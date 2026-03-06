@@ -6,78 +6,96 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using TodoApp.Application.Common.Interfaces;
 using TodoApp.Infrastructure.Data;
-using TodoApp.Infrastructure.Identity.Options;
+using TodoApp.Infrastructure.Jwt;
 using TodoApp.Infrastructure.Identity.Services;
+using TodoApp.Infrastructure.Caching;
 
 namespace Microsoft.Extensions.DependencyInjection;
-
-// Infrastructure Layer Dependency Injection
 public static class DependencyInjection
 {
     public static void AddInfrastructureServices(this IHostApplicationBuilder builder)
     {
         var services = builder.Services;
-        // Database - PostgreSQL
-        var connectionString = builder.Configuration.GetConnectionString("TodoAppDb");
-        
+        var configuration = builder.Configuration;
+
+        services.AddDatabaseContext(configuration);
+        services.AddRedisCache(configuration);
+        services.AddJwt(configuration);
+
+        services.AddSingleton<IRedisCacheService, RedisCacheService>();
+
+        services.AddScoped<IApplicationDbContext>(provider => 
+            provider.GetRequiredService<ApplicationDbContext>());
+
+        services.AddScoped<ApplicationDbContextInitialiser>();
+
+        services.AddScoped<IJwtService, JwtService>();
+        services.AddScoped<IPasswordHasher, PasswordHasher>();
+
+    }
+
+    public static IServiceCollection AddDatabaseContext(
+        this IServiceCollection services, IConfiguration configuration)
+    {
+        var connectionString = configuration.GetConnectionString("TodoAppDb");
+
         services.AddDbContext<ApplicationDbContext>(options =>
         {
-            options.UseNpgsql(connectionString, npgsqlOptions =>
+            options.UseNpgsql(connectionString, npgOptions =>
             {
-                npgsqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
-                npgsqlOptions.EnableRetryOnFailure(
+                npgOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                npgOptions.EnableRetryOnFailure(
                     maxRetryCount: 3,
                     maxRetryDelay: TimeSpan.FromSeconds(30),
                     errorCodesToAdd: null);
             });
         });
 
-        // Register DbContext as IApplicationDbContext
-        services.AddScoped<IApplicationDbContext>(provider => 
-            provider.GetRequiredService<ApplicationDbContext>());
+        return services;
+    }
 
-        // Identity Services
-        services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
+    public static IServiceCollection AddRedisCache(
+        this IServiceCollection services, IConfiguration configuration)
+    {
+        var redisConnectionString = configuration.GetConnectionString("Redis");
 
-        var jwtSettings = builder.Configuration
-            .GetSection("Jwt")
-            .Get<JwtSettings>();
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = redisConnectionString;
+            options.InstanceName = "TodoApp_";
+        });
+
+        return services;
+    }
+
+    public static IServiceCollection AddJwt(
+        this IServiceCollection services, IConfiguration configuration)
+    {
+        var jwtSettings = configuration.GetSection("JwtSettings").Get<JwtSettings>();
+
+        if (jwtSettings == null)
+        {
+            throw new InvalidOperationException(
+                "JwtSettings section is missing in appsettings.json");
+        }
+
+        services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateIssuer = true,
-                    ValidIssuer = jwtSettings!.Issuer,
-
                     ValidateAudience = true,
-                    ValidAudience = jwtSettings.Audience,
-
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(jwtSettings.SecretKey)
-                    ),
-
+                    ValidateIssuer = true,
                     ValidateLifetime = true,
-                    ClockSkew = TimeSpan.Zero
+                    ValidateIssuerSigningKey = true,
+                    ValidAudience = jwtSettings!.Audience,
+                    ValidIssuer = jwtSettings.Issuer,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey))
                 };
             });
 
-        services.AddScoped<IJwtService, JwtService>();
-        services.AddScoped<IPasswordHasher, PasswordHasher>();
-
-        // Database Initialiser
-        services.AddScoped<ApplicationDbContextInitialiser>();
-
+        return services;
     }
-
-    // // Apply pending migrations at startup (Development only)
-    // public static async Task ApplyMigrationsAsync(this IServiceProvider serviceProvider)
-    // {
-    //     using var scope = serviceProvider.CreateScope();
-    //     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        
-    //     await context.Database.MigrateAsync();
-    // }
 }
