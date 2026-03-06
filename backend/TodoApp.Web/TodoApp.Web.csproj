@@ -7,25 +7,25 @@
     <RootNamespace>TodoApp.Web</RootNamespace>
   </PropertyGroup>
 
-  <!-- 🌐 API - Versioning & Documentation -->
+  <!-- API - Versioning & Documentation -->
   <ItemGroup>
     <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
-  <!-- 🔐 AUTH - JWT -->
+  <!-- AUTH - JWT -->
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.2" />
   </ItemGroup>
 
-  <!-- 🔄 REALTIME - SignalR đã tích hợp sẵn trong ASP.NET Core -->
+  <!-- REALTIME - SignalR đã tích hợp sẵn trong ASP.NET Core -->
 
-  <!-- 🧪 ERROR HANDLING - RFC 7807 -->
+  <!-- ERROR HANDLING - RFC 7807 -->
   <ItemGroup>
     <PackageReference Include="Hellang.Middleware.ProblemDetails" Version="6.5.1" />
   </ItemGroup>
 
-  <!-- 🗄️ EF MIGRATIONS -->
+  <!-- EF MIGRATIONS -->
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -33,7 +33,7 @@
     </PackageReference>
   </ItemGroup>
 
-  <!-- 🔗 Project References -->
+  <!-- Project References -->
   <ItemGroup>
     <ProjectReference Include="..\TodoApp.Infrastructure\TodoApp.Infrastructure.csproj" />
     <ProjectReference Include="..\TodoApp.Application\TodoApp.Application.csproj" />

@@ -7,7 +7,18 @@ public static class DependencyInjection
     public static void AddWebServices(this IHostApplicationBuilder builder)
     {
         var services = builder.Services;
+        
+        services.AddSwagger();
+        services.AddRouting(options =>
+        {
+            options.LowercaseUrls = true;
+            options.LowercaseQueryStrings = true;
+        });
 
+    }
+
+    public static IServiceCollection AddSwagger(this IServiceCollection services)
+    {
         // Swagger với JWT support
         services.AddSwaggerGen(options =>
         {
@@ -18,7 +29,6 @@ public static class DependencyInjection
                 Description = "API for TodoApp - Content Platform with Todo"
             });
 
-            // JWT Bearer authentication
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 Description = "JWT Authorization header. Example: \"Bearer {token}\"",
@@ -44,5 +54,7 @@ public static class DependencyInjection
                 }
             });
         });
+
+        return services;
     }
 }
