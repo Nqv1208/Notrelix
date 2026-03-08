@@ -1,6 +1,0 @@
-export * from "./app-sidebar"
-export * from "./dashboard-header"
-export * from "./dashboard-overview"
-export * from "./task-page"
-export * from "./task-list-view"
-export * from "./task-kanban-view"

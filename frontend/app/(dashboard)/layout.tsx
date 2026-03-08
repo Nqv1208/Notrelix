@@ -2,8 +2,8 @@
 
 import { TooltipProvider } from "@/registry/new-york-v4/ui/tooltip"
 import { SidebarProvider, SidebarInset } from "@/registry/new-york-v4/ui/sidebar"
-import { AppSidebar } from "@/components/dashboard/app-sidebar"
-import { DashboardHeader } from "@/components/dashboard/dashboard-header"
+import { AppSidebar } from "@/app/(dashboard)/_components/app-sidebar"
+import { DashboardHeader } from "@/app/(dashboard)/_components/dashboard-header"
 
 export default function DashboardLayout({
   children,

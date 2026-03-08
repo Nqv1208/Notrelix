@@ -1,4 +1,4 @@
-import { TaskPage } from "@/components/dashboard/task-page"
+import { TaskPage } from "@/app/(dashboard)/_components/task-page"
 
 interface PageProps {
   params: Promise<{

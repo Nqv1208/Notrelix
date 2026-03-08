@@ -7,7 +7,7 @@ import {
   TestimonialsSection,
   CTASection,
   Footer,
-} from "@/components/app"
+} from "@/app/(app)/_components"
 
 export default function HomePage() {
   return (
