@@ -6,13 +6,61 @@ import { Button } from "@/registry/new-york-v4/ui/button"
 import { Input } from "@/registry/new-york-v4/ui/input"
 import { Label } from "@/registry/new-york-v4/ui/label"
 import { Checkbox } from "@/registry/new-york-v4/ui/checkbox"
+import { useRegister } from "@/features/auth/hooks/useRegister"
+import { useForm} from "react-hook-form"
+import { zodResolver} from "@hookform/resolvers/zod"
+import { RegisterRequest, registerSchema } from "@/features/auth/schemas/register.schemas"
+import { useState } from "react"
+import { parseAuthError } from "@/features/auth/utils/parse-auth-error"
+import { AuthErrorKey, AUTH_ERROR_KEYS, isAuthErrorKey } from "@/features/auth/i18n/auth-error-keys"
+import { useTranslations } from "next-intl"
 
 export function RegisterForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"form">) {
+  const t = useTranslations()
+  const registerMutation = useRegister()
+  const [serverErrorKey, setServerErrorKey] = useState<AuthErrorKey | null>(null)
+
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors}
+  } = useForm<RegisterRequest>({
+    resolver: zodResolver(registerSchema)
+  })
+
+  const onSubmit = (data: RegisterRequest) => {
+    setServerErrorKey(null)
+    const payLoad = {
+      name: `${data.firstName} ${data.lastName}`,
+      email: data.email,
+      password: data.password
+    }
+
+    registerMutation.mutate(payLoad, {
+      onError: (error) => {
+        const parsed = parseAuthError(error)
+
+        if (parsed.fieldErrors.email) {
+          setError("email", { type: "server", message: parsed.fieldErrors.email })
+        }
+
+        if (parsed.fieldErrors.password) {
+          setError("password", { type: "server", message: parsed.fieldErrors.password })
+        }
+
+        setServerErrorKey(parsed.messageKey)
+      }
+    })
+  }
+
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props}>
+    <form 
+      onSubmit={handleSubmit(onSubmit)}
+      className={cn("flex flex-col gap-6", className)} {...props}>
       {/* Header */}
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-bold tracking-tight">Tạo tài khoản</h1>
@@ -31,8 +79,9 @@ export function RegisterForm({
               type="text"
               placeholder="Nguyễn"
               autoComplete="given-name"
-              required
+              {...register("firstName")}
             />
+            {errors.firstName && <p className="text-xs text-destructive">{toLocalizedMessage(errors.firstName.message, t)}</p>}
           </div>
           <div className="grid gap-2">
             <Label htmlFor="lastName">Tên</Label>
@@ -41,8 +90,9 @@ export function RegisterForm({
               type="text"
               placeholder="Văn A"
               autoComplete="family-name"
-              required
+              {...register("lastName")}
             />
+            {errors.lastName && <p className="text-xs text-destructive">{toLocalizedMessage(errors.lastName.message, t)}</p>}
           </div>
         </div>
 
@@ -53,8 +103,9 @@ export function RegisterForm({
             type="email"
             placeholder="email@example.com"
             autoComplete="email"
-            required
+            {...register("email")}
           />
+          {errors.email && <p className="text-xs text-destructive">{toLocalizedMessage(errors.email.message, t)}</p>}
         </div>
 
         <div className="grid gap-2">
@@ -64,11 +115,12 @@ export function RegisterForm({
             type="password"
             placeholder="••••••••"
             autoComplete="new-password"
-            required
+            {...register("password")}
           />
-          <p className="text-xs text-muted-foreground">
+          {errors.password && <p className="text-xs text-destructive">{toLocalizedMessage(errors.password.message, t)}</p>}
+          {/* <p className="text-xs text-muted-foreground">
             Ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và số
-          </p>
+          </p> */}
         </div>
 
         <div className="grid gap-2">
@@ -78,8 +130,9 @@ export function RegisterForm({
             type="password"
             placeholder="••••••••"
             autoComplete="new-password"
-            required
+            {...register("confirmPassword")}
           />
+          {errors.confirmPassword && <p className="text-xs text-destructive">{toLocalizedMessage(errors.confirmPassword.message, t)}</p>}
         </div>
 
         <div className="flex items-start gap-2">
@@ -99,9 +152,13 @@ export function RegisterForm({
         <Button
           type="submit"
           className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white border-0"
+          disabled={registerMutation.isPending}
         >
-          Đăng ký
+          {registerMutation.isPending ? "Đang đăng ký..." : "Đăng ký"}
         </Button>
+        {serverErrorKey && (
+          <p className="text-sm text-destructive text-center">{t(serverErrorKey)}</p>
+        )}
       </div>
 
       {/* Divider */}
@@ -157,4 +214,13 @@ export function RegisterForm({
       </p>
     </form>
   )
+}
+
+function toLocalizedMessage(
+  message: string | undefined,
+  t: ReturnType<typeof useTranslations>
+): string {
+  if (!message) return t(AUTH_ERROR_KEYS.SERVER_GENERIC)
+  if (isAuthErrorKey(message)) return t(message)
+  return message
 }

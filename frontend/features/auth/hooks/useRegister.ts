@@ -4,11 +4,11 @@ import { useMutation } from "@tanstack/react-query";
 import { tokenStorage } from "@/lib/auth/token-storage";
 
 
-export const useLogin = () => {
+export const useRegister = () => {
   const router = useRouter();
 
   return useMutation({
-    mutationFn: authService.login,
+    mutationFn: authService.register,
     onSuccess: (data) => {
       tokenStorage.setTokens(data.accessToken, data.refreshToken);
       router.push("/");

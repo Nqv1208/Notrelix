@@ -1,26 +1,26 @@
 import { api } from "@/lib/api/api-client";
-import { LoginRequest, LoginResponse, LogoutRequest, RefreshRequest, RegisterRequest, RegisterResponse, User } from "../types/auth.types";
+import { LoginRequestApi, LoginResponseApi, LogoutRequest, RefreshRequest, RegisterRequestApi, RegisterResponseApi, User } from "../types/auth.types";
 import { endpoints } from "@/lib/api/endpoints";
 
 
 export const authService = {
-    login(data: LoginRequest) {
-        return api.post<LoginResponse>(endpoints.auth.login, data)
-    },
+  login(data: LoginRequestApi) {
+    return api.post<LoginResponseApi>(endpoints.auth.login, data);
+  },
 
-    register(data: RegisterRequest) {
-        return api.post<RegisterResponse>(endpoints.auth.register, data)
-    },
+  register(data: RegisterRequestApi) {
+    return api.post<RegisterResponseApi>(endpoints.auth.register, data);
+  },
 
-    logout(data: LogoutRequest) {
-        return api.post<LogoutRequest>(endpoints.auth.logout, data)
-    },
+  logout(data: LogoutRequest) {
+    return api.post<void>(endpoints.auth.logout, data);
+  },
 
-    refresh(data: RefreshRequest) {
-        return api.post<RefreshRequest>(endpoints.auth.refresh, data)
-    },
+  refresh(data: RefreshRequest) {
+    return api.post<LoginResponseApi>(endpoints.auth.refresh, data);
+  },
 
-    profile() {
-        return api.get<User>(endpoints.auth.profile)
-    }
-}
+  profile() {
+    return api.get<User>(endpoints.auth.profile);
+  },
+};

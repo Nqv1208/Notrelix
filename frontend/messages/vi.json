@@ -1,0 +1,43 @@
+{
+  "auth": {
+    "validation": {
+      "email": {
+        "required": "Email không được để trống",
+        "invalid": "Email không đúng định dạng"
+      },
+      "password": {
+        "required": "Mật khẩu không được để trống",
+        "min": "Mật khẩu phải có ít nhất 8 ký tự"
+      },
+      "confirmPassword": {
+        "required": "Xác nhận mật khẩu không được để trống",
+        "mismatch": "Mật khẩu xác nhận không khớp"
+      },
+      "firstName": {
+        "required": "Họ không được để trống",
+        "max": "Họ không được vượt quá 50 ký tự"
+      },
+      "lastName": {
+        "required": "Tên không được để trống",
+        "max": "Tên không được vượt quá 50 ký tự"
+      }
+    },
+    "server": {
+      "generic": "Đã xảy ra lỗi, vui lòng thử lại.",
+      "login": {
+        "invalidCredentials": "Email hoặc mật khẩu không đúng"
+      },
+      "register": {
+        "emailTaken": "Email đã được sử dụng"
+      },
+      "account": {
+        "inactive": "Tài khoản đã bị vô hiệu hóa",
+        "suspended": "Tài khoản đã bị tạm khóa"
+      },
+      "refresh": {
+        "invalid": "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại."
+      },
+      "unauthorized": "Bạn cần đăng nhập để tiếp tục."
+    }
+  }
+}

@@ -1,10 +1,15 @@
+"use client"
+
 import Link from "next/link"
 import { ArrowRight, CheckSquare, Sparkles } from "lucide-react"
 
 import { Button } from "@/registry/new-york-v4/ui/button"
 import { Badge } from "@/registry/new-york-v4/ui/badge"
+import { useAuthUser } from "@/features/auth/hooks/useAuthUser"
 
 export function HeroSection() {
+  const { isAuthenticated } = useAuthUser()
+
   return (
     <section className="relative pt-20 pb-32 overflow-hidden">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -30,12 +35,12 @@ export function HeroSection() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-            <Link href="/register">
+            <Link href={isAuthenticated ? "/dashboard" : "/register"}>
               <Button
                 size="lg"
                 className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white border-0 shadow-xl shadow-violet-500/30 px-8"
               >
-                Dùng thử miễn phí
+                {isAuthenticated ? "Mở Dashboard" : "Dùng thử miễn phí"}
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>

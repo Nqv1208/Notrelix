@@ -5,6 +5,8 @@ import { CheckSquare } from "lucide-react"
 
 import { Button } from "@/registry/new-york-v4/ui/button"
 import { ThemeToggle } from "@/app/(app)/_components/theme-toggle"
+import { useAuthUser } from "@/features/auth/hooks/useAuthUser"
+import { useLogout } from "@/features/auth/hooks/useLogout"
 
 const navLinks = [
   { href: "#features", label: "Tính năng" },
@@ -13,6 +15,9 @@ const navLinks = [
 ]
 
 export function Header() {
+  const { user, isAuthenticated } = useAuthUser()
+  const logoutMutation = useLogout()
+
   return (
     <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -43,19 +48,42 @@ export function Header() {
           {/* Actions */}
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <Link href="/login">
-              <Button variant="ghost" size="sm">
-                Đăng nhập
-              </Button>
-            </Link>
-            <Link href="/register">
-              <Button
-                size="sm"
-                className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white border-0 shadow-lg shadow-violet-500/25"
-              >
-                Bắt đầu miễn phí
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <span className="hidden md:inline text-sm text-muted-foreground">
+                  Xin chào, <span className="font-medium text-foreground">{user?.name ?? "bạn"}</span>
+                </span>
+                <Link href="/dashboard">
+                  <Button variant="ghost" size="sm">
+                    Dashboard
+                  </Button>
+                </Link>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => logoutMutation.mutate()}
+                  disabled={logoutMutation.isPending}
+                >
+                  {logoutMutation.isPending ? "Đang đăng xuất..." : "Đăng xuất"}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link href="/sign-in">
+                  <Button variant="ghost" size="sm">
+                    Đăng nhập
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button
+                    size="sm"
+                    className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white border-0 shadow-lg shadow-violet-500/25"
+                  >
+                    Bắt đầu miễn phí
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

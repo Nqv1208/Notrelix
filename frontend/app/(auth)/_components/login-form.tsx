@@ -8,28 +8,55 @@ import { Label } from "@/registry/new-york-v4/ui/label"
 import { Checkbox } from "@/registry/new-york-v4/ui/checkbox"
 import { useLogin } from "@/features/auth/hooks/useLogin"
 import { useState } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { LoginRequest, loginSchema } from "@/features/auth/schemas/login.schema"
+import { parseAuthError } from "@/features/auth/utils/parse-auth-error"
+import { AuthErrorKey, AUTH_ERROR_KEYS, isAuthErrorKey } from "@/features/auth/i18n/auth-error-keys"
+import { useTranslations } from "next-intl"
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"form">) {
-  const loginMutation =  useLogin()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const t = useTranslations()
+  const loginMutation = useLogin()
+  const [serverErrorKey, setServerErrorKey] = useState<AuthErrorKey | null>(null)
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors }
+  } = useForm<LoginRequest>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: ""
+    }
+  })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    loginMutation.mutate({
-      email: email,
-      password: password
+  const onSubmit = (data: LoginRequest) => {
+    setServerErrorKey(null)
+    loginMutation.mutate(data, {
+      onError: (error) => {
+        const parsed = parseAuthError(error)
+
+        if (parsed.fieldErrors.email) {
+          setError("email", { type: "server", message: parsed.fieldErrors.email })
+        }
+
+        if (parsed.fieldErrors.password) {
+          setError("password", { type: "server", message: parsed.fieldErrors.password })
+        }
+
+        setServerErrorKey(parsed.messageKey)
+      }
     })
-
-    console.log(process.env.NEXT_PUBLIC_API_URL)
   }
 
   return (
     <form 
-      onSubmit={handleSubmit}
+      onSubmit={handleSubmit(onSubmit)}
       className={cn("flex flex-col gap-6", className)} {...props}
     >
       {/* Header */}
@@ -49,10 +76,11 @@ export function LoginForm({
             type="email"
             placeholder="email@example.com"
             autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            {...register("email")}
           />
+          {errors.email && (
+            <p className="text-xs text-destructive">{toLocalizedMessage(errors.email.message, t)}</p>
+          )}
         </div>
 
         <div className="grid gap-2">
@@ -70,10 +98,11 @@ export function LoginForm({
             type="password"
             placeholder="••••••••"
             autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            {...register("password")}
           />
+          {errors.password && (
+            <p className="text-xs text-destructive">{toLocalizedMessage(errors.password.message, t)}</p>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -86,9 +115,13 @@ export function LoginForm({
         <Button
           type="submit"
           className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white border-0"
+          disabled={loginMutation.isPending}
           >
-          {loginMutation.isPending ? "Logging in..." : "Login"}
+          {loginMutation.isPending ? "Đang đăng nhập..." : "Đăng nhập"}
         </Button>
+        {serverErrorKey && (
+          <p className="text-sm text-destructive text-center">{t(serverErrorKey)}</p>
+        )}
       </div>
 
       {/* Divider */}
@@ -144,4 +177,13 @@ export function LoginForm({
       </p>
     </form>
   )
+}
+
+function toLocalizedMessage(
+  message: string | undefined,
+  t: ReturnType<typeof useTranslations>
+): string {
+  if (!message) return t(AUTH_ERROR_KEYS.SERVER_GENERIC)
+  if (isAuthErrorKey(message)) return t(message)
+  return message
 }
