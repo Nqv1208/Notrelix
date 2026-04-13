@@ -4,7 +4,11 @@ namespace TodoApp.Domain.Enums;
 public enum PermissionLevel
 {
     None = 0,
+    Viewer = 1,
     Read = 1,
-    Write = 2,
-    Admin = 3
+    Commenter = 2,
+    Editor = 3,
+    Write = 3,
+    Owner = 4,
+    Admin = 4
 }

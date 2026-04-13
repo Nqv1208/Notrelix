@@ -40,6 +40,18 @@ public class ExceptionHandlingMiddleware
                     Errors = validationEx.Errors
                 }
             ),
+            ArgumentException argumentEx => (
+                StatusCodes.Status400BadRequest,
+                new ErrorResponse
+                {
+                    Type = "ValidationError",
+                    Message = argumentEx.Message,
+                    Errors = new Dictionary<string, string[]>
+                    {
+                        ["request"] = new[] { argumentEx.Message }
+                    }
+                }
+            ),
             UnauthorizedException => (
                 StatusCodes.Status401Unauthorized,
                 new ErrorResponse

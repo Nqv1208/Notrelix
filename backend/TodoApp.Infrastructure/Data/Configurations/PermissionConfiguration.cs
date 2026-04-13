@@ -21,6 +21,10 @@ public class PermissionConfiguration : IEntityTypeConfiguration<Permission>
             .HasMaxLength(50)
             .IsRequired();
 
+        builder.Property(p => p.WorkspaceId)
+            .HasColumnName("workspace_id")
+            .IsRequired();
+
         builder.Property(p => p.ResourceId)
             .HasColumnName("resource_id")
             .IsRequired();
@@ -41,6 +45,12 @@ public class PermissionConfiguration : IEntityTypeConfiguration<Permission>
             .HasMaxLength(50)
             .IsRequired();
 
+        builder.Property(p => p.GrantedBy)
+            .HasColumnName("granted_by");
+
+        builder.Property(p => p.ExpiresAt)
+            .HasColumnName("expires_at");
+
         // Audit fields
         builder.Property(p => p.CreatedAt)
             .HasColumnName("created_at");
@@ -55,11 +65,17 @@ public class PermissionConfiguration : IEntityTypeConfiguration<Permission>
             .HasColumnName("updated_by");
 
         // Indexes - composite unique
-        builder.HasIndex(p => new { p.ResourceType, p.ResourceId, p.SubjectType, p.SubjectId })
+        builder.HasIndex(p => new { p.WorkspaceId, p.ResourceType, p.ResourceId, p.SubjectType, p.SubjectId })
             .IsUnique();
 
-        builder.HasIndex(p => new { p.ResourceType, p.ResourceId });
+        builder.HasIndex(p => new { p.ResourceType, p.ResourceId, p.SubjectType, p.SubjectId })
+            .HasDatabaseName("idx_permissions_resource");
         builder.HasIndex(p => new { p.SubjectType, p.SubjectId });
+
+        builder.HasOne<Workspace>()
+            .WithMany()
+            .HasForeignKey(p => p.WorkspaceId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // Ignore domain events
         builder.Ignore(p => p.DomainEvents);

@@ -4,5 +4,7 @@ namespace TodoApp.Domain.Enums;
 public enum SubjectType
 {
     User = 0,
-    Role = 1
+    Role = 1,
+    Group = 2,
+    WorkspaceRole = 3
 }

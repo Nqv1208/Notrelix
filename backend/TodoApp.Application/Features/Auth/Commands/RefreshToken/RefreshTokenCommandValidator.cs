@@ -7,7 +7,6 @@ public class RefreshTokenCommandValidator : AbstractValidator<RefreshTokenComman
 {
     public RefreshTokenCommandValidator()
     {
-        RuleFor(x => x.RefreshToken)
-            .NotEmpty().WithMessage("Refresh token không được để trống");
+        // Frontend kiểm tra input rỗng; backend xác minh token hợp lệ/hết hạn trong handler.
     }
 }

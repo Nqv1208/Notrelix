@@ -1,6 +1,8 @@
+using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using TodoApp.Application.Common.Models;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace TodoApp.Web.Controllers;
 
@@ -31,7 +33,12 @@ public abstract class BaseController : ControllerBase
     // Lấy UserId từ JWT claims
     protected Guid? GetCurrentUserId()
     {
-        var userIdClaim = User.FindFirst("sub") ?? User.FindFirst("userId");
+        var userIdClaim = User.Claims.FirstOrDefault(claim =>
+            string.Equals(claim.Type, JwtRegisteredClaimNames.Sub, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(claim.Type, "sub", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(claim.Type, "userId", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(claim.Type, ClaimTypes.NameIdentifier, StringComparison.OrdinalIgnoreCase)
+            || claim.Type.EndsWith("/nameidentifier", StringComparison.OrdinalIgnoreCase));
         if (userIdClaim is null || !Guid.TryParse(userIdClaim.Value, out var userId))
             return null;
         

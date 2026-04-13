@@ -20,6 +20,11 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
             .HasMaxLength(200)
             .IsRequired();
 
+        builder.Property(w => w.Slug)
+            .HasColumnName("slug")
+            .HasMaxLength(100)
+            .IsRequired();
+
         builder.Property(w => w.Description)
             .HasColumnName("description")
             .HasMaxLength(1000);
@@ -32,6 +37,18 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
 
         builder.Property(w => w.OwnerId)
             .HasColumnName("owner_id")
+            .IsRequired();
+
+        builder.Property(w => w.Plan)
+            .HasColumnName("plan")
+            .HasMaxLength(50)
+            .HasDefaultValue("free")
+            .IsRequired();
+
+        builder.Property(w => w.Settings)
+            .HasColumnName("settings")
+            .HasColumnType("jsonb")
+            .HasDefaultValue("{}")
             .IsRequired();
 
         // Icon as owned type (Value Object)
@@ -72,6 +89,7 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
 
         // Indexes
         builder.HasIndex(w => w.OwnerId);
+        builder.HasIndex(w => w.Slug).IsUnique().HasDatabaseName("idx_workspaces_slug");
 
         // Ignore domain events
         builder.Ignore(w => w.DomainEvents);

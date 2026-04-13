@@ -6,11 +6,14 @@ namespace TodoApp.Domain.Entities;
 // Entity đại diện cho comment trên resource
 public class Comment : AuditableEntity
 {
+    public Guid WorkspaceId { get; private set; }
     public ResourceType ResourceType { get; private set; }
     public Guid ResourceId { get; private set; }
     public Guid UserId { get; private set; }
     public string Content { get; private set; } = null!;
     public Guid? ParentCommentId { get; private set; }
+    public DateTime? ResolvedAt { get; private set; }
+    public Guid? ResolvedBy { get; private set; }
     public bool IsEdited { get; private set; }
     public DateTime? EditedAt { get; private set; }
     public bool IsDeleted { get; private set; }
@@ -24,13 +27,19 @@ public class Comment : AuditableEntity
 
     private Comment() : base() { }
 
-    public static Comment Create(ResourceType resourceType, Guid resourceId, Guid userId, string content)
+    public static Comment Create(
+        Guid workspaceId,
+        ResourceType resourceType,
+        Guid resourceId,
+        Guid userId,
+        string content)
     {
         if (string.IsNullOrWhiteSpace(content))
             throw new ArgumentException("Nội dung comment không được để trống", nameof(content));
 
         return new Comment
         {
+            WorkspaceId = workspaceId,
             ResourceType = resourceType,
             ResourceId = resourceId,
             UserId = userId,
@@ -47,6 +56,7 @@ public class Comment : AuditableEntity
 
         var reply = new Comment
         {
+            WorkspaceId = WorkspaceId,
             ResourceType = ResourceType,
             ResourceId = ResourceId,
             UserId = userId,
@@ -75,5 +85,11 @@ public class Comment : AuditableEntity
         IsDeleted = true;
         DeletedAt = DateTime.UtcNow;
         Content = "[Đã xóa]";
+    }
+
+    public void Resolve(Guid resolvedBy)
+    {
+        ResolvedBy = resolvedBy;
+        ResolvedAt = DateTime.UtcNow;
     }
 }

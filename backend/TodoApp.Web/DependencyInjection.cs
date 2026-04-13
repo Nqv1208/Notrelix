@@ -1,4 +1,6 @@
+using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -27,7 +29,7 @@ public static class DependencyInjection
             {
                 Title = "TodoApp API",
                 Version = "v1",
-                Description = "API for TodoApp - Content Platform with Todo"
+                Description = "API for workspace, docs (pages/blocks) and boards (lists/cards)"
             });
 
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme

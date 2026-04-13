@@ -21,6 +21,10 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
             .HasMaxLength(50)
             .IsRequired();
 
+        builder.Property(c => c.WorkspaceId)
+            .HasColumnName("workspace_id")
+            .IsRequired();
+
         builder.Property(c => c.ResourceId)
             .HasColumnName("resource_id")
             .IsRequired();
@@ -30,12 +34,18 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
             .IsRequired();
 
         builder.Property(c => c.Content)
-            .HasColumnName("content")
+            .HasColumnName("content_md")
             .HasMaxLength(5000)
             .IsRequired();
 
         builder.Property(c => c.ParentCommentId)
             .HasColumnName("parent_comment_id");
+
+        builder.Property(c => c.ResolvedAt)
+            .HasColumnName("resolved_at");
+
+        builder.Property(c => c.ResolvedBy)
+            .HasColumnName("resolved_by");
 
         builder.Property(c => c.IsEdited)
             .HasColumnName("is_edited")
@@ -71,9 +81,15 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
             .OnDelete(DeleteBehavior.Cascade);
 
         // Indexes
-        builder.HasIndex(c => new { c.ResourceType, c.ResourceId });
+        builder.HasIndex(c => new { c.ResourceType, c.ResourceId, c.CreatedAt })
+            .HasDatabaseName("idx_comments_resource");
         builder.HasIndex(c => c.UserId);
         builder.HasIndex(c => c.ParentCommentId);
+
+        builder.HasOne<Workspace>()
+            .WithMany()
+            .HasForeignKey(c => c.WorkspaceId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // Query filter for soft delete
         builder.HasQueryFilter(c => !c.IsDeleted);
