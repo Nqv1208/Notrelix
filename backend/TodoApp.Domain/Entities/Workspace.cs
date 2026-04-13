@@ -10,9 +10,12 @@ namespace TodoApp.Domain.Entities;
 public class Workspace : AuditableEntity
 {
     public string Name { get; private set; } = null!;
+    public string Slug { get; private set; } = null!;
     public string? Description { get; private set; }
     public WorkspaceType Type { get; private set; }
     public Guid OwnerId { get; private set; }
+    public string Plan { get; private set; } = "free";
+    public string Settings { get; private set; } = "{}";
     public Icon Icon { get; private set; } = null!;
     public bool IsArchived { get; private set; }
 
@@ -30,6 +33,7 @@ public class Workspace : AuditableEntity
         var workspace = new Workspace
         {
             Name = name.Trim(),
+            Slug = GenerateSlug(name),
             Type = WorkspaceType.Personal,
             OwnerId = ownerId,
             Icon = Icon.Default,
@@ -50,6 +54,7 @@ public class Workspace : AuditableEntity
         var workspace = new Workspace
         {
             Name = name.Trim(),
+            Slug = GenerateSlug(name),
             Description = description?.Trim(),
             Type = WorkspaceType.Team,
             OwnerId = ownerId,
@@ -68,6 +73,19 @@ public class Workspace : AuditableEntity
             throw new ArgumentException("Tên workspace không được để trống", nameof(name));
 
         Name = name.Trim();
+    }
+
+    public void UpdateSlug(string slug)
+    {
+        if (string.IsNullOrWhiteSpace(slug))
+            throw new ArgumentException("Slug không được để trống", nameof(slug));
+
+        Slug = slug.Trim().ToLowerInvariant();
+    }
+
+    public void UpdateSettings(string settingsJson)
+    {
+        Settings = string.IsNullOrWhiteSpace(settingsJson) ? "{}" : settingsJson;
     }
 
     public void UpdateDescription(string? description)
@@ -134,5 +152,11 @@ public class Workspace : AuditableEntity
     {
         var role = GetMemberRole(userId);
         return role is MemberRole.Owner or MemberRole.Admin;
+    }
+
+    private static string GenerateSlug(string name)
+    {
+        var slug = name.Trim().ToLowerInvariant().Replace(" ", "-");
+        return string.IsNullOrWhiteSpace(slug) ? Guid.NewGuid().ToString("N") : slug;
     }
 }

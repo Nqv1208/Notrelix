@@ -1,103 +1,85 @@
+using System.Text.Json;
 using TodoApp.Domain.Common;
-using TodoApp.Domain.Enums;
 
 namespace TodoApp.Domain.Entities;
 
-// Entity đại diện cho Block (Notion-style)
-// Block chứa nội dung trong ContentItem
 public class Block : AuditableEntity
 {
-    public Guid ContentItemId { get; private set; }
-    public BlockType Type { get; private set; }
-    public string Properties { get; private set; } = "{}"; // JSON
-    public int Position { get; private set; }
+    public Guid PageId { get; private set; }
     public Guid? ParentBlockId { get; private set; }
+    public Guid CreatedByUserId { get; private set; }
+    public string Type { get; private set; } = "paragraph";
+    public string Properties { get; private set; } = "{}";
+    public double Position { get; private set; }
+    public bool IsDeleted { get; private set; }
+    public int Version { get; private set; } = 1;
 
-    // Navigation
-    public ContentItem ContentItem { get; private set; } = null!;
+    public Page Page { get; private set; } = null!;
     public Block? ParentBlock { get; private set; }
 
-    private readonly List<Block> _children = new();
+    private readonly List<Block> _children = [];
     public IReadOnlyCollection<Block> Children => _children.AsReadOnly();
 
     private Block() : base() { }
 
-    public static Block Create(Guid contentItemId, BlockType type, string? content = null, int position = 0)
+    public static Block Create(
+        Guid pageId,
+        Guid createdByUserId,
+        string type,
+        string properties = "{}",
+        double position = 0,
+        Guid? parentBlockId = null)
     {
-        var block = new Block
+        ValidateJson(properties);
+
+        return new Block
         {
-            ContentItemId = contentItemId,
-            Type = type,
-            Position = position
+            PageId = pageId,
+            ParentBlockId = parentBlockId,
+            CreatedByUserId = createdByUserId,
+            Type = string.IsNullOrWhiteSpace(type) ? "paragraph" : type.Trim(),
+            Properties = properties,
+            Position = position,
+            IsDeleted = false,
+            Version = 1
         };
-
-        if (!string.IsNullOrWhiteSpace(content))
-        {
-            block.SetContent(content);
-        }
-
-        return block;
     }
 
-    public void SetContent(string content)
+    public void UpdateType(string type)
     {
-        // Simple text content stored in JSON format
-        Properties = System.Text.Json.JsonSerializer.Serialize(new { text = content });
+        Type = string.IsNullOrWhiteSpace(type) ? Type : type.Trim();
+        Version++;
     }
 
-    public string? GetContent()
+    public void UpdateProperties(string properties)
+    {
+        ValidateJson(properties);
+        Properties = properties;
+        Version++;
+    }
+
+    public void Move(double newPosition, Guid? newParentBlockId = null)
+    {
+        Position = newPosition;
+        ParentBlockId = newParentBlockId;
+        Version++;
+    }
+
+    public void SoftDelete()
+    {
+        IsDeleted = true;
+        Version++;
+    }
+
+    private static void ValidateJson(string value)
     {
         try
         {
-            using var doc = System.Text.Json.JsonDocument.Parse(Properties);
-            if (doc.RootElement.TryGetProperty("text", out var textElement))
-            {
-                return textElement.GetString();
-            }
+            JsonDocument.Parse(string.IsNullOrWhiteSpace(value) ? "{}" : value);
         }
-        catch
+        catch (JsonException)
         {
-            // Invalid JSON, return null
+            throw new ArgumentException("Properties phai la JSON hop le.", nameof(value));
         }
-        return null;
-    }
-
-    public void SetProperties(string jsonProperties)
-    {
-        // Validate JSON
-        try
-        {
-            System.Text.Json.JsonDocument.Parse(jsonProperties);
-            Properties = jsonProperties;
-        }
-        catch (System.Text.Json.JsonException)
-        {
-            throw new ArgumentException("Properties phải là JSON hợp lệ", nameof(jsonProperties));
-        }
-    }
-
-    public void UpdateType(BlockType newType)
-    {
-        Type = newType;
-    }
-
-    internal void UpdatePosition(int position)
-    {
-        if (position < 0)
-            throw new ArgumentException("Vị trí không được âm", nameof(position));
-
-        Position = position;
-    }
-
-    public void AddChild(Block childBlock)
-    {
-        childBlock.ParentBlockId = Id;
-        _children.Add(childBlock);
-    }
-
-    public void RemoveChild(Block childBlock)
-    {
-        _children.Remove(childBlock);
-        childBlock.ParentBlockId = null;
     }
 }

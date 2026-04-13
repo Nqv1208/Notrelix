@@ -15,13 +15,12 @@ public class BlockConfiguration : IEntityTypeConfiguration<Block>
         builder.Property(b => b.Id)
             .HasColumnName("id");
 
-        builder.Property(b => b.ContentItemId)
-            .HasColumnName("content_item_id")
+        builder.Property(b => b.PageId)
+            .HasColumnName("page_id")
             .IsRequired();
 
         builder.Property(b => b.Type)
             .HasColumnName("type")
-            .HasConversion<string>()
             .HasMaxLength(50)
             .IsRequired();
 
@@ -32,10 +31,18 @@ public class BlockConfiguration : IEntityTypeConfiguration<Block>
 
         builder.Property(b => b.Position)
             .HasColumnName("position")
-            .HasDefaultValue(0);
+            .HasDefaultValue(0d);
 
         builder.Property(b => b.ParentBlockId)
             .HasColumnName("parent_block_id");
+
+        builder.Property(b => b.IsDeleted)
+            .HasColumnName("is_deleted")
+            .HasDefaultValue(false);
+
+        builder.Property(b => b.Version)
+            .HasColumnName("version")
+            .HasDefaultValue(1);
 
         // Audit fields
         builder.Property(b => b.CreatedAt)
@@ -44,7 +51,7 @@ public class BlockConfiguration : IEntityTypeConfiguration<Block>
         builder.Property(b => b.UpdatedAt)
             .HasColumnName("updated_at");
 
-        builder.Property(b => b.CreatedBy)
+        builder.Property(b => b.CreatedByUserId)
             .HasColumnName("created_by");
 
         builder.Property(b => b.UpdatedBy)
@@ -56,10 +63,22 @@ public class BlockConfiguration : IEntityTypeConfiguration<Block>
             .HasForeignKey(b => b.ParentBlockId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Relationships
+        builder.HasOne(b => b.Page)
+            .WithMany(p => p.Blocks)
+            .HasForeignKey(b => b.PageId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         // Indexes
-        builder.HasIndex(b => b.ContentItemId);
-        builder.HasIndex(b => b.ParentBlockId);
-        builder.HasIndex(b => new { b.ContentItemId, b.Position });
+        builder.HasIndex(b => new { b.PageId, b.Position })
+            .HasDatabaseName("idx_blocks_page_position")
+            .HasFilter("is_deleted = false");
+        builder.HasIndex(b => b.ParentBlockId)
+            .HasDatabaseName("idx_blocks_parent")
+            .HasFilter("parent_block_id IS NOT NULL AND is_deleted = false");
+
+        builder.Ignore(b => b.CreatedBy);
+        builder.Ignore(b => b.UpdatedBy);
 
         // Ignore domain events
         builder.Ignore(b => b.DomainEvents);

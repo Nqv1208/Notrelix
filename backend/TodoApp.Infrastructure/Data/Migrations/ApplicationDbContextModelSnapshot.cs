@@ -8,7 +8,7 @@ using TodoApp.Infrastructure.Data;
 
 #nullable disable
 
-namespace TodoApp.Infrastructure.Data.Migrations
+namespace TodoApp.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
     partial class ApplicationDbContextModelSnapshot : ModelSnapshot
@@ -17,12 +17,12 @@ namespace TodoApp.Infrastructure.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.2")
+                .HasAnnotation("ProductVersion", "8.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("TodoApp.Domain.Activity.Entities.ActivityLog", b =>
+            modelBuilder.Entity("TodoApp.Domain.Entities.ActivityLog", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -84,7 +84,487 @@ namespace TodoApp.Infrastructure.Data.Migrations
                     b.ToTable("activity_logs", (string)null);
                 });
 
-            modelBuilder.Entity("TodoApp.Domain.Collaboration.Entities.Comment", b =>
+            modelBuilder.Entity("TodoApp.Domain.Entities.Attachment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("filename");
+
+                    b.Property<string>("MimeType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("mime_type");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_id");
+
+                    b.Property<string>("ResourceType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("resource_type");
+
+                    b.Property<long?>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<Guid>("UploadedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uploaded_by");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("url");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResourceType", "ResourceId");
+
+                    b.ToTable("attachments", (string)null);
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.Block", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_deleted");
+
+                    b.Property<Guid>("PageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("page_id");
+
+                    b.Property<Guid?>("ParentBlockId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("parent_block_id");
+
+                    b.Property<double>("Position")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("double precision")
+                        .HasDefaultValue(0.0)
+                        .HasColumnName("position");
+
+                    b.Property<string>("Properties")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("properties");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("type");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("Version")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentBlockId")
+                        .HasDatabaseName("idx_blocks_parent")
+                        .HasFilter("parent_block_id IS NOT NULL AND is_deleted = false");
+
+                    b.HasIndex("PageId", "Position")
+                        .HasDatabaseName("idx_blocks_page_position")
+                        .HasFilter("is_deleted = false");
+
+                    b.ToTable("blocks", (string)null);
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.Board", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Background")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("background");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("IsArchived")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_archived");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("Visibility")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("workspace")
+                        .HasColumnName("visibility");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkspaceId", "IsArchived")
+                        .HasDatabaseName("idx_boards_workspace");
+
+                    b.ToTable("boards", (string)null);
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.BoardList", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("board_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsArchived")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_archived");
+
+                    b.Property<double>("Position")
+                        .HasColumnType("double precision")
+                        .HasColumnName("position");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoardId");
+
+                    b.ToTable("lists", (string)null);
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.BoardMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("board_id");
+
+                    b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("joined_at");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("member")
+                        .HasColumnName("role");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoardId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("board_members", (string)null);
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.Card", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<string>("Cover")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("cover");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DescriptionMd")
+                        .HasColumnType("text")
+                        .HasColumnName("description_md");
+
+                    b.Property<DateTime?>("DueDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("due_date");
+
+                    b.Property<bool>("IsArchived")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_archived");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_deleted");
+
+                    b.Property<Guid>("ListId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("list_id");
+
+                    b.Property<double>("Position")
+                        .HasColumnType("double precision")
+                        .HasColumnName("position");
+
+                    b.Property<string>("Priority")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("priority");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("start_date");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("open")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ListId", "Position")
+                        .HasDatabaseName("idx_cards_list_position")
+                        .HasFilter("is_deleted = false");
+
+                    b.ToTable("cards", (string)null);
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.CardLabel", b =>
+                {
+                    b.Property<Guid>("CardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("card_id");
+
+                    b.Property<Guid>("LabelId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("label_id");
+
+                    b.HasKey("CardId", "LabelId");
+
+                    b.HasIndex("LabelId");
+
+                    b.ToTable("card_labels", (string)null);
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.CardMember", b =>
+                {
+                    b.Property<Guid>("CardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("card_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("assigned_at");
+
+                    b.Property<Guid?>("AssignedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("assigned_by");
+
+                    b.HasKey("CardId", "UserId");
+
+                    b.ToTable("card_members", (string)null);
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.Checklist", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("card_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<double>("Position")
+                        .HasColumnType("double precision")
+                        .HasColumnName("position");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasDefaultValue("Checklist")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CardId");
+
+                    b.ToTable("checklists", (string)null);
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.ChecklistItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("AssigneeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("assignee_id");
+
+                    b.Property<Guid>("ChecklistId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("checklist_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("DueDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("due_date");
+
+                    b.Property<bool>("IsChecked")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_checked");
+
+                    b.Property<double>("Position")
+                        .HasColumnType("double precision")
+                        .HasColumnName("position");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChecklistId");
+
+                    b.ToTable("checklist_items", (string)null);
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.Comment", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -95,7 +575,7 @@ namespace TodoApp.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(5000)
                         .HasColumnType("character varying(5000)")
-                        .HasColumnName("content");
+                        .HasColumnName("content_md");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -129,6 +609,14 @@ namespace TodoApp.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("parent_comment_id");
 
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at");
+
+                    b.Property<Guid?>("ResolvedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resolved_by");
+
                     b.Property<Guid>("ResourceId")
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
@@ -151,18 +639,217 @@ namespace TodoApp.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("user_id");
 
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ParentCommentId");
 
                     b.HasIndex("UserId");
 
-                    b.HasIndex("ResourceType", "ResourceId");
+                    b.HasIndex("WorkspaceId");
+
+                    b.HasIndex("ResourceType", "ResourceId", "CreatedAt")
+                        .HasDatabaseName("idx_comments_resource");
 
                     b.ToTable("comments", (string)null);
                 });
 
-            modelBuilder.Entity("TodoApp.Domain.Collaboration.Entities.Permission", b =>
+            modelBuilder.Entity("TodoApp.Domain.Entities.Label", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("board_id");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("color");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoardId");
+
+                    b.ToTable("labels", (string)null);
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("ActorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsRead")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_read");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("payload");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("read_at");
+
+                    b.Property<Guid?>("ResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_id");
+
+                    b.Property<string>("ResourceType")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("resource_type");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("type");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "CreatedAt")
+                        .HasDatabaseName("idx_notifications_user_unread")
+                        .HasFilter("is_read = false");
+
+                    b.ToTable("notifications", (string)null);
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.Page", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CoverUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("cover_url");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<short>("Depth")
+                        .HasColumnType("smallint")
+                        .HasColumnName("depth");
+
+                    b.Property<string>("IconType")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("icon_type");
+
+                    b.Property<string>("IconValue")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("icon_value");
+
+                    b.Property<bool>("IsArchived")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_archived");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_deleted");
+
+                    b.Property<bool>("IsTemplate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_template");
+
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("parent_id");
+
+                    b.Property<double>("Position")
+                        .HasColumnType("double precision")
+                        .HasColumnName("position");
+
+                    b.Property<DateTime?>("PublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("published_at");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasDefaultValue("Untitled")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentId")
+                        .HasDatabaseName("idx_pages_parent");
+
+                    b.HasIndex("WorkspaceId", "IsDeleted", "Position")
+                        .HasDatabaseName("idx_pages_workspace");
+
+                    b.ToTable("pages", (string)null);
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.Permission", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -176,6 +863,14 @@ namespace TodoApp.Infrastructure.Data.Migrations
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<Guid?>("GrantedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("granted_by");
 
                     b.Property<string>("Level")
                         .IsRequired()
@@ -211,230 +906,63 @@ namespace TodoApp.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("updated_by");
 
-                    b.HasKey("Id");
-
-                    b.HasIndex("ResourceType", "ResourceId");
-
-                    b.HasIndex("SubjectType", "SubjectId");
-
-                    b.HasIndex("ResourceType", "ResourceId", "SubjectType", "SubjectId")
-                        .IsUnique();
-
-                    b.ToTable("permissions", (string)null);
-                });
-
-            modelBuilder.Entity("TodoApp.Domain.Content.Entities.Block", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("ContentItemId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("content_item_id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<Guid?>("ParentBlockId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("parent_block_id");
-
-                    b.Property<int>("Position")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0)
-                        .HasColumnName("position");
-
-                    b.Property<string>("Properties")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("jsonb")
-                        .HasDefaultValue("{}")
-                        .HasColumnName("properties");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("type");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ContentItemId");
-
-                    b.HasIndex("ParentBlockId");
-
-                    b.HasIndex("ContentItemId", "Position");
-
-                    b.ToTable("blocks", (string)null);
-                });
-
-            modelBuilder.Entity("TodoApp.Domain.Content.Entities.ContentItem", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Cover")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("cover");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<bool>("IsArchived")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_archived");
-
-                    b.Property<bool>("IsDeleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_deleted");
-
-                    b.Property<Guid?>("ParentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("parent_id");
-
-                    b.Property<int>("Position")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0)
-                        .HasColumnName("position");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("title");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("type");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
                     b.Property<Guid>("WorkspaceId")
                         .HasColumnType("uuid")
                         .HasColumnName("workspace_id");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ParentId");
+                    b.HasIndex("SubjectType", "SubjectId");
 
-                    b.HasIndex("Type");
+                    b.HasIndex("ResourceType", "ResourceId", "SubjectType", "SubjectId")
+                        .HasDatabaseName("idx_permissions_resource");
 
-                    b.HasIndex("WorkspaceId");
+                    b.HasIndex("WorkspaceId", "ResourceType", "ResourceId", "SubjectType", "SubjectId")
+                        .IsUnique();
 
-                    b.HasIndex("WorkspaceId", "IsDeleted");
-
-                    b.ToTable("content_items", (string)null);
+                    b.ToTable("permissions", (string)null);
                 });
 
-            modelBuilder.Entity("TodoApp.Domain.Content.Entities.Todo", b =>
+            modelBuilder.Entity("TodoApp.Domain.Entities.Reaction", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<Guid?>("AssigneeId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("assignee_id");
-
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("completed_at");
-
-                    b.Property<Guid>("ContentItemId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("content_item_id");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
+                    b.Property<string>("Emoji")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("emoji");
 
-                    b.Property<string>("Priority")
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_id");
+
+                    b.Property<string>("ResourceType")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("priority");
+                        .HasColumnName("resource_type");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("status");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedBy")
+                    b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
-                    b.Property<string>("_subTasksJson")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("jsonb")
-                        .HasDefaultValue("[]")
-                        .HasColumnName("sub_tasks");
+                        .HasColumnName("user_id");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AssigneeId");
-
-                    b.HasIndex("ContentItemId")
+                    b.HasIndex("ResourceType", "ResourceId", "UserId", "Emoji")
                         .IsUnique();
 
-                    b.HasIndex("Priority");
-
-                    b.HasIndex("Status");
-
-                    b.ToTable("todos", (string)null);
+                    b.ToTable("reactions", (string)null);
                 });
 
-            modelBuilder.Entity("TodoApp.Domain.Identity.Entities.Session", b =>
+            modelBuilder.Entity("TodoApp.Domain.Entities.Session", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -489,7 +1017,7 @@ namespace TodoApp.Infrastructure.Data.Migrations
                     b.ToTable("sessions", (string)null);
                 });
 
-            modelBuilder.Entity("TodoApp.Domain.Identity.Entities.User", b =>
+            modelBuilder.Entity("TodoApp.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -544,7 +1072,45 @@ namespace TodoApp.Infrastructure.Data.Migrations
                     b.ToTable("users", (string)null);
                 });
 
-            modelBuilder.Entity("TodoApp.Domain.Workspace.Entities.Workspace", b =>
+            modelBuilder.Entity("TodoApp.Domain.Entities.UserProfile", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("Locale")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasDefaultValue("en")
+                        .HasColumnName("locale");
+
+                    b.Property<string>("Preferences")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("preferences");
+
+                    b.Property<string>("Timezone")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("UTC")
+                        .HasColumnName("timezone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("user_profiles", (string)null);
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.Workspace", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -580,6 +1146,27 @@ namespace TodoApp.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("owner_id");
 
+                    b.Property<string>("Plan")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("free")
+                        .HasColumnName("plan");
+
+                    b.Property<string>("Settings")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("settings");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("slug");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -598,10 +1185,69 @@ namespace TodoApp.Infrastructure.Data.Migrations
 
                     b.HasIndex("OwnerId");
 
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasDatabaseName("idx_workspaces_slug");
+
                     b.ToTable("workspaces", (string)null);
                 });
 
-            modelBuilder.Entity("TodoApp.Domain.Workspace.Entities.WorkspaceMember", b =>
+            modelBuilder.Entity("TodoApp.Domain.Entities.WorkspaceInvitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AcceptedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("accepted_at");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("email");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<Guid>("InvitedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("invited_by");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("role");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("token");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("WorkspaceId");
+
+                    b.ToTable("workspace_invitations", (string)null);
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.WorkspaceMember", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -636,106 +1282,177 @@ namespace TodoApp.Infrastructure.Data.Migrations
                     b.ToTable("workspace_members", (string)null);
                 });
 
-            modelBuilder.Entity("TodoApp.Domain.Collaboration.Entities.Comment", b =>
+            modelBuilder.Entity("TodoApp.Domain.Entities.Block", b =>
                 {
-                    b.HasOne("TodoApp.Domain.Collaboration.Entities.Comment", "ParentComment")
-                        .WithMany("Replies")
-                        .HasForeignKey("ParentCommentId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.Navigation("ParentComment");
-                });
-
-            modelBuilder.Entity("TodoApp.Domain.Content.Entities.Block", b =>
-                {
-                    b.HasOne("TodoApp.Domain.Content.Entities.ContentItem", "ContentItem")
+                    b.HasOne("TodoApp.Domain.Entities.Page", "Page")
                         .WithMany("Blocks")
-                        .HasForeignKey("ContentItemId")
+                        .HasForeignKey("PageId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("TodoApp.Domain.Content.Entities.Block", "ParentBlock")
+                    b.HasOne("TodoApp.Domain.Entities.Block", "ParentBlock")
                         .WithMany("Children")
                         .HasForeignKey("ParentBlockId")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.Navigation("ContentItem");
+                    b.Navigation("Page");
 
                     b.Navigation("ParentBlock");
                 });
 
-            modelBuilder.Entity("TodoApp.Domain.Content.Entities.ContentItem", b =>
+            modelBuilder.Entity("TodoApp.Domain.Entities.Board", b =>
                 {
-                    b.HasOne("TodoApp.Domain.Content.Entities.ContentItem", "Parent")
-                        .WithMany("Children")
-                        .HasForeignKey("ParentId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.OwnsOne("TodoApp.Domain.Common.ValueObjects.Icon", "Icon", b1 =>
-                        {
-                            b1.Property<Guid>("ContentItemId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<string>("Type")
-                                .IsRequired()
-                                .HasMaxLength(20)
-                                .HasColumnType("character varying(20)")
-                                .HasColumnName("icon_type");
-
-                            b1.Property<string>("Value")
-                                .IsRequired()
-                                .HasMaxLength(100)
-                                .HasColumnType("character varying(100)")
-                                .HasColumnName("icon_value");
-
-                            b1.HasKey("ContentItemId");
-
-                            b1.ToTable("content_items");
-
-                            b1.WithOwner()
-                                .HasForeignKey("ContentItemId");
-                        });
-
-                    b.Navigation("Icon")
-                        .IsRequired();
-
-                    b.Navigation("Parent");
-                });
-
-            modelBuilder.Entity("TodoApp.Domain.Content.Entities.Todo", b =>
-                {
-                    b.HasOne("TodoApp.Domain.Content.Entities.ContentItem", "ContentItem")
-                        .WithOne("Todo")
-                        .HasForeignKey("TodoApp.Domain.Content.Entities.Todo", "ContentItemId")
+                    b.HasOne("TodoApp.Domain.Entities.Workspace", "Workspace")
+                        .WithMany()
+                        .HasForeignKey("WorkspaceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.OwnsOne("TodoApp.Domain.Content.ValueObjects.DueDate", "DueDate", b1 =>
-                        {
-                            b1.Property<Guid>("TodoId")
-                                .HasColumnType("uuid");
+                    b.Navigation("Workspace");
+                });
 
-                            b1.Property<DateTime?>("Value")
-                                .HasColumnType("timestamp with time zone")
-                                .HasColumnName("due_date");
+            modelBuilder.Entity("TodoApp.Domain.Entities.BoardList", b =>
+                {
+                    b.HasOne("TodoApp.Domain.Entities.Board", "Board")
+                        .WithMany()
+                        .HasForeignKey("BoardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                            b1.HasKey("TodoId");
+                    b.Navigation("Board");
+                });
 
-                            b1.ToTable("todos");
+            modelBuilder.Entity("TodoApp.Domain.Entities.BoardMember", b =>
+                {
+                    b.HasOne("TodoApp.Domain.Entities.Board", "Board")
+                        .WithMany()
+                        .HasForeignKey("BoardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                            b1.WithOwner()
-                                .HasForeignKey("TodoId");
-                        });
+                    b.Navigation("Board");
+                });
 
-                    b.Navigation("ContentItem");
+            modelBuilder.Entity("TodoApp.Domain.Entities.Card", b =>
+                {
+                    b.HasOne("TodoApp.Domain.Entities.BoardList", "List")
+                        .WithMany()
+                        .HasForeignKey("ListId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Navigation("DueDate")
+                    b.Navigation("List");
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.CardLabel", b =>
+                {
+                    b.HasOne("TodoApp.Domain.Entities.Card", "Card")
+                        .WithMany()
+                        .HasForeignKey("CardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TodoApp.Domain.Entities.Label", "Label")
+                        .WithMany()
+                        .HasForeignKey("LabelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Card");
+
+                    b.Navigation("Label");
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.CardMember", b =>
+                {
+                    b.HasOne("TodoApp.Domain.Entities.Card", "Card")
+                        .WithMany()
+                        .HasForeignKey("CardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Card");
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.Checklist", b =>
+                {
+                    b.HasOne("TodoApp.Domain.Entities.Card", "Card")
+                        .WithMany()
+                        .HasForeignKey("CardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Card");
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.ChecklistItem", b =>
+                {
+                    b.HasOne("TodoApp.Domain.Entities.Checklist", "Checklist")
+                        .WithMany()
+                        .HasForeignKey("ChecklistId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Checklist");
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.Comment", b =>
+                {
+                    b.HasOne("TodoApp.Domain.Entities.Comment", "ParentComment")
+                        .WithMany("Replies")
+                        .HasForeignKey("ParentCommentId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("TodoApp.Domain.Entities.Workspace", null)
+                        .WithMany()
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ParentComment");
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.Label", b =>
+                {
+                    b.HasOne("TodoApp.Domain.Entities.Board", "Board")
+                        .WithMany()
+                        .HasForeignKey("BoardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Board");
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.Page", b =>
+                {
+                    b.HasOne("TodoApp.Domain.Entities.Page", "Parent")
+                        .WithMany("Children")
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("TodoApp.Domain.Entities.Workspace", "Workspace")
+                        .WithMany()
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Parent");
+
+                    b.Navigation("Workspace");
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.Permission", b =>
+                {
+                    b.HasOne("TodoApp.Domain.Entities.Workspace", null)
+                        .WithMany()
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("TodoApp.Domain.Identity.Entities.Session", b =>
+            modelBuilder.Entity("TodoApp.Domain.Entities.Session", b =>
                 {
-                    b.HasOne("TodoApp.Domain.Identity.Entities.User", "User")
+                    b.HasOne("TodoApp.Domain.Entities.User", "User")
                         .WithMany("Sessions")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -744,9 +1461,9 @@ namespace TodoApp.Infrastructure.Data.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("TodoApp.Domain.Identity.Entities.User", b =>
+            modelBuilder.Entity("TodoApp.Domain.Entities.User", b =>
                 {
-                    b.OwnsOne("TodoApp.Domain.Identity.ValueObjects.Email", "Email", b1 =>
+                    b.OwnsOne("TodoApp.Domain.ValueObjects.Email", "Email", b1 =>
                         {
                             b1.Property<Guid>("UserId")
                                 .HasColumnType("uuid");
@@ -772,9 +1489,20 @@ namespace TodoApp.Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("TodoApp.Domain.Workspace.Entities.Workspace", b =>
+            modelBuilder.Entity("TodoApp.Domain.Entities.UserProfile", b =>
                 {
-                    b.OwnsOne("TodoApp.Domain.Common.ValueObjects.Icon", "Icon", b1 =>
+                    b.HasOne("TodoApp.Domain.Entities.User", "User")
+                        .WithOne("Profile")
+                        .HasForeignKey("TodoApp.Domain.Entities.UserProfile", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.Workspace", b =>
+                {
+                    b.OwnsOne("TodoApp.Domain.ValueObjects.Icon", "Icon", b1 =>
                         {
                             b1.Property<Guid>("WorkspaceId")
                                 .HasColumnType("uuid");
@@ -803,9 +1531,20 @@ namespace TodoApp.Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("TodoApp.Domain.Workspace.Entities.WorkspaceMember", b =>
+            modelBuilder.Entity("TodoApp.Domain.Entities.WorkspaceInvitation", b =>
                 {
-                    b.HasOne("TodoApp.Domain.Workspace.Entities.Workspace", "Workspace")
+                    b.HasOne("TodoApp.Domain.Entities.Workspace", "Workspace")
+                        .WithMany()
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Workspace");
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.WorkspaceMember", b =>
+                {
+                    b.HasOne("TodoApp.Domain.Entities.Workspace", "Workspace")
                         .WithMany("Members")
                         .HasForeignKey("WorkspaceId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -814,31 +1553,31 @@ namespace TodoApp.Infrastructure.Data.Migrations
                     b.Navigation("Workspace");
                 });
 
-            modelBuilder.Entity("TodoApp.Domain.Collaboration.Entities.Comment", b =>
+            modelBuilder.Entity("TodoApp.Domain.Entities.Block", b =>
+                {
+                    b.Navigation("Children");
+                });
+
+            modelBuilder.Entity("TodoApp.Domain.Entities.Comment", b =>
                 {
                     b.Navigation("Replies");
                 });
 
-            modelBuilder.Entity("TodoApp.Domain.Content.Entities.Block", b =>
-                {
-                    b.Navigation("Children");
-                });
-
-            modelBuilder.Entity("TodoApp.Domain.Content.Entities.ContentItem", b =>
+            modelBuilder.Entity("TodoApp.Domain.Entities.Page", b =>
                 {
                     b.Navigation("Blocks");
 
                     b.Navigation("Children");
-
-                    b.Navigation("Todo");
                 });
 
-            modelBuilder.Entity("TodoApp.Domain.Identity.Entities.User", b =>
+            modelBuilder.Entity("TodoApp.Domain.Entities.User", b =>
                 {
+                    b.Navigation("Profile");
+
                     b.Navigation("Sessions");
                 });
 
-            modelBuilder.Entity("TodoApp.Domain.Workspace.Entities.Workspace", b =>
+            modelBuilder.Entity("TodoApp.Domain.Entities.Workspace", b =>
                 {
                     b.Navigation("Members");
                 });

@@ -1,14 +1,13 @@
-import { TaskPage } from "@/components/dashboard/task-page"
+import { DocumentPageView } from "@/app/(dashboard)/_components/document-page-view"
 
-interface PageProps {
+type PageProps = {
   params: Promise<{
     workspaceId: string
     pageId: string
   }>
 }
 
-export default async function WorkspacePageView({ params }: PageProps) {
+export default async function WorkspacePageRoute({ params }: PageProps) {
   const { workspaceId, pageId } = await params
-  
-  return <TaskPage workspaceId={workspaceId} pageId={pageId} />
+  return <DocumentPageView workspaceId={workspaceId} pageId={pageId} />
 }

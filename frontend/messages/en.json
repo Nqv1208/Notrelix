@@ -1,0 +1,43 @@
+{
+  "auth": {
+    "validation": {
+      "email": {
+        "required": "Email is required",
+        "invalid": "Email is invalid"
+      },
+      "password": {
+        "required": "Password is required",
+        "min": "Password must be at least 8 characters"
+      },
+      "confirmPassword": {
+        "required": "Confirm password is required",
+        "mismatch": "Passwords do not match"
+      },
+      "firstName": {
+        "required": "First name is required",
+        "max": "First name must be at most 50 characters"
+      },
+      "lastName": {
+        "required": "Last name is required",
+        "max": "Last name must be at most 50 characters"
+      }
+    },
+    "server": {
+      "generic": "Something went wrong. Please try again.",
+      "login": {
+        "invalidCredentials": "Invalid email or password"
+      },
+      "register": {
+        "emailTaken": "Email is already taken"
+      },
+      "account": {
+        "inactive": "This account is inactive",
+        "suspended": "This account is suspended"
+      },
+      "refresh": {
+        "invalid": "Session expired. Please sign in again."
+      },
+      "unauthorized": "You need to sign in to continue."
+    }
+  }
+}

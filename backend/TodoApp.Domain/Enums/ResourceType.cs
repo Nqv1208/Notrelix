@@ -5,6 +5,8 @@ public enum ResourceType
 {
     Workspace = 0,
     Page = 1,
-    Todo = 2,
-    Database = 3
+    Board = 2,
+    Card = 3,
+    Block = 4,
+    Comment = 5
 }

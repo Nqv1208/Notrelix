@@ -1,4 +1,6 @@
+using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -8,6 +10,7 @@ public static class DependencyInjection
     {
         var services = builder.Services;
         
+        services.AddCorsPolicy(builder.Configuration, "Frontend");
         services.AddSwagger();
         services.AddRouting(options =>
         {
@@ -26,7 +29,7 @@ public static class DependencyInjection
             {
                 Title = "TodoApp API",
                 Version = "v1",
-                Description = "API for TodoApp - Content Platform with Todo"
+                Description = "API for workspace, docs (pages/blocks) and boards (lists/cards)"
             });
 
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -55,6 +58,22 @@ public static class DependencyInjection
             });
         });
 
+        return services;
+    }
+
+    public static IServiceCollection AddCorsPolicy(this IServiceCollection services, IConfiguration configuration, string policyName)
+    {
+
+        var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+        services.AddCors(options =>
+        {
+            options.AddPolicy(policyName, builder =>
+            {
+                builder.WithOrigins(allowedOrigins)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+            });
+        });
         return services;
     }
 }

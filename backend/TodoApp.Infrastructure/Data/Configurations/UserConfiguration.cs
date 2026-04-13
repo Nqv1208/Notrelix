@@ -68,6 +68,11 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasForeignKey(s => s.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasOne(u => u.Profile)
+            .WithOne(p => p.User)
+            .HasForeignKey<UserProfile>(p => p.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         // Ignore domain events
         builder.Ignore(u => u.DomainEvents);
     }
