@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { useRouter, usePathname } from "next/navigation"
 import {
   Home,
   Search,
@@ -11,14 +12,15 @@ import {
   Plus,
   ChevronRight,
   MoreHorizontal,
-  FolderKanban,
   FileText,
-  CheckSquare,
-  Users,
   Star,
   Trash2,
   LogOut,
   ChevronsUpDown,
+  Users,
+  Pencil,
+  Copy,
+  StarOff,
 } from "lucide-react"
 
 import {
@@ -53,57 +55,160 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/registry/new-york-v4/ui/collapsible"
+import { cn } from "@/lib/utils"
+import { routes } from "@/lib/routes"
+import { useEditorStore } from "@/features/documents/store/editor-store"
+import type { Page } from "@/features/documents/types/document.types"
 
-// Sample data - sẽ thay thế bằng API
 const mainMenuItems = [
   { icon: Home, label: "Dashboard", href: "/dashboard", badge: null },
   { icon: Search, label: "Search", href: "/dashboard/search", badge: null },
-  { icon: Bell, label: "Notifications", href: "/dashboard/notifications", badge: "12" },
+  { icon: Bell, label: "Notifications", href: "/dashboard/notifications", badge: "3" },
   { icon: Calendar, label: "Calendar", href: "/dashboard/calendar", badge: null },
   { icon: Settings, label: "Settings", href: "/dashboard/settings", badge: null },
 ]
 
-const workspaces = [
-  {
-    id: "1",
-    name: "Craftboard Project",
-    icon: "🎨",
-    color: "bg-violet-500",
-    pages: [
-      { id: "1-1", name: "Sprint Tasks", icon: "🏃", type: "todo" },
-      { id: "1-2", name: "Project Roadmap", icon: "🗺️", type: "page" },
-      { id: "1-3", name: "Team Wiki", icon: "📚", type: "page" },
-    ]
-  },
-  {
-    id: "2",
-    name: "Personal Tasks",
-    icon: "📝",
-    color: "bg-emerald-500",
-    pages: [
-      { id: "2-1", name: "My Tasks", icon: "✅", type: "todo" },
-      { id: "2-2", name: "Notes", icon: "📓", type: "page" },
-    ]
-  },
-  {
-    id: "3",
-    name: "Marketing",
-    icon: "📣",
-    color: "bg-orange-500",
-    pages: [
-      { id: "3-1", name: "Campaign Tasks", icon: "🎯", type: "todo" },
-      { id: "3-2", name: "Content Calendar", icon: "📅", type: "page" },
-    ]
-  },
-]
+function PageTreeItem({ page, workspaceId, depth = 0 }: { page: Page; workspaceId: string; depth?: number }) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const { addPage, deletePage, toggleFavorite, updatePage } = useEditorStore()
+  const href = routes.dashboard.workspacePage(workspaceId, page.id) as string
+  const isActive = pathname === href
+  const hasChildren = page.children && page.children.length > 0
 
-const favorites = [
-  { id: "fav-1", name: "Sprint Tasks", icon: "🏃", href: "/dashboard/workspace/1/page/1-1" },
-  { id: "fav-2", name: "My Tasks", icon: "✅", href: "/dashboard/workspace/2/page/2-1" },
-]
+  const handleAddSubPage = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newId = addPage(workspaceId, page.id)
+    router.push(routes.dashboard.workspacePage(workspaceId, newId) as never)
+  }
+
+  if (hasChildren) {
+    return (
+      <Collapsible defaultOpen className="group/collapsible">
+        <SidebarMenuSubItem>
+          <CollapsibleTrigger asChild>
+            <SidebarMenuSubButton
+              className={cn(
+                "justify-between group/item",
+                isActive && "bg-accent font-medium"
+              )}
+            >
+              <Link href={href as never} className="flex items-center gap-1.5 min-w-0 flex-1">
+                <span className="text-sm shrink-0">{page.icon}</span>
+                <span className="truncate">{page.title}</span>
+              </Link>
+              <ChevronRight className="size-3.5 shrink-0 text-muted-foreground transition-transform group-data-[state=open]/collapsible:rotate-90" />
+            </SidebarMenuSubButton>
+          </CollapsibleTrigger>
+          <PageContextMenu page={page} workspaceId={workspaceId} onAddSubPage={handleAddSubPage} />
+          <CollapsibleContent>
+            <SidebarMenuSub>
+              {page.children!.filter(c => !c.isDeleted).map((child) => (
+                <PageTreeItem
+                  key={child.id}
+                  page={child}
+                  workspaceId={workspaceId}
+                  depth={depth + 1}
+                />
+              ))}
+              <SidebarMenuSubItem>
+                <SidebarMenuSubButton
+                  onClick={handleAddSubPage}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <Plus className="size-3.5" />
+                  <span>Add a page</span>
+                </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+            </SidebarMenuSub>
+          </CollapsibleContent>
+        </SidebarMenuSubItem>
+      </Collapsible>
+    )
+  }
+
+  return (
+    <SidebarMenuSubItem>
+      <SidebarMenuSubButton
+        asChild
+        className={cn(isActive && "bg-accent font-medium")}
+      >
+        <Link href={href as never}>
+          <span className="text-sm">{page.icon}</span>
+          <span className="truncate">{page.title}</span>
+        </Link>
+      </SidebarMenuSubButton>
+      <PageContextMenu page={page} workspaceId={workspaceId} onAddSubPage={handleAddSubPage} />
+    </SidebarMenuSubItem>
+  )
+}
+
+function PageContextMenu({
+  page,
+  workspaceId,
+  onAddSubPage,
+}: {
+  page: Page
+  workspaceId: string
+  onAddSubPage: (e: React.MouseEvent) => void
+}) {
+  const { deletePage, toggleFavorite, duplicatePageFn } = usePageActions(page, workspaceId)
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <SidebarMenuAction showOnHover className="data-[state=open]:opacity-100">
+          <MoreHorizontal className="size-4" />
+        </SidebarMenuAction>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-48">
+        <DropdownMenuItem onClick={onAddSubPage}>
+          <Plus className="size-4 mr-2" />
+          Add sub-page
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={toggleFavorite}>
+          {page.isFavorite ? (
+            <>
+              <StarOff className="size-4 mr-2" />
+              Remove from favorites
+            </>
+          ) : (
+            <>
+              <Star className="size-4 mr-2" />
+              Add to favorites
+            </>
+          )}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={deletePage} className="text-destructive">
+          <Trash2 className="size-4 mr-2" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+function usePageActions(page: Page, workspaceId: string) {
+  const store = useEditorStore()
+  return {
+    deletePage: () => store.deletePage(page.id),
+    toggleFavorite: () => store.toggleFavorite(page.id),
+    duplicatePageFn: () => {},
+  }
+}
 
 export function AppSidebar() {
   const { state } = useSidebar()
+  const router = useRouter()
+  const pathname = usePathname()
+  const { workspaces, addPage, getFavoritePages } = useEditorStore()
+  const favorites = getFavoritePages()
+
+  const handleAddPage = (wsId: string) => {
+    const newId = addPage(wsId)
+    router.push(routes.dashboard.workspacePage(wsId, newId) as never)
+  }
 
   return (
     <Sidebar collapsible="icon" className="border-r">
@@ -114,10 +219,10 @@ export function AppSidebar() {
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent">
                   <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 text-white font-bold">
-                    T
+                    C
                   </div>
                   <div className="flex flex-col gap-0.5 leading-none">
-                    <span className="font-semibold">TodoApp</span>
+                    <span className="font-semibold">Craftboard</span>
                     <span className="text-xs text-muted-foreground">Pro Plan</span>
                   </div>
                   <ChevronsUpDown className="ml-auto size-4" />
@@ -144,21 +249,23 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Main Menu */}
         <SidebarGroup>
-          <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainMenuItems.map((item) => (
                 <SidebarMenuItem key={item.label}>
-                  <SidebarMenuButton asChild tooltip={item.label}>
-                    <Link href={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    tooltip={item.label}
+                    isActive={pathname === item.href}
+                  >
+                    <Link href={item.href as never}>
                       <item.icon className="size-4" />
                       <span>{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
                   {item.badge && (
-                    <SidebarMenuAction className="bg-violet-500 text-white text-[10px] rounded-full size-5 flex items-center justify-center">
+                    <SidebarMenuAction className="bg-violet-500 text-white text-[10px] rounded-full size-5 flex items-center justify-center pointer-events-none">
                       {item.badge}
                     </SidebarMenuAction>
                   )}
@@ -170,89 +277,85 @@ export function AppSidebar() {
 
         <SidebarSeparator />
 
-        {/* Favorites */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Favorites</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {favorites.map((item) => (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton asChild tooltip={item.name}>
-                    <Link href={item.href}>
-                      <span className="text-base">{item.icon}</span>
-                      <span>{item.name}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                  <SidebarMenuAction showOnHover>
-                    <Star className="size-4 fill-yellow-400 text-yellow-400" />
-                  </SidebarMenuAction>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarSeparator />
-
-        {/* Workspaces / Pages */}
-        <SidebarGroup>
-          <SidebarGroupLabel>My Pages</SidebarGroupLabel>
-          <SidebarGroupAction>
-            <Plus className="size-4" />
-            <span className="sr-only">Add Page</span>
-          </SidebarGroupAction>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {workspaces.map((workspace) => (
-                <Collapsible key={workspace.id} defaultOpen className="group/collapsible">
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton tooltip={workspace.name}>
-                        <div className={`size-5 rounded flex items-center justify-center text-xs ${workspace.color} text-white`}>
-                          {workspace.icon}
-                        </div>
-                        <span className="font-medium">{workspace.name}</span>
-                        <ChevronRight className="ml-auto size-4 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+        {favorites.length > 0 && (
+          <>
+            <SidebarGroup>
+              <SidebarGroupLabel>Favorites</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {favorites.map((page) => (
+                    <SidebarMenuItem key={page.id}>
+                      <SidebarMenuButton
+                        asChild
+                        tooltip={page.title}
+                        isActive={pathname === (routes.dashboard.workspacePage(page.workspaceId, page.id) as string)}
+                      >
+                        <Link href={routes.dashboard.workspacePage(page.workspaceId, page.id) as never}>
+                          <span className="text-base">{page.icon}</span>
+                          <span className="truncate">{page.title}</span>
+                        </Link>
                       </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <SidebarMenuAction showOnHover>
-                      <MoreHorizontal className="size-4" />
-                    </SidebarMenuAction>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {workspace.pages.map((page) => (
-                          <SidebarMenuSubItem key={page.id}>
-                            <SidebarMenuSubButton asChild>
-                              <Link href={`/dashboard/workspace/${workspace.id}/page/${page.id}`}>
-                                <span>{page.icon}</span>
-                                <span>{page.name}</span>
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton className="text-muted-foreground hover:text-foreground">
-                            <Plus className="size-4" />
-                            <span>Add Page</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </SidebarMenuItem>
-                </Collapsible>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                      <SidebarMenuAction
+                        showOnHover
+                        onClick={() => useEditorStore.getState().toggleFavorite(page.id)}
+                      >
+                        <Star className="size-4 fill-yellow-400 text-yellow-400" />
+                      </SidebarMenuAction>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+            <SidebarSeparator />
+          </>
+        )}
+
+        {workspaces.map((workspace) => (
+          <React.Fragment key={workspace.id}>
+            <SidebarGroup>
+              <SidebarGroupLabel>
+                <span className="mr-1.5">{workspace.icon}</span>
+                {workspace.name}
+              </SidebarGroupLabel>
+              <SidebarGroupAction onClick={() => handleAddPage(workspace.id)}>
+                <Plus className="size-4" />
+                <span className="sr-only">Add Page</span>
+              </SidebarGroupAction>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuSub>
+                    {workspace.pages
+                      .filter((p) => !p.isDeleted && !p.parentId)
+                      .map((page) => (
+                        <PageTreeItem
+                          key={page.id}
+                          page={page}
+                          workspaceId={workspace.id}
+                        />
+                      ))}
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        onClick={() => handleAddPage(workspace.id)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <Plus className="size-3.5" />
+                        <span>New page</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  </SidebarMenuSub>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </React.Fragment>
+        ))}
 
         <SidebarSeparator />
 
-        {/* Trash */}
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Trash">
+                <SidebarMenuButton asChild tooltip="Trash" isActive={pathname === "/dashboard/trash"}>
                   <Link href="/dashboard/trash">
                     <Trash2 className="size-4" />
                     <span>Trash</span>

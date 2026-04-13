@@ -1,103 +1,96 @@
 import Link from "next/link"
-import { CheckSquare } from "lucide-react"
+import { Layers } from "lucide-react"
 
 import { Separator } from "@/registry/new-york-v4/ui/separator"
+import { routes } from "@/lib/routes"
 
-const footerLinks = {
+const footerSections = {
   product: {
-    title: "Sản phẩm",
+    title: "Product",
     links: [
-      { label: "Tính năng", href: "#features" },
-      { label: "Bảng giá", href: "#pricing" },
-      { label: "Tích hợp", href: "#integrations" },
+      { label: "Features", href: "#features" },
+      { label: "Pricing", href: "#pricing" },
+      { label: "Changelog", href: "#" },
+      { label: "Roadmap", href: "#" },
     ],
   },
-  support: {
-    title: "Hỗ trợ",
+  resources: {
+    title: "Resources",
     links: [
-      { label: "Tài liệu", href: "#docs" },
-      { label: "FAQ", href: "#faq" },
-      { label: "Liên hệ", href: "#contact" },
+      { label: "Documentation", href: "#" },
+      { label: "API Reference", href: "#" },
+      { label: "Templates", href: "#" },
+      { label: "Blog", href: "#" },
     ],
   },
   company: {
-    title: "Công ty",
+    title: "Company",
     links: [
-      { label: "Về chúng tôi", href: "#about" },
-      { label: "Blog", href: "#blog" },
-      { label: "Tuyển dụng", href: "#careers" },
+      { label: "About", href: "#" },
+      { label: "Careers", href: "#" },
+      { label: "Contact", href: routes.contact },
+      { label: "Press Kit", href: "#" },
+    ],
+  },
+  legal: {
+    title: "Legal",
+    links: [
+      { label: "Privacy", href: routes.auth.privacy },
+      { label: "Terms", href: routes.auth.terms },
+      { label: "Security", href: "#" },
     ],
   },
 }
 
-function FooterLinkSection({
-  title,
-  links,
-}: {
-  title: string
-  links: { label: string; href: string }[]
-}) {
-  return (
-    <div>
-      <h4 className="font-semibold mb-4 text-sm">{title}</h4>
-      <ul className="space-y-2 text-sm text-muted-foreground">
-        {links.map((link) => (
-          <li key={link.href}>
-            <a
-              href={link.href}
-              className="hover:text-foreground transition-colors"
-            >
-              {link.label}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
-}
-
 export function Footer() {
-  const currentYear = new Date().getFullYear()
+  const year = new Date().getFullYear()
 
   return (
-    <footer className="border-t border-border/50 bg-muted/30">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {/* Brand */}
+    <footer className="border-t bg-muted/30">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 lg:gap-12">
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-fuchsia-600">
-                <CheckSquare className="w-4 h-4 text-white" />
+            <Link href={routes.home} className="flex items-center gap-2 mb-4">
+              <div className="flex items-center justify-center size-8 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600">
+                <Layers className="size-4 text-white" />
               </div>
-              <span className="font-bold bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
-                TodoApp
+              <span className="font-bold text-lg">
+                Craft<span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">board</span>
               </span>
             </Link>
-            <p className="text-sm text-muted-foreground">
-              Quản lý công việc thông minh và hiệu quả.
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Docs, tasks, and boards — unified in one beautiful workspace.
             </p>
           </div>
 
-          {/* Links */}
-          <FooterLinkSection {...footerLinks.product} />
-          <FooterLinkSection {...footerLinks.support} />
-          <FooterLinkSection {...footerLinks.company} />
+          {Object.entries(footerSections).map(([key, section]) => (
+            <div key={key}>
+              <h4 className="font-semibold text-sm mb-4">{section.title}</h4>
+              <ul className="space-y-2.5">
+                {section.links.map((link) => (
+                  <li key={link.label}>
+                    <a
+                      href={link.href}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
-        <Separator className="my-8" />
+        <Separator className="my-10" />
 
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <p>© {currentYear} TodoApp. Mọi quyền được bảo lưu.</p>
-          <div className="flex gap-6">
-            <a href="#terms" className="hover:text-foreground transition-colors">
-              Điều khoản
-            </a>
-            <a
-              href="#privacy"
-              className="hover:text-foreground transition-colors"
-            >
-              Bảo mật
-            </a>
+          <p>&copy; {year} Craftboard, Inc. All rights reserved.</p>
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5">
+              <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+              All systems operational
+            </span>
           </div>
         </div>
       </div>

@@ -7,6 +7,7 @@ import { SidebarProvider, SidebarInset } from "@/registry/new-york-v4/ui/sidebar
 import { AppSidebar } from "@/app/(dashboard)/_components/app-sidebar"
 import { DashboardHeader } from "@/app/(dashboard)/_components/dashboard-header"
 import { useAuthUser } from "@/features/auth/hooks/useAuthUser"
+import { routes } from "@/lib/routes"
 
 export default function DashboardLayout({
   children,
@@ -18,7 +19,7 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (isReady && !isAuthenticated) {
-      router.replace("/sign-in")
+      router.replace(routes.auth.signIn)
     }
   }, [isReady, isAuthenticated, router])
 

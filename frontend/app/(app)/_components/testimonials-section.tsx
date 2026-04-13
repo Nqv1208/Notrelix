@@ -1,134 +1,139 @@
 import { Star } from "lucide-react"
 
-import { Card, CardContent } from "@/registry/new-york-v4/ui/card"
 import { Badge } from "@/registry/new-york-v4/ui/badge"
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarGroup,
-} from "@/registry/new-york-v4/ui/avatar"
+import { Avatar, AvatarFallback } from "@/registry/new-york-v4/ui/avatar"
 
-interface Testimonial {
+type Testimonial = {
   name: string
   role: string
+  company: string
   avatar: string
   content: string
+  gradient: string
 }
 
 const testimonials: Testimonial[] = [
   {
-    name: "Minh Anh",
-    role: "Product Manager",
-    avatar: "MA",
+    name: "Sarah Chen",
+    role: "Engineering Manager",
+    company: "Stripe",
+    avatar: "SC",
     content:
-      "Ứng dụng đã giúp team tôi tăng năng suất 40%. Giao diện đẹp và dễ sử dụng!",
+      "We replaced Notion AND Trello with Craftboard. Having docs and boards in the same workspace is a game changer for sprint planning.",
+    gradient: "from-violet-500 to-indigo-500",
   },
   {
-    name: "Hoàng Long",
-    role: "Software Engineer",
-    avatar: "HL",
+    name: "Marcus Rivera",
+    role: "Product Lead",
+    company: "Vercel",
+    avatar: "MR",
     content:
-      "Tính năng tự động hóa workflow thực sự ấn tượng. Tiết kiệm rất nhiều thời gian.",
+      "The block editor is incredibly smooth. Slash commands, drag-and-drop, nested pages — it feels like the future of team wikis.",
+    gradient: "from-emerald-500 to-teal-500",
   },
   {
-    name: "Thu Hà",
-    role: "Designer",
-    avatar: "TH",
+    name: "Yuki Tanaka",
+    role: "Head of Design",
+    company: "Linear",
+    avatar: "YT",
     content:
-      "UI/UX tuyệt vời! Đây là ứng dụng todo duy nhất mà tôi thực sự muốn dùng mỗi ngày.",
+      "Cleanest UI I've seen in a productivity tool. Our design team adopted it overnight. The kanban boards are chef's kiss.",
+    gradient: "from-pink-500 to-rose-500",
+  },
+  {
+    name: "Alex Kim",
+    role: "CTO",
+    company: "Railway",
+    avatar: "AK",
+    content:
+      "Permissions and workspaces are done right. We can share specific boards with clients while keeping internal docs private.",
+    gradient: "from-amber-500 to-orange-500",
+  },
+  {
+    name: "Priya Patel",
+    role: "Founder",
+    company: "Dub.co",
+    avatar: "PP",
+    content:
+      "Switched from 4 different tools to just Craftboard. The automations alone save us hours every week. Best decision this year.",
+    gradient: "from-cyan-500 to-blue-500",
+  },
+  {
+    name: "Tom Wright",
+    role: "DevRel",
+    company: "Supabase",
+    avatar: "TW",
+    content:
+      "Writing our public docs in Craftboard was effortless. Nested pages, code blocks with syntax highlighting, and easy exports.",
+    gradient: "from-purple-500 to-fuchsia-500",
   },
 ]
 
-function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
-  return (
-    <Card className="border-border/50 bg-card/50 backdrop-blur-sm hover:shadow-lg transition-shadow">
-      <CardContent className="pt-6">
-        <div className="flex gap-1 mb-4">
-          {[...Array(5)].map((_, i) => (
-            <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-          ))}
-        </div>
-        <p className="text-foreground mb-6 leading-relaxed">
-          &ldquo;{testimonial.content}&rdquo;
-        </p>
-        <div className="flex items-center gap-3">
-          <Avatar>
-            <AvatarFallback className="bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white text-xs">
-              {testimonial.avatar}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <div className="font-medium text-sm">{testimonial.name}</div>
-            <div className="text-xs text-muted-foreground">
-              {testimonial.role}
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-function UserStats() {
-  return (
-    <div className="mt-12 text-center">
-      <div className="inline-flex items-center gap-4 p-4 rounded-2xl bg-card border border-border/50">
-        <AvatarGroup>
-          <Avatar size="sm">
-            <AvatarFallback className="bg-violet-500 text-white text-xs">
-              A
-            </AvatarFallback>
-          </Avatar>
-          <Avatar size="sm">
-            <AvatarFallback className="bg-fuchsia-500 text-white text-xs">
-              B
-            </AvatarFallback>
-          </Avatar>
-          <Avatar size="sm">
-            <AvatarFallback className="bg-pink-500 text-white text-xs">
-              C
-            </AvatarFallback>
-          </Avatar>
-          <Avatar size="sm">
-            <AvatarFallback className="bg-cyan-500 text-white text-xs">
-              D
-            </AvatarFallback>
-          </Avatar>
-        </AvatarGroup>
-        <div className="text-left">
-          <div className="font-semibold">+10,000 người dùng</div>
-          <div className="text-xs text-muted-foreground">
-            đã tin tưởng TodoApp
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
+const stats = [
+  { value: "10,000+", label: "Active teams" },
+  { value: "2M+", label: "Pages created" },
+  { value: "99.9%", label: "Uptime SLA" },
+  { value: "4.9/5", label: "Avg. rating" },
+]
 
 export function TestimonialsSection() {
   return (
-    <section id="testimonials" className="py-24 bg-muted/30">
+    <section id="testimonials" className="py-28 bg-muted/30">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <Badge variant="outline" className="mb-4">
-            Đánh giá
+          <Badge variant="outline" className="mb-4 text-xs font-semibold tracking-wider uppercase">
+            Customers
           </Badge>
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-            Được yêu thích bởi hàng nghìn người
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-5">
+            Loved by teams everywhere
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Xem những gì khách hàng nói về trải nghiệm của họ với TodoApp.
+          <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+            From startups to enterprises, teams trust Craftboard to organize
+            their work and ship faster.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {testimonials.map((testimonial, index) => (
-            <TestimonialCard key={index} testimonial={testimonial} />
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-16">
+          {testimonials.map((t) => (
+            <div
+              key={t.name}
+              className="rounded-2xl border bg-card/50 backdrop-blur-sm p-6 hover:shadow-lg transition-shadow"
+            >
+              <div className="flex gap-0.5 mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="size-4 fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+              <p className="text-sm leading-relaxed mb-5">&ldquo;{t.content}&rdquo;</p>
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback
+                    className={`bg-gradient-to-br ${t.gradient} text-white text-xs font-medium`}
+                  >
+                    {t.avatar}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="text-sm font-medium">{t.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {t.role} at {t.company}
+                  </div>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
 
-        <UserStats />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto">
+          {stats.map((stat) => (
+            <div key={stat.label} className="text-center">
+              <div className="text-3xl font-bold tracking-tight bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
+                {stat.value}
+              </div>
+              <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   )

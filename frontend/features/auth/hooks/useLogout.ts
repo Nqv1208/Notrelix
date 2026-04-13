@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { authService } from "@/features/auth/api/auth.service"
 import { tokenStorage } from "@/lib/auth/token-storage"
+import { routes } from "@/lib/routes"
 
 export function useLogout() {
   const router = useRouter()
@@ -25,7 +26,7 @@ export function useLogout() {
     },
     onSettled: () => {
       queryClient.removeQueries({ queryKey: ["auth"] })
-      router.push("/")
+      router.push(routes.home)
       router.refresh()
     }
   })

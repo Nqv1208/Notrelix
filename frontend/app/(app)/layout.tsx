@@ -1,14 +1,33 @@
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "TodoApp - Quản lý công việc thông minh",
-  description: "Biến ý tưởng thành hành động, task thành thành tựu. Tăng năng suất làm việc với công cụ quản lý todo đơn giản nhưng mạnh mẽ.",
-  keywords: ["todo", "task management", "productivity", "quản lý công việc", "năng suất"],
-  authors: [{ name: "TodoApp Team" }],
+  title: "Craftboard — Docs, Tasks & Boards in One Workspace",
+  description:
+    "Craftboard combines the power of a Notion-like document editor with Trello-style project boards. Write, plan, and ship — all in one place.",
+  keywords: [
+    "project management",
+    "notion alternative",
+    "trello alternative",
+    "wiki",
+    "kanban",
+    "document editor",
+    "collaboration",
+    "SaaS",
+    "productivity",
+  ],
+  authors: [{ name: "Craftboard Team" }],
   openGraph: {
-    title: "TodoApp - Quản lý công việc thông minh",
-    description: "Biến ý tưởng thành hành động, task thành thành tựu.",
+    title: "Craftboard — Docs, Tasks & Boards in One Workspace",
+    description:
+      "Write docs like Notion. Manage tasks like Trello. Collaborate like a team that ships.",
     type: "website",
+    siteName: "Craftboard",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Craftboard — Docs, Tasks & Boards in One Workspace",
+    description:
+      "Write docs like Notion. Manage tasks like Trello. Collaborate like a team that ships.",
   },
 }
 

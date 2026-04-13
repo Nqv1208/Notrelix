@@ -1,167 +1,263 @@
 "use client"
 
 import * as React from "react"
-import { CheckSquare, Clock } from "lucide-react"
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/registry/new-york-v4/ui/card"
+import {
+  Check,
+  GripVertical,
+  Plus,
+  MoreHorizontal,
+  Tag,
+  User,
+  Clock,
+} from "lucide-react"
 import { Badge } from "@/registry/new-york-v4/ui/badge"
-import { Input } from "@/registry/new-york-v4/ui/input"
-import { Checkbox } from "@/registry/new-york-v4/ui/checkbox"
+import { cn } from "@/lib/utils"
 
-interface Task {
-  id: number
-  title: string
-  completed: boolean
-  priority: "high" | "medium" | "low"
-}
+type Tab = "docs" | "boards"
 
-const initialTasks: Task[] = [
-  { id: 1, title: "Hoàn thành báo cáo Q4", completed: true, priority: "high" },
-  { id: 2, title: "Họp với team marketing", completed: true, priority: "medium" },
-  { id: 3, title: "Review PR #234", completed: false, priority: "high" },
-  { id: 4, title: "Cập nhật documentation", completed: false, priority: "low" },
-  { id: 5, title: "Triển khai feature mới", completed: false, priority: "medium" },
+const kanbanColumns = [
+  {
+    title: "To Do",
+    color: "bg-slate-500",
+    cards: [
+      {
+        title: "Design new dashboard layout",
+        labels: [{ text: "Design", color: "bg-pink-500" }],
+        avatar: "TH",
+      },
+      {
+        title: "Write API documentation",
+        labels: [{ text: "Docs", color: "bg-blue-500" }],
+        avatar: "HL",
+      },
+    ],
+  },
+  {
+    title: "In Progress",
+    color: "bg-amber-500",
+    cards: [
+      {
+        title: "Implement drag & drop for blocks",
+        labels: [{ text: "Feature", color: "bg-violet-500" }, { text: "P1", color: "bg-red-500" }],
+        avatar: "MA",
+      },
+      {
+        title: "User authentication flow",
+        labels: [{ text: "Backend", color: "bg-emerald-500" }],
+        avatar: "HL",
+      },
+    ],
+  },
+  {
+    title: "Review",
+    color: "bg-blue-500",
+    cards: [
+      {
+        title: "Fix mobile responsiveness",
+        labels: [{ text: "Bug", color: "bg-red-500" }],
+        avatar: "TH",
+      },
+    ],
+  },
+  {
+    title: "Done",
+    color: "bg-emerald-500",
+    cards: [
+      {
+        title: "Setup project structure",
+        labels: [{ text: "Infra", color: "bg-slate-500" }],
+        avatar: "MA",
+        done: true,
+      },
+    ],
+  },
 ]
 
-function TaskItem({
-  task,
-  onToggle,
-}: {
-  task: Task
-  onToggle: (id: number) => void
-}) {
-  const priorityLabels = {
-    high: "Cao",
-    medium: "TB",
-    low: "Thấp",
-  }
-
-  const priorityVariants = {
-    high: "destructive" as const,
-    medium: "secondary" as const,
-    low: "outline" as const,
-  }
-
+function DocumentMockup() {
   return (
-    <div
-      className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors cursor-pointer group"
-      onClick={() => onToggle(task.id)}
-    >
-      <Checkbox
-        checked={task.completed}
-        className="transition-transform group-hover:scale-110"
-      />
-      <span
-        className={`flex-1 transition-all ${
-          task.completed
-            ? "line-through text-muted-foreground"
-            : "text-foreground"
-        }`}
-      >
-        {task.title}
-      </span>
-      <Badge variant={priorityVariants[task.priority]} className="text-xs">
-        {priorityLabels[task.priority]}
-      </Badge>
+    <div className="p-6 sm:p-8 space-y-4 max-w-2xl mx-auto">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-3xl">🗺️</span>
+        <h2 className="text-2xl font-bold">Product Roadmap</h2>
+      </div>
+
+      <p className="text-muted-foreground leading-relaxed">
+        Our plan for building the best workspace tool in 2026. Each quarter focuses on a core theme.
+      </p>
+
+      <div className="border-l-[3px] border-violet-400/60 pl-4 py-1 italic text-muted-foreground">
+        &ldquo;The best way to predict the future is to create it.&rdquo;
+      </div>
+
+      <h3 className="text-lg font-semibold mt-6">Q2 — Foundation</h3>
+      <div className="space-y-2 ml-1">
+        {[
+          { text: "Auth & workspace management", checked: true },
+          { text: "Block-based document editor", checked: true },
+          { text: "Kanban board module", checked: false },
+        ].map((item) => (
+          <div key={item.text} className="flex items-center gap-2.5">
+            <div
+              className={cn(
+                "size-4 rounded border-2 flex items-center justify-center shrink-0",
+                item.checked
+                  ? "border-emerald-500 bg-emerald-500"
+                  : "border-muted-foreground/30"
+              )}
+            >
+              {item.checked && <Check className="size-2.5 text-white" />}
+            </div>
+            <span className={cn(item.checked && "line-through text-muted-foreground")}>
+              {item.text}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <h3 className="text-lg font-semibold mt-6">Q3 — Collaboration</h3>
+      <ul className="space-y-1.5 ml-1">
+        {["Real-time comments & mentions", "File attachments & media", "Smart notifications"].map(
+          (text) => (
+            <li key={text} className="flex items-start gap-2">
+              <span className="text-muted-foreground mt-[0.35em]">•</span>
+              {text}
+            </li>
+          )
+        )}
+      </ul>
+
+      <div className="rounded-lg bg-muted/50 border overflow-hidden mt-4">
+        <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
+          <span className="text-xs text-muted-foreground font-mono">typescript</span>
+        </div>
+        <pre className="p-4 font-mono text-sm leading-relaxed overflow-x-auto">
+          <code>{`const workspace = await api.create({
+  name: "My Team",
+  plan: "pro"
+})`}</code>
+        </pre>
+      </div>
     </div>
   )
 }
 
-function ProgressStats({
-  completed,
-  total,
-}: {
-  completed: number
-  total: number
-}) {
-  const percentage = (completed / total) * 100
-
+function KanbanMockup() {
   return (
-    <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 border border-border/50">
-      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20">
-        <CheckSquare className="w-6 h-6 text-emerald-600" />
-      </div>
-      <div>
-        <div className="text-2xl font-bold">
-          {completed}/{total}
-        </div>
-        <div className="text-sm text-muted-foreground">Task hoàn thành</div>
-      </div>
-      <div className="ml-auto">
-        <div className="w-24 h-2 rounded-full bg-muted overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500"
-            style={{ width: `${percentage}%` }}
-          />
-        </div>
+    <div className="p-4 sm:p-6 overflow-x-auto">
+      <div className="flex gap-4 min-w-[800px]">
+        {kanbanColumns.map((col) => (
+          <div key={col.title} className="flex-1 min-w-[200px]">
+            <div className="flex items-center gap-2 mb-3 px-1">
+              <div className={`size-2.5 rounded-full ${col.color}`} />
+              <span className="text-sm font-semibold">{col.title}</span>
+              <span className="text-xs text-muted-foreground ml-auto">{col.cards.length}</span>
+            </div>
+            <div className="space-y-2.5">
+              {col.cards.map((card) => (
+                <div
+                  key={card.title}
+                  className="rounded-xl border bg-card p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer group"
+                >
+                  <div className="flex gap-1.5 mb-2">
+                    {card.labels.map((label) => (
+                      <span
+                        key={label.text}
+                        className={`${label.color} text-white text-[10px] font-medium px-1.5 py-0.5 rounded`}
+                      >
+                        {label.text}
+                      </span>
+                    ))}
+                  </div>
+                  <p className={cn("text-sm font-medium mb-2.5", "done" in card && card.done && "line-through text-muted-foreground")}>
+                    {card.title}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-center size-6 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 text-white text-[10px] font-medium">
+                      {card.avatar}
+                    </div>
+                    <div className="flex items-center gap-2 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Clock className="size-3" />
+                      <MoreHorizontal className="size-3.5" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <button className="w-full flex items-center gap-1.5 px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-lg transition-colors">
+                <Plus className="size-3.5" />
+                Add card
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
 }
 
 export function DemoSection() {
-  const [tasks, setTasks] = React.useState(initialTasks)
-
-  const toggleTask = (id: number) => {
-    setTasks(
-      tasks.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task
-      )
-    )
-  }
-
-  const completedCount = tasks.filter((t) => t.completed).length
-  const totalCount = tasks.length
+  const [activeTab, setActiveTab] = React.useState<Tab>("docs")
 
   return (
-    <section id="demo" className="py-24">
+    <section id="showcase" className="py-28">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Left Column - Description */}
-          <div>
-            <Badge variant="outline" className="mb-4">
-              Demo trực tiếp
-            </Badge>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-              Trải nghiệm ngay
-            </h2>
-            <p className="text-muted-foreground mb-8 leading-relaxed">
-              Hãy thử click vào các task bên dưới để đánh dấu hoàn thành. Đây chỉ
-              là một phần nhỏ trong những gì TodoApp có thể làm!
-            </p>
+        <div className="text-center mb-12">
+          <Badge variant="outline" className="mb-4 text-xs font-semibold tracking-wider uppercase">
+            Product
+          </Badge>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-5">
+            Two powerful tools, one workspace
+          </h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Switch seamlessly between rich documents and visual boards.
+            Everything lives in one place.
+          </p>
+        </div>
 
-            <div className="space-y-4">
-              <ProgressStats completed={completedCount} total={totalCount} />
-            </div>
+        <div className="max-w-5xl mx-auto">
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <button
+              onClick={() => setActiveTab("docs")}
+              className={cn(
+                "flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all",
+                activeTab === "docs"
+                  ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/20"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <GripVertical className="size-4" />
+              Document Editor
+            </button>
+            <button
+              onClick={() => setActiveTab("boards")}
+              className={cn(
+                "flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all",
+                activeTab === "boards"
+                  ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/20"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Tag className="size-4" />
+              Kanban Board
+            </button>
           </div>
 
-          {/* Right Column - Interactive Demo */}
-          <Card className="border-border/50 bg-card/80 backdrop-blur-sm shadow-2xl shadow-violet-500/5">
-            <CardHeader className="border-b border-border/50">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-muted-foreground" />
-                  Việc cần làm hôm nay
-                </CardTitle>
-                <Badge variant="secondary" className="font-mono">
-                  {new Date().toLocaleDateString("vi-VN")}
-                </Badge>
+          <div className="relative">
+            <div className="absolute -inset-3 bg-gradient-to-r from-violet-500/10 via-indigo-500/10 to-purple-500/10 rounded-[1.5rem] blur-xl" />
+            <div className="relative rounded-2xl border bg-card shadow-2xl shadow-violet-500/5 overflow-hidden min-h-[460px]">
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-muted/50 border-b">
+                <div className="flex gap-1.5">
+                  <div className="size-2.5 rounded-full bg-red-400/80" />
+                  <div className="size-2.5 rounded-full bg-yellow-400/80" />
+                  <div className="size-2.5 rounded-full bg-green-400/80" />
+                </div>
+                <div className="flex-1 text-center text-xs text-muted-foreground">
+                  {activeTab === "docs" ? "Product Roadmap — Craftboard" : "Sprint Board — Craftboard"}
+                </div>
               </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y divide-border/50">
-                {tasks.map((task) => (
-                  <TaskItem key={task.id} task={task} onToggle={toggleTask} />
-                ))}
-              </div>
-              <div className="p-4 border-t border-border/50">
-                <Input
-                  placeholder="Thêm task mới..."
-                  className="bg-muted/30 border-border/50"
-                />
-              </div>
-            </CardContent>
-          </Card>
+
+              {activeTab === "docs" ? <DocumentMockup /> : <KanbanMockup />}
+            </div>
+          </div>
         </div>
       </div>
     </section>

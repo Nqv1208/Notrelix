@@ -1,303 +1,223 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/registry/new-york-v4/ui/card"
-import { Button } from "@/registry/new-york-v4/ui/button"
-import { Badge } from "@/registry/new-york-v4/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/registry/new-york-v4/ui/avatar"
-import { Progress } from "@/registry/new-york-v4/ui/progress"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
-  CheckCircle2,
-  Clock,
-  AlertCircle,
-  TrendingUp,
-  Calendar,
-  Users,
-  FolderKanban,
-  ArrowRight,
   Plus,
+  FileText,
+  Clock,
+  Star,
+  ArrowRight,
+  Sparkles,
+  Layout,
+  ListChecks,
+  BookOpen,
+  Import,
 } from "lucide-react"
+import { Button } from "@/registry/new-york-v4/ui/button"
+import { routes } from "@/lib/routes"
+import { useEditorStore } from "@/features/documents/store/editor-store"
+import type { Page } from "@/features/documents/types/document.types"
 
-// Sample stats
-const stats = [
-  {
-    title: "Total Tasks",
-    value: "128",
-    change: "+12%",
-    changeType: "positive" as const,
-    icon: FolderKanban,
-    color: "text-violet-500",
-    bgColor: "bg-violet-500/10",
-  },
-  {
-    title: "Completed",
-    value: "86",
-    change: "+8%",
-    changeType: "positive" as const,
-    icon: CheckCircle2,
-    color: "text-emerald-500",
-    bgColor: "bg-emerald-500/10",
-  },
-  {
-    title: "In Progress",
-    value: "24",
-    change: "+4%",
-    changeType: "positive" as const,
-    icon: Clock,
-    color: "text-amber-500",
-    bgColor: "bg-amber-500/10",
-  },
-  {
-    title: "Overdue",
-    value: "6",
-    change: "-2%",
-    changeType: "negative" as const,
-    icon: AlertCircle,
-    color: "text-red-500",
-    bgColor: "bg-red-500/10",
-  },
+const quickActions = [
+  { icon: FileText, label: "Empty Page", description: "Start with a blank page" },
+  { icon: ListChecks, label: "Task List", description: "Track your to-dos" },
+  { icon: Layout, label: "Meeting Notes", description: "Structured meeting template" },
+  { icon: BookOpen, label: "Wiki", description: "Team knowledge base" },
 ]
-
-// Sample recent tasks
-const recentTasks = [
-  {
-    id: "1",
-    title: "Design new landing page",
-    status: "in_progress",
-    priority: "high",
-    dueDate: "Jan 20",
-    assignee: { name: "John", avatar: "/avatars/1.jpg" },
-    project: "Marketing",
-  },
-  {
-    id: "2",
-    title: "Fix authentication bug",
-    status: "todo",
-    priority: "urgent",
-    dueDate: "Jan 18",
-    assignee: { name: "Sarah", avatar: "/avatars/2.jpg" },
-    project: "Development",
-  },
-  {
-    id: "3",
-    title: "Update user documentation",
-    status: "in_progress",
-    priority: "medium",
-    dueDate: "Jan 22",
-    assignee: { name: "Mike", avatar: "/avatars/3.jpg" },
-    project: "Documentation",
-  },
-  {
-    id: "4",
-    title: "Review PR #234",
-    status: "done",
-    priority: "low",
-    dueDate: "Jan 17",
-    assignee: { name: "Emma", avatar: "/avatars/4.jpg" },
-    project: "Development",
-  },
-]
-
-// Sample upcoming deadlines
-const upcomingDeadlines = [
-  { id: "1", title: "Sprint Review", date: "Today, 3:00 PM", type: "meeting" },
-  { id: "2", title: "Deploy v2.0", date: "Tomorrow", type: "milestone" },
-  { id: "3", title: "Client presentation", date: "Jan 20", type: "meeting" },
-]
-
-const priorityColors = {
-  low: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-  medium: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  high: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
-  urgent: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-}
-
-const statusColors = {
-  todo: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-  in_progress: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  done: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-}
 
 export function DashboardOverview() {
+  const router = useRouter()
+  const { workspaces, addPage, getFavoritePages } = useEditorStore()
+  const favorites = getFavoritePages()
+
+  const allPages: (Page & { wsName: string; wsIcon: string })[] = []
+  for (const ws of workspaces) {
+    const flatPages = flattenPages(ws.pages)
+    for (const p of flatPages) {
+      if (!p.isDeleted) {
+        allPages.push({ ...p, wsName: ws.name, wsIcon: ws.icon })
+      }
+    }
+  }
+
+  const recentPages = allPages
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .slice(0, 8)
+
+  const handleQuickCreate = () => {
+    if (workspaces.length > 0) {
+      const newId = addPage(workspaces[0].id)
+      router.push(routes.dashboard.workspacePage(workspaces[0].id, newId) as never)
+    }
+  }
+
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome back! Here's your task overview.
-          </p>
-        </div>
-        <Button className="gap-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700">
-          <Plus className="size-4" />
-          Create Task
-        </Button>
+    <div className="max-w-5xl mx-auto px-6 py-10">
+      <div className="mb-10">
+        <h1 className="text-3xl font-bold tracking-tight">Good morning 👋</h1>
+        <p className="text-muted-foreground mt-1">
+          Pick up where you left off or start something new.
+        </p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <Card key={stat.title}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                  <stat.icon className={`size-5 ${stat.color}`} />
+      <section className="mb-10">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+          Quick Start
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {quickActions.map((action) => (
+            <button
+              key={action.label}
+              onClick={handleQuickCreate}
+              className="group flex flex-col items-start gap-3 rounded-xl border bg-card p-4 hover:border-primary/30 hover:shadow-sm transition-all text-left"
+            >
+              <div className="flex size-10 items-center justify-center rounded-lg bg-primary/5 group-hover:bg-primary/10 transition-colors">
+                <action.icon className="size-5 text-primary" />
+              </div>
+              <div>
+                <div className="text-sm font-medium">{action.label}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  {action.description}
                 </div>
-                <Badge
-                  variant="secondary"
-                  className={
-                    stat.changeType === "positive"
-                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                      : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                  }
-                >
-                  <TrendingUp className={`size-3 mr-1 ${stat.changeType === "negative" ? "rotate-180" : ""}`} />
-                  {stat.change}
-                </Badge>
               </div>
-              <div className="mt-4">
-                <p className="text-3xl font-bold">{stat.value}</p>
-                <p className="text-sm text-muted-foreground">{stat.title}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            </button>
+          ))}
+        </div>
+      </section>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Recent Tasks */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Recent Tasks</CardTitle>
-              <CardDescription>Your latest task activities</CardDescription>
-            </div>
-            <Button variant="ghost" size="sm" className="gap-1">
-              View All <ArrowRight className="size-4" />
+      {favorites.length > 0 && (
+        <section className="mb-10">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <Star className="size-3.5 fill-yellow-400 text-yellow-400" />
+              Favorites
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {favorites.map((page) => (
+              <Link
+                key={page.id}
+                href={routes.dashboard.workspacePage(page.workspaceId, page.id) as never}
+                className="group flex items-center gap-3 rounded-xl border bg-card p-4 hover:border-primary/30 hover:shadow-sm transition-all"
+              >
+                <span className="text-2xl">{page.icon}</span>
+                <div className="min-w-0">
+                  <div className="text-sm font-medium truncate">{page.title}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {workspaces.find((w) => w.id === page.workspaceId)?.name}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <Clock className="size-3.5" />
+            Recent Pages
+          </h2>
+        </div>
+        <div className="rounded-xl border bg-card divide-y">
+          {recentPages.map((page) => (
+            <Link
+              key={page.id}
+              href={routes.dashboard.workspacePage(page.workspaceId, page.id) as never}
+              className="flex items-center gap-4 p-3 hover:bg-accent/50 transition-colors first:rounded-t-xl last:rounded-b-xl group"
+            >
+              <span className="text-xl shrink-0">{page.icon}</span>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+                  {page.title}
+                </div>
+                <div className="text-xs text-muted-foreground flex items-center gap-2">
+                  <span>{page.wsIcon} {page.wsName}</span>
+                  <span className="text-muted-foreground/50">·</span>
+                  <span>Edited {formatRelativeTime(page.updatedAt)}</span>
+                </div>
+              </div>
+              <ArrowRight className="size-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {workspaces.map((ws) => (
+        <section key={ws.id} className="mt-10">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <span>{ws.icon}</span>
+              {ws.name}
+            </h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-xs"
+              onClick={() => {
+                const newId = addPage(ws.id)
+                router.push(routes.dashboard.workspacePage(ws.id, newId) as never)
+              }}
+            >
+              <Plus className="size-3.5" />
+              New Page
             </Button>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {ws.pages
+              .filter((p) => !p.isDeleted && !p.parentId)
+              .map((page) => (
+                <Link
+                  key={page.id}
+                  href={routes.dashboard.workspacePage(ws.id, page.id) as never}
+                  className="group rounded-xl border bg-card overflow-hidden hover:border-primary/30 hover:shadow-sm transition-all"
                 >
-                  <Avatar className="size-9">
-                    <AvatarImage src={task.assignee.avatar} />
-                    <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white text-xs">
-                      {task.assignee.name.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{task.title}</p>
-                    <p className="text-sm text-muted-foreground">{task.project}</p>
+                  <div className="h-20 bg-gradient-to-br from-muted/50 to-muted flex items-center justify-center">
+                    <span className="text-3xl opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all">
+                      {page.icon}
+                    </span>
                   </div>
-                  <Badge variant="secondary" className={priorityColors[task.priority as keyof typeof priorityColors]}>
-                    {task.priority}
-                  </Badge>
-                  <Badge variant="secondary" className={statusColors[task.status as keyof typeof statusColors]}>
-                    {task.status.replace("_", " ")}
-                  </Badge>
-                  <span className="text-sm text-muted-foreground whitespace-nowrap">
-                    {task.dueDate}
-                  </span>
-                </div>
+                  <div className="p-3">
+                    <div className="text-sm font-medium truncate">{page.title}</div>
+                    {page.children && page.children.length > 0 && (
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        {page.children.length} sub-page{page.children.length > 1 ? "s" : ""}
+                      </div>
+                    )}
+                  </div>
+                </Link>
               ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Sidebar Cards */}
-        <div className="space-y-6">
-          {/* Progress Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Weekly Progress</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Tasks Completed</span>
-                  <span className="font-medium">67%</span>
-                </div>
-                <Progress value={67} className="h-2" />
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Sprint Progress</span>
-                  <span className="font-medium">45%</span>
-                </div>
-                <Progress value={45} className="h-2" />
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Team Velocity</span>
-                  <span className="font-medium">82%</span>
-                </div>
-                <Progress value={82} className="h-2" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Upcoming Deadlines */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Calendar className="size-4" />
-                Upcoming
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {upcomingDeadlines.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                  >
-                    <div className={`size-2 rounded-full ${
-                      item.type === "meeting" ? "bg-violet-500" : "bg-emerald-500"
-                    }`} />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{item.title}</p>
-                      <p className="text-xs text-muted-foreground">{item.date}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Team Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Users className="size-4" />
-                Team
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex -space-x-2">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Avatar key={i} className="size-8 border-2 border-background">
-                    <AvatarImage src={`/avatars/${i}.jpg`} />
-                    <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white text-xs">
-                      U{i}
-                    </AvatarFallback>
-                  </Avatar>
-                ))}
-                <div className="flex items-center justify-center size-8 rounded-full bg-muted border-2 border-background text-xs font-medium">
-                  +8
-                </div>
-              </div>
-              <Button variant="outline" size="sm" className="w-full mt-4 gap-1">
-                <Plus className="size-4" />
-                Invite Member
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+          </div>
+        </section>
+      ))}
     </div>
   )
+}
+
+function flattenPages(pages: Page[]): Page[] {
+  const result: Page[] = []
+  for (const page of pages) {
+    result.push(page)
+    if (page.children) {
+      result.push(...flattenPages(page.children))
+    }
+  }
+  return result
+}
+
+function formatRelativeTime(dateStr: string): string {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMin = Math.floor(diffMs / 60000)
+  const diffHr = Math.floor(diffMin / 60)
+  const diffDay = Math.floor(diffHr / 24)
+
+  if (diffMin < 1) return "just now"
+  if (diffMin < 60) return `${diffMin}m ago`
+  if (diffHr < 24) return `${diffHr}h ago`
+  if (diffDay < 7) return `${diffDay}d ago`
+  return date.toLocaleDateString()
 }
