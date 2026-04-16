@@ -46,7 +46,7 @@ export function Header() {
               <Layers className="size-[18px] text-white" />
             </div>
             <span className="text-xl font-bold tracking-tight">
-              Craft<span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">board</span>
+              Notre<span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">lix</span>
             </span>
           </Link>
 

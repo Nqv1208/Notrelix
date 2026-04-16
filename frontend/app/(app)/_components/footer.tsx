@@ -55,7 +55,7 @@ export function Footer() {
                 <Layers className="size-4 text-white" />
               </div>
               <span className="font-bold text-lg">
-                Craft<span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">board</span>
+                Notre<span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">lix</span>
               </span>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed">
@@ -85,7 +85,7 @@ export function Footer() {
         <Separator className="my-10" />
 
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <p>&copy; {year} Craftboard, Inc. All rights reserved.</p>
+          <p>&copy; {year} Notrelix, Inc. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5">
               <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />

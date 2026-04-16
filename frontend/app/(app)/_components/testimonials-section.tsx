@@ -19,7 +19,7 @@ const testimonials: Testimonial[] = [
     company: "Stripe",
     avatar: "SC",
     content:
-      "We replaced Notion AND Trello with Craftboard. Having docs and boards in the same workspace is a game changer for sprint planning.",
+      "We replaced Notion AND Trello with Notrelix. Having docs and boards in the same workspace is a game changer for sprint planning.",
     gradient: "from-violet-500 to-indigo-500",
   },
   {
@@ -55,7 +55,7 @@ const testimonials: Testimonial[] = [
     company: "Dub.co",
     avatar: "PP",
     content:
-      "Switched from 4 different tools to just Craftboard. The automations alone save us hours every week. Best decision this year.",
+      "Switched from 4 different tools to just Notrelix. The automations alone save us hours every week. Best decision this year.",
     gradient: "from-cyan-500 to-blue-500",
   },
   {
@@ -64,7 +64,7 @@ const testimonials: Testimonial[] = [
     company: "Supabase",
     avatar: "TW",
     content:
-      "Writing our public docs in Craftboard was effortless. Nested pages, code blocks with syntax highlighting, and easy exports.",
+      "Writing our public docs in Notrelix was effortless. Nested pages, code blocks with syntax highlighting, and easy exports.",
     gradient: "from-purple-500 to-fuchsia-500",
   },
 ]
@@ -88,7 +88,7 @@ export function TestimonialsSection() {
             Loved by teams everywhere
           </h2>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            From startups to enterprises, teams trust Craftboard to organize
+            From startups to enterprises, teams trust Notrelix to organize
             their work and ship faster.
           </p>
         </div>

@@ -98,7 +98,7 @@ export function FeaturesSection() {
             Everything your team needs
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            From rich document editing to visual project boards — Craftboard
+            From rich document editing to visual project boards — Notrelix
             replaces a dozen tools with one cohesive workspace.
           </p>
         </div>

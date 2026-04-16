@@ -4,8 +4,8 @@ import { Layers, FileText, LayoutGrid, CheckSquare, Users, Zap, ArrowRight } fro
 import { routes } from "@/lib/routes"
 
 export const metadata: Metadata = {
-  title: "Sign in — Craftboard",
-  description: "Sign in or create an account to start using Craftboard.",
+  title: "Sign in — Notrelix",
+  description: "Sign in or create an account to start using Notrelix.",
 }
 
 const features = [
@@ -50,7 +50,7 @@ export default function AuthLayout({
           <div className="flex items-center justify-center size-10 rounded-xl bg-white/15 backdrop-blur-sm">
             <Layers className="size-5 text-white" />
           </div>
-          <span className="text-2xl font-bold tracking-tight">Craftboard</span>
+          <span className="text-2xl font-bold tracking-tight">Notrelix</span>
         </Link>
 
         {/* Center content */}
@@ -79,7 +79,7 @@ export default function AuthLayout({
         <div className="relative z-10 pt-8 border-t border-white/15">
           <blockquote>
             <p className="text-[15px] leading-relaxed text-white/80 mb-4">
-              &ldquo;We replaced Notion and Trello with Craftboard. Having docs
+              &ldquo;We replaced Notion and Trello with Notrelix. Having docs
               and boards in the same workspace is a game changer.&rdquo;
             </p>
             <footer className="flex items-center gap-3">
@@ -104,7 +104,7 @@ export default function AuthLayout({
               <Layers className="size-4 text-white" />
             </div>
             <span className="text-lg font-bold tracking-tight">
-              Craft<span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">board</span>
+              Notre<span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">lix</span>
             </span>
           </Link>
         </div>

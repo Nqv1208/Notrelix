@@ -2,42 +2,76 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { Mail, ArrowLeft, ArrowRight, Loader2, CheckCircle2 } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Mail, ArrowLeft, ArrowRight, Loader2, CheckCircle2, AlertCircle } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { routes } from "@/lib/routes"
 import { Button } from "@/registry/new-york-v4/ui/button"
 import { Input } from "@/registry/new-york-v4/ui/input"
 import { Label } from "@/registry/new-york-v4/ui/label"
+import { useForgotPassword } from "@/features/auth/hooks/useForgotPassword"
+import { ApiError } from "@/lib/api/api-error"
+import { forgotPasswordSchema, type ForgotPasswordRequest } from "@/features/auth/schemas/forgot-password.schema"
 
 export function ForgotPasswordForm() {
-  const [email, setEmail] = React.useState("")
-  const [error, setError] = React.useState("")
-  const [isLoading, setIsLoading] = React.useState(false)
-  const [isSent, setIsSent] = React.useState(false)
+  const mutation = useForgotPassword()
+  const [sentEmail, setSentEmail] = React.useState("")
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+    getValues,
+  } = useForm<ForgotPasswordRequest>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: { email: "" },
+  })
 
-    if (!email.trim()) {
-      setError("Please enter your email address.")
-      return
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError("Please enter a valid email address.")
-      return
-    }
-
-    setIsLoading(true)
-    // Simulate API call — replace with real API later
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    setIsLoading(false)
-    setIsSent(true)
+  const onSubmit = (data: ForgotPasswordRequest) => {
+    mutation.mutate(
+      { email: data.email },
+      {
+        onSuccess: () => {
+          setSentEmail(data.email)
+        },
+      }
+    )
   }
 
-  if (isSent) {
+  const handleResend = () => {
+    const email = sentEmail || getValues("email")
+    if (email) {
+      mutation.reset()
+      mutation.mutate(
+        { email },
+        {
+          onSuccess: () => {
+            setSentEmail(email)
+          },
+        }
+      )
+    }
+  }
+
+  const handleTryDifferentEmail = () => {
+    mutation.reset()
+    setSentEmail("")
+    reset({ email: "" })
+  }
+
+  const serverError = React.useMemo(() => {
+    if (!mutation.error) return null
+    if (mutation.error instanceof ApiError) {
+      const payload = mutation.error.data as { message?: string; detail?: string } | undefined
+      return payload?.message ?? payload?.detail ?? mutation.error.message
+    }
+    return mutation.error.message
+  }, [mutation.error])
+
+  if (sentEmail && mutation.isSuccess) {
     return (
       <div className="flex flex-col items-center text-center gap-6">
         <div className="flex items-center justify-center size-16 rounded-2xl bg-emerald-500/10">
@@ -48,7 +82,7 @@ export function ForgotPasswordForm() {
           <h1 className="text-2xl font-bold tracking-tight mb-2">Check your email</h1>
           <p className="text-muted-foreground text-[15px] leading-relaxed max-w-sm">
             We&apos;ve sent a password reset link to{" "}
-            <span className="font-medium text-foreground">{email}</span>.
+            <span className="font-medium text-foreground">{sentEmail}</span>.
             Click the link in the email to reset your password.
           </p>
         </div>
@@ -57,10 +91,7 @@ export function ForgotPasswordForm() {
           <Button
             variant="outline"
             className="w-full h-10"
-            onClick={() => {
-              setIsSent(false)
-              setEmail("")
-            }}
+            onClick={handleTryDifferentEmail}
           >
             Try a different email
           </Button>
@@ -79,12 +110,12 @@ export function ForgotPasswordForm() {
         <p className="text-xs text-muted-foreground">
           Didn&apos;t receive an email? Check your spam folder or{" "}
           <button
-            onClick={() => {
-              setIsSent(false)
-            }}
-            className="text-foreground underline-offset-4 hover:underline"
+            type="button"
+            onClick={handleResend}
+            disabled={mutation.isPending}
+            className="text-foreground underline-offset-4 hover:underline disabled:opacity-50"
           >
-            try again
+            {mutation.isPending ? "sending..." : "resend"}
           </button>
           .
         </p>
@@ -93,8 +124,7 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-7">
-      {/* Header */}
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-7">
       <div>
         <h1 className="text-2xl font-bold tracking-tight mb-1.5">
           Reset your password
@@ -105,7 +135,13 @@ export function ForgotPasswordForm() {
         </p>
       </div>
 
-      {/* Field */}
+      {serverError && (
+        <div className="flex items-start gap-2.5 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
+          <AlertCircle className="size-4 shrink-0 mt-0.5" />
+          <span>{serverError}</span>
+        </div>
+      )}
+
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email address</Label>
@@ -117,25 +153,25 @@ export function ForgotPasswordForm() {
               placeholder="you@company.com"
               autoComplete="email"
               autoFocus
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value)
-                if (error) setError("")
-              }}
-              className={cn("pl-9 h-10", error && "border-destructive focus-visible:ring-destructive")}
+              className={cn(
+                "pl-9 h-10",
+                (errors.email || serverError) && "border-destructive focus-visible:ring-destructive"
+              )}
+              {...register("email")}
             />
           </div>
-          {error && <p className="text-xs text-destructive">{error}</p>}
+          {errors.email && (
+            <p className="text-xs text-destructive">{errors.email.message}</p>
+          )}
         </div>
       </div>
 
-      {/* Submit */}
       <Button
         type="submit"
         className="w-full h-10 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white border-0 shadow-lg shadow-violet-500/20"
-        disabled={isLoading}
+        disabled={mutation.isPending}
       >
-        {isLoading ? (
+        {mutation.isPending ? (
           <>
             <Loader2 className="size-4 mr-2 animate-spin" />
             Sending link...
@@ -148,7 +184,6 @@ export function ForgotPasswordForm() {
         )}
       </Button>
 
-      {/* Back */}
       <Link href={routes.auth.signIn}>
         <Button variant="ghost" type="button" className="w-full h-10 text-muted-foreground">
           <ArrowLeft className="size-4 mr-2" />

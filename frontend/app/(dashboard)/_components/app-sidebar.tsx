@@ -219,10 +219,10 @@ export function AppSidebar() {
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent">
                   <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 text-white font-bold">
-                    C
+                    N
                   </div>
                   <div className="flex flex-col gap-0.5 leading-none">
-                    <span className="font-semibold">Craftboard</span>
+                    <span className="font-semibold">Notrelix</span>
                     <span className="text-xs text-muted-foreground">Pro Plan</span>
                   </div>
                   <ChevronsUpDown className="ml-auto size-4" />

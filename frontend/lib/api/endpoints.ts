@@ -4,6 +4,7 @@ export const endpoints = {
     register: "/auth/register",
     refresh: "/auth/refresh",
     logout: "/auth/logout",
+    forgotpassword: "/auth/forgotpassword",
     profile: "/auth/me",
   },
 };

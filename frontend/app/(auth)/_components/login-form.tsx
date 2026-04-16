@@ -5,7 +5,7 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useTranslations } from "next-intl"
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react"
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, AlertCircle } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { routes } from "@/lib/routes"
@@ -15,8 +15,8 @@ import { Label } from "@/registry/new-york-v4/ui/label"
 import { Checkbox } from "@/registry/new-york-v4/ui/checkbox"
 import { useLogin } from "@/features/auth/hooks/useLogin"
 import { LoginRequest, loginSchema } from "@/features/auth/schemas/login.schema"
-import { parseAuthError } from "@/features/auth/utils/parse-auth-error"
-import { AuthErrorKey, AUTH_ERROR_KEYS, isAuthErrorKey } from "@/features/auth/i18n/auth-error-keys"
+import { parseAuthError, type ParsedAuthError } from "@/features/auth/utils/parse-auth-error"
+import { resolveErrorDisplay } from "@/features/auth/utils/resolve-error-display"
 
 export function LoginForm({
   className,
@@ -24,7 +24,7 @@ export function LoginForm({
 }: React.ComponentPropsWithoutRef<"form">) {
   const t = useTranslations()
   const loginMutation = useLogin()
-  const [serverErrorKey, setServerErrorKey] = useState<AuthErrorKey | null>(null)
+  const [serverError, setServerError] = useState<ParsedAuthError | null>(null)
   const [showPassword, setShowPassword] = useState(false)
 
   const {
@@ -38,18 +38,24 @@ export function LoginForm({
   })
 
   const onSubmit = (data: LoginRequest) => {
-    setServerErrorKey(null)
+    setServerError(null)
     loginMutation.mutate(data, {
       onError: (error) => {
         const parsed = parseAuthError(error)
         if (parsed.fieldErrors.email)
-          setError("email", { type: "server", message: parsed.fieldErrors.email })
+          setError("email", { type: "server", message: String(parsed.fieldErrors.email) })
         if (parsed.fieldErrors.password)
-          setError("password", { type: "server", message: parsed.fieldErrors.password })
-        setServerErrorKey(parsed.messageKey)
+          setError("password", { type: "server", message: String(parsed.fieldErrors.password) })
+        setServerError(parsed)
       },
     })
   }
+
+  const serverErrorMessage = serverError
+    ? serverError.messageKey
+      ? t(serverError.messageKey)
+      : serverError.rawMessage
+    : null
 
   return (
     <form
@@ -57,15 +63,13 @@ export function LoginForm({
       className={cn("flex flex-col gap-7", className)}
       {...props}
     >
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight mb-1.5">Welcome back</h1>
         <p className="text-muted-foreground text-[15px]">
-          Sign in to your Craftboard workspace
+          Sign in to your Notrelix workspace
         </p>
       </div>
 
-      {/* Social buttons */}
       <div className="grid grid-cols-2 gap-3">
         <Button variant="outline" type="button" className="h-10">
           <svg className="size-4 mr-2" viewBox="0 0 24 24">
@@ -84,7 +88,6 @@ export function LoginForm({
         </Button>
       </div>
 
-      {/* Divider */}
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t" />
@@ -96,14 +99,13 @@ export function LoginForm({
         </div>
       </div>
 
-      {/* Server error */}
-      {serverErrorKey && (
-        <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
-          {t(serverErrorKey)}
+      {serverErrorMessage && (
+        <div className="flex items-start gap-2.5 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
+          <AlertCircle className="size-4 shrink-0 mt-0.5" />
+          <span>{serverErrorMessage}</span>
         </div>
       )}
 
-      {/* Fields */}
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
@@ -119,7 +121,7 @@ export function LoginForm({
             />
           </div>
           {errors.email && (
-            <p className="text-xs text-destructive">{toMsg(errors.email.message, t)}</p>
+            <p className="text-xs text-destructive">{resolveErrorDisplay(errors.email.message, t)}</p>
           )}
         </div>
 
@@ -153,7 +155,7 @@ export function LoginForm({
             </button>
           </div>
           {errors.password && (
-            <p className="text-xs text-destructive">{toMsg(errors.password.message, t)}</p>
+            <p className="text-xs text-destructive">{resolveErrorDisplay(errors.password.message, t)}</p>
           )}
         </div>
 
@@ -165,7 +167,6 @@ export function LoginForm({
         </div>
       </div>
 
-      {/* Submit */}
       <Button
         type="submit"
         className="w-full h-10 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white border-0 shadow-lg shadow-violet-500/20"
@@ -184,7 +185,6 @@ export function LoginForm({
         )}
       </Button>
 
-      {/* Footer */}
       <p className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}
         <Link
@@ -196,13 +196,4 @@ export function LoginForm({
       </p>
     </form>
   )
-}
-
-function toMsg(
-  message: string | undefined,
-  t: ReturnType<typeof useTranslations>
-): string {
-  if (!message) return t(AUTH_ERROR_KEYS.SERVER_GENERIC)
-  if (isAuthErrorKey(message)) return t(message)
-  return message
 }

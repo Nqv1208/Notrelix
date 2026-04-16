@@ -32,7 +32,7 @@ export function TaskPage({ workspaceId, pageId }: TaskPageProps) {
     id: pageId,
     title: "Sprint Tasks",
     icon: "🏃",
-    workspace: "Craftboard Project",
+    workspace: "Notrelix Project",
   }
 
   return (

@@ -1,5 +1,5 @@
 import { api } from "@/lib/api/api-client";
-import { LoginRequestApi, LoginResponseApi, LogoutRequest, RefreshRequest, RegisterRequestApi, RegisterResponseApi, User } from "../types/auth.types";
+import { ForgotPassword, ForgotPasswordRes, LoginRequestApi, LoginResponseApi, LogoutRequest, RefreshRequest, RegisterRequestApi, RegisterResponseApi, User } from "../types/auth.types";
 import { endpoints } from "@/lib/api/endpoints";
 
 
@@ -18,6 +18,10 @@ export const authService = {
 
   refresh(data: RefreshRequest) {
     return api.post<LoginResponseApi>(endpoints.auth.refresh, data);
+  },
+
+  forgotpassword(data: ForgotPassword) {
+    return api.post<ForgotPasswordRes>(endpoints.auth.forgotpassword, data)
   },
 
   profile() {

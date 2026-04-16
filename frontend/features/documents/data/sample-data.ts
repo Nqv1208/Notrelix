@@ -3,7 +3,7 @@ import type { Block, Page, Workspace } from "../types/document.types"
 export const sampleWorkspaces: Workspace[] = [
   {
     id: "ws-1",
-    name: "Craftboard Project",
+    name: "Notrelix Project",
     icon: "🎨",
     color: "bg-violet-500",
     pages: [
@@ -123,7 +123,7 @@ export function getSampleBlocks(pageId: string): Block[] {
       {
         id: "b-1",
         type: "heading_1",
-        content: "Welcome to Craftboard 🎨",
+        content: "Welcome to Notrelix 🎨",
         position: 1,
         createdAt: "2026-04-01T00:00:00Z",
         updatedAt: "2026-04-13T00:00:00Z",
@@ -132,7 +132,7 @@ export function getSampleBlocks(pageId: string): Block[] {
         id: "b-2",
         type: "paragraph",
         content:
-          "Craftboard is your all-in-one workspace for notes, documents, and project management. This guide will help you get started quickly.",
+          "Notrelix is your all-in-one workspace for notes, documents, and project management. This guide will help you get started quickly.",
         position: 2,
         createdAt: "2026-04-01T00:00:00Z",
         updatedAt: "2026-04-13T00:00:00Z",
