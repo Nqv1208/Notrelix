@@ -1,0 +1,63 @@
+# Overlay Development — luôn dùng cùng docker-compose.yml:
+#   docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+#
+# pgAdmin (tùy chọn): thêm --profile tools
+#   ... --profile tools up -d
+
+services:
+  postgres:
+    container_name: todoapp-postgres-dev
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  redis:
+    container_name: todoapp-redis-dev
+
+  backend:
+    image: mcr.microsoft.com/dotnet/sdk:8.0
+    container_name: todoapp-backend-dev
+    working_dir: /app
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    volumes:
+      - ./backend:/app
+    command: dotnet watch run --project TodoApp.Web/TodoApp.Web.csproj --no-launch-profile
+
+  frontend:
+    image: oven/bun:1.2.23-alpine
+    container_name: todoapp-frontend-dev
+    working_dir: /app
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    volumes:
+      - ./frontend:/app
+    command: sh -c "bun install && bun run dev" 
+
+  nginx:
+    container_name: todoapp-nginx-dev
+    depends_on:
+      frontend:
+        condition: service_started
+
+  pgadmin:
+    profiles:
+      - tools
+    image: dpage/pgadmin4:latest
+    container_name: todoapp-pgadmin-dev
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@todoapp.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend-network
+
+networks:
+  backend-network:
+    internal: false
