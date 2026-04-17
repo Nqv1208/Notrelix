@@ -25,10 +25,19 @@ export type RegisterRequestApi = {
 
 export type RegisterResponseApi = LoginResponseApi;
 
-export type LogoutRequest = Pick<LoginResponseApi, "refreshToken">;
+export type LogoutRequest = {
+  refreshToken: string;
+  accessToken?: string;
+};
 
 export type RefreshRequest = Pick<LoginResponseApi, "refreshToken">;
 
-export type ForgotPassword = Pick<LoginRequestApi, "email">;
+export type ForgotPasswordRequest = {
+  email: string;
+};
 
-export type ForgotPasswordRes =  {code: number}
+export type ResetPasswordRequest = {
+  email: string;
+  code: string;
+  newPassword: string;
+};
