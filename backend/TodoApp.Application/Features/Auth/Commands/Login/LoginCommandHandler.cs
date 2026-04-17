@@ -39,24 +39,24 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
 
         if (user is null)
         {
-            return Result<AuthResult>.Failure("Email hoặc mật khẩu không đúng");
+            return Result<AuthResult>.Failure("Invalid email or password");
         }
 
         // Kiểm tra trạng thái tài khoản
         if (user.Status == UserStatus.Inactive)
         {
-            return Result<AuthResult>.Failure("Tài khoản đã bị vô hiệu hóa");
+            return Result<AuthResult>.Failure("Account has been deactivated");
         }
 
         if (user.Status == UserStatus.Suspended)
         {
-            return Result<AuthResult>.Failure("Tài khoản đã bị tạm khóa");
+            return Result<AuthResult>.Failure("Account has been suspended");
         }
 
         // Xác thực mật khẩu
         if (!_passwordHasher.VerifyPassword(request.Password, user.PasswordHash))
         {
-            return Result<AuthResult>.Failure("Email hoặc mật khẩu không đúng");
+            return Result<AuthResult>.Failure("Invalid email or password");
         }
 
         // Generate tokens

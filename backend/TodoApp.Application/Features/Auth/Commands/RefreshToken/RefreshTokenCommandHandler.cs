@@ -39,7 +39,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
 
         if (session is null)
         {
-            return Result<AuthResult>.Failure("Refresh token không hợp lệ hoặc đã hết hạn");
+            return Result<AuthResult>.Failure("Refresh token is invalid or expired");
         }
 
         var user = session.User;

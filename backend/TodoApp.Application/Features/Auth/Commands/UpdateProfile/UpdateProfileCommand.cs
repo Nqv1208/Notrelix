@@ -31,7 +31,7 @@ public class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileCommand,
 
         if (user is null)
         {
-            return Result<UserDto>.Failure("Không tìm thấy người dùng");
+            return Result<UserDto>.Failure("User not found");
         }
 
         user.UpdateProfile(request.Name, request.Avatar);

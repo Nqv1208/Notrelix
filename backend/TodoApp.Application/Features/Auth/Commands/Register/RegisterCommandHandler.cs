@@ -39,7 +39,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<Au
 
         if (emailExists)
         {
-            return Result<AuthResult>.Failure("Email đã được sử dụng");
+            return Result<AuthResult>.Failure("Email is already in use");
         }
 
         // Tạo user mới

@@ -29,7 +29,7 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, R
 
         if (user is null)
         {
-            return Result<UserDto>.Failure("Không tìm thấy người dùng");
+            return Result<UserDto>.Failure("User not found");
         }
 
         return Result<UserDto>.Success(new UserDto
