@@ -13,12 +13,13 @@ export function useLogout() {
   return useMutation({
     mutationFn: async () => {
       const refreshToken = tokenStorage.getRefreshToken()
+      const accessToken = tokenStorage.getAccessToken()
 
       if (refreshToken) {
         try {
-          await authService.logout({ refreshToken })
+          await authService.logout({ refreshToken, accessToken: accessToken ?? undefined })
         } catch {
-          // Ignore API logout failures; local sign-out still proceeds.
+          // Ignore API failures; local sign-out still proceeds.
         }
       }
 

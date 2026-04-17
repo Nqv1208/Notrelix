@@ -23,6 +23,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0" />
+    <PackageReference Include="Resend" Version="0.4.0" />
   </ItemGroup>
 
   <!-- IDENTITY & SECURITY -->

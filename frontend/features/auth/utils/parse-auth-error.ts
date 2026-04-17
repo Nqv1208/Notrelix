@@ -1,79 +1,91 @@
-import { ApiError } from "@/lib/api/api-error";
-import { AUTH_ERROR_KEYS, AuthErrorKey, isAuthErrorKey } from "@/features/auth/i18n/auth-error-keys";
+import { ApiError } from "@/lib/api/api-error"
+import { AUTH_ERROR_KEYS, type AuthErrorKey, isAuthErrorKey } from "@/features/auth/i18n/auth-error-keys"
+import { matchServerError } from "@/features/auth/i18n/server-error-map"
 
-type ParsedAuthError = {
-  messageKey: AuthErrorKey;
-  fieldErrors: Record<string, AuthErrorKey>;
-};
+export type ParsedAuthError = {
+  messageKey: AuthErrorKey | null
+  rawMessage: string | null
+  fieldErrors: Record<string, AuthErrorKey | string>
+}
 
-type ApiErrorPayload = {
-  message?: string;
-  detail?: string;
-  type?: string;
-  errors?: unknown;
-};
+type MiddlewareErrorBody = {
+  type?: string
+  message?: string
+  detail?: string
+  errors?: Record<string, string[]> | string[]
+}
 
 export function parseAuthError(error: unknown): ParsedAuthError {
   const fallback: ParsedAuthError = {
     messageKey: AUTH_ERROR_KEYS.SERVER_GENERIC,
+    rawMessage: null,
     fieldErrors: {},
-  };
-
-  if (!(error instanceof ApiError)) {
-    return fallback;
   }
 
-  const payload = (error.data ?? {}) as ApiErrorPayload;
-  const messageKey =
-    mapErrorMessageToKey(payload.message ?? payload.detail, payload.type) ??
-    mapErrorMessageToKey(error.message, payload.type) ??
-    fallback.messageKey;
-  const result: ParsedAuthError = {
-    messageKey,
-    fieldErrors: {},
-  };
+  if (!(error instanceof ApiError)) return fallback
 
-  if (Array.isArray(payload.errors)) {
-    if (payload.errors.length > 0) {
-      result.messageKey = mapErrorMessageToKey(String(payload.errors[0]), payload.type) ?? result.messageKey;
-    }
-    return result;
+  const body = (error.data ?? {}) as MiddlewareErrorBody
+
+  if (body.type === "Unauthorized") {
+    return { messageKey: AUTH_ERROR_KEYS.UNAUTHORIZED, rawMessage: null, fieldErrors: {} }
   }
 
-  if (payload.errors && typeof payload.errors === "object") {
-    for (const [key, value] of Object.entries(payload.errors)) {
-      if (!Array.isArray(value) || value.length === 0) continue;
-      result.fieldErrors[key] = mapErrorMessageToKey(String(value[0]), payload.type) ?? AUTH_ERROR_KEYS.SERVER_GENERIC;
-    }
+  if (Array.isArray(body.errors)) {
+    return parseResultErrors(body.errors)
   }
 
-  return result;
+  if (body.errors && typeof body.errors === "object") {
+    return parseValidationErrors(body.errors as Record<string, string[]>, body.message)
+  }
+
+  const msg = body.message ?? body.detail ?? error.message
+  return resolveMessage(msg)
 }
 
-function mapErrorMessageToKey(message?: string, type?: string): AuthErrorKey | undefined {
-  if (type === "Unauthorized") {
-    return AUTH_ERROR_KEYS.UNAUTHORIZED;
+function parseResultErrors(errors: string[]): ParsedAuthError {
+  if (errors.length === 0) {
+    return { messageKey: AUTH_ERROR_KEYS.SERVER_GENERIC, rawMessage: null, fieldErrors: {} }
   }
 
-  if (!message) return undefined;
-  if (isAuthErrorKey(message)) return message;
+  const firstError = errors[0]
+  return resolveMessage(firstError)
+}
 
-  const normalized = message.trim().toLowerCase();
-  if (normalized.includes("email hoặc mật khẩu không đúng")) {
-    return AUTH_ERROR_KEYS.LOGIN_INVALID_CREDENTIALS;
-  }
-  if (normalized.includes("email đã được sử dụng")) {
-    return AUTH_ERROR_KEYS.REGISTER_EMAIL_TAKEN;
-  }
-  if (normalized.includes("tài khoản đã bị vô hiệu hóa")) {
-    return AUTH_ERROR_KEYS.ACCOUNT_INACTIVE;
-  }
-  if (normalized.includes("tài khoản đã bị tạm khóa")) {
-    return AUTH_ERROR_KEYS.ACCOUNT_SUSPENDED;
-  }
-  if (normalized.includes("refresh token không hợp lệ") || normalized.includes("hết hạn")) {
-    return AUTH_ERROR_KEYS.REFRESH_INVALID;
+function parseValidationErrors(
+  errors: Record<string, string[]>,
+  topMessage?: string
+): ParsedAuthError {
+  const fieldErrors: Record<string, AuthErrorKey | string> = {}
+
+  for (const [field, messages] of Object.entries(errors)) {
+    if (!Array.isArray(messages) || messages.length === 0) continue
+    const msg = messages[0]
+    fieldErrors[field.toLowerCase()] = resolveFieldMessage(msg)
   }
 
-  return undefined;
+  const resolved = topMessage ? resolveMessage(topMessage) : null
+
+  return {
+    messageKey: resolved?.messageKey ?? null,
+    rawMessage: resolved?.rawMessage ?? null,
+    fieldErrors,
+  }
+}
+
+function resolveMessage(message: string): ParsedAuthError {
+  if (isAuthErrorKey(message)) {
+    return { messageKey: message, rawMessage: null, fieldErrors: {} }
+  }
+
+  const mapped = matchServerError(message)
+  if (mapped) {
+    return { messageKey: mapped, rawMessage: null, fieldErrors: {} }
+  }
+
+  return { messageKey: null, rawMessage: message, fieldErrors: {} }
+}
+
+function resolveFieldMessage(message: string): AuthErrorKey | string {
+  if (isAuthErrorKey(message)) return message
+  return matchServerError(message) ?? message
 }

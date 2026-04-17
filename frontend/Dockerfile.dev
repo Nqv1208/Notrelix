@@ -1,0 +1,23 @@
+# syntax=docker/dockerfile:1.7
+
+FROM oven/bun:1.2.23-alpine
+
+WORKDIR /app
+
+# Cài dependency trước để tận dụng cache (optional)
+COPY package.json bun.lockb* ./
+
+RUN bun install
+
+# Copy source (dev vẫn sẽ bị override bởi volume)
+COPY . .
+
+# Env cho dev + hot reload trong Docker
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV CHOKIDAR_USEPOLLING=true
+ENV WATCHPACK_POLLING=true
+
+EXPOSE 3000
+
+CMD ["bun", "run", "dev"]

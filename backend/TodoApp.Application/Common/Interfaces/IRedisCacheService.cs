@@ -1,12 +1,10 @@
+namespace TodoApp.Application.Common.Interfaces;
 
-
-namespace TodoApp.Application.Common.Interfaces
+public interface IRedisCacheService
 {
-    public interface IRedisCacheService
-    {
-        Task SetAsync<T>(string key, T value, TimeSpan? expiration);
-        Task<T?> GetAsync<T>(string key);
-        Task Remove<T>(string key);
-        Task Refresh<T>(string key);
-    }
+    Task<T?> GetAsync<T>(string key);
+    Task SetAsync<T>(string key, T value, TimeSpan? expiration = null);
+    Task RemoveAsync(string key);
+    Task<bool> ExistsAsync(string key);
+    Task<long> IncrementAsync(string key, TimeSpan? expiration = null);
 }

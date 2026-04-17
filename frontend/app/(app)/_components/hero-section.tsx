@@ -38,7 +38,7 @@ export function HeroSection() {
           </h1>
 
           <p className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
-            Craftboard unifies documents, wikis, and project boards into one
+            Notrelix unifies documents, wikis, and project boards into one
             workspace. No more tab-switching — just focus and flow.
           </p>
 
@@ -86,7 +86,7 @@ export function HeroSection() {
               <div className="flex-1 flex items-center justify-center">
                 <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-background/60 text-xs text-muted-foreground">
                   <div className="size-3 rounded bg-gradient-to-br from-violet-500 to-indigo-500" />
-                  app.craftboard.io
+                  app.notrelix.io
                 </div>
               </div>
             </div>
@@ -133,7 +133,7 @@ export function HeroSection() {
                 <div className="space-y-3 mt-6">
                   <div className="flex items-start gap-3 group">
                     <GripVertical className="size-4 text-muted-foreground/30 mt-1 shrink-0" />
-                    <div className="text-xl font-semibold">Welcome to Craftboard</div>
+                    <div className="text-xl font-semibold">Welcome to Notrelix</div>
                   </div>
                   <div className="flex items-start gap-3 group">
                     <GripVertical className="size-4 text-muted-foreground/30 mt-1 shrink-0" />

@@ -23,7 +23,7 @@ export function CTASection() {
               Ready to unify your workflow?
             </h2>
             <p className="text-lg text-white/80 mb-10 leading-relaxed">
-              Join 10,000+ teams using Craftboard to write, plan, and ship — all
+              Join 10,000+ teams using Notrelix to write, plan, and ship — all
               in one place. Free forever for small teams.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

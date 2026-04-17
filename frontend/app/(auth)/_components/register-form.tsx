@@ -5,7 +5,7 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useTranslations } from "next-intl"
-import { Mail, Lock, Eye, EyeOff, User, ArrowRight, Loader2, Check } from "lucide-react"
+import { Mail, Lock, Eye, EyeOff, User, ArrowRight, Loader2, Check, AlertCircle } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { routes } from "@/lib/routes"
@@ -15,8 +15,8 @@ import { Label } from "@/registry/new-york-v4/ui/label"
 import { Checkbox } from "@/registry/new-york-v4/ui/checkbox"
 import { useRegister } from "@/features/auth/hooks/useRegister"
 import { RegisterRequest, registerSchema } from "@/features/auth/schemas/register.schemas"
-import { parseAuthError } from "@/features/auth/utils/parse-auth-error"
-import { AuthErrorKey, AUTH_ERROR_KEYS, isAuthErrorKey } from "@/features/auth/i18n/auth-error-keys"
+import { parseAuthError, type ParsedAuthError } from "@/features/auth/utils/parse-auth-error"
+import { resolveErrorDisplay } from "@/features/auth/utils/resolve-error-display"
 
 function getPasswordStrength(password: string): { score: number; label: string; color: string } {
   let score = 0
@@ -39,7 +39,7 @@ export function RegisterForm({
 }: React.ComponentPropsWithoutRef<"form">) {
   const t = useTranslations()
   const registerMutation = useRegister()
-  const [serverErrorKey, setServerErrorKey] = useState<AuthErrorKey | null>(null)
+  const [serverError, setServerError] = useState<ParsedAuthError | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
 
@@ -57,7 +57,7 @@ export function RegisterForm({
   const strength = getPasswordStrength(passwordValue)
 
   const onSubmit = (data: RegisterRequest) => {
-    setServerErrorKey(null)
+    setServerError(null)
     const payload = {
       name: `${data.firstName} ${data.lastName}`,
       email: data.email,
@@ -68,13 +68,19 @@ export function RegisterForm({
       onError: (error) => {
         const parsed = parseAuthError(error)
         if (parsed.fieldErrors.email)
-          setError("email", { type: "server", message: parsed.fieldErrors.email })
+          setError("email", { type: "server", message: String(parsed.fieldErrors.email) })
         if (parsed.fieldErrors.password)
-          setError("password", { type: "server", message: parsed.fieldErrors.password })
-        setServerErrorKey(parsed.messageKey)
+          setError("password", { type: "server", message: String(parsed.fieldErrors.password) })
+        setServerError(parsed)
       },
     })
   }
+
+  const serverErrorMessage = serverError
+    ? serverError.messageKey
+      ? t(serverError.messageKey)
+      : serverError.rawMessage
+    : null
 
   return (
     <form
@@ -86,7 +92,7 @@ export function RegisterForm({
       <div>
         <h1 className="text-2xl font-bold tracking-tight mb-1.5">Create your account</h1>
         <p className="text-muted-foreground text-[15px]">
-          Get started with Craftboard for free
+          Get started with Notrelix for free
         </p>
       </div>
 
@@ -122,9 +128,10 @@ export function RegisterForm({
       </div>
 
       {/* Server error */}
-      {serverErrorKey && (
-        <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
-          {t(serverErrorKey)}
+      {serverErrorMessage && (
+        <div className="flex items-start gap-2.5 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
+          <AlertCircle className="size-4 shrink-0 mt-0.5" />
+          <span>{serverErrorMessage}</span>
         </div>
       )}
 
@@ -146,7 +153,7 @@ export function RegisterForm({
               />
             </div>
             {errors.firstName && (
-              <p className="text-xs text-destructive">{toMsg(errors.firstName.message, t)}</p>
+              <p className="text-xs text-destructive">{resolveErrorDisplay(errors.firstName.message, t)}</p>
             )}
           </div>
           <div className="space-y-2">
@@ -160,7 +167,7 @@ export function RegisterForm({
               {...register("lastName")}
             />
             {errors.lastName && (
-              <p className="text-xs text-destructive">{toMsg(errors.lastName.message, t)}</p>
+              <p className="text-xs text-destructive">{resolveErrorDisplay(errors.lastName.message, t)}</p>
             )}
           </div>
         </div>
@@ -180,7 +187,7 @@ export function RegisterForm({
             />
           </div>
           {errors.email && (
-            <p className="text-xs text-destructive">{toMsg(errors.email.message, t)}</p>
+            <p className="text-xs text-destructive">{resolveErrorDisplay(errors.email.message, t)}</p>
           )}
         </div>
 
@@ -207,7 +214,7 @@ export function RegisterForm({
             </button>
           </div>
           {errors.password && (
-            <p className="text-xs text-destructive">{toMsg(errors.password.message, t)}</p>
+            <p className="text-xs text-destructive">{resolveErrorDisplay(errors.password.message, t)}</p>
           )}
           {/* Strength bar */}
           {passwordValue.length > 0 && (
@@ -253,7 +260,7 @@ export function RegisterForm({
             </button>
           </div>
           {errors.confirmPassword && (
-            <p className="text-xs text-destructive">{toMsg(errors.confirmPassword.message, t)}</p>
+            <p className="text-xs text-destructive">{resolveErrorDisplay(errors.confirmPassword.message, t)}</p>
           )}
         </div>
 
@@ -306,11 +313,3 @@ export function RegisterForm({
   )
 }
 
-function toMsg(
-  message: string | undefined,
-  t: ReturnType<typeof useTranslations>
-): string {
-  if (!message) return t(AUTH_ERROR_KEYS.SERVER_GENERIC)
-  if (isAuthErrorKey(message)) return t(message)
-  return message
-}

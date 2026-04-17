@@ -251,7 +251,7 @@ export function DemoSection() {
                   <div className="size-2.5 rounded-full bg-green-400/80" />
                 </div>
                 <div className="flex-1 text-center text-xs text-muted-foreground">
-                  {activeTab === "docs" ? "Product Roadmap — Craftboard" : "Sprint Board — Craftboard"}
+                  {activeTab === "docs" ? "Product Roadmap — Notrelix" : "Sprint Board — Notrelix"}
                 </div>
               </div>
 
