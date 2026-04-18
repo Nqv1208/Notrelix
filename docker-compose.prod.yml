@@ -2,22 +2,22 @@ version: "3.9"
 
 services:
   postgres:
-    container_name: todoapp-postgres-prod
+    container_name: notrelix-postgres-prod
 
   redis:
-    container_name: todoapp-redis-prod
+    container_name: notrelix-redis-prod
 
   backend:
-    container_name: todoapp-backend-prod
+    container_name: notrelix-backend-prod
     environment:
       - ENV=production
 
   frontend:
-    container_name: todoapp-frontend-prod
+    container_name: notrelix-frontend-prod
 
   nginx:
     image: nginx:alpine
-    container_name: todoapp-nginx
+    container_name: notrelix-nginx
     restart: unless-stopped
     ports:
       - "80:80"

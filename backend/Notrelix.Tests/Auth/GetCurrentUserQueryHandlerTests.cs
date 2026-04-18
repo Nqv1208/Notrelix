@@ -1,0 +1,49 @@
+using Microsoft.EntityFrameworkCore;
+using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Auth.Queries.GetCurrentUser;
+using Notrelix.Domain.Entities;
+
+namespace Notrelix.Tests.Auth;
+
+public class GetCurrentUserQueryHandlerTests
+{
+    [Fact]
+    public async Task Handle_WhenUserNotFound_ShouldReturnFailure()
+    {
+        using var context = AuthTestDbContextFactory.CreateInMemoryContext();
+
+        var handler = new GetCurrentUserQueryHandler(context);
+
+        var result = await handler.Handle(new GetCurrentUserQuery
+        {
+            UserId = Guid.NewGuid()
+        }, CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.ErrorType.Should().Be(ErrorType.NotFound);
+        result.Errors.Should().Contain("Không tìm thấy người dùng");
+    }
+
+    [Fact]
+    public async Task Handle_WhenUserExists_ShouldReturnUserDto()
+    {
+        using var context = AuthTestDbContextFactory.CreateInMemoryContext();
+
+        var user = User.Create("me@example.com", "Me", "hashed");
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
+
+        var handler = new GetCurrentUserQueryHandler(context);
+
+        var result = await handler.Handle(new GetCurrentUserQuery
+        {
+            UserId = user.Id
+        }, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        result.Data!.Id.Should().Be(user.Id);
+        result.Data!.Email.Should().Be("me@example.com");
+        result.Data!.Name.Should().Be("Me");
+    }
+}
+

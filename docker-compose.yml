@@ -10,11 +10,11 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-todoapp_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-notrelix_dev}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-todoapp_dev}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-notrelix_dev}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -40,7 +40,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8000
       INIT_DB: "true"
-      ConnectionStrings__TodoAppDb: Host=postgres;Port=5432;Database=${POSTGRES_DB:-todoapp_dev};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      ConnectionStrings__NotrelixDb: Host=postgres;Port=5432;Database=${POSTGRES_DB:-notrelix_dev};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
       ConnectionStrings__Redis: redis:6379,password=${REDIS_PASSWORD:-redis123}
       Email__ApiKey: ${RESEND_API_KEY:-re_test_placeholder}
       Cors__AllowedOrigins__0: http://localhost

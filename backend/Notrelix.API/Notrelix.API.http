@@ -1,0 +1,6 @@
+@Notrelix.API_HostAddress = http://localhost:5064
+
+GET {{Notrelix.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
