@@ -1,7 +1,7 @@
 <Solution>
-  <Project Path="TodoApp.Domain/TodoApp.Domain.csproj" />
-  <Project Path="TodoApp.Application/TodoApp.Application.csproj" />
-  <Project Path="TodoApp.Infrastructure/TodoApp.Infrastructure.csproj" />
-  <Project Path="TodoApp.Web/TodoApp.Web.csproj" />
-  <Project Path="TodoApp.Tests/TodoApp.Tests.csproj" />
+  <Project Path="Notrelix.Application/Notrelix.Application.csproj" />
+  <Project Path="Notrelix.Domain/Notrelix.Domain.csproj" />
+  <Project Path="Notrelix.Infrastructure/Notrelix.Infrastructure.csproj" />
+  <Project Path="Notrelix.Tests/Notrelix.Tests.csproj" />
+  <Project Path="Notrelix.API/Notrelix.API.csproj" />
 </Solution>

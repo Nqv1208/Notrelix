@@ -3,20 +3,20 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copy csproj files and restore dependencies
-COPY ["TodoApp.Domain/TodoApp.Domain.csproj", "TodoApp.Domain/"]
-COPY ["TodoApp.Application/TodoApp.Application.csproj", "TodoApp.Application/"]
-COPY ["TodoApp.Infrastructure/TodoApp.Infrastructure.csproj", "TodoApp.Infrastructure/"]
-COPY ["TodoApp.Web/TodoApp.Web.csproj", "TodoApp.Web/"]
-RUN dotnet restore "TodoApp.Web/TodoApp.Web.csproj"
+COPY ["Notrelix.Domain/Notrelix.Domain.csproj", "Notrelix.Domain/"]
+COPY ["Notrelix.Application/Notrelix.Application.csproj", "Notrelix.Application/"]
+COPY ["Notrelix.Infrastructure/Notrelix.Infrastructure.csproj", "Notrelix.Infrastructure/"]
+COPY ["Notrelix.API/Notrelix.API.csproj", "Notrelix.API/"]
+RUN dotnet restore "Notrelix.API/Notrelix.API.csproj"
 
 # Copy source code and build
 COPY . .
-WORKDIR "/src/TodoApp.Web"
-RUN dotnet build "TodoApp.Web.csproj" -c Release -o /app/build
+WORKDIR "/src/Notrelix.API"
+RUN dotnet build "Notrelix.API.csproj" -c Release -o /app/build
 
 # Publish stage
 FROM build AS publish
-RUN dotnet publish "TodoApp.Web.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "Notrelix.API.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
@@ -44,4 +44,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # Run the app
-ENTRYPOINT ["dotnet", "TodoApp.Web.dll"]
+ENTRYPOINT ["dotnet", "Notrelix.API.dll"]
