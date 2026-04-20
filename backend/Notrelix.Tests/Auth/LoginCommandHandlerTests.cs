@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Interfaces;
-using Notrelix.Application.Features.Auth.Commands.Login;
+using Notrelix.Application.Features.Identity.Commands.Login;
 using Notrelix.Application.Common.Models;
-using Notrelix.Domain.Entities;
+using Notrelix.Domain.Entities.Identity;
 using Notrelix.Domain.Enums;
 using Notrelix.Infrastructure.Data;
 

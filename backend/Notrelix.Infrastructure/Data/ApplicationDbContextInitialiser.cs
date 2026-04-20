@@ -1,8 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Common.Interfaces;
-using Notrelix.Domain.Entities;
+using Notrelix.Domain.Entities.Identity;
+using Notrelix.Domain.Entities.Workspace;
+using Notrelix.Domain.Entities.Document;
+using Notrelix.Domain.Entities.Board;
+using Notrelix.Domain.Entities.Calendar;
+using Notrelix.Domain.Entities.Shared;
 using Notrelix.Domain.Enums;
+using Notrelix.Domain.ValueObjects;
 
 namespace Notrelix.Infrastructure.Data;
 
@@ -27,11 +33,14 @@ public class ApplicationDbContextInitialiser
     {
         try
         {
-            await _context.Database.MigrateAsync();
+            if (_context.Database.IsNpgsql())
+            {
+                await _context.Database.MigrateAsync();
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while initialising database.");
+            _logger.LogError(ex, "An error occurred while initialising the database.");
             throw;
         }
     }
@@ -44,7 +53,7 @@ public class ApplicationDbContextInitialiser
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while seeding database.");
+            _logger.LogError(ex, "An error occurred while seeding the database.");
             throw;
         }
     }
@@ -56,8 +65,7 @@ public class ApplicationDbContextInitialiser
         {
             if (await _context.Users.AnyAsync())
             {
-                _logger.LogInformation("Database already seeded. Skip.");
-                await LogSeedSummaryAsync("skip");
+                _logger.LogInformation("Database already seeded. Skipping.");
                 return;
             }
 
@@ -67,13 +75,20 @@ public class ApplicationDbContextInitialiser
                 var scale = BuildScale();
                 _logger.LogInformation("Seeding metadata with scale: {@Scale}", scale);
 
+                // 1. Identity
                 var users = await SeedUsersAsync(scale.UserCount);
                 await SeedProfilesAndSessionsAsync(users, scale.SessionsPerUser);
+                await SeedOAuthAccountsAsync(users.Take(5).ToList());
 
+                // 2. Workspace
                 var workspaces = await SeedWorkspacesAsync(users, scale.WorkspaceCount, scale.MembersPerWorkspace);
                 await SeedInvitationsAsync(workspaces, users, scale.InvitationsPerWorkspace);
 
+                // 3. Document
                 var pages = await SeedPagesAndBlocksAsync(workspaces, users, scale.PagesPerWorkspace, scale.BlocksPerPage);
+                await SeedPageMentionsAsync(pages, users);
+
+                // 4. Board
                 var boardData = await SeedBoardsAsync(
                     workspaces,
                     users,
@@ -82,7 +97,14 @@ public class ApplicationDbContextInitialiser
                     scale.CardsPerList,
                     scale.ChecklistsPerCard,
                     scale.ItemsPerChecklist);
+                
+                await SeedBoardViewsAsync(boardData.Boards, users);
+                await SeedCardLinksAsync(boardData.Cards);
 
+                // 5. Calendar
+                await SeedCalendarDataAsync(users, boardData.Cards);
+
+                // 6. Shared / Collaboration
                 await SeedPermissionsAsync(workspaces, users, pages, boardData.Boards, scale.PermissionsPerWorkspace);
                 await SeedCollaborationAsync(
                     workspaces,
@@ -94,54 +116,53 @@ public class ApplicationDbContextInitialiser
                     scale.AttachmentsPerWorkspace,
                     scale.ReactionsPerWorkspace,
                     scale.NotificationsPerUser);
+                
                 await SeedActivityLogsAsync(workspaces, users, pages, boardData.Cards, scale.ActivityLogsPerWorkspace);
 
+                await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                await LogSeedSummaryAsync("seeded");
+                
+                _logger.LogInformation("Database seeded successfully.");
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error during seeding transaction.");
                 await transaction.RollbackAsync();
                 throw;
             }
         });
     }
 
+    #region 1. Identity
+
     private async Task<List<User>> SeedUsersAsync(int userCount)
     {
         var users = new List<User>
         {
-            User.Create("admin@Notrelix.com", "Admin User", _passwordHasher.HashPassword("Admin@123")),
-            User.Create("demo@Notrelix.com", "Demo User", _passwordHasher.HashPassword("Demo@123")),
-            User.Create("test@Notrelix.com", "Test User", _passwordHasher.HashPassword("Test@123"))
+            User.Create("admin@notrelix.com", "Admin User", _passwordHasher.HashPassword("Admin@123")),
+            User.Create("demo@notrelix.com", "Demo User", _passwordHasher.HashPassword("Demo@123")),
+            User.Create("test@notrelix.com", "Test User", _passwordHasher.HashPassword("Test@123"))
         };
 
         for (var i = 1; i <= userCount; i++)
         {
             var user = User.Create(
-                $"user{i:D3}@Notrelix.local",
+                $"user{i:D3}@notrelix.local",
                 $"User {i:D3}",
                 _passwordHasher.HashPassword("User@123"));
-
-            if (i % 9 == 0) user.Suspend();
-            if (i % 13 == 0) user.Deactivate();
-            user.RecordLogin();
+            
             users.Add(user);
         }
 
         _context.Users.AddRange(users);
-        await _context.SaveChangesAsync(default);
+        await _context.SaveChangesAsync();
         return users;
     }
 
-    private async Task SeedProfilesAndSessionsAsync(IReadOnlyList<User> users, int sessionsPerUser)
+    private async Task SeedProfilesAndSessionsAsync(List<User> users, int sessionsPerUser)
     {
-        var profiles = users.Select((user, index) =>
-            UserProfile.Create(
-                user.Id,
-                timezone: index % 2 == 0 ? "UTC" : "Asia/Ho_Chi_Minh",
-                locale: index % 3 == 0 ? "vi" : "en"))
-            .ToList();
+        var profiles = users.Select(user => UserProfile.Create(user.Id)).ToList();
+        foreach(var profile in profiles) profile.UpdateTheme("dark");
         _context.UserProfiles.AddRange(profiles);
 
         var sessions = new List<Session>();
@@ -152,118 +173,123 @@ public class ApplicationDbContextInitialiser
                 sessions.Add(Session.Create(
                     user.Id,
                     TimeSpan.FromDays(30),
-                    $"device-{i + 1}",
-                    $"10.0.{_random.Next(1, 250)}.{_random.Next(1, 250)}"));
+                    $"Device-{i + 1}",
+                    $"192.168.1.{_random.Next(1, 255)}"));
             }
         }
         _context.Sessions.AddRange(sessions);
-        await _context.SaveChangesAsync(default);
+        await Task.CompletedTask;
     }
 
-    private async Task<List<Workspace>> SeedWorkspacesAsync(IReadOnlyList<User> users, int workspaceCount, int membersPerWorkspace)
+    private async Task SeedOAuthAccountsAsync(List<User> users)
+    {
+        foreach (var user in users)
+        {
+            _context.OAuthAccounts.Add(OAuthAccount.Create(user.Id, "google", $"google-id-{user.Id:N}", user.Email));
+        }
+        await Task.CompletedTask;
+    }
+
+    #endregion
+
+    #region 2. Workspace
+
+    private async Task<List<Workspace>> SeedWorkspacesAsync(List<User> users, int workspaceCount, int membersPerWorkspace)
     {
         var workspaces = new List<Workspace>();
-        var ownerCount = Math.Min(users.Count, workspaceCount);
-        for (var i = 0; i < ownerCount; i++)
+        for (var i = 0; i < Math.Min(users.Count, workspaceCount); i++)
         {
             var owner = users[i];
             var workspace = i % 3 == 0
                 ? Workspace.CreatePersonal($"Personal {i + 1}", owner.Id)
-                : Workspace.CreateTeam($"Team {i + 1}", owner.Id, $"Workspace {i + 1} for metadata load test");
+                : Workspace.CreateTeam($"Team {i + 1}", owner.Id, $"Workspace {i + 1} for testing");
 
-            workspace.UpdateSlug($"workspace-{i + 1:D3}");
-            workspace.UpdateSettings($$"""{"theme":"{{(i % 2 == 0 ? "dark" : "light")}}","locale":"{{(i % 2 == 0 ? "vi" : "en")}}"}""");
+            workspace.UpdateSlug(Slug.Create(workspace.Name).Value);
+            workspace.UpdatePlan(i % 5 == 0 ? WorkspacePlan.Pro : WorkspacePlan.Free);
 
-            if (workspace.Type == WorkspaceType.Team)
+            if (!workspace.IsPersonal)
             {
-                var candidates = users
-                    .Where(u => u.Id != workspace.OwnerId)
-                    .OrderBy(_ => _random.Next())
-                    .Take(membersPerWorkspace)
-                    .ToList();
-
-                for (var j = 0; j < candidates.Count; j++)
+                var candidates = users.Where(u => u.Id != owner.Id).OrderBy(_ => _random.Next()).Take(membersPerWorkspace).ToList();
+                foreach (var candidate in candidates)
                 {
-                    var role = j == 0 ? MemberRole.Admin : (j % 4 == 0 ? MemberRole.Guest : MemberRole.Member);
-                    workspace.AddMember(candidates[j].Id, role);
+                    workspace.AddMember(candidate.Id, _random.Next(0, 10) > 8 ? WorkspaceRole.Admin : WorkspaceRole.Member);
                 }
             }
-
             workspaces.Add(workspace);
         }
 
         _context.Workspaces.AddRange(workspaces);
-        await _context.SaveChangesAsync(default);
+        await _context.SaveChangesAsync();
         return workspaces;
     }
 
-    private async Task SeedInvitationsAsync(IReadOnlyList<Workspace> workspaces, IReadOnlyList<User> users, int invitationsPerWorkspace)
+    private async Task SeedInvitationsAsync(List<Workspace> workspaces, List<User> users, int invitationsPerWorkspace)
     {
-        var invitations = new List<WorkspaceInvitation>();
-        foreach (var workspace in workspaces)
+        foreach (var workspace in workspaces.Where(w => !w.IsPersonal))
         {
             for (var i = 0; i < invitationsPerWorkspace; i++)
             {
-                var inviter = Pick(users);
-                invitations.Add(WorkspaceInvitation.Create(
+                var inviter = users.First(u => u.Id == workspace.OwnerId);
+                _context.WorkspaceInvitations.Add(WorkspaceInvitation.Create(
                     workspace.Id,
                     inviter.Id,
-                    $"invite-{workspace.Id:N}-{i + 1}@Notrelix.local",
-                    i % 3 == 0 ? "admin" : "member",
-                    $"{workspace.Id:N}-{Guid.NewGuid():N}",
-                    DateTime.UtcNow.AddDays(7 + i)));
+                    $"invite-{i}@test.com",
+                    WorkspaceRole.Member,
+                    TimeSpan.FromDays(7)));
             }
         }
-
-        _context.WorkspaceInvitations.AddRange(invitations);
-        await _context.SaveChangesAsync(default);
+        await Task.CompletedTask;
     }
 
-    private async Task<List<Page>> SeedPagesAndBlocksAsync(IReadOnlyList<Workspace> workspaces, IReadOnlyList<User> users, int pagesPerWorkspace, int blocksPerPage)
+    #endregion
+
+    #region 3. Document
+
+    private async Task<List<Page>> SeedPagesAndBlocksAsync(List<Workspace> workspaces, List<User> users, int pagesPerWorkspace, int blocksPerPage)
     {
         var pages = new List<Page>();
         foreach (var workspace in workspaces)
         {
-            Page? rootPage = null;
             for (var i = 0; i < pagesPerWorkspace; i++)
             {
-                var page = Page.Create(
-                    workspace.Id,
-                    Pick(users).Id,
-                    $"Page {i + 1:D2} - {workspace.Name}",
-                    i > 0 && i % 4 != 0 ? rootPage?.Id : null);
-
+                var page = Page.Create(workspace.Id, Pick(users).Id, $"Page {i + 1} in {workspace.Name}");
                 pages.Add(page);
-                if (i == 0) rootPage = page;
             }
         }
-
         _context.Pages.AddRange(pages);
-        await _context.SaveChangesAsync(default);
+        await _context.SaveChangesAsync();
 
-        var blockTypes = new[] { "heading1", "heading2", "paragraph", "quote", "code", "todo" };
-        var blocks = new List<Block>();
         foreach (var page in pages)
         {
             for (var i = 0; i < blocksPerPage; i++)
             {
-                var type = blockTypes[i % blockTypes.Length];
-                var payload = type == "code"
-                    ? $$"""{"language":"csharp","text":"// block {{i + 1}} in {{page.Title}}"}"""
-                    : $$"""{"text":"Block {{i + 1}} in {{page.Title}}"}""";
-
-                blocks.Add(Block.Create(page.Id, Pick(users).Id, type, payload, i + 1));
+                _context.Blocks.Add(Block.Create(
+                    page.Id, 
+                    page.CreatedByUserId, 
+                    (i % 2 == 0 ? BlockType.Paragraph : BlockType.Heading1).ToString().ToLower(), 
+                    "{\"text\": \"Content block " + i + "\"}", 
+                    i + 1));
             }
         }
-
-        _context.Blocks.AddRange(blocks);
-        await _context.SaveChangesAsync(default);
         return pages;
     }
 
+    private async Task SeedPageMentionsAsync(List<Page> pages, List<User> users)
+    {
+        foreach (var page in pages.Take(10))
+        {
+            _context.PageMentions.Add(PageMention.Create(page.Id, Pick(users).Id, Pick(users).Id));
+        }
+        await Task.CompletedTask;
+    }
+
+    #endregion
+
+    #region 4. Board
+
     private async Task<BoardSeedData> SeedBoardsAsync(
-        IReadOnlyList<Workspace> workspaces,
-        IReadOnlyList<User> users,
+        List<Workspace> workspaces,
+        List<User> users,
         int boardsPerWorkspace,
         int listsPerBoard,
         int cardsPerList,
@@ -275,277 +301,190 @@ public class ApplicationDbContextInitialiser
         {
             for (var i = 0; i < boardsPerWorkspace; i++)
             {
-                boards.Add(Board.Create(workspace.Id, Pick(users).Id, $"Board {i + 1:D2} - {workspace.Name}"));
+                boards.Add(Board.Create(workspace.Id, Pick(users).Id, $"Board {i + 1} - {workspace.Name}"));
             }
         }
         _context.Boards.AddRange(boards);
-        await _context.SaveChangesAsync(default);
-
-        var boardMembers = new List<BoardMember>();
-        var workspaceMembers = await _context.WorkspaceMembers.AsNoTracking().ToListAsync();
-        foreach (var board in boards)
-        {
-            var members = workspaceMembers
-                .Where(m => m.WorkspaceId == board.WorkspaceId)
-                .OrderBy(_ => _random.Next())
-                .Take(Math.Max(2, listsPerBoard))
-                .ToList();
-
-            foreach (var member in members)
-            {
-                boardMembers.Add(BoardMember.Create(board.Id, member.UserId, member.Role == MemberRole.Admin ? "admin" : "member"));
-            }
-        }
-        _context.BoardMembers.AddRange(boardMembers);
-        await _context.SaveChangesAsync(default);
+        await _context.SaveChangesAsync();
 
         var lists = new List<BoardList>();
         foreach (var board in boards)
         {
             for (var i = 0; i < listsPerBoard; i++)
             {
-                lists.Add(BoardList.Create(board.Id, $"List {i + 1:D2}", i + 1));
+                lists.Add(BoardList.Create(board.Id, $"List {i + 1}", i + 1));
             }
         }
         _context.BoardLists.AddRange(lists);
-        await _context.SaveChangesAsync(default);
+        await _context.SaveChangesAsync();
 
         var cards = new List<Card>();
         foreach (var list in lists)
         {
             for (var i = 0; i < cardsPerList; i++)
             {
-                cards.Add(Card.Create(list.Id, Pick(users).Id, $"Card {i + 1:D2} - {list.Title}", i + 1));
+                var card = Card.Create(list.Id, Pick(users).Id, $"Card {i + 1} in {list.Title}", i + 1);
+                card.UpdateStatus(i % 5 == 0 ? CardStatus.Done : CardStatus.InProgress);
+                card.UpdatePriority(i % 3 == 0 ? CardPriority.High : CardPriority.Medium);
+                cards.Add(card);
             }
         }
         _context.Cards.AddRange(cards);
+        await _context.SaveChangesAsync();
 
-        var labels = new List<Label>();
+        // Seed Board Members
         foreach (var board in boards)
         {
-            labels.Add(Label.Create(board.Id, "#ef4444", "Bug"));
-            labels.Add(Label.Create(board.Id, "#10b981", "Feature"));
-            labels.Add(Label.Create(board.Id, "#3b82f6", "API"));
-        }
-        _context.Labels.AddRange(labels);
-        await _context.SaveChangesAsync(default);
-
-        var listById = lists.ToDictionary(x => x.Id);
-        var labelsByBoard = labels.GroupBy(x => x.BoardId).ToDictionary(g => g.Key, g => g.ToList());
-        var boardMembersByBoard = boardMembers.GroupBy(x => x.BoardId).ToDictionary(g => g.Key, g => g.ToList());
-
-        var cardMembers = new List<CardMember>();
-        var cardLabels = new List<CardLabel>();
-        foreach (var card in cards)
-        {
-            var boardId = listById[card.ListId].BoardId;
-            foreach (var member in boardMembersByBoard[boardId].OrderBy(_ => _random.Next()).Take(2))
+            var wsMembers = await _context.WorkspaceMembers.Where(m => m.WorkspaceId == board.WorkspaceId).ToListAsync();
+            foreach (var member in wsMembers.Take(5))
             {
-                cardMembers.Add(CardMember.Create(card.Id, member.UserId, card.CreatedByUserId));
-            }
-
-            foreach (var label in labelsByBoard[boardId].OrderBy(_ => _random.Next()).Take(2))
-            {
-                cardLabels.Add(CardLabel.Create(card.Id, label.Id));
+                _context.BoardMembers.Add(BoardMember.Create(board.Id, member.UserId, BoardRole.Member));
             }
         }
-        _context.CardMembers.AddRange(cardMembers);
-        _context.CardLabels.AddRange(cardLabels);
-        await _context.SaveChangesAsync(default);
-
-        var checklists = new List<Checklist>();
-        foreach (var card in cards)
-        {
-            for (var i = 0; i < checklistsPerCard; i++)
-            {
-                checklists.Add(Checklist.Create(card.Id, $"Checklist {i + 1}", i + 1));
-            }
-        }
-        _context.Checklists.AddRange(checklists);
-        await _context.SaveChangesAsync(default);
-
-        var checklistItems = new List<ChecklistItem>();
-        foreach (var checklist in checklists)
-        {
-            for (var i = 0; i < itemsPerChecklist; i++)
-            {
-                checklistItems.Add(ChecklistItem.Create(checklist.Id, $"Item {i + 1} - {checklist.Title}", i + 1));
-            }
-        }
-        _context.ChecklistItems.AddRange(checklistItems);
-        await _context.SaveChangesAsync(default);
 
         return new BoardSeedData(boards, lists, cards);
     }
 
-    private async Task SeedPermissionsAsync(IReadOnlyList<Workspace> workspaces, IReadOnlyList<User> users, IReadOnlyList<Page> pages, IReadOnlyList<Board> boards, int permissionsPerWorkspace)
+    private async Task SeedBoardViewsAsync(List<Board> boards, List<User> users)
     {
-        var permissions = new List<Permission>();
-        foreach (var workspace in workspaces)
+        foreach (var board in boards)
         {
-            var workspaceUsers = users.OrderBy(_ => _random.Next()).Take(Math.Min(permissionsPerWorkspace, users.Count)).ToList();
-            var workspacePages = pages.Where(x => x.WorkspaceId == workspace.Id).ToList();
-            var workspaceBoards = boards.Where(x => x.WorkspaceId == workspace.Id).ToList();
+            _context.BoardViews.Add(BoardView.Create(board.Id, Pick(users).Id, Pick(new[] { ViewMode.Kanban, ViewMode.List, ViewMode.Calendar })));
+        }
+        await Task.CompletedTask;
+    }
 
-            foreach (var user in workspaceUsers)
+    private async Task SeedCardLinksAsync(List<Card> cards)
+    {
+        for (var i = 0; i < cards.Count - 1; i += 10)
+        {
+            _context.CardLinks.Add(CardLink.Create(cards[i].Id, cards[i + 1].Id, CardLinkType.RelatesTo));
+        }
+        await Task.CompletedTask;
+    }
+
+    #endregion
+
+    #region 5. Calendar
+
+    private async Task SeedCalendarDataAsync(List<User> users, List<Card> cards)
+    {
+        foreach (var user in users.Take(5))
+        {
+            var integration = CalendarIntegration.Create(user.Id, CalendarProvider.Google, "google-calendar-id");
+            _context.CalendarIntegrations.Add(integration);
+            
+            var card = cards.FirstOrDefault();
+            if (card != null)
             {
-                if (workspacePages.Count > 0)
-                {
-                    permissions.Add(Permission.CreateForUser(workspace.Id, ResourceType.Page, Pick(workspacePages).Id, user.Id, PermissionLevel.Editor));
-                }
-                if (workspaceBoards.Count > 0)
-                {
-                    permissions.Add(Permission.CreateForUser(workspace.Id, ResourceType.Board, Pick(workspaceBoards).Id, user.Id, PermissionLevel.Commenter));
-                }
+                _context.CalendarEvents.Add(CalendarEvent.Create(
+                    integration.Id, 
+                    "ext-" + Guid.NewGuid().ToString("N"),
+                    ResourceType.Card,
+                    card.Id));
             }
         }
+        await Task.CompletedTask;
+    }
 
-        _context.Permissions.AddRange(permissions);
-        await _context.SaveChangesAsync(default);
+    #endregion
+
+    #region 6. Shared / Collaboration
+
+    private async Task SeedPermissionsAsync(List<Workspace> workspaces, List<User> users, List<Page> pages, List<Board> boards, int permissionsPerWorkspace)
+    {
+        foreach (var workspace in workspaces.Take(5))
+        {
+            var page = pages.FirstOrDefault(p => p.WorkspaceId == workspace.Id);
+            if (page != null)
+                _context.Permissions.Add(Permission.CreateForUser(workspace.Id, ResourceType.Page, page.Id, Pick(users).Id, PermissionLevel.Editor));
+        }
+        await Task.CompletedTask;
     }
 
     private async Task SeedCollaborationAsync(
-        IReadOnlyList<Workspace> workspaces,
-        IReadOnlyList<User> users,
-        IReadOnlyList<Page> pages,
-        IReadOnlyList<BoardList> lists,
-        IReadOnlyList<Card> cards,
+        List<Workspace> workspaces,
+        List<User> users,
+        List<Page> pages,
+        List<BoardList> lists,
+        List<Card> cards,
         int commentsPerWorkspace,
         int attachmentsPerWorkspace,
         int reactionsPerWorkspace,
         int notificationsPerUser)
     {
-        var blocks = await _context.Blocks.AsNoTracking().ToListAsync();
-        var listBoardMap = lists.ToDictionary(x => x.Id, x => x.BoardId);
-        var boardWorkspaceMap = await _context.Boards.AsNoTracking().ToDictionaryAsync(x => x.Id, x => x.WorkspaceId);
-
-        var comments = new List<Comment>();
-        var attachments = new List<Attachment>();
-        var reactions = new List<Reaction>();
-        var notifications = new List<Notification>();
-
-        foreach (var workspace in workspaces)
+        foreach (var workspace in workspaces.Take(5))
         {
-            var workspaceUsers = users.OrderBy(_ => _random.Next()).Take(Math.Min(users.Count, Math.Max(4, commentsPerWorkspace / 2))).ToList();
-            var workspacePages = pages.Where(x => x.WorkspaceId == workspace.Id).ToList();
-            var workspaceBlocks = blocks.Where(x => workspacePages.Any(p => p.Id == x.PageId)).ToList();
-            var workspaceCards = cards.Where(c => boardWorkspaceMap[listBoardMap[c.ListId]] == workspace.Id).ToList();
-
-            for (var i = 0; i < commentsPerWorkspace; i++)
+            var card = cards.FirstOrDefault();
+            if (card != null)
             {
-                var user = Pick(workspaceUsers);
-                if (i % 2 == 0 && workspaceCards.Count > 0)
-                {
-                    comments.Add(Comment.Create(workspace.Id, ResourceType.Card, Pick(workspaceCards).Id, user.Id, $"Comment card #{i + 1}"));
-                }
-                else if (workspacePages.Count > 0)
-                {
-                    comments.Add(Comment.Create(workspace.Id, ResourceType.Page, Pick(workspacePages).Id, user.Id, $"Comment page #{i + 1}"));
-                }
-            }
-
-            for (var i = 0; i < attachmentsPerWorkspace; i++)
-            {
-                if (workspaceCards.Count == 0) break;
-                var user = Pick(workspaceUsers);
-                attachments.Add(Attachment.Create(
-                    workspace.Id,
-                    ResourceType.Card,
-                    Pick(workspaceCards).Id,
-                    user.Id,
-                    $"file-{i + 1}.txt",
-                    $"https://cdn.Notrelix.local/{workspace.Id:N}/file-{i + 1}.txt"));
-            }
-
-            for (var i = 0; i < reactionsPerWorkspace; i++)
-            {
-                if (workspaceBlocks.Count == 0) break;
-                var user = Pick(workspaceUsers);
-                reactions.Add(Reaction.Create(ResourceType.Block, Pick(workspaceBlocks).Id, user.Id, i % 2 == 0 ? ":+1:" : ":fire:"));
+                _context.Comments.Add(Comment.Create(workspace.Id, ResourceType.Card, card.Id, Pick(users).Id, "Great progress on this card!"));
+                
+                _context.Attachments.Add(Attachment.Create(
+                    workspace.Id, 
+                    ResourceType.Card, 
+                    card.Id, 
+                    Pick(users).Id, 
+                    "spec.pdf", 
+                    "https://storage.notrelix.com/spec.pdf"));
             }
         }
 
-        foreach (var user in users)
+        foreach (var user in users.Take(10))
         {
-            for (var i = 0; i < notificationsPerUser; i++)
-            {
-                var workspace = Pick(workspaces);
-                notifications.Add(Notification.Create(
-                    workspace.Id,
-                    user.Id,
-                    i % 2 == 0 ? "card.assigned" : "comment.created",
-                    $$"""{"message":"Notification #{{i + 1}} for {{user.Name}}"}"""));
-            }
+            _context.Notifications.Add(Notification.Create(
+                workspaces.First().Id, 
+                user.Id, 
+                "test.notification", 
+                users.First().Id, 
+                "{\"msg\": \"Hello\"}"));
         }
-
-        _context.Comments.AddRange(comments);
-        _context.Attachments.AddRange(attachments);
-        _context.Reactions.AddRange(reactions);
-        _context.Notifications.AddRange(notifications);
-        await _context.SaveChangesAsync(default);
+        await Task.CompletedTask;
     }
 
-    private async Task SeedActivityLogsAsync(IReadOnlyList<Workspace> workspaces, IReadOnlyList<User> users, IReadOnlyList<Page> pages, IReadOnlyList<Card> cards, int logsPerWorkspace)
+    private async Task SeedActivityLogsAsync(List<Workspace> workspaces, List<User> users, List<Page> pages, List<Card> cards, int logsPerWorkspace)
     {
-        var logs = new List<ActivityLog>();
-        foreach (var workspace in workspaces)
+        foreach (var workspace in workspaces.Take(5))
         {
-            var workspacePages = pages.Where(x => x.WorkspaceId == workspace.Id).ToList();
-            for (var i = 0; i < logsPerWorkspace; i++)
+            var page = pages.FirstOrDefault(p => p.WorkspaceId == workspace.Id);
+            if (page != null)
             {
-                var actor = Pick(users);
-                if (i % 2 == 0 && workspacePages.Count > 0)
-                {
-                    var page = Pick(workspacePages);
-                    logs.Add(ActivityLog.Create(actor.Id, ActivityAction.Update, "page", page.Id, page.Title, workspace.Id, new { field = "title" }));
-                }
-                else if (cards.Count > 0)
-                {
-                    var card = Pick(cards);
-                    logs.Add(ActivityLog.Create(actor.Id, ActivityAction.Comment, "card", card.Id, card.Title, workspace.Id, new { action = "comment" }));
-                }
+                _context.ActivityLogs.Add(ActivityLog.Create(
+                    workspace.Id, 
+                    Pick(users).Id, 
+                    "page.updated", 
+                    ResourceType.Page, 
+                    page.Id, 
+                    page.Title, 
+                    "{}"));
             }
         }
-
-        _context.ActivityLogs.AddRange(logs);
-        await _context.SaveChangesAsync(default);
+        await Task.CompletedTask;
     }
 
-    private async Task LogSeedSummaryAsync(string stage)
-    {
-        var dbName = _context.Database.GetDbConnection().Database;
-        _logger.LogInformation(
-            "Seed summary ({Stage}) on db '{Database}': users={Users}, workspaces={Workspaces}, pages={Pages}, boards={Boards}, cards={Cards}",
-            stage,
-            dbName,
-            await _context.Users.CountAsync(),
-            await _context.Workspaces.CountAsync(),
-            await _context.Pages.CountAsync(),
-            await _context.Boards.CountAsync(),
-            await _context.Cards.CountAsync());
-    }
+    #endregion
 
     private SeedScale BuildScale()
     {
         return new SeedScale(
-            UserCount: GetEnvInt("SEED_USERS", 60),
-            SessionsPerUser: GetEnvInt("SEED_SESSIONS_PER_USER", 2),
-            WorkspaceCount: GetEnvInt("SEED_WORKSPACES", 12),
-            MembersPerWorkspace: GetEnvInt("SEED_MEMBERS_PER_WORKSPACE", 10),
-            InvitationsPerWorkspace: GetEnvInt("SEED_INVITES_PER_WORKSPACE", 6),
-            PagesPerWorkspace: GetEnvInt("SEED_PAGES_PER_WORKSPACE", 18),
-            BlocksPerPage: GetEnvInt("SEED_BLOCKS_PER_PAGE", 10),
-            BoardsPerWorkspace: GetEnvInt("SEED_BOARDS_PER_WORKSPACE", 5),
-            ListsPerBoard: GetEnvInt("SEED_LISTS_PER_BOARD", 4),
-            CardsPerList: GetEnvInt("SEED_CARDS_PER_LIST", 16),
-            ChecklistsPerCard: GetEnvInt("SEED_CHECKLISTS_PER_CARD", 2),
-            ItemsPerChecklist: GetEnvInt("SEED_ITEMS_PER_CHECKLIST", 5),
-            PermissionsPerWorkspace: GetEnvInt("SEED_PERMISSIONS_PER_WORKSPACE", 14),
-            CommentsPerWorkspace: GetEnvInt("SEED_COMMENTS_PER_WORKSPACE", 40),
-            AttachmentsPerWorkspace: GetEnvInt("SEED_ATTACHMENTS_PER_WORKSPACE", 20),
-            ReactionsPerWorkspace: GetEnvInt("SEED_REACTIONS_PER_WORKSPACE", 24),
-            NotificationsPerUser: GetEnvInt("SEED_NOTIFICATIONS_PER_USER", 8),
-            ActivityLogsPerWorkspace: GetEnvInt("SEED_ACTIVITY_LOGS_PER_WORKSPACE", 60));
+            UserCount: GetEnvInt("SEED_USERS", 20),
+            SessionsPerUser: GetEnvInt("SEED_SESSIONS_PER_USER", 1),
+            WorkspaceCount: GetEnvInt("SEED_WORKSPACES", 5),
+            MembersPerWorkspace: GetEnvInt("SEED_MEMBERS_PER_WORKSPACE", 5),
+            InvitationsPerWorkspace: GetEnvInt("SEED_INVITES_PER_WORKSPACE", 2),
+            PagesPerWorkspace: GetEnvInt("SEED_PAGES_PER_WORKSPACE", 5),
+            BlocksPerPage: GetEnvInt("SEED_BLOCKS_PER_PAGE", 5),
+            BoardsPerWorkspace: GetEnvInt("SEED_BOARDS_PER_WORKSPACE", 2),
+            ListsPerBoard: GetEnvInt("SEED_LISTS_PER_BOARD", 3),
+            CardsPerList: GetEnvInt("SEED_CARDS_PER_LIST", 5),
+            ChecklistsPerCard: GetEnvInt("SEED_CHECKLISTS_PER_CARD", 1),
+            ItemsPerChecklist: GetEnvInt("SEED_ITEMS_PER_CHECKLIST", 3),
+            PermissionsPerWorkspace: GetEnvInt("SEED_PERMISSIONS_PER_WORKSPACE", 5),
+            CommentsPerWorkspace: GetEnvInt("SEED_COMMENTS_PER_WORKSPACE", 10),
+            AttachmentsPerWorkspace: GetEnvInt("SEED_ATTACHMENTS_PER_WORKSPACE", 5),
+            ReactionsPerWorkspace: GetEnvInt("SEED_REACTIONS_PER_WORKSPACE", 10),
+            NotificationsPerUser: GetEnvInt("SEED_NOTIFICATIONS_PER_USER", 5),
+            ActivityLogsPerWorkspace: GetEnvInt("SEED_ACTIVITY_LOGS_PER_WORKSPACE", 10));
     }
 
     private static int GetEnvInt(string key, int fallback)
@@ -556,11 +495,6 @@ public class ApplicationDbContextInitialiser
 
     private T Pick<T>(IReadOnlyList<T> source)
     {
-        if (source.Count == 0)
-        {
-            throw new InvalidOperationException("Cannot pick from an empty source.");
-        }
-
         return source[_random.Next(source.Count)];
     }
 
@@ -585,7 +519,7 @@ public class ApplicationDbContextInitialiser
         int ActivityLogsPerWorkspace);
 
     private sealed record BoardSeedData(
-        IReadOnlyList<Board> Boards,
-        IReadOnlyList<BoardList> Lists,
-        IReadOnlyList<Card> Cards);
+        List<Board> Boards,
+        List<BoardList> Lists,
+        List<Card> Cards);
 }

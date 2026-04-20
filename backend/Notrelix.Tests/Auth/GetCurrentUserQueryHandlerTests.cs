@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Features.Auth.Queries.GetCurrentUser;
-using Notrelix.Domain.Entities;
+using Notrelix.Application.Features.Identity.Queries.GetCurrentUser;
+using Notrelix.Domain.Entities.Identity;
 
 namespace Notrelix.Tests.Auth;
 

@@ -1,7 +1,7 @@
 import { Star } from "lucide-react"
 
-import { Badge } from "@/registry/new-york-v4/ui/badge"
-import { Avatar, AvatarFallback } from "@/registry/new-york-v4/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 type Testimonial = {
   name: string

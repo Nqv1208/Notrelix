@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import { Checkbox } from "@/registry/new-york-v4/ui/checkbox"
+import { Checkbox } from "@/components/ui/checkbox"
 import type { Block, BlockType } from "../types/document.types"
 import { useEditorStore } from "../store/editor-store"
 
