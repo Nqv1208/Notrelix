@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Features.Auth.Commands.UpdateProfile;
-using Notrelix.Domain.Entities;
+using Notrelix.Application.Features.Identity.Commands.UpdateProfile;
+using Notrelix.Domain.Entities.Identity;
 
 namespace Notrelix.Tests.Auth;
 

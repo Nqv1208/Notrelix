@@ -3,12 +3,12 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Notrelix.Infrastructure.Data;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace Notrelix.Infrastructure.Migrations
+namespace Notrelix.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
     partial class ApplicationDbContextModelSnapshot : ModelSnapshot
@@ -22,113 +22,55 @@ namespace Notrelix.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.ActivityLog", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.Board", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("action");
-
-                    b.Property<Guid>("ActorId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("actor_id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("Metadata")
+                    b.Property<string>("Background")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("jsonb")
                         .HasDefaultValue("{}")
-                        .HasColumnName("metadata");
-
-                    b.Property<Guid>("TargetId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("target_id");
-
-                    b.Property<string>("TargetTitle")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("target_title");
-
-                    b.Property<string>("TargetType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("target_type");
-
-                    b.Property<Guid?>("WorkspaceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("workspace_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ActorId");
-
-                    b.HasIndex("CreatedAt");
-
-                    b.HasIndex("WorkspaceId");
-
-                    b.HasIndex("TargetType", "TargetId");
-
-                    b.HasIndex("WorkspaceId", "CreatedAt");
-
-                    b.ToTable("activity_logs", (string)null);
-                });
-
-            modelBuilder.Entity("Notrelix.Domain.Entities.Attachment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("background");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<string>("FileName")
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("IsArchived")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_archived");
+
+                    b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
-                        .HasColumnName("filename");
+                        .HasColumnName("title");
 
-                    b.Property<string>("MimeType")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("mime_type");
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
-                    b.Property<Guid>("ResourceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("resource_id");
-
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("Visibility")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("resource_type");
-
-                    b.Property<long?>("SizeBytes")
-                        .HasColumnType("bigint")
-                        .HasColumnName("size_bytes");
-
-                    b.Property<Guid>("UploadedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("uploaded_by");
-
-                    b.Property<string>("Url")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
-                        .HasColumnName("url");
+                        .HasDefaultValue("Workspace")
+                        .HasColumnName("visibility");
 
                     b.Property<Guid>("WorkspaceId")
                         .HasColumnType("uuid")
@@ -136,12 +78,512 @@ namespace Notrelix.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ResourceType", "ResourceId");
+                    b.HasIndex("WorkspaceId", "IsArchived")
+                        .HasDatabaseName("idx_boards_workspace");
 
-                    b.ToTable("attachments", (string)null);
+                    b.ToTable("boards", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Block", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.BoardList", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("board_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsArchived")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_archived");
+
+                    b.Property<double>("Position")
+                        .HasColumnType("double precision")
+                        .HasColumnName("position");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoardId");
+
+                    b.ToTable("lists", (string)null);
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.BoardMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("board_id");
+
+                    b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("joined_at");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("Member")
+                        .HasColumnName("role");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoardId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("board_members", (string)null);
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.BoardView", b =>
+                {
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Filters")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ViewMode")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Kanban");
+
+                    b.HasKey("BoardId", "UserId");
+
+                    b.ToTable("board_views", (string)null);
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.Card", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("BoardListId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<string>("Cover")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("cover");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DescriptionMd")
+                        .HasColumnType("text")
+                        .HasColumnName("description_md");
+
+                    b.Property<DateTime?>("DueDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("due_date");
+
+                    b.Property<bool>("IsArchived")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_archived");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_deleted");
+
+                    b.Property<Guid?>("LinkedPageId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ListId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("list_id");
+
+                    b.Property<double>("Position")
+                        .HasColumnType("double precision")
+                        .HasColumnName("position");
+
+                    b.Property<string>("Priority")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("Low")
+                        .HasColumnName("priority");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("start_date");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("Open")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoardListId");
+
+                    b.HasIndex("LinkedPageId");
+
+                    b.HasIndex("ListId", "Position")
+                        .HasDatabaseName("idx_cards_list_position")
+                        .HasFilter("is_deleted = false");
+
+                    b.ToTable("cards", (string)null);
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.CardLabel", b =>
+                {
+                    b.Property<Guid>("CardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("card_id");
+
+                    b.Property<Guid>("LabelId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("label_id");
+
+                    b.HasKey("CardId", "LabelId");
+
+                    b.HasIndex("LabelId");
+
+                    b.ToTable("card_labels", (string)null);
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.CardLink", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("LinkType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasDefaultValue("RelatesTo");
+
+                    b.Property<Guid>("SourceCardId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TargetCardId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TargetCardId");
+
+                    b.HasIndex("SourceCardId", "TargetCardId", "LinkType")
+                        .IsUnique();
+
+                    b.ToTable("card_links", (string)null);
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.CardMember", b =>
+                {
+                    b.Property<Guid>("CardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("card_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("assigned_at");
+
+                    b.Property<Guid?>("AssignedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("assigned_by");
+
+                    b.HasKey("CardId", "UserId");
+
+                    b.ToTable("card_members", (string)null);
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.Checklist", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("card_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<double>("Position")
+                        .HasColumnType("double precision")
+                        .HasColumnName("position");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasDefaultValue("Checklist")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CardId");
+
+                    b.ToTable("checklists", (string)null);
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.ChecklistItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("AssigneeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("assignee_id");
+
+                    b.Property<Guid>("ChecklistId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("checklist_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("DueDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("due_date");
+
+                    b.Property<bool>("IsChecked")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_checked");
+
+                    b.Property<double>("Position")
+                        .HasColumnType("double precision")
+                        .HasColumnName("position");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChecklistId");
+
+                    b.ToTable("checklist_items", (string)null);
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.Label", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("board_id");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("color");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoardId");
+
+                    b.ToTable("labels", (string)null);
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Calendar.CalendarEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ExternalEventId")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("IntegrationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ResourceType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("SyncHash")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTime>("SyncedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IntegrationId", "ExternalEventId")
+                        .IsUnique();
+
+                    b.HasIndex("ResourceType", "ResourceId");
+
+                    b.ToTable("calendar_events", (string)null);
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Calendar.CalendarIntegration", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AccessToken")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CalendarId")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastSyncedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("ProviderAccountEmail")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("RefreshToken")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SyncDirection")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasDefaultValue("Both");
+
+                    b.Property<DateTime?>("TokenExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("WorkspaceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkspaceId");
+
+                    b.HasIndex("UserId", "Provider")
+                        .IsUnique();
+
+                    b.ToTable("calendar_integrations", (string)null);
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Document.Block", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -212,19 +654,17 @@ namespace Notrelix.Infrastructure.Migrations
                     b.ToTable("blocks", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Board", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Document.Page", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("Background")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("jsonb")
-                        .HasDefaultValue("{}")
-                        .HasColumnName("background");
+                    b.Property<string>("CoverUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("cover_url");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -234,159 +674,26 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("Description")
-                        .HasColumnType("text")
-                        .HasColumnName("description");
+                    b.Property<DateTime?>("Deadline")
+                        .HasColumnType("timestamp with time zone");
 
-                    b.Property<bool>("IsArchived")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_archived");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("title");
-
-                    b.Property<DateTime?>("UpdatedAt")
+                    b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("deleted_at");
 
-                    b.Property<string>("Visibility")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasDefaultValue("workspace")
-                        .HasColumnName("visibility");
+                    b.Property<short>("Depth")
+                        .HasColumnType("smallint")
+                        .HasColumnName("depth");
 
-                    b.Property<Guid>("WorkspaceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("workspace_id");
+                    b.Property<string>("IconType")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("icon_type");
 
-                    b.HasKey("Id");
-
-                    b.HasIndex("WorkspaceId", "IsArchived")
-                        .HasDatabaseName("idx_boards_workspace");
-
-                    b.ToTable("boards", (string)null);
-                });
-
-            modelBuilder.Entity("Notrelix.Domain.Entities.BoardList", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("BoardId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("board_id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("IsArchived")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_archived");
-
-                    b.Property<double>("Position")
-                        .HasColumnType("double precision")
-                        .HasColumnName("position");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("title");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BoardId");
-
-                    b.ToTable("lists", (string)null);
-                });
-
-            modelBuilder.Entity("Notrelix.Domain.Entities.BoardMember", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("BoardId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("board_id");
-
-                    b.Property<DateTime>("JoinedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("joined_at");
-
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasDefaultValue("member")
-                        .HasColumnName("role");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BoardId", "UserId")
-                        .IsUnique();
-
-                    b.ToTable("board_members", (string)null);
-                });
-
-            modelBuilder.Entity("Notrelix.Domain.Entities.Card", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("completed_at");
-
-                    b.Property<string>("Cover")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("cover");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("CreatedByUserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<string>("DescriptionMd")
-                        .HasColumnType("text")
-                        .HasColumnName("description_md");
-
-                    b.Property<DateTime?>("DueDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("due_date");
+                    b.Property<string>("IconValue")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("icon_value");
 
                     b.Property<bool>("IsArchived")
                         .ValueGeneratedOnAdd()
@@ -400,178 +707,389 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("is_deleted");
 
-                    b.Property<Guid>("ListId")
+                    b.Property<bool>("IsTemplate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_template");
+
+                    b.Property<Guid?>("ParentId")
                         .HasColumnType("uuid")
-                        .HasColumnName("list_id");
+                        .HasColumnName("parent_id");
 
                     b.Property<double>("Position")
                         .HasColumnType("double precision")
                         .HasColumnName("position");
 
-                    b.Property<string>("Priority")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("priority");
-
-                    b.Property<DateTime?>("StartDate")
+                    b.Property<DateTime?>("PublishedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("start_date");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasDefaultValue("open")
-                        .HasColumnName("status");
+                        .HasColumnName("published_at");
 
                     b.Property<string>("Title")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
+                        .HasDefaultValue("Untitled")
                         .HasColumnName("title");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("ListId", "Position")
-                        .HasDatabaseName("idx_cards_list_position")
-                        .HasFilter("is_deleted = false");
+                    b.HasIndex("ParentId")
+                        .HasDatabaseName("idx_pages_parent");
 
-                    b.ToTable("cards", (string)null);
+                    b.HasIndex("WorkspaceId", "IsDeleted", "Position")
+                        .HasDatabaseName("idx_pages_workspace");
+
+                    b.ToTable("pages", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.CardLabel", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Identity.OAuthAccount", b =>
                 {
-                    b.Property<Guid>("CardId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("card_id");
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
 
-                    b.Property<Guid>("LabelId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("label_id");
+                    b.Property<string>("AccessToken")
+                        .HasColumnType("text");
 
-                    b.HasKey("CardId", "LabelId");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
-                    b.HasIndex("LabelId");
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
-                    b.ToTable("card_labels", (string)null);
+                    b.Property<string>("ProviderId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("RawProfile")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}");
+
+                    b.Property<string>("RefreshToken")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("TokenExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("Provider", "ProviderId")
+                        .IsUnique();
+
+                    b.ToTable("oauth_accounts", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.CardMember", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Identity.Session", b =>
                 {
-                    b.Property<Guid>("CardId")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("card_id");
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DeviceInfo")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("device_info");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("ip_address");
+
+                    b.Property<bool>("IsRevoked")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_revoked");
+
+                    b.Property<string>("RefreshToken")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("refresh_token");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
                         .HasColumnName("user_id");
 
-                    b.Property<DateTime>("AssignedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("assigned_at");
+                    b.HasKey("Id");
 
-                    b.Property<Guid?>("AssignedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("assigned_by");
+                    b.HasIndex("RefreshToken")
+                        .IsUnique();
 
-                    b.HasKey("CardId", "UserId");
+                    b.HasIndex("UserId");
 
-                    b.ToTable("card_members", (string)null);
+                    b.ToTable("sessions", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Checklist", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Identity.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<Guid>("CardId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("card_id");
+                    b.Property<string>("Avatar")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("avatar");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<double>("Position")
-                        .HasColumnType("double precision")
-                        .HasColumnName("position");
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
 
-                    b.Property<string>("Title")
+                    b.Property<DateTime?>("LastLoginAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_login_at");
+
+                    b.Property<string>("Name")
                         .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasDefaultValue("Checklist")
-                        .HasColumnName("title");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("password_hash");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CardId");
-
-                    b.ToTable("checklists", (string)null);
+                    b.ToTable("users", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.ChecklistItem", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Identity.UserProfile", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("Locale")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasDefaultValue("vi")
+                        .HasColumnName("locale");
+
+                    b.Property<string>("Preferences")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("preferences");
+
+                    b.Property<string>("Theme")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("system")
+                        .HasColumnName("theme");
+
+                    b.Property<string>("Timezone")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("UTC")
+                        .HasColumnName("timezone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("user_profiles", (string)null);
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Shared.ActivityLog", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<Guid?>("AssigneeId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("assignee_id");
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("action");
 
-                    b.Property<Guid>("ChecklistId")
+                    b.Property<Guid>("ActorId")
                         .HasColumnType("uuid")
-                        .HasColumnName("checklist_id");
+                        .HasColumnName("actor_id");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<DateTime?>("DueDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("due_date");
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("ip_address");
 
-                    b.Property<bool>("IsChecked")
+                    b.Property<string>("Metadata")
+                        .IsRequired()
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_checked");
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("metadata");
 
-                    b.Property<double>("Position")
-                        .HasColumnType("double precision")
-                        .HasColumnName("position");
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_id");
 
-                    b.Property<string>("Title")
+                    b.Property<string>("ResourceTitle")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("resource_title");
+
+                    b.Property<string>("ResourceType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("resource_type");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("WorkspaceId");
+
+                    b.HasIndex("ResourceType", "ResourceId");
+
+                    b.HasIndex("WorkspaceId", "CreatedAt");
+
+                    b.ToTable("activity_logs", (string)null);
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Shared.Attachment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Filename")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
-                        .HasColumnName("title");
+                        .HasColumnName("filename");
+
+                    b.Property<string>("MimeType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("mime_type");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_id");
+
+                    b.Property<string>("ResourceType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("resource_type");
+
+                    b.Property<long?>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<Guid>("UploadedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uploaded_by");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("url");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ChecklistId");
+                    b.HasIndex("ResourceType", "ResourceId");
 
-                    b.ToTable("checklist_items", (string)null);
+                    b.ToTable("attachments", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Comment", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Shared.Comment", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("Content")
+                    b.Property<string>("ContentMd")
                         .IsRequired()
                         .HasMaxLength(5000)
                         .HasColumnType("character varying(5000)")
@@ -657,40 +1175,7 @@ namespace Notrelix.Infrastructure.Migrations
                     b.ToTable("comments", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Label", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("BoardId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("board_id");
-
-                    b.Property<string>("Color")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("color");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("Name")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("name");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BoardId");
-
-                    b.ToTable("labels", (string)null);
-                });
-
-            modelBuilder.Entity("Notrelix.Domain.Entities.Notification", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Shared.Notification", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -754,102 +1239,39 @@ namespace Notrelix.Infrastructure.Migrations
                     b.ToTable("notifications", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Page", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Shared.PageMention", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnType("uuid");
 
-                    b.Property<string>("CoverUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("cover_url");
+                    b.Property<Guid?>("BlockId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("CreatedByUserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
+                    b.Property<Guid>("MentionedBy")
+                        .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                    b.Property<Guid>("MentionedUserId")
+                        .HasColumnType("uuid");
 
-                    b.Property<short>("Depth")
-                        .HasColumnType("smallint")
-                        .HasColumnName("depth");
-
-                    b.Property<string>("IconType")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("icon_type");
-
-                    b.Property<string>("IconValue")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("icon_value");
-
-                    b.Property<bool>("IsArchived")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_archived");
-
-                    b.Property<bool>("IsDeleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_deleted");
-
-                    b.Property<bool>("IsTemplate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_template");
-
-                    b.Property<Guid?>("ParentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("parent_id");
-
-                    b.Property<double>("Position")
-                        .HasColumnType("double precision")
-                        .HasColumnName("position");
-
-                    b.Property<DateTime?>("PublishedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("published_at");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasDefaultValue("Untitled")
-                        .HasColumnName("title");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid>("WorkspaceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("workspace_id");
+                    b.Property<Guid>("PageId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ParentId")
-                        .HasDatabaseName("idx_pages_parent");
+                    b.HasIndex("MentionedBy");
 
-                    b.HasIndex("WorkspaceId", "IsDeleted", "Position")
-                        .HasDatabaseName("idx_pages_workspace");
+                    b.HasIndex("MentionedUserId");
 
-                    b.ToTable("pages", (string)null);
+                    b.HasIndex("PageId");
+
+                    b.ToTable("page_mentions", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Permission", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Shared.Permission", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -923,7 +1345,7 @@ namespace Notrelix.Infrastructure.Migrations
                     b.ToTable("permissions", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Reaction", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Shared.Reaction", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -962,160 +1384,15 @@ namespace Notrelix.Infrastructure.Migrations
                     b.ToTable("reactions", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Session", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Workspace.Workspace", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("DeviceInfo")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("device_info");
-
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("expires_at");
-
-                    b.Property<string>("IpAddress")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("ip_address");
-
-                    b.Property<bool>("IsRevoked")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_revoked");
-
-                    b.Property<string>("RefreshToken")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasColumnName("refresh_token");
-
-                    b.Property<DateTime?>("RevokedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("revoked_at");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RefreshToken")
-                        .IsUnique();
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("sessions", (string)null);
-                });
-
-            modelBuilder.Entity("Notrelix.Domain.Entities.User", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Avatar")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("avatar");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<DateTime?>("LastLoginAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_login_at");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("name");
-
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasColumnName("password_hash");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("status");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("users", (string)null);
-                });
-
-            modelBuilder.Entity("Notrelix.Domain.Entities.UserProfile", b =>
-                {
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<string>("Locale")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)")
-                        .HasDefaultValue("en")
-                        .HasColumnName("locale");
-
-                    b.Property<string>("Preferences")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("jsonb")
-                        .HasDefaultValue("{}")
-                        .HasColumnName("preferences");
-
-                    b.Property<string>("Timezone")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasDefaultValue("UTC")
-                        .HasColumnName("timezone");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("UserId");
-
-                    b.ToTable("user_profiles", (string)null);
-                });
-
-            modelBuilder.Entity("Notrelix.Domain.Entities.Workspace", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
+                    b.Property<string>("CoverUrl")
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -1136,6 +1413,12 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("is_archived");
 
+                    b.Property<bool>("IsPersonal")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_personal");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -1151,7 +1434,7 @@ namespace Notrelix.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasDefaultValue("free")
+                        .HasDefaultValue("Free")
                         .HasColumnName("plan");
 
                     b.Property<string>("Settings")
@@ -1166,12 +1449,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("slug");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("type");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -1192,7 +1469,7 @@ namespace Notrelix.Infrastructure.Migrations
                     b.ToTable("workspaces", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.WorkspaceInvitation", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Workspace.WorkspaceInvitation", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1221,10 +1498,9 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("invited_by");
 
-                    b.Property<string>("Role")
-                        .IsRequired()
+                    b.Property<int>("Role")
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasColumnType("integer")
                         .HasColumnName("role");
 
                     b.Property<string>("Token")
@@ -1247,12 +1523,15 @@ namespace Notrelix.Infrastructure.Migrations
                     b.ToTable("workspace_invitations", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.WorkspaceMember", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Workspace.WorkspaceMember", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<Guid?>("InvitedBy")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("JoinedAt")
                         .HasColumnType("timestamp with time zone")
@@ -1282,27 +1561,9 @@ namespace Notrelix.Infrastructure.Migrations
                     b.ToTable("workspace_members", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Block", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.Board", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Page", "Page")
-                        .WithMany("Blocks")
-                        .HasForeignKey("PageId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Notrelix.Domain.Entities.Block", "ParentBlock")
-                        .WithMany("Children")
-                        .HasForeignKey("ParentBlockId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.Navigation("Page");
-
-                    b.Navigation("ParentBlock");
-                });
-
-            modelBuilder.Entity("Notrelix.Domain.Entities.Board", b =>
-                {
-                    b.HasOne("Notrelix.Domain.Entities.Workspace", "Workspace")
+                    b.HasOne("Notrelix.Domain.Entities.Workspace.Workspace", "Workspace")
                         .WithMany()
                         .HasForeignKey("WorkspaceId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1311,9 +1572,31 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Navigation("Workspace");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.BoardList", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.BoardList", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Board", "Board")
+                    b.HasOne("Notrelix.Domain.Entities.Board.Board", "Board")
+                        .WithMany("Lists")
+                        .HasForeignKey("BoardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Board");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.BoardMember", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Entities.Board.Board", "Board")
+                        .WithMany("Members")
+                        .HasForeignKey("BoardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Board");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.BoardView", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Entities.Board.Board", "Board")
                         .WithMany()
                         .HasForeignKey("BoardId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1322,37 +1605,36 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Navigation("Board");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.BoardMember", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.Card", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Board", "Board")
+                    b.HasOne("Notrelix.Domain.Entities.Board.BoardList", null)
+                        .WithMany("Cards")
+                        .HasForeignKey("BoardListId");
+
+                    b.HasOne("Notrelix.Domain.Entities.Document.Page", "LinkedPage")
                         .WithMany()
-                        .HasForeignKey("BoardId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("LinkedPageId");
 
-                    b.Navigation("Board");
-                });
-
-            modelBuilder.Entity("Notrelix.Domain.Entities.Card", b =>
-                {
-                    b.HasOne("Notrelix.Domain.Entities.BoardList", "List")
+                    b.HasOne("Notrelix.Domain.Entities.Board.BoardList", "List")
                         .WithMany()
                         .HasForeignKey("ListId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("LinkedPage");
+
                     b.Navigation("List");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.CardLabel", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.CardLabel", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Card", "Card")
-                        .WithMany()
+                    b.HasOne("Notrelix.Domain.Entities.Board.Card", "Card")
+                        .WithMany("Labels")
                         .HasForeignKey("CardId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Notrelix.Domain.Entities.Label", "Label")
+                    b.HasOne("Notrelix.Domain.Entities.Board.Label", "Label")
                         .WithMany()
                         .HasForeignKey("LabelId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1363,10 +1645,29 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Navigation("Label");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.CardMember", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.CardLink", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Card", "Card")
+                    b.HasOne("Notrelix.Domain.Entities.Board.Card", "SourceCard")
                         .WithMany()
+                        .HasForeignKey("SourceCardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Notrelix.Domain.Entities.Board.Card", "TargetCard")
+                        .WithMany()
+                        .HasForeignKey("TargetCardId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("SourceCard");
+
+                    b.Navigation("TargetCard");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.CardMember", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Entities.Board.Card", "Card")
+                        .WithMany("Members")
                         .HasForeignKey("CardId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1374,10 +1675,10 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Navigation("Card");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Checklist", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.Checklist", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Card", "Card")
-                        .WithMany()
+                    b.HasOne("Notrelix.Domain.Entities.Board.Card", "Card")
+                        .WithMany("Checklists")
                         .HasForeignKey("CardId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1385,10 +1686,10 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Navigation("Card");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.ChecklistItem", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.ChecklistItem", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Checklist", "Checklist")
-                        .WithMany()
+                    b.HasOne("Notrelix.Domain.Entities.Board.Checklist", "Checklist")
+                        .WithMany("Items")
                         .HasForeignKey("ChecklistId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1396,25 +1697,9 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Navigation("Checklist");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Comment", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.Label", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Comment", "ParentComment")
-                        .WithMany("Replies")
-                        .HasForeignKey("ParentCommentId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("Notrelix.Domain.Entities.Workspace", null)
-                        .WithMany()
-                        .HasForeignKey("WorkspaceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ParentComment");
-                });
-
-            modelBuilder.Entity("Notrelix.Domain.Entities.Label", b =>
-                {
-                    b.HasOne("Notrelix.Domain.Entities.Board", "Board")
+                    b.HasOne("Notrelix.Domain.Entities.Board.Board", "Board")
                         .WithMany()
                         .HasForeignKey("BoardId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1423,14 +1708,43 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Navigation("Board");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Page", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Calendar.CalendarEvent", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Page", "Parent")
+                    b.HasOne("Notrelix.Domain.Entities.Calendar.CalendarIntegration", "Integration")
+                        .WithMany()
+                        .HasForeignKey("IntegrationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Integration");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Document.Block", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Entities.Document.Page", "Page")
+                        .WithMany("Blocks")
+                        .HasForeignKey("PageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Notrelix.Domain.Entities.Document.Block", "ParentBlock")
+                        .WithMany("Children")
+                        .HasForeignKey("ParentBlockId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Page");
+
+                    b.Navigation("ParentBlock");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Document.Page", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Entities.Document.Page", "Parent")
                         .WithMany("Children")
                         .HasForeignKey("ParentId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("Notrelix.Domain.Entities.Workspace", "Workspace")
+                    b.HasOne("Notrelix.Domain.Entities.Workspace.Workspace", "Workspace")
                         .WithMany()
                         .HasForeignKey("WorkspaceId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1441,18 +1755,20 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Navigation("Workspace");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Permission", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Identity.OAuthAccount", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Workspace", null)
-                        .WithMany()
-                        .HasForeignKey("WorkspaceId")
+                    b.HasOne("Notrelix.Domain.Entities.Identity.User", "User")
+                        .WithMany("OAuthAccounts")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Session", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Identity.Session", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.User", "User")
+                    b.HasOne("Notrelix.Domain.Entities.Identity.User", "User")
                         .WithMany("Sessions")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1461,7 +1777,7 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.User", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Identity.User", b =>
                 {
                     b.OwnsOne("Notrelix.Domain.ValueObjects.Email", "Email", b1 =>
                         {
@@ -1489,18 +1805,43 @@ namespace Notrelix.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.UserProfile", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Identity.UserProfile", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.User", "User")
+                    b.HasOne("Notrelix.Domain.Entities.Identity.User", "User")
                         .WithOne("Profile")
-                        .HasForeignKey("Notrelix.Domain.Entities.UserProfile", "UserId")
+                        .HasForeignKey("Notrelix.Domain.Entities.Identity.UserProfile", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Workspace", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Shared.Comment", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Entities.Shared.Comment", "ParentComment")
+                        .WithMany("Replies")
+                        .HasForeignKey("ParentCommentId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Notrelix.Domain.Entities.Workspace.Workspace", null)
+                        .WithMany()
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ParentComment");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Shared.Permission", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Entities.Workspace.Workspace", null)
+                        .WithMany()
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Workspace.Workspace", b =>
                 {
                     b.OwnsOne("Notrelix.Domain.ValueObjects.Icon", "Icon", b1 =>
                         {
@@ -1531,9 +1872,9 @@ namespace Notrelix.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.WorkspaceInvitation", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Workspace.WorkspaceInvitation", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Workspace", "Workspace")
+                    b.HasOne("Notrelix.Domain.Entities.Workspace.Workspace", "Workspace")
                         .WithMany()
                         .HasForeignKey("WorkspaceId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1542,9 +1883,9 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Navigation("Workspace");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.WorkspaceMember", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Workspace.WorkspaceMember", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Workspace", "Workspace")
+                    b.HasOne("Notrelix.Domain.Entities.Workspace.Workspace", "Workspace")
                         .WithMany("Members")
                         .HasForeignKey("WorkspaceId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1553,31 +1894,59 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Navigation("Workspace");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Block", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.Board", b =>
+                {
+                    b.Navigation("Lists");
+
+                    b.Navigation("Members");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.BoardList", b =>
+                {
+                    b.Navigation("Cards");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.Card", b =>
+                {
+                    b.Navigation("Checklists");
+
+                    b.Navigation("Labels");
+
+                    b.Navigation("Members");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Board.Checklist", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Document.Block", b =>
                 {
                     b.Navigation("Children");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Comment", b =>
-                {
-                    b.Navigation("Replies");
-                });
-
-            modelBuilder.Entity("Notrelix.Domain.Entities.Page", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Document.Page", b =>
                 {
                     b.Navigation("Blocks");
 
                     b.Navigation("Children");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.User", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Identity.User", b =>
                 {
+                    b.Navigation("OAuthAccounts");
+
                     b.Navigation("Profile");
 
                     b.Navigation("Sessions");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Workspace", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Shared.Comment", b =>
+                {
+                    b.Navigation("Replies");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Workspace.Workspace", b =>
                 {
                     b.Navigation("Members");
                 });

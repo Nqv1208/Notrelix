@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { ArrowRight, Layers } from "lucide-react"
 
-import { Button } from "@/registry/new-york-v4/ui/button"
+import { Button } from "@/components/ui/button"
 import { routes } from "@/lib/routes"
 
 export function CTASection() {

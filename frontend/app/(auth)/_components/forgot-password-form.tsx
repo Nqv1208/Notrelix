@@ -13,15 +13,15 @@ import { REGEXP_ONLY_DIGITS } from "input-otp"
 
 import { cn } from "@/lib/utils"
 import { routes } from "@/lib/routes"
-import { Button } from "@/registry/new-york-v4/ui/button"
-import { Input } from "@/registry/new-york-v4/ui/input"
-import { Label } from "@/registry/new-york-v4/ui/label"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
   InputOTPSeparator,
-} from "@/registry/new-york-v4/ui/input-otp"
+} from "@/components/ui/input-otp"
 import { useForgotPassword } from "@/features/auth/hooks/useForgotPassword"
 import { useResetPassword } from "@/features/auth/hooks/useResetPassword"
 import { forgotPasswordSchema, type ForgotPasswordRequest } from "@/features/auth/schemas/forgot-password.schema"

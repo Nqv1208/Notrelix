@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Interfaces;
-using Notrelix.Application.Features.Auth.Commands.RefreshToken;
+using Notrelix.Application.Features.Identity.Commands.RefreshToken;
 using Notrelix.Application.Common.Models;
-using Notrelix.Domain.Entities;
+using Notrelix.Domain.Entities.Identity;
 
 namespace Notrelix.Tests.Auth;
 

@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Features.Auth.Commands.Logout;
+using Notrelix.Application.Features.Identity.Commands.Logout;
 using Notrelix.Infrastructure.Data;
 
 namespace Notrelix.Tests.Auth;
