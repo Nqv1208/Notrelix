@@ -15,6 +15,9 @@ using Notrelix.Infrastructure.Identity.Services;
 using Notrelix.Infrastructure.Jwt;
 using Notrelix.Infrastructure.Otp;
 using Notrelix.Infrastructure.RateLimit;
+using Notrelix.Infrastructure.Data.Interceptors;
+using Notrelix.Infrastructure.Services;
+using Notrelix.Application.Common.Models;
 
 namespace Microsoft.Extensions.DependencyInjection;
 public static class DependencyInjection
@@ -28,7 +31,6 @@ public static class DependencyInjection
         services.AddRedisCache(configuration);
         services.AddJwt(configuration);
         services.AddEmail(configuration);
-        // services.AddEmailService(configuration);
 
         services.AddSingleton<IRedisCacheService, RedisCacheService>();
         services.AddSingleton<IOtpService, OtpService>();
@@ -42,6 +44,16 @@ public static class DependencyInjection
 
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
+        
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUser, CurrentUser>();
+        
+        // Register new services
+        services.AddScoped<IDateTimeProvider, DateTimeProvider>();
+        
+        // Register Interceptors
+        services.AddScoped<AuditableEntityInterceptor>();
+        services.AddScoped<DomainEventInterceptor>();
     }
 
     public static IServiceCollection AddDatabaseContext(
@@ -49,8 +61,12 @@ public static class DependencyInjection
     {
         var connectionString = configuration.GetConnectionString("NotrelixDb");
 
-        services.AddDbContext<ApplicationDbContext>(options =>
+        services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
+            // Add Interceptors
+            options.AddInterceptors(sp.GetRequiredService<AuditableEntityInterceptor>());
+            options.AddInterceptors(sp.GetRequiredService<DomainEventInterceptor>());
+
             options.UseNpgsql(connectionString, npgOptions =>
             {
                 npgOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
@@ -138,7 +154,8 @@ public static class DependencyInjection
                     ValidateIssuerSigningKey = true,
                     ValidAudience = jwtSettings!.Audience,
                     ValidIssuer = jwtSettings.Issuer,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        JwtKeyMaterial.DeriveKeyBytes(jwtSettings.SecretKey)),
                     NameClaimType = JwtRegisteredClaimNames.Sub
                 };
 

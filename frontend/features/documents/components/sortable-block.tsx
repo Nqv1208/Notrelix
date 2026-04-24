@@ -14,7 +14,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "@/registry/new-york-v4/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu"
 import type { Block, BlockType } from "../types/document.types"
 import { BlockRenderer } from "./block-renderer"
 import { useEditorStore } from "../store/editor-store"

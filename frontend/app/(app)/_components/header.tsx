@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { Menu, X, Layers } from "lucide-react"
 
-import { Button } from "@/registry/new-york-v4/ui/button"
+import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/app/(app)/_components/theme-toggle"
 import { useAuthUser } from "@/features/auth/hooks/useAuthUser"
 import { useLogout } from "@/features/auth/hooks/useLogout"

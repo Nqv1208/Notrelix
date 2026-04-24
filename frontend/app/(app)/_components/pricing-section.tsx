@@ -3,8 +3,8 @@
 import Link from "next/link"
 import { Check } from "lucide-react"
 
-import { Button } from "@/registry/new-york-v4/ui/button"
-import { Badge } from "@/registry/new-york-v4/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { routes } from "@/lib/routes"
 import { cn } from "@/lib/utils"
 

@@ -1,13 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Features.Auth.Commands.ForgotPassword;
-using Notrelix.Application.Features.Auth.Commands.Login;
-using Notrelix.Application.Features.Auth.Commands.Logout;
-using Notrelix.Application.Features.Auth.Commands.RefreshToken;
-using Notrelix.Application.Features.Auth.Commands.Register;
-using Notrelix.Application.Features.Auth.Commands.ResetPassword;
-using Notrelix.Application.Features.Auth.Queries.GetCurrentUser;
+using Notrelix.Application.Features.Identity.Commands.ForgotPassword;
+using Notrelix.Application.Features.Identity.Commands.Login;
+using Notrelix.Application.Features.Identity.Commands.Logout;
+using Notrelix.Application.Features.Identity.Commands.RefreshToken;
+using Notrelix.Application.Features.Identity.Commands.Register;
+using Notrelix.Application.Features.Identity.Commands.ResetPassword;
+using Notrelix.Application.Features.Identity.Queries.GetCurrentUser;
 
 namespace Notrelix.API.Controllers;
 

@@ -1,10 +1,10 @@
 "use client"
 
 import { usePathname } from "next/navigation"
-import { SidebarTrigger } from "@/registry/new-york-v4/ui/sidebar"
-import { Separator } from "@/registry/new-york-v4/ui/separator"
-import { Button } from "@/registry/new-york-v4/ui/button"
-import { Input } from "@/registry/new-york-v4/ui/input"
+import { SidebarTrigger } from "@/components/ui/sidebar"
+import { Separator } from "@/components/ui/separator"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -12,7 +12,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/registry/new-york-v4/ui/breadcrumb"
+} from "@/components/ui/breadcrumb"
 import { Search, Bell, Plus } from "lucide-react"
 import { routes } from "@/lib/routes"
 import { useEditorStore } from "@/features/documents/store/editor-store"

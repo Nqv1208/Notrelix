@@ -1,5 +1,10 @@
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Domain.Entities;
+using Notrelix.Domain.Entities.Identity;
+using Notrelix.Domain.Entities.Workspacess;
+using Notrelix.Domain.Entities.Document;
+using Notrelix.Domain.Entities.Boardss;
+using Notrelix.Domain.Entities.Calendar;
+using Notrelix.Domain.Entities.Shared;
 
 namespace Notrelix.Application.Common.Interfaces;
 
@@ -10,29 +15,41 @@ public interface IApplicationDbContext
     DbSet<User> Users { get; }
     DbSet<UserProfile> UserProfiles { get; }
     DbSet<Session> Sessions { get; }
+    DbSet<OAuthAccount> OAuthAccounts { get; }
 
     // Workspace
     DbSet<Workspace> Workspaces { get; }
     DbSet<WorkspaceMember> WorkspaceMembers { get; }
     DbSet<WorkspaceInvitation> WorkspaceInvitations { get; }
 
-    // Content
+    // Document
     DbSet<Page> Pages { get; }
     DbSet<Block> Blocks { get; }
+
+    // Board
     DbSet<Board> Boards { get; }
+    DbSet<BoardMember> BoardMembers { get; }
+    DbSet<BoardView> BoardViews { get; }
     DbSet<BoardList> BoardLists { get; }
+    DbSet<Label> Labels { get; }
     DbSet<Card> Cards { get; }
+    DbSet<CardMember> CardMembers { get; }
+    DbSet<CardLabel> CardLabels { get; }
+    DbSet<CardLink> CardLinks { get; }
     DbSet<Checklist> Checklists { get; }
     DbSet<ChecklistItem> ChecklistItems { get; }
 
-    // Collaboration
+    // Calendar
+    DbSet<CalendarIntegration> CalendarIntegrations { get; }
+    DbSet<CalendarEvent> CalendarEvents { get; }
+
+    // Shared
     DbSet<Permission> Permissions { get; }
     DbSet<Comment> Comments { get; }
+    DbSet<PageMention> PageMentions { get; }
     DbSet<Attachment> Attachments { get; }
     DbSet<Reaction> Reactions { get; }
     DbSet<Notification> Notifications { get; }
-
-    // Activity
     DbSet<ActivityLog> ActivityLogs { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);

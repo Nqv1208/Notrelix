@@ -10,7 +10,7 @@ import {
   User,
   Clock,
 } from "lucide-react"
-import { Badge } from "@/registry/new-york-v4/ui/badge"
+import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
 type Tab = "docs" | "boards"

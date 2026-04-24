@@ -1,4 +1,4 @@
-using Notrelix.Domain.Entities;
+using Notrelix.Domain.Entities.Identity;
 
 namespace Notrelix.Application.Common.Interfaces
 {

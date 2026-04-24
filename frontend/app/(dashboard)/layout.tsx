@@ -2,8 +2,8 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { TooltipProvider } from "@/registry/new-york-v4/ui/tooltip"
-import { SidebarProvider, SidebarInset } from "@/registry/new-york-v4/ui/sidebar"
+import { TooltipProvider } from "@/components/ui/tooltip"
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/app/(dashboard)/_components/app-sidebar"
 import { DashboardHeader } from "@/app/(dashboard)/_components/dashboard-header"
 import { useAuthUser } from "@/features/auth/hooks/useAuthUser"

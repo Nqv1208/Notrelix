@@ -16,13 +16,14 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 // Initialise and seed database
+using var scope = app.Services.CreateScope();
+var initialiser = scope.ServiceProvider.GetRequiredService<ApplicationDbContextInitialiser>();
+
+await initialiser.InitialiseAsync(); // ✅ luôn chạy
+
 if (app.Environment.IsDevelopment())
 {
-    using var scope = app.Services.CreateScope();
-    var initialiser = scope.ServiceProvider.GetRequiredService<ApplicationDbContextInitialiser>();
-    
-    await initialiser.InitialiseAsync();
-    await initialiser.SeedAsync();
+    await initialiser.SeedAsync(); // chỉ dev
 }
 
 // Middleware pipeline
@@ -35,7 +36,13 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("Frontend");
-app.UseHttpsRedirection();
+
+// Trong Docker dev chỉ bind HTTP :8000 — redirect HTTPS gây lỗi khi mở Swagger qua http://...
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

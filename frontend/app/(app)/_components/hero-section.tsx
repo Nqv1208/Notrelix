@@ -10,8 +10,8 @@ import {
   MessageSquare,
 } from "lucide-react"
 
-import { Button } from "@/registry/new-york-v4/ui/button"
-import { Badge } from "@/registry/new-york-v4/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { useAuthUser } from "@/features/auth/hooks/useAuthUser"
 import { routes } from "@/lib/routes"
 

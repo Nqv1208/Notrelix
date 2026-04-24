@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Layers } from "lucide-react"
 
-import { Separator } from "@/registry/new-york-v4/ui/separator"
+import { Separator } from "@/components/ui/separator"
 import { routes } from "@/lib/routes"
 
 const footerSections = {

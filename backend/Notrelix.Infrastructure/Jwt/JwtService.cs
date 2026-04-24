@@ -1,11 +1,10 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
-using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Notrelix.Application.Common.Interfaces;
-using Notrelix.Domain.Entities;
+using Notrelix.Domain.Entities.Identity;
 
 namespace Notrelix.Infrastructure.Jwt;
 
@@ -18,7 +17,7 @@ public class JwtService : IJwtService
     public JwtService(IOptions<JwtSettings> settings)
     {
         _settings = settings.Value;
-        _signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.SecretKey));
+        _signingKey = new SymmetricSecurityKey(JwtKeyMaterial.DeriveKeyBytes(_settings.SecretKey));
     }
 
     public JwtSettings Settings => _settings;

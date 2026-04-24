@@ -14,7 +14,7 @@ import {
   BookOpen,
   Import,
 } from "lucide-react"
-import { Button } from "@/registry/new-york-v4/ui/button"
+import { Button } from "@/components/ui/button"
 import { routes } from "@/lib/routes"
 import { useEditorStore } from "@/features/documents/store/editor-store"
 import type { Page } from "@/features/documents/types/document.types"
@@ -48,7 +48,7 @@ export function DashboardOverview() {
   const handleQuickCreate = () => {
     if (workspaces.length > 0) {
       const newId = addPage(workspaces[0].id)
-      router.push(routes.dashboard.workspacePage(workspaces[0].id, newId) as never)
+      router.push(routes.workspace.page(workspaces[0].id, newId) as never)
     }
   }
 
@@ -98,7 +98,7 @@ export function DashboardOverview() {
             {favorites.map((page) => (
               <Link
                 key={page.id}
-                href={routes.dashboard.workspacePage(page.workspaceId, page.id) as never}
+                href={routes.workspace.page(page.workspaceId, page.id) as never}
                 className="group flex items-center gap-3 rounded-xl border bg-card p-4 hover:border-primary/30 hover:shadow-sm transition-all"
               >
                 <span className="text-2xl">{page.icon}</span>
@@ -125,7 +125,7 @@ export function DashboardOverview() {
           {recentPages.map((page) => (
             <Link
               key={page.id}
-              href={routes.dashboard.workspacePage(page.workspaceId, page.id) as never}
+              href={routes.workspace.page(page.workspaceId, page.id) as never}
               className="flex items-center gap-4 p-3 hover:bg-accent/50 transition-colors first:rounded-t-xl last:rounded-b-xl group"
             >
               <span className="text-xl shrink-0">{page.icon}</span>
@@ -158,7 +158,7 @@ export function DashboardOverview() {
               className="gap-1.5 text-xs"
               onClick={() => {
                 const newId = addPage(ws.id)
-                router.push(routes.dashboard.workspacePage(ws.id, newId) as never)
+                router.push(routes.workspace.page(ws.id, newId) as never)
               }}
             >
               <Plus className="size-3.5" />
@@ -171,7 +171,7 @@ export function DashboardOverview() {
               .map((page) => (
                 <Link
                   key={page.id}
-                  href={routes.dashboard.workspacePage(ws.id, page.id) as never}
+                  href={routes.workspace.page(ws.id, page.id) as never}
                   className="group rounded-xl border bg-card overflow-hidden hover:border-primary/30 hover:shadow-sm transition-all"
                 >
                   <div className="h-20 bg-gradient-to-br from-muted/50 to-muted flex items-center justify-center">

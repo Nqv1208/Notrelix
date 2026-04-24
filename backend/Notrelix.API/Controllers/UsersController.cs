@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Features.Auth.Commands.UpdateProfile;
+using Notrelix.Application.Features.Identity.Commands.UpdateProfile;
 
 namespace Notrelix.API.Controllers;
 
