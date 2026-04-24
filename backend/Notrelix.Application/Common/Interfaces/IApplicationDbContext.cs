@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Domain.Entities.Identity;
-using Notrelix.Domain.Entities.Workspace;
+using Notrelix.Domain.Entities.Workspacess;
 using Notrelix.Domain.Entities.Document;
-using Notrelix.Domain.Entities.Board;
+using Notrelix.Domain.Entities.Boardss;
 using Notrelix.Domain.Entities.Calendar;
 using Notrelix.Domain.Entities.Shared;
 

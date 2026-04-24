@@ -21,7 +21,7 @@ public class Page : AuditableEntity
     public DateTime? Deadline { get; private set; }
 
     // Navigation
-    public Workspace.Workspace Workspace { get; private set; } = null!;
+    public Workspace Workspace { get; private set; } = null!;
     public Page? Parent { get; private set; }
     private readonly List<Page> _children = [];
     public IReadOnlyCollection<Page> Children => _children.AsReadOnly();

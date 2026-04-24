@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Interfaces;
 using Notrelix.Application.Common.Models;
 using Notrelix.Domain.Entities.Identity;
+using Notrelix.Domain.Entities.Workspacess;
 
 namespace Notrelix.Application.Features.Identity.Commands.Register;
 
@@ -48,7 +49,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<Au
         _context.Users.Add(user);
 
         // Tạo workspace cá nhân mặc định
-        var workspace = Domain.Entities.Workspace.Workspace.CreatePersonal($"{request.Name}'s Workspace", user.Id);
+        var workspace = Workspace.CreatePersonal($"{request.Name}'s Workspace", user.Id);
         _context.Workspaces.Add(workspace);
 
         await _context.SaveChangesAsync(cancellationToken);

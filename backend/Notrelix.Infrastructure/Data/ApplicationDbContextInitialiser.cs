@@ -2,9 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Common.Interfaces;
 using Notrelix.Domain.Entities.Identity;
-using Notrelix.Domain.Entities.Workspace;
+using Notrelix.Domain.Entities.Workspacess;
 using Notrelix.Domain.Entities.Document;
-using Notrelix.Domain.Entities.Board;
+using Notrelix.Domain.Entities.Boardss;
 using Notrelix.Domain.Entities.Calendar;
 using Notrelix.Domain.Entities.Shared;
 using Notrelix.Domain.Enums;
@@ -301,7 +301,7 @@ public class ApplicationDbContextInitialiser
         {
             for (var i = 0; i < boardsPerWorkspace; i++)
             {
-                boards.Add(Board.Create(workspace.Id, Pick(users).Id, $"Board {i + 1} - {workspace.Name}"));
+                boards.Add(Board.Create(workspace.Id, Pick(users).Id, $"Board {i + 1} - {workspace.Name}", $"Description for Board {i + 1} - {workspace.Name}"));
             }
         }
         _context.Boards.AddRange(boards);
