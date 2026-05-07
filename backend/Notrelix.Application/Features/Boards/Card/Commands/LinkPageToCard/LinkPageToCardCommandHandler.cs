@@ -1,13 +1,14 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Interfaces;
-using Notrelix.Domain.Entities.Boardss;
+using Notrelix.Domain.Entities.Boards;
 using Notrelix.Domain.Entities.Document;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Events.Board;
 
-namespace Notrelix.Application.Features.Boardss.Commands.LinkPageToCard;
+namespace Notrelix.Application.Features.Boards.Board.Commands.LinkPageToCard;
 
+public record LinkPageToCardCommand(Guid CardId, Guid PageId) : IRequest<Unit>;
 public class LinkPageToCardCommandHandler : IRequestHandler<LinkPageToCardCommand, Unit>
 {
     private readonly IApplicationDbContext _context;

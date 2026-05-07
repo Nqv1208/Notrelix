@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Notrelix.Domain.Entities.Workspacess;
+using Notrelix.Domain.Entities.Workspaces;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Workspaces;
 

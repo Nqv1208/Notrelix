@@ -86,7 +86,7 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
         builder.HasIndex(c => c.UserId);
         builder.HasIndex(c => c.ParentCommentId);
 
-        builder.HasOne<Notrelix.Domain.Entities.Workspacess.Workspace>()
+        builder.HasOne<Notrelix.Domain.Entities.Workspaces.Workspace>()
             .WithMany()
             .HasForeignKey(c => c.WorkspaceId)
             .OnDelete(DeleteBehavior.Cascade);

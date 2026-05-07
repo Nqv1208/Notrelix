@@ -43,6 +43,7 @@ public static class DependencyInjection
         services.AddScoped<ApplicationDbContextInitialiser>();
 
         services.AddScoped<IJwtService, JwtService>();
+        services.AddScoped<ICookieService, CookieService>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         
         services.AddHttpContextAccessor();
@@ -171,6 +172,15 @@ public static class DependencyInjection
                         {
                             context.Fail("Token has been revoked");
                         }
+                    },
+                    OnMessageReceived = context =>
+                    {
+                        var token = context.Request.Cookies["accessToken"];
+                        if (!string.IsNullOrEmpty(token))
+                        {
+                            context.Token = token;
+                        }
+                        return Task.CompletedTask;
                     }
                 };
             });

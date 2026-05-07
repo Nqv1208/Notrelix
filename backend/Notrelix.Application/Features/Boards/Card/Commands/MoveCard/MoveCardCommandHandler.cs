@@ -1,12 +1,13 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Interfaces;
-using Notrelix.Domain.Entities.Boardss;
+using Notrelix.Domain.Entities.Boards;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Events.Board;
 
-namespace Notrelix.Application.Features.Boardss.Commands.MoveCard;
+namespace Notrelix.Application.Features.Boards.Board.Commands.MoveCard;
 
+public record MoveCardCommand(Guid CardId, Guid ListId, double Position) : IRequest<Unit>;
 public class MoveCardCommandHandler : IRequestHandler<MoveCardCommand, Unit>
 {
     private readonly IApplicationDbContext _context;

@@ -1,8 +1,8 @@
 using MediatR;
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Features.Workspacess.DTOs;
+using Notrelix.Application.Features.Workspaces.DTOs;
 
-namespace Notrelix.Application.Features.Workspacess.Queries;
+namespace Notrelix.Application.Features.Workspaces.Queries;
 
 // ──────── Get Workspace by ID ────────
 public record GetWorkspaceQuery(Guid WorkspaceId) : IRequest<Result<WorkspaceDto>>;

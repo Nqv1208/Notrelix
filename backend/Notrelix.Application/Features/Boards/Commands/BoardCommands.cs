@@ -1,7 +1,7 @@
 using MediatR;
 using Notrelix.Application.Common.Models;
 
-namespace Notrelix.Application.Features.Boardss.Commands;
+namespace Notrelix.Application.Features.Boards.Commands;
 
 // ──────── Board ────────
 public record UpdateBoardCommand(Guid BoardId, string? Title, string? Description, string? Background, string? Visibility) : IRequest<Result>;

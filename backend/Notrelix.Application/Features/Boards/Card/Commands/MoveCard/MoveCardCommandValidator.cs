@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace Notrelix.Application.Features.Boardss.Commands.MoveCard;
+namespace Notrelix.Application.Features.Boards.Board.Commands.MoveCard;
 
 public class MoveCardCommandValidator : AbstractValidator<MoveCardCommand>
 {

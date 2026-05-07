@@ -2,7 +2,7 @@ using Notrelix.Domain.Common;
 using Notrelix.Domain.Enums;
 using Notrelix.Domain.ValueObjects;
 
-namespace Notrelix.Domain.Entities.Workspacess;
+namespace Notrelix.Domain.Entities.Workspaces;
 
 /// <summary>
 /// Entity đại diện cho không gian làm việc (Personal hoặc Team)

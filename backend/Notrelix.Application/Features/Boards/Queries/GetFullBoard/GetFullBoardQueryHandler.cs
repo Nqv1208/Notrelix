@@ -1,11 +1,11 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Interfaces;
-using Notrelix.Application.Features.Boardss.DTOs;
-using Notrelix.Domain.Entities.Boardss;
+using Notrelix.Application.Features.Boards.DTOs;
+using Notrelix.Domain.Entities.Boards;
 using Notrelix.Domain.Common.Exceptions;
 
-namespace Notrelix.Application.Features.Boardss.Queries.GetFullBoard;
+namespace Notrelix.Application.Features.Boards.Queries.GetFullBoard;
 
 public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, FullBoardDto>
 {

@@ -1,4 +1,4 @@
-namespace Notrelix.Application.Features.Workspacess.DTOs;
+namespace Notrelix.Application.Features.Workspaces.DTOs;
 
 public record WorkspaceDto(
     Guid Id,

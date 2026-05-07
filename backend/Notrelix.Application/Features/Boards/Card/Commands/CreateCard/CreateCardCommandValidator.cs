@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace Notrelix.Application.Features.Boardss.Commands.CreateCard;
+namespace Notrelix.Application.Features.Boards.Board.Commands.CreateCard;
 
 public class CreateCardCommandValidator : AbstractValidator<CreateCardCommand>
 {

@@ -1,6 +1,6 @@
 using Notrelix.Domain.Common;
 
-namespace Notrelix.Domain.Entities.Boardss;
+namespace Notrelix.Domain.Entities.Boards;
 
 public class ChecklistItem : BaseEntity
 {

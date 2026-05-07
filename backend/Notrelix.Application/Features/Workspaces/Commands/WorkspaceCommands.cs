@@ -1,7 +1,7 @@
 using MediatR;
 using Notrelix.Application.Common.Models;
 
-namespace Notrelix.Application.Features.Workspacess.Commands;
+namespace Notrelix.Application.Features.Workspaces.Commands;
 
 // ──────── Create Workspace ────────
 public record CreateWorkspaceCommand(

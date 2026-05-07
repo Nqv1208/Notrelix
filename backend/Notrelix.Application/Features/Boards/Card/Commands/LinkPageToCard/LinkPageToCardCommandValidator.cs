@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace Notrelix.Application.Features.Boardss.Commands.LinkPageToCard;
+namespace Notrelix.Application.Features.Boards.Board.Commands.LinkPageToCard;
 
 public class LinkPageToCardCommandValidator : AbstractValidator<LinkPageToCardCommand>
 {

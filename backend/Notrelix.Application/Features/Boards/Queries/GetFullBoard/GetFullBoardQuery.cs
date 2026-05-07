@@ -1,6 +1,6 @@
 using MediatR;
-using Notrelix.Application.Features.Boardss.DTOs;
+using Notrelix.Application.Features.Boards.DTOs;
 
-namespace Notrelix.Application.Features.Boardss.Queries.GetFullBoard;
+namespace Notrelix.Application.Features.Boards.Queries.GetFullBoard;
 
 public record GetFullBoardQuery(Guid BoardId) : IRequest<FullBoardDto>;

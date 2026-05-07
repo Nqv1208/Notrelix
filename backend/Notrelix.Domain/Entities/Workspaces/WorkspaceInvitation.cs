@@ -1,7 +1,7 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Enums;
 
-namespace Notrelix.Domain.Entities.Workspacess;
+namespace Notrelix.Domain.Entities.Workspaces;
 
 // Entity đại diện cho lời mời tham gia workspace
 public class WorkspaceInvitation : BaseEntity

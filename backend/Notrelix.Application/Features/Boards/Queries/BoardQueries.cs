@@ -1,8 +1,8 @@
 using MediatR;
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Features.Boardss.DTOs;
+using Notrelix.Application.Features.Boards.DTOs;
 
-namespace Notrelix.Application.Features.Boardss.Queries;
+namespace Notrelix.Application.Features.Boards.Queries;
 
 // ──────── Get Boards in Workspace ────────
 public record GetBoardsQuery(Guid WorkspaceId) : IRequest<Result<List<BoardDto>>>;

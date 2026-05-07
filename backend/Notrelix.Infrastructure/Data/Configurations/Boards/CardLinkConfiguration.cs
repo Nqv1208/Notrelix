@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Notrelix.Domain.Entities.Boardss;
+using Notrelix.Domain.Entities.Boards;
 using Notrelix.Domain.Enums;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Boards;

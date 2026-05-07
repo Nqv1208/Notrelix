@@ -1,12 +1,13 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Interfaces;
-using Notrelix.Domain.Entities.Boardss;
+using Notrelix.Domain.Entities.Boards;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Events.Board;
 
-namespace Notrelix.Application.Features.Boardss.Commands.CreateCard;
+namespace Notrelix.Application.Features.Boards.Board.Commands.CreateCard;
 
+public record CreateCardCommand(Guid ListId, string Title) : IRequest<Guid>;
 public class CreateCardCommandHandler : IRequestHandler<CreateCardCommand, Guid>
 {
     private readonly IApplicationDbContext _context;

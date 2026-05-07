@@ -1,5 +1,5 @@
 
-namespace Notrelix.Domain.Entities.Boardss;
+namespace Notrelix.Domain.Entities.Boards;
 
 public class Board : AuditableEntity
 {
