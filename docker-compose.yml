@@ -1,7 +1,14 @@
-# Full stack: PostgreSQL, Redis, API, Next.js, Nginx (cổng 80).
-# Chạy: docker compose up -d --build
-# Trình duyệt: http://localhost  — API: http://localhost/api/...
-# Build-time FE: NEXT_PUBLIC_API_URL (mặc định http://localhost/api)
+# =============================================================================
+# Stack đầy đủ (infra + app build) — staging/prod hoặc chạy release local.
+#
+# Dev (hot reload, không merge build): chỉ dùng infra + dev — xem docker-compose.dev.yml
+#
+#   Dev:     docker compose --env-file .env.dev -f docker-compose.dev.yml up -d
+#   Staging: docker compose --env-file .env.staging -f docker-compose.yml -f docker-compose.staging.yml up -d --build
+#   Prod:    docker compose --env-file .env.prod    -f docker-compose.yml -f docker-compose.prod.yml   up -d --build
+#
+# RabbitMQ: --profile messaging
+# =============================================================================
 
 services:
   postgres:
@@ -87,7 +94,7 @@ volumes:
 
 networks:
   backend-network:
-    driver: bridge
+    driver: bridgef
     internal: true
   frontend-network:
     driver: bridge
