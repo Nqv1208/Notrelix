@@ -2,3 +2,6 @@
 
 .env
 .env.*
+
+# Skill for Coding Agents
+.codex/*
