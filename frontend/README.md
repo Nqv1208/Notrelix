@@ -39,7 +39,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 # Frontend Route Structure
 
 ## Stack
-- **Framework**: Next.js 15 App Router
+- **Framework**: Next.js 16 App Router
 - **UI**: shadcn/ui + Tailwind CSS
 - **Data fetching**: TanStack Query v5
 - **HTTP client**: Axios (với auto refresh token interceptor)
