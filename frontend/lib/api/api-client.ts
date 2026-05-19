@@ -15,17 +15,18 @@ export async function apiFetch<T>(
   options: RequestInit = {},
   retry = true
 ): Promise<T> {
-  const accessToken = tokenStorage.getAccessToken();
+  // const accessToken = tokenStorage.getAccessToken();
   const headers: HeadersInit = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
 
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
+  // if (accessToken) {
+  //   headers.Authorization = `Bearer ${accessToken}`;
+  // }
 
   const response = await fetch(`${BASE_URL}${url}`, {
+    credentials: "include",
     ...options,
     headers,
   });
@@ -51,27 +52,28 @@ async function handleRefreshToken<T>(
   url: string,
   options: RequestInit
 ): Promise<T> {
-  const refreshToken = tokenStorage.getRefreshToken();
-  if (!refreshToken) {
-    tokenStorage.clearTokens();
-    throw new ApiError(401, AUTH_ERROR_KEYS.REFRESH_INVALID);
-  }
+  // const refreshToken = tokenStorage.getRefreshToken();
+  // if (!refreshToken) {
+  //   tokenStorage.clearTokens();
+  //   throw new ApiError(401, AUTH_ERROR_KEYS.REFRESH_INVALID);
+  // }
 
   const refreshResponse = await fetch(`${BASE_URL}${endpoints.auth.refresh}`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ refreshToken }),
+    // body: JSON.stringify({ refreshToken }),
   });
 
   const refreshData = (await parseJsonResponse(refreshResponse)) as RefreshResponse;
   if (!refreshResponse.ok) {
-    tokenStorage.clearTokens();
+    // tokenStorage.clearTokens();
     throw new ApiError(refreshResponse.status, extractErrorMessage(refreshData), refreshData);
   }
 
-  tokenStorage.setTokens(refreshData.accessToken, refreshData.refreshToken);
+  // tokenStorage.setTokens(refreshData.accessToken, refreshData.refreshToken);
   return apiFetch<T>(url, options, false);
 }
 

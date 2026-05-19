@@ -9,13 +9,29 @@ export const routes = {
     privacy: "/privacy",
   },
   dashboard: {
-    root: "/dashboard",
+    root: "/home",
     search: "/dashboard/search",
     notifications: "/dashboard/notifications",
     calendar: "/dashboard/calendar",
     settings: "/dashboard/settings",
     trash: "/dashboard/trash",
-    workspacePage: (workspaceId: string, pageId: string) =>
-      `/dashboard/workspace/${workspaceId}/page/${pageId}`,
+    // workspacePage: (workspaceId: string, pageId: string) =>
+    //   `/dashboard/workspace/${workspaceId}/page/${pageId}`,
+  },
+  workspace: {
+    root: (workspaceSlug: string) => `/${workspaceSlug}`,
+    view: (workspaceSlug: string, view: string) => `/${workspaceSlug}?view=${view}`,
+    chat: (workspaceSlug: string) => `/${workspaceSlug}/chat`,
+    panel: (workspaceSlug: string, panel: string) => `/${workspaceSlug}?panel=${panel}`,
+    page: (workspaceSlug: string, pageId: string) => `/${workspaceSlug}/docs/${pageId}`,
+    settings: (workspaceSlug: string) => `/${workspaceSlug}/settings`,
+    members: (workspaceSlug: string) => `/${workspaceSlug}/settings/members`,
+    permissions: (workspaceSlug: string) => `/${workspaceSlug}/settings/permissions`,
+    billing: (workspaceSlug: string) => `/${workspaceSlug}/settings/billing`,
+    docs: (workspaceSlug: string) => `/${workspaceSlug}/docs`,
+    docsPage: (workspaceSlug: string, pageId: string) => `/${workspaceSlug}/docs/${pageId}`,
+    docsHistory: (workspaceSlug: string, pageId: string) => `/${workspaceSlug}/docs/${pageId}/history`,
+    boards: (workspaceSlug: string) => `/${workspaceSlug}/boards`,
+    board: (workspaceSlug: string, boardId: string) => `/${workspaceSlug}/boards/${boardId}`,
   },
 } as const;

@@ -16,8 +16,8 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { routes } from "@/lib/routes"
-import { useEditorStore } from "@/features/documents/store/editor-store"
-import type { Page } from "@/features/documents/types/document.types"
+import { useEditorStore } from "@/features/docs/store/editor-store"
+import type { Page } from "@/features/docs/types/document.types"
 
 const quickActions = [
   { icon: FileText, label: "Empty Page", description: "Start with a blank page" },

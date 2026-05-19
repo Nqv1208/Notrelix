@@ -16,8 +16,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { PageEditor } from "@/features/documents/components/page-editor"
-import { useEditorStore } from "@/features/documents/store/editor-store"
+import { PageEditor } from "@/features/docs/components/page-editor"
+import { useEditorStore } from "@/features/docs/store/editor-store"
 import { cn } from "@/lib/utils"
 
 type DocumentPageViewProps = {
