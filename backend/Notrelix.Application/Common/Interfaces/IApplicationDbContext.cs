@@ -31,6 +31,7 @@ public interface IApplicationDbContext
     DbSet<BoardMember> BoardMembers { get; }
     DbSet<BoardView> BoardViews { get; }
     DbSet<BoardList> BoardLists { get; }
+    DbSet<BoardColumn> BoardColumns { get; }
     DbSet<Label> Labels { get; }
     DbSet<Card> Cards { get; }
     DbSet<CardMember> CardMembers { get; }

@@ -84,6 +84,62 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("boards", (string)null);
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.BoardColumn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("board_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("FieldType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("field_type");
+
+                    b.Property<bool>("IsHidden")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_hidden");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<double>("Position")
+                        .HasColumnType("float8")
+                        .HasColumnName("position");
+
+                    b.Property<string>("Settings")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("settings");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoardId", "Position")
+                        .HasDatabaseName("idx_board_columns_board_position");
+
+                    b.ToTable("board_columns", (string)null);
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Entities.Boards.BoardList", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1570,6 +1626,17 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Workspace");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.BoardColumn", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Entities.Boards.Board", "Board")
+                        .WithMany()
+                        .HasForeignKey("BoardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Board");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Entities.Boards.BoardList", b =>

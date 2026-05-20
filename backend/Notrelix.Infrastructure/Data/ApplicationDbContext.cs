@@ -37,6 +37,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<BoardMember> BoardMembers => Set<BoardMember>();
     public DbSet<BoardView> BoardViews => Set<BoardView>();
     public DbSet<BoardList> BoardLists => Set<BoardList>();
+    public DbSet<BoardColumn> BoardColumns => Set<BoardColumn>();
     public DbSet<Label> Labels => Set<Label>();
     public DbSet<Card> Cards => Set<Card>();
     public DbSet<CardMember> CardMembers => Set<CardMember>();
