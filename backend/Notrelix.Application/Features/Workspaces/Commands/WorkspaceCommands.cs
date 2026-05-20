@@ -44,3 +44,27 @@ public record UpdateMemberRoleCommand(
     Guid UserId,
     string Role
 ) : IRequest<Result>;
+
+// ══════════════════════════════════════════════════════════════
+// Slug-based variants — used by Minimal API endpoints
+// Handlers resolve slug → WorkspaceId internally
+// ══════════════════════════════════════════════════════════════
+
+public record ArchiveWorkspaceBySlugCommand(string Slug) : IRequest<Result>;
+
+public record InviteMemberBySlugCommand(
+    string Slug,
+    string Email,
+    string Role
+) : IRequest<Result<Guid>>;
+
+public record RemoveMemberBySlugCommand(
+    string Slug,
+    Guid UserId
+) : IRequest<Result>;
+
+public record UpdateMemberRoleBySlugCommand(
+    string Slug,
+    Guid UserId,
+    string Role
+) : IRequest<Result>;

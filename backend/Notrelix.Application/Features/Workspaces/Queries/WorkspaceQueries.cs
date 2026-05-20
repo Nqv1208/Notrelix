@@ -15,3 +15,11 @@ public record GetWorkspaceMembersQuery(Guid WorkspaceId) : IRequest<Result<List<
 
 // ──────── Get Workspace Invitations ────────
 public record GetWorkspaceInvitationsQuery(Guid WorkspaceId) : IRequest<Result<List<WorkspaceInvitationDto>>>;
+
+// ══════════════════════════════════════════════════════════════
+// Slug-based variants — used by Minimal API endpoints
+// ══════════════════════════════════════════════════════════════
+
+public record GetWorkspaceBySlugQuery(string Slug) : IRequest<Result<WorkspaceDto>>;
+public record GetWorkspaceMembersBySlugQuery(string Slug) : IRequest<Result<List<WorkspaceMemberDto>>>;
+public record GetWorkspaceActivityBySlugQuery(string Slug, int Page = 1, int PageSize = 20) : IRequest<Result<object>>;

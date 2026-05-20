@@ -1,6 +1,7 @@
 using MediatR;
 using Notrelix.Application.Common.Interfaces;
 using Notrelix.Application.Common.Models;
+using Notrelix.Domain.Entities.Boards;
 using Notrelix.Domain.Enums;
 using BoardEntity = Notrelix.Domain.Entities.Boards.Board;
 
@@ -20,6 +21,7 @@ namespace Notrelix.Application.Features.Boards.Board.Commands.CreateBoardCommand
             var board = BoardEntity.Create(request.WorkspaceId, request.CreatedByUser, request.Title, request.Description, request.Visibility);
 
             _context.Boards.Add(board);
+            _context.BoardColumns.AddRange(BoardColumn.CreateDefaults(board.Id));
 
             await _context.SaveChangesAsync(cancellationToken);
             
