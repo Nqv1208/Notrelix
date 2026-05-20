@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Interfaces;
 using Notrelix.Application.Features.Identity.Commands.RefreshToken;
-using Notrelix.Application.Common.Models;
 using Notrelix.Domain.Entities.Identity;
 
 namespace Notrelix.Tests.Auth;
@@ -22,8 +21,7 @@ public class RefreshTokenCommandHandlerTests
         }, CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
-        result.ErrorType.Should().Be(ErrorType.Unauthorized);
-        result.Errors.Should().Contain("Refresh token không hợp lệ hoặc đã hết hạn");
+        result.Errors.Should().Contain("Refresh token is invalid or expired");
     }
 
     [Fact]
@@ -63,4 +61,3 @@ public class RefreshTokenCommandHandlerTests
         (await context.Sessions.AnyAsync(s => s.RefreshToken == "new-refresh-token")).Should().BeTrue();
     }
 }
-

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Notrelix.Application.Common.Interfaces;
 using Notrelix.Application.Features.Identity.Commands.Logout;
-using Notrelix.Infrastructure.Data;
+using Notrelix.Domain.Entities.Identity;
 
 namespace Notrelix.Tests.Auth;
 
@@ -11,15 +12,16 @@ public class LogoutCommandHandlerTests
     {
         using var context = AuthTestDbContextFactory.CreateInMemoryContext();
 
-        var user = Notrelix.Domain.Entities.User.Create("logout@example.com", "Logout User", "hashed");
+        var user = User.Create("logout@example.com", "Logout User", "hashed");
         context.Users.Add(user);
 
         var refreshToken = "logout-token";
-        var session = Notrelix.Domain.Entities.Session.Create(user.Id, refreshToken, DateTime.UtcNow.AddMinutes(10));
+        var session = Session.Create(user.Id, refreshToken, DateTime.UtcNow.AddMinutes(10));
         context.Sessions.Add(session);
         await context.SaveChangesAsync();
 
-        var handler = new LogoutCommandHandler(context);
+        var jwtBlacklist = new Mock<IJwtBlacklistService>();
+        var handler = new LogoutCommandHandler(context, jwtBlacklist.Object);
 
         await handler.Handle(new LogoutCommand
         {
@@ -35,7 +37,8 @@ public class LogoutCommandHandlerTests
     {
         using var context = AuthTestDbContextFactory.CreateInMemoryContext();
 
-        var handler = new LogoutCommandHandler(context);
+        var jwtBlacklist = new Mock<IJwtBlacklistService>();
+        var handler = new LogoutCommandHandler(context, jwtBlacklist.Object);
 
         var result = await handler.Handle(new LogoutCommand
         {
@@ -45,4 +48,3 @@ public class LogoutCommandHandlerTests
         result.Succeeded.Should().BeTrue();
     }
 }
-

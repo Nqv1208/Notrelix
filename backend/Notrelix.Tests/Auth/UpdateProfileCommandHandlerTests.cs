@@ -48,7 +48,6 @@ public class UpdateProfileCommandHandlerTests
         }, CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
-        result.Errors.Should().Contain("Không tìm thấy người dùng");
+        result.Errors.Should().Contain("User not found");
     }
 }
-
