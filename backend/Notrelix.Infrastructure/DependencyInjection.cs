@@ -27,6 +27,8 @@ public static class DependencyInjection
         var services = builder.Services;
         var configuration = builder.Configuration;
 
+        services.Configure<SeedDataOptions>(configuration.GetSection("SeedData"));
+
         services.AddDatabaseContext(configuration);
         services.AddRedisCache(configuration);
         services.AddJwt(configuration);
@@ -143,6 +145,7 @@ public static class DependencyInjection
 
         services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
 
+        services.AddAuthorization();
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
