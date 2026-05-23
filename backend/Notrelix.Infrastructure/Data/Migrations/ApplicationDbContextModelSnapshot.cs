@@ -22,7 +22,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.Board", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.Board", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -84,7 +84,63 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("boards", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.BoardList", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.BoardColumn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("board_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("FieldType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("field_type");
+
+                    b.Property<bool>("IsHidden")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_hidden");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<double>("Position")
+                        .HasColumnType("float8")
+                        .HasColumnName("position");
+
+                    b.Property<string>("Settings")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("settings");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoardId", "Position")
+                        .HasDatabaseName("idx_board_columns_board_position");
+
+                    b.ToTable("board_columns", (string)null);
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.BoardList", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -132,7 +188,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("lists", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.BoardMember", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.BoardMember", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -167,7 +223,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("board_members", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.BoardView", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.BoardView", b =>
                 {
                     b.Property<Guid>("BoardId")
                         .HasColumnType("uuid");
@@ -196,7 +252,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("board_views", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.Card", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.Card", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -295,7 +351,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("cards", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.CardLabel", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.CardLabel", b =>
                 {
                     b.Property<Guid>("CardId")
                         .HasColumnType("uuid")
@@ -312,7 +368,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("card_labels", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.CardLink", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.CardLink", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -347,7 +403,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("card_links", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.CardMember", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.CardMember", b =>
                 {
                     b.Property<Guid>("CardId")
                         .HasColumnType("uuid")
@@ -370,7 +426,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("card_members", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.Checklist", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.Checklist", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -404,7 +460,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("checklists", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.ChecklistItem", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.ChecklistItem", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -450,7 +506,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("checklist_items", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.Label", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.Label", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1384,7 +1440,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("reactions", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Workspacess.Workspace", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Workspaces.Workspace", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1469,7 +1525,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("workspaces", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Workspacess.WorkspaceInvitation", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Workspaces.WorkspaceInvitation", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1523,7 +1579,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("workspace_invitations", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Workspacess.WorkspaceMember", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Workspaces.WorkspaceMember", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1561,9 +1617,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("workspace_members", (string)null);
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.Board", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.Board", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Workspacess.Workspace", "Workspace")
+                    b.HasOne("Notrelix.Domain.Entities.Workspaces.Workspace", "Workspace")
                         .WithMany()
                         .HasForeignKey("WorkspaceId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1572,9 +1628,20 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Navigation("Workspace");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.BoardList", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.BoardColumn", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Boardss.Board", "Board")
+                    b.HasOne("Notrelix.Domain.Entities.Boards.Board", "Board")
+                        .WithMany()
+                        .HasForeignKey("BoardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Board");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.BoardList", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Entities.Boards.Board", "Board")
                         .WithMany("Lists")
                         .HasForeignKey("BoardId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1583,9 +1650,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Navigation("Board");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.BoardMember", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.BoardMember", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Boardss.Board", "Board")
+                    b.HasOne("Notrelix.Domain.Entities.Boards.Board", "Board")
                         .WithMany("Members")
                         .HasForeignKey("BoardId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1594,9 +1661,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Navigation("Board");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.BoardView", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.BoardView", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Boardss.Board", "Board")
+                    b.HasOne("Notrelix.Domain.Entities.Boards.Board", "Board")
                         .WithMany()
                         .HasForeignKey("BoardId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1605,9 +1672,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Navigation("Board");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.Card", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.Card", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Boardss.BoardList", null)
+                    b.HasOne("Notrelix.Domain.Entities.Boards.BoardList", null)
                         .WithMany("Cards")
                         .HasForeignKey("BoardListId");
 
@@ -1615,7 +1682,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .WithMany()
                         .HasForeignKey("LinkedPageId");
 
-                    b.HasOne("Notrelix.Domain.Entities.Boardss.BoardList", "List")
+                    b.HasOne("Notrelix.Domain.Entities.Boards.BoardList", "List")
                         .WithMany()
                         .HasForeignKey("ListId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1626,15 +1693,15 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Navigation("List");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.CardLabel", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.CardLabel", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Boardss.Card", "Card")
+                    b.HasOne("Notrelix.Domain.Entities.Boards.Card", "Card")
                         .WithMany("Labels")
                         .HasForeignKey("CardId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Notrelix.Domain.Entities.Boardss.Label", "Label")
+                    b.HasOne("Notrelix.Domain.Entities.Boards.Label", "Label")
                         .WithMany()
                         .HasForeignKey("LabelId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1645,15 +1712,15 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Navigation("Label");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.CardLink", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.CardLink", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Boardss.Card", "SourceCard")
+                    b.HasOne("Notrelix.Domain.Entities.Boards.Card", "SourceCard")
                         .WithMany()
                         .HasForeignKey("SourceCardId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Notrelix.Domain.Entities.Boardss.Card", "TargetCard")
+                    b.HasOne("Notrelix.Domain.Entities.Boards.Card", "TargetCard")
                         .WithMany()
                         .HasForeignKey("TargetCardId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1664,9 +1731,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Navigation("TargetCard");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.CardMember", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.CardMember", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Boardss.Card", "Card")
+                    b.HasOne("Notrelix.Domain.Entities.Boards.Card", "Card")
                         .WithMany("Members")
                         .HasForeignKey("CardId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1675,9 +1742,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Navigation("Card");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.Checklist", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.Checklist", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Boardss.Card", "Card")
+                    b.HasOne("Notrelix.Domain.Entities.Boards.Card", "Card")
                         .WithMany("Checklists")
                         .HasForeignKey("CardId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1686,9 +1753,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Navigation("Card");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.ChecklistItem", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.ChecklistItem", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Boardss.Checklist", "Checklist")
+                    b.HasOne("Notrelix.Domain.Entities.Boards.Checklist", "Checklist")
                         .WithMany("Items")
                         .HasForeignKey("ChecklistId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1697,9 +1764,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Navigation("Checklist");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.Label", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.Label", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Boardss.Board", "Board")
+                    b.HasOne("Notrelix.Domain.Entities.Boards.Board", "Board")
                         .WithMany()
                         .HasForeignKey("BoardId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1744,7 +1811,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasForeignKey("ParentId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("Notrelix.Domain.Entities.Workspacess.Workspace", "Workspace")
+                    b.HasOne("Notrelix.Domain.Entities.Workspaces.Workspace", "Workspace")
                         .WithMany()
                         .HasForeignKey("WorkspaceId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1823,7 +1890,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasForeignKey("ParentCommentId")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.HasOne("Notrelix.Domain.Entities.Workspacess.Workspace", null)
+                    b.HasOne("Notrelix.Domain.Entities.Workspaces.Workspace", null)
                         .WithMany()
                         .HasForeignKey("WorkspaceId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1834,14 +1901,14 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Notrelix.Domain.Entities.Shared.Permission", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Workspacess.Workspace", null)
+                    b.HasOne("Notrelix.Domain.Entities.Workspaces.Workspace", null)
                         .WithMany()
                         .HasForeignKey("WorkspaceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Workspacess.Workspace", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Workspaces.Workspace", b =>
                 {
                     b.OwnsOne("Notrelix.Domain.ValueObjects.Icon", "Icon", b1 =>
                         {
@@ -1872,9 +1939,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Workspacess.WorkspaceInvitation", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Workspaces.WorkspaceInvitation", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Workspacess.Workspace", "Workspace")
+                    b.HasOne("Notrelix.Domain.Entities.Workspaces.Workspace", "Workspace")
                         .WithMany()
                         .HasForeignKey("WorkspaceId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1883,9 +1950,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Navigation("Workspace");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Workspacess.WorkspaceMember", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Workspaces.WorkspaceMember", b =>
                 {
-                    b.HasOne("Notrelix.Domain.Entities.Workspacess.Workspace", "Workspace")
+                    b.HasOne("Notrelix.Domain.Entities.Workspaces.Workspace", "Workspace")
                         .WithMany("Members")
                         .HasForeignKey("WorkspaceId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1894,19 +1961,19 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Navigation("Workspace");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.Board", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.Board", b =>
                 {
                     b.Navigation("Lists");
 
                     b.Navigation("Members");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.BoardList", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.BoardList", b =>
                 {
                     b.Navigation("Cards");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.Card", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.Card", b =>
                 {
                     b.Navigation("Checklists");
 
@@ -1915,7 +1982,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Navigation("Members");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Boardss.Checklist", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Boards.Checklist", b =>
                 {
                     b.Navigation("Items");
                 });
@@ -1946,7 +2013,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Navigation("Replies");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Entities.Workspacess.Workspace", b =>
+            modelBuilder.Entity("Notrelix.Domain.Entities.Workspaces.Workspace", b =>
                 {
                     b.Navigation("Members");
                 });

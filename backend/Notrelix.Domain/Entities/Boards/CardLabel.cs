@@ -1,4 +1,4 @@
-namespace Notrelix.Domain.Entities.Boardss;
+namespace Notrelix.Domain.Entities.Boards;
 
 // Composite PK: CardId + LabelId
 public class CardLabel

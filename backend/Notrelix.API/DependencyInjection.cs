@@ -71,7 +71,8 @@ public static class DependencyInjection
             {
                 builder.WithOrigins(allowedOrigins)
                     .AllowAnyHeader()
-                    .AllowAnyMethod();
+                    .AllowAnyMethod()
+                    .AllowCredentials();
             });
         });
         return services;

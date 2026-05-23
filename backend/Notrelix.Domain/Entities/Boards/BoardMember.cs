@@ -1,7 +1,7 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Enums;
 
-namespace Notrelix.Domain.Entities.Boardss;
+namespace Notrelix.Domain.Entities.Boards;
 
 public class BoardMember : BaseEntity
 {

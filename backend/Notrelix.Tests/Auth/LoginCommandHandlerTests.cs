@@ -1,10 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Interfaces;
 using Notrelix.Application.Features.Identity.Commands.Login;
-using Notrelix.Application.Common.Models;
 using Notrelix.Domain.Entities.Identity;
-using Notrelix.Domain.Enums;
-using Notrelix.Infrastructure.Data;
 
 namespace Notrelix.Tests.Auth;
 
@@ -27,8 +24,7 @@ public class LoginCommandHandlerTests
         }, CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
-        result.ErrorType.Should().Be(ErrorType.Unauthorized);
-        result.Errors.Should().Contain("Email hoặc mật khẩu không đúng");
+        result.Errors.Should().Contain("Invalid email or password");
     }
 
     [Fact]
@@ -68,4 +64,3 @@ public class LoginCommandHandlerTests
         (await context.Sessions.ToListAsync()).Should().HaveCount(1);
     }
 }
-

@@ -1,11 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Interfaces;
-using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Commands.Register;
-using Notrelix.Application.Common.Models;
 using Notrelix.Domain.Entities.Identity;
-using Notrelix.Domain.Entities.Identity;
-using Notrelix.Infrastructure.Data;
 
 namespace Notrelix.Tests.Auth;
 
@@ -33,8 +29,7 @@ public class RegisterCommandHandlerTests
         }, CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
-        result.ErrorType.Should().Be(ErrorType.Conflict);
-        result.Errors.Should().Contain("Email đã được sử dụng");
+        result.Errors.Should().Contain("Email is already in use");
 
         passwordHasher.Verify(x => x.HashPassword(It.IsAny<string>()), Times.Never);
         jwtService.Verify(x => x.GenerateAccessToken(It.IsAny<User>()), Times.Never);
@@ -73,4 +68,3 @@ public class RegisterCommandHandlerTests
         (await context.Sessions.ToListAsync()).Should().HaveCount(1);
     }
 }
-

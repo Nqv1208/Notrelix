@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Interfaces;
 using Notrelix.Application.Common.Models;
 using Notrelix.Domain.Entities.Identity;
-using Notrelix.Domain.Entities.Workspacess;
+using Notrelix.Domain.Entities.Workspaces;
 
 namespace Notrelix.Application.Features.Identity.Commands.Register;
 

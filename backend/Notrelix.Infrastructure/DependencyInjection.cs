@@ -27,6 +27,8 @@ public static class DependencyInjection
         var services = builder.Services;
         var configuration = builder.Configuration;
 
+        services.Configure<SeedDataOptions>(configuration.GetSection("SeedData"));
+
         services.AddDatabaseContext(configuration);
         services.AddRedisCache(configuration);
         services.AddJwt(configuration);
@@ -43,6 +45,7 @@ public static class DependencyInjection
         services.AddScoped<ApplicationDbContextInitialiser>();
 
         services.AddScoped<IJwtService, JwtService>();
+        services.AddScoped<ICookieService, CookieService>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         
         services.AddHttpContextAccessor();
@@ -142,6 +145,7 @@ public static class DependencyInjection
 
         services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
 
+        services.AddAuthorization();
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
@@ -171,6 +175,15 @@ public static class DependencyInjection
                         {
                             context.Fail("Token has been revoked");
                         }
+                    },
+                    OnMessageReceived = context =>
+                    {
+                        var token = context.Request.Cookies["accessToken"];
+                        if (!string.IsNullOrEmpty(token))
+                        {
+                            context.Token = token;
+                        }
+                        return Task.CompletedTask;
                     }
                 };
             });

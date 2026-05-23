@@ -1,4 +1,4 @@
-namespace Notrelix.Application.Features.Boardss.DTOs;
+namespace Notrelix.Application.Features.Boards.DTOs;
 
 public record BoardDto(
     Guid Id,

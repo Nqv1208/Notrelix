@@ -1,7 +1,7 @@
 using MediatR;
 using Notrelix.Application.Common.Models;
 
-namespace Notrelix.Application.Features.Boardss.Commands;
+namespace Notrelix.Application.Features.Boards.Commands;
 
 // ──────── Board ────────
 public record UpdateBoardCommand(Guid BoardId, string? Title, string? Description, string? Background, string? Visibility) : IRequest<Result>;
@@ -42,3 +42,30 @@ public record DeleteCardLinkCommand(Guid CardLinkId) : IRequest<Result>;
 
 // ──────── Common ────────
 public record ReorderItem(Guid Id, double NewPosition);
+
+// ══════════════════════════════════════════════════════════════
+// Additional commands needed by Minimal API endpoints
+// ══════════════════════════════════════════════════════════════
+
+// ── Board ────────────────────────────────────────────────────
+public record UnarchiveBoardCommand(Guid BoardId) : IRequest<Result>;
+public record CreateBoardBySlugCommand(string Slug, string Title, string? Description, string? Background, string? Visibility) : IRequest<Result<Guid>>;
+public record AddBoardMemberCommand(Guid BoardId, Guid UserId, string? Role) : IRequest<Result>;
+public record RemoveBoardMemberCommand(Guid BoardId, Guid UserId) : IRequest<Result>;
+public record SaveBoardViewCommand(Guid BoardId, string ViewMode, string? Filters) : IRequest<Result>;
+
+// ── List ─────────────────────────────────────────────────────
+public record UnarchiveListCommand(Guid ListId) : IRequest<Result>;
+
+// ── Card ─────────────────────────────────────────────────────
+public record UnlinkPageFromCardCommand(Guid CardId) : IRequest<Result>;
+
+// ── Label ────────────────────────────────────────────────────
+public record UpdateLabelCommand(Guid LabelId, string? Name, string? Color) : IRequest<Result>;
+public record DeleteLabelCommand(Guid LabelId) : IRequest<Result>;
+
+// ── Checklist ────────────────────────────────────────────────
+public record UpdateChecklistCommand(Guid ChecklistId, string? Title, double? Position) : IRequest<Result>;
+public record DeleteChecklistCommand(Guid ChecklistId) : IRequest<Result>;
+public record UpdateChecklistItemCommand(Guid ItemId, string? Title, bool? IsChecked, DateTime? DueDate, Guid? AssigneeId) : IRequest<Result>;
+public record DeleteChecklistItemCommand(Guid ItemId) : IRequest<Result>;

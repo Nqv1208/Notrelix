@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace Notrelix.Application.Features.Boardss.Queries.GetFullBoard;
+namespace Notrelix.Application.Features.Boards.Queries.GetFullBoard;
 
 public class GetFullBoardQueryValidator : AbstractValidator<GetFullBoardQuery>
 {

@@ -1,13 +1,26 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using Notrelix.Infrastructure.Data;
 using Notrelix.API.Middleware;
+using Notrelix.API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services
-builder.Services.AddControllers();
+// Add services — NO AddControllers(), using Minimal API exclusively
 builder.AddInfrastructureServices();
 builder.AddApplicationServices();
 builder.AddWebServices();
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto |
+        ForwardedHeaders.XForwardedHost;
+
+    // Containers sit behind nginx / edge proxies with dynamic network addresses.
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // Swagger với JWT support
 builder.Services.AddEndpointsApiExplorer();
@@ -15,18 +28,19 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Initialise and seed database
+// Initialise database and run opt-in seed data.
 using var scope = app.Services.CreateScope();
 var initialiser = scope.ServiceProvider.GetRequiredService<ApplicationDbContextInitialiser>();
 
-await initialiser.InitialiseAsync(); // ✅ luôn chạy
+await initialiser.InitialiseAsync();
 
-if (app.Environment.IsDevelopment())
+if (app.Configuration.GetValue<bool>("SeedData:Enabled"))
 {
-    await initialiser.SeedAsync(); // chỉ dev
+    await initialiser.SeedAsync();
 }
 
 // Middleware pipeline
+app.UseForwardedHeaders();
 app.UseExceptionHandling();
 
 if (app.Environment.IsDevelopment())
@@ -37,14 +51,17 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("Frontend");
 
-// Trong Docker dev chỉ bind HTTP :8000 — redirect HTTPS gây lỗi khi mở Swagger qua http://...
-if (!app.Environment.IsDevelopment())
+// TLS is terminated by nginx / the edge proxy in container deployments.
+// Enable only when the API itself is responsible for HTTPS redirection.
+if (app.Configuration.GetValue<bool>("HttpsRedirection:Enabled"))
 {
     app.UseHttpsRedirection();
 }
 
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
+
+// ── Minimal API endpoints (replaces app.MapControllers()) ────
+app.MapEndpoints();
 
 app.Run();

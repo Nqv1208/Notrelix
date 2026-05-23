@@ -1,14 +1,21 @@
 import "@/styles/globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { Outfit } from "next/font/google"
+import { Poppins, Inter } from "next/font/google"
 import { QueryProvider } from "./providers"
 import { NextIntlClientProvider } from "next-intl"
 import { getLocale, getMessages } from "next-intl/server"
 
-const outfit = Outfit({
+const poppins = Poppins({
   subsets: ["latin", "latin-ext"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-  variable: "--font-outfit",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-poppins",
+  display: "swap",
+})
+
+const inter = Inter({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600"],
+  variable: "--font-inter",
   display: "swap",
 })
 
@@ -22,8 +29,8 @@ export default async function RootLayout({
   const messages = await getMessages()
 
   return (
-    <html lang={locale} suppressHydrationWarning className={outfit.variable}>
-      <body className={outfit.className}>
+    <html lang={locale} suppressHydrationWarning className={`${poppins.variable} ${inter.variable}`}>
+      <body className={inter.className}>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <QueryProvider>
             <ThemeProvider

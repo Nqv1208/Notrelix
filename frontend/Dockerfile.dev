@@ -1,23 +1,13 @@
-# syntax=docker/dockerfile:1.7
+# Ảnh cơ sở để pre-build node_modules khi không dùng volume (tùy chọn).
+# Dev thường dùng compose mount + oven/bun trực tiếp (xem docker-compose.dev.yml).
 
-FROM oven/bun:1.2.23-alpine
-
+FROM oven/bun:1.2-alpine
 WORKDIR /app
-
-# Cài dependency trước để tận dụng cache (optional)
-COPY package.json bun.lockb* ./
-
-RUN bun install
-
-# Copy source (dev vẫn sẽ bị override bởi volume)
+RUN apk update && apk upgrade --no-cache
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
 COPY . .
-
-# Env cho dev + hot reload trong Docker
 ENV NODE_ENV=development
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV CHOKIDAR_USEPOLLING=true
-ENV WATCHPACK_POLLING=true
-
 EXPOSE 3000
-
-CMD ["bun", "run", "dev"]
+CMD ["bun", "run", "dev", "--", "--hostname", "0.0.0.0", "--port", "3000"]

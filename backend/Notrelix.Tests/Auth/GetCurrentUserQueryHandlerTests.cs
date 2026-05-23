@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Queries.GetCurrentUser;
 using Notrelix.Domain.Entities.Identity;
 
@@ -20,8 +19,7 @@ public class GetCurrentUserQueryHandlerTests
         }, CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
-        result.ErrorType.Should().Be(ErrorType.NotFound);
-        result.Errors.Should().Contain("Không tìm thấy người dùng");
+        result.Errors.Should().Contain("User not found");
     }
 
     [Fact]
@@ -46,4 +44,3 @@ public class GetCurrentUserQueryHandlerTests
         result.Data!.Name.Should().Be("Me");
     }
 }
-

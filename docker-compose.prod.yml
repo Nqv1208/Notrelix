@@ -1,4 +1,7 @@
-version: "3.9"
+# =============================================================================
+# Production — hardening, port 80, logging (Compose không áp dụng deploy.* ngoài Swarm)
+# Chạy: docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# =============================================================================
 
 services:
   postgres:
@@ -10,21 +13,18 @@ services:
   backend:
     container_name: notrelix-backend-prod
     environment:
-      - ENV=production
+      ASPNETCORE_ENVIRONMENT: Production
 
   frontend:
     container_name: notrelix-frontend-prod
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.example.com}
+        NEXT_PUBLIC_APP_ENV: production
 
   nginx:
-    image: nginx:alpine
-    container_name: notrelix-nginx
-    restart: unless-stopped
+    container_name: notrelix-nginx-prod
     ports:
-      - "80:80"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - backend
-      - frontend
-    networks:
-      - frontend-network
+      - "${PROD_HTTP_PORT:-80}:80"

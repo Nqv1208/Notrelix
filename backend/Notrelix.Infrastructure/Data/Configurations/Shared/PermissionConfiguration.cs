@@ -72,7 +72,7 @@ public class PermissionConfiguration : IEntityTypeConfiguration<Permission>
             .HasDatabaseName("idx_permissions_resource");
         builder.HasIndex(p => new { p.SubjectType, p.SubjectId });
 
-        builder.HasOne<Notrelix.Domain.Entities.Workspacess.Workspace>()
+        builder.HasOne<Notrelix.Domain.Entities.Workspaces.Workspace>()
             .WithMany()
             .HasForeignKey(p => p.WorkspaceId)
             .OnDelete(DeleteBehavior.Cascade);

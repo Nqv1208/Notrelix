@@ -1,7 +1,7 @@
 using MediatR;
 using Notrelix.Application.Common.Models;
 
-namespace Notrelix.Application.Features.Workspacess.Commands;
+namespace Notrelix.Application.Features.Workspaces.Commands;
 
 // ──────── Create Workspace ────────
 public record CreateWorkspaceCommand(
@@ -41,6 +41,30 @@ public record RemoveMemberCommand(
 // ──────── Update Member Role ────────
 public record UpdateMemberRoleCommand(
     Guid WorkspaceId,
+    Guid UserId,
+    string Role
+) : IRequest<Result>;
+
+// ══════════════════════════════════════════════════════════════
+// Slug-based variants — used by Minimal API endpoints
+// Handlers resolve slug → WorkspaceId internally
+// ══════════════════════════════════════════════════════════════
+
+public record ArchiveWorkspaceBySlugCommand(string Slug) : IRequest<Result>;
+
+public record InviteMemberBySlugCommand(
+    string Slug,
+    string Email,
+    string Role
+) : IRequest<Result<Guid>>;
+
+public record RemoveMemberBySlugCommand(
+    string Slug,
+    Guid UserId
+) : IRequest<Result>;
+
+public record UpdateMemberRoleBySlugCommand(
+    string Slug,
     Guid UserId,
     string Role
 ) : IRequest<Result>;

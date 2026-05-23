@@ -1,0 +1,31 @@
+# =============================================================================
+# Staging — build production images, expose HTTP, biến Staging
+# Chạy: docker compose --env-file .env.staging -f docker-compose.yml -f docker-compose.staging.yml up -d --build
+# (docker-compose.yml = include infra + docker-compose.app.yml)
+# =============================================================================
+
+services:
+  postgres:
+    container_name: notrelix-postgres-staging
+
+  redis:
+    container_name: notrelix-redis-staging
+
+  backend:
+    container_name: notrelix-backend-staging
+    environment:
+      ASPNETCORE_ENVIRONMENT: Staging
+
+  frontend:
+    container_name: notrelix-frontend-staging
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://staging.example.com/api}
+        NEXT_PUBLIC_APP_ENV: staging
+
+  nginx:
+    container_name: notrelix-nginx-staging
+    ports:
+      - "${STAGING_HTTP_PORT:-8080}:80"

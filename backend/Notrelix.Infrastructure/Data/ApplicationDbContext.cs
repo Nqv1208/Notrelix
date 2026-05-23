@@ -2,9 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Interfaces;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Entities.Identity;
-using Notrelix.Domain.Entities.Workspacess;
+using Notrelix.Domain.Entities.Workspaces;
 using Notrelix.Domain.Entities.Document;
-using Notrelix.Domain.Entities.Boardss;
+using Notrelix.Domain.Entities.Boards;
 using Notrelix.Domain.Entities.Calendar;
 using Notrelix.Domain.Entities.Shared;
 
@@ -37,6 +37,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<BoardMember> BoardMembers => Set<BoardMember>();
     public DbSet<BoardView> BoardViews => Set<BoardView>();
     public DbSet<BoardList> BoardLists => Set<BoardList>();
+    public DbSet<BoardColumn> BoardColumns => Set<BoardColumn>();
     public DbSet<Label> Labels => Set<Label>();
     public DbSet<Card> Cards => Set<Card>();
     public DbSet<CardMember> CardMembers => Set<CardMember>();

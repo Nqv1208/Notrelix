@@ -3,7 +3,10 @@ import { ApiError } from "@/lib/api/api-error";
 import { AUTH_ERROR_KEYS } from "@/features/auth/i18n/auth-error-keys";
 import { tokenStorage } from "@/lib/auth/token-storage";
 
-const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "/api").replace(/\/$/, "");
+const configuredBaseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "/api/v1").replace(/\/$/, "");
+const BASE_URL = configuredBaseUrl.endsWith("/api")
+  ? `${configuredBaseUrl}/v1`
+  : configuredBaseUrl;
 
 type RefreshResponse = {
   accessToken: string;
@@ -15,17 +18,18 @@ export async function apiFetch<T>(
   options: RequestInit = {},
   retry = true
 ): Promise<T> {
-  const accessToken = tokenStorage.getAccessToken();
+  // const accessToken = tokenStorage.getAccessToken();
   const headers: HeadersInit = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
 
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
+  // if (accessToken) {
+  //   headers.Authorization = `Bearer ${accessToken}`;
+  // }
 
   const response = await fetch(`${BASE_URL}${url}`, {
+    credentials: "include",
     ...options,
     headers,
   });
@@ -33,8 +37,7 @@ export async function apiFetch<T>(
   if (
     response.status === 401 &&
     retry &&
-    url !== endpoints.auth.refresh &&
-    url !== endpoints.auth.profile
+    url !== endpoints.auth.refresh
   ) {
     return handleRefreshToken<T>(url, options);
   }
@@ -51,27 +54,28 @@ async function handleRefreshToken<T>(
   url: string,
   options: RequestInit
 ): Promise<T> {
-  const refreshToken = tokenStorage.getRefreshToken();
-  if (!refreshToken) {
-    tokenStorage.clearTokens();
-    throw new ApiError(401, AUTH_ERROR_KEYS.REFRESH_INVALID);
-  }
+  // const refreshToken = tokenStorage.getRefreshToken();
+  // if (!refreshToken) {
+  //   tokenStorage.clearTokens();
+  //   throw new ApiError(401, AUTH_ERROR_KEYS.REFRESH_INVALID);
+  // }
 
   const refreshResponse = await fetch(`${BASE_URL}${endpoints.auth.refresh}`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ refreshToken }),
+    // body: JSON.stringify({ refreshToken }),
   });
 
   const refreshData = (await parseJsonResponse(refreshResponse)) as RefreshResponse;
   if (!refreshResponse.ok) {
-    tokenStorage.clearTokens();
+    // tokenStorage.clearTokens();
     throw new ApiError(refreshResponse.status, extractErrorMessage(refreshData), refreshData);
   }
 
-  tokenStorage.setTokens(refreshData.accessToken, refreshData.refreshToken);
+  // tokenStorage.setTokens(refreshData.accessToken, refreshData.refreshToken);
   return apiFetch<T>(url, options, false);
 }
 
