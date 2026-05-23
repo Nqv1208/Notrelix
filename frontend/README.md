@@ -64,9 +64,9 @@ src/
 │   │   │
 │   │   ├── home/page.tsx                # /home
 │   │   │
-│   │   ├── [workspaceSlug]/
+│   │   ├── [workspaceId]/
 │   │   │   ├── layout.tsx               # Validate workspace + WorkspaceProvider
-│   │   │   ├── page.tsx                 # /[workspaceSlug]
+│   │   │   ├── page.tsx                 # /[workspaceId]
 │   │   │   │
 │   │   │   ├── settings/
 │   │   │   │   ├── layout.tsx           # Settings tabs nav
@@ -77,12 +77,12 @@ src/
 │   │   │   │   └── billing/page.tsx     # Plan & billing
 │   │   │   │
 │   │   │   ├── docs/
-│   │   │   │   ├── page.tsx             # /[workspaceSlug]/docs
+│   │   │   │   ├── page.tsx             # /[workspaceId]/docs
 │   │   │   │   └── [pageId]/
-│   │   │   │       └── page.tsx         # /[workspaceSlug]/docs/[pageId]
+│   │   │   │       └── page.tsx         # /[workspaceId]/docs/[pageId]
 │   │   │   │
 │   │   │   └── boards/
-│   │   │       ├── page.tsx             # /[workspaceSlug]/boards
+│   │   │       ├── page.tsx             # /[workspaceId]/boards
 │   │   │       └── [boardId]/
 │   │   │           ├── page.tsx         # Kanban view (default)
 │   │   │           ├── list/page.tsx    # List view
@@ -151,18 +151,18 @@ src/
 | `/reset-password?token=xxx` | Đặt lại mật khẩu |
 | `/home` | Dashboard tổng quan |
 | `/invite/[token]` | Chấp nhận lời mời (public) |
-| `/[workspaceSlug]` | Workspace home |
-| `/[workspaceSlug]/settings/general` | Cài đặt chung |
-| `/[workspaceSlug]/settings/members` | Quản lý thành viên |
-| `/[workspaceSlug]/settings/permissions` | Phân quyền |
-| `/[workspaceSlug]/settings/billing` | Thanh toán |
-| `/[workspaceSlug]/docs` | Danh sách pages |
-| `/[workspaceSlug]/docs/[pageId]` | Notion-like editor |
-| `/[workspaceSlug]/boards` | Danh sách boards |
-| `/[workspaceSlug]/boards/[boardId]` | Kanban view |
-| `/[workspaceSlug]/boards/[boardId]/list` | List view |
-| `/[workspaceSlug]/boards/[boardId]/calendar` | Calendar view |
-| `/[workspaceSlug]/boards/[boardId]/card/[cardId]` | Card detail |
+| `/[workspaceId]` | Workspace home |
+| `/[workspaceId]/settings/general` | Cài đặt chung |
+| `/[workspaceId]/settings/members` | Quản lý thành viên |
+| `/[workspaceId]/settings/permissions` | Phân quyền |
+| `/[workspaceId]/settings/billing` | Thanh toán |
+| `/[workspaceId]/docs` | Danh sách pages |
+| `/[workspaceId]/docs/[pageId]` | Notion-like editor |
+| `/[workspaceId]/boards` | Danh sách boards |
+| `/[workspaceId]/boards/[boardId]` | Kanban view |
+| `/[workspaceId]/boards/[boardId]/list` | List view |
+| `/[workspaceId]/boards/[boardId]/calendar` | Calendar view |
+| `/[workspaceId]/boards/[boardId]/card/[cardId]` | Card detail |
 | `/account/profile` | Hồ sơ cá nhân |
 | `/account/security` | Bảo mật (sessions, password) |
 | `/account/notifications` | Cài đặt thông báo |
@@ -200,5 +200,5 @@ npm run dev
 
 Cần thêm `.env.local`:
 ```
-NEXT_PUBLIC_API_URL=http://localhost:5000/api
+NEXT_PUBLIC_API_URL=http://localhost:5000/api/v1
 ```
