@@ -130,8 +130,10 @@ export interface ViewConfig {
   hiddenFields: string[]
   columnOrder: string[]
   columnWidths: Record<string, number>
+  collapsedGroups: Record<string, boolean>
   filters: FilterConfig[]
   sortBy: SortConfig[]
+  searchQuery?: string
 }
 
 export interface FilterConfig {
@@ -152,11 +154,36 @@ export interface DragItem {
   sourceIndex: number
 }
 
+export interface BoardTableColumn {
+  id: string
+  field: FieldDefinition
+  width: number
+  minWidth: number
+  isVisible: boolean
+}
+
+export interface BoardTableGroupState {
+  id: string
+  isCollapsed: boolean
+}
+
+export interface BoardTableSelectionState {
+  selectedCardIds: string[]
+  isAllSelected: boolean
+}
+
+export interface BoardTableDraftCard {
+  listId: string
+  title: string
+}
+
 export interface FullBoardResponse {
   board: Board
   groups: BoardGroup[]
   fieldDefinitions: FieldDefinition[]
 }
+
+export type CardDetailTab = "updates" | "files" | "activity" | "linked-docs" | "subtasks"
 
 export interface CardComment {
   id: string
@@ -166,10 +193,46 @@ export interface CardComment {
   createdAt: string
 }
 
+export interface CardUpdate {
+  id: string
+  cardId: string
+  author: CardMember
+  body: string
+  mentionUserIds: string[]
+  attachmentIds: string[]
+  createdAt: string
+  updatedAt?: string
+}
+
 export interface CardActivity {
   id: string
   cardId: string
   actor: string
   action: string
+  type?: "created" | "updated" | "commented" | "file" | "automation" | "system"
+  metadata?: Record<string, unknown>
   createdAt: string
 }
+
+export interface CardFile {
+  id: string
+  cardId: string
+  name: string
+  size: number
+  contentType: string
+  url: string
+  source: "upload" | "r2" | "s3" | "link"
+  createdBy: CardMember
+  createdAt: string
+}
+
+export interface CardDetail extends Card {
+  boardTitle: string
+  watchers: CardMember[]
+  isWatched: boolean
+  updates: CardUpdate[]
+  files: CardFile[]
+  activity: CardActivity[]
+}
+
+export type * from "./api-types"

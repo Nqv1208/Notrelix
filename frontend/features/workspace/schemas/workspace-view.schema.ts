@@ -34,7 +34,7 @@ export const workspaceViewConfigSchema = z.object({
 })
 
 export const createWorkspaceViewSchema = z.object({
-  workspaceSlug: z.string().min(1),
+  workspaceId: z.string().min(1),
   name: z.string().min(1).max(120),
   type: workspaceViewTypeSchema,
   target: workspaceViewTargetSchema.optional(),

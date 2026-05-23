@@ -3,10 +3,9 @@ import type { WorkspaceSnapshot, WorkspaceView, WorkspaceViewType } from "../typ
 const workspaceSlug = "notrelix-os"
 const workspaceId = "workspace-notrelix-os"
 
-function view(input: Omit<WorkspaceView, "workspaceId" | "workspaceSlug" | "visibility" | "createdAt">): WorkspaceView {
+function view(input: Omit<WorkspaceView, "workspaceId" | "visibility" | "createdAt">): WorkspaceView {
   return {
     workspaceId,
-    workspaceSlug,
     visibility: "workspace",
     createdAt: "2026-05-01T08:00:00.000Z",
     ...input,
@@ -107,15 +106,15 @@ export const mockWorkspaceSnapshot: WorkspaceSnapshot = {
   ],
   views: mockWorkspaceViews,
   favorites: [
-    { id: "fav-table", title: "Product delivery", type: "view", icon: "▦", href: `/${workspaceSlug}?view=table` },
-    { id: "fav-doc", title: "Docs MVP specification", type: "doc", icon: "□", href: `/${workspaceSlug}?view=doc` },
-    { id: "fav-dashboard", title: "Workspace health", type: "dashboard", icon: "◌", href: `/${workspaceSlug}?view=dashboard` },
+    { id: "fav-table", title: "Product delivery", type: "view", icon: "▦", href: `/${workspaceId}?view=table` },
+    { id: "fav-doc", title: "Docs MVP specification", type: "doc", icon: "□", href: `/${workspaceId}?view=doc` },
+    { id: "fav-dashboard", title: "Workspace health", type: "dashboard", icon: "◌", href: `/${workspaceId}?view=dashboard` },
   ],
   recent: [
-    { id: "recent-table", title: "Main table", type: "view", icon: "▦", href: `/${workspaceSlug}?view=table`, updatedAt: "12m ago" },
-    { id: "recent-chat", title: "Project room", type: "chat", icon: "#", href: `/${workspaceSlug}/chat`, updatedAt: "18m ago" },
-    { id: "recent-roadmap", title: "Roadmap planning", type: "board", icon: "▥", href: `/${workspaceSlug}/boards/board-roadmap`, updatedAt: "1h ago" },
-    { id: "recent-q3", title: "Q3 operating plan", type: "doc", icon: "□", href: `/${workspaceSlug}/docs/q3-operating-plan`, updatedAt: "2h ago" },
+    { id: "recent-table", title: "Main table", type: "view", icon: "▦", href: `/${workspaceId}?view=table`, updatedAt: "12m ago" },
+    { id: "recent-chat", title: "Project room", type: "chat", icon: "#", href: `/${workspaceId}/chat`, updatedAt: "18m ago" },
+    { id: "recent-roadmap", title: "Roadmap planning", type: "board", icon: "▥", href: `/${workspaceId}/boards/board-roadmap`, updatedAt: "1h ago" },
+    { id: "recent-q3", title: "Q3 operating plan", type: "doc", icon: "□", href: `/${workspaceId}/docs/q3-operating-plan`, updatedAt: "2h ago" },
   ],
   activity: [
     { id: "activity-1", actor: "Ana", action: "published", target: "Q3 operating plan", createdAt: "12m ago" },

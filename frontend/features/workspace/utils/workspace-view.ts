@@ -1,8 +1,8 @@
 import type { WorkspaceView, WorkspaceViewType } from "../types"
+import { getWorkspaceViewHref } from "./workspace-routes"
 
-export function getViewHref(workspaceSlug: string, view: Pick<WorkspaceView, "id" | "type">) {
-  const viewParam = view.id === view.type ? view.type : view.id
-  return `/${workspaceSlug}?view=${viewParam}`
+export function getViewHref(workspaceId: string, view: Pick<WorkspaceView, "id" | "type">) {
+  return getWorkspaceViewHref(workspaceId, view)
 }
 
 export function isWorkspaceViewType(value: string): value is WorkspaceViewType {

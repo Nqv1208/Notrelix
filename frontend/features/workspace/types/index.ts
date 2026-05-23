@@ -54,7 +54,6 @@ export interface WorkspaceViewConfig {
 export interface WorkspaceView {
   id: string
   workspaceId: string
-  workspaceSlug: string
   name: string
   type: WorkspaceViewType
   icon: string
@@ -103,7 +102,7 @@ export interface WorkspaceSnapshot {
 }
 
 export interface CreateWorkspaceViewInput {
-  workspaceSlug: string
+  workspaceId: string
   name: string
   type: WorkspaceViewType
   target?: WorkspaceViewTarget

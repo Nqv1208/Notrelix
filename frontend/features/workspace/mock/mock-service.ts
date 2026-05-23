@@ -15,7 +15,7 @@ function iconFor(type: CreateWorkspaceViewInput["type"]) {
 export const mockWorkspaceService = {
   // TODO(api):
   // Replace mockWorkspaceService with real API integration.
-  // Endpoint: GET /api/workspaces/{slug}
+  // Endpoint: GET /api/v1/workspaces/{workspaceId}
   // Hook: useWorkspace
   async getWorkspace(slug: string) {
     await mockDelay()
@@ -25,7 +25,7 @@ export const mockWorkspaceService = {
 
   // TODO(api):
   // Replace mockWorkspaceService with real API integration.
-  // Endpoint: GET /api/workspaces/{slug}/snapshot
+  // Endpoint: GET /api/v1/workspaces/{workspaceId}/snapshot
   // Hook: useWorkspaceSnapshot
   async getSnapshot(slug: string) {
     await mockDelay()
@@ -35,19 +35,19 @@ export const mockWorkspaceService = {
 
   // TODO(api):
   // Replace mockWorkspaceService with real API integration.
-  // Endpoint: GET /api/workspaces/{slug}/views
+  // Endpoint: GET /api/v1/workspaces/{workspaceId}/views
   // Hook: useWorkspaceViews
   async getViews(slug: string) {
     await mockDelay()
     return cloneSnapshot().views
-      .filter((view) => view.workspaceSlug === snapshot.workspace.slug || view.workspaceSlug === slug)
-      .map((view) => ({ ...view, workspaceSlug: slug }))
+      .filter((view) => view.workspaceId === snapshot.workspace.id || view.workspaceId === slug)
+      .map((view) => ({ ...view, workspaceId: slug }))
       .sort((a, b) => a.position - b.position)
   },
 
   // TODO(api):
   // Replace mockWorkspaceService with real API integration.
-  // Endpoint: POST /api/workspaces/{slug}/views
+  // Endpoint: POST /api/v1/workspaces/{workspaceId}/views
   // Hook: useCreateWorkspaceView
   async createView(input: CreateWorkspaceViewInput): Promise<WorkspaceView> {
     await mockDelay()
@@ -55,7 +55,6 @@ export const mockWorkspaceService = {
     const newView: WorkspaceView = {
       id: `${input.type}-${Date.now()}`,
       workspaceId: snapshot.workspace.id,
-      workspaceSlug: input.workspaceSlug,
       name: input.name,
       type: input.type,
       icon: iconFor(input.type),
@@ -74,7 +73,7 @@ export const mockWorkspaceService = {
 
   // TODO(api):
   // Replace mockWorkspaceService with real API integration.
-  // Endpoint: PATCH /api/workspaces/{slug}/views/{viewId}
+  // Endpoint: PATCH /api/v1/workspaces/{workspaceId}/views/{viewId}
   // Hook: useUpdateWorkspaceView
   async updateView(slug: string, viewId: string, input: UpdateWorkspaceViewInput) {
     await mockDelay()
@@ -85,7 +84,7 @@ export const mockWorkspaceService = {
         if (view.id !== viewId) return view
         updated = {
           ...view,
-          workspaceSlug: slug,
+          workspaceId: slug,
           name: input.name ?? view.name,
           icon: input.icon ?? view.icon,
           config: { ...view.config, ...input.config },

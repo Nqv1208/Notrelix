@@ -209,7 +209,7 @@ export const mockBlocks: Record<string, Block[]> = {
       ],
     }),
     block("docs-mvp-spec", "b-10", "board_reference", 10, "", { linkedBoardId: "board-product", title: "Product delivery board" }),
-    block("docs-mvp-spec", "b-11", "code", 11, "GET /api/pages/:id/blocks\nPATCH /api/blocks/:blockId\nPOST /api/blocks/reorder", { language: "http" }),
+    block("docs-mvp-spec", "b-11", "code", 11, "GET /api/v1/pages/:id/blocks\nPATCH /api/v1/blocks/:blockId\nPOST /api/v1/blocks/reorder", { language: "http" }),
   ],
   "q3-operating-plan": [
     block("q3-operating-plan", "b-q3-1", "paragraph", 1, "Q3 focuses on activation, admin reliability, and calendar-led workflows for product teams."),
