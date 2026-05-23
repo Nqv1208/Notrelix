@@ -3,17 +3,17 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { queryKeys } from "@/lib/query/query-keys"
-import { boardsApi } from "../api/boards-api"
+import { cardApi } from "../api/card.api"
 import type { FullBoardResponse } from "../types"
 import type { UpdateCardInput } from "../schemas"
 import { updateCardInFullBoard } from "./query-cache"
 
-export function useUpdateCard(boardId: string) {
+export function useUpdateCard(boardId: string, workspaceId?: string) {
   const queryClient = useQueryClient()
-  const queryKey = queryKeys.boards.fullBoard(boardId)
+  const queryKey = queryKeys.boards.fullBoard(boardId, workspaceId)
 
   return useMutation({
-    mutationFn: ({ cardId, patch }: { cardId: string; patch: UpdateCardInput }) => boardsApi.updateCard(cardId, patch),
+    mutationFn: ({ cardId, patch }: { cardId: string; patch: UpdateCardInput }) => cardApi.updateCard(cardId, patch),
     onMutate: async ({ cardId, patch }) => {
       await queryClient.cancelQueries({ queryKey })
       const previous = queryClient.getQueryData<FullBoardResponse>(queryKey)

@@ -2,13 +2,13 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { queryKeys } from "@/lib/query/query-keys"
-import { workspacesApi } from "../api/workspaces-api"
+import { workspaceService } from "../api/workspace.service"
 
-export function useWorkspaceViews(slug: string) {
+export function useWorkspaceViews(workspaceId: string) {
   return useQuery({
-    queryKey: queryKeys.workspaces.views(slug),
-    queryFn: () => workspacesApi.getViews(slug),
-    enabled: Boolean(slug),
+    queryKey: queryKeys.workspaces.views(workspaceId),
+    queryFn: () => workspaceService.getViews(workspaceId),
+    enabled: Boolean(workspaceId),
     staleTime: 30_000,
   })
 }

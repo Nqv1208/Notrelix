@@ -2,13 +2,13 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { queryKeys } from "@/lib/query/query-keys"
-import { mockPageService } from "../mock/mock-page-service"
+import { pageService } from "../api/page.service"
 import type { CreateCommentPayload, PageComment } from "../types"
 
 export function usePageComments(pageId: string) {
   return useQuery({
     queryKey: queryKeys.pages.comments(pageId),
-    queryFn: () => mockPageService.getComments(pageId),
+    queryFn: () => pageService.getComments(pageId),
     enabled: !!pageId,
     staleTime: 15_000,
   })
@@ -19,7 +19,7 @@ export function useCreatePageComment(pageId: string) {
 
   return useMutation({
     mutationFn: (payload: Omit<CreateCommentPayload, "pageId">) =>
-      mockPageService.createComment({ ...payload, pageId }),
+      pageService.createComment({ ...payload, pageId }),
     onMutate: async (payload) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.pages.comments(pageId) })
       const previous = queryClient.getQueryData<PageComment[]>(queryKeys.pages.comments(pageId))

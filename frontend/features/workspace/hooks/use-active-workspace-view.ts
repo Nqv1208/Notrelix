@@ -18,8 +18,8 @@ export function resolveWorkspaceView(views: WorkspaceView[], requestedView?: str
   return views.find((view) => view.isDefault) ?? views[0]
 }
 
-export function useActiveWorkspaceView(slug: string, requestedView?: string | null) {
-  const query = useWorkspaceViews(slug)
+export function useActiveWorkspaceView(workspaceId: string, requestedView?: string | null) {
+  const query = useWorkspaceViews(workspaceId)
   const activeView = useMemo(() => resolveWorkspaceView(query.data ?? [], requestedView), [query.data, requestedView])
 
   return {

@@ -2,14 +2,14 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { queryKeys } from "@/lib/query/query-keys"
-import { blocksApi } from "../api/blocks-api"
+import { blockService } from "../api/block.service"
 import type { Block, ReorderBlocksInput } from "../types"
 
 export function useReorderBlocks(pageId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (payload: ReorderBlocksInput) => blocksApi.reorder(payload),
+    mutationFn: (payload: ReorderBlocksInput) => blockService.reorder(payload),
     onMutate: async (payload) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.pages.blocks(pageId) })
       const previous = queryClient.getQueryData<Block[]>(queryKeys.pages.blocks(pageId))

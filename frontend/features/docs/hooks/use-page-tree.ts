@@ -4,12 +4,12 @@ import { useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { queryKeys } from "@/lib/query/query-keys"
 import { DOCS_STALE_TIME } from "../constants"
-import { pagesApi } from "../api/pages-api"
+import { pageService } from "../api/page.service"
 
 export function usePageTree(workspaceId: string) {
   return useQuery({
     queryKey: queryKeys.pages.tree(workspaceId),
-    queryFn: () => pagesApi.getTree(workspaceId),
+    queryFn: () => pageService.getTree(workspaceId),
     enabled: !!workspaceId,
     staleTime: DOCS_STALE_TIME,
   })
@@ -18,7 +18,7 @@ export function usePageTree(workspaceId: string) {
 export function usePageList(workspaceId: string) {
   return useQuery({
     queryKey: queryKeys.pages.list(workspaceId),
-    queryFn: () => pagesApi.getList(workspaceId),
+    queryFn: () => pageService.getList(workspaceId),
     enabled: !!workspaceId,
     staleTime: DOCS_STALE_TIME,
   })

@@ -2,14 +2,14 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { queryKeys } from "@/lib/query/query-keys"
-import { pagesApi } from "../api/pages-api"
+import { pageService } from "../api/page.service"
 import type { CreatePagePayload, Page } from "../types"
 
 export function useCreatePage() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (payload: CreatePagePayload) => pagesApi.create(payload),
+    mutationFn: (payload: CreatePagePayload) => pageService.create(payload),
     onMutate: async (payload) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.pages.list(payload.workspaceId) })
       const previous = queryClient.getQueryData<Page[]>(queryKeys.pages.list(payload.workspaceId))

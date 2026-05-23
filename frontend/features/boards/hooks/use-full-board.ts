@@ -2,13 +2,13 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { queryKeys } from "@/lib/query/query-keys"
-import { boardsApi } from "../api/boards-api"
+import { boardApi } from "../api/board.api"
 
-export function useFullBoard(boardId: string) {
+export function useFullBoard(boardId?: string, workspaceId?: string) {
   const query = useQuery({
-    queryKey: queryKeys.boards.fullBoard(boardId),
-    queryFn: () => boardsApi.getFullBoard(boardId),
-    enabled: Boolean(boardId),
+    queryKey: queryKeys.boards.fullBoard(boardId ?? "pending", workspaceId),
+    queryFn: () => boardApi.getFullBoard(boardId!, { workspaceId: workspaceId! }),
+    enabled: Boolean(boardId && workspaceId),
     staleTime: 10_000,
   })
 

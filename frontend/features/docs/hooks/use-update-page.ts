@@ -2,14 +2,14 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { queryKeys } from "@/lib/query/query-keys"
-import { pagesApi } from "../api/pages-api"
+import { pageService } from "../api/page.service"
 import type { PageDetail, UpdatePagePayload } from "../types"
 
 export function useUpdatePage(pageId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (payload: UpdatePagePayload) => pagesApi.update(pageId, payload),
+    mutationFn: (payload: UpdatePagePayload) => pageService.update(pageId, payload),
     onMutate: async (payload) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.pages.detail(pageId) })
       const previous = queryClient.getQueryData<PageDetail>(queryKeys.pages.detail(pageId))

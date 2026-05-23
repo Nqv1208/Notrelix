@@ -2,19 +2,19 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { queryKeys } from "@/lib/query/query-keys"
-import { workspacesApi } from "../api/workspaces-api"
+import { workspaceService } from "../api/workspace.service"
 import type { UpdateWorkspaceViewInput, WorkspaceView } from "../types"
 
-export function useUpdateWorkspaceView(slug: string) {
+export function useUpdateWorkspaceView(workspaceId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: ({ viewId, input }: { viewId: string; input: UpdateWorkspaceViewInput }) =>
-      workspacesApi.updateView(slug, viewId, input),
+      workspaceService.updateView(workspaceId, viewId, input),
     onMutate: async ({ viewId, input }) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.workspaces.views(slug) })
-      const previous = queryClient.getQueryData(queryKeys.workspaces.views(slug))
-      queryClient.setQueryData(queryKeys.workspaces.views(slug), (old: WorkspaceView[] | undefined) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.workspaces.views(workspaceId) })
+      const previous = queryClient.getQueryData(queryKeys.workspaces.views(workspaceId))
+      queryClient.setQueryData(queryKeys.workspaces.views(workspaceId), (old: WorkspaceView[] | undefined) => {
         if (!old) return old
         return old.map((view) => {
           if (view.id !== viewId) return view
@@ -24,11 +24,11 @@ export function useUpdateWorkspaceView(slug: string) {
       return { previous }
     },
     onError: (_error, _variables, context) => {
-      queryClient.setQueryData(queryKeys.workspaces.views(slug), context?.previous)
+      queryClient.setQueryData(queryKeys.workspaces.views(workspaceId), context?.previous)
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.workspaces.views(slug) })
-      queryClient.invalidateQueries({ queryKey: queryKeys.workspaces.snapshot(slug) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.workspaces.views(workspaceId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.workspaces.snapshot(workspaceId) })
     },
   })
 }

@@ -2,14 +2,14 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { queryKeys } from "@/lib/query/query-keys"
-import { blocksApi } from "../api/blocks-api"
+import { blockService } from "../api/block.service"
 import type { Block, CreateBlockPayload } from "../types"
 
 export function useCreateBlock(pageId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (payload: CreateBlockPayload) => blocksApi.create(pageId, payload),
+    mutationFn: (payload: CreateBlockPayload) => blockService.create(pageId, payload),
     onMutate: async (payload) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.pages.blocks(pageId) })
       const previous = queryClient.getQueryData<Block[]>(queryKeys.pages.blocks(pageId))

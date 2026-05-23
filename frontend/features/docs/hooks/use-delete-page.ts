@@ -2,13 +2,13 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { queryKeys } from "@/lib/query/query-keys"
-import { pagesApi } from "../api/pages-api"
+import { pageService } from "../api/page.service"
 
 export function useDeletePage(workspaceId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (pageId: string) => pagesApi.delete(pageId),
+    mutationFn: (pageId: string) => pageService.delete(pageId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.pages.tree(workspaceId) })
       queryClient.invalidateQueries({ queryKey: queryKeys.pages.list(workspaceId) })
