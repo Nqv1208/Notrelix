@@ -8,6 +8,10 @@ export const endpoints = {
     resetPassword: "/auth/reset-password",
     profile: "/auth/me",
   },
+  workspaces: {
+    list: "/workspaces",
+    detail: (workspaceId: string) => `/workspaces/${workspaceId}`,
+  },
   pages: {
     list: (workspaceId: string) => `/workspaces/${workspaceId}/pages`,
     tree: (workspaceId: string) => `/workspaces/${workspaceId}/pages/tree`,
@@ -21,16 +25,37 @@ export const endpoints = {
   },
   blocks: {
     detail: (blockId: string) => `/blocks/${blockId}`,
+    reorder: "/blocks/reorder",
     batch: (pageId: string) => `/pages/${pageId}/blocks/batch`,
   },
   boards: {
-    list: (workspaceId: string) => `/workspaces/${workspaceId}/boards`,
+    listByWorkspaceId: (workspaceId: string) => `/workspaces/${workspaceId}/boards`,
+    detail: (boardId: string) => `/boards/${boardId}`,
     full: (boardId: string) => `/boards/${boardId}/full`,
     view: (boardId: string) => `/boards/${boardId}/view`,
+    columns: (boardId: string) => `/boards/${boardId}/columns`,
+    column: (boardId: string, columnId: string) => `/boards/${boardId}/columns/${columnId}`,
+    reorderColumns: (boardId: string) => `/boards/${boardId}/columns/reorder`,
+  },
+  lists: {
+    byBoard: (boardId: string) => `/boards/${boardId}/lists`,
+    detail: (listId: string) => `/lists/${listId}`,
+    cards: (listId: string) => `/lists/${listId}/cards`,
+    duplicate: (listId: string) => `/lists/${listId}/duplicate`,
+    archive: (listId: string) => `/lists/${listId}/archive`,
+    reorder: (boardId: string) => `/boards/${boardId}/lists/reorder`,
   },
   cards: {
     detail: (cardId: string) => `/cards/${cardId}`,
     move: (cardId: string) => `/cards/${cardId}/move`,
+    duplicate: (cardId: string) => `/cards/${cardId}/duplicate`,
+    archive: (cardId: string) => `/cards/${cardId}/archive`,
     fieldValues: (cardId: string) => `/cards/${cardId}/field-values`,
+    comments: (cardId: string) => `/cards/${cardId}/comments`,
+    attachments: (cardId: string) => `/cards/${cardId}/attachments`,
+    activity: (cardId: string) => `/cards/${cardId}/activity`,
+  },
+  comments: {
+    detail: (commentId: string) => `/comments/${commentId}`,
   },
 };

@@ -3,7 +3,10 @@ import { ApiError } from "@/lib/api/api-error";
 import { AUTH_ERROR_KEYS } from "@/features/auth/i18n/auth-error-keys";
 import { tokenStorage } from "@/lib/auth/token-storage";
 
-const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "/api").replace(/\/$/, "");
+const configuredBaseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "/api/v1").replace(/\/$/, "");
+const BASE_URL = configuredBaseUrl.endsWith("/api")
+  ? `${configuredBaseUrl}/v1`
+  : configuredBaseUrl;
 
 type RefreshResponse = {
   accessToken: string;
@@ -34,8 +37,7 @@ export async function apiFetch<T>(
   if (
     response.status === 401 &&
     retry &&
-    url !== endpoints.auth.refresh &&
-    url !== endpoints.auth.profile
+    url !== endpoints.auth.refresh
   ) {
     return handleRefreshToken<T>(url, options);
   }
