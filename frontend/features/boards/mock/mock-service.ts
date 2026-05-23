@@ -1,7 +1,7 @@
 import { mockDelay } from "./mock-delay"
 import { mockBoards, mockCardActivity, mockCardComments } from "./mock-data"
 import type { Card, CardActivity, CardComment, FullBoardResponse } from "../types"
-import type { UpdateCardInput, UpdateFieldValueInput } from "../schemas"
+import type { CreateCardInput, UpdateCardInput, UpdateFieldValueInput } from "../schemas"
 import type { MoveCardInput } from "../schemas/move-card.schema"
 
 function cloneBoard(board: FullBoardResponse): FullBoardResponse {
@@ -124,6 +124,7 @@ export const mockBoardService = {
   async updateFieldValue(payload: UpdateFieldValueInput): Promise<Card> {
     await mockDelay(120, 300)
     const card = findCard(payload.cardId)
+    const board = mockBoards.find((item) => item.board.id === card.boardId)
     card.fieldValues[payload.fieldDefinitionId] = payload.value
     if (payload.fieldDefinitionId.endsWith("field-status") && typeof payload.value === "string") {
       card.status = payload.value
@@ -131,8 +132,87 @@ export const mockBoardService = {
     if (payload.fieldDefinitionId.endsWith("field-priority")) {
       card.priority = payload.value as Card["priority"]
     }
+    if (payload.fieldDefinitionId.endsWith("field-person") && Array.isArray(payload.value) && board) {
+      const memberIds = payload.value
+      card.members = board.board.members
+        .filter((member) => memberIds.includes(member.userId))
+        .map((member) => ({
+          id: `cm-${card.id}-${member.userId}`,
+          userId: member.userId,
+          name: member.name,
+          initials: member.initials,
+          avatarUrl: member.avatarUrl,
+          color: member.color,
+        }))
+    }
     card.updatedAt = new Date().toISOString()
     return { ...card, fieldValues: { ...card.fieldValues } }
+  },
+
+  // TODO(api):
+  // Replace with real API integration.
+  // Endpoint: POST /api/v1/boards/{boardId}/cards
+  async createCard(boardId: string, payload: CreateCardInput): Promise<Card> {
+    await mockDelay(120, 300)
+    const board = mockBoards.find((item) => item.board.id === boardId)
+    if (!board) throw new Error("Board not found")
+    const targetGroup = board.groups.find((group) => group.id === payload.listId)
+    if (!targetGroup) throw new Error("List not found")
+
+    const title = payload.title.trim()
+    const position = payload.position ?? (targetGroup.cards.at(-1)?.position ?? 0) + 1
+    const statusFieldId = `${boardId}-field-status`
+    const priorityFieldId = `${boardId}-field-priority`
+    const dueDateFieldId = `${boardId}-field-due-date`
+    const titleFieldId = `${boardId}-field-title`
+    const personFieldId = `${boardId}-field-person`
+    const linkedPageFieldId = `${boardId}-field-linked-page`
+    const progressFieldId = `${boardId}-field-progress`
+    const status = statusForGroup(targetGroup.title)
+    const card: Card = {
+      id: `${boardId}-card-${createId()}`,
+      listId: targetGroup.id,
+      boardId,
+      workspaceId: board.board.workspaceId,
+      title,
+      descriptionMd: "",
+      position,
+      priority: "medium",
+      status,
+      dueDate: undefined,
+      startDate: undefined,
+      completedAt: status === "status-done" || status === "status-completed" ? new Date().toISOString() : undefined,
+      isArchived: false,
+      isDeleted: false,
+      members: [],
+      labels: [],
+      checklists: [],
+      fieldValues: {
+        [titleFieldId]: title,
+        [personFieldId]: [],
+        [statusFieldId]: status,
+        [priorityFieldId]: "medium",
+        [dueDateFieldId]: undefined,
+        [linkedPageFieldId]: undefined,
+        [progressFieldId]: 0,
+      },
+      _count: { comments: 0, attachments: 0, checklistItems: 0 },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+
+    targetGroup.cards.push(card)
+    targetGroup.cards.sort((a, b) => a.position - b.position)
+    return { ...card, members: [...card.members], labels: [...card.labels], checklists: [], fieldValues: { ...card.fieldValues }, _count: { ...card._count } }
+  },
+
+  // TODO(api):
+  // Persisted table view settings will move to PATCH /api/v1/board-views/{viewId}.
+  async updateColumnWidths(boardId: string, columnWidths: Record<string, number>): Promise<Record<string, number>> {
+    await mockDelay(80, 180)
+    const board = mockBoards.find((item) => item.board.id === boardId)
+    if (!board) throw new Error("Board not found")
+    return { ...columnWidths }
   },
 
   // TODO(api):
@@ -154,6 +234,19 @@ export const mockBoardService = {
     targetGroup.cards.sort((a, b) => a.position - b.position)
     return { ...card, fieldValues: { ...card.fieldValues } }
   },
+}
+
+function createId() {
+  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
+function statusForGroup(groupTitle: string) {
+  const normalized = groupTitle.toLowerCase()
+  if (normalized.includes("working")) return "status-working"
+  if (normalized.includes("stuck")) return "status-stuck"
+  if (normalized.includes("completed")) return "status-completed"
+  if (normalized.includes("done")) return "status-done"
+  return "status-not-started"
 }
 
 function findCard(cardId: string) {

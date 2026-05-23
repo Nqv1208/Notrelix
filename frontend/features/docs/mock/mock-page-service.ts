@@ -37,14 +37,14 @@ function hydratePage(page: Page) {
 
 export const mockPageService = {
   // TODO(api):
-  // Replace with GET /api/workspaces/:workspaceId/pages/tree.
+  // Replace with GET /api/v1/workspaces/:workspaceId/pages/tree.
   async getTree(workspaceId: string) {
     await wait()
     return buildPageTree(workspace.pages.filter((page) => page.workspaceId === workspaceId || page.workspaceSlug === workspaceId))
   },
 
   // TODO(api):
-  // Replace with GET /api/workspaces/:workspaceId/pages.
+  // Replace with GET /api/v1/workspaces/:workspaceId/pages.
   async getList(workspaceId: string) {
     await wait()
     return workspace.pages
@@ -53,21 +53,21 @@ export const mockPageService = {
   },
 
   // TODO(api):
-  // Replace with GET /api/pages/:id.
+  // Replace with GET /api/v1/pages/:id.
   async getDetail(pageId: string) {
     await wait()
     return hydratePage(getPageOrThrow(pageId))
   },
 
   // TODO(api):
-  // Replace with GET /api/pages/:id/breadcrumb.
+  // Replace with GET /api/v1/pages/:id/breadcrumb.
   async getBreadcrumb(pageId: string) {
     await wait()
     return getBreadcrumb(workspace.pages, pageId)
   },
 
   // TODO(api):
-  // Replace with POST /api/pages.
+  // Replace with POST /api/v1/pages.
   async create(payload: CreatePagePayload) {
     await wait()
     const timestamp = now()
@@ -109,7 +109,7 @@ export const mockPageService = {
   },
 
   // TODO(api):
-  // Replace with PATCH /api/pages/:id.
+  // Replace with PATCH /api/v1/pages/:id.
   async update(pageId: string, payload: UpdatePagePayload) {
     await wait()
     let updated: Page | undefined
@@ -122,7 +122,7 @@ export const mockPageService = {
   },
 
   // TODO(api):
-  // Replace with DELETE /api/pages/:id.
+  // Replace with DELETE /api/v1/pages/:id.
   async delete(pageId: string) {
     await wait()
     const childIds = new Set(workspace.pages.filter((page) => page.parentId === pageId).map((page) => page.id))
@@ -130,14 +130,14 @@ export const mockPageService = {
   },
 
   // TODO(api):
-  // Replace with GET /api/pages/:id/blocks.
+  // Replace with GET /api/v1/pages/:id/blocks.
   async getBlocks(pageId: string) {
     await wait()
     return [...(workspace.blocks[pageId] ?? [])].sort((a, b) => a.position - b.position)
   },
 
   // TODO(api):
-  // Replace with POST /api/pages/:id/blocks.
+  // Replace with POST /api/v1/pages/:id/blocks.
   async createBlock(pageId: string, payload: CreateBlockPayload) {
     await wait()
     const timestamp = now()
@@ -159,7 +159,7 @@ export const mockPageService = {
   },
 
   // TODO(api):
-  // Replace with PATCH /api/blocks/:blockId.
+  // Replace with PATCH /api/v1/blocks/:blockId.
   async updateBlock(blockId: string, payload: UpdateBlockPayload) {
     await wait()
     let updated: Block | undefined
@@ -182,7 +182,7 @@ export const mockPageService = {
 
   // TODO(api):
   // Replace mock mutation with real API call.
-  // Endpoint: PATCH /api/blocks/reorder
+  // Endpoint: PATCH /api/v1/blocks/reorder
   async reorderBlocks(pageId: string, orderedBlockIds: string[]) {
     await wait()
     const blocks = workspace.blocks[pageId] ?? []

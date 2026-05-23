@@ -1,17 +1,18 @@
 import type { Board, BoardGroup, BoardMember, Card, FieldDefinition, FieldOption, FullBoardResponse } from "../types"
 
 const statusOptions: FieldOption[] = [
-  { id: "status-not-started", label: "Not Started", color: "#808080" },
-  { id: "status-working", label: "Working on it", color: "#F1C024" },
-  { id: "status-stuck", label: "Stuck", color: "#E44258" },
-  { id: "status-done", label: "Done", color: "#00C875" },
+  { id: "status-not-started", label: "Not Started", color: "var(--muted-foreground)" },
+  { id: "status-working", label: "Working on it", color: "var(--primary)" },
+  { id: "status-stuck", label: "Stuck", color: "var(--destructive)" },
+  { id: "status-done", label: "Done", color: "var(--accent)" },
+  { id: "status-completed", label: "Completed", color: "var(--primary)" },
 ]
 
 const priorityOptions: FieldOption[] = [
-  { id: "urgent", label: "Urgent", color: "#E44258" },
-  { id: "high", label: "High", color: "#FDAB3D" },
-  { id: "medium", label: "Medium", color: "#579BFC" },
-  { id: "low", label: "Low", color: "#00C875" },
+  { id: "urgent", label: "Urgent", color: "var(--destructive)" },
+  { id: "high", label: "High", color: "var(--primary)" },
+  { id: "medium", label: "Medium", color: "var(--accent)" },
+  { id: "low", label: "Low", color: "var(--muted-foreground)" },
 ]
 
 const members: BoardMember[] = [
@@ -46,7 +47,7 @@ function makeCard(
   linkedPageId?: string
 ): Card {
   const assignee = members[assigneeIndex % members.length]
-  const doneItems = status === "status-done" ? 4 : status === "status-working" ? 2 : status === "status-stuck" ? 1 : 0
+  const doneItems = status === "status-done" || status === "status-completed" ? 4 : status === "status-working" ? 2 : status === "status-stuck" ? 1 : 0
   return {
     id: `${boardId}-card-${index}`,
     listId,
@@ -92,6 +93,10 @@ function makeCard(
   }
 }
 
+function makeDueDate(cardIndex: number) {
+  return new Date(Date.UTC(2026, 4, 14 + cardIndex, 9, 0, 0)).toISOString()
+}
+
 function makeBoard(boardId: string, title: string, description: string, linkedPageId: string): FullBoardResponse {
   const workspaceId = "workspace-notrelix-os"
   const fields = fieldDefinitions(boardId)
@@ -112,9 +117,10 @@ function makeBoard(boardId: string, title: string, description: string, linkedPa
 
   const listSeeds = [
     { id: `${boardId}-list-backlog`, title: "Backlog", color: "var(--muted-foreground)" },
-    { id: `${boardId}-list-working`, title: "Working on it", color: "#F1C024" },
-    { id: `${boardId}-list-review`, title: "Review", color: "var(--primary)" },
-    { id: `${boardId}-list-done`, title: "Done", color: "#00C875" },
+    { id: `${boardId}-list-working`, title: "Working on it", color: "var(--primary)" },
+    { id: `${boardId}-list-stuck`, title: "Stuck", color: "var(--destructive)" },
+    { id: `${boardId}-list-done`, title: "Done", color: "var(--accent)" },
+    { id: `${boardId}-list-completed`, title: "Completed", color: "var(--primary)" },
   ]
 
   const cardTitles = [
@@ -133,12 +139,17 @@ function makeBoard(boardId: string, title: string, description: string, linkedPa
     "Document API migration plan",
     "Triage overdue tasks",
     "Validate permissions matrix",
+    "Package workspace table defaults",
+    "Confirm launch analytics events",
+    "Close follow-up research items",
+    "Archive completed QA notes",
+    "Publish customer success brief",
   ]
 
   let cardIndex = 0
   const groups: BoardGroup[] = listSeeds.map((list, listIndex) => {
-    const cards = cardTitles.slice(listIndex * 4, listIndex * 4 + (listIndex === 3 ? 3 : 4)).map((cardTitle) => {
-      const statuses = ["status-not-started", "status-working", "status-stuck", "status-done"]
+    const cards = cardTitles.slice(listIndex * 4, listIndex * 4 + 4).map((cardTitle) => {
+      const statuses = ["status-not-started", "status-working", "status-stuck", "status-done", "status-completed"]
       const priorities: Card["priority"][] = ["low", "medium", "high", "urgent"]
       cardIndex += 1
       return makeCard(
@@ -149,7 +160,7 @@ function makeBoard(boardId: string, title: string, description: string, linkedPa
         cardTitle,
         statuses[listIndex],
         priorities[cardIndex % priorities.length],
-        `2026-05-${String(14 + cardIndex).padStart(2, "0")}T09:00:00.000Z`,
+        makeDueDate(cardIndex),
         cardIndex,
         cardIndex % 2 === 0 ? "docs-mvp-spec" : undefined
       )
