@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils"
 import type { Board, Card } from "@/features/boards/types"
 
 export function KanbanCard({ board, card }: { board: Board; card: Card }) {
-  const params = useParams<{ workspaceSlug: string; boardId?: string }>()
+  const params = useParams<{ workspaceId: string; boardId?: string }>()
   const boardId = params.boardId ?? card.boardId
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
@@ -47,7 +47,7 @@ export function KanbanCard({ board, card }: { board: Board; card: Card }) {
           <GripVertical className="size-3.5 text-muted-foreground/60" />
         </button>
         <div className="min-w-0 flex-1">
-          <Link href={`/${params.workspaceSlug}/boards/${boardId}/card/${card.id}` as never} className="line-clamp-2 text-sm font-semibold leading-5 text-foreground hover:text-primary">
+          <Link href={`/${params.workspaceId}/boards/${boardId}/card/${card.id}` as never} className="line-clamp-2 text-sm font-semibold leading-5 text-foreground hover:text-primary">
             {card.title}
           </Link>
           {card.linkedPageId ? (

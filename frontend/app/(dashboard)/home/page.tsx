@@ -1,8 +1,10 @@
 import Link from "next/link"
-import { Activity, ArrowUpRight, Clock3, FileText, Search, SquareKanban, Users } from "lucide-react"
+import { Activity, Clock3, FileText, Search, SquareKanban } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { recentBoards, recentDocs, recentWorkspaces, homeActivity } from "../_components/home-data"
+import { getWorkspaceBoardHref, getWorkspaceDocHref } from "@/features/workspace/utils/workspace-routes"
+import { recentBoards, recentDocs, homeActivity } from "../_components/home-data"
+import { HomeWorkspacesSection } from "./_components/home-workspaces-section"
 
 export default function HomePage() {
   return (
@@ -26,27 +28,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-foreground">Recent workspaces</h2>
-          <Button variant="ghost" size="sm">View all</Button>
-        </div>
-        <div className="grid gap-3 md:grid-cols-3">
-          {recentWorkspaces.map((workspace) => (
-            <Link key={workspace.slug} href={`/${workspace.slug}` as never} className="group rounded-2xl border border-border bg-card p-4 transition hover:-translate-y-0.5 hover:shadow-[rgba(205,208,223,0.35)_0px_2px_24px]">
-              <div className="mb-5 flex items-center justify-between">
-                <span className="flex size-11 items-center justify-center rounded-xl text-sm font-semibold text-primary-foreground" style={{ backgroundColor: workspace.color }}>{workspace.icon}</span>
-                <ArrowUpRight className="size-4 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
-              </div>
-              <h3 className="text-sm font-semibold text-foreground">{workspace.name}</h3>
-              <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                <Users className="size-3.5" />
-                {workspace.members} members · {workspace.updatedAt}
-              </p>
-            </Link>
-          ))}
-        </div>
-      </section>
+      <HomeWorkspacesSection />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <section className="rounded-2xl border border-border bg-card p-5">
@@ -56,7 +38,7 @@ export default function HomePage() {
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             {recentDocs.map((doc) => (
-              <Link key={doc.id} href={`/${doc.workspaceSlug}/docs/${doc.id}` as never} className="rounded-xl border border-border bg-muted p-4 transition hover:bg-card">
+              <Link key={doc.id} href={getWorkspaceDocHref(doc.workspaceId, doc.id) as never} className="rounded-xl border border-border bg-muted p-4 transition hover:bg-card">
                 <span className="mb-4 block text-2xl">{doc.icon}</span>
                 <h3 className="line-clamp-1 text-sm font-semibold text-foreground">{doc.title}</h3>
                 <p className="mt-1 text-xs text-muted-foreground">{doc.owner} · {doc.updatedAt}</p>
@@ -88,7 +70,7 @@ export default function HomePage() {
         </div>
         <div className="grid gap-3 md:grid-cols-3">
           {recentBoards.map((board) => (
-            <Link key={board.id} href={`/${board.workspaceSlug}/boards/${board.id}` as never} className="rounded-xl border border-border p-4 transition hover:bg-muted">
+            <Link key={board.id} href={getWorkspaceBoardHref(board.workspaceId, board.id) as never} className="rounded-xl border border-border p-4 transition hover:bg-muted">
               <div className="mb-3 flex items-center gap-2">
                 <span className="size-2 rounded-full" style={{ backgroundColor: board.color }} />
                 <h3 className="text-sm font-semibold text-foreground">{board.title}</h3>

@@ -4,25 +4,20 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
-import {
-  SidebarGroup,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-} from "@/components/ui/sidebar"
+import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
 
 export function LogoNav() {
   const pathname = usePathname()
   
-  // Extract workspace slug for dynamic routing
+  // The first segment is the stable workspace id on workspace routes.
   const segments = pathname.split("/").filter(Boolean)
-  const workspaceSlug = segments[0] && segments[0] !== "home" ? segments[0] : "ws-1"
+  const workspaceId = segments[0] && segments[0] !== "home" ? segments[0] : null
 
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <SidebarMenuButton size="lg" asChild className="hover:bg-transparent">
-          <Link href={`/${workspaceSlug}`}>
+          <Link href={workspaceId ? `/${workspaceId}` : "/home"}>
             <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-[var(--color-brand-violet)] text-[var(--color-paper)]">
               {/* Icon placeholder */}
             </div>

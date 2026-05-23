@@ -12,7 +12,7 @@ export function CellText({ card, field }: { card: Card; field: FieldDefinition }
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState(card.title)
   const updateCard = useUpdateCard(card.boardId)
-  const params = useParams<{ workspaceSlug: string; boardId?: string }>()
+  const params = useParams<{ workspaceId: string; boardId?: string }>()
   const boardId = params.boardId ?? card.boardId
 
   function commit() {
@@ -51,7 +51,7 @@ export function CellText({ card, field }: { card: Card; field: FieldDefinition }
         <button type="button" className="min-w-0 text-left" onDoubleClick={() => setEditing(true)} onClick={() => setEditing(true)}>
           <p className="truncate font-medium text-foreground">{card.title}</p>
         </button>
-        <Link href={`/${params.workspaceSlug}/boards/${boardId}/card/${card.id}` as never} className="shrink-0 rounded p-1 text-muted-foreground opacity-0 transition hover:bg-muted hover:text-foreground group-hover:opacity-100" aria-label={`Open ${card.title}`}>
+        <Link href={`/${params.workspaceId}/boards/${boardId}/card/${card.id}` as never} className="shrink-0 rounded p-1 text-muted-foreground opacity-0 transition hover:bg-muted hover:text-foreground group-hover:opacity-100" aria-label={`Open ${card.title}`}>
           <ArrowUpRight className="size-3.5" />
         </Link>
       </div>

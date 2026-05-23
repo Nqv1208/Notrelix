@@ -11,10 +11,11 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { getWorkspaceBoardHref, getWorkspaceDocHref } from "@/features/workspace/utils/workspace-routes"
 
 const favorites = [
-  { title: "Docs MVP specification", type: "Doc", href: "/notrelix-os/docs/docs-mvp-spec", icon: FileText },
-  { title: "Product delivery", type: "Board", href: "/notrelix-os/boards/board-product", icon: SquareKanban },
+  { title: "Docs MVP specification", type: "Doc", href: getWorkspaceDocHref("workspace-notrelix-os", "docs-mvp-spec"), icon: FileText },
+  { title: "Product delivery", type: "Board", href: getWorkspaceBoardHref("workspace-notrelix-os", "board-product"), icon: SquareKanban },
 ]
 
 export function FavoritesSection() {

@@ -20,7 +20,7 @@ import { FloatingFormatToolbar } from "./floating-format-toolbar"
 
 interface MondayDocEditorProps {
   pageId: string
-  workspaceSlug: string
+  workspaceId: string
   embedded?: boolean
   showToolbar?: boolean
   showOpenFullDoc?: boolean
@@ -28,7 +28,7 @@ interface MondayDocEditorProps {
 
 export function MondayDocEditor({
   pageId,
-  workspaceSlug,
+  workspaceId,
   embedded,
   showToolbar = true,
   showOpenFullDoc,
@@ -76,7 +76,7 @@ export function MondayDocEditor({
               </div>
               {showOpenFullDoc ? (
                 <Button asChild variant="outline" size="sm" className="bg-card">
-                  <Link href={`/${workspaceSlug}/docs/${pageId}` as never}>
+                  <Link href={`/${workspaceId}/docs/${pageId}` as never}>
                     Open full doc
                     <ArrowUpRight className="size-4" />
                   </Link>

@@ -11,28 +11,29 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { getWorkspaceBoardHref, getWorkspaceDocHref, getWorkspaceRootHref } from "@/features/workspace/utils/workspace-routes"
 import { recentBoards, recentDocs, recentWorkspaces } from "../home-data"
 
 const recents = [
   ...recentWorkspaces.map((item) => ({
-    id: item.slug,
+    id: item.id,
     title: item.name,
     subtitle: "Workspace",
-    href: `/${item.slug}`,
+    href: getWorkspaceRootHref(item.id),
     icon: Workflow,
   })),
   ...recentDocs.map((item) => ({
     id: item.id,
     title: item.title,
     subtitle: "Doc",
-    href: `/${item.workspaceSlug}/docs/${item.id}`,
+    href: getWorkspaceDocHref(item.workspaceId, item.id),
     icon: FileText,
   })),
   ...recentBoards.map((item) => ({
     id: item.id,
     title: item.title,
     subtitle: "Board",
-    href: `/${item.workspaceSlug}/boards/${item.id}`,
+    href: getWorkspaceBoardHref(item.workspaceId, item.id),
     icon: SquareKanban,
   })),
 ].slice(0, 8)
