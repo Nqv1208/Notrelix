@@ -96,6 +96,9 @@ services:
       ConnectionStrings__NotrelixDb: >-
         Host=postgres;Port=5432;Database=${POSTGRES_DB:-notrelix_dev};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD}
       ConnectionStrings__Redis: redis:6379,password=${REDIS_PASSWORD}
+      SeedData__Enabled: "true"
+      SeedData__Profile: Large
+      SeedData__ResetBeforeSeed: "false"
       JwtSettings__SecretKey: ${JWT_SECRET:-dev-only-change-me-not-for-production}
       JwtSettings__Issuer: ${JWT_ISSUER:-http://localhost:${BACKEND_PORT:-8000}}
       JwtSettings__Audience: ${JWT_AUDIENCE:-http://localhost:${FRONTEND_PORT:-3000}}
@@ -134,7 +137,7 @@ services:
       NEXT_TELEMETRY_DISABLED: "1"
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:${BACKEND_PORT:-8000}/api}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
       NEXT_PUBLIC_APP_ENV: development
     volumes:
       - ./frontend:/app

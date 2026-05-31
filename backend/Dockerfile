@@ -39,7 +39,7 @@ USER appuser
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:8000/Health/live || exit 1
+  CMD wget -qO- http://127.0.0.1:8000/health/live || exit 1
 
 # Run the app
 ENTRYPOINT ["dotnet", "Notrelix.API.dll"]
