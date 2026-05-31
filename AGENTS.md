@@ -11,12 +11,12 @@
 ```
 Notrelix
 ├── Vision:     Workspace kết hợp Notion (docs) + Trello (boards) + Calendar sync
-├── Backend:    .NET 10 / ASP.NET Core / Entity Framework Core / PostgreSQL
-├── Frontend:   Next.js 15 App Router / TypeScript / shadcn/ui / TanStack Query
+├── Backend:    .NET 8 / ASP.NET Core / Entity Framework Core / PostgreSQL
+├── Frontend:   Next.js 16 App Router / TypeScript / shadcn/ui / TanStack Query
 ├── Cache:      Redis 7 (sessions + pub/sub + queue)
 ├── Storage:    S3/R2 (file attachments — không lưu binary vào DB)
 ├── Auth:       JWT (access token in-memory) + refresh token (httpOnly cookie)
-└── Multi-tenant: workspace slug-based routing (/[workspaceSlug]/...)
+└── Multi-tenant: workspace id-based routing (/[workspaceId]/...)
 ```
 
 ---
@@ -188,23 +188,25 @@ public class CardConfiguration : IEntityTypeConfiguration<Card>
 ### 3.5 API Conventions
 
 ```
-// RULE: RESTful endpoints, grouped by domain
-GET    /api/workspaces/{slug}
-GET    /api/workspaces/{slug}/boards
-POST   /api/boards
-GET    /api/boards/{boardId}/full          // board + lists + cards
-PATCH  /api/cards/{cardId}
-PATCH  /api/cards/{cardId}/move            // { listId, position }
-POST   /api/cards/{cardId}/link-page       // { pageId }
-DELETE /api/cards/{cardId}/link-page
+// RULE: RESTful endpoints, grouped by domain and URL-versioned.
+// RULE: Workspace-scoped routes use workspaceId in the path. Slug lookup is explicit only.
+GET    /api/v1/workspaces/{workspaceId}
+GET    /api/v1/workspaces/by-slug/{slug}       // legacy/deep-link resolution only
+GET    /api/v1/workspaces/{workspaceId}/boards
+POST   /api/v1/workspaces/{workspaceId}/boards
+GET    /api/v1/boards/{boardId}/full           // board + lists + cards
+PATCH  /api/v1/cards/{cardId}
+POST   /api/v1/cards/{cardId}/move             // { listId, position }
+POST   /api/v1/cards/{cardId}/link-page        // { pageId }
+DELETE /api/v1/cards/{cardId}/link-page
 
-GET    /api/pages/{pageId}/blocks
-PATCH  /api/blocks/{blockId}
-POST   /api/blocks/reorder                 // batch position update
+GET    /api/v1/pages/{pageId}/blocks
+PATCH  /api/v1/blocks/{blockId}
+POST   /api/v1/blocks/reorder                  // batch position update
 
-GET    /api/workspaces/{slug}/calendar     // unified calendar events
-POST   /api/calendar/integrations          // connect Google Calendar
-POST   /api/calendar/sync                  // manual trigger sync
+GET    /api/v1/workspaces/{workspaceId}/calendar // unified calendar events
+POST   /api/v1/calendar/integrations           // connect Google Calendar
+POST   /api/v1/calendar/sync                   // manual trigger sync
 
 // RULE: Response luôn wrap trong ApiResponse<T>
 {
@@ -356,7 +358,7 @@ frontend/
 │   │   │   │   ├── appearance/page.tsx        # Theme, language, density
 │   │   │   │   └── calendar-sync/page.tsx     # Google Calendar OAuth + iCal export
 │   │   │   │
-│   │   │   └── [workspaceSlug]/               # ── Dynamic workspace ──
+│   │   │   └── [workspaceId]/               # ── Dynamic workspace ──
 │   │   │       ├── layout.tsx                 # Validate + WorkspaceProvider + CalendarSyncProvider
 │   │   │       ├── page.tsx                   # /[ws] — pinned docs, active boards, deadlines
 │   │   │       ├── loading.tsx
@@ -705,15 +707,15 @@ const STORAGE_KEY = 'docs-panel-width'
 // RULE: Props interface đặt ngay trước component
 interface Props {
   pageId:        string
-  workspaceSlug: string
+  workspaceId: string
   compact?:      boolean
 }
 
-export function PageEditor({ pageId, workspaceSlug, compact }: Props) {}
+export function PageEditor({ pageId, workspaceId, compact }: Props) {}
 
 // RULE: Async Server Components fetch data trực tiếp
 export default async function PageDetailPage({ params }: { params: Promise<{ pageId: string }> }) {
-  const { pageId } = await params  // PHẢI await params trong Next.js 15
+  const { pageId } = await params  // PHẢI await params trong Next.js 16
   const queryClient = getQueryClient()
   await queryClient.prefetchQuery({
     queryKey: queryKeys.pages.detail(pageId),
@@ -802,7 +804,7 @@ useQuery({
 // Lý do: @modal slot đã được dùng, thêm @docs sẽ conflict
 // Xem: useBoardDocsPanel hook
 
-// RULE: params trong Next.js 15 phải được await
+// RULE: params trong Next.js 16 phải được await
 // SAI:
 export default function Page({ params }: { params: { boardId: string } }) {
   const { boardId } = params  // sync access
@@ -990,7 +992,7 @@ test(board):     add unit tests for card move command
 □ Soft delete đúng pattern (is_deleted + deleted_at)
 □ Calendar sync chạy async qua queue
 □ Query keys dùng factory, không hardcode string
-□ params trong Next.js 15 được await
+□ params trong Next.js 16 được await
 □ Không có 'any' type trong TypeScript
 □ activity_logs được update cho write operations quan trọng
 □ Redis cache invalidated khi data thay đổi
@@ -1084,4 +1086,4 @@ JWT_SECRET=<same as backend>
 ---
 
 *Cập nhật lần cuối: reflect schema refactored 28 tables, 7 domains*
-*Stack: .NET 10 / Next.js 15 / PostgreSQL 16 / Redis 7 / S3*
+*Stack: .NET 8 / Next.js 16 / PostgreSQL 16 / Redis 7 / S3*
