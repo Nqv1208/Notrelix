@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Infrastructure.Data;
 
-namespace Notrelix.Tests.Auth;
+namespace Notrelix.Tests.Application.Auth;
 
 public static class AuthTestDbContextFactory
 {

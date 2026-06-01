@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Interfaces;
 using Notrelix.Infrastructure.Data;
 
-namespace Notrelix.Tests.Data;
+namespace Notrelix.Tests.Infrastructure.Data;
 
 public class SeedDataInitialiserTests
 {
