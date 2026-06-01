@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { usePage, usePageBlocks } from "@/features/docs/hooks"
+import { usePage, usePageBlocks, usePageComments, usePageHistory } from "@/features/docs/hooks"
 import { mockDocsWorkspace } from "@/features/docs/mock/mock-data"
 import { useDocsEditorStore } from "@/features/docs/store/editor-store"
 import { cn } from "@/lib/utils"
@@ -148,7 +148,21 @@ export function MondayDocEditor({
   )
 }
 
+
 function CollaborationTabs({ pageId, compact }: { pageId: string; compact?: boolean }) {
+  const { data: comments = [], isLoading: isCommentsLoading } = usePageComments(pageId)
+  const { data: activity = [], isLoading: isActivityLoading } = usePageHistory(pageId)
+
+  if (isCommentsLoading || isActivityLoading) {
+    return (
+      <div className="space-y-3 p-2">
+        <Skeleton className="h-10 rounded-xl" />
+        <Skeleton className="h-10 rounded-xl" />
+        <Skeleton className="h-10 rounded-xl" />
+      </div>
+    )
+  }
+
   return (
     <Tabs defaultValue="comments" className={compact ? "mt-4" : "h-[calc(100svh-88px)]"}>
       <TabsList className="grid w-full grid-cols-2">
@@ -157,33 +171,40 @@ function CollaborationTabs({ pageId, compact }: { pageId: string; compact?: bool
       </TabsList>
       <TabsContent value="comments" className="mt-3">
         <div className="space-y-3">
-          {(mockDocsWorkspace.comments[pageId] ?? []).map((comment) => {
+          {comments.map((comment: any) => {
             const user = mockDocsWorkspace.users.find((item) => item.id === comment.authorId)
             return (
               <div key={comment.id} className="rounded-xl border border-border bg-muted p-3">
-                <p className="text-xs font-semibold text-foreground">{user?.name ?? "Teammate"}</p>
+                <p className="text-xs font-semibold text-foreground">{user?.name ?? comment.authorName ?? "Teammate"}</p>
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">{comment.body}</p>
               </div>
             )
           })}
+          {comments.length === 0 && (
+            <p className="text-center text-xs text-muted-foreground py-4">No comments yet</p>
+          )}
         </div>
       </TabsContent>
       <TabsContent value="activity" className="mt-3">
         <div className="space-y-3">
-          {(mockDocsWorkspace.activity[pageId] ?? []).map((item) => {
+          {activity.map((item: any) => {
             const user = mockDocsWorkspace.users.find((candidate) => candidate.id === item.actorId)
             return (
               <div key={item.id} className="rounded-xl border border-border bg-muted p-3">
-                <p className="text-sm text-foreground"><span className="font-medium">{user?.name ?? "Teammate"}</span> {item.action} {item.targetLabel}</p>
+                <p className="text-sm text-foreground"><span className="font-medium">{user?.name ?? item.actorName ?? "Teammate"}</span> {item.action} {item.targetLabel}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleString()}</p>
               </div>
             )
           })}
+          {activity.length === 0 && (
+            <p className="text-center text-xs text-muted-foreground py-4">No activity logged yet</p>
+          )}
         </div>
       </TabsContent>
     </Tabs>
   )
 }
+
 
 function EditorSkeleton({ embedded }: { embedded?: boolean }) {
   return (

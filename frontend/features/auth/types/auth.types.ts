@@ -26,7 +26,7 @@ export type RegisterRequestApi = {
 export type RegisterResponseApi = LoginResponseApi;
 
 export type LogoutRequest = {
-  refreshToken: string;
+  refreshToken?: string;
   accessToken?: string;
 };
 
