@@ -18,6 +18,21 @@ public record PageDto(
     DateTime? UpdatedAt
 );
 
+public record PageBreadcrumbDto(
+    Guid Id,
+    string Title,
+    string? IconType,
+    string? IconValue
+);
+
+public record PageHistoryDto(
+    Guid Id,
+    Guid ActorId,
+    string Action,
+    string? ResourceTitle,
+    DateTime CreatedAt
+);
+
 public record PageTreeItemDto(
     Guid Id,
     string Title,
@@ -36,5 +51,8 @@ public record BlockDto(
     string Type,
     string Properties,
     double Position,
-    int Version
+    int Version,
+    Guid CreatedByUserId,
+    DateTime CreatedAt,
+    DateTime? UpdatedAt
 );
