@@ -112,88 +112,40 @@ using Notrelix.Application.Features.Workspaces.Queries.GetWorkspaceInvitations;
 using Notrelix.Application.Features.Workspaces.Queries.GetWorkspaceMembers;
 using Notrelix.Application.Features.Workspaces.Queries.GetWorkspaceMembersBySlug;
 using Notrelix.API.Extensions;
-namespace Notrelix.API.Endpoints.Comments;
+namespace Notrelix.API.Endpoints.Attachments;
 
-public static class CommentEndpoints
+public static class AttachmentEndpoints
 {
-    public static IEndpointRouteBuilder MapCommentEndpoints(this IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapAttachmentEndpoints(this IEndpointRouteBuilder app)
     {
-        // Card comments
-        var cardGroup = app
-            .MapGroup("/api/v1/cards/{cardId:guid}/comments")
-            .WithTags("Comments")
-            .RequireAuthorization()
-            .WithOpenApi();
-
-        cardGroup.MapGet("/", GetCardComments).WithName("GetCardComments");
-        cardGroup.MapPost("/", CreateCardComment).WithName("CreateCardComment");
-
-        // Page comments
-        var pageGroup = app
-            .MapGroup("/api/v1/pages/{pageId:guid}/comments")
-            .WithTags("Comments")
-            .RequireAuthorization()
-            .WithOpenApi();
-
-        pageGroup.MapGet("/", GetPageComments).WithName("GetPageComments");
-        pageGroup.MapPost("/", CreatePageComment).WithName("CreatePageComment");
-
-        // Comment-scoped
         var group = app
-            .MapGroup("/api/v1/comments")
-            .WithTags("Comments")
+            .MapGroup("/api/v1/cards/{cardId:guid}/attachments")
+            .WithTags("Attachments")
             .RequireAuthorization()
             .WithOpenApi();
 
-        group.MapPatch("/{commentId:guid}", UpdateComment).WithName("UpdateComment");
-        group.MapDelete("/{commentId:guid}", DeleteComment).WithName("DeleteComment");
-        group.MapPost("/{commentId:guid}/resolve", ResolveComment).WithName("ResolveComment");
+        group.MapGet("/", GetCardAttachments)
+            .WithName("GetCardAttachments")
+            .WithSummary("Get card attachments");
+
+        group.MapPost("/", CreateCardAttachment)
+            .WithName("CreateCardAttachment")
+            .WithSummary("Register card attachment metadata");
 
         return app;
     }
 
-    private static async Task<IResult> GetCardComments(Guid cardId, ISender sender)
+    private static async Task<IResult> GetCardAttachments(Guid cardId, ISender sender)
     {
-        var result = await sender.Send(new GetCommentsQuery("Card", cardId));
+        var result = await sender.Send(new GetCardAttachmentsQuery(cardId));
         return result.ToApiResult();
     }
 
-    private static async Task<IResult> CreateCardComment(Guid cardId, CreateCommentRequest body, ISender sender)
+    private static async Task<IResult> CreateCardAttachment(Guid cardId, CreateCardAttachmentRequest body, ISender sender)
     {
-        var result = await sender.Send(new CreateCommentCommand("Card", cardId, body.ContentMd, body.ParentCommentId));
+        var result = await sender.Send(new CreateCardAttachmentCommand(cardId, body.Filename, body.Url, body.SizeBytes, body.ContentType, body.Source));
         return result.ToCreatedResult();
-    }
-
-    private static async Task<IResult> GetPageComments(Guid pageId, ISender sender)
-    {
-        var result = await sender.Send(new GetCommentsQuery("Page", pageId));
-        return result.ToApiResult();
-    }
-
-    private static async Task<IResult> CreatePageComment(Guid pageId, CreateCommentRequest body, ISender sender)
-    {
-        var result = await sender.Send(new CreateCommentCommand("Page", pageId, body.ContentMd, body.ParentCommentId));
-        return result.ToCreatedResult();
-    }
-
-    private static async Task<IResult> UpdateComment(Guid commentId, UpdateCommentRequest body, ISender sender)
-    {
-        var result = await sender.Send(new UpdateCommentCommand(commentId, body.ContentMd));
-        return result.ToApiResult();
-    }
-
-    private static async Task<IResult> DeleteComment(Guid commentId, ISender sender)
-    {
-        var result = await sender.Send(new DeleteCommentCommand(commentId));
-        return result.ToNoContentResult();
-    }
-
-    private static async Task<IResult> ResolveComment(Guid commentId, ISender sender)
-    {
-        var result = await sender.Send(new ResolveCommentCommand(commentId));
-        return result.ToNoContentResult();
     }
 }
 
-public record CreateCommentRequest(string ContentMd, Guid? ParentCommentId = null);
-public record UpdateCommentRequest(string ContentMd);
+public record CreateCardAttachmentRequest(string Filename, string Url, long? SizeBytes, string? ContentType, string? Source);

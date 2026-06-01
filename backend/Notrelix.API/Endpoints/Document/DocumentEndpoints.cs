@@ -112,88 +112,153 @@ using Notrelix.Application.Features.Workspaces.Queries.GetWorkspaceInvitations;
 using Notrelix.Application.Features.Workspaces.Queries.GetWorkspaceMembers;
 using Notrelix.Application.Features.Workspaces.Queries.GetWorkspaceMembersBySlug;
 using Notrelix.API.Extensions;
-namespace Notrelix.API.Endpoints.Comments;
+namespace Notrelix.API.Endpoints.Document;
 
-public static class CommentEndpoints
+public static class DocumentEndpoints
 {
-    public static IEndpointRouteBuilder MapCommentEndpoints(this IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapDocumentEndpoints(this IEndpointRouteBuilder app)
     {
-        // Card comments
-        var cardGroup = app
-            .MapGroup("/api/v1/cards/{cardId:guid}/comments")
-            .WithTags("Comments")
+        var workspaceGroup = app
+            .MapGroup("/api/v1/workspaces/{workspaceId:guid}/pages")
+            .WithTags("Document")
             .RequireAuthorization()
             .WithOpenApi();
 
-        cardGroup.MapGet("/", GetCardComments).WithName("GetCardComments");
-        cardGroup.MapPost("/", CreateCardComment).WithName("CreateCardComment");
+        workspaceGroup.MapGet("/", GetWorkspacePages).WithName("GetWorkspacePages");
+        workspaceGroup.MapGet("/tree", GetPageTree).WithName("GetPageTree");
+        workspaceGroup.MapGet("/search", SearchPages).WithName("SearchPages");
+        workspaceGroup.MapPost("/", CreatePage).WithName("CreatePage");
 
-        // Page comments
         var pageGroup = app
-            .MapGroup("/api/v1/pages/{pageId:guid}/comments")
-            .WithTags("Comments")
+            .MapGroup("/api/v1/pages")
+            .WithTags("Document")
             .RequireAuthorization()
             .WithOpenApi();
 
-        pageGroup.MapGet("/", GetPageComments).WithName("GetPageComments");
-        pageGroup.MapPost("/", CreatePageComment).WithName("CreatePageComment");
+        pageGroup.MapGet("/{pageId:guid}", GetPage).WithName("GetPage");
+        pageGroup.MapPatch("/{pageId:guid}", UpdatePage).WithName("UpdatePage");
+        pageGroup.MapDelete("/{pageId:guid}", DeletePage).WithName("DeletePage");
+        pageGroup.MapGet("/{pageId:guid}/breadcrumb", GetBreadcrumb).WithName("GetPageBreadcrumb");
+        pageGroup.MapGet("/{pageId:guid}/history", GetHistory).WithName("GetPageHistory");
+        pageGroup.MapGet("/{pageId:guid}/blocks", GetBlocks).WithName("GetPageBlocks");
+        pageGroup.MapPost("/{pageId:guid}/blocks", CreateBlock).WithName("CreateBlock");
+        pageGroup.MapPost("/{pageId:guid}/blocks/batch", BatchUpdateBlocks).WithName("BatchUpdateBlocks");
 
-        // Comment-scoped
-        var group = app
-            .MapGroup("/api/v1/comments")
-            .WithTags("Comments")
+        var blockGroup = app
+            .MapGroup("/api/v1/blocks")
+            .WithTags("Document")
             .RequireAuthorization()
             .WithOpenApi();
 
-        group.MapPatch("/{commentId:guid}", UpdateComment).WithName("UpdateComment");
-        group.MapDelete("/{commentId:guid}", DeleteComment).WithName("DeleteComment");
-        group.MapPost("/{commentId:guid}/resolve", ResolveComment).WithName("ResolveComment");
+        blockGroup.MapPatch("/{blockId:guid}", UpdateBlock).WithName("UpdateBlock");
+        blockGroup.MapDelete("/{blockId:guid}", DeleteBlock).WithName("DeleteBlock");
+        blockGroup.MapPost("/reorder", ReorderBlocks).WithName("ReorderBlocks");
 
         return app;
     }
 
-    private static async Task<IResult> GetCardComments(Guid cardId, ISender sender)
+    private static async Task<IResult> GetWorkspacePages(Guid workspaceId, ISender sender)
     {
-        var result = await sender.Send(new GetCommentsQuery("Card", cardId));
+        var result = await sender.Send(new GetWorkspacePagesQuery(workspaceId));
         return result.ToApiResult();
     }
 
-    private static async Task<IResult> CreateCardComment(Guid cardId, CreateCommentRequest body, ISender sender)
+    private static async Task<IResult> GetPageTree(Guid workspaceId, ISender sender)
     {
-        var result = await sender.Send(new CreateCommentCommand("Card", cardId, body.ContentMd, body.ParentCommentId));
+        var result = await sender.Send(new GetPageTreeQuery(workspaceId));
+        return result.ToApiResult();
+    }
+
+    private static async Task<IResult> SearchPages(Guid workspaceId, string query, ISender sender)
+    {
+        var result = await sender.Send(new SearchPagesQuery(workspaceId, query));
+        return result.ToApiResult();
+    }
+
+    private static async Task<IResult> CreatePage(Guid workspaceId, CreatePageRequest body, ISender sender)
+    {
+        var result = await sender.Send(new CreatePageCommand(workspaceId, body.Title, body.ParentId));
         return result.ToCreatedResult();
     }
 
-    private static async Task<IResult> GetPageComments(Guid pageId, ISender sender)
+    private static async Task<IResult> GetPage(Guid pageId, ISender sender)
     {
-        var result = await sender.Send(new GetCommentsQuery("Page", pageId));
+        var result = await sender.Send(new GetPageQuery(pageId));
         return result.ToApiResult();
     }
 
-    private static async Task<IResult> CreatePageComment(Guid pageId, CreateCommentRequest body, ISender sender)
+    private static async Task<IResult> UpdatePage(Guid pageId, UpdatePageRequest body, ISender sender)
     {
-        var result = await sender.Send(new CreateCommentCommand("Page", pageId, body.ContentMd, body.ParentCommentId));
+        var result = await sender.Send(new UpdatePageCommand(pageId, body.Title, body.IconType, body.IconValue, body.CoverUrl));
+        return result.ToApiResult();
+    }
+
+    private static async Task<IResult> DeletePage(Guid pageId, ISender sender)
+    {
+        var result = await sender.Send(new DeletePageCommand(pageId));
+        return result.ToNoContentResult();
+    }
+
+    private static async Task<IResult> GetBreadcrumb(Guid pageId, ISender sender)
+    {
+        var result = await sender.Send(new GetPageBreadcrumbQuery(pageId));
+        return result.ToApiResult();
+    }
+
+    private static async Task<IResult> GetHistory(Guid pageId, ISender sender)
+    {
+        var result = await sender.Send(new GetPageHistoryQuery(pageId));
+        return result.ToApiResult();
+    }
+
+    private static async Task<IResult> GetBlocks(Guid pageId, ISender sender)
+    {
+        var result = await sender.Send(new GetPageBlocksQuery(pageId));
+        return result.ToApiResult();
+    }
+
+    private static async Task<IResult> CreateBlock(Guid pageId, CreateBlockRequest body, ISender sender)
+    {
+        var result = await sender.Send(new CreateBlockCommand(pageId, body.Type, body.Properties ?? "{}", body.Position ?? 0, body.ParentId));
         return result.ToCreatedResult();
     }
 
-    private static async Task<IResult> UpdateComment(Guid commentId, UpdateCommentRequest body, ISender sender)
+    private static async Task<IResult> UpdateBlock(Guid blockId, UpdateBlockRequest body, ISender sender)
     {
-        var result = await sender.Send(new UpdateCommentCommand(commentId, body.ContentMd));
+        var result = await sender.Send(new UpdateBlockCommand(blockId, body.Type, body.Properties));
         return result.ToApiResult();
     }
 
-    private static async Task<IResult> DeleteComment(Guid commentId, ISender sender)
+    private static async Task<IResult> DeleteBlock(Guid blockId, ISender sender)
     {
-        var result = await sender.Send(new DeleteCommentCommand(commentId));
+        var result = await sender.Send(new DeleteBlockCommand(blockId));
         return result.ToNoContentResult();
     }
 
-    private static async Task<IResult> ResolveComment(Guid commentId, ISender sender)
+    private static async Task<IResult> ReorderBlocks(ReorderBlocksRequest body, ISender sender)
     {
-        var result = await sender.Send(new ResolveCommentCommand(commentId));
-        return result.ToNoContentResult();
+        var result = await sender.Send(new ReorderBlocksCommand(
+            body.PageId,
+            body.Items.Select(item => new ReorderBlockItem(item.BlockId, item.Position, item.ParentId)).ToList()
+        ));
+        return result.ToApiResult();
+    }
+
+    private static async Task<IResult> BatchUpdateBlocks(Guid pageId, BatchUpdateBlocksRequest body, ISender sender)
+    {
+        var result = await sender.Send(new BatchUpdateBlocksCommand(
+            pageId,
+            body.Blocks.Select(block => new BatchUpdateBlockItem(block.Id, block.Type, block.Properties, block.Position, block.ParentId)).ToList()
+        ));
+        return result.ToApiResult();
     }
 }
 
-public record CreateCommentRequest(string ContentMd, Guid? ParentCommentId = null);
-public record UpdateCommentRequest(string ContentMd);
+public record CreatePageRequest(string Title, Guid? ParentId = null);
+public record UpdatePageRequest(string? Title, string? IconType, string? IconValue, string? CoverUrl);
+public record CreateBlockRequest(string Type, string? Properties = null, double? Position = null, Guid? ParentId = null);
+public record UpdateBlockRequest(string? Type, string? Properties = null);
+public record ReorderBlocksRequest(Guid PageId, List<ReorderBlockRequestItem> Items);
+public record ReorderBlockRequestItem(Guid BlockId, double Position, Guid? ParentId = null);
+public record BatchUpdateBlocksRequest(List<BatchUpdateBlockRequestItem> Blocks);
+public record BatchUpdateBlockRequestItem(Guid Id, string? Type, string? Properties, double? Position, Guid? ParentId);
