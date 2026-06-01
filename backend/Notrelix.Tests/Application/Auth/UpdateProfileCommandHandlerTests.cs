@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Features.Identity.Commands.UpdateProfile;
 using Notrelix.Domain.Entities.Identity;
 
-namespace Notrelix.Tests.Application.Auth;
+namespace Notrelix.Application.Tests.Auth;
 
 public class UpdateProfileCommandHandlerTests
 {

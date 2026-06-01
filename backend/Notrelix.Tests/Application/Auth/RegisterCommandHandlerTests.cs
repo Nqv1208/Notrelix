@@ -3,7 +3,7 @@ using Notrelix.Application.Common.Interfaces;
 using Notrelix.Application.Features.Identity.Commands.Register;
 using Notrelix.Domain.Entities.Identity;
 
-namespace Notrelix.Tests.Application.Auth;
+namespace Notrelix.Application.Tests.Auth;
 
 public class RegisterCommandHandlerTests
 {
