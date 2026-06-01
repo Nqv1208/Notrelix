@@ -33,6 +33,7 @@ public class CardConfiguration : IEntityTypeConfiguration<Card>
         builder.Property(x => x.StartDate).HasColumnName("start_date");
         builder.Property(x => x.CompletedAt).HasColumnName("completed_at");
         builder.Property(x => x.Cover).HasColumnName("cover").HasColumnType("jsonb");
+        builder.Property(x => x.FieldValues).HasColumnName("field_values").HasColumnType("jsonb").HasDefaultValue("{}");
         builder.Property(x => x.IsArchived).HasColumnName("is_archived").HasDefaultValue(false);
         builder.Property(x => x.IsDeleted).HasColumnName("is_deleted").HasDefaultValue(false);
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");

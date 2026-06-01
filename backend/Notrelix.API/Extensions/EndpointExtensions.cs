@@ -1,10 +1,12 @@
 using MediatR;
+using Notrelix.API.Endpoints.Attachments;
 using Notrelix.API.Endpoints.Activity;
 using Notrelix.API.Endpoints.Auth;
 using Notrelix.API.Endpoints.Boards;
 using Notrelix.API.Endpoints.Cards;
 using Notrelix.API.Endpoints.Checklists;
 using Notrelix.API.Endpoints.Comments;
+using Notrelix.API.Endpoints.Document;
 using Notrelix.API.Endpoints.Health;
 using Notrelix.API.Endpoints.Labels;
 using Notrelix.API.Endpoints.Lists;
@@ -35,6 +37,9 @@ public static class EndpointExtensions
         // Workspace
         app.MapWorkspaceEndpoints();
 
+        // Document
+        app.MapDocumentEndpoints();
+
         // Boards
         app.MapBoardEndpoints();
         app.MapBoardMemberEndpoints();
@@ -56,6 +61,9 @@ public static class EndpointExtensions
 
         // Comments
         app.MapCommentEndpoints();
+
+        // Attachments
+        app.MapAttachmentEndpoints();
 
         // Activity
         app.MapActivityEndpoints();

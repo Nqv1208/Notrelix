@@ -155,6 +155,14 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasDefaultValue("#579bfc")
+                        .HasColumnName("color");
+
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
 
@@ -285,6 +293,13 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("DueDate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("due_date");
+
+                    b.Property<string>("FieldValues")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("field_values");
 
                     b.Property<bool>("IsArchived")
                         .ValueGeneratedOnAdd()

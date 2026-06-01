@@ -17,7 +17,7 @@ public static class AuthEndpoints
     public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app
-            .MapGroup("/api/auth")
+            .MapGroup("/api/v1/auth")
             .WithTags("Auth")
             .WithOpenApi();
 
@@ -104,11 +104,26 @@ public static class AuthEndpoints
         return result.ToApiResult();
     }
 
+
+
     private static async Task<IResult> Logout(
-        LogoutCommand command,
-        ISender sender)
+        HttpContext httpContext,
+        ISender sender,
+        ICookieService cookieService)
     {
+        var refreshToken = httpContext.Request.Cookies["refreshToken"] ?? string.Empty;
+        var accessToken = httpContext.Request.Cookies["accessToken"];
+
+        var command = new LogoutCommand
+        {
+            RefreshToken = refreshToken,
+            AccessToken = accessToken
+        };
+
         var result = await sender.Send(command);
+
+        cookieService.DeleteTokenCookie();
+
         return result.ToApiResult();
     }
 
