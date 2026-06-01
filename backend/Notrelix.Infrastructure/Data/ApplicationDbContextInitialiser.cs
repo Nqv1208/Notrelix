@@ -32,9 +32,9 @@ public class ApplicationDbContextInitialiser
         new(MemberEmail, "Member User", WorkspaceRole.Member)
     ];
 
-    private static readonly string[] DefaultLoginEmails = DefaultLoginAccounts
+    private static readonly List<string> DefaultLoginEmails = DefaultLoginAccounts
         .Select(account => account.Email)
-        .ToArray();
+        .ToList();
 
     private readonly ILogger<ApplicationDbContextInitialiser> _logger;
     private readonly ApplicationDbContext _context;
@@ -340,7 +340,7 @@ public class ApplicationDbContextInitialiser
     {
         var lookupEmails = DefaultLoginEmails
             .Concat([LegacyDemoEmail, LegacyMemberEmail])
-            .ToArray();
+            .ToList();
 
         var users = await _context.Users
             .Where(user => lookupEmails.Contains(user.Email.Value))

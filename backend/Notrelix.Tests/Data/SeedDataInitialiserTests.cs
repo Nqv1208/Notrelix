@@ -90,7 +90,7 @@ public class SeedDataInitialiserTests
 
         await CreateInitialiser(context).SeedAsync();
 
-        var defaultEmails = new[]
+        var defaultEmails = new List<string>
         {
             "admin@notrelix.com",
             "demo@notrelix.com",

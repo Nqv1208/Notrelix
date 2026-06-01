@@ -15,7 +15,7 @@ public abstract class BaseEvent : IDomainEvent
 
     protected BaseEvent()
     {
-        EventId = Guid.NewGuid();
+        EventId = Guid.CreateVersion7();
         OccurredOn = DateTime.UtcNow;
     }
 }

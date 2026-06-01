@@ -31,7 +31,7 @@ public class ActivityLog
     {
         return new ActivityLog
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             WorkspaceId = workspaceId,
             ActorId = actorId,
             Action = action,
