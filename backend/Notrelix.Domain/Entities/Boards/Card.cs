@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Enums;
 
@@ -17,12 +18,13 @@ public class Card : AuditableEntity
     public DateTime? StartDate { get; private set; }
     public DateTime? CompletedAt { get; private set; }
     public string? Cover { get; private set; }
+    public string FieldValues { get; private set; } = "{}";
     public bool IsArchived { get; private set; }
     public bool IsDeleted { get; private set; }
 
     // Navigation
     public BoardList List { get; private set; } = null!;
-    public Document.Page? LinkedPage { get; private set; }
+    public Page? LinkedPage { get; private set; }
 
     private readonly List<CardMember> _members = new();
     public IReadOnlyCollection<CardMember> Members => _members.AsReadOnly();
@@ -51,6 +53,31 @@ public class Card : AuditableEntity
     public void UpdateDescription(string? description) => DescriptionMd = description?.Trim();
     public void UpdatePriority(CardPriority? priority) => Priority = priority;
     public void UpdateCover(string? cover) => Cover = cover;
+    public void ReplaceFieldValues(string? valuesJson)
+    {
+        FieldValues = string.IsNullOrWhiteSpace(valuesJson) ? "{}" : valuesJson;
+        ValidateFieldValues(FieldValues);
+    }
+
+    public void UpdateFieldValue(string key, object? value)
+    {
+        if (string.IsNullOrWhiteSpace(key)) return;
+
+        var values = GetFieldValues();
+        if (value is null) values.Remove(key);
+        else values[key] = value;
+
+        FieldValues = JsonSerializer.Serialize(values);
+    }
+
+    public Dictionary<string, object?> GetFieldValues()
+    {
+        if (string.IsNullOrWhiteSpace(FieldValues)) return new Dictionary<string, object?>();
+
+        var values = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(FieldValues);
+        return values?.ToDictionary(item => item.Key, item => NormalizeJsonElement(item.Value))
+            ?? new Dictionary<string, object?>();
+    }
 
     public void SetDueDate(DateTime? dueDate)
     {
@@ -114,5 +141,26 @@ public class Card : AuditableEntity
     public void SoftDelete()
     {
         IsDeleted = true;
+    }
+
+    private static void ValidateFieldValues(string valuesJson)
+    {
+        JsonDocument.Parse(valuesJson);
+    }
+
+    private static object? NormalizeJsonElement(JsonElement element)
+    {
+        return element.ValueKind switch
+        {
+            JsonValueKind.Null => null,
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Number when element.TryGetInt64(out var longValue) => longValue,
+            JsonValueKind.Number when element.TryGetDouble(out var doubleValue) => doubleValue,
+            JsonValueKind.String => element.GetString(),
+            JsonValueKind.Array => element.EnumerateArray().Select(NormalizeJsonElement).ToList(),
+            JsonValueKind.Object => element.EnumerateObject().ToDictionary(property => property.Name, property => NormalizeJsonElement(property.Value)),
+            _ => element.ToString()
+        };
     }
 }
