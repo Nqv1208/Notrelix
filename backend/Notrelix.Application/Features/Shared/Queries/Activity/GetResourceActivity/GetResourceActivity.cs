@@ -1,28 +1,20 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Interfaces;
-using Notrelix.Application.Common.Models;
-using Notrelix.Domain.Enums;
+using global::Notrelix.Application.Common.Interfaces;
+using global::Notrelix.Application.Common.Models;
+using global::Notrelix.Application.Features.Shared.Activity.DTOs;
+using global::Notrelix.Domain.Entities.Boards;
+using global::Notrelix.Domain.Entities.Document;
+using global::Notrelix.Domain.Entities.Identity;
+using global::Notrelix.Domain.Entities.Shared;
+using global::Notrelix.Domain.Entities.Workspaces;
+using global::Notrelix.Domain.Enums;
 
-namespace Notrelix.Application.Features.Shared.Activity;
+namespace Notrelix.Application.Features.Shared.Queries.Activity.GetResourceActivity;
 
-// ── DTOs ─────────────────────────────────────────────────────
-public record ActivityLogDto(
-    Guid Id,
-    Guid ActorId,
-    string? ActorName,
-    string Action,
-    string ResourceType,
-    Guid ResourceId,
-    string? ResourceTitle,
-    DateTime CreatedAt
-);
-
-// ── Queries ──────────────────────────────────────────────────
 public record GetResourceActivityQuery(string ResourceType, Guid ResourceId, int Page = 1, int PageSize = 20)
     : IRequest<Result<object>>;
 
-// ── Handlers ─────────────────────────────────────────────────
 public class GetResourceActivityQueryHandler : IRequestHandler<GetResourceActivityQuery, Result<object>>
 {
     private readonly IApplicationDbContext _context;
