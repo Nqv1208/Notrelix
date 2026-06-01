@@ -27,7 +27,7 @@ public class WorkspaceInvitation : BaseEntity
         WorkspaceRole role = WorkspaceRole.Member,
         TimeSpan? expiration = null)
     {
-        return new WorkspaceInvitation
+        var invitation = new WorkspaceInvitation
         {
             WorkspaceId = workspaceId,
             InvitedBy = invitedBy,
@@ -37,6 +37,10 @@ public class WorkspaceInvitation : BaseEntity
             ExpiresAt = DateTime.UtcNow.Add(expiration ?? TimeSpan.FromDays(7)),
             CreatedAt = DateTime.UtcNow
         };
+
+        invitation.AddDomainEvent(new Events.Workspace.MemberInvitedEvent(workspaceId, invitation.Email, role, invitedBy));
+
+        return invitation;
     }
 
     public bool IsExpired => ExpiresAt < DateTime.UtcNow;

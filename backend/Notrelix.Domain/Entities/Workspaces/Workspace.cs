@@ -44,6 +44,8 @@ public class Workspace : AuditableEntity
         // Owner tự động là member với role Owner
         workspace._members.Add(WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner));
 
+        workspace.AddDomainEvent(new Events.Workspace.WorkspaceCreatedEvent(workspace.Id, workspace.Name, workspace.OwnerId, workspace.IsPersonal));
+
         return workspace;
     }
 
@@ -64,6 +66,8 @@ public class Workspace : AuditableEntity
         };
 
         workspace._members.Add(WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner));
+
+        workspace.AddDomainEvent(new Events.Workspace.WorkspaceCreatedEvent(workspace.Id, workspace.Name, workspace.OwnerId, workspace.IsPersonal));
 
         return workspace;
     }
