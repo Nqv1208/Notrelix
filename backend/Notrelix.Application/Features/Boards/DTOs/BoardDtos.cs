@@ -15,12 +15,25 @@ public record BoardDto(
 
 public record FullBoardDto(
     Guid Id,
+    Guid WorkspaceId,
     string Title,
     string? Description,
     string Background,
     string Visibility,
+    List<BoardColumnDto> Columns,
     List<ListDto> Lists,
     List<BoardMemberDto> Members
+);
+
+public record BoardColumnDto(
+    Guid Id,
+    Guid BoardId,
+    string Name,
+    string FieldType,
+    string Settings,
+    double Position,
+    bool IsHidden,
+    bool IsSystemField
 );
 
 public record BoardMemberDto(
@@ -34,6 +47,7 @@ public record BoardMemberDto(
 public record ListDto(
     Guid Id,
     string Title,
+    string Color,
     double Position,
     bool IsArchived,
     List<CardSummaryDto> Cards
@@ -42,20 +56,30 @@ public record ListDto(
 public record CardSummaryDto(
     Guid Id,
     string Title,
+    Guid? LinkedPageId,
     string? Priority,
     string Status,
     DateTime? DueDate,
+    DateTime? StartDate,
+    DateTime? CompletedAt,
     string? Cover,
     int MemberCount,
+    List<CardMemberDto> Members,
+    List<CardLabelDto> Labels,
     int ChecklistProgress, // e.g. 3/5
     int ChecklistTotal,
     int CommentCount,
     int AttachmentCount,
-    double Position
+    double Position,
+    string FieldValues,
+    DateTime CreatedAt,
+    DateTime? UpdatedAt
 );
 
 public record CardDto(
     Guid Id,
+    Guid BoardId,
+    Guid WorkspaceId,
     Guid ListId,
     string Title,
     string? DescriptionMd,
@@ -70,6 +94,9 @@ public record CardDto(
     List<CardMemberDto> Members,
     List<CardLabelDto> Labels,
     List<ChecklistDto> Checklists,
+    int CommentCount,
+    int AttachmentCount,
+    string FieldValues,
     DateTime CreatedAt,
     DateTime? UpdatedAt
 );
