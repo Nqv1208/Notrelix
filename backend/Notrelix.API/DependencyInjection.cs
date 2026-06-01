@@ -23,6 +23,7 @@ public static class DependencyInjection
     public static IServiceCollection AddSwagger(this IServiceCollection services)
     {
         // Swagger với JWT support
+        services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
         {
             options.SwaggerDoc("v1", new OpenApiInfo
