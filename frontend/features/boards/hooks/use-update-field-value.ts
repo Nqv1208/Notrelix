@@ -19,7 +19,7 @@ export function useUpdateFieldValue(boardId: string, workspaceId?: string) {
       const previous = queryClient.getQueryData<FullBoardResponse>(queryKey)
       queryClient.setQueryData<FullBoardResponse>(queryKey, (old) =>
         updateCardInFullBoard(old, payload.cardId, (card) => {
-          const memberIds = payload.fieldDefinitionId.endsWith("field-person") && Array.isArray(payload.value) ? payload.value : undefined
+          const memberIds = Array.isArray(payload.value) ? (payload.value as string[]) : undefined
           const members = memberIds
             ? (old?.board.members
                 .filter((member) => memberIds.includes(member.userId))
@@ -33,10 +33,14 @@ export function useUpdateFieldValue(boardId: string, workspaceId?: string) {
                 })) ?? [])
             : card.members
 
+          const fieldDef = previous?.fieldDefinitions.find((f) => f.id === payload.fieldDefinitionId)
+          const isDueDateField = fieldDef?.fieldType === "date" || payload.fieldDefinitionId.endsWith("field-due-date")
+
           return {
             ...card,
             status: payload.fieldDefinitionId.endsWith("field-status") && typeof payload.value === "string" ? payload.value : card.status,
             priority: payload.fieldDefinitionId.endsWith("field-priority") ? (payload.value as Card["priority"]) : card.priority,
+            dueDate: isDueDateField ? ((payload.value as string | null) ?? undefined) : card.dueDate,
             members,
             fieldValues: { ...card.fieldValues, [payload.fieldDefinitionId]: payload.value },
             updatedAt: new Date().toISOString(),
