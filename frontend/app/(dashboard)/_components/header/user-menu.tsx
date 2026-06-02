@@ -1,6 +1,7 @@
 "use client"
 
 import type { ComponentType, CSSProperties, ReactNode } from "react"
+import { useState, useEffect } from "react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,6 +69,12 @@ function UserMenuItem({ icon: Icon, label, badge, rightElement, onClick, danger 
 export function UserMenu() {
   const { user } = useAuthUser()
   const { mutate: logout } = useLogout()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const displayUser = user ?? {
     name: "Notrelix User",
     email: "workspace@notrelix.app",
@@ -76,6 +83,22 @@ export function UserMenu() {
   const initials = displayUser.name
     ? displayUser.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
     : "U"
+
+  if (!mounted) {
+    return (
+      <button
+        className="relative ml-2 h-8 w-8 rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        aria-label="User settings"
+        type="button"
+      >
+        <Avatar className="h-8 w-8">
+          <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+      </button>
+    )
+  }
 
   return (
     <DropdownMenu>
