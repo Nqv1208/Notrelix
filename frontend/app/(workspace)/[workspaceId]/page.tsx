@@ -1,4 +1,4 @@
-import { WorkspaceBoardShell } from "./_components/workspace-board-shell"
+import { WorkspaceBoardShell } from "./_components/board-layout/workspace-board-shell"
 
 export default async function WorkspaceHomePage({
   params,

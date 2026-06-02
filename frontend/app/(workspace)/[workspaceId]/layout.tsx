@@ -1,4 +1,4 @@
-import { WorkspaceShell } from "./_components/workspace-shell"
+import { WorkspaceShell } from "./_components/shell/workspace-shell"
 
 export default async function WorkspaceLayout({
   children,

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { workspaceAssets, workspaceMembers, workspaceTasks } from "../_components/workspace-data"
+import { workspaceAssets, workspaceMembers, workspaceTasks } from "../_components/dashboard/workspace-data"
 
 export default async function WorkspacePage({ params }: { params: Promise<{ workspaceId: string }> }) {
   const { workspaceId } = await params
