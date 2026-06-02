@@ -1,9 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { authService } from "@/features/auth/api/auth.service"
-import { tokenStorage } from "@/lib/auth/token-storage"
 import { ApiError } from "@/lib/api/api-error"
 
 export function useAuthUser() {

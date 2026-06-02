@@ -18,6 +18,12 @@ interface GlobalSearchDialogProps {
 }
 
 export function GlobalSearchDialog({ open, onOpenChange }: GlobalSearchDialogProps) {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
@@ -29,6 +35,8 @@ export function GlobalSearchDialog({ open, onOpenChange }: GlobalSearchDialogPro
     document.addEventListener("keydown", down)
     return () => document.removeEventListener("keydown", down)
   }, [open, onOpenChange])
+
+  if (!mounted) return null
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>

@@ -1,6 +1,6 @@
 "use client"
 
-import { MondayDocEditor } from "@/components/docs/editor"
+import { MondayDocEditor } from "./editor/monday-doc-editor"
 
 interface EditorShellProps {
   pageId: string

@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { workspaceTasks } from "../../_components/workspace-data"
+import { workspaceTasks } from "../../_components/dashboard/workspace-data"
 
 export function BoardWorkbench({ boardId }: { workspaceId: string; boardId?: string }) {
   const title = boardId === "board-roadmap" ? "Roadmap planning" : "Product delivery"

@@ -3,7 +3,7 @@
 import { AlertCircle } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
-import { BoardKanbanView, BoardTableView } from "@/components/boards/workbench"
+import { BoardKanbanView, BoardTableView } from "./workbench"
 import { useBoardDocsPanel, useFullBoard } from "@/features/boards/hooks"
 import { useWorkspace } from "@/features/workspace/hooks/use-workspace"
 import { BoardToolbar } from "./board-toolbar"

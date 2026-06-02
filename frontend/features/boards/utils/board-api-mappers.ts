@@ -203,10 +203,31 @@ function mapCardSummaryDto(dto: CardSummaryDtoApi, listId: string, board: Board,
   const status = normalizeStatus(dto.status)
   const progress = dto.checklistTotal > 0 ? Math.round((dto.checklistProgress / dto.checklistTotal) * 100) : 0
   const customValues = parseFieldValues(dto.fieldValues)
+
+  // Derive card members from person field values stored in fieldValues
+  const personField = fields.find((f) => getSemanticField(f) === "person")
+  const personUserIds = personField && Array.isArray(customValues[personField.id])
+    ? (customValues[personField.id] as string[])
+    : []
+  const members = personUserIds
+    .map((userId) => {
+      const bm = board.members.find((m) => m.userId === userId)
+      if (!bm) return null
+      return {
+        id: `cm-${dto.id}-${bm.userId}`,
+        userId: bm.userId,
+        name: bm.name,
+        initials: bm.initials,
+        avatarUrl: bm.avatarUrl,
+        color: bm.color,
+      }
+    })
+    .filter((m): m is NonNullable<typeof m> => m !== null)
+
   const semanticValues = Object.fromEntries(fields.map((field) => {
     const semantic = getSemanticField(field)
     if (semantic === "title") return [field.id, dto.title]
-    if (semantic === "person") return [field.id, []]
+    if (semantic === "person") return [field.id, personUserIds]
     if (semantic === "status") return [field.id, normalizeOptionValue(dto.status, field.options, status)]
     if (semantic === "priority") return [field.id, normalizeOptionValue(priority, field.options, priority)]
     if (semantic === "due_date") return [field.id, dto.dueDate ?? undefined]
@@ -232,7 +253,7 @@ function mapCardSummaryDto(dto: CardSummaryDtoApi, listId: string, board: Board,
     completedAt: undefined,
     isArchived: false,
     isDeleted: false,
-    members: [],
+    members,
     labels: [],
     checklists: [],
     fieldValues,
