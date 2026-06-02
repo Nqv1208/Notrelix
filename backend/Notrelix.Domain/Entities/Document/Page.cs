@@ -61,7 +61,11 @@ public class Page : AuditableEntity
 
     public void SetDeadline(DateTime? deadline)
     {
-        Deadline = deadline;
+        if (Deadline != deadline)
+        {
+            Deadline = deadline;
+            AddDomainEvent(new Events.Document.PageDeadlineSetEvent(Id, WorkspaceId, deadline));
+        }
     }
 
     public void Move(Guid? newParentId, double newPosition)
@@ -70,9 +74,10 @@ public class Page : AuditableEntity
         Position = newPosition;
     }
 
-    public void Publish()
+    public void Publish(Guid publishedBy)
     {
         PublishedAt = DateTime.UtcNow;
+        AddDomainEvent(new Events.Document.PagePublishedEvent(Id, WorkspaceId, publishedBy));
     }
 
     public void Unpublish()

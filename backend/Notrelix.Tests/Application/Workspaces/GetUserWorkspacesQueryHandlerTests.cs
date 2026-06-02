@@ -115,7 +115,7 @@ using Notrelix.Domain.Entities.Workspaces;
 using Notrelix.Domain.Enums;
 using Notrelix.Infrastructure.Data;
 
-namespace Notrelix.Tests.Workspaces;
+namespace Notrelix.Application.Tests.Workspaces;
 
 public class GetUserWorkspacesQueryHandlerTests
 {

@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Interfaces;
 using Notrelix.Infrastructure.Data;
 
-namespace Notrelix.Tests.Data;
+namespace Notrelix.Infrastructure.Tests.Data;
 
 public class SeedDataInitialiserTests
 {
@@ -90,7 +90,7 @@ public class SeedDataInitialiserTests
 
         await CreateInitialiser(context).SeedAsync();
 
-        var defaultEmails = new[]
+        var defaultEmails = new List<string>
         {
             "admin@notrelix.com",
             "demo@notrelix.com",

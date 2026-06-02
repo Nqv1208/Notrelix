@@ -60,6 +60,9 @@ public class Block : AuditableEntity
 
     public void Move(double newPosition, Guid? newParentBlockId = null)
     {
+        if (newParentBlockId.HasValue && newParentBlockId.Value == Id)
+            throw new InvalidOperationException("A block cannot be its own parent.");
+
         Position = newPosition;
         ParentBlockId = newParentBlockId;
         Version++;

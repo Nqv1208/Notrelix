@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Features.Identity.Queries.GetCurrentUser;
 using Notrelix.Domain.Entities.Identity;
 
-namespace Notrelix.Tests.Auth;
+namespace Notrelix.Application.Tests.Auth;
 
 public class GetCurrentUserQueryHandlerTests
 {

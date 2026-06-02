@@ -7,6 +7,8 @@ import { GlobalSearchDialog } from "./header/global-search-dialog"
 import { UserMenu } from "./header/user-menu"
 import { Bell, Grip, HelpCircle, Hexagon, Inbox, Puzzle, Search, UserPlus } from "lucide-react"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
+import { routes } from "@/lib/routes"
 
 type UtilityButtonProps = {
   icon: ComponentType<{ className?: string }>
@@ -50,17 +52,19 @@ export function AppHeader({
           className
         )}
       >
-        <div className="flex min-w-0 items-center gap-3">
-          {showSidebarTrigger ? (
-            <SidebarTrigger className="-ml-1 text-muted-foreground hover:bg-muted hover:text-foreground" />
-          ) : null}
-          <div className="flex min-w-0 items-center gap-2">
-            <Hexagon className="size-5 fill-primary text-primary" />
-            <span className="hidden truncate text-lg font-bold text-foreground sm:block">
-              Notrelix <span className="font-normal text-muted-foreground">work management</span>
-            </span>
+        <Link href={routes.dashboard.root}>
+          <div className="flex min-w-0 items-center gap-3">
+            {showSidebarTrigger ? (
+              <SidebarTrigger className="-ml-1 text-muted-foreground hover:bg-muted hover:text-foreground" />
+            ) : null}
+            <div className="flex min-w-0 items-center gap-2">
+              <Hexagon className="size-5 fill-primary text-primary" />
+              <span className="hidden truncate text-lg font-bold text-foreground sm:block">
+                Notrelix <span className="font-normal text-muted-foreground">work management</span>
+              </span>
+            </div>
           </div>
-        </div>
+        </Link>
 
         <div className="mx-4 hidden min-w-0 flex-1 justify-center lg:flex" />
 

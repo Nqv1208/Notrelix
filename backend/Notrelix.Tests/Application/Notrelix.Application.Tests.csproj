@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <RootNamespace>Notrelix.Tests</RootNamespace>
+    <RootNamespace>Notrelix.Application.Tests</RootNamespace>
   </PropertyGroup>
 
   <!-- TESTING -->
@@ -19,23 +19,15 @@
     </PackageReference>
     <PackageReference Include="FluentAssertions" Version="8.8.0" />
     <PackageReference Include="Moq" Version="4.20.72" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
   </ItemGroup>
 
-  <!-- EXCLUDE NESTED TEST PROJECTS TO PREVENT DUPLICATE COMPILATION -->
+  <!-- PROJECT REFERENCES -->
   <ItemGroup>
-    <Compile Remove="Domain\**" />
-    <Compile Remove="Application\**" />
-    <Compile Remove="Infrastructure\**" />
-    <Compile Remove="API\**" />
-    <EmbeddedResource Remove="Domain\**" />
-    <EmbeddedResource Remove="Application\**" />
-    <EmbeddedResource Remove="Infrastructure\**" />
-    <EmbeddedResource Remove="API\**" />
-    <None Remove="Domain\**" />
-    <None Remove="Application\**" />
-    <None Remove="Infrastructure\**" />
-    <None Remove="API\**" />
+    <ProjectReference Include="..\..\Notrelix.Domain\Notrelix.Domain.csproj" />
+    <ProjectReference Include="..\..\Notrelix.Application\Notrelix.Application.csproj" />
+    <ProjectReference Include="..\..\Notrelix.Infrastructure\Notrelix.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
-

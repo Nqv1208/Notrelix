@@ -3,5 +3,10 @@
   <Project Path="Notrelix.Domain/Notrelix.Domain.csproj" />
   <Project Path="Notrelix.Infrastructure/Notrelix.Infrastructure.csproj" />
   <Project Path="Notrelix.Tests/Notrelix.Tests.csproj" />
+  <Project Path="Notrelix.Tests/Domain/Notrelix.Domain.Tests.csproj" />
+  <Project Path="Notrelix.Tests/Application/Notrelix.Application.Tests.csproj" />
+  <Project Path="Notrelix.Tests/Infrastructure/Notrelix.Infrastructure.Tests.csproj" />
+  <Project Path="Notrelix.Tests/API/Notrelix.API.Tests.csproj" />
   <Project Path="Notrelix.API/Notrelix.API.csproj" />
 </Solution>
+
