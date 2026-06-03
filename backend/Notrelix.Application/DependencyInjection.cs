@@ -3,6 +3,8 @@ using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Hosting;
 using Notrelix.Application.Common.Behaviors;
+using Notrelix.Application.Common.Interfaces;
+using Notrelix.Application.Common.Security;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -24,6 +26,8 @@ public static class DependencyInjection
 
         // FluentValidation - auto register all validators
         services.AddValidatorsFromAssembly(assembly);
+
+        services.AddScoped<IWorkspacePermissionService, WorkspacePermissionService>();
 
         // AutoMapper
         services.AddAutoMapper(cfg => cfg.AddMaps(assembly), assembly);
