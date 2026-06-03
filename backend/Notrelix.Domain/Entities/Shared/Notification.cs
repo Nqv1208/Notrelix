@@ -1,5 +1,6 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Enums;
+using Notrelix.Domain.Events.Shared;
 
 namespace Notrelix.Domain.Entities.Shared;
 
@@ -27,7 +28,7 @@ public class Notification : BaseEntity
         ResourceType? resourceType = null,
         Guid? resourceId = null)
     {
-        return new Notification
+        var notification = new Notification
         {
             WorkspaceId = workspaceId,
             UserId = userId,
@@ -38,6 +39,9 @@ public class Notification : BaseEntity
             ResourceId = resourceId,
             CreatedAt = DateTime.UtcNow
         };
+
+        notification.AddDomainEvent(new NotificationCreatedEvent(notification.Id, workspaceId, userId, type, resourceType, resourceId));
+        return notification;
     }
 
     public void MarkAsRead()

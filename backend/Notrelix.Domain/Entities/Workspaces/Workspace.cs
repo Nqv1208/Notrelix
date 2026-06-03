@@ -1,5 +1,6 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Enums;
+using Notrelix.Domain.Events.Workspace;
 using Notrelix.Domain.ValueObjects;
 
 namespace Notrelix.Domain.Entities.Workspaces;
@@ -44,7 +45,7 @@ public class Workspace : AuditableEntity
         // Owner tự động là member với role Owner
         workspace._members.Add(WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner));
 
-        workspace.AddDomainEvent(new Events.Workspace.WorkspaceCreatedEvent(workspace.Id, workspace.Name, workspace.OwnerId, workspace.IsPersonal));
+        workspace.AddDomainEvent(new WorkspaceCreatedEvent(workspace.Id, workspace.Name, workspace.OwnerId, workspace.IsPersonal));
 
         return workspace;
     }
@@ -67,17 +68,26 @@ public class Workspace : AuditableEntity
 
         workspace._members.Add(WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner));
 
-        workspace.AddDomainEvent(new Events.Workspace.WorkspaceCreatedEvent(workspace.Id, workspace.Name, workspace.OwnerId, workspace.IsPersonal));
+        workspace.AddDomainEvent(new WorkspaceCreatedEvent(workspace.Id, workspace.Name, workspace.OwnerId, workspace.IsPersonal));
 
         return workspace;
     }
 
     public void UpdateName(string name)
     {
+        Rename(name, Guid.Empty);
+    }
+
+    public void Rename(string name, Guid updatedBy)
+    {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Tên workspace không được để trống", nameof(name));
 
-        Name = name.Trim();
+        var normalizedName = name.Trim();
+        if (Name == normalizedName) return;
+
+        Name = normalizedName;
+        AddDomainEvent(new WorkspaceUpdatedEvent(Id, updatedBy, Name, Slug));
     }
 
     public void UpdateSlug(string slug)
@@ -85,7 +95,11 @@ public class Workspace : AuditableEntity
         if (string.IsNullOrWhiteSpace(slug))
             throw new ArgumentException("Slug không được để trống", nameof(slug));
 
-        Slug = slug.Trim().ToLowerInvariant();
+        var normalizedSlug = slug.Trim().ToLowerInvariant();
+        if (Slug == normalizedSlug) return;
+
+        Slug = normalizedSlug;
+        AddDomainEvent(new WorkspaceUpdatedEvent(Id, Guid.Empty, Name, Slug));
     }
 
     public void UpdateSettings(string settingsJson)
@@ -121,30 +135,82 @@ public class Workspace : AuditableEntity
 
         var member = WorkspaceMember.Create(Id, userId, role);
         _members.Add(member);
+        AddDomainEvent(new WorkspaceMemberJoinedEvent(Id, userId, role, member.InvitedBy));
         return member;
     }
 
     public void RemoveMember(Guid userId)
     {
-        if (userId == OwnerId)
+        RemoveMember(userId, Guid.Empty);
+    }
+
+    public void RemoveMember(Guid userId, Guid removedBy)
+    {
+        var member = _members.FirstOrDefault(m => m.UserId == userId);
+        if (member == null)
+            return;
+
+        if (member.IsOwner && OwnerCount <= 1)
             throw new InvalidOperationException("Không thể xóa Owner khỏi workspace");
 
-        var member = _members.FirstOrDefault(m => m.UserId == userId);
-        if (member != null)
+        _members.Remove(member);
+        AddDomainEvent(new WorkspaceMemberRemovedEvent(Id, userId, member.Role, removedBy));
+
+        if (OwnerId == userId)
         {
-            _members.Remove(member);
+            OwnerId = _members.First(m => m.IsOwner).UserId;
         }
     }
 
     public void UpdateMemberRole(Guid userId, WorkspaceRole newRole)
     {
-        if (userId == OwnerId && newRole != WorkspaceRole.Owner)
-            throw new InvalidOperationException("Không thể thay đổi role của Owner");
+        ChangeMemberRole(userId, newRole, Guid.Empty);
+    }
 
+    public void ChangeMemberRole(Guid userId, WorkspaceRole newRole, Guid changedBy)
+    {
         var member = _members.FirstOrDefault(m => m.UserId == userId)
             ?? throw new InvalidOperationException("User không phải là thành viên của workspace");
 
+        if (member.IsOwner && newRole != WorkspaceRole.Owner && OwnerCount <= 1)
+            throw new InvalidOperationException("Không thể thay đổi role của Owner");
+
+        var oldRole = member.Role;
+        if (oldRole == newRole) return;
+
         member.UpdateRole(newRole);
+        AddDomainEvent(new WorkspaceMemberRoleChangedEvent(Id, userId, oldRole, newRole, changedBy));
+
+        if (OwnerId == userId && newRole != WorkspaceRole.Owner)
+        {
+            OwnerId = _members.First(m => m.IsOwner).UserId;
+        }
+    }
+
+    public void TransferOwnership(Guid newOwnerId, Guid transferredBy)
+    {
+        if (transferredBy != OwnerId)
+            throw new InvalidOperationException("Chỉ owner hiện tại mới được chuyển quyền sở hữu workspace");
+
+        if (newOwnerId == OwnerId)
+            return;
+
+        var currentOwner = _members.FirstOrDefault(m => m.UserId == OwnerId)
+            ?? throw new InvalidOperationException("Workspace thiếu owner hiện tại");
+
+        var newOwner = _members.FirstOrDefault(m => m.UserId == newOwnerId)
+            ?? throw new InvalidOperationException("Owner mới phải là thành viên của workspace");
+
+        var oldOwnerId = OwnerId;
+        var oldTargetRole = newOwner.Role;
+
+        currentOwner.UpdateRole(WorkspaceRole.Admin);
+        newOwner.UpdateRole(WorkspaceRole.Owner);
+        OwnerId = newOwnerId;
+
+        AddDomainEvent(new WorkspaceMemberRoleChangedEvent(Id, oldOwnerId, WorkspaceRole.Owner, WorkspaceRole.Admin, transferredBy));
+        AddDomainEvent(new WorkspaceMemberRoleChangedEvent(Id, newOwnerId, oldTargetRole, WorkspaceRole.Owner, transferredBy));
+        AddDomainEvent(new WorkspaceOwnershipTransferredEvent(Id, oldOwnerId, newOwnerId, transferredBy));
     }
 
     public bool IsMember(Guid userId) => _members.Any(m => m.UserId == userId);
@@ -163,4 +229,6 @@ public class Workspace : AuditableEntity
         var role = GetMemberRole(userId);
         return role is WorkspaceRole.Owner or WorkspaceRole.Admin;
     }
+
+    private int OwnerCount => _members.Count(m => m.IsOwner);
 }

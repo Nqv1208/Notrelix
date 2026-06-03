@@ -1,4 +1,5 @@
 using Notrelix.Domain.Common;
+using Notrelix.Domain.Events.Document;
 
 namespace Notrelix.Domain.Entities.Shared;
 
@@ -17,7 +18,7 @@ public class PageMention : BaseEntity
 
     public static PageMention Create(Guid pageId, Guid mentionedUserId, Guid mentionedBy, Guid? blockId = null)
     {
-        return new PageMention
+        var mention = new PageMention
         {
             PageId = pageId,
             BlockId = blockId,
@@ -25,5 +26,8 @@ public class PageMention : BaseEntity
             MentionedBy = mentionedBy,
             CreatedAt = DateTime.UtcNow
         };
+
+        mention.AddDomainEvent(new PageMentionedEvent(pageId, blockId, mentionedUserId, mentionedBy));
+        return mention;
     }
 }
