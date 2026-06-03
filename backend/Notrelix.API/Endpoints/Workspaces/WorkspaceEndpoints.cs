@@ -101,6 +101,7 @@ using Notrelix.Application.Features.Workspaces.Commands.RemoveMember;
 using Notrelix.Application.Features.Workspaces.Commands.RemoveMemberBySlug;
 using Notrelix.Application.Features.Workspaces.Commands.UpdateMemberRole;
 using Notrelix.Application.Features.Workspaces.Commands.UpdateMemberRoleBySlug;
+using Notrelix.Application.Features.Workspaces.Commands.CancelInvitation;
 using Notrelix.Application.Features.Workspaces.Commands.UpdateWorkspace;
 using Notrelix.Application.Features.Workspaces.DTOs;
 using Notrelix.Application.Features.Workspaces.Queries.GetUserWorkspaces;
@@ -111,6 +112,8 @@ using Notrelix.Application.Features.Workspaces.Queries.GetWorkspaceBySlug;
 using Notrelix.Application.Features.Workspaces.Queries.GetWorkspaceInvitations;
 using Notrelix.Application.Features.Workspaces.Queries.GetWorkspaceMembers;
 using Notrelix.Application.Features.Workspaces.Queries.GetWorkspaceMembersBySlug;
+using Notrelix.Application.Features.Workspaces.Queries.GetInvitationByToken;
+using Notrelix.Application.Features.Workspaces.Queries.GetUserPendingInvitations;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Common.Interfaces;
 namespace Notrelix.API.Endpoints.Workspaces;
@@ -167,6 +170,27 @@ public static class WorkspaceEndpoints
         group.MapPost("/{workspaceId:guid}/invitations", InviteMember)
             .WithName("InviteMember")
             .WithSummary("Invite a member to workspace");
+
+        group.MapGet("/{workspaceId:guid}/invitations", GetInvitations)
+            .WithName("GetWorkspaceInvitations")
+            .WithSummary("Get workspace invitations");
+
+        group.MapDelete("/{workspaceId:guid}/invitations/{invitationId:guid}", CancelInvitation)
+            .WithName("CancelInvitation")
+            .WithSummary("Cancel a workspace invitation");
+
+        group.MapGet("/invitations/by-token/{token}", GetInvitationByToken)
+            .WithName("GetInvitationByToken")
+            .WithSummary("Get workspace invitation details by token")
+            .AllowAnonymous();
+
+        group.MapPost("/invitations/accept/{token}", AcceptInvitation)
+            .WithName("AcceptInvitation")
+            .WithSummary("Accept a workspace invitation by token");
+
+        group.MapGet("/invitations/pending", GetPendingInvitations)
+            .WithName("GetUserPendingInvitations")
+            .WithSummary("Get pending invitations for the current logged-in user");
 
         // ── Activity ─────────────────────────────────────────────
         group.MapGet("/{workspaceId:guid}/activity", GetActivity)
@@ -266,6 +290,23 @@ public static class WorkspaceEndpoints
         return result.ToCreatedResult();
     }
 
+    private static async Task<IResult> GetInvitations(
+        Guid workspaceId,
+        ISender sender)
+    {
+        var result = await sender.Send(new GetWorkspaceInvitationsQuery(workspaceId));
+        return result.ToApiResult();
+    }
+
+    private static async Task<IResult> CancelInvitation(
+        Guid workspaceId,
+        Guid invitationId,
+        ISender sender)
+    {
+        var result = await sender.Send(new CancelInvitationCommand(workspaceId, invitationId));
+        return result.ToNoContentResult();
+    }
+
     private static async Task<IResult> GetActivity(
         Guid workspaceId,
         ISender sender,
@@ -273,6 +314,29 @@ public static class WorkspaceEndpoints
         int pageSize = 20)
     {
         var result = await sender.Send(new GetWorkspaceActivityQuery(workspaceId, page, pageSize));
+        return result.ToApiResult();
+    }
+
+    private static async Task<IResult> GetInvitationByToken(
+        string token,
+        ISender sender)
+    {
+        var result = await sender.Send(new GetInvitationByTokenQuery(token));
+        return result.ToApiResult();
+    }
+
+    private static async Task<IResult> AcceptInvitation(
+        string token,
+        ISender sender)
+    {
+        var result = await sender.Send(new AcceptInvitationCommand(token));
+        return result.ToApiResult();
+    }
+
+    private static async Task<IResult> GetPendingInvitations(
+        ISender sender)
+    {
+        var result = await sender.Send(new GetUserPendingInvitationsQuery());
         return result.ToApiResult();
     }
 }

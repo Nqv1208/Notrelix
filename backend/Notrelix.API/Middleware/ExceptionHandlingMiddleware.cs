@@ -1,5 +1,10 @@
 using System.Text.Json;
 using Notrelix.Application.Common.Exceptions;
+using DomainBusinessRuleViolationException = Notrelix.Domain.Common.Exceptions.BusinessRuleViolationException;
+using DomainConflictException = Notrelix.Domain.Common.Exceptions.ConflictException;
+using DomainException = Notrelix.Domain.Common.Exceptions.DomainException;
+using DomainForbiddenException = Notrelix.Domain.Common.Exceptions.ForbiddenException;
+using DomainValidationException = Notrelix.Domain.Common.Exceptions.DomainValidationException;
 
 namespace Notrelix.API.Middleware;
 
@@ -40,6 +45,14 @@ public class ExceptionHandlingMiddleware
                     Errors = validationEx.Errors
                 }
             ),
+            ArgumentException argumentEx when IsMediatRNotificationContractException(argumentEx) => (
+                StatusCodes.Status500InternalServerError,
+                new ErrorResponse
+                {
+                    Type = "InternalServerError",
+                    Message = "An unexpected error occurred"
+                }
+            ),
             ArgumentException argumentEx => (
                 StatusCodes.Status400BadRequest,
                 new ErrorResponse
@@ -60,11 +73,56 @@ public class ExceptionHandlingMiddleware
                     Message = exception.Message
                 }
             ),
+            DomainForbiddenException => (
+                StatusCodes.Status403Forbidden,
+                new ErrorResponse
+                {
+                    Type = "Forbidden",
+                    Message = exception.Message
+                }
+            ),
             NotFoundException => (
                 StatusCodes.Status404NotFound,
                 new ErrorResponse
                 {
                     Type = "NotFound",
+                    Message = exception.Message
+                }
+            ),
+            DomainValidationException validationEx => (
+                StatusCodes.Status400BadRequest,
+                new ErrorResponse
+                {
+                    Type = "ValidationError",
+                    Message = validationEx.Message,
+                    Errors = validationEx.Errors.ToDictionary(item => item.Key, item => item.Value)
+                }
+            ),
+            DomainBusinessRuleViolationException ruleEx => (
+                StatusCodes.Status400BadRequest,
+                new ErrorResponse
+                {
+                    Type = "BusinessRuleViolation",
+                    Message = ruleEx.Message,
+                    Errors = new Dictionary<string, string[]>
+                    {
+                        [ruleEx.RuleName] = new[] { ruleEx.Message }
+                    }
+                }
+            ),
+            DomainConflictException => (
+                StatusCodes.Status409Conflict,
+                new ErrorResponse
+                {
+                    Type = "Conflict",
+                    Message = exception.Message
+                }
+            ),
+            DomainException => (
+                StatusCodes.Status400BadRequest,
+                new ErrorResponse
+                {
+                    Type = "DomainError",
                     Message = exception.Message
                 }
             ),
@@ -97,6 +155,12 @@ public class ExceptionHandlingMiddleware
         });
 
         await context.Response.WriteAsync(json);
+    }
+
+    private static bool IsMediatRNotificationContractException(ArgumentException exception)
+    {
+        return exception.Message.Contains("does not implement INotification", StringComparison.Ordinal)
+            || exception.Message.Contains("does not implement $INotification", StringComparison.Ordinal);
     }
 }
 

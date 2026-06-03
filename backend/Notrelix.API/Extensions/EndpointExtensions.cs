@@ -12,6 +12,7 @@ using Notrelix.API.Endpoints.Labels;
 using Notrelix.API.Endpoints.Lists;
 using Notrelix.API.Endpoints.Users;
 using Notrelix.API.Endpoints.Workspaces;
+using Notrelix.API.Endpoints.Notifications;
 using Notrelix.Application.Common.Models;
 
 namespace Notrelix.API.Extensions;
@@ -67,6 +68,9 @@ public static class EndpointExtensions
 
         // Activity
         app.MapActivityEndpoints();
+
+        // Notifications
+        app.MapNotificationEndpoints();
 
         return app;
     }
