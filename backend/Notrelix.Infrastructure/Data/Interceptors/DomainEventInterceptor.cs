@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Notrelix.Application.Common.Events;
 using Notrelix.Domain.Common;
 
 namespace Notrelix.Infrastructure.Data.Interceptors;
@@ -52,7 +53,14 @@ public class DomainEventInterceptor : SaveChangesInterceptor
 
         foreach (var domainEvent in domainEvents)
         {
-            await _mediator.Publish(domainEvent, cancellationToken);
+            var notification = CreateDomainEventNotification(domainEvent);
+            await _mediator.Publish(notification, cancellationToken);
         }
+    }
+
+    private static object CreateDomainEventNotification(BaseEvent domainEvent)
+    {
+        var notificationType = typeof(DomainEventNotification<>).MakeGenericType(domainEvent.GetType());
+        return Activator.CreateInstance(notificationType, domainEvent)!;
     }
 }
