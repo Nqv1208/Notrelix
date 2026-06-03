@@ -72,19 +72,34 @@ public record UpdateCardCommand(Guid CardId, string? Title, string? DescriptionM
 public class UpdateCardCommandHandler : IRequestHandler<UpdateCardCommand, Result>
 {
     private readonly IApplicationDbContext _context;
-    public UpdateCardCommandHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
+
+    public UpdateCardCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _permissions = permissions;
+    }
 
     public async Task<Result> Handle(UpdateCardCommand request, CancellationToken ct)
     {
-        var card = await _context.Cards.FirstOrDefaultAsync(c => c.Id == request.CardId && !c.IsDeleted, ct);
+        var card = await _context.Cards
+            .Include(c => c.List)
+            .FirstOrDefaultAsync(c => c.Id == request.CardId && !c.IsDeleted, ct);
         if (card is null) throw new NotFoundException(nameof(Card), request.CardId);
 
-        if (request.Title is not null) card.UpdateTitle(request.Title);
+        await _permissions.EnsureCanEditBoardAsync(card.List.BoardId, _currentUser.UserId, ct);
+
+        if (request.Title is not null) card.Rename(request.Title, _currentUser.UserId);
         if (request.DescriptionMd is not null) card.UpdateDescription(request.DescriptionMd);
         if (request.Priority is not null)
-            card.UpdatePriority(Enum.Parse<Domain.Enums.CardPriority>(request.Priority, ignoreCase: true));
+            card.ChangePriority(Enum.Parse<Domain.Enums.CardPriority>(request.Priority, ignoreCase: true), _currentUser.UserId);
         if (request.Cover is not null) card.UpdateCover(request.Cover);
-        if (request.DueDate.HasValue || request.StartDate.HasValue) card.SetDueDate(request.DueDate);
+        if (request.DueDate.HasValue || request.StartDate.HasValue) card.SetDueDate(request.DueDate, _currentUser.UserId);
         if (request.StartDate.HasValue) card.SetStartDate(request.StartDate);
 
         await _context.SaveChangesAsync(ct);

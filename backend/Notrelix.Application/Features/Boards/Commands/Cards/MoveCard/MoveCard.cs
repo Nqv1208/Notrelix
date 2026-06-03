@@ -71,11 +71,16 @@ public class MoveCardCommandHandler : IRequestHandler<MoveCardCommand, Result>
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
 
-    public MoveCardCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public MoveCardCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
     {
         _context = context;
         _currentUser = currentUser;
+        _permissions = permissions;
     }
 
     public async Task<Result> Handle(MoveCardCommand request, CancellationToken cancellationToken)
@@ -93,11 +98,13 @@ public class MoveCardCommandHandler : IRequestHandler<MoveCardCommand, Result>
         if (targetList == null)
             throw new NotFoundException(nameof(BoardList), request.ListId);
 
-        var oldListId = card.ListId;
-        var oldPosition = card.Position;
+        if (card.List.BoardId != targetList.BoardId)
+            throw new BusinessRuleViolationException("CardBoardMismatch", "Card can only be moved between groups on the same board.");
+
+        await _permissions.EnsureCanEditBoardAsync(card.List.BoardId, _currentUser.UserId, cancellationToken);
 
         // Cập nhật vị trí và danh sách
-        card.Move(request.ListId, request.Position);
+        card.MoveToGroup(request.ListId, request.Position, _currentUser.UserId);
 
         await _context.SaveChangesAsync(cancellationToken);
 

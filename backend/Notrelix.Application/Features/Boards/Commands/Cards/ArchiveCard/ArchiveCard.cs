@@ -72,13 +72,27 @@ public record ArchiveCardCommand(Guid CardId) : IRequest<Result>;
 public class ArchiveCardCommandHandler : IRequestHandler<ArchiveCardCommand, Result>
 {
     private readonly IApplicationDbContext _context;
-    public ArchiveCardCommandHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
+
+    public ArchiveCardCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _permissions = permissions;
+    }
 
     public async Task<Result> Handle(ArchiveCardCommand request, CancellationToken ct)
     {
-        var card = await _context.Cards.FirstOrDefaultAsync(c => c.Id == request.CardId, ct);
+        var card = await _context.Cards
+            .Include(c => c.List)
+            .FirstOrDefaultAsync(c => c.Id == request.CardId, ct);
         if (card is null) throw new NotFoundException(nameof(Card), request.CardId);
-        card.Archive();
+        await _permissions.EnsureCanEditBoardAsync(card.List.BoardId, _currentUser.UserId, ct);
+        card.Archive(_currentUser.UserId);
         await _context.SaveChangesAsync(ct);
         return Result.Success();
     }

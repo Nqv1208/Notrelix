@@ -71,10 +71,17 @@ public record LinkPageToCardCommand(Guid CardId, Guid PageId) : IRequest<Result>
 public class LinkPageToCardCommandHandler : IRequestHandler<LinkPageToCardCommand, Result>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
 
-    public LinkPageToCardCommandHandler(IApplicationDbContext context)
+    public LinkPageToCardCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
     {
         _context = context;
+        _currentUser = currentUser;
+        _permissions = permissions;
     }
 
     public async Task<Result> Handle(LinkPageToCardCommand request, CancellationToken cancellationToken)
@@ -92,8 +99,20 @@ public class LinkPageToCardCommandHandler : IRequestHandler<LinkPageToCardComman
         if (page == null)
             throw new NotFoundException(nameof(Page), request.PageId);
 
+        var board = await _context.Boards
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == card.List.BoardId, cancellationToken);
+
+        if (board == null)
+            throw new NotFoundException(nameof(BoardEntity), card.List.BoardId);
+
+        await _permissions.EnsureCanEditBoardAsync(board.Id, _currentUser.UserId, cancellationToken);
+
+        if (board.WorkspaceId != page.WorkspaceId)
+            throw new BusinessRuleViolationException("CardPageWorkspaceMismatch", "Card chỉ được link với page cùng workspace.");
+
         // Map link
-        card.LinkPage(request.PageId);
+        card.LinkPage(request.PageId, _currentUser.UserId);
 
         await _context.SaveChangesAsync(cancellationToken);
 

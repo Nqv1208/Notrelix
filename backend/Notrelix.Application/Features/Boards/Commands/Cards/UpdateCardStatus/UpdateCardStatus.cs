@@ -72,13 +72,27 @@ public record UpdateCardStatusCommand(Guid CardId, string Status) : IRequest<Res
 public class UpdateCardStatusCommandHandler : IRequestHandler<UpdateCardStatusCommand, Result>
 {
     private readonly IApplicationDbContext _context;
-    public UpdateCardStatusCommandHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
+
+    public UpdateCardStatusCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _permissions = permissions;
+    }
 
     public async Task<Result> Handle(UpdateCardStatusCommand request, CancellationToken ct)
     {
-        var card = await _context.Cards.FirstOrDefaultAsync(c => c.Id == request.CardId, ct);
+        var card = await _context.Cards
+            .Include(c => c.List)
+            .FirstOrDefaultAsync(c => c.Id == request.CardId, ct);
         if (card is null) throw new NotFoundException(nameof(Card), request.CardId);
-        card.UpdateStatus(Enum.Parse<Domain.Enums.CardStatus>(request.Status, ignoreCase: true));
+        await _permissions.EnsureCanEditBoardAsync(card.List.BoardId, _currentUser.UserId, ct);
+        card.ChangeStatus(Enum.Parse<Domain.Enums.CardStatus>(request.Status, ignoreCase: true), _currentUser.UserId);
         await _context.SaveChangesAsync(ct);
         return Result.Success();
     }

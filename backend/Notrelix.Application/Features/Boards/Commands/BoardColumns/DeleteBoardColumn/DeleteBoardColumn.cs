@@ -72,10 +72,23 @@ public record DeleteBoardColumnCommand(Guid BoardId, Guid ColumnId) : IRequest<R
 public class DeleteBoardColumnCommandHandler : IRequestHandler<DeleteBoardColumnCommand, Result>
 {
     private readonly IApplicationDbContext _context;
-    public DeleteBoardColumnCommandHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
+
+    public DeleteBoardColumnCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _permissions = permissions;
+    }
 
     public async Task<Result> Handle(DeleteBoardColumnCommand request, CancellationToken ct)
     {
+        await _permissions.EnsureCanEditBoardAsync(request.BoardId, _currentUser.UserId, ct);
+
         var column = await _context.BoardColumns
             .FirstOrDefaultAsync(item => item.Id == request.ColumnId && item.BoardId == request.BoardId, ct);
         if (column is null) throw new NotFoundException(nameof(BoardColumn), request.ColumnId);

@@ -72,12 +72,24 @@ public record UnarchiveListCommand(Guid ListId) : IRequest<Result>;
 public class UnarchiveListCommandHandler : IRequestHandler<UnarchiveListCommand, Result>
 {
     private readonly IApplicationDbContext _context;
-    public UnarchiveListCommandHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
+
+    public UnarchiveListCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _permissions = permissions;
+    }
 
     public async Task<Result> Handle(UnarchiveListCommand request, CancellationToken ct)
     {
         var list = await _context.BoardLists.FirstOrDefaultAsync(l => l.Id == request.ListId, ct);
         if (list is null) throw new NotFoundException(nameof(BoardList), request.ListId);
+        await _permissions.EnsureCanEditBoardAsync(list.BoardId, _currentUser.UserId, ct);
         list.Unarchive();
         await _context.SaveChangesAsync(ct);
         return Result.Success();

@@ -72,14 +72,28 @@ public record UpdateListCommand(Guid ListId, string? Title, string? Color = null
 public class UpdateListCommandHandler : IRequestHandler<UpdateListCommand, Result>
 {
     private readonly IApplicationDbContext _context;
-    public UpdateListCommandHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
+
+    public UpdateListCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _permissions = permissions;
+    }
 
     public async Task<Result> Handle(UpdateListCommand request, CancellationToken ct)
     {
         var list = await _context.BoardLists.FirstOrDefaultAsync(l => l.Id == request.ListId, ct);
         if (list is null) throw new NotFoundException(nameof(BoardList), request.ListId);
-        if (request.Title is not null) list.UpdateTitle(request.Title);
-        if (request.Color is not null) list.UpdateColor(request.Color);
+
+        await _permissions.EnsureCanEditBoardAsync(list.BoardId, _currentUser.UserId, ct);
+
+        if (request.Title is not null) list.Rename(request.Title, _currentUser.UserId);
+        if (request.Color is not null) list.ChangeColor(request.Color, _currentUser.UserId);
         await _context.SaveChangesAsync(ct);
         return Result.Success();
     }

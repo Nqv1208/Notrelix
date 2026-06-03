@@ -72,13 +72,26 @@ public record CreateBoardColumnCommand(Guid BoardId, string Name, string FieldTy
 public class CreateBoardColumnCommandHandler : IRequestHandler<CreateBoardColumnCommand, Result<Guid>>
 {
     private readonly IApplicationDbContext _context;
-    public CreateBoardColumnCommandHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
+
+    public CreateBoardColumnCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _permissions = permissions;
+    }
 
     public async Task<Result<Guid>> Handle(CreateBoardColumnCommand request, CancellationToken ct)
     {
         var boardExists = await _context.Boards.AsNoTracking()
             .AnyAsync(board => board.Id == request.BoardId && !board.IsArchived, ct);
         if (!boardExists) throw new NotFoundException(nameof(Board), request.BoardId);
+
+        await _permissions.EnsureCanEditBoardAsync(request.BoardId, _currentUser.UserId, ct);
 
         var position = request.Position ?? await _context.BoardColumns
             .Where(column => column.BoardId == request.BoardId)

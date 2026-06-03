@@ -71,11 +71,16 @@ public class CreateCardCommandHandler : IRequestHandler<CreateCardCommand, Resul
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
 
-    public CreateCardCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public CreateCardCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
     {
         _context = context;
         _currentUser = currentUser;
+        _permissions = permissions;
     }
 
     public async Task<Result<Guid>> Handle(CreateCardCommand request, CancellationToken cancellationToken)
@@ -86,22 +91,22 @@ public class CreateCardCommandHandler : IRequestHandler<CreateCardCommand, Resul
         if (list == null)
             throw new NotFoundException(nameof(BoardList), request.ListId);
 
+        await _permissions.EnsureCanEditBoardAsync(list.BoardId, _currentUser.UserId, cancellationToken);
+
         // Tính toán position (mặc định đặt ở cuối danh sách)
         var maxPosition = await _context.Cards
             .Where(x => x.ListId == request.ListId && !x.IsDeleted)
             .MaxAsync(x => (double?)x.Position, cancellationToken) ?? 0;
 
-        var newPosition = maxPosition + 65536.0; // Khoảng cách an toàn ban đầu
+        var newPosition = request.Position ?? maxPosition + 65536.0; // Khoảng cách an toàn ban đầu
 
         var card = Card.Create(
             listId: request.ListId,
+            boardId: list.BoardId,
             createdBy: _currentUser.UserId,
             title: request.Title,
             position: newPosition
         );
-
-        // Thêm domain event
-        card.AddDomainEvent(new CardCreatedEvent(card.Id, list.BoardId, list.Id, card.Title, card.CreatedByUserId));
 
         _context.Cards.Add(card);
         await _context.SaveChangesAsync(cancellationToken);

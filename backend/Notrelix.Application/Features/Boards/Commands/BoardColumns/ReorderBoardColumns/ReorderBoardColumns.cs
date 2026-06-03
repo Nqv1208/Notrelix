@@ -73,10 +73,23 @@ public record ReorderBoardColumnsCommand(Guid BoardId, List<ReorderItem> Items) 
 public class ReorderBoardColumnsCommandHandler : IRequestHandler<ReorderBoardColumnsCommand, Result>
 {
     private readonly IApplicationDbContext _context;
-    public ReorderBoardColumnsCommandHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
+
+    public ReorderBoardColumnsCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _permissions = permissions;
+    }
 
     public async Task<Result> Handle(ReorderBoardColumnsCommand request, CancellationToken ct)
     {
+        await _permissions.EnsureCanEditBoardAsync(request.BoardId, _currentUser.UserId, ct);
+
         foreach (var item in request.Items)
         {
             var column = await _context.BoardColumns

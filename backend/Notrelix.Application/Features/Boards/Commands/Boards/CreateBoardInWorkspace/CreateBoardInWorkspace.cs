@@ -73,11 +73,16 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
 
-    public CreateBoardInWorkspaceCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public CreateBoardInWorkspaceCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
     {
         _context = context;
         _currentUser = currentUser;
+        _permissions = permissions;
     }
 
     public async Task<Result<Guid>> Handle(CreateBoardInWorkspaceCommand request, CancellationToken ct)
@@ -88,11 +93,14 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
 
         if (!workspaceExists) throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
+        if (!await _permissions.CanEditWorkspaceAsync(request.WorkspaceId, _currentUser.UserId, ct))
+            throw new ForbiddenException("Bạn không có quyền tạo board trong workspace này.");
+
         var visibility = request.Visibility is not null
             ? Enum.Parse<BoardVisibility>(request.Visibility, ignoreCase: true)
             : BoardVisibility.Workspace;
 
-        var board = BoardEntity.Create(request.WorkspaceId, _currentUser.UserId, request.Title, request.Description ?? "", visibility);
+        var board = BoardEntity.Create(request.WorkspaceId, _currentUser.UserId, request.Title, request.Description, visibility);
 
         if (request.Background is not null) board.UpdateBackground(request.Background);
 

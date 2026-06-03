@@ -73,15 +73,35 @@ public class AssignCardMemberCommandHandler : IRequestHandler<AssignCardMemberCo
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
-    public AssignCardMemberCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
-    { _context = context; _currentUser = currentUser; }
+    private readonly IWorkspacePermissionService _permissions;
+
+    public AssignCardMemberCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _permissions = permissions;
+    }
 
     public async Task<Result> Handle(AssignCardMemberCommand request, CancellationToken ct)
     {
         var card = await _context.Cards
+            .Include(c => c.List)
             .Include(c => c.Members)
             .FirstOrDefaultAsync(c => c.Id == request.CardId, ct);
         if (card is null) throw new NotFoundException(nameof(Card), request.CardId);
+        await _permissions.EnsureCanEditBoardAsync(card.List.BoardId, _currentUser.UserId, ct);
+
+        var workspaceId = await _context.Boards
+            .Where(board => board.Id == card.List.BoardId)
+            .Select(board => board.WorkspaceId)
+            .FirstAsync(ct);
+
+        if (!await _permissions.CanViewWorkspaceAsync(workspaceId, request.UserId, ct))
+            throw new ForbiddenException("Chỉ có thể assign thành viên thuộc cùng workspace.");
+
         card.AssignMember(request.UserId, _currentUser.UserId);
         await _context.SaveChangesAsync(ct);
         return Result.Success();

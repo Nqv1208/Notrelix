@@ -72,7 +72,18 @@ public record RemoveBoardMemberCommand(Guid BoardId, Guid UserId) : IRequest<Res
 public class RemoveBoardMemberCommandHandler : IRequestHandler<RemoveBoardMemberCommand, Result>
 {
     private readonly IApplicationDbContext _context;
-    public RemoveBoardMemberCommandHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
+
+    public RemoveBoardMemberCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _permissions = permissions;
+    }
 
     public async Task<Result> Handle(RemoveBoardMemberCommand request, CancellationToken ct)
     {
@@ -81,6 +92,9 @@ public class RemoveBoardMemberCommandHandler : IRequestHandler<RemoveBoardMember
             .FirstOrDefaultAsync(b => b.Id == request.BoardId, ct);
 
         if (board is null) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
+
+        await _permissions.EnsureCanManageBoardAsync(board.Id, _currentUser.UserId, ct);
+
         board.RemoveMember(request.UserId);
         await _context.SaveChangesAsync(ct);
         return Result.Success();

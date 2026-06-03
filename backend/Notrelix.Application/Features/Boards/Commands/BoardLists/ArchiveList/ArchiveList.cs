@@ -72,13 +72,25 @@ public record ArchiveListCommand(Guid ListId) : IRequest<Result>;
 public class ArchiveListCommandHandler : IRequestHandler<ArchiveListCommand, Result>
 {
     private readonly IApplicationDbContext _context;
-    public ArchiveListCommandHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
+
+    public ArchiveListCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _permissions = permissions;
+    }
 
     public async Task<Result> Handle(ArchiveListCommand request, CancellationToken ct)
     {
         var list = await _context.BoardLists.FirstOrDefaultAsync(l => l.Id == request.ListId, ct);
         if (list is null) throw new NotFoundException(nameof(BoardList), request.ListId);
-        list.Archive();
+        await _permissions.EnsureCanEditBoardAsync(list.BoardId, _currentUser.UserId, ct);
+        list.Archive(_currentUser.UserId);
         await _context.SaveChangesAsync(ct);
         return Result.Success();
     }

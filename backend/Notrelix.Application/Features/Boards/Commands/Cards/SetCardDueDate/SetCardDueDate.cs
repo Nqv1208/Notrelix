@@ -72,13 +72,27 @@ public record SetCardDueDateCommand(Guid CardId, DateTime? DueDate, DateTime? St
 public class SetCardDueDateCommandHandler : IRequestHandler<SetCardDueDateCommand, Result>
 {
     private readonly IApplicationDbContext _context;
-    public SetCardDueDateCommandHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
+
+    public SetCardDueDateCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _permissions = permissions;
+    }
 
     public async Task<Result> Handle(SetCardDueDateCommand request, CancellationToken ct)
     {
-        var card = await _context.Cards.FirstOrDefaultAsync(c => c.Id == request.CardId, ct);
+        var card = await _context.Cards
+            .Include(c => c.List)
+            .FirstOrDefaultAsync(c => c.Id == request.CardId, ct);
         if (card is null) throw new NotFoundException(nameof(Card), request.CardId);
-        card.SetDueDate(request.DueDate);
+        await _permissions.EnsureCanEditBoardAsync(card.List.BoardId, _currentUser.UserId, ct);
+        card.SetDueDate(request.DueDate, _currentUser.UserId);
         card.SetStartDate(request.StartDate);
         await _context.SaveChangesAsync(ct);
         return Result.Success();

@@ -73,15 +73,30 @@ public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand,
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
 
-    public SaveBoardViewCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public SaveBoardViewCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
     {
         _context = context;
         _currentUser = currentUser;
+        _permissions = permissions;
     }
 
     public async Task<Result> Handle(SaveBoardViewCommand request, CancellationToken ct)
     {
+        var workspaceId = await _context.Boards
+            .AsNoTracking()
+            .Where(board => board.Id == request.BoardId && !board.IsArchived)
+            .Select(board => board.WorkspaceId)
+            .FirstOrDefaultAsync(ct);
+        if (workspaceId == Guid.Empty) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
+
+        if (!await _permissions.CanViewWorkspaceAsync(workspaceId, _currentUser.UserId, ct))
+            throw new ForbiddenException("Bạn không có quyền xem workspace này.");
+
         var view = await _context.BoardViews
             .FirstOrDefaultAsync(v => v.BoardId == request.BoardId && v.UserId == _currentUser.UserId, ct);
 

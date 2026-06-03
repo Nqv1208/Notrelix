@@ -73,11 +73,16 @@ public class UpdateCardFieldValuesCommandHandler : IRequestHandler<UpdateCardFie
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
 
-    public UpdateCardFieldValuesCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public UpdateCardFieldValuesCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
     {
         _context = context;
         _currentUser = currentUser;
+        _permissions = permissions;
     }
 
     public async Task<Result> Handle(UpdateCardFieldValuesCommand request, CancellationToken ct)
@@ -87,21 +92,23 @@ public class UpdateCardFieldValuesCommandHandler : IRequestHandler<UpdateCardFie
             .FirstOrDefaultAsync(c => c.Id == request.CardId && !c.IsDeleted, ct);
         if (card is null) throw new NotFoundException(nameof(Card), request.CardId);
 
-        var boardId = await _context.BoardLists.AsNoTracking()
+        var boardInfo = await _context.BoardLists.AsNoTracking()
             .Where(list => list.Id == card.ListId)
-            .Select(list => list.BoardId)
+            .Select(list => new { list.BoardId, list.Board.WorkspaceId })
             .FirstOrDefaultAsync(ct);
-        if (boardId == Guid.Empty) throw new NotFoundException(nameof(BoardList), card.ListId);
+        if (boardInfo is null) throw new NotFoundException(nameof(BoardList), card.ListId);
+
+        await _permissions.EnsureCanEditBoardAsync(boardInfo.BoardId, _currentUser.UserId, ct);
 
         var columns = await _context.BoardColumns.AsNoTracking()
-            .Where(column => column.BoardId == boardId && request.Values.Keys.Contains(column.Id))
+            .Where(column => column.BoardId == boardInfo.BoardId && request.Values.Keys.Contains(column.Id))
             .ToDictionaryAsync(column => column.Id, ct);
 
         foreach (var (columnId, value) in request.Values)
         {
-            if (columnId == boardId)
+            if (columnId == boardInfo.BoardId)
             {
-                card.UpdateTitle(ReadString(value) ?? card.Title);
+                card.Rename(ReadString(value) ?? card.Title, _currentUser.UserId);
                 continue;
             }
 
@@ -112,21 +119,28 @@ public class UpdateCardFieldValuesCommandHandler : IRequestHandler<UpdateCardFie
             switch (semanticField)
             {
                 case "title":
-                    card.UpdateTitle(ReadString(value) ?? card.Title);
+                    card.Rename(ReadString(value) ?? card.Title, _currentUser.UserId);
                     break;
                 case "status":
-                    card.UpdateStatus(ParseEnum<CardStatus>(value, column.Name));
+                    card.ChangeStatus(ParseEnum<CardStatus>(value, column.Name), _currentUser.UserId);
                     break;
                 case "priority":
-                    card.UpdatePriority(ParseEnum<CardPriority>(value, column.Name));
+                    card.ChangePriority(ParseEnum<CardPriority>(value, column.Name), _currentUser.UserId);
                     break;
                 case "due_date":
-                    card.SetDueDate(ReadDateTime(value));
+                    card.SetDueDate(ReadDateTime(value), _currentUser.UserId);
                     break;
                 case "linked_page":
                     var pageId = ReadGuid(value);
-                    if (pageId.HasValue) card.LinkPage(pageId.Value);
-                    else card.UnlinkPage();
+                    if (pageId.HasValue)
+                    {
+                        await EnsurePageCanBeLinkedAsync(pageId.Value, boardInfo.WorkspaceId, ct);
+                        card.LinkPage(pageId.Value, _currentUser.UserId);
+                    }
+                    else
+                    {
+                        card.UnlinkPage(_currentUser.UserId);
+                    }
                     break;
                 case "assignees":
                     await ReplaceMembers(card, ReadGuidList(value), ct);
@@ -148,6 +162,23 @@ public class UpdateCardFieldValuesCommandHandler : IRequestHandler<UpdateCardFie
 
         await _context.SaveChangesAsync(ct);
         return Result.Success();
+    }
+
+    private async Task EnsurePageCanBeLinkedAsync(Guid pageId, Guid boardWorkspaceId, CancellationToken ct)
+    {
+        var pageWorkspaceId = await _context.Pages
+            .AsNoTracking()
+            .Where(page => page.Id == pageId && !page.IsDeleted)
+            .Select(page => page.WorkspaceId)
+            .FirstOrDefaultAsync(ct);
+
+        if (pageWorkspaceId == Guid.Empty)
+            throw new NotFoundException(nameof(Page), pageId);
+
+        if (pageWorkspaceId != boardWorkspaceId)
+            throw new BusinessRuleViolationException(
+                "CardPageSameWorkspace",
+                "Card can only be linked to a page in the same workspace.");
     }
 
     private async Task ReplaceMembers(Card card, IReadOnlyCollection<Guid> userIds, CancellationToken ct)

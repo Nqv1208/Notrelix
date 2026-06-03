@@ -73,15 +73,40 @@ public record ReorderListsCommand(Guid BoardId, List<ReorderItem> Items) : IRequ
 public class ReorderListsCommandHandler : IRequestHandler<ReorderListsCommand, Result>
 {
     private readonly IApplicationDbContext _context;
-    public ReorderListsCommandHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
+
+    public ReorderListsCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _permissions = permissions;
+    }
 
     public async Task<Result> Handle(ReorderListsCommand request, CancellationToken ct)
     {
-        foreach (var item in request.Items)
+        await _permissions.EnsureCanEditBoardAsync(request.BoardId, _currentUser.UserId, ct);
+
+        var itemIds = request.Items.Select(item => item.Id).ToHashSet();
+        var lists = await _context.BoardLists
+            .Where(list => itemIds.Contains(list.Id))
+            .ToListAsync(ct);
+
+        if (lists.Count != itemIds.Count)
+            throw new NotFoundException(nameof(BoardList), string.Join(",", itemIds));
+
+        if (lists.Any(list => list.BoardId != request.BoardId))
+            throw new BusinessRuleViolationException("ListBoardMismatch", "All reordered groups must belong to the requested board.");
+
+        var positionsById = request.Items.ToDictionary(item => item.Id, item => item.NewPosition);
+        foreach (var list in lists)
         {
-            var list = await _context.BoardLists.FirstOrDefaultAsync(l => l.Id == item.Id, ct);
-            list?.UpdatePosition(item.NewPosition);
+            list.Move(positionsById[list.Id], _currentUser.UserId);
         }
+
         await _context.SaveChangesAsync(ct);
         return Result.Success();
     }

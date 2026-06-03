@@ -72,13 +72,25 @@ public record ArchiveBoardCommand(Guid BoardId) : IRequest<Result>;
 public class ArchiveBoardCommandHandler : IRequestHandler<ArchiveBoardCommand, Result>
 {
     private readonly IApplicationDbContext _context;
-    public ArchiveBoardCommandHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
+
+    public ArchiveBoardCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _permissions = permissions;
+    }
 
     public async Task<Result> Handle(ArchiveBoardCommand request, CancellationToken ct)
     {
         var board = await _context.Boards.FirstOrDefaultAsync(b => b.Id == request.BoardId, ct);
         if (board is null) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
-        board.Archive();
+        await _permissions.EnsureCanManageBoardAsync(board.Id, _currentUser.UserId, ct);
+        board.Archive(_currentUser.UserId);
         await _context.SaveChangesAsync(ct);
         return Result.Success();
     }

@@ -72,14 +72,27 @@ public record UpdateBoardCommand(Guid BoardId, string? Title, string? Descriptio
 public class UpdateBoardCommandHandler : IRequestHandler<UpdateBoardCommand, Result>
 {
     private readonly IApplicationDbContext _context;
-    public UpdateBoardCommandHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
+
+    public UpdateBoardCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _permissions = permissions;
+    }
 
     public async Task<Result> Handle(UpdateBoardCommand request, CancellationToken ct)
     {
         var board = await _context.Boards.FirstOrDefaultAsync(b => b.Id == request.BoardId, ct);
         if (board is null) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
 
-        if (request.Title is not null) board.UpdateTitle(request.Title);
+        await _permissions.EnsureCanManageBoardAsync(board.Id, _currentUser.UserId, ct);
+
+        if (request.Title is not null) board.Rename(request.Title, _currentUser.UserId);
         if (request.Description is not null) board.UpdateDescription(request.Description);
         if (request.Background is not null) board.UpdateBackground(request.Background);
         if (request.Visibility is not null)

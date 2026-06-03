@@ -72,7 +72,18 @@ public record AddBoardMemberCommand(Guid BoardId, Guid UserId, string? Role) : I
 public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberCommand, Result>
 {
     private readonly IApplicationDbContext _context;
-    public AddBoardMemberCommandHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
+
+    public AddBoardMemberCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _permissions = permissions;
+    }
 
     public async Task<Result> Handle(AddBoardMemberCommand request, CancellationToken ct)
     {
@@ -81,6 +92,18 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
             .FirstOrDefaultAsync(b => b.Id == request.BoardId, ct);
 
         if (board is null) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
+
+        await _permissions.EnsureCanManageBoardAsync(board.Id, _currentUser.UserId, ct);
+
+        var isWorkspaceMember = await _context.WorkspaceMembers
+            .AsNoTracking()
+            .AnyAsync(member => member.WorkspaceId == board.WorkspaceId && member.UserId == request.UserId, ct);
+        if (!isWorkspaceMember)
+        {
+            throw new BusinessRuleViolationException(
+                "BoardMemberMustBelongToWorkspace",
+                "Board member must belong to the same workspace.");
+        }
 
         var role = request.Role is not null
             ? Enum.Parse<BoardRole>(request.Role, ignoreCase: true)
