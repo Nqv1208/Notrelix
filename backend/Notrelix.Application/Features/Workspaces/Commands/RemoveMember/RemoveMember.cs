@@ -21,8 +21,18 @@ public record RemoveMemberCommand(
 public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, Result>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
 
-    public RemoveMemberCommandHandler(IApplicationDbContext context) => _context = context;
+    public RemoveMemberCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _permissions = permissions;
+    }
 
     public async Task<Result> Handle(RemoveMemberCommand request, CancellationToken ct)
     {
@@ -33,7 +43,9 @@ public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, R
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
-        workspace.RemoveMember(request.UserId);
+        await _permissions.EnsureCanManageWorkspaceAsync(request.WorkspaceId, _currentUser.UserId, ct);
+
+        workspace.RemoveMember(request.UserId, _currentUser.UserId);
         await _context.SaveChangesAsync(ct);
         return Result.Success();
     }

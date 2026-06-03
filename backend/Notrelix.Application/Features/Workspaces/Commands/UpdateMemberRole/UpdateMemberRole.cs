@@ -22,8 +22,18 @@ public record UpdateMemberRoleCommand(
 public class UpdateMemberRoleCommandHandler : IRequestHandler<UpdateMemberRoleCommand, Result>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
 
-    public UpdateMemberRoleCommandHandler(IApplicationDbContext context) => _context = context;
+    public UpdateMemberRoleCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _permissions = permissions;
+    }
 
     public async Task<Result> Handle(UpdateMemberRoleCommand request, CancellationToken ct)
     {
@@ -34,8 +44,10 @@ public class UpdateMemberRoleCommandHandler : IRequestHandler<UpdateMemberRoleCo
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
+        await _permissions.EnsureCanManageWorkspaceAsync(request.WorkspaceId, _currentUser.UserId, ct);
+
         var newRole = Enum.Parse<WorkspaceRole>(request.Role, ignoreCase: true);
-        workspace.UpdateMemberRole(request.UserId, newRole);
+        workspace.ChangeMemberRole(request.UserId, newRole, _currentUser.UserId);
         await _context.SaveChangesAsync(ct);
 
         return Result.Success();
