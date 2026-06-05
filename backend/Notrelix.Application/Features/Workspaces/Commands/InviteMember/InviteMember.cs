@@ -23,11 +23,16 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
 
-    public InviteMemberCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public InviteMemberCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
     {
         _context = context;
         _currentUser = currentUser;
+        _permissions = permissions;
     }
 
     public async Task<Result<Guid>> Handle(InviteMemberCommand request, CancellationToken ct)
@@ -38,6 +43,34 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
 
         if (!workspaceExists)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
+
+        await _permissions.EnsureCanManageWorkspaceAsync(request.WorkspaceId, _currentUser.UserId, ct);
+
+        var cleanEmail = request.Email.Trim().ToLowerInvariant();
+
+        // ── Kiểm tra email/user đã là thành viên chưa ─────────────
+        var targetUser = await _context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Email.Value.ToLower() == cleanEmail, ct);
+
+        if (targetUser != null)
+        {
+            var isAlreadyMember = await _context.WorkspaceMembers
+                .AnyAsync(m => m.WorkspaceId == request.WorkspaceId && m.UserId == targetUser.Id, ct);
+
+            if (isAlreadyMember)
+                return Result<Guid>.Failure("Người dùng này đã là thành viên của Workspace.");
+        }
+
+        // ── Kiểm tra lời mời active ─────────────────────────────
+        var hasActiveInvitation = await _context.WorkspaceInvitations
+            .AnyAsync(i => i.WorkspaceId == request.WorkspaceId 
+                           && i.Email == cleanEmail
+                           && i.AcceptedAt == null 
+                           && i.ExpiresAt > DateTime.UtcNow, ct);
+
+        if (hasActiveInvitation)
+            return Result<Guid>.Failure("Đã có một lời mời đang chờ xử lý dành cho email này.");
 
         var role = Enum.Parse<WorkspaceRole>(request.Role, ignoreCase: true);
         var invitation = WorkspaceInvitation.Create(request.WorkspaceId, _currentUser.UserId, request.Email, role);

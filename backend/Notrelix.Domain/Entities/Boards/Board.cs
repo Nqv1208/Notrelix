@@ -1,3 +1,7 @@
+using Notrelix.Domain.Common.Exceptions;
+using Notrelix.Domain.Enums;
+using Notrelix.Domain.Events.Board;
+using Notrelix.Domain.Entities.Workspaces;
 
 namespace Notrelix.Domain.Entities.Boards;
 
@@ -22,21 +26,39 @@ public class Board : AuditableEntity
 
     private Board() : base() { }
 
-    public static Board Create(Guid workspaceId, Guid createdBy, string title, string description, BoardVisibility visibility = BoardVisibility.Workspace)
+    public static Board Create(Guid workspaceId, Guid createdBy, string title, string? description, BoardVisibility visibility = BoardVisibility.Workspace)
     {
-        return new Board
+        if (string.IsNullOrWhiteSpace(title))
+            throw new ArgumentException("Board title cannot be empty.", nameof(title));
+
+        var board = new Board
         {
             WorkspaceId = workspaceId,
             CreatedByUserId = createdBy,
             Title = title.Trim(),
-            Description = description,
+            Description = description?.Trim(),
             Visibility = visibility
         };
+
+        board.AddDomainEvent(new BoardCreatedEvent(board.Id, workspaceId, createdBy, board.Title));
+        return board;
     }
 
     public void UpdateTitle(string title)
     {
-        Title = string.IsNullOrWhiteSpace(title) ? Title : title.Trim();
+        Rename(title, Guid.Empty);
+    }
+
+    public void Rename(string title, Guid updatedBy)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            throw new ArgumentException("Board title cannot be empty.", nameof(title));
+
+        var normalizedTitle = title.Trim();
+        if (Title == normalizedTitle) return;
+
+        Title = normalizedTitle;
+        AddDomainEvent(new BoardUpdatedEvent(Id, WorkspaceId, updatedBy, Title));
     }
 
     public void UpdateDescription(string? description)
@@ -59,7 +81,7 @@ public class Board : AuditableEntity
         var list = BoardList.Create(this.Id, title, position);
         _lists.Add(list);
         
-        AddDomainEvent(new Events.Board.ListCreatedEvent(list.Id, this.Id, title));
+        AddDomainEvent(new ListCreatedEvent(list.Id, this.Id, title));
         return list;
     }
 
@@ -71,7 +93,7 @@ public class Board : AuditableEntity
         var member = BoardMember.Create(this.Id, userId, role);
         _members.Add(member);
         
-        AddDomainEvent(new Events.Board.BoardMemberAddedEvent(this.Id, userId, role));
+        AddDomainEvent(new BoardMemberAddedEvent(this.Id, userId, role));
     }
 
     public void RemoveMember(Guid userId)
@@ -82,9 +104,20 @@ public class Board : AuditableEntity
 
         _members.Remove(member);
         
-        AddDomainEvent(new Events.Board.BoardMemberRemovedEvent(this.Id, userId));
+        AddDomainEvent(new BoardMemberRemovedEvent(this.Id, userId));
     }
 
-    public void Archive() => IsArchived = true;
+    public void Archive()
+    {
+        Archive(Guid.Empty);
+    }
+
+    public void Archive(Guid archivedBy)
+    {
+        if (IsArchived) return;
+        IsArchived = true;
+        AddDomainEvent(new BoardArchivedEvent(Id, WorkspaceId, archivedBy));
+    }
+
     public void Unarchive() => IsArchived = false;
 }

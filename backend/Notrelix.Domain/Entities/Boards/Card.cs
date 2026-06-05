@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Enums;
+using Notrelix.Domain.Events.Board;
 
 namespace Notrelix.Domain.Entities.Boards;
 
@@ -21,6 +22,7 @@ public class Card : AuditableEntity
     public string FieldValues { get; private set; } = "{}";
     public bool IsArchived { get; private set; }
     public bool IsDeleted { get; private set; }
+    public DateTime? DeletedAt { get; private set; }
 
     // Navigation
     public BoardList List { get; private set; } = null!;
@@ -39,6 +41,24 @@ public class Card : AuditableEntity
 
     public static Card Create(Guid listId, Guid createdBy, string title, double position = 0)
     {
+        return CreateCore(listId, createdBy, title, position, boardId: null);
+    }
+
+    public static Card Create(Guid listId, Guid boardId, Guid createdBy, string title, double position = 0)
+    {
+        var card = CreateCore(listId, createdBy, title, position, boardId);
+        card.AddDomainEvent(new CardCreatedEvent(card.Id, boardId, listId, card.Title, createdBy));
+        return card;
+    }
+
+    private static Card CreateCore(Guid listId, Guid createdBy, string title, double position, Guid? boardId)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            throw new ArgumentException("Card title cannot be empty.", nameof(title));
+
+        if (double.IsNaN(position) || double.IsInfinity(position))
+            throw new ArgumentException("Position must be a finite number.", nameof(position));
+
         return new Card
         {
             ListId = listId,
@@ -49,9 +69,33 @@ public class Card : AuditableEntity
         };
     }
 
-    public void UpdateTitle(string title) => Title = title.Trim();
+    public void UpdateTitle(string title) => Rename(title, Guid.Empty);
+
+    public void Rename(string title, Guid updatedBy)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            throw new ArgumentException("Card title cannot be empty.", nameof(title));
+
+        var normalizedTitle = title.Trim();
+        if (Title == normalizedTitle) return;
+
+        Title = normalizedTitle;
+        AddDomainEvent(new CardUpdatedEvent(Id, updatedBy, Title));
+    }
+
     public void UpdateDescription(string? description) => DescriptionMd = description?.Trim();
-    public void UpdatePriority(CardPriority? priority) => Priority = priority;
+
+    public void UpdatePriority(CardPriority? priority) => ChangePriority(priority, Guid.Empty);
+
+    public void ChangePriority(CardPriority? priority, Guid changedBy)
+    {
+        if (Priority == priority) return;
+
+        var oldPriority = Priority;
+        Priority = priority;
+        AddDomainEvent(new CardPriorityChangedEvent(Id, oldPriority, priority, changedBy));
+    }
+
     public void UpdateCover(string? cover) => Cover = cover;
     public void ReplaceFieldValues(string? valuesJson)
     {
@@ -81,39 +125,72 @@ public class Card : AuditableEntity
 
     public void SetDueDate(DateTime? dueDate)
     {
+        SetDueDate(dueDate, Guid.Empty);
+    }
+
+    public void SetDueDate(DateTime? dueDate, Guid changedBy)
+    {
         if (DueDate != dueDate)
         {
+            var oldDueDate = DueDate;
             DueDate = dueDate;
-            AddDomainEvent(new Events.Board.CardDueDateSetEvent(this.Id, dueDate));
+            AddDomainEvent(new CardDueDateChangedEvent(this.Id, oldDueDate, dueDate, changedBy));
         }
     }
 
     public void SetStartDate(DateTime? startDate) => StartDate = startDate;
 
-    public void UpdateStatus(CardStatus status)
+    public void UpdateStatus(CardStatus status) => ChangeStatus(status, Guid.Empty);
+
+    public void ChangeStatus(CardStatus status, Guid changedBy)
     {
+        if (Status == status) return;
+
+        var oldStatus = Status;
         Status = status;
         CompletedAt = status == CardStatus.Done ? DateTime.UtcNow : null;
+        AddDomainEvent(new CardStatusChangedEvent(Id, oldStatus, status, changedBy));
     }
 
     public void LinkPage(Guid pageId)
     {
-        if (LinkedPageId == pageId) return;
-        LinkedPageId = pageId;
-        AddDomainEvent(new Events.Board.CardLinkedToPageEvent(this.Id, pageId));
+        LinkPage(pageId, Guid.Empty);
     }
 
-    public void UnlinkPage() => LinkedPageId = null;
+    public void LinkPage(Guid pageId, Guid linkedBy)
+    {
+        if (LinkedPageId == pageId) return;
+        LinkedPageId = pageId;
+        AddDomainEvent(new CardLinkedToPageEvent(this.Id, pageId));
+    }
+
+    public void UnlinkPage() => UnlinkPage(Guid.Empty);
+
+    public void UnlinkPage(Guid unlinkedBy)
+    {
+        if (!LinkedPageId.HasValue) return;
+
+        var oldPageId = LinkedPageId.Value;
+        LinkedPageId = null;
+        AddDomainEvent(new CardUnlinkedFromPageEvent(Id, oldPageId, unlinkedBy));
+    }
 
     public void Move(Guid newListId, double newPosition)
     {
+        MoveToGroup(newListId, newPosition, Guid.Empty);
+    }
+
+    public void MoveToGroup(Guid newListId, double newPosition, Guid movedBy)
+    {
+        if (double.IsNaN(newPosition) || double.IsInfinity(newPosition))
+            throw new ArgumentException("Position must be a finite number.", nameof(newPosition));
+
         var oldListId = ListId;
-        var oldPosition = Position;
 
         ListId = newListId;
         Position = newPosition;
 
-        AddDomainEvent(new Events.Board.CardMovedEvent(this.Id, oldListId, newListId, newPosition));
+        AddDomainEvent(new CardMovedEvent(this.Id, oldListId, newListId, newPosition));
     }
 
     public void AssignMember(Guid userId, Guid assignedBy)
@@ -121,9 +198,9 @@ public class Card : AuditableEntity
         if (_members.Any(m => m.UserId == userId))
             return; // Already assigned
 
-        var member = CardMember.Create(this.Id, userId);
+        var member = CardMember.Create(this.Id, userId, assignedBy);
         _members.Add(member);
-        AddDomainEvent(new Events.Board.CardAssignedEvent(this.Id, userId, assignedBy));
+        AddDomainEvent(new CardAssignedEvent(this.Id, userId, assignedBy));
     }
 
     public void AddLabel(Guid labelId)
@@ -135,12 +212,25 @@ public class Card : AuditableEntity
         _labels.Add(label);
     }
 
-    public void Archive() => IsArchived = true;
+    public void Archive() => Archive(Guid.Empty);
+
+    public void Archive(Guid archivedBy)
+    {
+        if (IsArchived) return;
+        IsArchived = true;
+        AddDomainEvent(new CardArchivedEvent(Id, archivedBy));
+    }
+
     public void Unarchive() => IsArchived = false;
 
-    public void SoftDelete()
+    public void SoftDelete() => SoftDelete(Guid.Empty);
+
+    public void SoftDelete(Guid deletedBy)
     {
+        if (IsDeleted) return;
         IsDeleted = true;
+        DeletedAt = DateTime.UtcNow;
+        AddDomainEvent(new CardDeletedEvent(Id, deletedBy));
     }
 
     private static void ValidateFieldValues(string valuesJson)

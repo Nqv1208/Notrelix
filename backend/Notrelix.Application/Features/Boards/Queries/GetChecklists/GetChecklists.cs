@@ -1,4 +1,3 @@
-using BoardEntity = global::Notrelix.Domain.Entities.Boards.Board;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Interfaces;

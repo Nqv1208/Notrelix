@@ -16,6 +16,7 @@ using Notrelix.Infrastructure.Jwt;
 using Notrelix.Infrastructure.Otp;
 using Notrelix.Infrastructure.RateLimit;
 using Notrelix.Infrastructure.Data.Interceptors;
+using Notrelix.Infrastructure.BackgroundJobs;
 using Notrelix.Infrastructure.Services;
 using Notrelix.Application.Common.Models;
 
@@ -53,6 +54,8 @@ public static class DependencyInjection
         
         // Register new services
         services.AddScoped<IDateTimeProvider, DateTimeProvider>();
+        services.AddScoped<INotificationService, RedisNotificationService>();
+        services.AddSingleton<IJobQueue, InMemoryJobQueue>();
         
         // Register Interceptors
         services.AddScoped<AuditableEntityInterceptor>();

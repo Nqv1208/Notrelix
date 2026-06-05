@@ -1,5 +1,6 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Enums;
+using Notrelix.Domain.Events.Shared;
 
 namespace Notrelix.Domain.Entities.Shared;
 
@@ -37,7 +38,7 @@ public class Comment : AuditableEntity
         if (string.IsNullOrWhiteSpace(contentMd))
             throw new ArgumentException("Nội dung comment không được để trống", nameof(contentMd));
 
-        return new Comment
+        var comment = new Comment
         {
             WorkspaceId = workspaceId,
             ResourceType = resourceType,
@@ -47,6 +48,9 @@ public class Comment : AuditableEntity
             IsEdited = false,
             IsDeleted = false
         };
+
+        comment.AddDomainEvent(new CommentCreatedEvent(comment.Id, workspaceId, resourceType, resourceId, userId));
+        return comment;
     }
 
     public Comment Reply(Guid userId, string contentMd)
@@ -67,6 +71,7 @@ public class Comment : AuditableEntity
         };
 
         _replies.Add(reply);
+        reply.AddDomainEvent(new CommentCreatedEvent(reply.Id, reply.WorkspaceId, reply.ResourceType, reply.ResourceId, userId));
         return reply;
     }
 
@@ -78,6 +83,7 @@ public class Comment : AuditableEntity
         ContentMd = newContent.Trim();
         IsEdited = true;
         EditedAt = DateTime.UtcNow;
+        AddDomainEvent(new CommentUpdatedEvent(Id, UserId));
     }
 
     public void SoftDelete()
@@ -85,6 +91,7 @@ public class Comment : AuditableEntity
         IsDeleted = true;
         DeletedAt = DateTime.UtcNow;
         ContentMd = "[Đã xóa]";
+        AddDomainEvent(new CommentDeletedEvent(Id, UserId));
     }
 
     public void Resolve(Guid resolvedBy)

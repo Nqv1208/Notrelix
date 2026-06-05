@@ -17,7 +17,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.0")
+                .HasAnnotation("ProductVersion", "9.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -151,10 +151,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("board_id");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
                     b.Property<string>("Color")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -162,6 +158,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(64)")
                         .HasDefaultValue("#579bfc")
                         .HasColumnName("color");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
@@ -171,6 +171,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
                         .HasColumnName("is_archived");
+
+                    b.Property<bool>("IsCollapsed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_collapsed");
 
                     b.Property<double>("Position")
                         .HasColumnType("double precision")
@@ -233,29 +239,78 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Notrelix.Domain.Entities.Boards.BoardView", b =>
                 {
-                    b.Property<Guid>("BoardId")
-                        .HasColumnType("uuid");
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("board_id");
+
+                    b.Property<string>("Config")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("config");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
 
                     b.Property<string>("Filters")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("jsonb")
-                        .HasDefaultValue("{}");
+                        .HasDefaultValue("{}")
+                        .HasColumnName("filters");
+
+                    b.Property<bool>("IsDefault")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_default");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasDefaultValue("Main table")
+                        .HasColumnName("name");
+
+                    b.Property<double>("Position")
+                        .HasColumnType("float8")
+                        .HasColumnName("position");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
 
                     b.Property<string>("ViewMode")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasDefaultValue("Kanban");
+                        .HasDefaultValue("Kanban")
+                        .HasColumnName("view_mode");
 
-                    b.HasKey("BoardId", "UserId");
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoardId", "Position")
+                        .HasDatabaseName("idx_board_views_board_position");
+
+                    b.HasIndex("BoardId", "UserId", "ViewMode")
+                        .HasDatabaseName("idx_board_views_user_mode");
 
                     b.ToTable("board_views", (string)null);
                 });
@@ -285,6 +340,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
 
                     b.Property<string>("DescriptionMd")
                         .HasColumnType("text")
