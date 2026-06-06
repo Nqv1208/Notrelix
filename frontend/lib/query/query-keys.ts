@@ -25,6 +25,10 @@ export const queryKeys = {
     members: (workspaceId: string) => ["workspaces", "members", workspaceId] as const,
     views: (workspaceId: string) => ["workspaces", "views", workspaceId] as const,
     activeView: (workspaceId: string, view: string) => ["workspaces", "views", workspaceId, "active", view] as const,
+    invitations: (workspaceId: string) => ["workspaces", "invitations", workspaceId] as const,
+    invitationByToken: (token: string) => ["workspaces", "invitations", "by-token", token] as const,
+    pendingInvitations: ["workspaces", "invitations", "pending"] as const,
+    activity: (workspaceId: string) => ["workspaces", "activity", workspaceId] as const,
   },
   boards: {
     all: ["boards"] as const,
@@ -41,5 +45,8 @@ export const queryKeys = {
     files: (cardId: string) => ["cards", "files", cardId] as const,
     comments: (cardId: string) => ["cards", "comments", cardId] as const,
     activity: (cardId: string) => ["cards", "activity", cardId] as const,
+  },
+  notifications: {
+    all: ["notifications"] as const,
   },
 } as const
