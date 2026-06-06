@@ -22,6 +22,7 @@ import { usePageBlocks } from "@/features/docs/hooks"
 import type { WorkspaceView, WorkspaceViewType } from "@/features/workspace/types"
 
 export function WorkspaceContextualToolbar({ activeType, activeView }: { activeType: WorkspaceViewType; activeView?: WorkspaceView }) {
+  if (activeType === "table") return null
   if (activeType === "doc") return <DocToolbar pageId={activeView?.target.pageId ?? "docs-mvp-spec"} />
   if (activeType === "kanban") return <KanbanToolbar />
   if (activeType === "calendar") return <CalendarToolbar />
@@ -125,7 +126,7 @@ function DashboardToolbar() {
 
 function ToolbarShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-14 flex-wrap items-center gap-2 border-b border-border bg-background px-4 py-2 sm:px-6">
+    <div className="flex min-h-14 flex-wrap items-center gap-2 bg-background px-4 py-2 sm:px-6">
       {children}
     </div>
   )

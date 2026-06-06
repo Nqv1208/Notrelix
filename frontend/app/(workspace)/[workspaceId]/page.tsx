@@ -5,10 +5,9 @@ export default async function WorkspaceHomePage({
   searchParams,
 }: {
   params: Promise<{ workspaceId: string }>
-  searchParams: Promise<{ view?: string }>
+  searchParams: Promise<{ view?: string; panel?: string }>
 }) {
-  const { workspaceId } = await params
-  const { view } = await searchParams
+  const [{ workspaceId }, { view, panel }] = await Promise.all([params, searchParams])
 
-  return <WorkspaceBoardShell workspaceId={workspaceId} requestedView={view} />
+  return <WorkspaceBoardShell workspaceId={workspaceId} requestedView={view} panel={panel} />
 }

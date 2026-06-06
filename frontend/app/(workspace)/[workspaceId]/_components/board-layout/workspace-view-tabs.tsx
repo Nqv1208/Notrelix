@@ -35,7 +35,6 @@ export function WorkspaceViewTabs({
                     active && "text-foreground"
                   )}
                 >
-                  <span className="text-xs">{view.icon}</span>
                   {view.name}
                   {active ? <span className="absolute inset-x-2 -bottom-1 h-0.5 rounded-full bg-primary" /> : null}
                 </Link>
