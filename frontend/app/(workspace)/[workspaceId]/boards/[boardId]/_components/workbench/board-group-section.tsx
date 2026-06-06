@@ -6,9 +6,13 @@ import { TableAddRow } from "./table-add-row"
 import { TableDataRow } from "./table-data-row"
 
 export function BoardGroupSection({
+  boardId,
+  workspaceId,
   group,
   fields,
 }: {
+  boardId: string
+  workspaceId: string
   group: BoardGroup
   fields: FieldDefinition[]
 }) {
@@ -25,7 +29,7 @@ export function BoardGroupSection({
           {group.cards.map((card) => (
             <TableDataRow key={card.id} group={group} card={card} fields={fields} />
           ))}
-          <TableAddRow fields={fields} groupTitle={group.title} />
+          <TableAddRow boardId={boardId} workspaceId={workspaceId} group={group} fields={fields} />
         </SortableContext>
       ) : null}
     </section>

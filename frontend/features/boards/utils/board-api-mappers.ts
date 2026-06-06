@@ -204,25 +204,30 @@ function mapCardSummaryDto(dto: CardSummaryDtoApi, listId: string, board: Board,
   const progress = dto.checklistTotal > 0 ? Math.round((dto.checklistProgress / dto.checklistTotal) * 100) : 0
   const customValues = parseFieldValues(dto.fieldValues)
 
-  // Derive card members from person field values stored in fieldValues
+  // Derive card members from person field values stored in fieldValues or dto.members
   const personField = fields.find((f) => getSemanticField(f) === "person")
-  const personUserIds = personField && Array.isArray(customValues[personField.id])
-    ? (customValues[personField.id] as string[])
-    : []
-  const members = personUserIds
-    .map((userId) => {
-      const bm = board.members.find((m) => m.userId === userId)
-      if (!bm) return null
-      return {
-        id: `cm-${dto.id}-${bm.userId}`,
-        userId: bm.userId,
-        name: bm.name,
-        initials: bm.initials,
-        avatarUrl: bm.avatarUrl,
-        color: bm.color,
-      }
-    })
-    .filter((m): m is NonNullable<typeof m> => m !== null)
+  const personUserIds = dto.members && dto.members.length > 0
+    ? dto.members.map((m) => m.userId)
+    : (personField && Array.isArray(customValues[personField.id])
+        ? (customValues[personField.id] as string[])
+        : [])
+
+  const members = dto.members && dto.members.length > 0
+    ? dto.members.map((m, index) => mapCardMember(m, index))
+    : personUserIds
+        .map((userId) => {
+          const bm = board.members.find((m) => m.userId === userId)
+          if (!bm) return null
+          return {
+            id: `cm-${dto.id}-${bm.userId}`,
+            userId: bm.userId,
+            name: bm.name,
+            initials: bm.initials,
+            avatarUrl: bm.avatarUrl,
+            color: bm.color,
+          }
+        })
+        .filter((m): m is NonNullable<typeof m> => m !== null)
 
   const semanticValues = Object.fromEntries(fields.map((field) => {
     const semantic = getSemanticField(field)
@@ -236,6 +241,10 @@ function mapCardSummaryDto(dto: CardSummaryDtoApi, listId: string, board: Board,
     return [field.id, undefined]
   }))
   const fieldValues = { ...customValues, ...semanticValues }
+
+  const labels = dto.labels
+    ? dto.labels.map((label) => ({ id: label.labelId, name: label.name ?? "Label", color: label.color }))
+    : []
 
   return {
     id: dto.id,
@@ -254,7 +263,7 @@ function mapCardSummaryDto(dto: CardSummaryDtoApi, listId: string, board: Board,
     isArchived: false,
     isDeleted: false,
     members,
-    labels: [],
+    labels,
     checklists: [],
     fieldValues,
     _count: {

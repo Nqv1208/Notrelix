@@ -31,10 +31,12 @@ export function getChecklistProgress(card: Card) {
   return total === 0 ? 0 : Math.round((done / total) * 100)
 }
 
+const dateFormatter = new Intl.DateTimeFormat("en", { month: "short", day: "numeric" })
+
 export function formatDate(value?: string) {
   const date = parseDateValue(value)
   if (!date) return "No date"
-  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(date)
+  return dateFormatter.format(date)
 }
 
 export function toDateInputValue(value?: string) {

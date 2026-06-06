@@ -9,6 +9,7 @@ const TASK_ID_PARAM = "taskId"
 export function useSelectedCardPanel() {
   const router = useRouter()
   const pathname = usePathname()
+  // react-doctor-disable-next-line react-doctor/nextjs-no-use-search-params-without-suspense
   const searchParams = useSearchParams()
   const selectedCardId = searchParams.get(TASK_ID_PARAM)
 

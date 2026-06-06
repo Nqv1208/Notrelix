@@ -5,9 +5,11 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { workspaceTasks } from "../../_components/dashboard/workspace-data"
 
+const WORKBENCH_GROUPS = ["This week", "Next", "Blocked", "Done"]
+
 export function BoardWorkbench({ boardId }: { workspaceId: string; boardId?: string }) {
   const title = boardId === "board-roadmap" ? "Roadmap planning" : "Product delivery"
-  const groups = ["This week", "Next", "Blocked", "Done"]
+  const groups = WORKBENCH_GROUPS
 
   return (
     <main className="mx-auto max-w-[1380px] px-4 py-5 sm:px-6 lg:px-8">

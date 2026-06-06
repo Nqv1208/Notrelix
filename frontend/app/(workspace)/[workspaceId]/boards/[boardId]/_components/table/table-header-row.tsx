@@ -79,7 +79,7 @@ export function TableHeaderRow({
           </div>
         </div>
       ))}
-      <div role="columnheader" className="border-r border-border" />
+      <div role="columnheader" aria-label="Actions column spacing" className="border-r border-border" />
     </div>
   )
 }

@@ -58,6 +58,8 @@ export interface CardSummaryDtoApi {
   dueDate?: string | null
   cover?: string | null
   memberCount: number
+  members: CardMemberDtoApi[]
+  labels: CardLabelDtoApi[]
   checklistProgress: number
   checklistTotal: number
   commentCount: number

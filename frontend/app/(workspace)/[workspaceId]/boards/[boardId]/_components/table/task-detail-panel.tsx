@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -32,16 +32,21 @@ export function TaskDetailPanel({
   const isMobile = useIsMobile()
   const content = cardId ? <TaskDetailPanelContent board={board} cardId={cardId} onClose={onClose} /> : null
 
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  })
+
   useEffect(() => {
     if (!open || isMobile) return
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose()
+      if (event.key === "Escape") onCloseRef.current()
     }
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [isMobile, onClose, open])
+  }, [isMobile, open])
 
   if (isMobile) {
     return (

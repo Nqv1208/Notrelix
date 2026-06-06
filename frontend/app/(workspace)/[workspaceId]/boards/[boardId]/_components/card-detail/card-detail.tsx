@@ -77,8 +77,8 @@ export function CardDetail({
               </Badge>
             </div>
 
-            <label className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Description</label>
-            <Textarea className="mt-2 min-h-32 bg-muted/40" defaultValue={card.descriptionMd ?? ""} aria-label="Card description" />
+            <label htmlFor="card-description-textarea" className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Description</label>
+            <Textarea id="card-description-textarea" className="mt-2 min-h-32 bg-muted/40" defaultValue={card.descriptionMd ?? ""} aria-label="Card description" />
           </div>
 
           {card.linkedPageId ? <CardLinkedPagePreview workspaceId={workspaceId} boardId={boardId} pageId={card.linkedPageId} /> : (
