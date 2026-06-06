@@ -2,6 +2,7 @@
 
 import type { ComponentType, CSSProperties, ReactNode } from "react"
 import { useState, useEffect } from "react"
+import { useMounted } from "@/hooks/use-mounted"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -69,11 +70,7 @@ function UserMenuItem({ icon: Icon, label, badge, rightElement, onClick, danger 
 export function UserMenu() {
   const { user } = useAuthUser()
   const { mutate: logout } = useLogout()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const mounted = useMounted()
 
   const displayUser = user ?? {
     name: "Notrelix User",
