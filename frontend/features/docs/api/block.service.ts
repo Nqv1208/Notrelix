@@ -57,6 +57,7 @@ export const blockService = {
       position: payload.position,
       parentId: payload.parentId,
     })
+    // react-doctor-disable-next-line react-doctor/server-sequential-independent-await
     const blocks = await this.getByPage(pageId)
     return blocks.find((block) => block.id === id) ?? {
       id,
