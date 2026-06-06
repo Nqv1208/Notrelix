@@ -77,24 +77,21 @@ export function WorkspaceSidebar({ workspaceId, collapsed, onCollapse, onExpand,
   return (
     <aside
       className={cn(
-        "group/workspace-sidebar relative z-20 h-full shrink-0 border-r border-border bg-card/95 text-card-foreground backdrop-blur-xl transition-[width] duration-200",
+        "group/workspace-sidebar relative z-20 shrink-0 bg-card/90 text-card-foreground backdrop-blur-xl shadow-sm rounded-l-xl ml-2 h-full transition-all duration-300 ease-in-out",
         inSheet ? "block" : "hidden lg:block",
         inSheet && "h-svh",
-        collapsed ? "w-[68px]" : "w-[292px]"
+        collapsed ? "w-4 hover:w-6" : "w-[280px]"
       )}
     >
-      <div className="flex h-full flex-col">
+      <div className={cn("flex h-full flex-col transition-opacity duration-200", collapsed ? "opacity-0 pointer-events-none" : "opacity-100")}>
 
         <div className="p-4">
           <button
             onClick={() => setSearchOpen(true)}
-            className={cn(
-              "flex h-9 w-full items-center gap-2 rounded-lg border border-border bg-muted px-3 text-sm text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              collapsed && "justify-center px-0"
-            )}
+            className="flex h-9 w-full items-center gap-2 rounded-lg border border-border bg-muted px-3 text-sm text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Search className="size-4" />
-            {!collapsed ? <span className="min-w-0 flex-1 text-left">Search workspace</span> : null}
+            <span className="min-w-0 flex-1 text-left">Search workspace</span>
           </button>
         </div>
 
@@ -104,58 +101,56 @@ export function WorkspaceSidebar({ workspaceId, collapsed, onCollapse, onExpand,
               <SidebarNavLink
                 key={item.label}
                 item={item}
-                collapsed={collapsed}
+                collapsed={false}
                 active={isActiveWorkspaceNav({ item, pathname, panel, workspaceId })}
               />
             ))}
           </nav>
 
-          {!collapsed ? (
-            <div className="space-y-6 mt-6 pb-6">
-              <SidebarSection title="Quick access">
-                <div className="space-y-1">
-                  {favorites.map((item) => (
-                    <Link
-                      key={item.id}
-                      href={item.href as never}
-                      className="group flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
-                    >
-                      <Star className="size-3.5 text-primary" />
-                      <span className="min-w-0 flex-1 truncate">{item.title}</span>
-                      <MoreHorizontal className="size-3.5 opacity-0 group-hover:opacity-100" />
-                    </Link>
-                  ))}
-                </div>
-              </SidebarSection>
+          <div className="space-y-6 mt-6 pb-6">
+            <SidebarSection title="Quick access">
+              <div className="space-y-1">
+                {favorites.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={item.href as never}
+                    className="group flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                  >
+                    <Star className="size-3.5 text-primary" />
+                    <span className="min-w-0 flex-1 truncate">{item.title}</span>
+                    <MoreHorizontal className="size-3.5 opacity-0 group-hover:opacity-100" />
+                  </Link>
+                ))}
+              </div>
+            </SidebarSection>
 
-              <SidebarSection title="Team online">
-                <div className="space-y-1">
-                  {members.map((member) => (
-                    <div key={member.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm">
-                      <Avatar className="size-6">
-                        <AvatarFallback className="text-[10px] text-primary-foreground" style={{ backgroundColor: member.color }}>
-                          {member.initials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="min-w-0 flex-1 truncate text-muted-foreground">{member.name}</span>
-                      <span
-                        className={cn(
-                          "size-2 rounded-full",
-                          member.status === "active"
-                            ? "bg-primary"
-                            : member.status === "in-call"
-                              ? "bg-accent-foreground"
-                              : member.status === "idle"
-                                ? "bg-muted-foreground"
-                                : "bg-border"
-                        )}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </SidebarSection>
-            </div>
-          ) : null}
+            <SidebarSection title="Team online">
+              <div className="space-y-1">
+                {members.map((member) => (
+                  <div key={member.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm">
+                    <Avatar className="size-6">
+                      <AvatarFallback className="text-[10px] text-primary-foreground" style={{ backgroundColor: member.color }}>
+                        {member.initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="min-w-0 flex-1 truncate text-muted-foreground">{member.name}</span>
+                    <span
+                      className={cn(
+                        "size-2 rounded-full",
+                        member.status === "active"
+                          ? "bg-primary"
+                          : member.status === "in-call"
+                            ? "bg-accent-foreground"
+                            : member.status === "idle"
+                              ? "bg-muted-foreground"
+                              : "bg-border"
+                      )}
+                    />
+                  </div>
+                ))}
+              </div>
+            </SidebarSection>
+          </div>
         </ScrollArea>
 
         {/* Footer Area - Fixed at bottom via flex layout */}
@@ -165,7 +160,7 @@ export function WorkspaceSidebar({ workspaceId, collapsed, onCollapse, onExpand,
               <SidebarNavLink
                 key={item.label}
                 item={item}
-                collapsed={collapsed}
+                collapsed={false}
                 active={isActiveWorkspaceNav({ item, pathname, panel, workspaceId })}
               />
             ))}
@@ -180,7 +175,10 @@ export function WorkspaceSidebar({ workspaceId, collapsed, onCollapse, onExpand,
           type="button"
           aria-label={collapsed ? "Expand workspace sidebar" : "Collapse workspace sidebar"}
           onClick={collapsed ? onExpand : onCollapse}
-          className="absolute right-[-14px] top-5 z-30 hidden size-7 items-center justify-center rounded-full border border-border bg-card text-muted-foreground opacity-0 shadow-sm transition group-hover/workspace-sidebar:opacity-100 hover:bg-muted hover:text-foreground lg:flex"
+          className={cn(
+            "absolute right-[-14px] top-5 z-30 hidden size-7 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition hover:bg-muted hover:text-foreground lg:flex",
+            collapsed ? "opacity-100 shadow-md" : "opacity-0 group-hover/workspace-sidebar:opacity-100 shadow-sm"
+          )}
         >
           {collapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
         </button>
