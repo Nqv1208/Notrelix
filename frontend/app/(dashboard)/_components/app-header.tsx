@@ -5,7 +5,8 @@ import { useState } from "react"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { GlobalSearchDialog } from "./header/global-search-dialog"
 import { UserMenu } from "./header/user-menu"
-import { Bell, Grip, HelpCircle, Hexagon, Inbox, Puzzle, Search, UserPlus } from "lucide-react"
+import { NotificationBell } from "./header/notification-bell"
+import { Grip, HelpCircle, Hexagon, Inbox, Puzzle, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { routes } from "@/lib/routes"
@@ -69,9 +70,8 @@ export function AppHeader({
         <div className="mx-4 hidden min-w-0 flex-1 justify-center lg:flex" />
 
         <div className="flex items-center gap-1 sm:gap-2">
-          <UtilityButton icon={Bell} badge={1} />
+          <NotificationBell />
           <UtilityButton icon={Inbox} />
-          <UtilityButton icon={UserPlus} />
           <UtilityButton icon={Puzzle} />
           <UtilityButton icon={Search} onClick={() => setSearchOpen(true)} />
           <UtilityButton icon={HelpCircle} />

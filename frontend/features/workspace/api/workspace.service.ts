@@ -200,7 +200,21 @@ export const workspaceService = {
       boardApi.getBoardsByWorkspaceId(workspaceId),
       pageService.getList(workspaceId),
     ])
-    return createViews(workspaceId, boards, pages)
+    const defaultViews = createViews(workspaceId, boards, pages)
+    
+    let customViews: WorkspaceView[] = []
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem(`custom_views_${workspaceId}`)
+        if (stored) {
+          customViews = JSON.parse(stored)
+        }
+      } catch (e) {
+        console.error("Lỗi đọc custom views từ localStorage:", e)
+      }
+    }
+    
+    return [...defaultViews, ...customViews]
   },
 
   async getSnapshot(workspaceId: string): Promise<WorkspaceSnapshot> {
@@ -236,7 +250,7 @@ export const workspaceService = {
 
   async createView(input: CreateWorkspaceViewInput): Promise<WorkspaceView> {
     const now = new Date().toISOString()
-    return {
+    const view: WorkspaceView = {
       id: `${input.type}-${Date.now()}`,
       workspaceId: input.workspaceId,
       name: input.name,
@@ -251,6 +265,19 @@ export const workspaceService = {
       createdAt: now,
       updatedAt: now,
     }
+    
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem(`custom_views_${input.workspaceId}`)
+        const currentViews: WorkspaceView[] = stored ? JSON.parse(stored) : []
+        currentViews.push(view)
+        localStorage.setItem(`custom_views_${input.workspaceId}`, JSON.stringify(currentViews))
+      } catch (e) {
+        console.error("Lỗi ghi custom view vào localStorage:", e)
+      }
+    }
+    
+    return view
   },
 
   async updateView(workspaceId: string, viewId: string, input: UpdateWorkspaceViewInput): Promise<WorkspaceView> {
@@ -264,5 +291,65 @@ export const workspaceService = {
       config: { ...(current?.config ?? {}), ...input.config },
       updatedAt: new Date().toISOString(),
     }
+  },
+
+  async createWorkspace(input: { name: string; slug: string; isPersonal: boolean }): Promise<WorkspaceSummary> {
+    const res = await api.post<WorkspaceDtoApi>(endpoints.workspaces.list, input)
+    return mapWorkspaceDto(res)
+  },
+
+  async updateWorkspace(workspaceId: string, input: { name: string; slug: string }): Promise<WorkspaceSummary> {
+    const res = await api.patch<WorkspaceDtoApi>(endpoints.workspaces.detail(workspaceId), input)
+    return mapWorkspaceDto(res)
+  },
+
+  async updateMemberRole(workspaceId: string, userId: string, role: string): Promise<WorkspaceMember> {
+    const res = await api.patch<WorkspaceMemberDtoApi>(`${endpoints.workspaces.detail(workspaceId)}/members/${userId}`, { role })
+    return mapMemberDto(res, 0)
+  },
+
+  async removeMember(workspaceId: string, userId: string): Promise<void> {
+    await api.delete<void>(`${endpoints.workspaces.detail(workspaceId)}/members/${userId}`)
+  },
+
+  async getInvitations(workspaceId: string): Promise<any[]> {
+    const invitations = await api.get<any[]>(`${endpoints.workspaces.detail(workspaceId)}/invitations`)
+    return invitations.map((inv) => ({
+      id: inv.id,
+      email: inv.email,
+      role: inv.role,
+      expiresAt: inv.expiresAt,
+      isAccepted: inv.isAccepted,
+      createdAt: inv.createdAt,
+    }))
+  },
+
+  async createInvitation(workspaceId: string, email: string, role: string): Promise<any> {
+    const res = await api.post<any>(`${endpoints.workspaces.detail(workspaceId)}/invitations`, { email, role })
+    return res
+  },
+
+  async deleteInvitation(workspaceId: string, invitationId: string): Promise<void> {
+    await api.delete<void>(`${endpoints.workspaces.detail(workspaceId)}/invitations/${invitationId}`)
+  },
+
+  async getActivityLogs(workspaceId: string, page = 1, pageSize = 20): Promise<WorkspaceActivityItem[]> {
+    const res = await api.get<WorkspaceActivityResponseApi>(`${endpoints.workspaces.detail(workspaceId)}/activity?page=${page}&pageSize=${pageSize}`)
+    return mapActivity(res)
+  },
+
+  async getInvitationByToken(token: string): Promise<any> {
+    const res = await api.get<any>(`/api/v1/workspaces/invitations/by-token/${token}`)
+    return res
+  },
+
+  async acceptInvitation(token: string): Promise<{ workspaceSlug: string; workspaceId: string }> {
+    const res = await api.post<{ workspaceSlug: string; workspaceId: string }>(`/api/v1/workspaces/invitations/accept/${token}`, {})
+    return res
+  },
+
+  async getPendingInvitations(): Promise<any[]> {
+    const res = await api.get<any[]>("/api/v1/workspaces/invitations/pending")
+    return res
   },
 }

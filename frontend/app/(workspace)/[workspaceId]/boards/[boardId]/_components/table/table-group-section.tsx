@@ -176,6 +176,7 @@ function GroupHeader({
                     key={color}
                     type="button"
                     title={color}
+                    aria-label={`Group color ${color}`}
                     className={cn(
                       "size-5 rounded-full border-2 transition-transform hover:scale-110",
                       group.color === color ? "border-foreground/70" : "border-transparent"

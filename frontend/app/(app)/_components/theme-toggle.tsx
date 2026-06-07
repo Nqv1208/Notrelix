@@ -3,16 +3,13 @@
 import * as React from "react"
 import { useTheme } from "next-themes"
 import { Moon, Sun } from "lucide-react"
+import { useMounted } from "@/hooks/use-mounted"
 
 import { Button } from "@/components/ui/button"
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = React.useState(false)
-
-  React.useEffect(() => {
-    setMounted(true)
-  }, [])
+  const mounted = useMounted()
 
   if (!mounted) {
     return (
@@ -37,3 +34,4 @@ export function ThemeToggle() {
     </Button>
   )
 }
+

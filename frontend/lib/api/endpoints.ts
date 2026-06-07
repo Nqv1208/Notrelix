@@ -58,4 +58,9 @@ export const endpoints = {
   comments: {
     detail: (commentId: string) => `/comments/${commentId}`,
   },
+  notifications: {
+    list: "/notifications",
+    read: (id: string) => `/notifications/${id}/read`,
+    readAll: "/notifications/read-all",
+  },
 };

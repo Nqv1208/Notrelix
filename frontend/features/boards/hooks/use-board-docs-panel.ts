@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 export function useBoardDocsPanel() {
   const router = useRouter()
   const pathname = usePathname()
+  // react-doctor-disable-next-line react-doctor/nextjs-no-use-search-params-without-suspense
   const searchParams = useSearchParams()
   const activeDocId = searchParams.get("doc") ?? undefined
 

@@ -12,7 +12,7 @@ export function WorkspaceShell({ workspaceId, children }: { workspaceId: string;
   const [collapsed, setCollapsed] = useState(false)
 
   return (
-    <div className="min-h-svh bg-app-shell text-foreground">
+    <div className="min-h-svh bg-app-header/95 text-foreground">
       <AppHeader
         showSidebarTrigger={false}
       />
@@ -32,14 +32,14 @@ export function WorkspaceShell({ workspaceId, children }: { workspaceId: string;
           <WorkspaceSidebar workspaceId={workspaceId} collapsed={false} onCollapse={() => undefined} inSheet />
         </SheetContent>
       </Sheet>
-      <div className="flex h-[calc(100svh-3.5rem)] overflow-hidden">
+      <div className="flex h-[calc(100svh-3.5rem)] overflow-hidden bg-app-header/95">
         <WorkspaceSidebar
           workspaceId={workspaceId}
           collapsed={collapsed}
           onCollapse={() => setCollapsed(true)}
           onExpand={() => setCollapsed(false)}
         />
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 bg-background h-full">
           <div className="h-full overflow-auto">{children}</div>
         </div>
       </div>

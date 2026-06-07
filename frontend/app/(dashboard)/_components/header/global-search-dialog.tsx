@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef } from "react"
+import { useMounted } from "@/hooks/use-mounted"
 import {
   CommandDialog,
   CommandEmpty,
@@ -18,23 +19,26 @@ interface GlobalSearchDialogProps {
 }
 
 export function GlobalSearchDialog({ open, onOpenChange }: GlobalSearchDialogProps) {
-  const [mounted, setMounted] = useState(false)
+  const mounted = useMounted()
 
+  const onOpenChangeRef = useRef(onOpenChange)
+  const openRef = useRef(open)
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    onOpenChangeRef.current = onOpenChange
+    openRef.current = open
+  })
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
-        onOpenChange(!open)
+        onOpenChangeRef.current(!openRef.current)
       }
     }
 
     document.addEventListener("keydown", down)
     return () => document.removeEventListener("keydown", down)
-  }, [open, onOpenChange])
+  }, [])
 
   if (!mounted) return null
 

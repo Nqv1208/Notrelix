@@ -7,20 +7,23 @@ import { WorkspaceCompactHeader } from "../shell/workspace-compact-header"
 import { WorkspaceContextualToolbar } from "./workspace-contextual-toolbar"
 import { WorkspaceViewContent } from "../dashboard/workspace-view-content"
 import { WorkspaceViewTabs } from "./workspace-view-tabs"
+import { WorkspaceManagementPanel } from "../shell/workspace-management-panel"
 
 export function WorkspaceBoardShell({
   workspaceId,
   requestedView,
+  panel,
 }: {
   workspaceId: string
   requestedView?: string
+  panel?: string
 }) {
   const snapshot = useWorkspaceSnapshot(workspaceId)
   const { views, activeView, isLoading, error } = useActiveWorkspaceView(workspaceId, requestedView)
 
   if (snapshot.isLoading || isLoading) return <WorkspaceBoardSkeleton />
 
-  if (snapshot.error || error || !snapshot.data || !activeView) {
+  if (snapshot.error || error || !snapshot.data || (!activeView && !panel)) {
     return (
       <main className="p-4 sm:p-6">
         <div className="rounded-2xl border border-border bg-card p-8 text-center">
@@ -35,11 +38,19 @@ export function WorkspaceBoardShell({
   return (
     <main className="flex h-full min-h-0 flex-col bg-background">
       <WorkspaceCompactHeader workspace={snapshot.data.workspace} members={snapshot.data.members} />
-      <WorkspaceViewTabs workspaceId={workspaceId} views={views} activeViewId={activeView.id} />
-      <WorkspaceContextualToolbar activeType={activeView.type} activeView={activeView} />
-      <section className="min-h-0 flex-1 overflow-auto">
-        <WorkspaceViewContent workspaceId={workspaceId} view={activeView} snapshot={snapshot.data} />
-      </section>
+      {panel ? (
+        <section className="min-h-0 flex-1 overflow-auto p-4 sm:p-6">
+          <WorkspaceManagementPanel panel={panel} workspaceId={workspaceId} snapshot={snapshot.data} />
+        </section>
+      ) : activeView ? (
+        <>
+          <WorkspaceViewTabs workspaceId={workspaceId} views={views} activeViewId={activeView.id} />
+          <WorkspaceContextualToolbar activeType={activeView.type} activeView={activeView} />
+          <section className="min-h-0 flex-1 overflow-auto">
+            <WorkspaceViewContent workspaceId={workspaceId} view={activeView} snapshot={snapshot.data} />
+          </section>
+        </>
+      ) : null}
     </main>
   )
 }

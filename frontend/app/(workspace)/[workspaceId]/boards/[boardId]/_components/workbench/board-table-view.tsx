@@ -84,7 +84,7 @@ export function BoardTableView({
         <div role="grid" aria-rowcount={groups.reduce((count, group) => count + group.cards.length, 0)} aria-colcount={visibleFields.length}>
           <TableHeaderRow fields={visibleFields} />
           {groups.map((group) => (
-            <BoardGroupSection key={group.id} group={group} fields={visibleFields} />
+            <BoardGroupSection key={group.id} boardId={board.id} workspaceId={board.workspaceId} group={group} fields={visibleFields} />
           ))}
         </div>
       </DndContext>

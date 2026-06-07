@@ -15,27 +15,37 @@ import {
 import { workspaceViewTemplates } from "@/features/workspace/mock/mock-data"
 import { useCreateWorkspaceView } from "@/features/workspace/hooks"
 import type { WorkspaceViewType } from "@/features/workspace/types"
-
-const defaultTargets: Partial<Record<WorkspaceViewType, { boardId?: string; pageId?: string; calendarId?: string; dashboardId?: string }>> = {
-  table: { boardId: "board-product" },
-  kanban: { boardId: "board-product" },
-  timeline: { boardId: "board-product" },
-  doc: { pageId: "docs-mvp-spec" },
-  calendar: { calendarId: "workspace-calendar" },
-  dashboard: { dashboardId: "workspace-health" },
-}
+import { useWorkspaceBoards } from "@/features/boards/hooks"
+import { usePageList } from "@/features/docs/hooks/use-page-tree"
 
 export function WorkspaceAddViewMenu({ workspaceId }: { workspaceId: string }) {
   const router = useRouter()
   const createView = useCreateWorkspaceView()
+  const { data: boards = [] } = useWorkspaceBoards(workspaceId)
+  const { data: pages = [] } = usePageList(workspaceId)
 
   async function handleCreate(type: WorkspaceViewType, label: string, disabled?: boolean) {
     if (disabled || createView.isPending) return
+
+    const firstBoardId = boards[0]?.id
+    const firstPageId = pages[0]?.id
+
+    let target: { boardId?: string; pageId?: string; calendarId?: string; dashboardId?: string } = {}
+    if (type === "table" || type === "kanban" || type === "timeline") {
+      target = { boardId: firstBoardId || "board-product" }
+    } else if (type === "doc") {
+      target = { pageId: firstPageId || "docs-mvp-spec" }
+    } else if (type === "calendar") {
+      target = { calendarId: "workspace-calendar", boardId: firstBoardId }
+    } else if (type === "dashboard") {
+      target = { dashboardId: "workspace-health" }
+    }
+
     const view = await createView.mutateAsync({
       workspaceId,
       name: label,
       type,
-      target: defaultTargets[type],
+      target,
     })
     router.push(`/${workspaceId}?view=${view.id}`)
   }

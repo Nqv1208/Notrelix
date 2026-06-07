@@ -58,7 +58,7 @@ export function DocsSearch({ workspaceId, mode = "button" }: DocsSearchProps) {
         <Kbd>⌘K</Kbd>
       </button>
     ) : (
-      <Button variant="outline" className="h-10 min-w-[220px] justify-between rounded-xl bg-card text-muted-foreground">
+      <Button variant="outline" onClick={() => setOpen(true)} className="h-10 min-w-[220px] justify-between rounded-xl bg-card text-muted-foreground">
         <span className="flex items-center gap-2">
           <Search className="size-4" />
           Quick search
@@ -75,7 +75,7 @@ export function DocsSearch({ workspaceId, mode = "button" }: DocsSearchProps) {
 
   return (
     <>
-      <span onClick={() => setOpen(true)}>{trigger}</span>
+      {trigger}
       <CommandDialog open={open} onOpenChange={setOpen} title="Search docs" description="Search pages, blocks, tasks, and boards">
         <Command className="border-0">
           <CommandInput placeholder="Search docs, blocks, tasks..." value={query} onValueChange={setQuery} />

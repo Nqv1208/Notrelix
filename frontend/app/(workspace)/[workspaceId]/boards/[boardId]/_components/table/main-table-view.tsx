@@ -117,7 +117,7 @@ export function MainTableView({ boardId, workspaceId }: { boardId: string; works
       <ResizablePanelGroup direction="horizontal" className="h-full min-h-0">
         <ResizablePanel id="main-table" defaultSize={hasDesktopPanel ? "60%" : "100%"} minSize="40%">
           <section className="flex h-full min-h-0 flex-col overflow-hidden bg-background" aria-label={`${board.title} main table`}>
-            {/* <MainTableToolbar
+            <MainTableToolbar
               table={table}
               boardId={boardId}
               workspaceId={workspaceId}
@@ -129,7 +129,7 @@ export function MainTableView({ boardId, workspaceId }: { boardId: string; works
                   position: generatePosition(lastPosition, undefined),
                 })
               }}
-            /> */}
+            />
             <div className="min-h-0 flex-1">
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <TableScrollContainer>
@@ -215,7 +215,7 @@ function MainTableToolbar({
   const createColumn = useCreateColumn(boardId, workspaceId)
 
   return (
-    <div className="flex min-h-12 shrink-0 flex-wrap items-center gap-1.5 border-b border-border bg-card px-4 py-2">
+    <div className="flex min-h-14 shrink-0 flex-wrap items-center gap-2 bg-background px-4 py-2 sm:px-6">
       <div className="relative w-full max-w-xs">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input

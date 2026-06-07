@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useDroppable } from "@dnd-kit/core"
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { MoreHorizontal, Plus } from "lucide-react"
@@ -11,7 +12,16 @@ import type { Board, BoardGroup } from "@/features/boards/types"
 import { KanbanAddCard } from "./kanban-add-card"
 import { KanbanCard } from "./kanban-card"
 
-export function KanbanColumn({ board, group }: { board: Board; group: BoardGroup }) {
+export function KanbanColumn({
+  board,
+  group,
+  workspaceId,
+}: {
+  board: Board
+  group: BoardGroup
+  workspaceId: string
+}) {
+  const [isAdding, setIsAdding] = useState(false)
   const { setNodeRef, isOver } = useDroppable({
     id: group.id,
     data: { type: "kanban-column", group },
@@ -33,7 +43,12 @@ export function KanbanColumn({ board, group }: { board: Board; group: BoardGroup
           <Badge variant="secondary" className="rounded-full">{group.cards.length}</Badge>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon-sm" aria-label={`Add card to ${group.title}`}>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Add card to ${group.title}`}
+            onClick={() => setIsAdding(true)}
+          >
             <Plus className="size-4" />
           </Button>
           <Button variant="ghost" size="icon-sm" aria-label={`${group.title} actions`}>
@@ -48,7 +63,13 @@ export function KanbanColumn({ board, group }: { board: Board; group: BoardGroup
             {group.cards.map((card) => (
               <KanbanCard key={card.id} board={board} card={card} />
             ))}
-            <KanbanAddCard groupTitle={group.title} />
+            <KanbanAddCard
+              boardId={board.id}
+              workspaceId={workspaceId}
+              group={group}
+              isAdding={isAdding}
+              onToggleAdding={setIsAdding}
+            />
           </div>
         </SortableContext>
       </ScrollArea>

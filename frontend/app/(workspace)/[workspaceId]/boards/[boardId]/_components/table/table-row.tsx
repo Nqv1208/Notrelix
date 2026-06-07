@@ -52,6 +52,13 @@ export function TableRow({
     <div
       ref={setNodeRef}
       role="row"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault()
+          onOpenDetail()
+        }
+      }}
       aria-label={`${card.title} in ${group.title}`}
       aria-selected={isDetailSelected}
       aria-grabbed={isDragging}

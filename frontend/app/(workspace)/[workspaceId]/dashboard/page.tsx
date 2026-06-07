@@ -167,13 +167,15 @@ function TaskTable() {
   )
 }
 
+const ACTIVITY_ITEMS = [
+  ["Ana published", "Q3 operating plan", "12m ago"],
+  ["Minh moved", "3 cards in Product delivery", "28m ago"],
+  ["Sam commented", "Docs MVP specification", "1h ago"],
+  ["Ivy summarized", "Customer interviews", "2h ago"],
+]
+
 function ActivityList({ compact }: { compact?: boolean }) {
-  const items = [
-    ["Ana published", "Q3 operating plan", "12m ago"],
-    ["Minh moved", "3 cards in Product delivery", "28m ago"],
-    ["Sam commented", "Docs MVP specification", "1h ago"],
-    ["Ivy summarized", "Customer interviews", "2h ago"],
-  ]
+  const items = ACTIVITY_ITEMS
 
   return (
     <div className="space-y-3">

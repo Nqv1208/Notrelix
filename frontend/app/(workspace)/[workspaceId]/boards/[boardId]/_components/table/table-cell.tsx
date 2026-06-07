@@ -18,6 +18,7 @@ import { Progress } from "@/components/ui/progress"
 import { useBoardDocsPanel, useUpdateCard, useUpdateFieldValue } from "@/features/boards/hooks"
 import type { Board, BoardMember, Card, FieldDefinition, FieldOption } from "@/features/boards/types"
 import { cn } from "@/lib/utils"
+import { Calendar } from "@/components/ui/calendar"
 import { formatDate, getChecklistProgress, getOptionToneClass, toDateInputValue } from "./table-utils"
 
 export function TableCell({
@@ -93,14 +94,14 @@ function TitleCell({
   }
 
   return (
-    <div className="min-w-0">
-      <div className="flex min-w-0 items-center gap-2">
+    <div className="flex w-full min-w-0 items-center justify-between gap-2">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
         <button type="button" className="min-w-0 text-left" onClick={onOpenDetail}>
           <p className="truncate font-medium text-foreground">{card.title}</p>
         </button>
         <button
           type="button"
-          className="rounded p-1 text-muted-foreground opacity-0 transition hover:bg-muted hover:text-foreground group-hover/row:opacity-100"
+          className="rounded p-1 text-muted-foreground opacity-0 transition hover:bg-muted hover:text-foreground group-hover/row:opacity-100 shrink-0"
           aria-label={`Edit ${card.title}`}
           onClick={(event) => {
             event.stopPropagation()
@@ -110,20 +111,22 @@ function TitleCell({
           <Pencil className="size-3.5" />
         </button>
       </div>
-      <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-        {card._count.comments > 0 ? (
-          <span className="inline-flex items-center gap-1">
-            <MessageSquareText className="size-3" />
-            {card._count.comments}
-          </span>
-        ) : null}
-        {card._count.attachments > 0 ? (
-          <span className="inline-flex items-center gap-1">
-            <Paperclip className="size-3" />
-            {card._count.attachments}
-          </span>
-        ) : null}
-      </div>
+      {(card._count.comments > 0 || card._count.attachments > 0) && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0 ml-auto">
+          {card._count.comments > 0 ? (
+            <span className="inline-flex items-center gap-1">
+              <MessageSquareText className="size-3" />
+              {card._count.comments}
+            </span>
+          ) : null}
+          {card._count.attachments > 0 ? (
+            <span className="inline-flex items-center gap-1">
+              <Paperclip className="size-3" />
+              {card._count.attachments}
+            </span>
+          ) : null}
+        </div>
+      )}
     </div>
   )
 }
@@ -234,26 +237,52 @@ function SelectCell({
 function DateCell({ card, field }: { card: Card; field: FieldDefinition }) {
   const updateFieldValue = useUpdateFieldValue(card.boardId, card.workspaceId)
   const rawValue = typeof card.fieldValues[field.id] === "string" ? String(card.fieldValues[field.id]) : card.dueDate
-  const value = toDateInputValue(rawValue)
+  const selectedDate = rawValue ? new Date(rawValue) : undefined
+
+  const handleSelect = (date: Date | undefined) => {
+    updateFieldValue.mutate({
+      cardId: card.id,
+      fieldDefinitionId: field.id,
+      value: date ? date.toISOString() : null,
+    })
+  }
 
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button type="button" className="inline-flex items-center gap-2 text-sm text-muted-foreground" onClick={(event) => event.stopPropagation()}>
-          <CalendarDays className="size-4" />
-          <span>{formatDate(rawValue)}</span>
+        <button
+          type="button"
+          className={cn(
+            "inline-flex items-center gap-2 rounded px-2 py-1 text-sm transition hover:bg-muted",
+            rawValue ? "text-foreground font-medium" : "text-muted-foreground/60"
+          )}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <CalendarDays className="size-4 shrink-0 text-muted-foreground" />
+          <span className="truncate">{formatDate(rawValue)}</span>
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-56" onClick={(event) => event.stopPropagation()}>
-        <Input
-          type="date"
-          aria-label={`Edit ${field.name}`}
-          value={value}
-          onChange={(event) => {
-            const next = event.target.value
-            updateFieldValue.mutate({ cardId: card.id, fieldDefinitionId: field.id, value: next ? new Date(`${next}T09:00:00.000Z`).toISOString() : null })
-          }}
-        />
+      <PopoverContent align="start" className="w-auto p-0" onClick={(event) => event.stopPropagation()}>
+        <div className="flex flex-col">
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={handleSelect}
+            initialFocus
+          />
+          {rawValue && (
+            <div className="border-t p-2 flex justify-end bg-muted/20">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => handleSelect(undefined)}
+              >
+                Clear date
+              </Button>
+            </div>
+          )}
+        </div>
       </PopoverContent>
     </Popover>
   )

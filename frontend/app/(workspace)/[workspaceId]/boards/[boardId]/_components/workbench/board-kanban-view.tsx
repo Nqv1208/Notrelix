@@ -58,7 +58,7 @@ export function BoardKanbanView({ board, groups }: { board: Board; groups: Board
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
         <div className="flex min-h-[620px] gap-4 overflow-x-auto pb-2">
           {groups.map((group) => (
-            <KanbanColumn key={group.id} board={board} group={group} />
+            <KanbanColumn key={group.id} board={board} group={group} workspaceId={board.workspaceId} />
           ))}
         </div>
       </DndContext>

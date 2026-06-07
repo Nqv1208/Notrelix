@@ -15,9 +15,11 @@ export function createSearchResults(input: {
   if (!query) return []
 
   const results: SearchResult[] = []
+  const pageMap = new Map(input.pages.map((p) => [p.id, p.title]))
 
   for (const page of input.pages) {
     const haystack = normalize(`${page.title} ${page.tags.join(" ")}`)
+    // react-doctor-disable-next-line react-doctor/js-set-map-lookups
     if (haystack.includes(query)) {
       results.push({
         id: page.id,
@@ -34,12 +36,13 @@ export function createSearchResults(input: {
   for (const [pageId, blocks] of Object.entries(input.blocks)) {
     for (const block of blocks) {
       const text = block.properties.text ?? block.properties.title ?? ""
+      // react-doctor-disable-next-line react-doctor/js-set-map-lookups
       if (normalize(text).includes(query)) {
         results.push({
           id: block.id,
           type: "block",
           title: text.slice(0, 80) || "Untitled block",
-          excerpt: `Block in ${input.pages.find((page) => page.id === pageId)?.title ?? "page"}`,
+          excerpt: `Block in ${pageMap.get(pageId) ?? "page"}`,
           icon: "¶",
           pageId,
           score: 0.55,
@@ -50,6 +53,7 @@ export function createSearchResults(input: {
   }
 
   for (const task of input.tasks) {
+    // react-doctor-disable-next-line react-doctor/js-set-map-lookups
     if (normalize(task.title).includes(query)) {
       results.push({
         id: task.id,
@@ -64,6 +68,7 @@ export function createSearchResults(input: {
   }
 
   for (const board of input.boards) {
+    // react-doctor-disable-next-line react-doctor/js-set-map-lookups
     if (normalize(board.name).includes(query)) {
       results.push({
         id: board.id,

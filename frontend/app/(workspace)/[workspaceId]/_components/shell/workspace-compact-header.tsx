@@ -1,6 +1,20 @@
 "use client"
 
-import { Bot, ChevronDown, Link2, MessageSquareText, MoreHorizontal, Plug, Share2, Sparkles, Star, UserPlus, Workflow } from "lucide-react"
+import Link from "next/link"
+import {
+  Bot,
+  ChevronDown,
+  Link2,
+  MessageSquareText,
+  MoreHorizontal,
+  Plug,
+  Settings,
+  Share2,
+  Sparkles,
+  Star,
+  UserPlus,
+  Workflow,
+} from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -14,6 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
 import type { WorkspaceMember, WorkspaceSummary } from "@/features/workspace/types"
+import { toast } from "sonner"
 
 export function WorkspaceCompactHeader({
   workspace,
@@ -22,6 +37,14 @@ export function WorkspaceCompactHeader({
   workspace: WorkspaceSummary
   members: WorkspaceMember[]
 }) {
+  const handleCopyLink = () => {
+    if (typeof window !== "undefined") {
+      const workspaceUrl = `${window.location.origin}/${workspace.id}`
+      navigator.clipboard.writeText(workspaceUrl)
+        .then(() => toast.success("Workspace link copied to clipboard"))
+        .catch(() => toast.error("Failed to copy workspace link"))
+    }
+  }
   return (
     <header className="border-b border-border bg-card px-4 py-2.5 sm:px-6">
       <div className="flex min-h-10 flex-wrap items-center gap-2">
@@ -43,14 +66,16 @@ export function WorkspaceCompactHeader({
               <Star className="size-4" />
               Add to favorites
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleCopyLink} className="cursor-pointer">
               <Link2 className="size-4" />
               Copy workspace link
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <MoreHorizontal className="size-4" />
-              More settings
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link href={`/${workspace.id}?panel=settings&tab=general`}>
+                <Settings className="size-4 mr-2" />
+                Workspace Settings
+              </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -64,13 +89,17 @@ export function WorkspaceCompactHeader({
           <Sparkles className="size-4" />
           AI suggestions
         </Button>
-        <Button variant="ghost" size="sm" className="rounded-full">
-          <Plug className="size-4" />
-          Integrate
+        <Button variant="ghost" size="sm" className="rounded-full" asChild>
+          <Link href={`/${workspace.id}?panel=settings&tab=integrations`}>
+            <Plug className="size-4" />
+            Integrate
+          </Link>
         </Button>
-        <Button variant="ghost" size="sm" className="rounded-full">
-          <Workflow className="size-4" />
-          Automate
+        <Button variant="ghost" size="sm" className="rounded-full" asChild>
+          <Link href={`/${workspace.id}?panel=settings&tab=automations`}>
+            <Workflow className="size-4" />
+            Automate
+          </Link>
         </Button>
         <Button variant="ghost" size="sm" className="rounded-full">
           <Bot className="size-4" />
@@ -86,16 +115,20 @@ export function WorkspaceCompactHeader({
               </Avatar>
             ))}
           </div>
-          <Button size="sm" className="rounded-full">
-            <UserPlus className="size-4" />
-            Invite
+          <Button size="sm" className="rounded-full" asChild>
+            <Link href={`/${workspace.id}?panel=settings&tab=members`}>
+              <UserPlus className="size-4" />
+              Invite
+            </Link>
           </Button>
           <Button variant="outline" size="sm" className="bg-card">
             <Share2 className="size-4" />
             Share
           </Button>
-          <Button variant="ghost" size="icon-sm" aria-label="Workspace comments and activity">
-            <MessageSquareText className="size-4" />
+          <Button variant="ghost" size="icon-sm" aria-label="Workspace comments and activity" asChild>
+            <Link href={`/${workspace.id}?panel=settings&tab=activity`}>
+              <MessageSquareText className="size-4" />
+            </Link>
           </Button>
           <Button variant="ghost" size="icon-sm" aria-label="More workspace actions">
             <MoreHorizontal className="size-4" />

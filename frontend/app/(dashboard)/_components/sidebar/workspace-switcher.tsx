@@ -67,13 +67,15 @@ function MenuItem({ icon: Icon, label, disabled, rightIcon: RightIcon, onClick, 
   )
 }
 
+const ACTIVE_WORKSPACE = {
+  id: "ws-1",
+  name: "Notrelix OS",
+  iconColor: "var(--color-surface-sun)",
+  letter: "N"
+}
+
 export function WorkspaceSwitcher() {
-  const activeWorkspace = {
-    id: "ws-1",
-    name: "Notrelix OS",
-    iconColor: "var(--color-surface-sun)",
-    letter: "N"
-  }
+  const activeWorkspace = ACTIVE_WORKSPACE
 
   return (
     <SidebarGroup className="mt-2">
