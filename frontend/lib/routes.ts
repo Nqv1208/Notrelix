@@ -18,6 +18,13 @@ export const routes = {
     // workspacePage: (workspaceId: string, pageId: string) =>
     //   `/dashboard/workspace/${workspaceId}/page/${pageId}`,
   },
+  account: {
+    root: '/account',
+    profile: '/account/profile',
+    appearance: '/account/appearance',
+    security: '/account/security',
+    notifications: '/account/notifications',
+  },
   workspace: {
     root: (workspaceId: string) => `/${workspaceId}`,
     view: (workspaceId: string, view: string) => `/${workspaceId}?view=${view}`,
