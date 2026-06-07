@@ -8,6 +8,9 @@ export const endpoints = {
     resetPassword: "/auth/reset-password",
     profile: "/auth/me",
   },
+  users: {
+    updateProfile: "/users/profile",
+  },
   workspaces: {
     list: "/workspaces",
     detail: (workspaceId: string) => `/workspaces/${workspaceId}`,
