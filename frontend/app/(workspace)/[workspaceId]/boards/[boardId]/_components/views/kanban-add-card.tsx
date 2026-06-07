@@ -30,9 +30,7 @@ export function KanbanAddCard({
   const setIsOpen = onToggleAdding ?? setInternalOpen
 
   useEffect(() => {
-    if (isOpen) {
-      requestAnimationFrame(() => inputRef.current?.focus())
-    }
+    if (isOpen) requestAnimationFrame(() => inputRef.current?.focus())
   }, [isOpen])
 
   function submit() {
