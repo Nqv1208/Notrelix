@@ -5,9 +5,9 @@ interface PageEditorProps {
 }
 
 export default async function PageEditorPage({ params }: PageEditorProps) {
-  const { workspaceId, pageId } = await params
+  await params
 
   // TODO(api):
   // Server-prefetch page detail and blocks through HydrationBoundary when backend APIs are live.
-  return <EditorShell pageId={pageId} workspaceId={workspaceId} />
+  return <EditorShell />
 }

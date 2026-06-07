@@ -1,8 +1,12 @@
 "use client"
 
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { AlertCircle } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useActiveWorkspaceView, useWorkspaceSnapshot } from "@/features/workspace/hooks"
+import { useResolvedWorkspaceBoard } from "@/features/boards/hooks"
+import { getWorkspaceBoardHref } from "@/features/workspace/utils/workspace-routes"
 import { WorkspaceCompactHeader } from "../shell/workspace-compact-header"
 import { WorkspaceContextualToolbar } from "./workspace-contextual-toolbar"
 import { WorkspaceViewContent } from "../dashboard/workspace-view-content"
@@ -18,12 +22,22 @@ export function WorkspaceBoardShell({
   requestedView?: string
   panel?: string
 }) {
+  const router = useRouter()
   const snapshot = useWorkspaceSnapshot(workspaceId)
   const { views, activeView, isLoading, error } = useActiveWorkspaceView(workspaceId, requestedView)
+  const defaultBoard = useResolvedWorkspaceBoard({ workspaceId })
+  const shouldRedirectToMainTable = !panel
 
-  if (snapshot.isLoading || isLoading) return <WorkspaceBoardSkeleton />
+  useEffect(() => {
+    if (!shouldRedirectToMainTable || !defaultBoard.boardId) return
+    router.replace(getWorkspaceBoardHref(workspaceId, defaultBoard.boardId) as never)
+  }, [defaultBoard.boardId, router, shouldRedirectToMainTable, workspaceId])
 
-  if (snapshot.error || error || !snapshot.data || (!activeView && !panel)) {
+  if (snapshot.isLoading || isLoading || (shouldRedirectToMainTable && defaultBoard.isLoading)) return <WorkspaceBoardSkeleton />
+
+  if (shouldRedirectToMainTable && defaultBoard.boardId) return <WorkspaceBoardSkeleton />
+
+  if (snapshot.error || error || (shouldRedirectToMainTable && defaultBoard.error) || !snapshot.data || (!activeView && !panel)) {
     return (
       <main className="p-4 sm:p-6">
         <div className="rounded-2xl border border-border bg-card p-8 text-center">
@@ -36,7 +50,7 @@ export function WorkspaceBoardShell({
   }
 
   return (
-    <main className="flex h-full min-h-0 flex-col bg-background">
+    <main className="flex h-full min-h-0 flex-col bg-card">
       <WorkspaceCompactHeader workspace={snapshot.data.workspace} members={snapshot.data.members} />
       {panel ? (
         <section className="min-h-0 flex-1 overflow-auto p-4 sm:p-6">
@@ -57,7 +71,7 @@ export function WorkspaceBoardShell({
 
 function WorkspaceBoardSkeleton() {
   return (
-    <main className="flex h-full min-h-0 flex-col bg-background">
+    <main className="flex h-full min-h-0 flex-col bg-card">
       <div className="border-b border-border bg-card p-6">
         <Skeleton className="mb-3 h-10 w-72 rounded-xl" />
         <Skeleton className="h-5 w-full max-w-2xl rounded-lg" />

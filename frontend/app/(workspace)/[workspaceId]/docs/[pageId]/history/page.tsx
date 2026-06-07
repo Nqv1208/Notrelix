@@ -11,7 +11,7 @@ export default async function HistoryPage({ params }: HistoryPageProps) {
   const breadcrumb = await mockPageService.getBreadcrumb(pageId)
 
   return (
-    <div className="min-h-svh bg-background">
+    <div className="min-h-svh bg-card">
       <div className="mx-auto max-w-[1180px] px-4 py-8 sm:px-6 lg:px-8">
         <BreadcrumbNav breadcrumb={breadcrumb} workspaceId={workspaceId} />
         <div className="mb-6 rounded-2xl border border-border bg-card p-5">

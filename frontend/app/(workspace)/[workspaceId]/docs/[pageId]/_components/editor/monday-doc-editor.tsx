@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { usePage, usePageBlocks, usePageComments, usePageHistory } from "@/features/docs/hooks"
 import { mockDocsWorkspace } from "@/features/docs/mock/mock-data"
 import { useDocsEditorStore } from "@/features/docs/store/editor-store"
+import type { PageActivity, PageComment } from "@/features/docs/types"
 import { cn } from "@/lib/utils"
 import { DocBlockRenderer } from "./block-renderer"
 import { DocEditorToolbar } from "./doc-editor-toolbar"
@@ -40,16 +41,17 @@ export function MondayDocEditor({
   const blocks = usePageBlocks(pageId)
   const detail = page.data
   const pageBlocks = blocks.data ?? detail?.blocks ?? []
+  const contained = embedded || !showToolbar
 
   useEffect(() => {
     setActivePageId(pageId)
   }, [pageId, setActivePageId])
 
-  if (page.isLoading || blocks.isLoading) return <EditorSkeleton embedded={embedded} />
+  if (page.isLoading || blocks.isLoading) return <EditorSkeleton embedded={contained} />
 
   if (!detail) {
     return (
-      <div className="flex min-h-80 items-center justify-center bg-background p-8 text-center text-foreground">
+      <div className="flex min-h-80 items-center justify-center bg-card p-8 text-center text-foreground">
         <div>
           <h1 className="text-lg font-semibold text-foreground">Page not found</h1>
           <p className="mt-2 text-sm text-muted-foreground">The page may have been moved, archived, or deleted.</p>
@@ -59,9 +61,9 @@ export function MondayDocEditor({
   }
 
   return (
-    <div className={cn("min-h-0 bg-background text-foreground", embedded ? "h-full" : "min-h-svh")}>
+    <div className={cn("min-h-0 bg-card text-foreground", contained ? "h-full" : "min-h-svh")}>
       {showToolbar ? <DocEditorToolbar pageId={pageId} blocks={pageBlocks} /> : null}
-      <div className={cn("flex min-h-0", embedded ? "h-full" : "min-h-[calc(100svh-49px)]")}>
+      <div className={cn("flex min-h-0", contained ? "h-full" : "min-h-[calc(100svh-49px)]")}>
         <main className="min-w-0 flex-1 overflow-auto">
           <div className="mx-auto max-w-[880px] px-4 pb-24 pt-5 sm:px-8">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -171,11 +173,11 @@ function CollaborationTabs({ pageId, compact }: { pageId: string; compact?: bool
       </TabsList>
       <TabsContent value="comments" className="mt-3">
         <div className="space-y-3">
-          {comments.map((comment: any) => {
+          {comments.map((comment: PageComment) => {
             const user = mockDocsWorkspace.users.find((item) => item.id === comment.authorId)
             return (
               <div key={comment.id} className="rounded-xl border border-border bg-muted p-3">
-                <p className="text-xs font-semibold text-foreground">{user?.name ?? comment.authorName ?? "Teammate"}</p>
+                <p className="text-xs font-semibold text-foreground">{user?.name ?? "Teammate"}</p>
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">{comment.body}</p>
               </div>
             )
@@ -187,11 +189,11 @@ function CollaborationTabs({ pageId, compact }: { pageId: string; compact?: bool
       </TabsContent>
       <TabsContent value="activity" className="mt-3">
         <div className="space-y-3">
-          {activity.map((item: any) => {
+          {activity.map((item: PageActivity) => {
             const user = mockDocsWorkspace.users.find((candidate) => candidate.id === item.actorId)
             return (
               <div key={item.id} className="rounded-xl border border-border bg-muted p-3">
-                <p className="text-sm text-foreground"><span className="font-medium">{user?.name ?? item.actorName ?? "Teammate"}</span> {item.action} {item.targetLabel}</p>
+                <p className="text-sm text-foreground"><span className="font-medium">{user?.name ?? "Teammate"}</span> {item.action} {item.targetLabel}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleString()}</p>
               </div>
             )

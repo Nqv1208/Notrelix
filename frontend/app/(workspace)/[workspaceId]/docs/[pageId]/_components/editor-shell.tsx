@@ -1,12 +1,12 @@
 "use client"
 
 import { MondayDocEditor } from "./editor/monday-doc-editor"
+import { useWorkspaceTabbedRoute } from "../../../_components/shell/workspace-tabbed-shell"
 
-interface EditorShellProps {
-  pageId: string
-  workspaceId: string
-}
+export function EditorShell() {
+  const route = useWorkspaceTabbedRoute()
 
-export function EditorShell({ pageId, workspaceId }: EditorShellProps) {
-  return <MondayDocEditor pageId={pageId} workspaceId={workspaceId} />
+  if (route.kind !== "docs" || !route.pageId) return null
+
+  return <MondayDocEditor pageId={route.pageId} workspaceId={route.workspaceId} showToolbar={false} />
 }

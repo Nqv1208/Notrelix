@@ -25,6 +25,7 @@ type WorkspaceDtoApi = {
   isArchived: boolean
   memberCount: number
   createdAt: string
+  settings?: string | null
 }
 
 type WorkspaceMemberDtoApi = {
@@ -65,6 +66,7 @@ function mapWorkspaceDto(workspace: WorkspaceDtoApi): WorkspaceSummary {
     plan: normalizePlan(workspace.plan),
     memberCount: workspace.memberCount,
     isPersonal: workspace.isPersonal,
+    settings: workspace.settings ?? undefined,
   }
 }
 
@@ -196,25 +198,64 @@ export const workspaceService = {
   },
 
   async getViews(workspaceId: string): Promise<WorkspaceView[]> {
-    const [boards, pages] = await Promise.all([
+    const [boards, pages, workspace] = await Promise.all([
       boardApi.getBoardsByWorkspaceId(workspaceId),
       pageService.getList(workspaceId),
+      this.getWorkspace(workspaceId),
     ])
     const defaultViews = createViews(workspaceId, boards, pages)
     
     let customViews: WorkspaceView[] = []
-    if (typeof window !== "undefined") {
+    let orderIds: string[] = []
+    
+    if (workspace.settings) {
       try {
-        const stored = localStorage.getItem(`custom_views_${workspaceId}`)
-        if (stored) {
-          customViews = JSON.parse(stored)
+        const settingsObj = JSON.parse(workspace.settings)
+        if (settingsObj.customViews) {
+          customViews = settingsObj.customViews
+        }
+        if (settingsObj.customViewsOrder) {
+          orderIds = settingsObj.customViewsOrder
         }
       } catch (e) {
-        console.error("Lỗi đọc custom views từ localStorage:", e)
+        console.error("Lỗi đọc custom views từ settings:", e)
       }
     }
     
-    return [...defaultViews, ...customViews]
+    const allViews = [...defaultViews, ...customViews]
+    
+    if (orderIds.length > 0) {
+      allViews.sort((a, b) => {
+        const indexA = orderIds.indexOf(a.id)
+        const indexB = orderIds.indexOf(b.id)
+        if (indexA !== -1 && indexB !== -1) {
+          return indexA - indexB
+        }
+        if (indexA !== -1) return -1
+        if (indexB !== -1) return 1
+        return (a.position ?? 0) - (b.position ?? 0)
+      })
+    } else {
+      allViews.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+    }
+    
+    return allViews
+  },
+
+  async reorderViews(workspaceId: string, orderedViewIds: string[]): Promise<void> {
+    const workspace = await this.getWorkspace(workspaceId)
+    let settingsObj: any = {}
+    if (workspace.settings) {
+      try {
+        settingsObj = JSON.parse(workspace.settings)
+      } catch (e) {
+        console.error("Lỗi parse settings:", e)
+      }
+    }
+    settingsObj.customViewsOrder = orderedViewIds
+    await api.patch(endpoints.workspaces.detail(workspaceId), {
+      settings: JSON.stringify(settingsObj)
+    })
   },
 
   async getSnapshot(workspaceId: string): Promise<WorkspaceSnapshot> {
@@ -266,17 +307,23 @@ export const workspaceService = {
       updatedAt: now,
     }
     
-    if (typeof window !== "undefined") {
+    const workspace = await this.getWorkspace(input.workspaceId)
+    let settingsObj: any = {}
+    if (workspace.settings) {
       try {
-        const stored = localStorage.getItem(`custom_views_${input.workspaceId}`)
-        const currentViews: WorkspaceView[] = stored ? JSON.parse(stored) : []
-        currentViews.push(view)
-        localStorage.setItem(`custom_views_${input.workspaceId}`, JSON.stringify(currentViews))
+        settingsObj = JSON.parse(workspace.settings)
       } catch (e) {
-        console.error("Lỗi ghi custom view vào localStorage:", e)
+        console.error("Lỗi parse settings:", e)
       }
     }
     
+    const currentViews: WorkspaceView[] = settingsObj.customViews || []
+    currentViews.push(view)
+    settingsObj.customViews = currentViews
+    
+    await api.patch(endpoints.workspaces.detail(input.workspaceId), {
+      settings: JSON.stringify(settingsObj)
+    })
     return view
   },
 
@@ -298,7 +345,7 @@ export const workspaceService = {
     return mapWorkspaceDto(res)
   },
 
-  async updateWorkspace(workspaceId: string, input: { name: string; slug: string }): Promise<WorkspaceSummary> {
+  async updateWorkspace(workspaceId: string, input: { name?: string; slug?: string; settings?: string }): Promise<WorkspaceSummary> {
     const res = await api.patch<WorkspaceDtoApi>(endpoints.workspaces.detail(workspaceId), input)
     return mapWorkspaceDto(res)
   },

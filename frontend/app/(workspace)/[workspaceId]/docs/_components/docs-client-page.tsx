@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useDocsOverview, usePageList, usePageTree } from "@/features/docs/hooks/use-page-tree"
 import { useFavorites } from "@/features/docs/hooks/use-favorites"
 import { mockDocsWorkspace } from "@/features/docs/mock/mock-data"
+import { useWorkspaceTabbedRoute } from "../../_components/shell/workspace-tabbed-shell"
 import { PageTree } from "./page-tree"
 import { DocsToolbar } from "./docs-toolbar"
 import { DocsOverview } from "./docs-overview"
@@ -16,10 +17,12 @@ import { FavoritesSection } from "./favorites-section"
 import { DocsSearch } from "./docs-search"
 
 interface DocsClientPageProps {
-  workspaceId: string
+  workspaceId?: string
 }
 
-export function DocsClientPage({ workspaceId }: DocsClientPageProps) {
+export function DocsClientPage({ workspaceId: workspaceIdProp }: DocsClientPageProps) {
+  const route = useWorkspaceTabbedRoute()
+  const workspaceId = workspaceIdProp ?? route.workspaceId
   const { data: tree = [], isLoading: treeLoading } = usePageTree(workspaceId)
   const { data: pageList = [], isLoading: listLoading } = usePageList(workspaceId)
   const { data: favorites = [] } = useFavorites(workspaceId)
@@ -29,7 +32,7 @@ export function DocsClientPage({ workspaceId }: DocsClientPageProps) {
   const isLoading = treeLoading || listLoading
 
   return (
-    <main className="mx-auto max-w-[1380px] px-4 py-5 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-[1380px] px-4 py-5 sm:px-6 lg:px-8">
       <section className="mb-5 overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-[rgba(205,208,223,0.25)_0px_2px_28px]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -84,7 +87,7 @@ export function DocsClientPage({ workspaceId }: DocsClientPageProps) {
           </aside>
         </div>
       )}
-    </main>
+    </div>
   )
 }
 

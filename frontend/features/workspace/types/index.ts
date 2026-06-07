@@ -33,6 +33,7 @@ export interface WorkspaceSummary {
   plan: "free" | "pro" | "business" | "enterprise"
   memberCount: number
   isPersonal: boolean
+  settings?: string
 }
 
 export interface WorkspaceViewTarget {
