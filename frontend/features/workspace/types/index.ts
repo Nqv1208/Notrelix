@@ -24,6 +24,21 @@ export interface WorkspaceMember {
   avatarUrl?: string
 }
 
+export interface WorkspaceInvitation {
+  id: string
+  token?: string
+  email: string
+  role: WorkspaceMember["role"]
+  expiresAt: string
+  isAccepted: boolean
+  isExpired?: boolean
+  createdAt: string
+  workspaceId?: string
+  workspaceSlug?: string
+  workspaceName?: string
+  inviterName?: string
+}
+
 export interface WorkspaceSummary {
   id: string
   slug: string
@@ -114,4 +129,21 @@ export interface UpdateWorkspaceViewInput {
   icon?: string
   config?: Partial<WorkspaceViewConfig>
   position?: number
+}
+
+export interface CreateWorkspaceInput {
+  name: string
+  slug: string
+  isPersonal: boolean
+}
+
+export interface UpdateWorkspaceInput {
+  name?: string
+  slug?: string
+  settings?: string
+}
+
+export interface CreateWorkspaceInvitationInput {
+  email: string
+  role: WorkspaceMember["role"] | string
 }

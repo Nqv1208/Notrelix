@@ -14,6 +14,9 @@ export const endpoints = {
   workspaces: {
     list: "/workspaces",
     detail: (workspaceId: string) => `/workspaces/${workspaceId}`,
+    invitationByToken: (token: string) => `/workspaces/invitations/by-token/${token}`,
+    acceptInvitation: (token: string) => `/workspaces/invitations/accept/${token}`,
+    pendingInvitations: "/workspaces/invitations/pending",
   },
   pages: {
     list: (workspaceId: string) => `/workspaces/${workspaceId}/pages`,

@@ -1,6 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
+import { queryKeys } from "@/lib/query/query-keys"
 import { authService } from "@/features/auth/api/auth.service"
 import { ApiError } from "@/lib/api/api-error"
 
@@ -17,7 +18,7 @@ export function useAuthUser() {
   // }, [])
 
   const profileQuery = useQuery({
-    queryKey: ["auth", "profile"],
+    queryKey: queryKeys.auth.profile,
     queryFn: () => authService.profile(),
     // enabled: Boolean(accessToken),
     retry: false,

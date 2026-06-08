@@ -15,8 +15,6 @@ export const routes = {
     calendar: "/dashboard/calendar",
     settings: "/dashboard/settings",
     trash: "/dashboard/trash",
-    // workspacePage: (workspaceId: string, pageId: string) =>
-    //   `/dashboard/workspace/${workspaceId}/page/${pageId}`,
   },
   account: {
     root: '/account',
