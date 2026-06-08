@@ -14,7 +14,8 @@ export function useNotifications() {
     queryFn: () => notificationsService.list(),
     enabled: isAuthenticated,
     staleTime: 15 * 1000, // 15 seconds
-    refetchInterval: 20 * 1000, // Refetch every 20 seconds
+    // refetchInterval: 20 * 1000, // Refetch every 20 seconds
+    // refetchIntervalInBackground: false,
   })
 }
 

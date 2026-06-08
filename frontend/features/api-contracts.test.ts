@@ -57,6 +57,42 @@ describe("frontend API contracts", () => {
     expect(offenders).toEqual([])
   })
 
+  test("workspace API modules do not import other feature domains", () => {
+    const files = sourceFiles(join(frontendRoot, "features", "workspace", "api"))
+      .filter((file) => !file.endsWith(".test.ts"))
+
+    const offenders = files
+      .map((file) => ({
+        file,
+        source: readFileSync(file, "utf8"),
+      }))
+      .filter(({ source }) =>
+        source.includes("@/features/boards") ||
+        source.includes("@/features/docs")
+      )
+      .map(({ file }) => file.replace(frontendRoot, "frontend/"))
+
+    expect(offenders).toEqual([])
+  })
+
+  test("workspace API modules do not hard-code the API version prefix", () => {
+    const files = sourceFiles(join(frontendRoot, "features", "workspace", "api"))
+      .filter((file) => !file.endsWith(".test.ts"))
+
+    const offenders = files
+      .map((file) => ({
+        file,
+        source: readFileSync(file, "utf8"),
+      }))
+      .filter(({ source }) =>
+        source.includes("\"/api/v1") ||
+        source.includes("'/api/v1")
+      )
+      .map(({ file }) => file.replace(frontendRoot, "frontend/"))
+
+    expect(offenders).toEqual([])
+  })
+
   test("board table runtime uses split api modules and workspaceId route naming", () => {
     const requiredApiFiles = [
       "board.api.ts",

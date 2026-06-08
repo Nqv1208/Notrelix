@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { AppHeader } from "@/app/(dashboard)/_components/app-header"
 import { WorkspaceSidebar } from "./workspace-sidebar"
+import { WorkspaceTabbedRouteFrame } from "./workspace-tabbed-shell"
 
 export function WorkspaceShell({ workspaceId, children }: { workspaceId: string; children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false)
@@ -39,8 +40,8 @@ export function WorkspaceShell({ workspaceId, children }: { workspaceId: string;
           onCollapse={() => setCollapsed(true)}
           onExpand={() => setCollapsed(false)}
         />
-        <div className="min-w-0 flex-1 bg-background h-full">
-          <div className="h-full overflow-auto">{children}</div>
+        <div className="min-w-0 flex-1 bg-card h-full">
+          <WorkspaceTabbedRouteFrame workspaceId={workspaceId}>{children}</WorkspaceTabbedRouteFrame>
         </div>
       </div>
     </div>

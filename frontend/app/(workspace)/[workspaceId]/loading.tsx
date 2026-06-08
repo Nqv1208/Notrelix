@@ -1,6 +1,6 @@
 export default function WorkspaceLoading() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-card">
       <div className="mx-auto max-w-[1360px] px-6 lg:px-8 py-6 space-y-8 animate-pulse">
         {/* Header Skeleton */}
         <div className="flex items-center justify-between">

@@ -10,7 +10,7 @@ export default function WorkspaceError({
   reset: () => void
 }) {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-6">
+    <div className="min-h-screen bg-card flex items-center justify-center px-6">
       <div className="flex flex-col items-center text-center max-w-sm space-y-4">
         <div className="flex items-center justify-center size-14 rounded-2xl bg-red-50 dark:bg-red-950/30">
           <AlertCircle className="size-7 text-red-600 dark:text-red-400 stroke-[1.5]" />

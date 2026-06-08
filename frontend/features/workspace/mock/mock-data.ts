@@ -106,14 +106,14 @@ export const mockWorkspaceSnapshot: WorkspaceSnapshot = {
   ],
   views: mockWorkspaceViews,
   favorites: [
-    { id: "fav-table", title: "Product delivery", type: "view", icon: "▦", href: `/${workspaceId}?view=table` },
-    { id: "fav-doc", title: "Docs MVP specification", type: "doc", icon: "□", href: `/${workspaceId}?view=doc` },
-    { id: "fav-dashboard", title: "Workspace health", type: "dashboard", icon: "◌", href: `/${workspaceId}?view=dashboard` },
+    { id: "fav-table", title: "Product delivery", type: "view", icon: "▦", href: `/${workspaceId}/boards/board-product?view=table` },
+    { id: "fav-doc", title: "Docs MVP specification", type: "doc", icon: "□", href: `/${workspaceId}/docs/docs-mvp-spec` },
+    { id: "fav-dashboard", title: "Workspace health", type: "dashboard", icon: "◌", href: `/${workspaceId}/dashboard` },
   ],
   recent: [
-    { id: "recent-table", title: "Main table", type: "view", icon: "▦", href: `/${workspaceId}?view=table`, updatedAt: "12m ago" },
+    { id: "recent-table", title: "Main table", type: "view", icon: "▦", href: `/${workspaceId}/boards/board-product?view=table`, updatedAt: "12m ago" },
     { id: "recent-chat", title: "Project room", type: "chat", icon: "#", href: `/${workspaceId}/chat`, updatedAt: "18m ago" },
-    { id: "recent-roadmap", title: "Roadmap planning", type: "board", icon: "▥", href: `/${workspaceId}/boards/board-roadmap`, updatedAt: "1h ago" },
+    { id: "recent-roadmap", title: "Roadmap planning", type: "board", icon: "▥", href: `/${workspaceId}/boards/board-roadmap?view=table`, updatedAt: "1h ago" },
     { id: "recent-q3", title: "Q3 operating plan", type: "doc", icon: "□", href: `/${workspaceId}/docs/q3-operating-plan`, updatedAt: "2h ago" },
   ],
   activity: [

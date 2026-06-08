@@ -8,9 +8,15 @@ export const endpoints = {
     resetPassword: "/auth/reset-password",
     profile: "/auth/me",
   },
+  users: {
+    updateProfile: "/users/profile",
+  },
   workspaces: {
     list: "/workspaces",
     detail: (workspaceId: string) => `/workspaces/${workspaceId}`,
+    invitationByToken: (token: string) => `/workspaces/invitations/by-token/${token}`,
+    acceptInvitation: (token: string) => `/workspaces/invitations/accept/${token}`,
+    pendingInvitations: "/workspaces/invitations/pending",
   },
   pages: {
     list: (workspaceId: string) => `/workspaces/${workspaceId}/pages`,

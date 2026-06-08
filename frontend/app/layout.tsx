@@ -4,6 +4,7 @@ import { Poppins, Inter } from "next/font/google"
 import { QueryProvider } from "./providers"
 import { NextIntlClientProvider } from "next-intl"
 import { getLocale, getMessages } from "next-intl/server"
+import { colorThemeScript } from "@/features/theme/color-theme-script"
 
 const poppins = Poppins({
   subsets: ["latin", "latin-ext"],
@@ -29,6 +30,9 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} suppressHydrationWarning className={`${poppins.variable} ${inter.variable}`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: colorThemeScript }} />
+      </head>
       <body className={inter.className}>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <QueryProvider>

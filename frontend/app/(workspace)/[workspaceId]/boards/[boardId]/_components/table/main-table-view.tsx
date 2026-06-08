@@ -113,10 +113,10 @@ export function MainTableView({ boardId, workspaceId }: { boardId: string; works
   const board = table.board
 
   return (
-    <div data-slot="main-table" className="h-full min-h-0 overflow-hidden bg-background">
+    <div data-slot="main-table" className="h-full min-h-0 overflow-hidden bg-card">
       <ResizablePanelGroup direction="horizontal" className="h-full min-h-0">
         <ResizablePanel id="main-table" defaultSize={hasDesktopPanel ? "60%" : "100%"} minSize="40%">
-          <section className="flex h-full min-h-0 flex-col overflow-hidden bg-background" aria-label={`${board.title} main table`}>
+          <section className="flex h-full min-h-0 flex-col overflow-hidden bg-card" aria-label={`${board.title} main table`}>
             <MainTableToolbar
               table={table}
               boardId={boardId}
@@ -215,7 +215,7 @@ function MainTableToolbar({
   const createColumn = useCreateColumn(boardId, workspaceId)
 
   return (
-    <div className="flex min-h-14 shrink-0 flex-wrap items-center gap-2 bg-background px-4 py-2 sm:px-6">
+    <div className="flex min-h-14 shrink-0 flex-wrap items-center gap-2 bg-card px-4 py-2 sm:px-6">
       <div className="relative w-full max-w-xs">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -346,7 +346,7 @@ function MainTableToolbar({
 
 function MainTableSkeleton() {
   return (
-    <div className="h-full min-h-0 bg-background p-4">
+    <div className="h-full min-h-0 bg-card p-4">
       <div className="border border-border bg-card p-4">
         <Skeleton className="mb-4 h-10 rounded-lg" />
         <div className="flex flex-col gap-2">

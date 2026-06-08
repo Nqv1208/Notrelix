@@ -1,18 +1,20 @@
 "use client"
 
 import Link from "next/link"
-import { useMemo, useCallback } from "react"
-import { AlertCircle, CalendarDays, Clock3, FileText, Gauge, MessageSquareText, SquareKanban, Users } from "lucide-react"
-import { BoardKanbanView } from "@/app/(workspace)/[workspaceId]/boards/[boardId]/_components/workbench/board-kanban-view"
+import { useMemo } from "react"
+import { AlertCircle, Clock3, FileText, Gauge, MessageSquareText, SquareKanban, Users } from "lucide-react"
+import { BoardCalendarView } from "@/app/(workspace)/[workspaceId]/boards/[boardId]/_components/views/board-calendar-view"
+import { BoardKanbanView } from "@/app/(workspace)/[workspaceId]/boards/[boardId]/_components/views/board-kanban-view"
+import { BoardTimelineView } from "@/app/(workspace)/[workspaceId]/boards/[boardId]/_components/views/board-timeline-view"
 import { MondayDocEditor } from "@/app/(workspace)/[workspaceId]/docs/[pageId]/_components/editor/monday-doc-editor"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useFullBoard, useResolvedWorkspaceBoard, useWorkspaceBoards } from "@/features/boards/hooks"
+import type { Board } from "@/features/boards/types"
 import { usePageList } from "@/features/docs/hooks/use-page-tree"
-import type { Card } from "@/features/boards/types"
 import type { WorkspaceSnapshot, WorkspaceView } from "@/features/workspace/types"
+import { getWorkspaceBoardHref, getWorkspaceBoardsHref } from "@/features/workspace/utils/workspace-routes"
 import { MainTableView } from "@/app/(workspace)/[workspaceId]/boards/[boardId]/_components/table/main-table-view"
 
 export function WorkspaceViewContent({
@@ -69,7 +71,7 @@ function WorkspaceKanbanBoardView({ boardId, workspaceId }: { boardId: string; w
 
 function WorkspaceDocView({ pageId, workspaceId }: { pageId: string; workspaceId: string }) {
   return (
-    <div className="h-full min-h-[720px] bg-background">
+    <div className="h-full min-h-[720px] bg-card">
       <MondayDocEditor pageId={pageId} workspaceId={workspaceId} embedded showToolbar={false} showOpenFullDoc />
     </div>
   )
@@ -85,85 +87,13 @@ function WorkspaceCalendarView({
   const resolvedBoard = useResolvedWorkspaceBoard({ workspaceId, requestedBoardId: view.target.boardId })
   const { groups, isLoading: isBoardLoading, error: boardError } = useFullBoard(resolvedBoard.boardId, workspaceId)
 
-  // Get current week days (Monday to Friday)
-  const currentWeekDays = useMemo(() => {
-    const today = new Date()
-    const dayOfWeek = today.getDay() // 0 = Sun, 1 = Mon, ...
-    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
-    const monday = new Date(today)
-    monday.setDate(today.getDate() + mondayOffset)
-
-    return Array.from({ length: 5 }).map((_, i) => {
-      const date = new Date(monday)
-      date.setDate(monday.getDate() + i)
-      return date
-    })
-  }, [])
-
-  const cards = useMemo(() => {
-    return groups.flatMap((group) => group.cards.map((card) => ({ ...card, groupTitle: group.title })))
-  }, [groups])
-
-  // Group cards by day (Mon-Fri)
-  const cardsByDay = useMemo(() => {
-    const result: Record<number, typeof cards> = { 0: [], 1: [], 2: [], 3: [], 4: [] }
-    let fallbackIndex = 0
-
-    cards.forEach((card) => {
-      let placed = false
-      if (card.dueDate) {
-        try {
-          const cardDate = new Date(card.dueDate)
-          currentWeekDays.forEach((day, index) => {
-            if (cardDate.toDateString() === day.toDateString()) {
-              result[index].push(card)
-              placed = true
-            }
-          })
-        } catch {}
-      }
-      // Fallback: if card has no date or falls outside this week, distribute it evenly
-      if (!placed) {
-        result[fallbackIndex % 5].push(card)
-        fallbackIndex++
-      }
-    })
-    return result
-  }, [cards, currentWeekDays])
-
   if (resolvedBoard.isLoading || isBoardLoading) return <ViewSkeleton rows={6} />
   if (resolvedBoard.error || boardError) return <ViewError title="Calendar unavailable" />
   if (resolvedBoard.isEmpty || !resolvedBoard.boardId) return <ViewEmptyBoard />
 
   return (
     <div className="p-4 sm:p-6">
-      <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <div>
-            <h2 className="text-sm font-semibold text-foreground">Workspace calendar</h2>
-            <p className="text-xs text-muted-foreground">Unified deadlines from board cards and linked docs.</p>
-          </div>
-          <Badge variant="secondary" className="rounded-full">{cards.length} scheduled</Badge>
-        </div>
-        <div className="grid min-w-[760px] grid-cols-5">
-          {currentWeekDays.map((day, index) => {
-            const dayStr = day.toLocaleDateString("en-US", { weekday: "short", day: "numeric" })
-            return (
-              <div key={day.toISOString()} className="min-h-[520px] border-r border-border p-3 last:border-r-0">
-                <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-                  <CalendarDays className="size-3.5" />
-                  {dayStr}
-                </div>
-                <div className="space-y-2">
-                  {cardsByDay[index].map((card) => (
-                    <CalendarCard key={card.id} card={card} groupTitle={card.groupTitle} />
-                  ))}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </section>
+      <BoardCalendarView groups={groups} />
     </div>
   )
 }
@@ -178,80 +108,13 @@ function WorkspaceTimelineView({
   const resolvedBoard = useResolvedWorkspaceBoard({ workspaceId, requestedBoardId: view.target.boardId })
   const { groups, isLoading: isBoardLoading, error: boardError } = useFullBoard(resolvedBoard.boardId, workspaceId)
 
-  // 6 week range starting from Monday of current week
-  const { timelineStart, timelineEnd, weeks } = useMemo(() => {
-    const today = new Date()
-    const dayOfWeek = today.getDay()
-    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
-    const timelineStart = new Date(today)
-    timelineStart.setDate(today.getDate() + mondayOffset)
-    timelineStart.setHours(0, 0, 0, 0)
-
-    const timelineEnd = new Date(timelineStart)
-    timelineEnd.setDate(timelineStart.getDate() + 42) // 6 weeks = 42 days
-
-    const weeks = Array.from({ length: 6 }).map((_, i) => `Week ${i + 1}`)
-    return { timelineStart, timelineEnd, weeks }
-  }, [])
-
-  const cards = useMemo(() => {
-    return groups.flatMap((group) => group.cards.map((card) => ({ ...card, groupTitle: group.title }))).slice(0, 10)
-  }, [groups])
-
-  const getTimelineBarStyles = useCallback((card: any, index: number) => {
-    let start = new Date(card.startDate || new Date())
-    let end = new Date(card.dueDate || new Date())
-
-    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
-      const width = 20 + (index % 4) * 15
-      const margin = (index % 3) * 10
-      return { width: `${width}%`, marginLeft: `${margin}%` }
-    }
-
-    const totalDuration = timelineEnd.getTime() - timelineStart.getTime()
-    const cardStartOffset = start.getTime() - timelineStart.getTime()
-    const cardDuration = end.getTime() - start.getTime()
-
-    const marginLeftPct = Math.max(0, Math.min(100, (cardStartOffset / totalDuration) * 100))
-    const widthPct = Math.max(5, Math.min(100 - marginLeftPct, (cardDuration / totalDuration) * 100))
-
-    return {
-      width: `${widthPct}%`,
-      marginLeft: `${marginLeftPct}%`,
-    }
-  }, [timelineStart, timelineEnd])
-
   if (resolvedBoard.isLoading || isBoardLoading) return <ViewSkeleton rows={7} />
   if (resolvedBoard.error || boardError) return <ViewError title="Timeline unavailable" />
   if (resolvedBoard.isEmpty || !resolvedBoard.boardId) return <ViewEmptyBoard />
 
   return (
     <div className="p-4 sm:p-6">
-      <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-        <div className="grid min-w-[900px] grid-cols-[260px_repeat(6,minmax(96px,1fr))] border-b border-border bg-muted px-4 py-3 text-xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-          <div>Item</div>
-          {weeks.map((week) => <div key={week}>{week}</div>)}
-        </div>
-        <div className="min-w-[900px]">
-          {cards.map((card, index) => {
-            const barStyle = getTimelineBarStyles(card, index)
-            return (
-              <div key={card.id} className="grid min-h-14 grid-cols-[260px_repeat(6,minmax(96px,1fr))] items-center border-b border-border px-4 last:border-b-0">
-                <div className="min-w-0 pr-4">
-                  <p className="truncate text-sm font-medium text-foreground">{card.title}</p>
-                  <p className="text-xs text-muted-foreground">{card.groupTitle}</p>
-                </div>
-                <div className="col-span-6 h-3 rounded-full bg-muted">
-                  <div
-                    className="h-3 rounded-full bg-primary"
-                    style={barStyle}
-                  />
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </section>
+      <BoardTimelineView groups={groups} />
     </div>
   )
 }
@@ -262,6 +125,8 @@ function WorkspaceDashboardView({ workspaceId, snapshot }: { workspaceId: string
 
   const boardsCount = boardsQuery.data?.length ?? 0
   const docsCount = pagesQuery.data?.length ?? 0
+  const primaryBoardId = boardsQuery.data?.[0]?.id
+  const openTableHref = primaryBoardId ? getWorkspaceBoardHref(workspaceId, primaryBoardId) : getWorkspaceBoardsHref(workspaceId)
 
   const metrics = useMemo(() => [
     { label: "Views", value: snapshot.views.length.toString(), detail: "Workspace tabs", icon: Gauge },
@@ -293,13 +158,13 @@ function WorkspaceDashboardView({ workspaceId, snapshot }: { workspaceId: string
               <p className="text-xs text-muted-foreground">Current activity across views and project resources.</p>
             </div>
             <Button asChild variant="outline" size="sm" className="bg-card">
-              <Link href={`/${workspaceId}?view=table` as never}>Open table</Link>
+              <Link href={openTableHref as never}>Open table</Link>
             </Button>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
-            {(boardsQuery.data ?? []).slice(0, 3).map((board: any, index: number) => (
+            {(boardsQuery.data ?? []).slice(0, 3).map((board: Board, index: number) => (
               <div key={board.id} className="rounded-xl border border-border bg-muted/45 p-4">
-                <h3 className="mb-3 text-sm font-semibold text-foreground">{board.name}</h3>
+                <h3 className="mb-3 text-sm font-semibold text-foreground">{board.title}</h3>
                 <Progress value={[68, 43, 81][index % 3]} />
                 <p className="mt-3 text-xs text-muted-foreground">Active work stream</p>
               </div>
@@ -333,18 +198,6 @@ function WorkspaceDashboardView({ workspaceId, snapshot }: { workspaceId: string
             </div>
           </section>
         </aside>
-      </div>
-    </div>
-  )
-}
-
-function CalendarCard({ card, groupTitle }: { card: Card; groupTitle: string }) {
-  return (
-    <div className="rounded-xl border border-border bg-muted p-3">
-      <p className="line-clamp-2 text-sm font-medium text-foreground">{card.title}</p>
-      <div className="mt-3 flex items-center justify-between gap-2">
-        <Badge variant="secondary" className="rounded-full">{groupTitle}</Badge>
-        <span className="text-xs text-muted-foreground">{card.dueDate?.slice(5, 10)}</span>
       </div>
     </div>
   )

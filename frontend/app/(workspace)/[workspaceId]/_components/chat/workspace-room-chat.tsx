@@ -72,7 +72,7 @@ export function WorkspaceRoomChat({ members, messages }: WorkspaceRoomChatProps)
   return (
     <main
       className={cn(
-        "relative grid h-full min-h-0 bg-background text-foreground transition-[grid-template-columns]",
+        "relative grid h-full min-h-0 bg-card text-foreground transition-[grid-template-columns]",
         detailsOpen ? "xl:grid-cols-[minmax(0,1fr)_340px]" : "xl:grid-cols-[minmax(0,1fr)_0px]"
       )}
     >

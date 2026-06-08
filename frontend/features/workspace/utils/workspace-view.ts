@@ -1,8 +1,12 @@
 import type { WorkspaceView, WorkspaceViewType } from "../types"
 import { getWorkspaceViewHref } from "./workspace-routes"
 
-export function getViewHref(workspaceId: string, view: Pick<WorkspaceView, "id" | "type">) {
-  return getWorkspaceViewHref(workspaceId, view)
+export function getViewHref(
+  workspaceId: string,
+  view: Pick<WorkspaceView, "id" | "type" | "target">,
+  options: { currentBoardId?: string } = {}
+) {
+  return getWorkspaceViewHref(workspaceId, view, options)
 }
 
 export function isWorkspaceViewType(value: string): value is WorkspaceViewType {

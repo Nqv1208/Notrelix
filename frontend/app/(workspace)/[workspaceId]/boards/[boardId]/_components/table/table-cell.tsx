@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { CalendarDays, FileText, MessageSquareText, Paperclip, Pencil, UserPlus } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -15,8 +16,9 @@ import {
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Progress } from "@/components/ui/progress"
-import { useBoardDocsPanel, useUpdateCard, useUpdateFieldValue } from "@/features/boards/hooks"
+import { useUpdateCard, useUpdateFieldValue } from "@/features/boards/hooks"
 import type { Board, BoardMember, Card, FieldDefinition, FieldOption } from "@/features/boards/types"
+import { getWorkspaceDocHref } from "@/features/workspace/utils/workspace-routes"
 import { cn } from "@/lib/utils"
 import { Calendar } from "@/components/ui/calendar"
 import { formatDate, getChecklistProgress, getOptionToneClass, toDateInputValue } from "./table-utils"
@@ -38,7 +40,7 @@ export function TableCell({
   if (field.fieldType === "date") return <DateCell card={card} field={field} />
   if (field.fieldType === "timeline") return <TimelineCell card={card} field={field} />
   if (field.fieldType === "checkbox") return <CheckboxCell card={card} field={field} />
-  if (field.fieldType === "linked_page") return <LinkedDocCell pageId={card.linkedPageId} />
+  if (field.fieldType === "linked_page") return <LinkedDocCell workspaceId={card.workspaceId} pageId={card.linkedPageId} />
   if (field.fieldType === "progress") return <ProgressCell card={card} />
 
   if (field.fieldType === "select") {
@@ -367,8 +369,7 @@ function TextFieldCell({ card, field }: { card: Card; field: FieldDefinition }) 
   )
 }
 
-function LinkedDocCell({ pageId }: { pageId?: string }) {
-  const { openDoc } = useBoardDocsPanel()
+function LinkedDocCell({ workspaceId, pageId }: { workspaceId: string; pageId?: string }) {
   if (!pageId) return <span className="text-sm text-muted-foreground">No doc</span>
 
   return (
@@ -376,13 +377,12 @@ function LinkedDocCell({ pageId }: { pageId?: string }) {
       variant="ghost"
       size="sm"
       className="h-8 max-w-full justify-start px-2 text-muted-foreground"
-      onClick={(event) => {
-        event.stopPropagation()
-        openDoc(pageId)
-      }}
+      asChild
     >
-      <FileText className="size-4 text-primary" />
-      <span className="truncate">{pageId}</span>
+      <Link href={getWorkspaceDocHref(workspaceId, pageId) as never} onClick={(event) => event.stopPropagation()}>
+        <FileText className="size-4 text-primary" />
+        <span className="truncate">{pageId}</span>
+      </Link>
     </Button>
   )
 }

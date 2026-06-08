@@ -126,7 +126,7 @@ function DashboardToolbar() {
 
 function ToolbarShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-14 flex-wrap items-center gap-2 bg-background px-4 py-2 sm:px-6">
+    <div className="flex min-h-14 flex-wrap items-center gap-2 bg-card px-4 py-2 sm:px-6">
       {children}
     </div>
   )

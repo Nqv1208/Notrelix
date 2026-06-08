@@ -49,7 +49,7 @@ export function AppHeader({
     <>
       <header
         className={cn(
-          "sticky top-0 z-[80] flex h-12 shrink-0 items-center justify-between border-b border-border bg-app-header/95 px-4 shadow-sm backdrop-blur-xl",
+          "sticky top-0 z-[80] flex h-12 shrink-0 items-center justify-between bg-app-header/95 px-4 backdrop-blur-xl",
           className
         )}
       >

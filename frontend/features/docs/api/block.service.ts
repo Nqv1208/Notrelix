@@ -1,19 +1,7 @@
 import { api } from "@/lib/api/api-client"
 import { endpoints } from "@/lib/api/endpoints"
 import type { Block, BlockProperties, CreateBlockPayload, ReorderBlocksInput, UpdateBlockPayload } from "../types"
-
-type BlockDtoApi = {
-  id: string
-  pageId: string
-  parentBlockId?: string | null
-  type: Block["type"]
-  properties: string | BlockProperties
-  position: number
-  version: number
-  createdByUserId: string
-  createdAt: string
-  updatedAt?: string | null
-}
+import type { BlockDtoApi } from "../types/dto"
 
 function parseProperties(value: BlockDtoApi["properties"]): BlockProperties {
   if (typeof value === "object") return value
