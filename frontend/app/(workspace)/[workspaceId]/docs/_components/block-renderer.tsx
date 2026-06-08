@@ -1,6 +1,6 @@
 "use client"
 
-import type { Block } from "../types"
+import type { Block } from "@/features/docs/types"
 
 export function BlockRenderer({ block }: { block: Block }) {
   return (

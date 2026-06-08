@@ -1,6 +1,6 @@
 "use client"
 
-import type { BlockType } from "../types"
+import type { BlockType } from "@/features/docs/types"
 
 export function SlashCommandMenu({ onSelect }: { onSelect?: (type: BlockType) => void }) {
   return (
