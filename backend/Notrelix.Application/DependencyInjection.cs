@@ -28,6 +28,7 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(assembly);
 
         services.AddScoped<IWorkspacePermissionService, WorkspacePermissionService>();
+        services.AddSingleton<IN8nSignatureService, N8nSignatureService>();
 
         // AutoMapper
         services.AddAutoMapper(cfg => cfg.AddMaps(assembly), assembly);

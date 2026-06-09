@@ -10,6 +10,8 @@ namespace Notrelix.Infrastructure.Email
     {
         public const string SectionName = "Smtp";
 
+        public bool Enabled { get; init; }
+
         [Required]
         public string Host { get; init; } = string.Empty;
 
