@@ -12,7 +12,8 @@ public record WorkspaceDto(
     string? CoverUrl,
     bool IsArchived,
     int MemberCount,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    string? Settings
 );
 
 public record WorkspaceMemberDto(

@@ -18,7 +18,8 @@ public record UpdateWorkspaceCommand(
     string? Name,
     string? Description,
     string? IconType,
-    string? IconValue
+    string? IconValue,
+    string? Settings
 ) : IRequest<Result>;
 
 public class UpdateWorkspaceCommandHandler : IRequestHandler<UpdateWorkspaceCommand, Result>
@@ -45,6 +46,7 @@ public class UpdateWorkspaceCommandHandler : IRequestHandler<UpdateWorkspaceComm
                 : Domain.ValueObjects.Icon.FromName(request.IconValue);
             workspace.UpdateIcon(icon);
         }
+        if (request.Settings is not null) workspace.UpdateSettings(request.Settings);
 
         await _context.SaveChangesAsync(ct);
         return Result.Success();

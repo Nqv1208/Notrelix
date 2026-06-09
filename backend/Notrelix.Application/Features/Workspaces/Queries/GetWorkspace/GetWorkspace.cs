@@ -55,7 +55,8 @@ public class GetWorkspaceQueryHandler : IRequestHandler<GetWorkspaceQuery, Resul
             workspace.CoverUrl,
             workspace.IsArchived,
             memberCount,
-            workspace.CreatedAt
+            workspace.CreatedAt,
+            workspace.Settings
         ));
     }
 }
