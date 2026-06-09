@@ -1,33 +1,25 @@
 import {
-  LandingV2BentoCollab,
-  LandingV2BentoWorkflows,
-  LandingV2Enterprise,
-  LandingV2FeatureOwn,
-  LandingV2FinalCta,
   LandingV2Footer,
   LandingV2Header,
-  LandingV2Hero,
   LandingV2LogoCloud,
-  LandingV2LovedByBuilders,
-  LandingV2MoreFeatures,
-  LandingV2PricingTeaser,
 } from "@/app/(app)/v2/_components"
+import { LandingHero } from "@/components/marketing/LandingHero"
+import { FeatureGrid } from "@/components/marketing/FeatureGrid"
+import { EnterpriseSection } from "@/components/marketing/EnterpriseSection"
+import { UseCaseSection } from "@/components/marketing/UseCaseSection"
+import { FinalCTA } from "@/components/marketing/FinalCTA"
 
 export default function LandingV2Page() {
   return (
     <>
       <LandingV2Header />
       <main>
-        <LandingV2Hero />
+        <LandingHero />
         <LandingV2LogoCloud />
-        <LandingV2FeatureOwn />
-        <LandingV2BentoWorkflows />
-        <LandingV2BentoCollab />
-        <LandingV2Enterprise />
-        <LandingV2MoreFeatures />
-        <LandingV2LovedByBuilders />
-        <LandingV2PricingTeaser />
-        <LandingV2FinalCta />
+        <FeatureGrid />
+        <EnterpriseSection />
+        <UseCaseSection />
+        <FinalCTA />
       </main>
       <LandingV2Footer />
     </>

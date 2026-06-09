@@ -4,7 +4,7 @@ import Link from "next/link"
 import { ArrowUpRight, RefreshCw, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useWorkspaceList } from "@/features/workspace/hooks/use-workspace"
+import { useWorkspaceList } from "@/features/workspace/hooks"
 import type { WorkspaceSummary } from "@/features/workspace/types"
 import { getWorkspaceRootHref } from "@/features/workspace/utils/workspace-routes"
 

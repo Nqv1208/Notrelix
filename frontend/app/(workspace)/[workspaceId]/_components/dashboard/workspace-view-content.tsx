@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useMemo } from "react"
 import { AlertCircle, Clock3, FileText, Gauge, MessageSquareText, SquareKanban, Users } from "lucide-react"
 import { BoardCalendarView } from "@/app/(workspace)/[workspaceId]/boards/[boardId]/_components/views/board-calendar-view"
-import { BoardKanbanView } from "@/app/(workspace)/[workspaceId]/boards/[boardId]/_components/views/board-kanban-view"
+import { KanbanView } from "../kanban/kanban-view"
 import { BoardTimelineView } from "@/app/(workspace)/[workspaceId]/boards/[boardId]/_components/views/board-timeline-view"
 import { MondayDocEditor } from "@/app/(workspace)/[workspaceId]/docs/[pageId]/_components/editor/monday-doc-editor"
 import { Button } from "@/components/ui/button"
@@ -53,20 +53,7 @@ function WorkspaceBoardView({
   if (resolvedBoard.isEmpty || !resolvedBoard.boardId) return <ViewEmptyBoard />
   if (mode === "table") return <MainTableView boardId={resolvedBoard.boardId} workspaceId={workspaceId} />
 
-  return <WorkspaceKanbanBoardView boardId={resolvedBoard.boardId} workspaceId={workspaceId} />
-}
-
-function WorkspaceKanbanBoardView({ boardId, workspaceId }: { boardId: string; workspaceId: string }) {
-  const { board, groups, isLoading, error } = useFullBoard(boardId, workspaceId)
-
-  if (isLoading) return <ViewSkeleton rows={4} />
-  if (error || !board) return <ViewError title="Board unavailable" />
-
-  return (
-    <div className="p-4 sm:p-6">
-      <BoardKanbanView board={board} groups={groups} />
-    </div>
-  )
+  return <KanbanView boardId={resolvedBoard.boardId} workspaceId={workspaceId} />
 }
 
 function WorkspaceDocView({ pageId, workspaceId }: { pageId: string; workspaceId: string }) {
