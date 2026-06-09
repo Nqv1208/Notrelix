@@ -14,6 +14,7 @@ public class CardConfiguration : IEntityTypeConfiguration<Card>
 
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.ListId).HasColumnName("list_id");
+        builder.Property(x => x.LinkedPageId).HasColumnName("linked_page_id");
         builder.Property(x => x.CreatedByUserId).HasColumnName("created_by");
         builder.Property(x => x.Title).HasColumnName("title").HasMaxLength(500);
         builder.Property(x => x.DescriptionMd).HasColumnName("description_md");
@@ -40,7 +41,15 @@ public class CardConfiguration : IEntityTypeConfiguration<Card>
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 
-        builder.HasOne(x => x.List).WithMany().HasForeignKey(x => x.ListId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(x => x.List)
+            .WithMany(l => l.Cards)
+            .HasForeignKey(x => x.ListId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(x => x.LinkedPage)
+            .WithMany()
+            .HasForeignKey(x => x.LinkedPageId)
+            .OnDelete(DeleteBehavior.SetNull);
         
         builder.HasMany(x => x.Members)
             .WithOne(m => m.Card)

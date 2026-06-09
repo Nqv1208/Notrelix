@@ -49,7 +49,8 @@ public class GetUserWorkspacesQueryHandler : IRequestHandler<GetUserWorkspacesQu
         var result = workspaces.Select(w => new WorkspaceDto(
             w.Id, w.Name, w.Slug, w.Description, w.IsPersonal,
             w.Plan.ToString(), w.Icon.Type.ToString(), w.Icon.Value,
-            w.CoverUrl, w.IsArchived, memberCounts.GetValueOrDefault(w.Id), w.CreatedAt
+            w.CoverUrl, w.IsArchived, memberCounts.GetValueOrDefault(w.Id), w.CreatedAt,
+            w.Settings
         )).ToList();
 
         return Result<List<WorkspaceDto>>.Success(result);

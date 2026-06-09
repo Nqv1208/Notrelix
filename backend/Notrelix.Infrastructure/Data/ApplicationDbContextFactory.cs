@@ -14,7 +14,7 @@ namespace Notrelix.Infrastructure.Data
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
 
         optionsBuilder.UseNpgsql(
-            "Host=localhost;Port=5432;Database=notrelix;Username=postgres;Password=postgres"
+            "Host=127.0.0.1;Port=5432;Database=notrelix_dev;Username=postgres;Password=postgres"
         );
 
         return new ApplicationDbContext(optionsBuilder.Options);

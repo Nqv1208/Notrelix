@@ -26,6 +26,7 @@ public class PageConfiguration : IEntityTypeConfiguration<Page>
         builder.Property(x => x.IsDeleted).HasColumnName("is_deleted").HasDefaultValue(false);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.PublishedAt).HasColumnName("published_at");
+        builder.Property(x => x.Deadline).HasColumnName("deadline");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 

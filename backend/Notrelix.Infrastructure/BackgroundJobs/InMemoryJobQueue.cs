@@ -1,13 +1,18 @@
-using System.Collections.Concurrent;
+using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Common.Interfaces;
 
 namespace Notrelix.Infrastructure.BackgroundJobs;
 
-public sealed class InMemoryJobQueue : IJobQueue
+internal interface IBackgroundJobQueueReader
+{
+    ValueTask<object> DequeueAsync(CancellationToken cancellationToken = default);
+}
+
+public sealed class InMemoryJobQueue : IJobQueue, IBackgroundJobQueueReader
 {
     private readonly ILogger<InMemoryJobQueue> _logger;
-    private readonly ConcurrentQueue<QueuedJob> _jobs = new();
+    private readonly Channel<QueuedJob> _jobs = Channel.CreateUnbounded<QueuedJob>();
 
     public InMemoryJobQueue(ILogger<InMemoryJobQueue> logger)
     {
@@ -20,7 +25,7 @@ public sealed class InMemoryJobQueue : IJobQueue
         ArgumentNullException.ThrowIfNull(job);
         cancellationToken.ThrowIfCancellationRequested();
 
-        _jobs.Enqueue(new QueuedJob(job, DateTimeOffset.UtcNow));
+        _jobs.Writer.TryWrite(new QueuedJob(job, DateTimeOffset.UtcNow));
         _logger.LogInformation("Queued background job {JobType}", typeof(TJob).Name);
 
         return Task.CompletedTask;
@@ -32,13 +37,26 @@ public sealed class InMemoryJobQueue : IJobQueue
         ArgumentNullException.ThrowIfNull(job);
         cancellationToken.ThrowIfCancellationRequested();
 
-        _jobs.Enqueue(new QueuedJob(job, DateTimeOffset.UtcNow.Add(delay)));
+        _jobs.Writer.TryWrite(new QueuedJob(job, DateTimeOffset.UtcNow.Add(delay)));
         _logger.LogInformation(
             "Queued delayed background job {JobType} for {ScheduledAt}",
             typeof(TJob).Name,
             DateTimeOffset.UtcNow.Add(delay));
 
         return Task.CompletedTask;
+    }
+
+    public async ValueTask<object> DequeueAsync(CancellationToken cancellationToken = default)
+    {
+        var queuedJob = await _jobs.Reader.ReadAsync(cancellationToken);
+        var delay = queuedJob.ScheduledAt - DateTimeOffset.UtcNow;
+
+        if (delay > TimeSpan.Zero)
+        {
+            await Task.Delay(delay, cancellationToken);
+        }
+
+        return queuedJob.Job;
     }
 
     private sealed record QueuedJob(object Job, DateTimeOffset ScheduledAt);

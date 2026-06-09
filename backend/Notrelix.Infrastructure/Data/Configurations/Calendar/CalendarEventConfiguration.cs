@@ -10,18 +10,31 @@ public class CalendarEventConfiguration : IEntityTypeConfiguration<CalendarEvent
     {
         builder.ToTable("calendar_events");
 
-        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Id)
+            .HasColumnName("id");
+
+        builder.Property(e => e.IntegrationId)
+            .HasColumnName("integration_id");
 
         builder.Property(e => e.ExternalEventId)
+            .HasColumnName("external_event_id")
             .HasMaxLength(500)
             .IsRequired();
 
         builder.Property(e => e.ResourceType)
+            .HasColumnName("resource_type")
             .HasConversion<string>()
             .HasMaxLength(30);
 
+        builder.Property(e => e.ResourceId)
+            .HasColumnName("resource_id");
+
         builder.Property(e => e.SyncHash)
+            .HasColumnName("sync_hash")
             .HasMaxLength(128);
+
+        builder.Property(e => e.SyncedAt)
+            .HasColumnName("synced_at");
 
         // Unique: one mapping per integration + external event
         builder.HasIndex(e => new { e.IntegrationId, e.ExternalEventId })

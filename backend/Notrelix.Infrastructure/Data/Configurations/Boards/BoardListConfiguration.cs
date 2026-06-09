@@ -18,6 +18,8 @@ public class BoardListConfiguration : IEntityTypeConfiguration<BoardList>
         builder.Property(x => x.Position).HasColumnName("position");
         builder.Property(x => x.IsArchived).HasColumnName("is_archived").HasDefaultValue(false);
         builder.Property(x => x.IsCollapsed).HasColumnName("is_collapsed").HasDefaultValue(false);
+        builder.Property(x => x.CreatedBy).HasColumnName("created_by");
+        builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 

@@ -29,6 +29,7 @@ public static class DependencyInjection
         var configuration = builder.Configuration;
 
         services.Configure<SeedDataOptions>(configuration.GetSection("SeedData"));
+        services.Configure<N8nOptions>(configuration.GetSection("N8n"));
 
         services.AddDatabaseContext(configuration);
         services.AddRedisCache(configuration);
@@ -55,7 +56,17 @@ public static class DependencyInjection
         // Register new services
         services.AddScoped<IDateTimeProvider, DateTimeProvider>();
         services.AddScoped<INotificationService, RedisNotificationService>();
-        services.AddSingleton<IJobQueue, InMemoryJobQueue>();
+        services.AddSingleton<InMemoryJobQueue>();
+        services.AddSingleton<IJobQueue>(provider => provider.GetRequiredService<InMemoryJobQueue>());
+        services.AddSingleton<IBackgroundJobQueueReader>(provider => provider.GetRequiredService<InMemoryJobQueue>());
+        services.AddScoped<N8nDispatchService>();
+        services.AddHostedService<QueuedJobWorker>();
+        services.AddHttpClient<IN8nClient, N8nClient>((_, client) =>
+        {
+            var baseUrl = configuration.GetSection("N8n")["InternalBaseUrl"] ?? "http://n8n:5678";
+            client.BaseAddress = new Uri(baseUrl);
+            client.Timeout = TimeSpan.FromSeconds(15);
+        });
         
         // Register Interceptors
         services.AddScoped<AuditableEntityInterceptor>();
@@ -112,8 +123,19 @@ public static class DependencyInjection
             .Bind(configuration.GetSection("Smtp"))
             .ValidateDataAnnotations()
             .ValidateOnStart();
-        
-        services.AddTransient<IEmailService, SmtpEmailService>();
+
+        var smtpOptions = configuration
+            .GetSection(SmtpOptions.SectionName)
+            .Get<SmtpOptions>() ?? new SmtpOptions();
+
+        if (smtpOptions.Enabled)
+        {
+            services.AddTransient<IEmailService, SmtpEmailService>();
+        }
+        else
+        {
+            services.AddTransient<IEmailService, NoopEmailService>();
+        }
         
         return services;
     }

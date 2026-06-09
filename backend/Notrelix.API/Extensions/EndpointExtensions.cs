@@ -7,6 +7,7 @@ using Notrelix.API.Endpoints.Cards;
 using Notrelix.API.Endpoints.Checklists;
 using Notrelix.API.Endpoints.Comments;
 using Notrelix.API.Endpoints.Document;
+using Notrelix.API.Endpoints.Extensibility;
 using Notrelix.API.Endpoints.Health;
 using Notrelix.API.Endpoints.Labels;
 using Notrelix.API.Endpoints.Lists;
@@ -71,6 +72,9 @@ public static class EndpointExtensions
 
         // Notifications
         app.MapNotificationEndpoints();
+
+        // Extensibility / Automations
+        app.MapAutomationEndpoints();
 
         return app;
     }

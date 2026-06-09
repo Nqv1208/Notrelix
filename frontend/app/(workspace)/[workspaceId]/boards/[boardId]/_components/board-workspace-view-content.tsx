@@ -7,7 +7,7 @@ import type { WorkspaceView } from "@/features/workspace/types"
 import { useWorkspaceTabbedRoute } from "../../../_components/shell/workspace-tabbed-shell"
 import { MainTableView } from "./table/main-table-view"
 import { BoardCalendarView } from "./views/board-calendar-view"
-import { BoardKanbanView } from "./views/board-kanban-view"
+import { KanbanView } from "../../../_components/kanban/kanban-view"
 import { BoardTimelineView } from "./views/board-timeline-view"
 
 export function BoardWorkspaceRouteContent() {
@@ -34,7 +34,7 @@ export function BoardWorkspaceViewContent({
   view: WorkspaceView
 }) {
   if (view.type === "table") return <MainTableView boardId={boardId} workspaceId={workspaceId} />
-  if (view.type === "kanban") return <BoardFullDataView workspaceId={workspaceId} boardId={boardId} mode="kanban" />
+  if (view.type === "kanban") return <KanbanView boardId={boardId} workspaceId={workspaceId} />
   if (view.type === "calendar") return <BoardFullDataView workspaceId={workspaceId} boardId={boardId} mode="calendar" />
   if (view.type === "timeline") return <BoardFullDataView workspaceId={workspaceId} boardId={boardId} mode="timeline" />
   return <UnsupportedBoardView view={view} />
@@ -56,7 +56,7 @@ function BoardFullDataView({
 
   return (
     <div className="h-full overflow-auto p-4 sm:p-6">
-      {mode === "kanban" ? <BoardKanbanView board={board} groups={groups} /> : null}
+      {mode === "kanban" ? <KanbanView boardId={board.id} workspaceId={workspaceId} /> : null}
       {mode === "calendar" ? <BoardCalendarView groups={groups} /> : null}
       {mode === "timeline" ? <BoardTimelineView groups={groups} /> : null}
     </div>
