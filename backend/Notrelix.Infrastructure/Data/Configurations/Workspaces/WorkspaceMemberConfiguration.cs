@@ -33,6 +33,9 @@ public class WorkspaceMemberConfiguration : IEntityTypeConfiguration<WorkspaceMe
             .HasColumnName("joined_at")
             .IsRequired();
 
+        builder.Property(m => m.InvitedBy)
+            .HasColumnName("invited_by");
+
         // Indexes - composite unique
         builder.HasIndex(m => new { m.WorkspaceId, m.UserId })
             .IsUnique();

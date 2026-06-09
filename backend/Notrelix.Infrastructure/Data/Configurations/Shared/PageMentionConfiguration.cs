@@ -10,7 +10,27 @@ public class PageMentionConfiguration : IEntityTypeConfiguration<PageMention>
     {
         builder.ToTable("page_mentions");
 
-        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Id)
+            .HasColumnName("id");
+
+        builder.Property(e => e.PageId)
+            .HasColumnName("page_id")
+            .IsRequired();
+
+        builder.Property(e => e.BlockId)
+            .HasColumnName("block_id");
+
+        builder.Property(e => e.MentionedUserId)
+            .HasColumnName("mentioned_user_id")
+            .IsRequired();
+
+        builder.Property(e => e.MentionedBy)
+            .HasColumnName("mentioned_by")
+            .IsRequired();
+
+        builder.Property(e => e.CreatedAt)
+            .HasColumnName("created_at")
+            .IsRequired();
 
         builder.HasIndex(e => e.PageId);
         builder.HasIndex(e => e.MentionedUserId);

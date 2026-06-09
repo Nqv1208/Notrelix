@@ -68,6 +68,9 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
             .HasColumnName("is_archived")
             .HasDefaultValue(false);
 
+        builder.Property(w => w.CoverUrl)
+            .HasColumnName("cover_url");
+
         // Audit fields
         builder.Property(w => w.CreatedAt)
             .HasColumnName("created_at");

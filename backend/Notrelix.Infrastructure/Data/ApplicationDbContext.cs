@@ -6,6 +6,7 @@ using Notrelix.Domain.Entities.Workspaces;
 using Notrelix.Domain.Entities.Document;
 using Notrelix.Domain.Entities.Boards;
 using Notrelix.Domain.Entities.Calendar;
+using Notrelix.Domain.Entities.Extensibility;
 using Notrelix.Domain.Entities.Shared;
 
 namespace Notrelix.Infrastructure.Data;
@@ -49,6 +50,12 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     // Calendar
     public DbSet<CalendarIntegration> CalendarIntegrations => Set<CalendarIntegration>();
     public DbSet<CalendarEvent> CalendarEvents => Set<CalendarEvent>();
+
+    // Extensibility
+    public DbSet<IntegrationConnection> IntegrationConnections => Set<IntegrationConnection>();
+    public DbSet<AutomationRule> AutomationRules => Set<AutomationRule>();
+    public DbSet<WebhookSubscription> WebhookSubscriptions => Set<WebhookSubscription>();
+    public DbSet<AutomationExecution> AutomationExecutions => Set<AutomationExecution>();
 
     // Shared
     public DbSet<Permission> Permissions => Set<Permission>();
