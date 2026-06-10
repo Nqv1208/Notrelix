@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.HttpOverrides;
+using Notrelix.Infrastructure;
 using Notrelix.Infrastructure.Data;
 using Notrelix.API.Middleware;
 using Notrelix.API.Extensions;
@@ -7,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services — NO AddControllers(), using Minimal API exclusively
 builder.AddInfrastructureServices();
+builder.Services.AddInfrastructure(builder.Configuration);
 builder.AddApplicationServices();
 builder.AddWebServices();
 

@@ -7,7 +7,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Resend;
 using StackExchange.Redis;
-using Notrelix.Application.Common.Interfaces;
+using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Caching;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Email;
@@ -19,10 +19,28 @@ using Notrelix.Infrastructure.Data.Interceptors;
 using Notrelix.Infrastructure.BackgroundJobs;
 using Notrelix.Infrastructure.Services;
 using Notrelix.Application.Common.Models;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace Microsoft.Extensions.DependencyInjection;
+namespace Notrelix.Infrastructure;
+
 public static class DependencyInjection
 {
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        // Placeholders for future tasks
+        // services.AddPersistence(configuration);
+        // services.AddCache(configuration);
+        // services.AddAuth(configuration);
+        // services.AddStorage(configuration);
+        // services.AddEmail(configuration);
+        // services.AddRealtime(configuration);
+        // services.AddBackgroundJobs(configuration);
+        
+        return services;
+    }
+
     public static void AddInfrastructureServices(this IHostApplicationBuilder builder)
     {
         var services = builder.Services;
@@ -139,23 +157,6 @@ public static class DependencyInjection
         
         return services;
     }
-
-    // public static IServiceCollection AddEmailService(
-    //     this IServiceCollection services, IConfiguration configuration)
-    // {
-    //     services.Configure<EmailSettings>(configuration.GetSection("Email"));
-
-    //     services.AddOptions();
-    //     services.AddHttpClient<ResendClient>();
-    //     services.Configure<ResendClientOptions>(o =>
-    //     {
-    //         o.ApiToken = configuration.GetSection("Email")["ApiKey"] ?? "";
-    //     });
-    //     services.AddTransient<IResend, ResendClient>();
-    //     services.AddTransient<IEmailService, ResendEmailService>();
-
-    //     return services;
-    // }
 
     public static IServiceCollection AddJwt(
         this IServiceCollection services, IConfiguration configuration)
