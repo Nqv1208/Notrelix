@@ -1,5 +1,5 @@
 using StackExchange.Redis;
-using Notrelix.Application.Common.Interfaces;
+using Notrelix.Application.Common.Abstractions;
 
 namespace Notrelix.Infrastructure.RateLimit;
 

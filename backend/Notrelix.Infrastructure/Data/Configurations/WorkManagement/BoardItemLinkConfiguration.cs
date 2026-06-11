@@ -1,0 +1,32 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Notrelix.Domain.WorkManagement.Items;
+
+namespace Notrelix.Infrastructure.Data.Configurations.WorkManagement;
+
+public class BoardItemLinkConfiguration : IEntityTypeConfiguration<BoardItemLink>
+{
+    public void Configure(EntityTypeBuilder<BoardItemLink> builder)
+    {
+        builder.ToTable("board_item_links");
+
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).HasColumnName("id");
+
+        builder.Property(x => x.SourceItemId).HasColumnName("source_item_id").IsRequired();
+        builder.Property(x => x.LinkType).HasColumnName("link_type").HasConversion<string>().IsRequired().HasMaxLength(50);
+
+        builder.OwnsOne(x => x.Target, target =>
+        {
+            target.Property(t => t.ResourceType).HasColumnName("target_type").IsRequired().HasMaxLength(50);
+            target.Property(t => t.ResourceId).HasColumnName("target_id").IsRequired();
+        });
+
+        builder.HasOne<BoardItem>()
+            .WithMany()
+            .HasForeignKey(x => x.SourceItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasIndex(x => x.SourceItemId).HasDatabaseName("idx_board_item_links_source_item");
+    }
+}
