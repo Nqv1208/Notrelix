@@ -14,7 +14,7 @@ public class PermissionTemplate : AggregateRoot
 
     private PermissionTemplate() : base() { }
 
-    public static PermissionTemplate Create(string name, JsonValue permissions, bool isSystem = false, Guid? workspaceId = null)
+    public static PermissionTemplate Create(string name, JsonValue permissions, Guid createdBy, DateTimeOffset createdAt, bool isSystem = false, Guid? workspaceId = null)
     {
         Guard.NotNullOrWhiteSpace(name);
         Guard.NotNull(permissions);
@@ -28,7 +28,7 @@ public class PermissionTemplate : AggregateRoot
             Status = PermissionTemplateStatus.Active
         };
 
-        template.AddDomainEvent(new PermissionTemplateCreatedEvent(template.Id, template.Name, Guid.Empty)); // In Domain, we might not have Actor here yet if system
+        template.AddDomainEvent(new PermissionTemplateCreatedEvent(workspaceId ?? Guid.Empty, template.Id, template.Name, createdBy, createdAt));
         return template;
     }
 }

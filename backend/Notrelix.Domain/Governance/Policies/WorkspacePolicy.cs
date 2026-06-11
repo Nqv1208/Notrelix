@@ -11,7 +11,7 @@ public class WorkspacePolicy : AuditableEntity
 
     private WorkspacePolicy() : base() { }
 
-    public static WorkspacePolicy Create(Guid workspaceId, Guid createdBy)
+    public static WorkspacePolicy Create(Guid workspaceId, Guid createdBy, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
 
@@ -23,7 +23,7 @@ public class WorkspacePolicy : AuditableEntity
             SharingPolicy = SharingPolicy.Create(false, false)
         };
 
-        policy.SetAuditOnCreate(createdBy);
+        policy.SetAuditOnCreate(createdBy, createdAt);
         return policy;
     }
 
@@ -31,13 +31,14 @@ public class WorkspacePolicy : AuditableEntity
         GuestAccessPolicy? guestPolicy, 
         ResourcePolicy? resourcePolicy, 
         SharingPolicy? sharingPolicy, 
-        Guid updatedBy)
+        Guid updatedBy,
+        DateTimeOffset updatedAt)
     {
         if (guestPolicy != null) GuestPolicy = guestPolicy;
         if (resourcePolicy != null) ResourcePolicy = resourcePolicy;
         if (sharingPolicy != null) SharingPolicy = sharingPolicy;
 
-        SetAuditOnUpdate(updatedBy);
-        AddDomainEvent(new WorkspacePolicyUpdatedEvent(WorkspaceId, updatedBy));
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new WorkspacePolicyUpdatedEvent(WorkspaceId, updatedBy, updatedAt));
     }
 }

@@ -19,7 +19,8 @@ public class SecurityEvent : AggregateRoot
         SecurityEventType type, 
         SecuritySeverity severity, 
         string title, 
-        SecurityEventMetadata metadata)
+        SecurityEventMetadata metadata,
+        DateTimeOffset occurredAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(title);
@@ -31,10 +32,10 @@ public class SecurityEvent : AggregateRoot
             Severity = severity,
             Title = title,
             Metadata = metadata,
-            OccurredAt = DateTimeOffset.UtcNow
+            OccurredAt = occurredAt
         };
 
-        @event.AddDomainEvent(new SecurityEventRecordedEvent(@event.Id, workspaceId, type));
+        @event.AddDomainEvent(new SecurityEventRecordedEvent(@event.Id, workspaceId, type, occurredAt));
 
         return @event;
     }
