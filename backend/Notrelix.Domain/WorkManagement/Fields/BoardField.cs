@@ -38,6 +38,8 @@ public class BoardField : AggregateRoot
         Guard.NotNull(settings);
         Guard.NotNull(position);
 
+        FieldSettingsValidator.Validate(settings, type);
+
         var field = new BoardField
         {
             WorkspaceId = workspaceId,
@@ -72,6 +74,9 @@ public class BoardField : AggregateRoot
         if (Type != FieldType.Select && Type != FieldType.MultiSelect && Type != FieldType.Status)
             throw new BusinessRuleException($"Cannot add options to field of type {Type}");
 
+        if (_options.Any(o => string.Equals(o.Name, name, StringComparison.OrdinalIgnoreCase)))
+            throw new BusinessRuleException($"Duplicate option name '{name}'.");
+
         var option = FieldOption.Create(Id, name, color, position);
         _options.Add(option);
         SetAuditOnUpdate(addedBy, addedAt);
@@ -93,7 +98,6 @@ public class BoardField : AggregateRoot
     {
         return Type is FieldType.Status
             or FieldType.Select
-            or FieldType.MultiSelect
             or FieldType.Person;
     }
 }
