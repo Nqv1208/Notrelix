@@ -2,7 +2,6 @@ using FluentAssertions;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Identity.Sessions;
-using Notrelix.Domain.Identity.Credentials;
 using Xunit;
 
 namespace Notrelix.Domain.Tests.Identity;
@@ -77,6 +76,70 @@ public class UserSessionTests
         session.Revoke(revokeTime);
 
         session.UpdatedAt.Should().Be(revokeTime);
+    }
+
+    [Fact]
+    public void Create_WithInvalidExpiration_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var act = () => UserSession.Create(Guid.NewGuid(), ValidTokenHash, now, now);
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*after creation time*");
+    }
+
+    [Fact]
+    public void Expire_ShouldChangeStatusAndRaiseEvent()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var session = UserSession.Create(Guid.NewGuid(), ValidTokenHash, now.AddDays(30), now);
+        session.ClearDomainEvents();
+
+        var expireTime = now.AddDays(1);
+        session.Expire(expireTime);
+
+        session.Status.Should().Be(SessionStatus.Expired);
+        session.DomainEvents.Should().ContainSingle(e => e is UserSessionExpiredEvent);
+        var evt = (UserSessionExpiredEvent)session.DomainEvents.First(e => e is UserSessionExpiredEvent);
+        evt.SessionId.Should().Be(session.Id);
+        evt.UserId.Should().Be(session.UserId);
+        evt.ExpiredAt.Should().Be(expireTime);
+    }
+
+    [Fact]
+    public void Expire_AlreadyExpired_ShouldBeIdempotent()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var session = UserSession.Create(Guid.NewGuid(), ValidTokenHash, now.AddDays(30), now);
+        session.Expire(now.AddDays(1));
+        session.ClearDomainEvents();
+
+        session.Expire(now.AddDays(2));
+
+        session.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Revoke_OnExpiredSession_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var session = UserSession.Create(Guid.NewGuid(), ValidTokenHash, now.AddDays(30), now);
+        session.Expire(now.AddDays(1));
+
+        var act = () => session.Revoke(now.AddDays(2));
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*expired session*");
+    }
+
+    [Fact]
+    public void Expire_OnRevokedSession_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var session = UserSession.Create(Guid.NewGuid(), ValidTokenHash, now.AddDays(30), now);
+        session.Revoke(now.AddDays(1));
+
+        var act = () => session.Expire(now.AddDays(2));
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*revoked session*");
     }
 
     [Fact]

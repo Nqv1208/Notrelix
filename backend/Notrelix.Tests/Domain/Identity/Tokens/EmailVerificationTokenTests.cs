@@ -1,0 +1,137 @@
+using FluentAssertions;
+using Notrelix.Domain.Common.Exceptions;
+using Notrelix.Domain.Identity.Tokens;
+using Notrelix.Domain.Identity.Tokens.Events;
+using Xunit;
+
+namespace Notrelix.Domain.Tests.Identity.Tokens;
+
+public class EmailVerificationTokenTests
+{
+    private static readonly TokenHash ValidHash = TokenHash.Create("test-verification-hash");
+
+    [Fact]
+    public void Create_ShouldSetPropertiesAndRaiseEvent()
+    {
+        var userId = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+
+        var token = EmailVerificationToken.Create(userId, ValidHash, now.AddHours(24), now);
+
+        token.UserId.Should().Be(userId);
+        token.TokenHash.Should().Be(ValidHash);
+        token.Status.Should().Be(UserTokenStatus.Active);
+        token.ExpiresAt.Should().Be(now.AddHours(24));
+        token.CreatedAt.Should().Be(now);
+        token.UsedAt.Should().BeNull();
+        token.ExpiredAt.Should().BeNull();
+
+        token.DomainEvents.Should().ContainSingle(e => e is EmailVerificationTokenCreatedEvent);
+        var evt = (EmailVerificationTokenCreatedEvent)token.DomainEvents.Single(e => e is EmailVerificationTokenCreatedEvent);
+        evt.TokenId.Should().Be(token.Id);
+        evt.UserId.Should().Be(userId);
+        evt.CreatedAt.Should().Be(now);
+    }
+
+    [Fact]
+    public void Create_WithInvalidExpiration_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var act = () => EmailVerificationToken.Create(Guid.NewGuid(), ValidHash, now, now);
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*after creation time*");
+    }
+
+    [Fact]
+    public void MarkUsed_ShouldChangeStatusAndRaiseEvent()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var token = EmailVerificationToken.Create(Guid.NewGuid(), ValidHash, now.AddHours(24), now);
+        token.ClearDomainEvents();
+
+        var useTime = now.AddHours(1);
+        token.MarkUsed(useTime);
+
+        token.Status.Should().Be(UserTokenStatus.Used);
+        token.UsedAt.Should().Be(useTime);
+
+        token.DomainEvents.Should().ContainSingle(e => e is EmailVerificationTokenUsedEvent);
+        var evt = (EmailVerificationTokenUsedEvent)token.DomainEvents.Single(e => e is EmailVerificationTokenUsedEvent);
+        evt.TokenId.Should().Be(token.Id);
+        evt.UserId.Should().Be(token.UserId);
+        evt.UsedAt.Should().Be(useTime);
+    }
+
+    [Fact]
+    public void MarkUsed_AlreadyUsed_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var token = EmailVerificationToken.Create(Guid.NewGuid(), ValidHash, now.AddHours(24), now);
+        token.MarkUsed(now.AddHours(1));
+
+        var act = () => token.MarkUsed(now.AddHours(2));
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*already been used*");
+    }
+
+    [Fact]
+    public void MarkUsed_AfterExpiresAt_ShouldTransitionToExpiredAndThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var token = EmailVerificationToken.Create(Guid.NewGuid(), ValidHash, now.AddHours(1), now);
+        token.ClearDomainEvents();
+
+        var useTime = now.AddHours(2);
+        var act = () => token.MarkUsed(useTime);
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*expired token*");
+        token.Status.Should().Be(UserTokenStatus.Expired);
+        token.ExpiredAt.Should().Be(useTime);
+        token.DomainEvents.Should().ContainSingle(e => e is EmailVerificationTokenExpiredEvent);
+    }
+
+    [Fact]
+    public void Expire_ShouldSetStatusAndRaiseEvent()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var token = EmailVerificationToken.Create(Guid.NewGuid(), ValidHash, now.AddHours(24), now);
+        token.ClearDomainEvents();
+
+        var expireTime = now.AddHours(1);
+        token.Expire(expireTime);
+
+        token.Status.Should().Be(UserTokenStatus.Expired);
+        token.ExpiredAt.Should().Be(expireTime);
+
+        token.DomainEvents.Should().ContainSingle(e => e is EmailVerificationTokenExpiredEvent);
+        var evt = (EmailVerificationTokenExpiredEvent)token.DomainEvents.Single(e => e is EmailVerificationTokenExpiredEvent);
+        evt.TokenId.Should().Be(token.Id);
+        evt.UserId.Should().Be(token.UserId);
+        evt.ExpiredAt.Should().Be(expireTime);
+    }
+
+    [Fact]
+    public void Expire_AlreadyExpired_ShouldBeIdempotent()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var token = EmailVerificationToken.Create(Guid.NewGuid(), ValidHash, now.AddHours(24), now);
+        token.Expire(now.AddHours(1));
+        token.ClearDomainEvents();
+
+        token.Expire(now.AddHours(2));
+
+        token.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Expire_OnUsedToken_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var token = EmailVerificationToken.Create(Guid.NewGuid(), ValidHash, now.AddHours(24), now);
+        token.MarkUsed(now.AddHours(1));
+
+        var act = () => token.Expire(now.AddHours(2));
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*used token*");
+    }
+}
