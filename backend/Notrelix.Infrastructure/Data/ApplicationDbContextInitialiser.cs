@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Notrelix.Application.Common.Interfaces;
+using Notrelix.Application.Common.Abstractions;
 using Notrelix.Domain.Entities.Boards;
 using Notrelix.Domain.Entities.Calendar;
 using Notrelix.Domain.Entities.Document;

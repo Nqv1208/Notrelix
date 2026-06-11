@@ -1,6 +1,6 @@
 using MediatR;
 using Notrelix.API.Extensions;
-using Notrelix.Application.Common.Interfaces;
+using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Commands.ForgotPassword;
 using Notrelix.Application.Features.Identity.Commands.Login;

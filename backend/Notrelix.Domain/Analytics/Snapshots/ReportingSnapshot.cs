@@ -1,0 +1,24 @@
+using Notrelix.Domain.Common;
+
+namespace Notrelix.Domain.Analytics.Snapshots;
+
+public class ReportingSnapshot : Entity
+{
+    public Guid WorkspaceId { get; private set; }
+    public string ReportType { get; private set; } = null!;
+    public JsonValue Data { get; private set; } = null!;
+    public DateTimeOffset CapturedAt { get; private set; }
+
+    private ReportingSnapshot() : base() { }
+
+    public static ReportingSnapshot Capture(Guid workspaceId, string reportType, JsonValue data, DateTimeOffset capturedAt)
+    {
+        return new ReportingSnapshot
+        {
+            WorkspaceId = workspaceId,
+            ReportType = reportType,
+            Data = data,
+            CapturedAt = capturedAt
+        };
+    }
+}

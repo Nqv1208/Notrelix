@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Notrelix.Application.Common.Interfaces;
-using Notrelix.Application.Features.Extensibility;
-using Notrelix.Application.Features.Extensibility.Jobs;
-using Notrelix.Domain.Entities.Extensibility;
+using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Features.Automation;
+using Notrelix.Application.Features.Automation.Jobs;
+using Notrelix.Application.Features.Integrations;
+using Notrelix.Domain.Automation.Executions;
+using Notrelix.Domain.Automation.Rules;
 using Notrelix.Infrastructure.Data;
 
 namespace Notrelix.Infrastructure.BackgroundJobs;

@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Notrelix.Application.Common.Events;
-using Notrelix.Application.Common.Interfaces;
+using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Security;
 using Notrelix.Application.Features.Extensibility.Commands.CreateAutomationRule;
 using Notrelix.Application.Features.Extensibility.Events;

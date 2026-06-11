@@ -1,6 +1,6 @@
 using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
-using Notrelix.Application.Common.Interfaces;
+using Notrelix.Application.Common.Abstractions;
 
 namespace Notrelix.Infrastructure.BackgroundJobs;
 

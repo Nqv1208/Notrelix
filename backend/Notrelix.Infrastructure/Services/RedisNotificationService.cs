@@ -1,8 +1,8 @@
 using StackExchange.Redis;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Interfaces;
-using Notrelix.Domain.Entities.Shared;
+using Notrelix.Application.Common.Abstractions;
+using Notrelix.Domain.Collaboration.Notifications;
 
 namespace Notrelix.Infrastructure.Services;
 
@@ -66,7 +66,7 @@ public class RedisNotificationService : INotificationService
     public async Task MarkAllAsReadAsync(Guid userId, Guid workspaceId, CancellationToken cancellationToken = default)
     {
         var unreadNotifications = await _context.Notifications
-            .Where(n => n.UserId == userId && n.WorkspaceId == workspaceId && !n.IsRead)
+            .Where(n => n.UserId == userId && n.WorkspaceId == workspaceId && n.Status == NotificationStatus.Unread)
             .ToListAsync(cancellationToken);
 
         foreach (var notification in unreadNotifications)

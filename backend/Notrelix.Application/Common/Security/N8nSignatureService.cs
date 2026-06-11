@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
-using Notrelix.Application.Common.Interfaces;
+using Notrelix.Application.Common.Abstractions;
 
 namespace Notrelix.Application.Common.Security;
 

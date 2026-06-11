@@ -2,7 +2,7 @@ using System.Text.Json;
 using MediatR;
 using Microsoft.Extensions.Options;
 using Notrelix.API.Extensions;
-using Notrelix.Application.Common.Interfaces;
+using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Extensibility.Commands.CreateAutomationRule;
 using Notrelix.Application.Features.Extensibility.Commands.HandleN8nCallback;

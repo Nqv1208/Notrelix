@@ -3,7 +3,7 @@ namespace Notrelix.Domain.Common;
 // Base class cho Value Object - immutable và được so sánh bằng giá trị
 public abstract class ValueObject
 {
-    protected abstract IEnumerable<object> GetEqualityComponents();
+    protected abstract IEnumerable<object?> GetEqualityComponents();
 
     public override bool Equals(object? obj)
     {

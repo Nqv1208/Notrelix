@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Interfaces;
+using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Workspaces.Commands.CreateWorkspace;
 using Notrelix.Domain.Entities.Workspaces;
 using Notrelix.Domain.Enums;

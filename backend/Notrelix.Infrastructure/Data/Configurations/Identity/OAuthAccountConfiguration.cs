@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Notrelix.Domain.Entities.Identity;
+using Notrelix.Domain.Identity.OAuth;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Identity;
 
@@ -10,54 +10,26 @@ public class OAuthAccountConfiguration : IEntityTypeConfiguration<OAuthAccount>
     {
         builder.ToTable("oauth_accounts");
 
-        builder.Property(e => e.Id)
-            .HasColumnName("id");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).HasColumnName("id");
 
-        builder.Property(e => e.UserId)
-            .HasColumnName("user_id")
-            .IsRequired();
+        builder.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
+        builder.Property(x => x.Provider).HasColumnName("provider").HasConversion<string>().IsRequired().HasMaxLength(50);
+        builder.Property(x => x.ProviderId).HasColumnName("provider_id").IsRequired().HasMaxLength(256);
+        builder.Property(x => x.AccessToken).HasColumnName("access_token");
+        builder.Property(x => x.RefreshToken).HasColumnName("refresh_token");
+        builder.Property(x => x.TokenExpiresAt).HasColumnName("token_expires_at");
 
-        builder.Property(e => e.Provider)
-            .HasColumnName("provider")
-            .HasMaxLength(50)
-            .IsRequired();
+        builder.OwnsOne(x => x.RawProfile, profile =>
+        {
+            profile.Property(p => p.Value).HasColumnName("raw_profile").HasColumnType("jsonb").IsRequired();
+        });
 
-        builder.Property(e => e.ProviderId)
-            .HasColumnName("provider_id")
-            .HasMaxLength(255)
-            .IsRequired();
+        builder.HasOne<User>()
+            .WithMany(x => x.OAuthAccounts)
+            .HasForeignKey(x => x.UserId);
 
-        builder.Property(e => e.AccessToken)
-            .HasColumnName("access_token")
-            .HasColumnType("text");
-
-        builder.Property(e => e.RefreshToken)
-            .HasColumnName("refresh_token")
-            .HasColumnType("text");
-
-        builder.Property(e => e.TokenExpiresAt)
-            .HasColumnName("token_expires_at");
-
-        builder.Property(e => e.RawProfile)
-            .HasColumnName("raw_profile")
-            .HasColumnType("jsonb")
-            .HasDefaultValue("{}");
-
-        builder.Property(e => e.CreatedAt)
-            .HasColumnName("created_at");
-
-        builder.Property(e => e.UpdatedAt)
-            .HasColumnName("updated_at");
-
-        // Unique: one user per provider
-        builder.HasIndex(e => new { e.Provider, e.ProviderId })
-            .IsUnique();
-
-        builder.HasIndex(e => e.UserId);
-
-        builder.HasOne(e => e.User)
-            .WithMany(u => u.OAuthAccounts)
-            .HasForeignKey(e => e.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasIndex(x => new { x.Provider, x.ProviderId }).IsUnique().HasDatabaseName("idx_oauth_accounts_provider");
+        builder.HasIndex(x => x.UserId).HasDatabaseName("idx_oauth_accounts_user_id");
     }
 }

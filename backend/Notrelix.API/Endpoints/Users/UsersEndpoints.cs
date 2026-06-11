@@ -1,6 +1,6 @@
 using MediatR;
 using Notrelix.API.Extensions;
-using Notrelix.Application.Common.Interfaces;
+using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Identity.Commands.UpdateProfile;
 
 namespace Notrelix.API.Endpoints.Users;

@@ -1,0 +1,39 @@
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using global::Notrelix.Application.Common.Abstractions;
+using global::Notrelix.Application.Common.Models;
+using global::Notrelix.Application.Features.Document.Common;
+using global::Notrelix.Application.Features.Document.DTOs;
+using global::Notrelix.Domain.Identity;
+using global::Notrelix.Domain.Workspaces;
+
+namespace Notrelix.Application.Features.Document.Queries.GetPageHistory;
+
+public record GetPageHistoryQuery(Guid PageId) : IRequest<Result<List<PageHistoryDto>>>;
+
+public class GetPageHistoryQueryHandler : IRequestHandler<GetPageHistoryQuery, Result<List<PageHistoryDto>>>
+{
+    private readonly IApplicationDbContext _context;
+    public GetPageHistoryQueryHandler(IApplicationDbContext context) => _context = context;
+
+    public async Task<Result<List<PageHistoryDto>>> Handle(GetPageHistoryQuery request, CancellationToken ct)
+    {
+        var pageExists = await _context.Pages.AsNoTracking()
+            .AnyAsync(page => page.Id == request.PageId && !page.IsDeleted, ct);
+        if (!pageExists) throw new NotFoundException(nameof(Page), request.PageId);
+
+        var history = await _context.ActivityLogs.AsNoTracking()
+            .Where(activity => activity.ResourceType == ResourceType.Page && activity.ResourceId == request.PageId)
+            .OrderByDescending(activity => activity.CreatedAt)
+            .Select(activity => new PageHistoryDto(
+                activity.Id,
+                activity.ActorId,
+                activity.Action,
+                activity.ResourceTitle,
+                activity.CreatedAt
+            ))
+            .ToListAsync(ct);
+
+        return Result<List<PageHistoryDto>>.Success(history);
+    }
+}

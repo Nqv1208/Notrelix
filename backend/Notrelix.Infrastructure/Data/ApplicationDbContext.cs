@@ -1,66 +1,95 @@
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Interfaces;
+using Notrelix.Application.Common.Abstractions;
 using Notrelix.Domain.Common;
-using Notrelix.Domain.Entities.Identity;
-using Notrelix.Domain.Entities.Workspaces;
-using Notrelix.Domain.Entities.Document;
-using Notrelix.Domain.Entities.Boards;
-using Notrelix.Domain.Entities.Calendar;
-using Notrelix.Domain.Entities.Extensibility;
-using Notrelix.Domain.Entities.Shared;
+using Notrelix.Domain.Identity.Users;
+using Notrelix.Domain.Identity.Profiles;
+using Notrelix.Domain.Identity.Sessions;
+using Notrelix.Domain.Identity.OAuth;
+using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Domain.Workspaces.Members;
+using Notrelix.Domain.Workspaces.Invitations;
+using Notrelix.Domain.Workspaces.Spaces;
+using Notrelix.Domain.Workspaces.Teams;
+using Notrelix.Domain.Documents.Pages;
+using Notrelix.Domain.Documents.Blocks;
+using Notrelix.Domain.WorkManagement.Boards;
+using Notrelix.Domain.WorkManagement.BoardGroups;
+using Notrelix.Domain.WorkManagement.Fields;
+using Notrelix.Domain.WorkManagement.Views;
+using Notrelix.Domain.WorkManagement.Items;
+using Notrelix.Domain.WorkManagement.Labels;
+using Notrelix.Domain.WorkManagement.Checklists;
+using Notrelix.Domain.Integrations.Calendar;
+using Notrelix.Domain.Integrations.Connections;
+using Notrelix.Domain.Integrations.Webhooks;
+using Notrelix.Domain.Automation.Rules;
+using Notrelix.Domain.Automation.Executions;
+using Notrelix.Domain.Governance.Permissions;
+using Notrelix.Domain.Governance.Roles;
+using Notrelix.Domain.Governance.Policies;
+using Notrelix.Domain.Governance.Security;
+using Notrelix.Domain.Governance.Audit;
+using Notrelix.Domain.Governance.ShareLinks;
+using Notrelix.Domain.Collaboration.Comments;
+using Notrelix.Domain.Collaboration.Mentions;
+using Notrelix.Domain.Collaboration.Attachments;
+using Notrelix.Domain.Collaboration.Reactions;
+using Notrelix.Domain.Collaboration.Notifications;
+using Notrelix.Domain.Collaboration.Activity;
 
 namespace Notrelix.Infrastructure.Data;
 
-// Application Database Context - Implement IApplicationDbContext
 public class ApplicationDbContext : DbContext, IApplicationDbContext
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
     {
     }
 
-    // Identity
     public DbSet<User> Users => Set<User>();
     public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
-    public DbSet<Session> Sessions => Set<Session>();
+    public DbSet<UserSession> Sessions => Set<UserSession>();
     public DbSet<OAuthAccount> OAuthAccounts => Set<OAuthAccount>();
 
-    // Workspace
     public DbSet<Workspace> Workspaces => Set<Workspace>();
     public DbSet<WorkspaceMember> WorkspaceMembers => Set<WorkspaceMember>();
     public DbSet<WorkspaceInvitation> WorkspaceInvitations => Set<WorkspaceInvitation>();
+    public DbSet<Space> Spaces => Set<Space>();
+    public DbSet<Team> Teams => Set<Team>();
+    public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
 
-    // Document
     public DbSet<Page> Pages => Set<Page>();
     public DbSet<Block> Blocks => Set<Block>();
 
-    // Board
     public DbSet<Board> Boards => Set<Board>();
-    public DbSet<BoardMember> BoardMembers => Set<BoardMember>();
+    public DbSet<BoardGroup> BoardGroups => Set<BoardGroup>();
+    public DbSet<BoardField> BoardFields => Set<BoardField>();
     public DbSet<BoardView> BoardViews => Set<BoardView>();
-    public DbSet<BoardList> BoardLists => Set<BoardList>();
-    public DbSet<BoardColumn> BoardColumns => Set<BoardColumn>();
+    public DbSet<BoardMember> BoardMembers => Set<BoardMember>();
+    public DbSet<BoardItem> BoardItems => Set<BoardItem>();
+    public DbSet<BoardItemValue> BoardItemValues => Set<BoardItemValue>();
+    public DbSet<BoardItemMember> BoardItemMembers => Set<BoardItemMember>();
+    public DbSet<BoardItemLabel> BoardItemLabels => Set<BoardItemLabel>();
+    public DbSet<BoardItemLink> BoardItemLinks => Set<BoardItemLink>();
     public DbSet<Label> Labels => Set<Label>();
-    public DbSet<Card> Cards => Set<Card>();
-    public DbSet<CardMember> CardMembers => Set<CardMember>();
-    public DbSet<CardLabel> CardLabels => Set<CardLabel>();
-    public DbSet<CardLink> CardLinks => Set<CardLink>();
     public DbSet<Checklist> Checklists => Set<Checklist>();
     public DbSet<ChecklistItem> ChecklistItems => Set<ChecklistItem>();
 
-    // Calendar
     public DbSet<CalendarIntegration> CalendarIntegrations => Set<CalendarIntegration>();
     public DbSet<CalendarEvent> CalendarEvents => Set<CalendarEvent>();
 
-    // Extensibility
     public DbSet<IntegrationConnection> IntegrationConnections => Set<IntegrationConnection>();
-    public DbSet<AutomationRule> AutomationRules => Set<AutomationRule>();
     public DbSet<WebhookSubscription> WebhookSubscriptions => Set<WebhookSubscription>();
+    public DbSet<AutomationRule> AutomationRules => Set<AutomationRule>();
     public DbSet<AutomationExecution> AutomationExecutions => Set<AutomationExecution>();
 
-    // Shared
-    public DbSet<Permission> Permissions => Set<Permission>();
+    public DbSet<ResourcePermission> ResourcePermissions => Set<ResourcePermission>();
+    public DbSet<CustomRole> CustomRoles => Set<CustomRole>();
+    public DbSet<ShareLink> ShareLinks => Set<ShareLink>();
+    public DbSet<WorkspacePolicy> WorkspacePolicies => Set<WorkspacePolicy>();
+    public DbSet<SecurityEvent> SecurityEvents => Set<SecurityEvent>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<Comment> Comments => Set<Comment>();
-    public DbSet<PageMention> PageMentions => Set<PageMention>();
+    public DbSet<Mention> PageMentions => Set<Mention>();
     public DbSet<Attachment> Attachments => Set<Attachment>();
     public DbSet<Reaction> Reactions => Set<Reaction>();
     public DbSet<Notification> Notifications => Set<Notification>();
@@ -70,16 +99,13 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Ignore Domain Events
-        modelBuilder.Ignore<BaseEvent>();
+        modelBuilder.Ignore<DomainEvent>();
 
-        // Apply all configurations from assembly
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        // Auto-update audit fields
         foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
         {
             switch (entry.State)
