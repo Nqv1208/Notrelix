@@ -1,5 +1,7 @@
 using FluentAssertions;
-using Notrelix.Domain.Identity.Security;
+using Notrelix.Domain.Common.Exceptions;
+using Notrelix.Domain.Identity.Mfa;
+using Notrelix.Domain.Identity.Mfa.Events;
 using Xunit;
 
 namespace Notrelix.Domain.Tests.Identity;
@@ -7,61 +9,134 @@ namespace Notrelix.Domain.Tests.Identity;
 public class MfaMethodTests
 {
     [Fact]
-    public void Create_ShouldSetProperties()
+    public void Create_ShouldSetPropertiesAndRaiseEvent()
     {
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
-        var method = UserMfaMethod.Create(userId, MfaMethodType.AuthenticatorApp, now, "secret-ref", "dest-masked", isPrimary: true);
+        var method = UserMfaMethod.Create(userId, MfaMethodType.AuthenticatorApp, now, "secret-ref", isPrimary: false);
 
         method.UserId.Should().Be(userId);
         method.Type.Should().Be(MfaMethodType.AuthenticatorApp);
         method.SecretRef.Should().Be("secret-ref");
-        method.DestinationMasked.Should().Be("dest-masked");
+        method.Status.Should().Be(MfaMethodStatus.PendingVerification);
         method.IsVerified.Should().BeFalse();
-        method.IsPrimary.Should().BeTrue();
-    }
-
-    [Fact]
-    public void Verify_ShouldSetIsVerified()
-    {
-        var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.Sms, DateTimeOffset.UtcNow);
-
-        method.Verify(DateTimeOffset.UtcNow);
-
-        method.IsVerified.Should().BeTrue();
-        method.VerifiedAt.Should().NotBeNull();
-    }
-
-    [Fact]
-    public void SetPrimary_ShouldChangeIsPrimary()
-    {
-        var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.AuthenticatorApp, DateTimeOffset.UtcNow, isPrimary: false);
-
-        method.SetPrimary(true);
-
-        method.IsPrimary.Should().BeTrue();
-    }
-
-    [Fact]
-    public void Create_ShouldSetCreatedAt()
-    {
-        var now = new DateTimeOffset(2026, 6, 11, 10, 0, 0, TimeSpan.Zero);
-
-        var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.Email, now);
-
+        method.IsPrimary.Should().BeFalse();
         method.CreatedAt.Should().Be(now);
+
+        method.DomainEvents.Should().ContainSingle(e => e is UserMfaMethodAddedEvent);
+        var evt = (UserMfaMethodAddedEvent)method.DomainEvents.Single(e => e is UserMfaMethodAddedEvent);
+        evt.MfaMethodId.Should().Be(method.Id);
+        evt.UserId.Should().Be(userId);
+        evt.Type.Should().Be(MfaMethodType.AuthenticatorApp);
+        evt.AddedAt.Should().Be(now);
     }
 
     [Fact]
-    public void Disable_ShouldSetDisabledAtAndResetPrimary()
+    public void Create_AuthenticatorAppWithoutSecret_ShouldThrow()
     {
         var now = DateTimeOffset.UtcNow;
-        var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.AuthenticatorApp, now, isPrimary: true);
 
-        method.Disable(now.AddDays(1));
+        var act = () => UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.AuthenticatorApp, now, secretRef: null);
 
-        method.DisabledAt.Should().Be(now.AddDays(1));
+        act.Should().Throw<BusinessRuleException>().WithMessage("*requires a secret reference*");
+    }
+
+    [Fact]
+    public void Create_EmailSmsWithoutDestination_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        var act1 = () => UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.Email, now, destinationMasked: null);
+        var act2 = () => UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.Sms, now, destinationMasked: null);
+
+        act1.Should().Throw<BusinessRuleException>().WithMessage("*requires a masked destination*");
+        act2.Should().Throw<BusinessRuleException>().WithMessage("*requires a masked destination*");
+    }
+
+    [Fact]
+    public void Verify_ShouldActivateMethodAndRaiseEvent()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.Email, now, destinationMasked: "t***@example.com");
+        method.ClearDomainEvents();
+
+        method.Verify(now.AddMinutes(5));
+
+        method.Status.Should().Be(MfaMethodStatus.Active);
+        method.IsVerified.Should().BeTrue();
+        method.VerifiedAt.Should().Be(now.AddMinutes(5));
+
+        method.DomainEvents.Should().ContainSingle(e => e is UserMfaMethodVerifiedEvent);
+        var evt = (UserMfaMethodVerifiedEvent)method.DomainEvents.Single(e => e is UserMfaMethodVerifiedEvent);
+        evt.MfaMethodId.Should().Be(method.Id);
+        evt.UserId.Should().Be(method.UserId);
+        evt.Type.Should().Be(MfaMethodType.Email);
+        evt.VerifiedAt.Should().Be(now.AddMinutes(5));
+    }
+
+    [Fact]
+    public void Verify_OnDisabledMethod_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.AuthenticatorApp, now, "secret");
+        method.Disable(now.AddMinutes(1));
+
+        var act = () => method.Verify(now.AddMinutes(2));
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*disabled MFA method*");
+    }
+
+    [Fact]
+    public void SetPrimary_OnActiveMethod_ShouldSucceedAndRaiseEvent()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.AuthenticatorApp, now, "secret");
+        method.Verify(now.AddMinutes(1));
+        method.ClearDomainEvents();
+
+        method.SetPrimary(true, now.AddMinutes(2));
+
+        method.IsPrimary.Should().BeTrue();
+        method.DomainEvents.Should().ContainSingle(e => e is UserMfaMethodSetAsPrimaryEvent);
+        var evt = (UserMfaMethodSetAsPrimaryEvent)method.DomainEvents.Single(e => e is UserMfaMethodSetAsPrimaryEvent);
+        evt.MfaMethodId.Should().Be(method.Id);
+        evt.UserId.Should().Be(method.UserId);
+        evt.Type.Should().Be(MfaMethodType.AuthenticatorApp);
+        evt.UpdatedAt.Should().Be(now.AddMinutes(2));
+    }
+
+    [Fact]
+    public void SetPrimary_OnPendingMethod_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.AuthenticatorApp, now, "secret");
+
+        var act = () => method.SetPrimary(true, now.AddMinutes(1));
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*verified and active*");
+    }
+
+    [Fact]
+    public void Disable_ShouldDeactivateMethodAndClearPrimary()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.AuthenticatorApp, now, "secret");
+        method.Verify(now.AddMinutes(1));
+        method.SetPrimary(true, now.AddMinutes(2));
+        method.ClearDomainEvents();
+
+        method.Disable(now.AddMinutes(3));
+
+        method.Status.Should().Be(MfaMethodStatus.Disabled);
         method.IsPrimary.Should().BeFalse();
+        method.DisabledAt.Should().Be(now.AddMinutes(3));
+
+        method.DomainEvents.Should().ContainSingle(e => e is UserMfaMethodDisabledEvent);
+        var evt = (UserMfaMethodDisabledEvent)method.DomainEvents.Single(e => e is UserMfaMethodDisabledEvent);
+        evt.MfaMethodId.Should().Be(method.Id);
+        evt.UserId.Should().Be(method.UserId);
+        evt.Type.Should().Be(MfaMethodType.AuthenticatorApp);
+        evt.DisabledAt.Should().Be(now.AddMinutes(3));
     }
 }
