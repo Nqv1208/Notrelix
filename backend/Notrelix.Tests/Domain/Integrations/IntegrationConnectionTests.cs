@@ -10,7 +10,7 @@ public class IntegrationConnectionTests
     public void Create_ShouldSucceed_AndRaiseEvent()
     {
         var workspaceId = Guid.NewGuid();
-        var connection = IntegrationConnection.Create(workspaceId, IntegrationProvider.Slack, Guid.NewGuid());
+        var connection = IntegrationConnection.Create(workspaceId, IntegrationProvider.Slack, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         connection.Provider.Should().Be(IntegrationProvider.Slack);
         connection.Status.Should().Be(IntegrationConnectionStatus.Active);

@@ -31,7 +31,7 @@ public class IntegrationSecretVersion : Entity
 
     private IntegrationSecretVersion() : base() { }
 
-    public static IntegrationSecretVersion Create(Guid connectionId, string version, SecretRef secretRef)
+    public static IntegrationSecretVersion Create(Guid connectionId, string version, SecretRef secretRef, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(connectionId);
         Guard.NotNullOrWhiteSpace(version);
@@ -42,7 +42,7 @@ public class IntegrationSecretVersion : Entity
             ConnectionId = connectionId,
             Version = version.Trim(),
             SecretReference = secretRef,
-            CreatedAt = DateTimeOffset.UtcNow
+            CreatedAt = createdAt
         };
     }
 }
@@ -64,6 +64,7 @@ public class IntegrationConnection : AggregateRoot
         Guid workspaceId, 
         IntegrationProvider provider, 
         Guid createdBy,
+        DateTimeOffset createdAt,
         string? providerAccountId = null,
         DateTimeOffset? expiresAt = null)
     {
@@ -79,8 +80,8 @@ public class IntegrationConnection : AggregateRoot
             ExpiresAt = expiresAt
         };
 
-        connection.SetAuditOnCreate(createdBy);
-        connection.AddDomainEvent(new IntegrationConnectionCreatedEvent(workspaceId, connection.Id, provider, createdBy));
+        connection.SetAuditOnCreate(createdBy, createdAt);
+        connection.AddDomainEvent(new IntegrationConnectionCreatedEvent(workspaceId, connection.Id, provider, createdBy, createdAt));
 
         return connection;
     }
