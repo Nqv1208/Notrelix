@@ -1,13 +1,13 @@
 using Notrelix.Domain.Common;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Domain.Workspaces.Members;
 
 public sealed record WorkspaceMemberRoleChangedEvent(
     Guid WorkspaceId,
     Guid MemberId,
+    Guid UserId,
     WorkspaceRole OldRole,
     WorkspaceRole NewRole,
-    Guid UpdatedBy,
+    Guid ActorId,
     DateTimeOffset OccurredAt
 ) : DomainEvent(OccurredAt);
