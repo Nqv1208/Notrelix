@@ -37,7 +37,7 @@ public class Plan : AggregateRoot
 
     private Plan() : base() { }
 
-    public static Plan Create(string name, Money price, BillingPeriod period)
+    public static Plan Create(string name, Money price, BillingPeriod period, DateTimeOffset createdAt)
     {
         Guard.NotNullOrWhiteSpace(name);
         Guard.NotNull(price);
@@ -50,7 +50,7 @@ public class Plan : AggregateRoot
             Status = PlanStatus.Active
         };
 
-        plan.AddDomainEvent(new PlanCreatedEvent(plan.Id, plan.Name));
+        plan.AddDomainEvent(new PlanCreatedEvent(Guid.Empty, plan.Id, plan.Name, createdAt));
         return plan;
     }
 

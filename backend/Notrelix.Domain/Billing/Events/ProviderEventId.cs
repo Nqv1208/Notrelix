@@ -1,6 +1,6 @@
 using Notrelix.Domain.Common;
 
-namespace Notrelix.Domain.Billing;
+namespace Notrelix.Domain.Billing.Events;
 
 public sealed class ProviderEventId : ValueObject
 {

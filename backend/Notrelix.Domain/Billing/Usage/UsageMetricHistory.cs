@@ -10,13 +10,13 @@ public class UsageMetricHistory : Entity
 
     private UsageMetricHistory() : base() { }
 
-    public static UsageMetricHistory Create(Guid metricId, int increment)
+    public static UsageMetricHistory Create(Guid metricId, int increment, DateTimeOffset timestamp)
     {
         return new UsageMetricHistory
         {
             MetricId = metricId,
             Increment = increment,
-            Timestamp = DateTimeOffset.UtcNow
+            Timestamp = timestamp
         };
     }
 }

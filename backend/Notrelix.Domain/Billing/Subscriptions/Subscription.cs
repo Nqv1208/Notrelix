@@ -14,7 +14,7 @@ public class Subscription : AggregateRoot
 
     private Subscription() : base() { }
 
-    public static Subscription Create(Guid workspaceId, Guid planId, SubscriptionTier tier, DateTimeOffset start, DateTimeOffset end)
+    public static Subscription Create(Guid workspaceId, Guid planId, SubscriptionTier tier, DateTimeOffset start, DateTimeOffset end, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(planId);
@@ -29,7 +29,7 @@ public class Subscription : AggregateRoot
             CurrentPeriodEnd = end
         };
 
-        subscription.AddDomainEvent(new SubscriptionStartedEvent(workspaceId, planId));
+        subscription.AddDomainEvent(new SubscriptionStartedEvent(workspaceId, planId, createdAt));
         return subscription;
     }
 }

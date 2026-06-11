@@ -1,4 +1,4 @@
-namespace Notrelix.Domain.Billing;
+namespace Notrelix.Domain.Billing.Events;
 
 public enum BillingEventStatus
 {

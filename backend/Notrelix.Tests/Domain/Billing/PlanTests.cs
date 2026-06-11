@@ -12,7 +12,7 @@ public class PlanTests
     public void Create_ShouldSucceed()
     {
         var price = Money.Create(19.99m, "USD");
-        var plan = Plan.Create("Pro Plan", price, BillingPeriod.Monthly);
+        var plan = Plan.Create("Pro Plan", price, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
 
         plan.Name.Should().Be("Pro Plan");
         plan.Price.Should().Be(price);
@@ -22,7 +22,7 @@ public class PlanTests
     [Fact]
     public void AddLimit_ShouldAddToList()
     {
-        var plan = Plan.Create("Free", Money.Create(0, "USD"), BillingPeriod.Monthly);
+        var plan = Plan.Create("Free", Money.Create(0, "USD"), BillingPeriod.Monthly, DateTimeOffset.UtcNow);
         var feature = FeatureCode.Create("BOARD_COUNT");
 
         plan.AddLimit(feature, 5);
