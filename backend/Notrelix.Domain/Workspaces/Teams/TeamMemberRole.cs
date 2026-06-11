@@ -1,4 +1,4 @@
-namespace Notrelix.Domain.Workspaces;
+namespace Notrelix.Domain.Workspaces.Teams;
 
 public enum TeamMemberRole
 {

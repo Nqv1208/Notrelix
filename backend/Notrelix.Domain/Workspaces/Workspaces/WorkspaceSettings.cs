@@ -1,6 +1,6 @@
 using Notrelix.Domain.Common;
 
-namespace Notrelix.Domain.Workspaces;
+namespace Notrelix.Domain.Workspaces.Workspaces;
 
 public sealed class WorkspaceSettings : ValueObject
 {
