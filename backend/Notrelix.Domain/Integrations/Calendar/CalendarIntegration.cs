@@ -25,6 +25,11 @@ public class CalendarEventLink : Entity
             ETag = eTag
         };
     }
+
+    public void UpdateETag(string? eTag)
+    {
+        ETag = eTag;
+    }
 }
 
 public class CalendarIntegration : AggregateRoot
@@ -34,6 +39,9 @@ public class CalendarIntegration : AggregateRoot
     public CalendarProvider Provider { get; private set; }
     public CalendarSyncDirection SyncDirection { get; private set; }
     public bool IsActive { get; private set; }
+
+    private readonly List<CalendarEventLink> _eventLinks = new();
+    public IReadOnlyCollection<CalendarEventLink> EventLinks => _eventLinks.AsReadOnly();
 
     private CalendarIntegration() : base() { }
 
@@ -55,5 +63,60 @@ public class CalendarIntegration : AggregateRoot
         integration.AddDomainEvent(new CalendarIntegrationConnectedEvent(workspaceId, connectionId, createdAt));
 
         return integration;
+    }
+
+    public void Activate(Guid updatedBy, DateTimeOffset occurredAt)
+    {
+        EnsureNotDeleted();
+        if (IsActive) return;
+
+        IsActive = true;
+        SetAuditOnUpdate(updatedBy, occurredAt);
+        AddDomainEvent(new CalendarIntegrationActivatedEvent(WorkspaceId, Id, updatedBy, occurredAt));
+    }
+
+    public void Deactivate(Guid updatedBy, DateTimeOffset occurredAt)
+    {
+        EnsureNotDeleted();
+        if (!IsActive) return;
+
+        IsActive = false;
+        SetAuditOnUpdate(updatedBy, occurredAt);
+        AddDomainEvent(new CalendarIntegrationDeactivatedEvent(WorkspaceId, Id, updatedBy, occurredAt));
+    }
+
+    public void ChangeSyncDirection(CalendarSyncDirection newDirection, Guid updatedBy, DateTimeOffset occurredAt)
+    {
+        EnsureNotDeleted();
+        if (SyncDirection == newDirection) return;
+
+        SyncDirection = newDirection;
+        SetAuditOnUpdate(updatedBy, occurredAt);
+        AddDomainEvent(new CalendarIntegrationSyncDirectionChangedEvent(WorkspaceId, Id, newDirection, updatedBy, occurredAt));
+    }
+
+    public void LinkEvent(Guid internalEventId, string externalEventId, string? eTag = null)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(internalEventId);
+        Guard.NotNullOrWhiteSpace(externalEventId);
+
+        if (_eventLinks.Any(l => l.InternalEventId == internalEventId || l.ExternalEventId == externalEventId))
+        {
+            throw new DomainException("An event link already exists for this internal or external event.");
+        }
+
+        _eventLinks.Add(CalendarEventLink.Create(Id, internalEventId, externalEventId, eTag));
+    }
+
+    public void UpdateEventLinkETag(Guid internalEventId, string? newETag)
+    {
+        EnsureNotDeleted();
+        var link = _eventLinks.FirstOrDefault(l => l.InternalEventId == internalEventId);
+        if (link == null)
+        {
+            throw new DomainException($"No event link found for internal event '{internalEventId}'.");
+        }
+        link.UpdateETag(newETag);
     }
 }

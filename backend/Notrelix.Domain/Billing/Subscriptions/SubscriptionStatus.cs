@@ -7,5 +7,6 @@ public enum SubscriptionStatus
     PastDue,
     Canceled,
     Unpaid,
-    Incomplete
+    Incomplete,
+    Expired
 }

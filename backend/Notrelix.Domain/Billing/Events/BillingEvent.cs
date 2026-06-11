@@ -13,7 +13,7 @@ public class BillingEvent : AggregateRoot
 
     private BillingEvent() : base() { }
 
-    public static BillingEvent Record(string providerEventId, BillingEventType type, JsonValue rawData)
+    public static BillingEvent Record(string providerEventId, BillingEventType type, JsonValue rawData, DateTimeOffset receivedAt)
     {
         Guard.NotNullOrWhiteSpace(providerEventId);
         Guard.NotNull(rawData);
@@ -24,7 +24,7 @@ public class BillingEvent : AggregateRoot
             Type = type,
             Status = BillingEventStatus.Received,
             RawData = rawData,
-            ReceivedAt = DateTimeOffset.UtcNow
+            ReceivedAt = receivedAt
         };
     }
 }

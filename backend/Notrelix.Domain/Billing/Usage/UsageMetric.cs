@@ -1,4 +1,5 @@
 using Notrelix.Domain.Common;
+using Notrelix.Domain.Billing.Rules;
 
 namespace Notrelix.Domain.Billing.Usage;
 
@@ -29,10 +30,42 @@ public class UsageMetric : AggregateRoot
         };
     }
 
-    public void Increase(int amount, DateTimeOffset occurredAt)
+    public void Increase(int amount, int limit, bool isHardLimit, DateTimeOffset occurredAt)
     {
-         CurrentValue += amount;
-         _history.Add(UsageMetricHistory.Create(Id, amount, occurredAt));
-         AddDomainEvent(new UsageMetricIncreasedEvent(WorkspaceId, Key, amount, occurredAt));
+        EnsureNotDeleted();
+        Guard.Positive(amount);
+
+        if (CurrentValue + amount > limit)
+        {
+            AddDomainEvent(new UsageLimitExceededEvent(WorkspaceId, Key, occurredAt));
+            UsageRules.EnsureCanIncrease(CurrentValue, amount, limit, isHardLimit);
+        }
+
+        CurrentValue += amount;
+        _history.Add(UsageMetricHistory.Create(Id, amount, occurredAt));
+        AddDomainEvent(new UsageMetricIncreasedEvent(WorkspaceId, Key, amount, occurredAt));
+    }
+
+    public void Decrease(int amount, DateTimeOffset occurredAt)
+    {
+        EnsureNotDeleted();
+        Guard.Positive(amount);
+
+        if (CurrentValue - amount < 0)
+        {
+            throw new DomainException("Usage value cannot be negative.");
+        }
+
+        CurrentValue -= amount;
+        _history.Add(UsageMetricHistory.Create(Id, -amount, occurredAt));
+    }
+
+    public void Reset(UsagePeriod newPeriod, DateTimeOffset occurredAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotNull(newPeriod);
+
+        CurrentValue = 0;
+        CurrentPeriod = newPeriod;
     }
 }

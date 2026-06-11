@@ -1,9 +1,9 @@
 using Notrelix.Domain.Common;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Domain.Billing.Subscriptions;
 
 public sealed record SubscriptionExpiredEvent(
     Guid WorkspaceId,
+    Guid SubscriptionId,
     DateTimeOffset OccurredAt
 ) : DomainEvent(OccurredAt);
