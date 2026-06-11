@@ -53,14 +53,13 @@ public class ResourcePermission : AggregateRoot
         var oldLevel = Level;
         Level = newLevel;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        
-        AddDomainEvent(new ResourcePermissionLevelChangedEvent(WorkspaceId, Id, oldLevel, newLevel, updatedBy, updatedAt));
+        AddDomainEvent(new ResourcePermissionLevelChangedEvent(WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, oldLevel, newLevel, updatedBy, updatedAt));
     }
 
     public void Revoke(Guid revokedBy, DateTimeOffset revokedAt)
     {
         EnsureNotDeleted();
         SoftDelete(revokedBy, revokedAt);
-        AddDomainEvent(new ResourcePermissionRevokedEvent(WorkspaceId, Id, revokedBy, revokedAt));
+        AddDomainEvent(new ResourcePermissionRevokedEvent(WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, revokedBy, revokedAt));
     }
 }

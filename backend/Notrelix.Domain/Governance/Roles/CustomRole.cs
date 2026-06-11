@@ -52,7 +52,8 @@ public class CustomRole : SoftDeletableEntity
     {
         EnsureNotDeleted();
 
-        if (_permissions.Any(p => p.Action == action)) return;
+        if (_permissions.Any(p => p.Action == action))
+            throw new BusinessRuleException($"Permission '{action}' is already assigned to this role.");
 
         _permissions.Add(CustomRolePermission.Create(Id, action));
         SetAuditOnUpdate(updatedBy, updatedAt);
@@ -81,5 +82,36 @@ public class CustomRole : SoftDeletableEntity
     {
         EnsureNotDeleted();
         AddDomainEvent(new CustomRoleRevokedEvent(WorkspaceId, Id, memberId, revokedBy, revokedAt));
+    }
+
+    public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
+    {
+        EnsureNotDeleted();
+        if (Status == CustomRoleStatus.Archived) return;
+
+        Status = CustomRoleStatus.Archived;
+        SetAuditOnUpdate(archivedBy, archivedAt);
+    }
+
+    public void Activate(Guid activatedBy, DateTimeOffset activatedAt)
+    {
+        if (Status != CustomRoleStatus.Archived) return;
+
+        Status = CustomRoleStatus.Active;
+        SetAuditOnUpdate(activatedBy, activatedAt);
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        Status = CustomRoleStatus.Archived;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        Status = CustomRoleStatus.Active;
+        base.Restore(restoredBy, restoredAt);
     }
 }

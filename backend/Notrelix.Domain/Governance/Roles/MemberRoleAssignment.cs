@@ -11,7 +11,7 @@ public class MemberRoleAssignment : Entity
 
     private MemberRoleAssignment() : base() { }
 
-    public static MemberRoleAssignment Create(Guid workspaceId, Guid memberId, Guid customRoleId)
+    public static MemberRoleAssignment Create(Guid workspaceId, Guid memberId, Guid customRoleId, DateTimeOffset assignedAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(memberId);
@@ -22,7 +22,7 @@ public class MemberRoleAssignment : Entity
             WorkspaceId = workspaceId,
             MemberId = memberId,
             CustomRoleId = customRoleId,
-            AssignedAt = DateTimeOffset.UtcNow
+            AssignedAt = assignedAt
         };
     }
 }
