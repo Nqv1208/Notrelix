@@ -1,21 +1,31 @@
 namespace Notrelix.Domain.Common;
 
-// Base entity với audit fields (CreatedAt, UpdatedAt, CreatedBy, UpdatedBy)
-public abstract class AuditableEntity : BaseEntity
+public abstract class AuditableEntity : Entity
 {
-    public DateTime CreatedAt { get; set; }
-    public Guid? CreatedBy { get; set; }
-    public DateTime? UpdatedAt { get; set; }
-    public Guid? UpdatedBy { get; set; }
-
-    protected AuditableEntity() : base()
-    {
-        CreatedAt = DateTime.UtcNow;
+    public DateTimeOffset CreatedAt { get; protected set; }
+    public Guid? CreatedBy { get; protected set; }
+    public DateTimeOffset? UpdatedAt { get; protected set; }
+    public Guid? UpdatedBy { get; protected set; }
+    
+    protected AuditableEntity() : base() 
+    { 
+        CreatedAt = DateTimeOffset.UtcNow; 
     }
-
-    protected AuditableEntity(Guid id) : base(id)
-    {
-        CreatedAt = DateTime.UtcNow;
+    
+    protected AuditableEntity(Guid id) : base(id) 
+    { 
+        CreatedAt = DateTimeOffset.UtcNow; 
+    }
+    
+    public void SetAuditOnCreate(Guid createdBy) 
+    { 
+        CreatedBy = createdBy; 
+        CreatedAt = DateTimeOffset.UtcNow; 
+    }
+    
+    public void SetAuditOnUpdate(Guid updatedBy) 
+    { 
+        UpdatedBy = updatedBy; 
+        UpdatedAt = DateTimeOffset.UtcNow; 
     }
 }
-
