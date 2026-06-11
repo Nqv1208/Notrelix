@@ -13,7 +13,7 @@ public class UserSession : AggregateRoot
 
     private UserSession() : base() { }
 
-    public static UserSession Create(Guid userId, RefreshTokenHash tokenHash, DateTimeOffset expiresAt, string? ipAddress = null, string? userAgent = null)
+    public static UserSession Create(Guid userId, RefreshTokenHash tokenHash, DateTimeOffset expiresAt, DateTimeOffset createdAt, string? ipAddress = null, string? userAgent = null)
     {
         Guard.NotEmpty(userId);
         Guard.NotNull(tokenHash);
@@ -25,18 +25,19 @@ public class UserSession : AggregateRoot
             Status = SessionStatus.Active,
             IpAddress = ipAddress,
             UserAgent = userAgent,
-            ExpiresAt = expiresAt,
-            CreatedAt = DateTimeOffset.UtcNow
+            ExpiresAt = expiresAt
         };
 
-        session.AddDomainEvent(new UserSessionCreatedEvent(session.Id, userId));
+        session.SetAuditOnCreate(userId, createdAt);
+        session.AddDomainEvent(new UserSessionCreatedEvent(Guid.Empty, session.Id, userId, createdAt));
         return session;
     }
 
-    public void Revoke()
+    public void Revoke(DateTimeOffset revokedAt)
     {
         if (Status != SessionStatus.Active) return;
         Status = SessionStatus.Revoked;
-        AddDomainEvent(new UserSessionRevokedEvent(Id, UserId));
+        SetAuditOnUpdate(UserId, revokedAt);
+        AddDomainEvent(new UserSessionRevokedEvent(Guid.Empty, Id, UserId, revokedAt));
     }
 }
