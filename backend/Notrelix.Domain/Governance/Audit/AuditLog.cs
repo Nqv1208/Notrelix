@@ -29,7 +29,6 @@ public class AuditLog : Entity
         string userAgent,
         DateTimeOffset timestamp)
     {
-        Guid.Empty.ToString(); // just some guard
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(actorId);
         Guard.NotNullOrWhiteSpace(action);

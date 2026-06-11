@@ -28,7 +28,7 @@ public class PermissionTemplate : AggregateRoot
             Status = PermissionTemplateStatus.Active
         };
 
-        template.AddDomainEvent(new PermissionTemplateCreatedEvent(workspaceId ?? Guid.Empty, template.Id, template.Name, createdBy, createdAt));
+        template.AddDomainEvent(new PermissionTemplateCreatedEvent(template.WorkspaceId, template.Id, template.Name, createdBy, createdAt));
         return template;
     }
 }

@@ -6,6 +6,10 @@ namespace Notrelix.Domain.Governance.Permissions;
 public sealed record ResourcePermissionLevelChangedEvent(
     Guid WorkspaceId,
     Guid PermissionId,
+    ResourceType ResourceType,
+    Guid ResourceId,
+    PermissionSubjectType SubjectType,
+    Guid SubjectId,
     PermissionLevel OldLevel,
     PermissionLevel NewLevel,
     Guid UpdatedBy,

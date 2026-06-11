@@ -68,9 +68,18 @@ public class ShareLink : AuditableEntity
         Guard.NotNull(newHash);
         
         TokenHash = newHash;
-        Status = ShareLinkStatus.Active; // Re-activate if it was expired
+        Status = ShareLinkStatus.Active;
         SetAuditOnUpdate(rotatedBy, rotatedAt);
         
         AddDomainEvent(new ShareLinkRotatedEvent(WorkspaceId, Id, rotatedBy, rotatedAt));
+    }
+
+    public void Expire(DateTimeOffset expiredAt)
+    {
+        if (Status != ShareLinkStatus.Active) return;
+
+        Status = ShareLinkStatus.Expired;
+        SetAuditOnUpdate(Guid.Empty, expiredAt);
+        AddDomainEvent(new ShareLinkExpiredEvent(WorkspaceId, Id, expiredAt));
     }
 }
