@@ -115,7 +115,7 @@ using Notrelix.Application.Features.Workspaces.Queries.GetWorkspaceMembersBySlug
 using Notrelix.Application.Features.Workspaces.Queries.GetInvitationByToken;
 using Notrelix.Application.Features.Workspaces.Queries.GetUserPendingInvitations;
 using Notrelix.API.Extensions;
-using Notrelix.Application.Common.Interfaces;
+using Notrelix.Application.Common.Abstractions;
 namespace Notrelix.API.Endpoints.Workspaces;
 
 public static class WorkspaceEndpoints
