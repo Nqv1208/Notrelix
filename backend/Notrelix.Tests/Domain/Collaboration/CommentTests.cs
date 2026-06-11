@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Collaboration.Comments;
-using Notrelix.Domain.Collaboration.Comments;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.SharedKernel;
 using Xunit;
@@ -16,7 +15,7 @@ public class CommentTests
         var target = ResourceRef.Create("BoardItem", Guid.NewGuid());
         var createdBy = Guid.NewGuid();
         
-        var comment = Comment.Create(Guid.NewGuid(), target, "Test comment", createdBy);
+        var comment = Comment.Create(Guid.NewGuid(), target, "Test comment", createdBy, DateTimeOffset.UtcNow);
 
         comment.Content.Should().Be("Test comment");
         comment.Target.Should().Be(target);
@@ -27,11 +26,11 @@ public class CommentTests
     [Fact]
     public void Resolve_ShouldUpdateStatus_AndRaiseEvent()
     {
-        var comment = Comment.Create(Guid.NewGuid(), ResourceRef.Create("Page", Guid.NewGuid()), "Content", Guid.NewGuid());
+        var comment = Comment.Create(Guid.NewGuid(), ResourceRef.Create("Page", Guid.NewGuid()), "Content", Guid.NewGuid(), DateTimeOffset.UtcNow);
         comment.ClearDomainEvents();
 
         var resolvedBy = Guid.NewGuid();
-        comment.Resolve(resolvedBy);
+        comment.Resolve(resolvedBy, DateTimeOffset.UtcNow);
 
         comment.CommentStatus.Should().Be(CommentStatus.Resolved);
         comment.UpdatedBy.Should().Be(resolvedBy);
