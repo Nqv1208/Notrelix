@@ -71,6 +71,6 @@ public class Comment : SoftDeletableEntity
         if (IsDeleted) return;
         CommentStatus = CommentStatus.SoftDeleted;
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new CommentDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new CommentSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
 }

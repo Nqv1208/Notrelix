@@ -2,7 +2,7 @@ using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Collaboration.Attachments;
 
-public class Attachment : AggregateRoot
+public class Attachment : SoftDeletableEntity
 {
     public Guid WorkspaceId { get; private set; }
     public ResourceRef Target { get; private set; } = null!;
@@ -26,6 +26,20 @@ public class Attachment : AggregateRoot
         };
 
         attachment.SetAuditOnCreate(createdBy, createdAt);
+        attachment.AddDomainEvent(new AttachmentCreatedEvent(workspaceId, attachment.Id, target, createdAt));
         return attachment;
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        AddDomainEvent(new AttachmentDeletedEvent(WorkspaceId, Id, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
     }
 }

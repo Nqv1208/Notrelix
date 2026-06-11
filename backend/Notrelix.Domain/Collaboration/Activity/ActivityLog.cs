@@ -18,6 +18,7 @@ public class ActivityLog : AggregateRoot
         Guid actorId, 
         ActivityType type, 
         ResourceRef target, 
+        DateTimeOffset timestamp,
         ActivityMetadata? metadata = null)
     {
         Guard.NotEmpty(workspaceId);
@@ -31,7 +32,7 @@ public class ActivityLog : AggregateRoot
             Type = type,
             Target = target,
             Metadata = metadata ?? ActivityMetadata.Empty(),
-            Timestamp = DateTimeOffset.UtcNow
+            Timestamp = timestamp
         };
     }
 }

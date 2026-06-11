@@ -35,4 +35,9 @@ public class ResourceWatcher : AggregateRoot
         watcher.AddDomainEvent(new ResourceWatchedEvent(workspaceId, watcher.Id, target, userId, createdAt));
         return watcher;
     }
+
+    public void Unwatch(DateTimeOffset removedAt)
+    {
+        AddDomainEvent(new ResourceUnwatchedEvent(WorkspaceId, Id, removedAt));
+    }
 }

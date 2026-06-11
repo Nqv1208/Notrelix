@@ -12,7 +12,7 @@ public class PresenceSession : Entity
 
     private PresenceSession() : base() { }
 
-    public static PresenceSession Create(Guid workspaceId, Guid userId, string? connectionId = null)
+    public static PresenceSession Create(Guid workspaceId, Guid userId, DateTimeOffset lastSeenAt, string? connectionId = null)
     {
         return new PresenceSession
         {
@@ -20,7 +20,7 @@ public class PresenceSession : Entity
             UserId = userId,
             ConnectionId = connectionId,
             Status = PresenceStatus.Online,
-            LastSeenAt = DateTimeOffset.UtcNow
+            LastSeenAt = lastSeenAt
         };
     }
 }
