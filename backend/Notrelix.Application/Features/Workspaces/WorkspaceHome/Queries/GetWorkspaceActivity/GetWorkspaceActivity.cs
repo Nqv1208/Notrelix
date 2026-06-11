@@ -1,0 +1,61 @@
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using global::Notrelix.Application.Common.Abstractions;
+using global::Notrelix.Application.Common.Models;
+using global::Notrelix.Application.Features.Workspaces.DTOs;
+using global::Notrelix.Domain.Identity;
+using global::Notrelix.Domain.Workspaces;
+
+using global::Notrelix.Application.Common.Security;
+
+namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspaceActivity;
+
+public record GetWorkspaceActivityQuery(Guid WorkspaceId, int Page = 1, int PageSize = 20) : IRequest<Result<object>>, IAuthorizeableRequest
+{
+    ResourceType IAuthorizeableRequest.ResourceType => ResourceType.Workspace;
+    Guid IAuthorizeableRequest.ResourceId => WorkspaceId;
+    PermissionAction IAuthorizeableRequest.Action => PermissionAction.ViewWorkspace;
+}
+
+public class GetWorkspaceActivityQueryHandler : IRequestHandler<GetWorkspaceActivityQuery, Result<object>>
+{
+    private readonly IApplicationDbContext _context;
+
+    public GetWorkspaceActivityQueryHandler(IApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<Result<object>> Handle(GetWorkspaceActivityQuery request, CancellationToken ct)
+    {
+        var workspaceExists = await _context.Workspaces
+            .AsNoTracking()
+            .AnyAsync(w => w.Id == request.WorkspaceId && !w.IsArchived, ct);
+
+        if (!workspaceExists)
+            throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
+
+        var total = await _context.ActivityLogs
+            .CountAsync(a => a.WorkspaceId == request.WorkspaceId, ct);
+
+        var logs = await _context.ActivityLogs
+            .AsNoTracking()
+            .Where(a => a.WorkspaceId == request.WorkspaceId)
+            .OrderByDescending(a => a.CreatedAt)
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .Select(a => new
+            {
+                a.Id,
+                a.ActorId,
+                a.Action,
+                ResourceType = a.ResourceType.ToString(),
+                a.ResourceId,
+                a.ResourceTitle,
+                a.CreatedAt
+            })
+            .ToListAsync(ct);
+
+        return Result<object>.Success(new { data = logs, total, page = request.Page, pageSize = request.PageSize });
+    }
+}

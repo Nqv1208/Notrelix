@@ -3,7 +3,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Hosting;
 using Notrelix.Application.Common.Behaviors;
-using Notrelix.Application.Common.Interfaces;
+using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Security;
 
 namespace Microsoft.Extensions.DependencyInjection;
@@ -23,11 +23,13 @@ public static class DependencyInjection
         // MediatR Pipeline Behaviors
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
 
         // FluentValidation - auto register all validators
         services.AddValidatorsFromAssembly(assembly);
 
         services.AddScoped<IWorkspacePermissionService, WorkspacePermissionService>();
+        services.AddScoped<IPermissionService, PermissionService>();
         services.AddSingleton<IN8nSignatureService, N8nSignatureService>();
 
         // AutoMapper

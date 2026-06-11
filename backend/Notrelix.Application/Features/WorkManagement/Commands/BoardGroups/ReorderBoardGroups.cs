@@ -1,0 +1,56 @@
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+using global::Notrelix.Application.Common.Abstractions;
+using global::Notrelix.Application.Common.Models;
+using global::Notrelix.Application.Features.WorkManagement.Commands.Boards;
+using global::Notrelix.Application.Features.WorkManagement.Commands.Common;
+using global::Notrelix.Application.Features.WorkManagement.DTOs;
+using global::Notrelix.Domain.Identity;
+using global::Notrelix.Domain.Workspaces;
+
+namespace Notrelix.Application.Features.WorkManagement.Commands;
+
+public record ReorderBoardGroupsCommand(Guid BoardId, List<ReorderItem> Items) : IRequest<Result>;
+
+public class ReorderBoardGroupsCommandHandler : IRequestHandler<ReorderBoardGroupsCommand, Result>
+{
+    private readonly IApplicationDbContext _context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
+
+    public ReorderBoardGroupsCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _permissions = permissions;
+    }
+
+    public async Task<Result> Handle(ReorderBoardGroupsCommand request, CancellationToken ct)
+    {
+        await _permissions.EnsureCanEditBoardAsync(request.BoardId, _currentUser.UserId, ct);
+
+        var itemIds = request.Items.Select(item => item.Id).ToHashSet();
+        var lists = await _context.BoardGroups
+            .Where(list => itemIds.Contains(list.Id))
+            .ToListAsync(ct);
+
+        if (lists.Count != itemIds.Count)
+            throw new NotFoundException(nameof(BoardGroup), string.Join(",", itemIds));
+
+        if (lists.Any(list => list.BoardId != request.BoardId))
+            throw new BusinessRuleViolationException("ListBoardMismatch", "All reordered groups must belong to the requested board.");
+
+        var positionsById = request.Items.ToDictionary(item => item.Id, item => item.NewPosition);
+        foreach (var list in lists)
+        {
+            list.Move(positionsById[list.Id], _currentUser.UserId);
+        }
+
+        await _context.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+}
