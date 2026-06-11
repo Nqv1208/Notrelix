@@ -1,4 +1,5 @@
 using Notrelix.Domain.Common;
+using Notrelix.Domain.Identity.Mfa;
 
 namespace Notrelix.Domain.Identity.Security.Events;
 

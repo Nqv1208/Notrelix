@@ -52,15 +52,8 @@ public class EmailVerificationToken : AggregateRoot
             throw new BusinessRuleException("Token has already been used.");
         }
 
-        if (Status == UserTokenStatus.Expired || usedAt > ExpiresAt)
+        if (Status == UserTokenStatus.Expired || usedAt >= ExpiresAt)
         {
-            if (Status != UserTokenStatus.Expired)
-            {
-                Status = UserTokenStatus.Expired;
-                ExpiredAt = usedAt;
-                SetAuditOnUpdate(UserId, usedAt);
-                AddDomainEvent(new EmailVerificationTokenExpiredEvent(Id, UserId, usedAt));
-            }
             throw new BusinessRuleException("Cannot use an expired token.");
         }
 

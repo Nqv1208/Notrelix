@@ -4,14 +4,13 @@ using Notrelix.Domain.Identity.Profiles.Events;
 
 namespace Notrelix.Domain.Identity.Profiles;
 
-public class UserProfile : Entity
+public class UserProfile : AggregateRoot
 {
     public Guid UserId { get; private set; }
     public string Timezone { get; private set; } = "UTC";
     public string Locale { get; private set; } = "vi";
     public string Theme { get; private set; } = "system";
     public string Preferences { get; private set; } = "{}";
-    public DateTimeOffset? UpdatedAt { get; private set; }
 
     private UserProfile() : base() { }
 

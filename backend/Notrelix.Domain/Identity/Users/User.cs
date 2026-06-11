@@ -1,4 +1,8 @@
 using Notrelix.Domain.Common.Exceptions;
+using Notrelix.Domain.Identity.Profiles;
+using Notrelix.Domain.Identity.OAuth;
+using Notrelix.Domain.Identity.OAuth.Events;
+using Notrelix.Domain.Identity.Users.Events;
 
 namespace Notrelix.Domain.Identity.Users;
 
@@ -49,8 +53,10 @@ public class User : AggregateRoot
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(name);
+
         Name = name.Trim();
         Avatar = avatar?.Trim();
+        
         SetAuditOnUpdate(Id, updatedAt);
     }
 
@@ -59,9 +65,17 @@ public class User : AggregateRoot
         DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+
+        var oldEmail = Email;
+
         Email = Email.Create(email);
+        
         SetAuditOnUpdate(Id, updatedAt);
-        AddDomainEvent(new UserEmailChangedEvent(Id, Email, updatedAt));
+        AddDomainEvent(new UserEmailChangedEvent(
+            Id,
+            oldEmail,
+            Email,
+            updatedAt));
     }
 
     public void UpdatePassword(
@@ -70,7 +84,9 @@ public class User : AggregateRoot
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(passwordHash);
+
         PasswordHash = passwordHash;
+
         SetAuditOnUpdate(Id, updatedAt);
         AddDomainEvent(new UserPasswordChangedEvent(Id, updatedAt));
     }
@@ -78,7 +94,9 @@ public class User : AggregateRoot
     public void RecordLogin(DateTimeOffset loggedInAt)
     {
         EnsureNotDeleted();
+
         LastLoginAt = loggedInAt;
+
         AddDomainEvent(new UserLoggedInEvent(Id, loggedInAt));
     }
 
@@ -98,7 +116,8 @@ public class User : AggregateRoot
             Id,
             previousStatus,
             activatedBy,
-            activatedAt));
+            activatedAt,
+            string.IsNullOrWhiteSpace(reason) ? null : reason.Trim()));
     }
 
     public void Deactivate(

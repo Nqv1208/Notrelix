@@ -1,5 +1,6 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
+using Notrelix.Domain.Identity.Security.Events;
 
 namespace Notrelix.Domain.Identity.Security;
 

@@ -1,6 +1,7 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Identity.Mfa.Events;
+using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Domain.Identity.Mfa;
 
@@ -8,7 +9,7 @@ public class UserMfaMethod : AggregateRoot
 {
     public Guid UserId { get; private set; }
     public MfaMethodType Type { get; private set; }
-    public string? SecretRef { get; private set; }
+    public SecretRef? SecretRef { get; private set; }
     public string? DestinationMasked { get; private set; }
     public MfaMethodStatus Status { get; private set; }
     public bool IsPrimary { get; private set; }
@@ -23,7 +24,7 @@ public class UserMfaMethod : AggregateRoot
         Guid userId, 
         MfaMethodType type, 
         DateTimeOffset createdAt, 
-        string? secretRef = null, 
+        SecretRef? secretRef = null, 
         string? destinationMasked = null, 
         bool isPrimary = false)
     {
