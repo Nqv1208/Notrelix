@@ -35,6 +35,8 @@ public class Space : AggregateRoot
     public void Rename(string newName, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (Status == SpaceStatus.Archived)
+            throw new BusinessRuleException("Cannot rename an archived space.");
         Guard.NotNullOrWhiteSpace(newName);
 
         var oldName = Name;
@@ -49,6 +51,8 @@ public class Space : AggregateRoot
     public void Move(Guid newWorkspaceId, Guid movedBy, DateTimeOffset movedAt)
     {
         EnsureNotDeleted();
+        if (Status == SpaceStatus.Archived)
+            throw new BusinessRuleException("Cannot move an archived space.");
         Guard.NotEmpty(newWorkspaceId);
 
         var oldWorkspaceId = WorkspaceId;
@@ -72,6 +76,7 @@ public class Space : AggregateRoot
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
+        Status = SpaceStatus.SoftDeleted;
         base.SoftDelete(deletedBy, deletedAt, reason);
         AddDomainEvent(new SpaceSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
@@ -79,6 +84,7 @@ public class Space : AggregateRoot
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
+        Status = SpaceStatus.Active;
         base.Restore(restoredBy, restoredAt);
         AddDomainEvent(new SpaceRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }

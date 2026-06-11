@@ -49,13 +49,13 @@ public class WorkspaceInvitation : AggregateRoot
 
     public void Accept(Guid userId, DateTimeOffset acceptedAt)
     {
+        EnsureNotDeleted();
+
         if (Status != WorkspaceInvitationStatus.Pending)
             throw new BusinessRuleException("Invitation is not pending.");
-        
+
         if (ExpiresAt < acceptedAt)
         {
-            Status = WorkspaceInvitationStatus.Expired;
-            AddDomainEvent(new WorkspaceInvitationExpiredEvent(Id, WorkspaceId, acceptedAt));
             throw new BusinessRuleException("Invitation has expired.");
         }
 
@@ -64,8 +64,19 @@ public class WorkspaceInvitation : AggregateRoot
         AddDomainEvent(new WorkspaceInvitationAcceptedEvent(Id, WorkspaceId, userId, userId, acceptedAt));
     }
 
+    public void Expire(DateTimeOffset expiredAt)
+    {
+        EnsureNotDeleted();
+        if (Status != WorkspaceInvitationStatus.Pending) return;
+
+        Status = WorkspaceInvitationStatus.Expired;
+        SetAuditOnUpdate(Guid.Empty, expiredAt);
+        AddDomainEvent(new WorkspaceInvitationExpiredEvent(Id, WorkspaceId, expiredAt));
+    }
+
     public void Revoke(Guid revokedBy, DateTimeOffset revokedAt)
     {
+        EnsureNotDeleted();
         if (Status != WorkspaceInvitationStatus.Pending) return;
 
         Status = WorkspaceInvitationStatus.Revoked;
