@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Interfaces;
+using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Identity.Commands.Logout;
 using Notrelix.Domain.Entities.Identity;
 

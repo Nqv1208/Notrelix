@@ -1,7 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Events;
-using Notrelix.Application.Common.Interfaces;
+using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Calendar.Events;
 using Notrelix.Application.Features.Calendar.Jobs;
 using Notrelix.Application.Features.Shared.Events;
