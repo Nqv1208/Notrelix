@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MediatR;
-using Notrelix.Application.Common.Interfaces;
+using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Commands.Register;
 using Notrelix.Domain.Entities.Identity;
