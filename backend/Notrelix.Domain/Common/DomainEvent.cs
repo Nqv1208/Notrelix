@@ -1,13 +1,13 @@
 namespace Notrelix.Domain.Common;
 
-public abstract class DomainEvent : IDomainEvent
+public abstract record DomainEvent : IDomainEvent
 {
     public Guid EventId { get; }
     public DateTimeOffset OccurredAt { get; }
 
-    protected DomainEvent()
+    protected DomainEvent(DateTimeOffset occurredAt)
     {
         EventId = Guid.NewGuid();
-        OccurredAt = DateTimeOffset.UtcNow;
+        OccurredAt = occurredAt;
     }
 }

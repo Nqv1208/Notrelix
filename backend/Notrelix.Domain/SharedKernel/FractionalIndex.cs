@@ -4,17 +4,16 @@ namespace Notrelix.Domain.SharedKernel;
 
 public sealed class FractionalIndex : ValueObject, IComparable<FractionalIndex>
 {
-    public double Value { get; }
+    public string Value { get; }
 
-    private FractionalIndex(double value)
+    private FractionalIndex(string value)
     {
+        Guard.NotNullOrWhiteSpace(value);
         Value = value;
     }
 
-    public static FractionalIndex Create(double value)
-    {
-        return new FractionalIndex(value);
-    }
+    public static FractionalIndex Create(string value) => new(value);
+    public static FractionalIndex Initial() => new("a0");
 
     protected override IEnumerable<object?> GetEqualityComponents()
     {
@@ -25,8 +24,8 @@ public sealed class FractionalIndex : ValueObject, IComparable<FractionalIndex>
     {
         if (ReferenceEquals(this, other)) return 0;
         if (other is null) return 1;
-        return Value.CompareTo(other.Value);
+        return string.CompareOrdinal(Value, other.Value);
     }
 
-    public override string ToString() => Value.ToString("G");
+    public override string ToString() => Value;
 }
