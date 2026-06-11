@@ -16,7 +16,7 @@ public class CustomRole : SoftDeletableEntity
 
     private CustomRole() : base() { }
 
-    public static CustomRole Create(Guid workspaceId, string name, string? description, Guid createdBy)
+    public static CustomRole Create(Guid workspaceId, string name, string? description, Guid createdBy, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(name);
@@ -29,13 +29,13 @@ public class CustomRole : SoftDeletableEntity
             Status = CustomRoleStatus.Active
         };
 
-        role.SetAuditOnCreate(createdBy);
-        role.AddDomainEvent(new CustomRoleCreatedEvent(role.Id, workspaceId, role.Name, createdBy));
+        role.SetAuditOnCreate(createdBy, createdAt);
+        role.AddDomainEvent(new CustomRoleCreatedEvent(role.Id, workspaceId, role.Name, createdBy, createdAt));
 
         return role;
     }
 
-    public void Rename(string name, Guid updatedBy)
+    public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(name);
@@ -44,22 +44,22 @@ public class CustomRole : SoftDeletableEntity
         if (Name == newName) return;
 
         Name = newName;
-        SetAuditOnUpdate(updatedBy);
-        AddDomainEvent(new CustomRoleUpdatedEvent(Id, updatedBy));
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new CustomRoleUpdatedEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
-    public void AddPermission(string action, Guid updatedBy)
+    public void AddPermission(string action, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
 
         if (_permissions.Any(p => p.Action == action)) return;
 
         _permissions.Add(CustomRolePermission.Create(Id, action));
-        SetAuditOnUpdate(updatedBy);
-        AddDomainEvent(new CustomRoleUpdatedEvent(Id, updatedBy));
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new CustomRoleUpdatedEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
-    public void RemovePermission(string action, Guid updatedBy)
+    public void RemovePermission(string action, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
 
@@ -67,13 +67,19 @@ public class CustomRole : SoftDeletableEntity
         if (permission == null) return;
 
         _permissions.Remove(permission);
-        SetAuditOnUpdate(updatedBy);
-        AddDomainEvent(new CustomRoleUpdatedEvent(Id, updatedBy));
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new CustomRoleUpdatedEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
-    public void AssignToMember(Guid memberId, Guid assignedBy)
+    public void AssignToMember(Guid memberId, Guid assignedBy, DateTimeOffset assignedAt)
     {
         EnsureNotDeleted();
-        AddDomainEvent(new CustomRoleAssignedEvent(Id, memberId, assignedBy));
+        AddDomainEvent(new CustomRoleAssignedEvent(WorkspaceId, Id, memberId, assignedBy, assignedAt));
+    }
+
+    public void RevokeFromMember(Guid memberId, Guid revokedBy, DateTimeOffset revokedAt)
+    {
+        EnsureNotDeleted();
+        AddDomainEvent(new CustomRoleRevokedEvent(WorkspaceId, Id, memberId, revokedBy, revokedAt));
     }
 }

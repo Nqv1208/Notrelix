@@ -25,7 +25,8 @@ public class AuditLogTests
             metadata,
             AuditSeverity.Warning,
             "127.0.0.1",
-            "Mozilla/5.0");
+            "Mozilla/5.0",
+            DateTimeOffset.UtcNow);
 
         log.WorkspaceId.Should().Be(workspaceId);
         log.ActorId.Should().Be(actorId);

@@ -26,8 +26,10 @@ public class AuditLog : Entity
         AuditMetadata metadata,
         AuditSeverity severity,
         string ipAddress,
-        string userAgent)
+        string userAgent,
+        DateTimeOffset timestamp)
     {
+        Guid.Empty.ToString(); // just some guard
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(actorId);
         Guard.NotNullOrWhiteSpace(action);
@@ -42,12 +44,12 @@ public class AuditLog : Entity
             ResourceId = resourceId,
             Metadata = metadata,
             Severity = severity,
-            Timestamp = DateTimeOffset.UtcNow,
+            Timestamp = timestamp,
             IpAddress = ipAddress,
             UserAgent = userAgent
         };
 
-        log.AddDomainEvent(new AuditLogRecordedEvent(log.Id, workspaceId, log.Action));
+        log.AddDomainEvent(new AuditLogRecordedEvent(log.Id, workspaceId, log.Action, timestamp));
         
         return log;
     }
