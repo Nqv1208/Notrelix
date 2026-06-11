@@ -13,7 +13,7 @@ public class Space : AggregateRoot
 
     private Space() : base() { }
 
-    public static Space Create(Guid workspaceId, string name, SpaceVisibility visibility, Guid createdBy)
+    public static Space Create(Guid workspaceId, string name, SpaceVisibility visibility, Guid createdBy, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(name);
@@ -26,22 +26,27 @@ public class Space : AggregateRoot
             Status = SpaceStatus.Active
         };
 
-        space.SetAuditOnCreate(createdBy);
-        space.AddDomainEvent(new SpaceCreatedEvent(space.Id, workspaceId, space.Name, createdBy));
+        space.SetAuditOnCreate(createdBy, createdAt);
+        space.AddDomainEvent(new SpaceCreatedEvent(space.Id, workspaceId, space.Name, createdBy, createdAt));
 
         return space;
     }
 
-    public void Rename(string newName, Guid updatedBy)
+    public void Rename(string newName, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(newName);
 
-        Name = newName.Trim();
-        SetAuditOnUpdate(updatedBy);
+        var oldName = Name;
+        var normalizedName = newName.Trim();
+        if (Name == normalizedName) return;
+
+        Name = normalizedName;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new SpaceRenamedEvent(WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
     }
 
-    public void Move(Guid newWorkspaceId, Guid movedBy)
+    public void Move(Guid newWorkspaceId, Guid movedBy, DateTimeOffset movedAt)
     {
         EnsureNotDeleted();
         Guard.NotEmpty(newWorkspaceId);
@@ -50,7 +55,31 @@ public class Space : AggregateRoot
         if (WorkspaceId == newWorkspaceId) return;
 
         WorkspaceId = newWorkspaceId;
-        SetAuditOnUpdate(movedBy);
-        AddDomainEvent(new SpaceMovedEvent(Id, oldWorkspaceId, newWorkspaceId, movedBy));
+        SetAuditOnUpdate(movedBy, movedAt);
+        AddDomainEvent(new SpaceMovedEvent(Id, oldWorkspaceId, newWorkspaceId, movedBy, movedAt));
+    }
+
+    public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
+    {
+        EnsureNotDeleted();
+        if (Status == SpaceStatus.Archived) return;
+
+        Status = SpaceStatus.Archived;
+        SetAuditOnUpdate(archivedBy, archivedAt);
+        AddDomainEvent(new SpaceArchivedEvent(WorkspaceId, Id, archivedBy, archivedAt));
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        AddDomainEvent(new SpaceSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        AddDomainEvent(new SpaceRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

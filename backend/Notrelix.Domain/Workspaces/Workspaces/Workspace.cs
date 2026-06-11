@@ -1,10 +1,11 @@
 using Notrelix.Domain.Common;
+using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Domain.Workspaces.Workspaces;
 
-public class Workspace : SoftDeletableEntity
+public class Workspace : AggregateRoot
 {
     public string Name { get; private set; } = null!;
     public string Slug { get; private set; } = null!;
@@ -13,12 +14,9 @@ public class Workspace : SoftDeletableEntity
     public WorkspaceSettings Settings { get; private set; } = null!;
     public bool IsPersonal { get; private set; }
 
-    private readonly List<Notrelix.Domain.Workspaces.Members.WorkspaceMember> _workspaceMembers = new();
-    public IReadOnlyCollection<Notrelix.Domain.Workspaces.Members.WorkspaceMember> WorkspaceMembers => _workspaceMembers.AsReadOnly();
-
     private Workspace() : base() { }
 
-    public static Workspace Create(Guid ownerId, string name, string slug, bool isPersonal = false)
+    public static Workspace Create(Guid ownerId, string name, string slug, DateTimeOffset createdAt, bool isPersonal = false)
     {
         Guard.NotEmpty(ownerId);
         Guard.NotNullOrWhiteSpace(name);
@@ -33,18 +31,13 @@ public class Workspace : SoftDeletableEntity
             IsPersonal = isPersonal
         };
 
-        workspace.SetAuditOnCreate(ownerId);
-        
-        // The first member is the owner
-        var owner = Notrelix.Domain.Workspaces.Members.WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner, ownerId);
-        workspace._workspaceMembers.Add(owner);
-
-        workspace.AddDomainEvent(new WorkspaceCreatedEvent(workspace.Id, workspace.Name, workspace.Slug, ownerId));
+        workspace.SetAuditOnCreate(ownerId, createdAt);
+        workspace.AddDomainEvent(new WorkspaceCreatedEvent(workspace.Id, workspace.Name, workspace.Slug, ownerId, createdAt));
 
         return workspace;
     }
 
-    public void Rename(string newName, Guid updatedBy)
+    public void Rename(string newName, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(newName);
@@ -53,18 +46,18 @@ public class Workspace : SoftDeletableEntity
         if (Name == newName.Trim()) return;
 
         Name = newName.Trim();
-        SetAuditOnUpdate(updatedBy);
-        AddDomainEvent(new WorkspaceRenamedEvent(Id, oldName, Name, updatedBy));
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new WorkspaceRenamedEvent(Id, oldName, Name, updatedBy, updatedAt));
     }
 
-    public void Archive(Guid archivedBy)
+    public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();
         if (Status == WorkspaceStatus.Archived) return;
 
         Status = WorkspaceStatus.Archived;
-        SetAuditOnUpdate(archivedBy);
-        AddDomainEvent(new WorkspaceArchivedEvent(Id, archivedBy));
+        SetAuditOnUpdate(archivedBy, archivedAt);
+        AddDomainEvent(new WorkspaceArchivedEvent(Id, archivedBy, archivedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -72,44 +65,14 @@ public class Workspace : SoftDeletableEntity
         if (IsDeleted) return;
         Status = WorkspaceStatus.SoftDeleted;
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new WorkspaceSoftDeletedEvent(Id, deletedBy));
+        AddDomainEvent(new WorkspaceSoftDeletedEvent(Id, deletedBy, deletedAt));
     }
 
-    public void AddMember(Guid userId, WorkspaceRole role, Guid addedBy)
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
-        EnsureNotDeleted();
-        if (_workspaceMembers.Any(m => m.UserId == userId))
-            throw new BusinessRuleException("User is already a member of this workspace.");
-
-        var member = Notrelix.Domain.Workspaces.Members.WorkspaceMember.Create(Id, userId, role, addedBy);
-        _workspaceMembers.Add(member);
-        AddDomainEvent(new WorkspaceMemberAddedEvent(Id, member.Id, userId, role, addedBy));
-    }
-
-    public void RemoveMember(Guid userId, Guid removedBy)
-    {
-        EnsureNotDeleted();
-        var member = _workspaceMembers.FirstOrDefault(m => m.UserId == userId);
-        if (member == null) return;
-
-        if (member.Role == WorkspaceRole.Owner && _workspaceMembers.Count(m => m.Role == WorkspaceRole.Owner) <= 1)
-            throw new BusinessRuleException("Cannot remove the last owner of the workspace.");
-
-        _workspaceMembers.Remove(member);
-        AddDomainEvent(new WorkspaceMemberRemovedEvent(Id, member.Id, removedBy));
-    }
-
-    public void ChangeMemberRole(Guid userId, WorkspaceRole newRole, Guid updatedBy)
-    {
-        EnsureNotDeleted();
-        var member = _workspaceMembers.FirstOrDefault(m => m.UserId == userId);
-        if (member == null) throw new BusinessRuleException("Member not found.");
-
-        if (member.Role == WorkspaceRole.Owner && newRole != WorkspaceRole.Owner && _workspaceMembers.Count(m => m.Role == WorkspaceRole.Owner) <= 1)
-            throw new BusinessRuleException("Cannot downgrade the role of the last owner.");
-
-        var oldRole = member.Role;
-        member.ChangeRole(newRole, updatedBy);
-        AddDomainEvent(new WorkspaceMemberRoleChangedEvent(Id, member.Id, oldRole, newRole, updatedBy));
+        if (!IsDeleted) return;
+        Status = WorkspaceStatus.Active;
+        base.Restore(restoredBy, restoredAt);
+        AddDomainEvent(new WorkspaceRestoredEvent(Id, restoredBy, restoredAt));
     }
 }

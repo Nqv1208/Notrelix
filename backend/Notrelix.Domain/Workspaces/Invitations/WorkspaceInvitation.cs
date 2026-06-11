@@ -1,4 +1,5 @@
 using Notrelix.Domain.Common;
+using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Workspaces.Invitations;
@@ -8,7 +9,7 @@ public class WorkspaceInvitation : AggregateRoot
     public Guid WorkspaceId { get; private set; }
     public string Email { get; private set; } = null!;
     public WorkspaceRole Role { get; private set; }
-    public string Token { get; private set; } = null!;
+    public InvitationTokenHash Token { get; private set; } = null!;
     public WorkspaceInvitationStatus Status { get; private set; }
     public DateTimeOffset ExpiresAt { get; private set; }
     public Guid InvitedBy { get; private set; }
@@ -19,13 +20,14 @@ public class WorkspaceInvitation : AggregateRoot
         Guid workspaceId, 
         string email, 
         WorkspaceRole role, 
-        string token, 
+        InvitationTokenHash token, 
         Guid invitedBy,
+        DateTimeOffset createdAt,
         TimeSpan? expiry = null)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(email);
-        Guard.NotNullOrWhiteSpace(token);
+        Guard.NotNull(token);
         Guard.NotEmpty(invitedBy);
 
         var invitation = new WorkspaceInvitation
@@ -35,36 +37,39 @@ public class WorkspaceInvitation : AggregateRoot
             Role = role,
             Token = token,
             Status = WorkspaceInvitationStatus.Pending,
-            ExpiresAt = DateTimeOffset.UtcNow.Add(expiry ?? TimeSpan.FromDays(7)),
+            ExpiresAt = createdAt.Add(expiry ?? TimeSpan.FromDays(7)),
             InvitedBy = invitedBy
         };
 
-        invitation.SetAuditOnCreate(invitedBy);
-        invitation.AddDomainEvent(new WorkspaceInvitationCreatedEvent(invitation.Id, workspaceId, invitation.Email, role, invitedBy));
+        invitation.SetAuditOnCreate(invitedBy, createdAt);
+        invitation.AddDomainEvent(new WorkspaceInvitationCreatedEvent(invitation.Id, workspaceId, invitation.Email, role, invitedBy, createdAt));
 
         return invitation;
     }
 
-    public void Accept(Guid userId)
+    public void Accept(Guid userId, DateTimeOffset acceptedAt)
     {
         if (Status != WorkspaceInvitationStatus.Pending)
             throw new BusinessRuleException("Invitation is not pending.");
         
-        if (ExpiresAt < DateTimeOffset.UtcNow)
+        if (ExpiresAt < acceptedAt)
         {
             Status = WorkspaceInvitationStatus.Expired;
+            AddDomainEvent(new WorkspaceInvitationExpiredEvent(Id, WorkspaceId, acceptedAt));
             throw new BusinessRuleException("Invitation has expired.");
         }
 
         Status = WorkspaceInvitationStatus.Accepted;
-        AddDomainEvent(new WorkspaceInvitationAcceptedEvent(Id, WorkspaceId, userId, userId));
+        SetAuditOnUpdate(userId, acceptedAt);
+        AddDomainEvent(new WorkspaceInvitationAcceptedEvent(Id, WorkspaceId, userId, userId, acceptedAt));
     }
 
-    public void Revoke(Guid revokedBy)
+    public void Revoke(Guid revokedBy, DateTimeOffset revokedAt)
     {
         if (Status != WorkspaceInvitationStatus.Pending) return;
 
         Status = WorkspaceInvitationStatus.Revoked;
-        SetAuditOnUpdate(revokedBy);
+        SetAuditOnUpdate(revokedBy, revokedAt);
+        AddDomainEvent(new WorkspaceInvitationRevokedEvent(Id, WorkspaceId, revokedBy, revokedAt));
     }
 }

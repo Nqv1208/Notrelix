@@ -12,7 +12,7 @@ public class WorkspaceMember : AggregateRoot
 
     private WorkspaceMember() : base() { }
 
-    internal static WorkspaceMember Create(Guid workspaceId, Guid userId, WorkspaceRole role, Guid addedBy)
+    public static WorkspaceMember Create(Guid workspaceId, Guid userId, WorkspaceRole role, Guid addedBy, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(userId);
@@ -25,28 +25,40 @@ public class WorkspaceMember : AggregateRoot
             Status = WorkspaceMemberStatus.Active
         };
 
-        member.SetAuditOnCreate(addedBy);
+        member.SetAuditOnCreate(addedBy, createdAt);
+        member.AddDomainEvent(new WorkspaceMemberAddedEvent(workspaceId, member.Id, userId, role, addedBy, createdAt));
         return member;
     }
 
-    internal void ChangeRole(WorkspaceRole newRole, Guid updatedBy)
+    public void ChangeRole(WorkspaceRole newRole, Guid updatedBy, DateTimeOffset updatedAt)
     {
         if (Role == newRole) return;
+        var oldRole = Role;
         Role = newRole;
-        SetAuditOnUpdate(updatedBy);
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new WorkspaceMemberRoleChangedEvent(WorkspaceId, Id, oldRole, newRole, updatedBy, updatedAt));
     }
 
-    public void Suspend(Guid updatedBy)
+    public void Suspend(Guid updatedBy, DateTimeOffset updatedAt)
     {
         if (Status == WorkspaceMemberStatus.Suspended) return;
         Status = WorkspaceMemberStatus.Suspended;
-        SetAuditOnUpdate(updatedBy);
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new WorkspaceMemberSuspendedEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
-    public void Activate(Guid updatedBy)
+    public void Activate(Guid updatedBy, DateTimeOffset updatedAt)
     {
         if (Status == WorkspaceMemberStatus.Active) return;
         Status = WorkspaceMemberStatus.Active;
-        SetAuditOnUpdate(updatedBy);
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new WorkspaceMemberActivatedEvent(WorkspaceId, Id, updatedBy, updatedAt));
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        AddDomainEvent(new WorkspaceMemberRemovedEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
 }

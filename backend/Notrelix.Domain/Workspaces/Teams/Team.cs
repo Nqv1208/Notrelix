@@ -3,27 +3,7 @@ using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Workspaces.Teams;
 
-public class TeamMember : Entity
-{
-    public Guid TeamId { get; private set; }
-    public Guid UserId { get; private set; }
-    public TeamMemberRole Role { get; private set; }
 
-    private TeamMember() : base() { }
-
-    public static TeamMember Create(Guid teamId, Guid userId, TeamMemberRole role)
-    {
-        Guard.NotEmpty(teamId);
-        Guard.NotEmpty(userId);
-
-        return new TeamMember
-        {
-            TeamId = teamId,
-            UserId = userId,
-            Role = role
-        };
-    }
-}
 
 public class Team : AggregateRoot
 {
@@ -37,7 +17,7 @@ public class Team : AggregateRoot
 
     private Team() : base() { }
 
-    public static Team Create(Guid workspaceId, string name, Guid createdBy)
+    public static Team Create(Guid workspaceId, string name, Guid createdBy, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(name);
@@ -49,13 +29,37 @@ public class Team : AggregateRoot
             Status = TeamStatus.Active
         };
 
-        team.SetAuditOnCreate(createdBy);
-        team.AddDomainEvent(new TeamCreatedEvent(team.Id, workspaceId, team.Name, createdBy));
+        team.SetAuditOnCreate(createdBy, createdAt);
+        team.AddDomainEvent(new TeamCreatedEvent(team.Id, workspaceId, team.Name, createdBy, createdAt));
 
         return team;
     }
 
-    public void AddMember(Guid userId, TeamMemberRole role, Guid addedBy)
+    public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotNullOrWhiteSpace(name);
+
+        var oldName = Name;
+        var normalizedName = name.Trim();
+        if (Name == normalizedName) return;
+
+        Name = normalizedName;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new TeamRenamedEvent(WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
+    }
+
+    public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
+    {
+        EnsureNotDeleted();
+        if (Status == TeamStatus.Archived) return;
+
+        Status = TeamStatus.Archived;
+        SetAuditOnUpdate(archivedBy, archivedAt);
+        AddDomainEvent(new TeamArchivedEvent(WorkspaceId, Id, archivedBy, archivedAt));
+    }
+
+    public void AddMember(Guid userId, TeamMemberRole role, Guid addedBy, DateTimeOffset addedAt)
     {
         EnsureNotDeleted();
         if (_members.Any(m => m.UserId == userId))
@@ -64,17 +68,18 @@ public class Team : AggregateRoot
         var member = TeamMember.Create(Id, userId, role);
         _members.Add(member);
         
-        SetAuditOnUpdate(addedBy);
-        AddDomainEvent(new TeamMemberAddedEvent(Id, userId, role, addedBy));
+        SetAuditOnUpdate(addedBy, addedAt);
+        AddDomainEvent(new TeamMemberAddedEvent(WorkspaceId, Id, userId, role, addedBy, addedAt));
     }
 
-    public void RemoveMember(Guid userId, Guid removedBy)
+    public void RemoveMember(Guid userId, Guid removedBy, DateTimeOffset removedAt)
     {
         EnsureNotDeleted();
         var member = _members.FirstOrDefault(m => m.UserId == userId);
         if (member == null) return;
 
         _members.Remove(member);
-        SetAuditOnUpdate(removedBy);
+        SetAuditOnUpdate(removedBy, removedAt);
+        AddDomainEvent(new TeamMemberRemovedEvent(WorkspaceId, Id, userId, removedBy, removedAt));
     }
 }
