@@ -29,10 +29,10 @@ public class UsageMetric : AggregateRoot
         };
     }
 
-    public void Increase(int amount)
+    public void Increase(int amount, DateTimeOffset occurredAt)
     {
-        CurrentValue += amount;
-        _history.Add(UsageMetricHistory.Create(Id, amount));
-        AddDomainEvent(new UsageMetricIncreasedEvent(WorkspaceId, Key, amount));
+         CurrentValue += amount;
+         _history.Add(UsageMetricHistory.Create(Id, amount, occurredAt));
+         AddDomainEvent(new UsageMetricIncreasedEvent(WorkspaceId, Key, amount, occurredAt));
     }
 }
