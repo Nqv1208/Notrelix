@@ -11,7 +11,7 @@ public class WebhookSubscription : AggregateRoot
 
     private WebhookSubscription() : base() { }
 
-    public static WebhookSubscription Create(Guid workspaceId, string targetUrl, Guid createdBy, WebhookSecretHash? secretHash = null)
+    public static WebhookSubscription Create(Guid workspaceId, string targetUrl, Guid createdBy, DateTimeOffset createdAt, WebhookSecretHash? secretHash = null)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(targetUrl);
@@ -24,8 +24,8 @@ public class WebhookSubscription : AggregateRoot
             SecretHash = secretHash
         };
 
-        subscription.SetAuditOnCreate(createdBy);
-        subscription.AddDomainEvent(new WebhookSubscriptionCreatedEvent(workspaceId, subscription.Id, subscription.TargetUrl));
+        subscription.SetAuditOnCreate(createdBy, createdAt);
+        subscription.AddDomainEvent(new WebhookSubscriptionCreatedEvent(subscription.Id, workspaceId, subscription.TargetUrl, createdAt));
 
         return subscription;
     }

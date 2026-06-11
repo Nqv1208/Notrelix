@@ -37,7 +37,7 @@ public class CalendarIntegration : AggregateRoot
 
     private CalendarIntegration() : base() { }
 
-    public static CalendarIntegration Create(Guid workspaceId, Guid connectionId, CalendarProvider provider, CalendarSyncDirection syncDirection, Guid createdBy)
+    public static CalendarIntegration Create(Guid workspaceId, Guid connectionId, CalendarProvider provider, CalendarSyncDirection syncDirection, Guid createdBy, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(connectionId);
@@ -51,8 +51,8 @@ public class CalendarIntegration : AggregateRoot
             IsActive = true
         };
 
-        integration.SetAuditOnCreate(createdBy);
-        integration.AddDomainEvent(new CalendarIntegrationConnectedEvent(workspaceId, connectionId));
+        integration.SetAuditOnCreate(createdBy, createdAt);
+        integration.AddDomainEvent(new CalendarIntegrationConnectedEvent(workspaceId, connectionId, createdAt));
 
         return integration;
     }
