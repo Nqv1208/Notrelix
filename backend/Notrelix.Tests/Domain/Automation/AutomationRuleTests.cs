@@ -10,7 +10,7 @@ public class AutomationRuleTests
     public void Create_ShouldSucceed_AndRaiseEvent()
     {
         var workspaceId = Guid.NewGuid();
-        var rule = AutomationRule.Create(workspaceId, "Notify on high priority", Guid.NewGuid());
+        var rule = AutomationRule.Create(workspaceId, "Notify on high priority", Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         rule.Name.Should().Be("Notify on high priority");
         rule.Status.Should().Be(AutomationRuleStatus.Draft);
@@ -20,10 +20,10 @@ public class AutomationRuleTests
     [Fact]
     public void Enable_ShouldChangeStatus_AndRaiseEvent()
     {
-        var rule = AutomationRule.Create(Guid.NewGuid(), "Rule", Guid.NewGuid());
+        var rule = AutomationRule.Create(Guid.NewGuid(), "Rule", Guid.NewGuid(), DateTimeOffset.UtcNow);
         rule.ClearDomainEvents();
 
-        rule.Enable(Guid.NewGuid());
+        rule.Enable(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         rule.Status.Should().Be(AutomationRuleStatus.Active);
         rule.DomainEvents.Should().ContainSingle(e => e is AutomationRuleEnabledEvent);
