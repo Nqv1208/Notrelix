@@ -17,7 +17,7 @@ public class MfaMethodTests
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
-        var method = UserMfaMethod.Create(userId, MfaMethodType.AuthenticatorApp, now, ValidSecret, isPrimary: false);
+        var method = UserMfaMethod.Create(userId, MfaMethodType.AuthenticatorApp, now, ValidSecret);
 
         method.UserId.Should().Be(userId);
         method.Type.Should().Be(MfaMethodType.AuthenticatorApp);
@@ -91,31 +91,51 @@ public class MfaMethodTests
     }
 
     [Fact]
-    public void SetPrimary_OnActiveMethod_ShouldSucceedAndRaiseEvent()
+    public void SetAsPrimary_OnActiveMethod_ShouldSucceedAndRaiseEvent()
     {
         var now = DateTimeOffset.UtcNow;
         var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.AuthenticatorApp, now, ValidSecret);
         method.Verify(now.AddMinutes(1));
         method.ClearDomainEvents();
 
-        method.SetPrimary(true, now.AddMinutes(2));
+        method.SetAsPrimary(now.AddMinutes(2));
 
         method.IsPrimary.Should().BeTrue();
         method.DomainEvents.Should().ContainSingle(e => e is UserMfaMethodSetAsPrimaryEvent);
         var evt = (UserMfaMethodSetAsPrimaryEvent)method.DomainEvents.Single(e => e is UserMfaMethodSetAsPrimaryEvent);
         evt.MfaMethodId.Should().Be(method.Id);
         evt.UserId.Should().Be(method.UserId);
-        evt.Type.Should().Be(MfaMethodType.AuthenticatorApp);
+        evt.Type.Should().Be(method.Type);
         evt.UpdatedAt.Should().Be(now.AddMinutes(2));
     }
 
     [Fact]
-    public void SetPrimary_OnPendingMethod_ShouldThrow()
+    public void UnsetAsPrimary_ShouldClearPrimaryAndRaiseEvent()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.AuthenticatorApp, now, ValidSecret);
+        method.Verify(now.AddMinutes(1));
+        method.SetAsPrimary(now.AddMinutes(2));
+        method.ClearDomainEvents();
+
+        method.UnsetAsPrimary(now.AddMinutes(3));
+
+        method.IsPrimary.Should().BeFalse();
+        method.DomainEvents.Should().ContainSingle(e => e is UserMfaMethodUnsetAsPrimaryEvent);
+        var evt = (UserMfaMethodUnsetAsPrimaryEvent)method.DomainEvents.Single(e => e is UserMfaMethodUnsetAsPrimaryEvent);
+        evt.MfaMethodId.Should().Be(method.Id);
+        evt.UserId.Should().Be(method.UserId);
+        evt.Type.Should().Be(method.Type);
+        evt.UpdatedAt.Should().Be(now.AddMinutes(3));
+    }
+
+    [Fact]
+    public void SetAsPrimary_OnPendingMethod_ShouldThrow()
     {
         var now = DateTimeOffset.UtcNow;
         var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.AuthenticatorApp, now, ValidSecret);
 
-        var act = () => method.SetPrimary(true, now.AddMinutes(1));
+        var act = () => method.SetAsPrimary(now.AddMinutes(1));
 
         act.Should().Throw<BusinessRuleException>().WithMessage("*verified and active*");
     }
@@ -126,7 +146,7 @@ public class MfaMethodTests
         var now = DateTimeOffset.UtcNow;
         var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.AuthenticatorApp, now, ValidSecret);
         method.Verify(now.AddMinutes(1));
-        method.SetPrimary(true, now.AddMinutes(2));
+        method.SetAsPrimary(now.AddMinutes(2));
         method.ClearDomainEvents();
 
         method.Disable(now.AddMinutes(3));

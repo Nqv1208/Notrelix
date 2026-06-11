@@ -25,8 +25,7 @@ public class UserMfaMethod : AggregateRoot
         MfaMethodType type, 
         DateTimeOffset createdAt, 
         SecretRef? secretRef = null, 
-        string? destinationMasked = null, 
-        bool isPrimary = false)
+        string? destinationMasked = null)
     {
         Guard.NotEmpty(userId);
         MfaMethodRules.EnsureValidCreation(type, secretRef, destinationMasked);
@@ -38,7 +37,7 @@ public class UserMfaMethod : AggregateRoot
             SecretRef = secretRef,
             DestinationMasked = destinationMasked,
             Status = MfaMethodStatus.PendingVerification,
-            IsPrimary = isPrimary
+            IsPrimary = false
         };
 
         method.SetAuditOnCreate(userId, createdAt);
@@ -64,18 +63,31 @@ public class UserMfaMethod : AggregateRoot
         AddDomainEvent(new UserMfaMethodVerifiedEvent(Id, UserId, Type, verifiedAt));
     }
 
-    public void SetPrimary(bool isPrimary, DateTimeOffset updatedAt)
+    public void SetAsPrimary(DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        if (isPrimary && Status != MfaMethodStatus.Active)
+        if (Status != MfaMethodStatus.Active)
         {
             throw new BusinessRuleException("Only verified and active MFA methods can be set as primary.");
         }
 
-        IsPrimary = isPrimary;
+        if (IsPrimary) return;
+
+        IsPrimary = true;
         SetAuditOnUpdate(UserId, updatedAt);
         
         AddDomainEvent(new UserMfaMethodSetAsPrimaryEvent(Id, UserId, Type, updatedAt));
+    }
+
+    public void UnsetAsPrimary(DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        if (!IsPrimary) return;
+
+        IsPrimary = false;
+        SetAuditOnUpdate(UserId, updatedAt);
+        
+        AddDomainEvent(new UserMfaMethodUnsetAsPrimaryEvent(Id, UserId, Type, updatedAt));
     }
 
     public void Disable(DateTimeOffset disabledAt)

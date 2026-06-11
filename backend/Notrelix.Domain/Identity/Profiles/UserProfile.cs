@@ -14,31 +14,36 @@ public class UserProfile : AggregateRoot
 
     private UserProfile() : base() { }
 
-    public static UserProfile Create(Guid userId)
+    public static UserProfile Create(Guid userId, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(userId);
-        return new UserProfile
+        var profile = new UserProfile
         {
             UserId = userId
         };
+        profile.SetAuditOnCreate(userId, createdAt);
+        return profile;
     }
 
     public void UpdateTimezone(string timezone, DateTimeOffset updatedAt)
     {
+        EnsureNotDeleted();
         Timezone = string.IsNullOrWhiteSpace(timezone) ? "UTC" : timezone.Trim();
-        UpdatedAt = updatedAt;
+        SetAuditOnUpdate(UserId, updatedAt);
         AddDomainEvent(new UserProfileUpdatedEvent(UserId, updatedAt));
     }
 
     public void UpdateLocale(string locale, DateTimeOffset updatedAt)
     {
+        EnsureNotDeleted();
         Locale = string.IsNullOrWhiteSpace(locale) ? "vi" : locale.Trim();
-        UpdatedAt = updatedAt;
+        SetAuditOnUpdate(UserId, updatedAt);
         AddDomainEvent(new UserProfileUpdatedEvent(UserId, updatedAt));
     }
 
     public void UpdateTheme(string theme, DateTimeOffset updatedAt)
     {
+        EnsureNotDeleted();
         if (string.IsNullOrWhiteSpace(theme))
         {
             Theme = "system";
@@ -51,12 +56,13 @@ public class UserProfile : AggregateRoot
             }
             Theme = theme.Trim().ToLowerInvariant();
         }
-        UpdatedAt = updatedAt;
+        SetAuditOnUpdate(UserId, updatedAt);
         AddDomainEvent(new UserProfileUpdatedEvent(UserId, updatedAt));
     }
 
     public void UpdatePreferences(string preferences, DateTimeOffset updatedAt)
     {
+        EnsureNotDeleted();
         var json = string.IsNullOrWhiteSpace(preferences) ? "{}" : preferences;
         try
         {
@@ -67,7 +73,7 @@ public class UserProfile : AggregateRoot
             throw new BusinessRuleException("Preferences must be a valid JSON string.");
         }
         Preferences = json;
-        UpdatedAt = updatedAt;
+        SetAuditOnUpdate(UserId, updatedAt);
         AddDomainEvent(new UserProfileUpdatedEvent(UserId, updatedAt));
     }
 }
