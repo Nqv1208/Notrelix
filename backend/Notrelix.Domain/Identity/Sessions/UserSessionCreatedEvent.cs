@@ -4,7 +4,6 @@ using Notrelix.Domain.SharedKernel;
 namespace Notrelix.Domain.Identity.Sessions;
 
 public sealed record UserSessionCreatedEvent(
-    Guid WorkspaceId,
     Guid SessionId,
     Guid UserId,
     DateTimeOffset OccurredAt

@@ -7,9 +7,7 @@ public class OAuthAccount : Entity
     public Guid UserId { get; private set; }
     public OAuthProvider Provider { get; private set; }
     public string ProviderId { get; private set; } = null!;
-    public string? AccessToken { get; private set; }
-    public string? RefreshToken { get; private set; }
-    public DateTimeOffset? TokenExpiresAt { get; private set; }
+    public OAuthToken? Token { get; private set; }
     public JsonValue RawProfile { get; private set; } = null!;
 
     private OAuthAccount() : base() { }
@@ -19,9 +17,7 @@ public class OAuthAccount : Entity
         OAuthProvider provider,
         string providerId,
         JsonValue rawProfile,
-        string? accessToken = null,
-        string? refreshToken = null,
-        DateTimeOffset? tokenExpiresAt = null)
+        OAuthToken? token = null)
     {
         Guard.NotEmpty(userId);
         Guard.NotNullOrWhiteSpace(providerId);
@@ -31,10 +27,21 @@ public class OAuthAccount : Entity
             UserId = userId,
             Provider = provider,
             ProviderId = providerId.Trim(),
-            AccessToken = accessToken,
-            RefreshToken = refreshToken,
-            TokenExpiresAt = tokenExpiresAt,
+            Token = token,
             RawProfile = rawProfile
         };
+    }
+
+    public void Link(OAuthToken token, DateTimeOffset linkedAt)
+    {
+        Guard.NotNull(token);
+        Token = token;
+        AddDomainEvent(new OAuthAccountLinkedEvent(UserId, Provider, linkedAt));
+    }
+
+    public void Unlink(DateTimeOffset unlinkedAt)
+    {
+        Token = null;
+        AddDomainEvent(new OAuthAccountUnlinkedEvent(UserId, Provider, unlinkedAt));
     }
 }

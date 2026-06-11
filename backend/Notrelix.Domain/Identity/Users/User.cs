@@ -1,95 +1,89 @@
-namespace Notrelix.Domain.Identity;
+using Notrelix.Domain.Common.Exceptions;
 
-// Entity đại diện cho người dùng trong hệ thống
-public class User : AuditableEntity
+namespace Notrelix.Domain.Identity.Users;
+
+public class User : AggregateRoot
 {
     public Email Email { get; private set; } = null!;
     public string Name { get; private set; } = null!;
     public string? Avatar { get; private set; }
-    
-    // Computed property for compatibility
+
     public string? AvatarUrl => Avatar;
     public string PasswordHash { get; private set; } = null!;
     public UserStatus Status { get; private set; }
-    public DateTime? LastLoginAt { get; private set; }
+    public DateTimeOffset? LastLoginAt { get; private set; }
 
-    // Navigation - Sessions
-    private readonly List<UserSession> _sessions = new();
-    public IReadOnlyCollection<UserSession> Sessions => _sessions.AsReadOnly();
     public UserProfile? Profile { get; private set; }
 
-    // Navigation - OAuth Accounts
     private readonly List<OAuthAccount> _oauthAccounts = new();
     public IReadOnlyCollection<OAuthAccount> OAuthAccounts => _oauthAccounts.AsReadOnly();
 
     private User() : base() { }
 
-    public static User Create(string email, string name, string passwordHash)
+    public static User Create(string email, string name, string passwordHash, DateTimeOffset createdAt)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Tên không được để trống", nameof(name));
+        Guard.NotNullOrWhiteSpace(name);
+        Guard.NotNullOrWhiteSpace(passwordHash);
 
-        if (string.IsNullOrWhiteSpace(passwordHash))
-            throw new ArgumentException("Password hash không được để trống", nameof(passwordHash));
-
-        return new User
+        var user = new User
         {
             Email = Email.Create(email),
             Name = name.Trim(),
             PasswordHash = passwordHash,
             Status = UserStatus.Active
         };
+
+        user.SetAuditOnCreate(Guid.Empty, createdAt);
+        user.AddDomainEvent(new UserRegisteredEvent(user.Id, email, createdAt));
+        return user;
     }
 
-    public void UpdateProfile(string name, string? avatar)
+    public void UpdateProfile(string name, string? avatar, DateTimeOffset updatedAt)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Tên không được để trống", nameof(name));
-
+        EnsureNotDeleted();
+        Guard.NotNullOrWhiteSpace(name);
         Name = name.Trim();
         Avatar = avatar?.Trim();
+        SetAuditOnUpdate(Id, updatedAt);
     }
 
-    public void UpdateEmail(string email)
+    public void UpdateEmail(string email, DateTimeOffset updatedAt)
     {
+        EnsureNotDeleted();
         Email = Email.Create(email);
+        SetAuditOnUpdate(Id, updatedAt);
     }
 
-    public void UpdatePassword(string passwordHash)
+    public void UpdatePassword(string passwordHash, DateTimeOffset updatedAt)
     {
-        if (string.IsNullOrWhiteSpace(passwordHash))
-            throw new ArgumentException("Password hash không được để trống", nameof(passwordHash));
-
+        EnsureNotDeleted();
+        Guard.NotNullOrWhiteSpace(passwordHash);
         PasswordHash = passwordHash;
+        SetAuditOnUpdate(Id, updatedAt);
     }
 
-    public void RecordLogin()
+    public void RecordLogin(DateTimeOffset loggedInAt)
     {
-        LastLoginAt = DateTime.UtcNow;
+        EnsureNotDeleted();
+        LastLoginAt = loggedInAt;
+        AddDomainEvent(new UserLoggedInEvent(Id, loggedInAt, loggedInAt));
     }
 
-    public void Activate() => Status = UserStatus.Active;
-    public void Deactivate() => Status = UserStatus.Inactive;
-    public void Suspend() => Status = UserStatus.Suspended;
-
-    public UserSession CreateSession(RefreshTokenHash tokenHash, DateTimeOffset expiration, DateTimeOffset createdAt, string? ipAddress = null, string? userAgent = null)
+    public void Activate()
     {
-        var session = UserSession.Create(Id, tokenHash, expiration, createdAt, ipAddress, userAgent);
-        _sessions.Add(session);
-        return session;
+        EnsureNotDeleted();
+        Status = UserStatus.Active;
     }
 
-    public void RevokeSession(Guid sessionId, DateTimeOffset revokedAt)
+    public void Deactivate()
     {
-        var session = _sessions.FirstOrDefault(s => s.Id == sessionId);
-        session?.Revoke(revokedAt);
+        EnsureNotDeleted();
+        Status = UserStatus.Inactive;
     }
 
-    public void RevokeAllSessions(DateTimeOffset revokedAt)
+    public void Suspend()
     {
-        foreach (var session in _sessions)
-        {
-            session.Revoke(revokedAt);
-        }
+        EnsureNotDeleted();
+        Status = UserStatus.Suspended;
     }
 }

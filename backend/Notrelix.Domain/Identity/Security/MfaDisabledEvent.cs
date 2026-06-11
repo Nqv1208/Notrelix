@@ -4,7 +4,6 @@ using Notrelix.Domain.SharedKernel;
 namespace Notrelix.Domain.Identity.Security;
 
 public sealed record MfaDisabledEvent(
-    Guid WorkspaceId,
     Guid UserId,
     MfaMethodType Type,
     DateTimeOffset OccurredAt
