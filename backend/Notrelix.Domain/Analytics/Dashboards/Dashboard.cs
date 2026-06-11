@@ -36,7 +36,7 @@ public class Dashboard : AggregateRoot
 
     private Dashboard() : base() { }
 
-    public static Dashboard Create(Guid workspaceId, string name)
+    public static Dashboard Create(Guid workspaceId, string name, Guid createdBy, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(name);
@@ -47,7 +47,7 @@ public class Dashboard : AggregateRoot
             Name = name.Trim()
         };
 
-        dashboard.SetAuditOnCreate(Guid.Empty); // System or Actor
+        dashboard.SetAuditOnCreate(createdBy, createdAt);
         return dashboard;
     }
 }
