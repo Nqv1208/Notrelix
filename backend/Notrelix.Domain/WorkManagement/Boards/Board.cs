@@ -13,7 +13,7 @@ public class Board : AggregateRoot
 
     private Board() : base() { }
 
-    public static Board Create(Guid workspaceId, Guid createdBy, string title, string? description, BoardVisibility visibility = BoardVisibility.Workspace)
+    public static Board Create(Guid workspaceId, Guid createdBy, string title, string? description, DateTimeOffset createdAt, BoardVisibility visibility = BoardVisibility.Workspace)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(createdBy);
@@ -28,12 +28,12 @@ public class Board : AggregateRoot
             IsArchived = false
         };
 
-        board.SetAuditOnCreate(createdBy);
-        board.AddDomainEvent(new BoardCreatedEvent(workspaceId, board.Id, board.Title, createdBy));
+        board.SetAuditOnCreate(createdBy, createdAt);
+        board.AddDomainEvent(new BoardCreatedEvent(workspaceId, board.Id, board.Title, createdBy, createdAt));
         return board;
     }
 
-    public void Rename(string title, Guid updatedBy)
+    public void Rename(string title, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(title);
@@ -43,56 +43,63 @@ public class Board : AggregateRoot
         if (Title == normalizedTitle) return;
 
         Title = normalizedTitle;
-        SetAuditOnUpdate(updatedBy);
-        AddDomainEvent(new BoardRenamedEvent(Id, oldTitle, Title, updatedBy));
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new BoardRenamedEvent(WorkspaceId, Id, oldTitle, Title, updatedBy, updatedAt));
     }
 
-    public void UpdateDescription(string? description, Guid updatedBy)
+    public void UpdateDescription(string? description, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Description = description?.Trim();
-        SetAuditOnUpdate(updatedBy);
+        SetAuditOnUpdate(updatedBy, updatedAt);
     }
 
-    public void UpdateBackground(string background, Guid updatedBy)
+    public void UpdateBackground(string background, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Background = string.IsNullOrWhiteSpace(background) ? Background : background;
-        SetAuditOnUpdate(updatedBy);
+        SetAuditOnUpdate(updatedBy, updatedAt);
     }
 
-    public void ChangeVisibility(BoardVisibility visibility, Guid updatedBy)
+    public void ChangeVisibility(BoardVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         var oldVisibility = Visibility;
         if (Visibility == visibility) return;
 
         Visibility = visibility;
-        SetAuditOnUpdate(updatedBy);
-        AddDomainEvent(new BoardVisibilityChangedEvent(Id, oldVisibility, Visibility, updatedBy));
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new BoardVisibilityChangedEvent(WorkspaceId, Id, oldVisibility, Visibility, updatedBy, updatedAt));
     }
 
-    public void Archive(Guid archivedBy)
+    public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();
         if (IsArchived) return;
         IsArchived = true;
-        SetAuditOnUpdate(archivedBy);
-        AddDomainEvent(new BoardArchivedEvent(Id, archivedBy));
+        SetAuditOnUpdate(archivedBy, archivedAt);
+        AddDomainEvent(new BoardArchivedEvent(WorkspaceId, Id, archivedBy, archivedAt));
     }
 
-    public void Unarchive(Guid unarchivedBy)
+    public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
     {
         EnsureNotDeleted();
         if (!IsArchived) return;
         IsArchived = false;
-        SetAuditOnUpdate(unarchivedBy);
+        SetAuditOnUpdate(unarchivedBy, unarchivedAt);
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new BoardSoftDeletedEvent(Id, deletedBy));
+        AddDomainEvent(new BoardSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        AddDomainEvent(new BoardRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }
