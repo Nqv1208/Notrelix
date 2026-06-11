@@ -1,7 +1,5 @@
 using Notrelix.Domain.Common;
-using Notrelix.Domain.Enums;
-
-namespace Notrelix.Domain.ValueObjects;
+namespace Notrelix.Domain.SharedKernel;
 
 /// <summary>
 /// Value Object đại diện cho icon (emoji hoặc icon name)

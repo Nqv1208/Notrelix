@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Notrelix.Domain.ValueObjects;
+namespace Notrelix.Domain.SharedKernel;
 
 /// <summary>
 /// Value object cho sync hash — phát hiện thay đổi giữa app và external calendar
