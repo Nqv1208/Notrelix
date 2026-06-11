@@ -23,28 +23,29 @@ public class AutomationExecutionStep : Entity
         };
     }
 
-    public void Start()
+    public void Start(DateTimeOffset startedAt)
     {
         Status = AutomationExecutionStatus.Running;
-        StartedAt = DateTimeOffset.UtcNow;
+        StartedAt = startedAt;
     }
 
-    public void Succeed()
+    public void Succeed(DateTimeOffset finishedAt)
     {
         Status = AutomationExecutionStatus.Succeeded;
-        FinishedAt = DateTimeOffset.UtcNow;
+        FinishedAt = finishedAt;
     }
 
-    public void Fail(string error)
+    public void Fail(string error, DateTimeOffset finishedAt)
     {
         Status = AutomationExecutionStatus.Failed;
         Error = error;
-        FinishedAt = DateTimeOffset.UtcNow;
+        FinishedAt = finishedAt;
     }
 }
 
 public class AutomationExecution : AggregateRoot
 {
+    public Guid WorkspaceId { get; private set; }
     public Guid RuleId { get; private set; }
     public Guid TriggerId { get; private set; }
     public AutomationExecutionStatus Status { get; private set; }
@@ -57,35 +58,37 @@ public class AutomationExecution : AggregateRoot
 
     private AutomationExecution() : base() { }
 
-    public static AutomationExecution Create(Guid ruleId, Guid triggerId)
+    public static AutomationExecution Create(Guid workspaceId, Guid ruleId, Guid triggerId, DateTimeOffset startedAt)
     {
+        Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(ruleId);
         Guard.NotEmpty(triggerId);
 
         var execution = new AutomationExecution
         {
+            WorkspaceId = workspaceId,
             RuleId = ruleId,
             TriggerId = triggerId,
             Status = AutomationExecutionStatus.Queued,
-            StartedAt = DateTimeOffset.UtcNow
+            StartedAt = startedAt
         };
 
-        execution.AddDomainEvent(new AutomationExecutionStartedEvent(execution.Id, ruleId));
+        execution.AddDomainEvent(new AutomationExecutionStartedEvent(workspaceId, execution.Id, ruleId, startedAt));
         return execution;
     }
 
-    public void Succeed()
+    public void Succeed(DateTimeOffset finishedAt)
     {
         Status = AutomationExecutionStatus.Succeeded;
-        FinishedAt = DateTimeOffset.UtcNow;
-        AddDomainEvent(new AutomationExecutionSucceededEvent(Id, RuleId));
+        FinishedAt = finishedAt;
+        AddDomainEvent(new AutomationExecutionSucceededEvent(WorkspaceId, Id, RuleId, finishedAt));
     }
 
-    public void Fail(string error)
+    public void Fail(string error, DateTimeOffset finishedAt)
     {
         Status = AutomationExecutionStatus.Failed;
         Error = error;
-        FinishedAt = DateTimeOffset.UtcNow;
-        AddDomainEvent(new AutomationExecutionFailedEvent(Id, RuleId, error));
+        FinishedAt = finishedAt;
+        AddDomainEvent(new AutomationExecutionFailedEvent(WorkspaceId, Id, RuleId, error, finishedAt));
     }
 }
