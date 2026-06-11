@@ -75,7 +75,7 @@ public class EmailVerificationTokenTests
     }
 
     [Fact]
-    public void MarkUsed_AfterExpiresAt_ShouldTransitionToExpiredAndThrow()
+    public void MarkUsed_AfterExpiresAt_ShouldThrowWithoutMutating()
     {
         var now = DateTimeOffset.UtcNow;
         var token = EmailVerificationToken.Create(Guid.NewGuid(), ValidHash, now.AddHours(1), now);
@@ -85,9 +85,9 @@ public class EmailVerificationTokenTests
         var act = () => token.MarkUsed(useTime);
 
         act.Should().Throw<BusinessRuleException>().WithMessage("*expired token*");
-        token.Status.Should().Be(UserTokenStatus.Expired);
-        token.ExpiredAt.Should().Be(useTime);
-        token.DomainEvents.Should().ContainSingle(e => e is EmailVerificationTokenExpiredEvent);
+        token.Status.Should().Be(UserTokenStatus.Active);
+        token.ExpiredAt.Should().BeNull();
+        token.DomainEvents.Should().BeEmpty();
     }
 
     [Fact]

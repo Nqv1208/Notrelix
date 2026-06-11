@@ -6,5 +6,6 @@ public sealed record UserActivatedEvent(
     Guid UserId,
     UserStatus PreviousStatus,
     Guid ActivatedBy,
-    DateTimeOffset ActivatedAt
+    DateTimeOffset ActivatedAt,
+    string? Reason
 ) : DomainEvent(ActivatedAt);

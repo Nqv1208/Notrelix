@@ -5,22 +5,6 @@ global using Notrelix.Domain.Common.Exceptions;
 // SharedKernel
 global using Notrelix.Domain.SharedKernel;
 
-// Bounded Contexts - Identity
-global using Notrelix.Domain.Identity;
-global using Notrelix.Domain.Identity.Users;
-global using Notrelix.Domain.Identity.Users.Events;
-global using Notrelix.Domain.Identity.Profiles;
-global using Notrelix.Domain.Identity.Profiles.Events;
-global using Notrelix.Domain.Identity.Sessions;
-global using Notrelix.Domain.Identity.Sessions.Events;
-global using Notrelix.Domain.Identity.OAuth;
-global using Notrelix.Domain.Identity.OAuth.Events;
-global using Notrelix.Domain.Identity.Security;
-global using Notrelix.Domain.Identity.Security.Events;
-global using Notrelix.Domain.Identity.Mfa;
-global using Notrelix.Domain.Identity.Mfa.Events;
-global using Notrelix.Domain.Identity.Tokens;
-global using Notrelix.Domain.Identity.Tokens.Events;
 
 // Bounded Contexts - Workspaces
 global using Notrelix.Domain.Workspaces;

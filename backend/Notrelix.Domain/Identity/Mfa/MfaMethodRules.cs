@@ -1,12 +1,13 @@
 using Notrelix.Domain.Common.Exceptions;
+using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Domain.Identity.Mfa;
 
 public static class MfaMethodRules
 {
-    public static void EnsureValidCreation(MfaMethodType type, string? secretRef, string? destinationMasked)
+    public static void EnsureValidCreation(MfaMethodType type, SecretRef? secretRef, string? destinationMasked)
     {
-        if (type == MfaMethodType.AuthenticatorApp && string.IsNullOrWhiteSpace(secretRef))
+        if (type == MfaMethodType.AuthenticatorApp && secretRef is null)
         {
             throw new BusinessRuleException("Authenticator app MFA method requires a secret reference.");
         }

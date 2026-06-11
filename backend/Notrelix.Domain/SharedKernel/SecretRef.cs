@@ -1,6 +1,6 @@
 using Notrelix.Domain.Common;
 
-namespace Notrelix.Domain.Identity.OAuth;
+namespace Notrelix.Domain.SharedKernel;
 
 public sealed class SecretRef : ValueObject
 {
@@ -21,4 +21,6 @@ public sealed class SecretRef : ValueObject
     {
         yield return Value;
     }
+
+    public override string ToString() => Value;
 }

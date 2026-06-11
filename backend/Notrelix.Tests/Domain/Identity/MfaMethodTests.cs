@@ -2,23 +2,26 @@ using FluentAssertions;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Identity.Mfa;
 using Notrelix.Domain.Identity.Mfa.Events;
+using Notrelix.Domain.SharedKernel;
 using Xunit;
 
 namespace Notrelix.Domain.Tests.Identity;
 
 public class MfaMethodTests
 {
+    private static readonly SecretRef ValidSecret = SecretRef.Create("secret-ref-123");
+
     [Fact]
     public void Create_ShouldSetPropertiesAndRaiseEvent()
     {
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
-        var method = UserMfaMethod.Create(userId, MfaMethodType.AuthenticatorApp, now, "secret-ref", isPrimary: false);
+        var method = UserMfaMethod.Create(userId, MfaMethodType.AuthenticatorApp, now, ValidSecret, isPrimary: false);
 
         method.UserId.Should().Be(userId);
         method.Type.Should().Be(MfaMethodType.AuthenticatorApp);
-        method.SecretRef.Should().Be("secret-ref");
+        method.SecretRef.Should().Be(ValidSecret);
         method.Status.Should().Be(MfaMethodStatus.PendingVerification);
         method.IsVerified.Should().BeFalse();
         method.IsPrimary.Should().BeFalse();
@@ -79,7 +82,7 @@ public class MfaMethodTests
     public void Verify_OnDisabledMethod_ShouldThrow()
     {
         var now = DateTimeOffset.UtcNow;
-        var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.AuthenticatorApp, now, "secret");
+        var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.AuthenticatorApp, now, ValidSecret);
         method.Disable(now.AddMinutes(1));
 
         var act = () => method.Verify(now.AddMinutes(2));
@@ -91,7 +94,7 @@ public class MfaMethodTests
     public void SetPrimary_OnActiveMethod_ShouldSucceedAndRaiseEvent()
     {
         var now = DateTimeOffset.UtcNow;
-        var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.AuthenticatorApp, now, "secret");
+        var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.AuthenticatorApp, now, ValidSecret);
         method.Verify(now.AddMinutes(1));
         method.ClearDomainEvents();
 
@@ -110,7 +113,7 @@ public class MfaMethodTests
     public void SetPrimary_OnPendingMethod_ShouldThrow()
     {
         var now = DateTimeOffset.UtcNow;
-        var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.AuthenticatorApp, now, "secret");
+        var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.AuthenticatorApp, now, ValidSecret);
 
         var act = () => method.SetPrimary(true, now.AddMinutes(1));
 
@@ -121,7 +124,7 @@ public class MfaMethodTests
     public void Disable_ShouldDeactivateMethodAndClearPrimary()
     {
         var now = DateTimeOffset.UtcNow;
-        var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.AuthenticatorApp, now, "secret");
+        var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.AuthenticatorApp, now, ValidSecret);
         method.Verify(now.AddMinutes(1));
         method.SetPrimary(true, now.AddMinutes(2));
         method.ClearDomainEvents();
