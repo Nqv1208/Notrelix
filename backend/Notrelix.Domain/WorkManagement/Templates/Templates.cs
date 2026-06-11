@@ -12,7 +12,7 @@ public class BoardTemplate : AggregateRoot
 
     private BoardTemplate() : base() { }
 
-    public static BoardTemplate Create(string name, JsonValue structure, Guid? workspaceId = null)
+    public static BoardTemplate Create(string name, JsonValue structure, DateTimeOffset createdAt, Guid? workspaceId = null)
     {
         Guard.NotNullOrWhiteSpace(name);
         Guard.NotNull(structure);
@@ -25,13 +25,14 @@ public class BoardTemplate : AggregateRoot
             Status = TemplateStatus.Published
         };
 
-        template.AddDomainEvent(new BoardTemplateCreatedEvent(template.Id, template.Name));
+        template.AddDomainEvent(new BoardTemplateCreatedEvent(workspaceId ?? Guid.Empty, template.Id, template.Name, createdAt));
         return template;
     }
 }
 
 public class ItemTemplate : AggregateRoot
 {
+    public Guid WorkspaceId { get; private set; }
     public Guid BoardId { get; private set; }
     public string Name { get; private set; } = null!;
     public JsonValue Values { get; private set; } = null!;
@@ -39,21 +40,23 @@ public class ItemTemplate : AggregateRoot
 
     private ItemTemplate() : base() { }
 
-    public static ItemTemplate Create(Guid boardId, string name, JsonValue values)
+    public static ItemTemplate Create(Guid workspaceId, Guid boardId, string name, JsonValue values, DateTimeOffset createdAt)
     {
+        Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(boardId);
         Guard.NotNullOrWhiteSpace(name);
         Guard.NotNull(values);
 
         var template = new ItemTemplate
         {
+            WorkspaceId = workspaceId,
             BoardId = boardId,
             Name = name.Trim(),
             Values = values,
             Status = TemplateStatus.Published
         };
 
-        template.AddDomainEvent(new ItemTemplateCreatedEvent(template.Id, template.Name));
+        template.AddDomainEvent(new ItemTemplateCreatedEvent(workspaceId, template.Id, template.Name, createdAt));
         return template;
     }
 }

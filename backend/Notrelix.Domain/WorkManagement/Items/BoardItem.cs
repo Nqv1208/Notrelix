@@ -24,7 +24,8 @@ public class BoardItem : SoftDeletableEntity
         Guid groupId, 
         string name, 
         FractionalIndex position, 
-        Guid createdBy)
+        Guid createdBy,
+        DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(boardId);
@@ -41,13 +42,13 @@ public class BoardItem : SoftDeletableEntity
             Position = position
         };
 
-        item.SetAuditOnCreate(createdBy);
-        item.AddDomainEvent(new BoardItemCreatedEvent(boardId, groupId, item.Id, item.Name, createdBy));
+        item.SetAuditOnCreate(createdBy, createdAt);
+        item.AddDomainEvent(new BoardItemCreatedEvent(workspaceId, boardId, groupId, item.Id, item.Name, createdBy, createdAt));
         
         return item;
     }
 
-    public void Rename(string name, Guid updatedBy)
+    public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(name);
@@ -57,11 +58,11 @@ public class BoardItem : SoftDeletableEntity
         if (Name == normalizedName) return;
 
         Name = normalizedName;
-        SetAuditOnUpdate(updatedBy);
-        AddDomainEvent(new BoardItemRenamedEvent(Id, BoardId, oldName, Name, updatedBy));
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new BoardItemRenamedEvent(WorkspaceId, Id, BoardId, oldName, Name, updatedBy, updatedAt));
     }
 
-    public void MoveToGroup(Guid newGroupId, FractionalIndex newPosition, Guid updatedBy)
+    public void MoveToGroup(Guid newGroupId, FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Guard.NotEmpty(newGroupId);
@@ -72,23 +73,28 @@ public class BoardItem : SoftDeletableEntity
 
         GroupId = newGroupId;
         Position = newPosition;
-        SetAuditOnUpdate(updatedBy);
+        SetAuditOnUpdate(updatedBy, updatedAt);
         
-        AddDomainEvent(new BoardItemMovedEvent(Id, BoardId, oldGroupId, newGroupId, newPosition.Value, updatedBy));
+        AddDomainEvent(new BoardItemMovedEvent(WorkspaceId, Id, BoardId, oldGroupId, newGroupId, newPosition.Value, updatedBy, updatedAt));
     }
 
-    public void UpdateFieldValue(Guid fieldId, FieldValue newValue, Guid updatedBy)
+    public void UpdateFieldValue(BoardField field, FieldValue newValue, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        Guard.NotEmpty(fieldId);
+        Guard.NotNull(field);
         Guard.NotNull(newValue);
 
-        var existingValue = _fieldValues.FirstOrDefault(fv => fv.FieldId == fieldId);
-        var oldValue = existingValue?.Value ?? FieldValue.Create(JsonValue.EmptyObject());
+        if (field.BoardId != BoardId)
+            throw new BusinessRuleException("Field does not belong to this board.");
+
+        FieldValueValidator.Validate(newValue, field.Type, field.Settings);
+
+        var existingValue = _fieldValues.FirstOrDefault(fv => fv.FieldId == field.Id);
+        var oldValue = existingValue?.Value ?? FieldValue.Empty();
 
         if (existingValue == null)
         {
-            _fieldValues.Add(BoardItemValue.Create(Id, fieldId, newValue));
+            _fieldValues.Add(BoardItemValue.Create(Id, field.Id, newValue));
         }
         else
         {
@@ -96,21 +102,21 @@ public class BoardItem : SoftDeletableEntity
             existingValue.UpdateValue(newValue);
         }
 
-        SetAuditOnUpdate(updatedBy);
-        AddDomainEvent(new BoardItemFieldValueChangedEvent(Id, BoardId, fieldId, oldValue, newValue, updatedBy));
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new BoardItemFieldValueChangedEvent(WorkspaceId, Id, BoardId, field.Id, oldValue, newValue, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new BoardItemSoftDeletedEvent(Id, BoardId, deletedBy));
+        AddDomainEvent(new BoardItemSoftDeletedEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
         base.Restore(restoredBy, restoredAt);
-        AddDomainEvent(new BoardItemRestoredEvent(Id, BoardId, restoredBy));
+        AddDomainEvent(new BoardItemRestoredEvent(WorkspaceId, Id, BoardId, restoredBy, restoredAt));
     }
 }

@@ -4,7 +4,7 @@ using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Domain.WorkManagement.Fields;
 
-public class BoardField : SoftDeletableEntity
+public class BoardField : AggregateRoot
 {
     public Guid WorkspaceId { get; private set; }
     public Guid BoardId { get; private set; }
@@ -28,6 +28,7 @@ public class BoardField : SoftDeletableEntity
         FieldSettings settings, 
         FractionalIndex position, 
         Guid createdBy,
+        DateTimeOffset createdAt,
         string? defaultValue = null, 
         bool isSystem = false)
     {
@@ -49,23 +50,23 @@ public class BoardField : SoftDeletableEntity
             IsSystem = isSystem
         };
 
-        field.SetAuditOnCreate(createdBy);
-        field.AddDomainEvent(new BoardFieldCreatedEvent(boardId, field.Id, field.Name, type, createdBy));
+        field.SetAuditOnCreate(createdBy, createdAt);
+        field.AddDomainEvent(new BoardFieldCreatedEvent(workspaceId, boardId, field.Id, field.Name, type, createdBy, createdAt));
         
         return field;
     }
 
-    public void UpdateSettings(FieldSettings settings, Guid updatedBy)
+    public void UpdateSettings(FieldSettings settings, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Guard.NotNull(settings);
         
         Settings = settings;
-        SetAuditOnUpdate(updatedBy);
-        AddDomainEvent(new BoardFieldUpdatedEvent(Id, BoardId, updatedBy));
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new BoardFieldUpdatedEvent(WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
 
-    public void AddOption(string name, Color color, FractionalIndex position, Guid addedBy)
+    public void AddOption(string name, Color color, FractionalIndex position, Guid addedBy, DateTimeOffset addedAt)
     {
         EnsureNotDeleted();
         if (Type != FieldType.Select && Type != FieldType.MultiSelect && Type != FieldType.Status)
@@ -73,8 +74,8 @@ public class BoardField : SoftDeletableEntity
 
         var option = FieldOption.Create(Id, name, color, position);
         _options.Add(option);
-        SetAuditOnUpdate(addedBy);
-        AddDomainEvent(new FieldOptionAddedEvent(Id, option.Id, option.Name, addedBy));
+        SetAuditOnUpdate(addedBy, addedAt);
+        AddDomainEvent(new FieldOptionAddedEvent(WorkspaceId, Id, option.Id, option.Name, addedBy, addedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -85,6 +86,14 @@ public class BoardField : SoftDeletableEntity
             throw new BusinessRuleException("Cannot delete a system field.");
 
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new BoardFieldDeletedEvent(Id, BoardId, deletedBy));
+        AddDomainEvent(new BoardFieldDeletedEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
+    }
+
+    public bool CanBeUsedAsKanbanColumn()
+    {
+        return Type is FieldType.Status
+            or FieldType.Select
+            or FieldType.MultiSelect
+            or FieldType.Person;
     }
 }

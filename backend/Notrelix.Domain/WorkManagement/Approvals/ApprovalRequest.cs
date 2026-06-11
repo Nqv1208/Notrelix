@@ -41,7 +41,7 @@ public class ApprovalRequest : AggregateRoot
 
     private ApprovalRequest() : base() { }
 
-    public static ApprovalRequest Create(Guid workspaceId, ResourceRef target, string title, Guid requestedBy)
+    public static ApprovalRequest Create(Guid workspaceId, ResourceRef target, string title, Guid requestedBy, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(target);
@@ -56,8 +56,8 @@ public class ApprovalRequest : AggregateRoot
             RequestedByUserId = requestedBy
         };
 
-        request.SetAuditOnCreate(requestedBy);
-        request.AddDomainEvent(new ApprovalRequestCreatedEvent(request.Id, workspaceId, target));
+        request.SetAuditOnCreate(requestedBy, createdAt);
+        request.AddDomainEvent(new ApprovalRequestCreatedEvent(request.Id, workspaceId, target, createdAt));
 
         return request;
     }

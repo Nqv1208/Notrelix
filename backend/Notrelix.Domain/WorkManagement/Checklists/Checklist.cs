@@ -28,15 +28,16 @@ public class ChecklistItem : Entity
         };
     }
 
-    public void Toggle()
+    public void Toggle(DateTimeOffset toggledAt)
     {
         Status = Status == ChecklistItemStatus.Open ? ChecklistItemStatus.Done : ChecklistItemStatus.Open;
-        CompletedAt = Status == ChecklistItemStatus.Done ? DateTimeOffset.UtcNow : null;
+        CompletedAt = Status == ChecklistItemStatus.Done ? toggledAt : null;
     }
 }
 
 public class Checklist : AggregateRoot
 {
+    public Guid WorkspaceId { get; private set; }
     public Guid ItemId { get; private set; }
     public string Title { get; private set; } = null!;
     public double Position { get; private set; }
@@ -46,28 +47,54 @@ public class Checklist : AggregateRoot
 
     private Checklist() : base() { }
 
-    public static Checklist Create(Guid itemId, string title, double position, Guid createdBy)
+    public static Checklist Create(Guid workspaceId, Guid itemId, string title, double position, Guid createdBy, DateTimeOffset createdAt)
     {
+        Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(itemId);
         Guard.NotNullOrWhiteSpace(title);
 
         var checklist = new Checklist
         {
+            WorkspaceId = workspaceId,
             ItemId = itemId,
             Title = title.Trim(),
             Position = position
         };
 
-        checklist.SetAuditOnCreate(createdBy);
-        checklist.AddDomainEvent(new ChecklistCreatedEvent(itemId, checklist.Id, checklist.Title));
+        checklist.SetAuditOnCreate(createdBy, createdAt);
+        checklist.AddDomainEvent(new ChecklistCreatedEvent(workspaceId, itemId, checklist.Id, checklist.Title, createdAt));
 
         return checklist;
     }
 
-    public void AddItem(string title, double position)
+    public void AddItem(string title, double position, Guid addedBy, DateTimeOffset addedAt)
     {
+        EnsureNotDeleted();
         var item = ChecklistItem.Create(Id, title, position);
         _items.Add(item);
-        AddDomainEvent(new ChecklistItemAddedEvent(Id, item.Id, title));
+        SetAuditOnUpdate(addedBy, addedAt);
+        AddDomainEvent(new ChecklistItemAddedEvent(WorkspaceId, Id, item.Id, title, addedAt));
+    }
+
+    public void ToggleItem(Guid itemId, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        var item = _items.FirstOrDefault(x => x.Id == itemId);
+        if (item == null) throw new BusinessRuleException($"Item {itemId} not found");
+
+        item.Toggle(updatedAt);
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new ChecklistItemToggledEvent(WorkspaceId, Id, item.Id, item.Status == ChecklistItemStatus.Done, updatedAt));
+    }
+
+    public void RemoveItem(Guid itemId, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        var item = _items.FirstOrDefault(x => x.Id == itemId);
+        if (item == null) return;
+
+        _items.Remove(item);
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new ChecklistItemRemovedEvent(WorkspaceId, Id, item.Id, updatedAt));
     }
 }

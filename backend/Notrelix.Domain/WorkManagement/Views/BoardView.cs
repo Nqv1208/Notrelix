@@ -3,7 +3,7 @@ using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.WorkManagement.Views;
 
-public class BoardView : Entity
+public class BoardView : AggregateRoot
 {
     public Guid WorkspaceId { get; private set; }
     public Guid BoardId { get; private set; }
@@ -21,6 +21,7 @@ public class BoardView : Entity
         ViewType type, 
         BoardViewConfig config, 
         Guid createdBy,
+        DateTimeOffset createdAt,
         bool isDefault = false)
     {
         Guard.NotEmpty(workspaceId);
@@ -39,13 +40,15 @@ public class BoardView : Entity
             IsDefault = isDefault
         };
 
-        view.AddDomainEvent(new BoardViewCreatedEvent(boardId, view.Id, view.Name, type, createdBy));
+        view.SetAuditOnCreate(createdBy, createdAt);
+        view.AddDomainEvent(new BoardViewCreatedEvent(workspaceId, boardId, view.Id, view.Name, type, createdBy, createdAt));
         
         return view;
     }
 
-    public void UpdateConfig(BoardViewConfig config, Guid updatedBy)
+    public void UpdateConfig(BoardViewConfig config, Guid updatedBy, DateTimeOffset updatedAt)
     {
+        EnsureNotDeleted();
         Guard.NotNull(config);
         
         // Ensure the config type matches the view type
@@ -61,6 +64,29 @@ public class BoardView : Entity
         if (Config == config) return;
 
         Config = config;
-        AddDomainEvent(new BoardViewConfigUpdatedEvent(Id, BoardId, updatedBy));
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new BoardViewConfigUpdatedEvent(WorkspaceId, Id, BoardId, updatedBy, updatedAt));
+    }
+
+    public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotNullOrWhiteSpace(name);
+
+        var oldName = Name;
+        var normalizedName = name.Trim();
+        if (Name == normalizedName) return;
+
+        Name = normalizedName;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new BoardViewRenamedEvent(WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        AddDomainEvent(new BoardViewDeletedEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 }

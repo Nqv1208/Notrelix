@@ -6,7 +6,7 @@ public sealed class CalendarViewConfig : BoardViewConfig
 {
     private CalendarViewConfig(JsonValue data) : base(data) { }
 
-    public static CalendarViewConfig Create(JsonValue data)
+    public static new CalendarViewConfig Create(JsonValue data)
     {
         return new CalendarViewConfig(data);
     }
