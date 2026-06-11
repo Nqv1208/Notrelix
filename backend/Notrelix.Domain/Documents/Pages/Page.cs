@@ -39,6 +39,8 @@ public class Page : SoftDeletableEntity
     public void Rename(string newTitle, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (Status == PageStatus.Archived)
+            throw new BusinessRuleException("Cannot rename an archived page.");
         Guard.NotNullOrWhiteSpace(newTitle);
 
         var oldTitle = Title;
@@ -52,6 +54,8 @@ public class Page : SoftDeletableEntity
     public void Move(Guid? newParentId, Guid updatedBy, DateTimeOffset updatedAt, Func<Guid, Guid?> getParentId)
     {
         EnsureNotDeleted();
+        if (Status == PageStatus.Archived)
+            throw new BusinessRuleException("Cannot move an archived page.");
         if (ParentId == newParentId) return;
 
         if (newParentId.HasValue)
