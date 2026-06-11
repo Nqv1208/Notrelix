@@ -11,7 +11,7 @@ public class ResourceLink : AggregateRoot
 
     private ResourceLink() : base() { }
 
-    public static ResourceLink Create(Guid workspaceId, ResourceRef source, ResourceRef target, LinkType type, Guid createdBy)
+    public static ResourceLink Create(Guid workspaceId, ResourceRef source, ResourceRef target, LinkType type, Guid createdBy, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(source);
@@ -25,7 +25,7 @@ public class ResourceLink : AggregateRoot
             Type = type
         };
 
-        link.SetAuditOnCreate(createdBy);
+        link.SetAuditOnCreate(createdBy, createdAt);
         return link;
     }
 }

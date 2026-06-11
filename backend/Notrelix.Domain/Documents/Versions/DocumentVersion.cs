@@ -2,26 +2,7 @@ using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Documents.Versions;
 
-public sealed class DocumentSnapshot : ValueObject
-{
-    public JsonValue Data { get; }
 
-    private DocumentSnapshot(JsonValue data)
-    {
-        Data = data;
-    }
-
-    public static DocumentSnapshot Create(JsonValue data)
-    {
-        Guard.NotNull(data);
-        return new DocumentSnapshot(data);
-    }
-
-    protected override IEnumerable<object?> GetEqualityComponents()
-    {
-        yield return Data;
-    }
-}
 
 public class DocumentVersion : AggregateRoot
 {
@@ -32,7 +13,7 @@ public class DocumentVersion : AggregateRoot
 
     private DocumentVersion() : base() { }
 
-    public static DocumentVersion Create(Guid pageId, int versionNumber, DocumentSnapshot snapshot, Guid createdBy, string? changeSummary = null)
+    public static DocumentVersion Create(Guid pageId, int versionNumber, DocumentSnapshot snapshot, Guid createdBy, DateTimeOffset createdAt, string? changeSummary = null)
     {
         Guard.NotEmpty(pageId);
         Guard.Positive(versionNumber);
@@ -46,7 +27,7 @@ public class DocumentVersion : AggregateRoot
             ChangeSummary = changeSummary?.Trim()
         };
 
-        version.SetAuditOnCreate(createdBy);
+        version.SetAuditOnCreate(createdBy, createdAt);
         return version;
     }
 }

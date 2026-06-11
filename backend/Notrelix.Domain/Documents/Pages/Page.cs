@@ -15,7 +15,7 @@ public class Page : SoftDeletableEntity
 
     private Page() : base() { }
 
-    public static Page Create(Guid workspaceId, string title, Guid createdBy, Guid? parentId = null)
+    public static Page Create(Guid workspaceId, string title, Guid createdBy, DateTimeOffset createdAt, Guid? parentId = null)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(createdBy);
@@ -30,13 +30,13 @@ public class Page : SoftDeletableEntity
             Visibility = PageVisibility.Workspace
         };
 
-        page.SetAuditOnCreate(createdBy);
-        page.AddDomainEvent(new PageCreatedEvent(workspaceId, page.Id, page.Title, createdBy));
+        page.SetAuditOnCreate(createdBy, createdAt);
+        page.AddDomainEvent(new PageCreatedEvent(workspaceId, page.Id, page.Title, createdBy, createdAt));
 
         return page;
     }
 
-    public void Rename(string newTitle, Guid updatedBy)
+    public void Rename(string newTitle, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(newTitle);
@@ -45,11 +45,11 @@ public class Page : SoftDeletableEntity
         if (Title == newTitle.Trim()) return;
 
         Title = newTitle.Trim();
-        SetAuditOnUpdate(updatedBy);
-        AddDomainEvent(new PageRenamedEvent(Id, oldTitle, Title, updatedBy));
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new PageRenamedEvent(WorkspaceId, Id, oldTitle, Title, updatedBy, updatedAt));
     }
 
-    public void Move(Guid? newParentId, Guid updatedBy, Func<Guid, Guid?> getParentId)
+    public void Move(Guid? newParentId, Guid updatedBy, DateTimeOffset updatedAt, Func<Guid, Guid?> getParentId)
     {
         EnsureNotDeleted();
         if (ParentId == newParentId) return;
@@ -61,18 +61,18 @@ public class Page : SoftDeletableEntity
 
         var oldParentId = ParentId;
         ParentId = newParentId;
-        SetAuditOnUpdate(updatedBy);
-        AddDomainEvent(new PageMovedEvent(Id, oldParentId, ParentId, updatedBy));
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new PageMovedEvent(WorkspaceId, Id, oldParentId, ParentId, updatedBy, updatedAt));
     }
 
-    public void Archive(Guid archivedBy)
+    public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();
         if (Status == PageStatus.Archived) return;
 
         Status = PageStatus.Archived;
-        SetAuditOnUpdate(archivedBy);
-        AddDomainEvent(new PageArchivedEvent(Id, archivedBy));
+        SetAuditOnUpdate(archivedBy, archivedAt);
+        AddDomainEvent(new PageArchivedEvent(WorkspaceId, Id, archivedBy, archivedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -80,7 +80,7 @@ public class Page : SoftDeletableEntity
         if (IsDeleted) return;
         Status = PageStatus.SoftDeleted;
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new PageSoftDeletedEvent(Id, deletedBy));
+        AddDomainEvent(new PageSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -88,6 +88,6 @@ public class Page : SoftDeletableEntity
         if (!IsDeleted) return;
         Status = PageStatus.Active;
         base.Restore(restoredBy, restoredAt);
-        AddDomainEvent(new PageRestoredEvent(Id, restoredBy));
+        AddDomainEvent(new PageRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }
