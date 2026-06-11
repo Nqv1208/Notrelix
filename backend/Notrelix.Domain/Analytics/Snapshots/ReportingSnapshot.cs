@@ -11,14 +11,14 @@ public class ReportingSnapshot : Entity
 
     private ReportingSnapshot() : base() { }
 
-    public static ReportingSnapshot Capture(Guid workspaceId, string reportType, JsonValue data)
+    public static ReportingSnapshot Capture(Guid workspaceId, string reportType, JsonValue data, DateTimeOffset capturedAt)
     {
         return new ReportingSnapshot
         {
             WorkspaceId = workspaceId,
             ReportType = reportType,
             Data = data,
-            CapturedAt = DateTimeOffset.UtcNow
+            CapturedAt = capturedAt
         };
     }
 }

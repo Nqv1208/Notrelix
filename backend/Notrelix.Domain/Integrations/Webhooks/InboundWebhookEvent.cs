@@ -13,7 +13,7 @@ public class InboundWebhookEvent : AggregateRoot
 
     private InboundWebhookEvent() : base() { }
 
-    public static InboundWebhookEvent Record(string provider, string eventType, JsonValue payload, Guid? workspaceId = null, string? externalId = null)
+    public static InboundWebhookEvent Record(string provider, string eventType, JsonValue payload, DateTimeOffset receivedAt, Guid? workspaceId = null, string? externalId = null)
     {
         return new InboundWebhookEvent
         {
@@ -22,7 +22,7 @@ public class InboundWebhookEvent : AggregateRoot
             EventType = eventType,
             Payload = payload,
             ExternalEventId = externalId,
-            ReceivedAt = DateTimeOffset.UtcNow
+            ReceivedAt = receivedAt
         };
     }
 }

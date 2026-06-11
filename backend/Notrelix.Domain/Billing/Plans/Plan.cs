@@ -1,4 +1,5 @@
 using Notrelix.Domain.Common;
+using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Billing.Plans;
 
@@ -15,12 +16,22 @@ public class PlanLimit : Entity
         Guard.NotEmpty(planId);
         Guard.NotNull(feature);
 
+        if (limit < 0)
+            throw new BusinessRuleException("Plan limit cannot be negative.");
+
         return new PlanLimit
         {
             PlanId = planId,
             Feature = feature,
             Limit = limit
         };
+    }
+
+    public void UpdateLimit(int newLimit)
+    {
+        if (newLimit < 0)
+            throw new BusinessRuleException("Plan limit cannot be negative.");
+        Limit = newLimit;
     }
 }
 
@@ -50,13 +61,33 @@ public class Plan : AggregateRoot
             Status = PlanStatus.Active
         };
 
-        plan.AddDomainEvent(new PlanCreatedEvent(Guid.Empty, plan.Id, plan.Name, createdAt));
+        plan.SetAuditOnCreate(Guid.Empty, createdAt);
+        plan.AddDomainEvent(new PlanCreatedEvent(plan.Id, plan.Name, createdAt));
         return plan;
     }
 
     public void AddLimit(FeatureCode feature, int limit)
     {
-        if (_limits.Any(l => l.Feature == feature)) return;
+        if (_limits.Any(l => l.Feature == feature))
+            throw new BusinessRuleException($"Feature '{feature}' is already added to this plan.");
+
         _limits.Add(PlanLimit.Create(Id, feature, limit));
+    }
+
+    public void UpdateDescription(string description)
+    {
+        Description = description?.Trim();
+    }
+
+    public void Archive()
+    {
+        if (Status == PlanStatus.Archived) return;
+        Status = PlanStatus.Archived;
+    }
+
+    public void Deprecate()
+    {
+        if (Status == PlanStatus.Deprecated) return;
+        Status = PlanStatus.Deprecated;
     }
 }

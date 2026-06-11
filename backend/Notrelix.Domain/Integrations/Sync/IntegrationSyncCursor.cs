@@ -32,7 +32,7 @@ public class IntegrationSyncCursor : Entity
 
     private IntegrationSyncCursor() : base() { }
 
-    public static IntegrationSyncCursor Create(Guid connectionId, string resourceType, SyncCursorValue cursor)
+    public static IntegrationSyncCursor Create(Guid connectionId, string resourceType, SyncCursorValue cursor, DateTimeOffset lastSyncedAt)
     {
         Guard.NotEmpty(connectionId);
         Guard.NotNullOrWhiteSpace(resourceType);
@@ -43,14 +43,14 @@ public class IntegrationSyncCursor : Entity
             ConnectionId = connectionId,
             ResourceType = resourceType,
             Cursor = cursor,
-            LastSyncedAt = DateTimeOffset.UtcNow
+            LastSyncedAt = lastSyncedAt
         };
     }
 
-    public void UpdateCursor(SyncCursorValue newCursor)
+    public void UpdateCursor(SyncCursorValue newCursor, DateTimeOffset lastSyncedAt)
     {
         Guard.NotNull(newCursor);
         Cursor = newCursor;
-        LastSyncedAt = DateTimeOffset.UtcNow;
+        LastSyncedAt = lastSyncedAt;
     }
 }

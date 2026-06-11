@@ -1,4 +1,5 @@
 using Notrelix.Domain.Common;
+using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Billing.Payments;
 
@@ -13,13 +14,13 @@ public class Invoice : AggregateRoot
 
     private Invoice() : base() { }
 
-    public static Invoice Create(Guid workspaceId, Guid subscriptionId, string number, Money amount, DateTimeOffset dueAt)
+    public static Invoice Create(Guid workspaceId, Guid subscriptionId, string number, Money amount, DateTimeOffset dueAt, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(number);
         Guard.NotNull(amount);
 
-        return new Invoice
+        var invoice = new Invoice
         {
             WorkspaceId = workspaceId,
             SubscriptionId = subscriptionId,
@@ -28,5 +29,50 @@ public class Invoice : AggregateRoot
             Status = InvoiceStatus.Draft,
             DueAt = dueAt
         };
+
+        invoice.SetAuditOnCreate(Guid.Empty, createdAt);
+        return invoice;
+    }
+
+    public void Issue(DateTimeOffset issuedAt)
+    {
+        if (Status != InvoiceStatus.Draft)
+            throw new BusinessRuleException("Only draft invoices can be issued.");
+        Status = InvoiceStatus.Open;
+        SetAuditOnUpdate(Guid.Empty, issuedAt);
+        AddDomainEvent(new InvoiceIssuedEvent(Id, WorkspaceId, Amount, issuedAt));
+    }
+
+    public void MarkPaid(DateTimeOffset paidAt)
+    {
+        if (Status == InvoiceStatus.Void)
+            throw new BusinessRuleException("Cannot mark a void invoice as paid.");
+        if (Status == InvoiceStatus.Paid) return;
+
+        Status = InvoiceStatus.Paid;
+        SetAuditOnUpdate(Guid.Empty, paidAt);
+        AddDomainEvent(new InvoicePaidEvent(Id, WorkspaceId, paidAt));
+    }
+
+    public void MarkFailed(string reason, DateTimeOffset failedAt)
+    {
+        if (Status == InvoiceStatus.Paid)
+            throw new BusinessRuleException("Cannot fail a paid invoice.");
+        if (Status == InvoiceStatus.Void)
+            throw new BusinessRuleException("Cannot fail a void invoice.");
+
+        Status = InvoiceStatus.Uncollectible;
+        SetAuditOnUpdate(Guid.Empty, failedAt);
+        AddDomainEvent(new InvoiceFailedEvent(Id, WorkspaceId, reason, failedAt));
+    }
+
+    public void Void(DateTimeOffset voidedAt)
+    {
+        if (Status == InvoiceStatus.Paid)
+            throw new BusinessRuleException("Cannot void a paid invoice.");
+        if (Status == InvoiceStatus.Void) return;
+
+        Status = InvoiceStatus.Void;
+        SetAuditOnUpdate(Guid.Empty, voidedAt);
     }
 }

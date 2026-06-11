@@ -1,4 +1,5 @@
 using Notrelix.Domain.Common;
+using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Automation.Executions;
 
@@ -25,18 +26,24 @@ public class AutomationExecutionStep : Entity
 
     public void Start(DateTimeOffset startedAt)
     {
+        if (Status != AutomationExecutionStatus.Queued)
+            throw new BusinessRuleException("Step can only start from Queued state.");
         Status = AutomationExecutionStatus.Running;
         StartedAt = startedAt;
     }
 
     public void Succeed(DateTimeOffset finishedAt)
     {
+        if (Status != AutomationExecutionStatus.Running)
+            throw new BusinessRuleException("Step can only succeed from Running state.");
         Status = AutomationExecutionStatus.Succeeded;
         FinishedAt = finishedAt;
     }
 
     public void Fail(string error, DateTimeOffset finishedAt)
     {
+        if (Status != AutomationExecutionStatus.Running)
+            throw new BusinessRuleException("Step can only fail from Running state.");
         Status = AutomationExecutionStatus.Failed;
         Error = error;
         FinishedAt = finishedAt;
@@ -52,6 +59,9 @@ public class AutomationExecution : AggregateRoot
     public DateTimeOffset StartedAt { get; private set; }
     public DateTimeOffset? FinishedAt { get; private set; }
     public string? Error { get; private set; }
+    public string? Payload { get; private set; }
+    public int AttemptCount { get; private set; }
+    public string? LastResponse { get; private set; }
 
     private readonly List<AutomationExecutionStep> _steps = new();
     public IReadOnlyCollection<AutomationExecutionStep> Steps => _steps.AsReadOnly();
@@ -70,15 +80,32 @@ public class AutomationExecution : AggregateRoot
             RuleId = ruleId,
             TriggerId = triggerId,
             Status = AutomationExecutionStatus.Queued,
-            StartedAt = startedAt
+            StartedAt = startedAt,
+            AttemptCount = 0
         };
 
-        execution.AddDomainEvent(new AutomationExecutionStartedEvent(workspaceId, execution.Id, ruleId, startedAt));
+        execution.AddDomainEvent(new AutomationExecutionQueuedEvent(workspaceId, execution.Id, ruleId, startedAt));
         return execution;
+    }
+
+    public void SetPayload(string payload)
+    {
+        Payload = payload;
+    }
+
+    public void Start(DateTimeOffset startedAt)
+    {
+        if (Status != AutomationExecutionStatus.Queued)
+            throw new BusinessRuleException("Execution can only start from Queued state.");
+        Status = AutomationExecutionStatus.Running;
+        StartedAt = startedAt;
+        AddDomainEvent(new AutomationExecutionStartedEvent(WorkspaceId, Id, RuleId, startedAt));
     }
 
     public void Succeed(DateTimeOffset finishedAt)
     {
+        if (Status != AutomationExecutionStatus.Running)
+            throw new BusinessRuleException("Execution can only succeed from Running state.");
         Status = AutomationExecutionStatus.Succeeded;
         FinishedAt = finishedAt;
         AddDomainEvent(new AutomationExecutionSucceededEvent(WorkspaceId, Id, RuleId, finishedAt));
@@ -86,9 +113,24 @@ public class AutomationExecution : AggregateRoot
 
     public void Fail(string error, DateTimeOffset finishedAt)
     {
+        if (Status != AutomationExecutionStatus.Running)
+            throw new BusinessRuleException("Execution can only fail from Running state.");
+        if (string.IsNullOrWhiteSpace(error))
+            throw new BusinessRuleException("Error must not be empty when execution fails.");
+
         Status = AutomationExecutionStatus.Failed;
         Error = error;
         FinishedAt = finishedAt;
         AddDomainEvent(new AutomationExecutionFailedEvent(WorkspaceId, Id, RuleId, error, finishedAt));
+    }
+
+    public void Cancel(Guid cancelledBy, DateTimeOffset cancelledAt)
+    {
+        if (Status != AutomationExecutionStatus.Queued && Status != AutomationExecutionStatus.Running)
+            throw new BusinessRuleException("Execution can only be cancelled from Queued or Running state.");
+
+        Status = AutomationExecutionStatus.Cancelled;
+        FinishedAt = cancelledAt;
+        AddDomainEvent(new AutomationExecutionCancelledEvent(WorkspaceId, Id, RuleId, cancelledBy, cancelledAt));
     }
 }
