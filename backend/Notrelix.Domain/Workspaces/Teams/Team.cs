@@ -59,13 +59,15 @@ public class Team : AggregateRoot
         AddDomainEvent(new TeamArchivedEvent(WorkspaceId, Id, archivedBy, archivedAt));
     }
 
-    public void AddMember(Guid userId, TeamMemberRole role, Guid addedBy, DateTimeOffset addedAt)
+    public void AddMember(Guid userId, TeamMemberRole role, Guid addedBy, DateTimeOffset addedAt, Guid? workspaceMemberId = null)
     {
         EnsureNotDeleted();
+        if (Status == TeamStatus.Archived)
+            throw new BusinessRuleException("Cannot add a member to an archived team.");
         if (_members.Any(m => m.UserId == userId))
             throw new BusinessRuleException("User is already a member of this team.");
 
-        var member = TeamMember.Create(Id, userId, role);
+        var member = TeamMember.Create(Id, userId, role, workspaceMemberId);
         _members.Add(member);
         
         SetAuditOnUpdate(addedBy, addedAt);
@@ -75,11 +77,29 @@ public class Team : AggregateRoot
     public void RemoveMember(Guid userId, Guid removedBy, DateTimeOffset removedAt)
     {
         EnsureNotDeleted();
+        if (Status == TeamStatus.Archived)
+            throw new BusinessRuleException("Cannot remove a member from an archived team.");
         var member = _members.FirstOrDefault(m => m.UserId == userId);
         if (member == null) return;
 
-        _members.Remove(member);
+        member.Remove(removedBy, removedAt);
         SetAuditOnUpdate(removedBy, removedAt);
         AddDomainEvent(new TeamMemberRemovedEvent(WorkspaceId, Id, userId, removedBy, removedAt));
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        Status = TeamStatus.SoftDeleted;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        AddDomainEvent(new TeamSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        Status = TeamStatus.Active;
+        base.Restore(restoredBy, restoredAt);
+        AddDomainEvent(new TeamRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }
