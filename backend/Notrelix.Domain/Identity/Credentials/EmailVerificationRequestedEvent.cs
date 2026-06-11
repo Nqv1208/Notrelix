@@ -4,7 +4,6 @@ using Notrelix.Domain.SharedKernel;
 namespace Notrelix.Domain.Identity.Credentials;
 
 public sealed record EmailVerificationRequestedEvent(
-    Guid WorkspaceId,
     Guid UserId,
     string Email,
     DateTimeOffset OccurredAt

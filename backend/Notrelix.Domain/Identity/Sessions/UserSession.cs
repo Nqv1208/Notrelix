@@ -29,7 +29,7 @@ public class UserSession : AggregateRoot
         };
 
         session.SetAuditOnCreate(userId, createdAt);
-        session.AddDomainEvent(new UserSessionCreatedEvent(Guid.Empty, session.Id, userId, createdAt));
+        session.AddDomainEvent(new UserSessionCreatedEvent(session.Id, userId, createdAt));
         return session;
     }
 
@@ -38,6 +38,6 @@ public class UserSession : AggregateRoot
         if (Status != SessionStatus.Active) return;
         Status = SessionStatus.Revoked;
         SetAuditOnUpdate(UserId, revokedAt);
-        AddDomainEvent(new UserSessionRevokedEvent(Guid.Empty, Id, UserId, revokedAt));
+        AddDomainEvent(new UserSessionRevokedEvent(Id, UserId, revokedAt));
     }
 }
