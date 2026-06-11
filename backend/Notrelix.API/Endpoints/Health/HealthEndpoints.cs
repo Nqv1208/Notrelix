@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Interfaces;
+using Notrelix.Application.Common.Abstractions;
 
 namespace Notrelix.API.Endpoints.Health;
 
