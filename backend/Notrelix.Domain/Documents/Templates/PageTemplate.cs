@@ -1,13 +1,7 @@
 using Notrelix.Domain.Common;
+using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Documents.Templates;
-
-public enum PageTemplateStatus
-{
-    Draft,
-    Published,
-    Archived
-}
 
 public class PageTemplate : AggregateRoot
 {
@@ -35,7 +29,26 @@ public class PageTemplate : AggregateRoot
             Status = PageTemplateStatus.Draft
         };
 
-        template.AddDomainEvent(new PageTemplateCreatedEvent(workspaceId ?? Guid.Empty, template.Id, template.Name, createdAt));
+        template.SetAuditOnCreate(Guid.Empty, createdAt);
+        template.AddDomainEvent(new PageTemplateCreatedEvent(template.WorkspaceId, template.Id, template.Name, createdAt));
         return template;
+    }
+
+    public void Publish(Guid publishedBy, DateTimeOffset publishedAt)
+    {
+        if (Status == PageTemplateStatus.Archived)
+            throw new BusinessRuleException("Cannot publish an archived template.");
+
+        Status = PageTemplateStatus.Published;
+        SetAuditOnUpdate(publishedBy, publishedAt);
+        AddDomainEvent(new PageTemplatePublishedEvent(WorkspaceId, Id, publishedAt));
+    }
+
+    public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
+    {
+        if (Status == PageTemplateStatus.Archived) return;
+
+        Status = PageTemplateStatus.Archived;
+        SetAuditOnUpdate(archivedBy, archivedAt);
     }
 }

@@ -4,7 +4,7 @@ using Notrelix.Domain.SharedKernel;
 namespace Notrelix.Domain.Documents.Templates;
 
 public sealed record PageTemplatePublishedEvent(
-    Guid WorkspaceId,
+    Guid? WorkspaceId,
     Guid TemplateId,
     DateTimeOffset OccurredAt
 ) : DomainEvent(OccurredAt);
