@@ -72,24 +72,24 @@ public class User : AuditableEntity
     public void Deactivate() => Status = UserStatus.Inactive;
     public void Suspend() => Status = UserStatus.Suspended;
 
-    public UserSession CreateSession(RefreshTokenHash tokenHash, DateTimeOffset expiration)
+    public UserSession CreateSession(RefreshTokenHash tokenHash, DateTimeOffset expiration, DateTimeOffset createdAt, string? ipAddress = null, string? userAgent = null)
     {
-        var session = UserSession.Create(Id, tokenHash, expiration);
+        var session = UserSession.Create(Id, tokenHash, expiration, createdAt, ipAddress, userAgent);
         _sessions.Add(session);
         return session;
     }
 
-    public void RevokeSession(Guid sessionId)
+    public void RevokeSession(Guid sessionId, DateTimeOffset revokedAt)
     {
         var session = _sessions.FirstOrDefault(s => s.Id == sessionId);
-        session?.Revoke();
+        session?.Revoke(revokedAt);
     }
 
-    public void RevokeAllSessions()
+    public void RevokeAllSessions(DateTimeOffset revokedAt)
     {
         foreach (var session in _sessions)
         {
-            session.Revoke();
+            session.Revoke(revokedAt);
         }
     }
 }
