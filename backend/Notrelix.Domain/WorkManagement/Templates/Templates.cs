@@ -25,7 +25,7 @@ public class BoardTemplate : AggregateRoot
             Status = TemplateStatus.Published
         };
 
-        template.AddDomainEvent(new BoardTemplateCreatedEvent(workspaceId ?? Guid.Empty, template.Id, template.Name, createdAt));
+        template.AddDomainEvent(new BoardTemplateCreatedEvent(template.WorkspaceId, template.Id, template.Name, createdAt));
         return template;
     }
 }

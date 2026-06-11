@@ -58,8 +58,10 @@ public class BoardGroup : SoftDeletableEntity
         Guard.NotNull(color);
         if (Color == color) return;
 
+        var oldColor = Color;
         Color = color;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new BoardGroupColorChangedEvent(WorkspaceId, BoardId, Id, oldColor, color, updatedBy, updatedAt));
     }
 
     public void UpdatePosition(FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
@@ -77,6 +79,13 @@ public class BoardGroup : SoftDeletableEntity
     {
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new BoardGroupSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new BoardGroupSoftDeletedEvent(WorkspaceId, BoardId, Id, deletedBy, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        AddDomainEvent(new BoardGroupRestoredEvent(WorkspaceId, BoardId, Id, restoredBy, restoredAt));
     }
 }

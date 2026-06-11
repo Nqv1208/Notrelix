@@ -1,4 +1,5 @@
 using Notrelix.Domain.Common;
+using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Domain.WorkManagement.Checklists;
 
@@ -9,21 +10,21 @@ public class ChecklistItem : Entity
     public ChecklistItemStatus Status { get; private set; }
     public Guid? AssigneeUserId { get; private set; }
     public DateTimeOffset? DueAt { get; private set; }
-    public double Position { get; private set; }
+    public FractionalIndex Position { get; private set; } = null!;
     public DateTimeOffset? CompletedAt { get; private set; }
 
     private ChecklistItem() : base() { }
 
-    public static ChecklistItem Create(Guid checklistId, string title, double position)
+    public static ChecklistItem Create(Guid checklistId, string title, FractionalIndex position)
     {
         Guard.NotEmpty(checklistId);
         Guard.NotNullOrWhiteSpace(title);
+        Guard.NotNull(position);
 
         return new ChecklistItem
         {
             ChecklistId = checklistId,
             Title = title.Trim(),
-            Status = ChecklistItemStatus.Open,
             Position = position
         };
     }
@@ -40,18 +41,19 @@ public class Checklist : AggregateRoot
     public Guid WorkspaceId { get; private set; }
     public Guid ItemId { get; private set; }
     public string Title { get; private set; } = null!;
-    public double Position { get; private set; }
+    public FractionalIndex Position { get; private set; } = null!;
 
     private readonly List<ChecklistItem> _items = new();
     public IReadOnlyCollection<ChecklistItem> Items => _items.AsReadOnly();
 
     private Checklist() : base() { }
 
-    public static Checklist Create(Guid workspaceId, Guid itemId, string title, double position, Guid createdBy, DateTimeOffset createdAt)
+    public static Checklist Create(Guid workspaceId, Guid itemId, string title, FractionalIndex position, Guid createdBy, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(itemId);
         Guard.NotNullOrWhiteSpace(title);
+        Guard.NotNull(position);
 
         var checklist = new Checklist
         {
@@ -67,9 +69,10 @@ public class Checklist : AggregateRoot
         return checklist;
     }
 
-    public void AddItem(string title, double position, Guid addedBy, DateTimeOffset addedAt)
+    public void AddItem(string title, FractionalIndex position, Guid addedBy, DateTimeOffset addedAt)
     {
         EnsureNotDeleted();
+        Guard.NotNull(position);
         var item = ChecklistItem.Create(Id, title, position);
         _items.Add(item);
         SetAuditOnUpdate(addedBy, addedAt);

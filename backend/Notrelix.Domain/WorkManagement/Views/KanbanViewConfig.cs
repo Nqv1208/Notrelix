@@ -24,11 +24,21 @@ public sealed class KanbanViewConfig : BoardViewConfig
         Guid? swimlaneFieldId = null)
     {
         Guard.NotNull(columnField);
+        Guard.NotEmpty(columnField.Id);
 
         if (!columnField.CanBeUsedAsKanbanColumn())
             throw new BusinessRuleException("Invalid Kanban column field.");
 
-        return new KanbanViewConfig(columnField.Id, swimlaneFieldId, visibleFieldIds.ToArray());
+        var ids = visibleFieldIds.ToArray();
+        if (ids.Any(id => id == Guid.Empty))
+            throw new BusinessRuleException("Visible field IDs cannot be empty.");
+
+        if (swimlaneFieldId.HasValue && swimlaneFieldId.Value == Guid.Empty)
+            throw new BusinessRuleException("Swimlane field ID cannot be empty.");
+
+        var deduplicated = ids.Distinct().ToArray();
+
+        return new KanbanViewConfig(columnField.Id, swimlaneFieldId, deduplicated);
     }
 
     protected override IEnumerable<object?> GetEqualityComponents()

@@ -5,6 +5,7 @@ namespace Notrelix.Domain.WorkManagement.BoardGroups;
 
 public sealed record BoardGroupSoftDeletedEvent(
     Guid WorkspaceId,
+    Guid BoardId,
     Guid GroupId,
     Guid DeletedBy,
     DateTimeOffset OccurredAt

@@ -84,10 +84,44 @@ public class BoardItem : SoftDeletableEntity
         Guard.NotNull(field);
         Guard.NotNull(newValue);
 
+        if (field.WorkspaceId != WorkspaceId)
+            throw new BusinessRuleException("Field belongs to a different workspace.");
+
         if (field.BoardId != BoardId)
             throw new BusinessRuleException("Field does not belong to this board.");
 
+        if (field.IsDeleted)
+            throw new BusinessRuleException("Cannot update value for a deleted field.");
+
+        if (field.IsSystem)
+            throw new BusinessRuleException("Cannot update a system field.");
+
         FieldValueValidator.Validate(newValue, field.Type, field.Settings);
+
+        if (field.Type is FieldType.Select or FieldType.Status)
+        {
+            var optionId = newValue.Data.Value.Trim('"');
+            if (!field.Options.Any(o => o.Id.ToString() == optionId))
+                throw new BusinessRuleException($"Value '{optionId}' is not a valid option for field '{field.Name}'.");
+        }
+        else if (field.Type == FieldType.MultiSelect)
+        {
+            // MultiSelect: validate each value is a valid option
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(newValue.Data.Value);
+                foreach (var element in doc.RootElement.EnumerateArray())
+                {
+                    var optionId = element.GetString();
+                    if (!field.Options.Any(o => o.Id.ToString() == optionId))
+                        throw new BusinessRuleException($"Value '{optionId}' is not a valid option for field '{field.Name}'.");
+                }
+            }
+            catch
+            {
+                throw new BusinessRuleException($"Value for field type {field.Type} must be an array of option IDs.");
+            }
+        }
 
         var existingValue = _fieldValues.FirstOrDefault(fv => fv.FieldId == field.Id);
         var oldValue = existingValue?.Value ?? FieldValue.Empty();
