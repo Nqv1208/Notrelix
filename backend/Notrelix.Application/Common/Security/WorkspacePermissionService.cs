@@ -1,7 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Interfaces;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.Enums;
+using Notrelix.Application.Common.Abstractions;
 
 namespace Notrelix.Application.Common.Security;
 

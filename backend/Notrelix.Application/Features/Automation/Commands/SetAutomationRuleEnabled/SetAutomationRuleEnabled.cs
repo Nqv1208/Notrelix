@@ -1,0 +1,41 @@
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Common.Models;
+using Notrelix.Domain.Automation;
+
+namespace Notrelix.Application.Features.Automation.Commands.SetAutomationRuleEnabled;
+
+public record SetAutomationRuleEnabledCommand(Guid AutomationRuleId, bool IsEnabled) : IRequest<Result>;
+
+public class SetAutomationRuleEnabledCommandHandler : IRequestHandler<SetAutomationRuleEnabledCommand, Result>
+{
+    private readonly IApplicationDbContext _context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IWorkspacePermissionService _permissions;
+
+    public SetAutomationRuleEnabledCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IWorkspacePermissionService permissions)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _permissions = permissions;
+    }
+
+    public async Task<Result> Handle(SetAutomationRuleEnabledCommand request, CancellationToken cancellationToken)
+    {
+        var rule = await _context.AutomationRules
+            .FirstOrDefaultAsync(item => item.Id == request.AutomationRuleId, cancellationToken);
+        if (rule is null) throw new NotFoundException(nameof(AutomationRule), request.AutomationRuleId);
+
+        await _permissions.EnsureCanManageWorkspaceAsync(rule.WorkspaceId, _currentUser.UserId, cancellationToken);
+
+        if (request.IsEnabled) rule.Enable(_currentUser.UserId);
+        else rule.Disable(_currentUser.UserId);
+
+        await _context.SaveChangesAsync(cancellationToken);
+        return Result.Success();
+    }
+}
