@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Workspaces.Spaces;
 using Xunit;
 
@@ -44,5 +45,54 @@ public class SpaceTests
 
         space.WorkspaceId.Should().Be(newWorkspaceId);
         space.DomainEvents.Should().ContainSingle(e => e is SpaceMovedEvent);
+    }
+
+    [Fact]
+    public void Rename_ShouldThrow_WhenArchived()
+    {
+        var space = Space.Create(Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        var act = () => space.Rename("Sales", Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*archived*");
+    }
+
+    [Fact]
+    public void Move_ShouldThrow_WhenArchived()
+    {
+        var space = Space.Create(Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var newWorkspaceId = Guid.NewGuid();
+        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        var act = () => space.Move(newWorkspaceId, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*archived*");
+    }
+
+    [Fact]
+    public void SoftDelete_ShouldSetStatusToSoftDeleted()
+    {
+        var space = Space.Create(Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        space.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        space.Status.Should().Be(SpaceStatus.SoftDeleted);
+        space.IsDeleted.Should().BeTrue();
+        space.DomainEvents.Should().Contain(e => e is SpaceSoftDeletedEvent);
+    }
+
+    [Fact]
+    public void Restore_ShouldSetStatusToActive()
+    {
+        var space = Space.Create(Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.ClearDomainEvents();
+
+        space.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        space.Status.Should().Be(SpaceStatus.Active);
+        space.IsDeleted.Should().BeFalse();
+        space.DomainEvents.Should().Contain(e => e is SpaceRestoredEvent);
     }
 }

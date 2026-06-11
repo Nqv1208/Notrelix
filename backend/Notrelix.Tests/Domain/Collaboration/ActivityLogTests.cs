@@ -15,11 +15,13 @@ public class ActivityLogTests
         var actorId = Guid.NewGuid();
         var target = ResourceRef.Create("Board", Guid.NewGuid());
 
-        var log = ActivityLog.Record(workspaceId, actorId, ActivityType.Created, target);
+        var timestamp = DateTimeOffset.UtcNow;
+        var log = ActivityLog.Record(workspaceId, actorId, ActivityType.Created, target, timestamp);
 
         log.WorkspaceId.Should().Be(workspaceId);
         log.ActorId.Should().Be(actorId);
         log.Type.Should().Be(ActivityType.Created);
         log.Target.Should().Be(target);
+        log.Timestamp.Should().Be(timestamp);
     }
 }

@@ -86,4 +86,69 @@ public class BoardItemTests
         item.IsDeleted.Should().BeFalse();
         item.DomainEvents.Should().ContainSingle(e => e is BoardItemRestoredEvent);
     }
+
+    [Fact]
+    public void UpdateFieldValue_ShouldThrow_WhenFieldFromDifferentWorkspace()
+    {
+        var item = BoardItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        item.ClearDomainEvents();
+
+        var field = BoardField.Create(Guid.NewGuid(), item.BoardId, "Field", FieldType.Text, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var value = FieldValue.Create(JsonValue.Create("\"Hello\""));
+
+        Action act = () => item.UpdateFieldValue(field, value, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*workspace*");
+    }
+
+    [Fact]
+    public void UpdateFieldValue_ShouldThrow_WhenFieldFromDifferentBoard()
+    {
+        var item = BoardItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        item.ClearDomainEvents();
+
+        var field = BoardField.Create(item.WorkspaceId, Guid.NewGuid(), "Field", FieldType.Text, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var value = FieldValue.Create(JsonValue.Create("\"Hello\""));
+
+        Action act = () => item.UpdateFieldValue(field, value, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*board*");
+    }
+
+    [Fact]
+    public void UpdateFieldValue_ShouldThrow_WhenSelectValueNotInOptions()
+    {
+        var workspaceId = Guid.NewGuid();
+        var boardId = Guid.NewGuid();
+        var item = BoardItem.Create(workspaceId, boardId, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        item.ClearDomainEvents();
+
+        var field = BoardField.Create(workspaceId, boardId, "Status", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("b0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var nonExistentOptionId = Guid.NewGuid().ToString();
+        var value = FieldValue.Create(JsonValue.Create($"\"{nonExistentOptionId}\""));
+
+        Action act = () => item.UpdateFieldValue(field, value, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*option*");
+    }
+
+    [Fact]
+    public void UpdateFieldValue_ShouldAccept_WhenSelectValueMatchesOption()
+    {
+        var workspaceId = Guid.NewGuid();
+        var boardId = Guid.NewGuid();
+        var item = BoardItem.Create(workspaceId, boardId, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        item.ClearDomainEvents();
+
+        var field = BoardField.Create(workspaceId, boardId, "Status", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("b0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var optionId = field.Options.First().Id.ToString();
+        var value = FieldValue.Create(JsonValue.Create($"\"{optionId}\""));
+
+        item.UpdateFieldValue(field, value, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        item.FieldValues.Should().HaveCount(1);
+        item.DomainEvents.Should().ContainSingle(e => e is BoardItemFieldValueChangedEvent);
+    }
 }
