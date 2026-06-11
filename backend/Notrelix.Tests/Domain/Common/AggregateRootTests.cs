@@ -6,7 +6,7 @@ namespace Notrelix.Domain.Tests.Common;
 
 public class AggregateRootTests
 {
-    private class TestEvent : DomainEvent { }
+    private sealed record TestEvent() : DomainEvent(DateTimeOffset.UtcNow);
 
     private class TestAggregate : AggregateRoot
     {

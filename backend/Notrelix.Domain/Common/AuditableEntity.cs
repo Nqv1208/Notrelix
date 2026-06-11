@@ -9,23 +9,21 @@ public abstract class AuditableEntity : Entity
     
     protected AuditableEntity() : base() 
     { 
-        CreatedAt = DateTimeOffset.UtcNow; 
     }
     
     protected AuditableEntity(Guid id) : base(id) 
     { 
-        CreatedAt = DateTimeOffset.UtcNow; 
     }
     
-    public void SetAuditOnCreate(Guid createdBy) 
+    public void SetAuditOnCreate(Guid createdBy, DateTimeOffset createdAt) 
     { 
         CreatedBy = createdBy; 
-        CreatedAt = DateTimeOffset.UtcNow; 
+        CreatedAt = createdAt; 
     }
     
-    public void SetAuditOnUpdate(Guid updatedBy) 
+    public void SetAuditOnUpdate(Guid updatedBy, DateTimeOffset updatedAt) 
     { 
         UpdatedBy = updatedBy; 
-        UpdatedAt = DateTimeOffset.UtcNow; 
+        UpdatedAt = updatedAt; 
     }
 }
