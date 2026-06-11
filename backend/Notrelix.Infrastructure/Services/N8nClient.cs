@@ -1,7 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text;
 using Microsoft.Extensions.Options;
-using Notrelix.Application.Common.Interfaces;
+using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
 
 namespace Notrelix.Infrastructure.Services;

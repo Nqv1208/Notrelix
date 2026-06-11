@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using Notrelix.Application.Common.Interfaces;
+using Notrelix.Application.Common.Abstractions;
 
 namespace Notrelix.Infrastructure.Jwt
 {

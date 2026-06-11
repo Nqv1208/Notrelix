@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Notrelix.Domain.Entities.Identity;
+using Notrelix.Domain.Identity;
+using Notrelix.Domain.Identity.Users;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Identity;
 
@@ -10,85 +11,39 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
     {
         builder.ToTable("users");
 
-        builder.HasKey(u => u.Id);
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).HasColumnName("id");
 
-        builder.Property(u => u.Id)
-            .HasColumnName("id");
-
-        // Email as owned type (Value Object)
-        builder.OwnsOne(u => u.Email, email =>
+        builder.OwnsOne(x => x.Email, email =>
         {
-            email.Property(e => e.Value)
-                .HasColumnName("email")
-                .HasMaxLength(256)
-                .IsRequired();
-
-            email.HasIndex(e => e.Value)
-                .IsUnique();
+            email.Property(e => e.Value).HasColumnName("email").IsRequired().HasMaxLength(256);
         });
 
-        builder.Property(u => u.Name)
-            .HasColumnName("name")
-            .HasMaxLength(100)
-            .IsRequired();
+        builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
+        builder.Property(x => x.Avatar).HasColumnName("avatar");
+        builder.Property(x => x.PasswordHash).HasColumnName("password_hash").IsRequired();
+        builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
+        builder.Property(x => x.LastLoginAt).HasColumnName("last_login_at");
 
-        builder.Property(u => u.Avatar)
-            .HasColumnName("avatar")
-            .HasMaxLength(500);
+        builder.Ignore(x => x.AvatarUrl);
 
-        builder.Property(u => u.PasswordHash)
-            .HasColumnName("password_hash")
-            .HasMaxLength(256)
-            .IsRequired();
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
+        builder.Property(x => x.CreatedBy).HasColumnName("created_by");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.Property(u => u.Status)
-            .HasColumnName("status")
-            .HasConversion<string>()
-            .HasMaxLength(50);
+        builder.HasOne(x => x.Profile)
+            .WithOne(x => x.User)
+            .HasForeignKey<UserProfile>(x => x.UserId);
 
-        builder.Property(u => u.LastLoginAt)
-            .HasColumnName("last_login_at");
+        builder.HasMany(x => x.Sessions)
+            .WithOne()
+            .HasForeignKey(x => x.UserId);
 
-        // Audit fields
-        builder.Property(u => u.CreatedAt)
-            .HasColumnName("created_at");
+        builder.HasMany(x => x.OAuthAccounts)
+            .WithOne()
+            .HasForeignKey(x => x.UserId);
 
-        builder.Property(u => u.UpdatedAt)
-            .HasColumnName("updated_at");
-
-        builder.Property(u => u.CreatedBy)
-            .HasColumnName("created_by");
-
-        builder.Property(u => u.UpdatedBy)
-            .HasColumnName("updated_by");
-
-        // Relationships
-        builder.HasMany(u => u.Sessions)
-            .WithOne(s => s.User)
-            .HasForeignKey(s => s.UserId)
-            .OnDelete(DeleteBehavior.Cascade)
-            .Metadata.PrincipalToDependent!.SetPropertyAccessMode(PropertyAccessMode.Field);
-        
-        builder.Navigation(u => u.Sessions)
-            .HasField("_sessions")
-            .UsePropertyAccessMode(PropertyAccessMode.PreferField);
-
-        builder.HasMany(u => u.OAuthAccounts)
-            .WithOne(oa => oa.User)
-            .HasForeignKey(oa => oa.UserId)
-            .OnDelete(DeleteBehavior.Cascade)
-            .Metadata.PrincipalToDependent!.SetPropertyAccessMode(PropertyAccessMode.Field);
-
-        builder.Navigation(u => u.OAuthAccounts)
-            .HasField("_oauthAccounts")
-            .UsePropertyAccessMode(PropertyAccessMode.PreferField);
-
-        builder.HasOne(u => u.Profile)
-            .WithOne(p => p.User)
-            .HasForeignKey<UserProfile>(p => p.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // Ignore domain events
-        builder.Ignore(u => u.DomainEvents);
+        builder.HasIndex(x => x.Email).IsUnique().HasDatabaseName("idx_users_email");
     }
 }

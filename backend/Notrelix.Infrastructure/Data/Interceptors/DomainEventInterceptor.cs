@@ -40,7 +40,7 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         if (context is null) return;
 
         var entities = context.ChangeTracker
-            .Entries<BaseEntity>()
+            .Entries<Entity>()
             .Where(e => e.Entity.DomainEvents.Any())
             .Select(e => e.Entity)
             .ToList();
@@ -58,7 +58,7 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         }
     }
 
-    private static object CreateDomainEventNotification(BaseEvent domainEvent)
+    private static object CreateDomainEventNotification(DomainEvent domainEvent)
     {
         var notificationType = typeof(DomainEventNotification<>).MakeGenericType(domainEvent.GetType());
         return Activator.CreateInstance(notificationType, domainEvent)!;
