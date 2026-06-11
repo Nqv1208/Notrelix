@@ -11,7 +11,7 @@ public class Attachment : AggregateRoot
 
     private Attachment() : base() { }
 
-    public static Attachment Create(Guid workspaceId, ResourceRef target, AttachmentType type, FileMetadata metadata, Guid createdBy)
+    public static Attachment Create(Guid workspaceId, ResourceRef target, AttachmentType type, FileMetadata metadata, Guid createdBy, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(target);
@@ -25,7 +25,7 @@ public class Attachment : AggregateRoot
             Metadata = metadata
         };
 
-        attachment.SetAuditOnCreate(createdBy);
+        attachment.SetAuditOnCreate(createdBy, createdAt);
         return attachment;
     }
 }

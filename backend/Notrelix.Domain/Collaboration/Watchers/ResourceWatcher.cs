@@ -18,7 +18,7 @@ public class ResourceWatcher : AggregateRoot
 
     private ResourceWatcher() : base() { }
 
-    public static ResourceWatcher Create(Guid workspaceId, ResourceRef target, Guid userId, WatchLevel level = WatchLevel.All)
+    public static ResourceWatcher Create(Guid workspaceId, ResourceRef target, Guid userId, DateTimeOffset createdAt, WatchLevel level = WatchLevel.All)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(target);
@@ -32,7 +32,7 @@ public class ResourceWatcher : AggregateRoot
             Level = level
         };
 
-        watcher.AddDomainEvent(new ResourceWatchedEvent(watcher.Id, target, userId));
+        watcher.AddDomainEvent(new ResourceWatchedEvent(workspaceId, watcher.Id, target, userId, createdAt));
         return watcher;
     }
 }
