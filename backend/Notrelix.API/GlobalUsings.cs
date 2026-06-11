@@ -1,7 +1,5 @@
 // Common
 global using Notrelix.Domain.Common;
-global using Notrelix.Domain.Common.Exceptions;
-global using Notrelix.Domain.SharedKernel;
 
 // Contexts
 global using Notrelix.Domain.Identity;
@@ -12,6 +10,14 @@ global using Notrelix.Domain.Integrations;
 global using Notrelix.Domain.Collaboration;
 global using Notrelix.Domain.Governance;
 global using Notrelix.Domain.Automation;
+global using Notrelix.Domain.ValueObjects;
+
+// Events
+global using Notrelix.Domain.Identity.Events;
+global using Notrelix.Domain.Workspaces.Events;
+global using Notrelix.Domain.Documents.Events;
+global using Notrelix.Domain.Integrations.Events;
+global using Notrelix.Domain.Collaboration.Events;
 
 // Added by script for Bounded Context entities
 global using Notrelix.Domain.Identity.Users;
@@ -47,5 +53,4 @@ global using Notrelix.Domain.Collaboration.Attachments;
 global using Notrelix.Domain.Collaboration.Reactions;
 global using Notrelix.Domain.Collaboration.Notifications;
 global using Notrelix.Domain.Collaboration.Activity;
-global using Notrelix.Application.Common.Abstractions;
 global using Notrelix.Domain.Common.Exceptions;
