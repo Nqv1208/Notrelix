@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Documents.Pages;
-using Notrelix.Domain.Documents.Pages;
 using Xunit;
 
 namespace Notrelix.Domain.Tests.Documents;
@@ -14,7 +13,7 @@ public class PageTests
         var workspaceId = Guid.NewGuid();
         var createdBy = Guid.NewGuid();
         
-        var page = Page.Create(workspaceId, "My Page", createdBy);
+        var page = Page.Create(workspaceId, "My Page", createdBy, DateTimeOffset.UtcNow);
 
         page.Title.Should().Be("My Page");
         page.WorkspaceId.Should().Be(workspaceId);
@@ -26,7 +25,7 @@ public class PageTests
     public void Move_ShouldThrow_WhenCreatingCycle()
     {
         var pageId = Guid.NewGuid();
-        var page = Page.Create(Guid.NewGuid(), "Child", Guid.NewGuid(), Guid.NewGuid());
+        var page = Page.Create(Guid.NewGuid(), "Child", Guid.NewGuid(), DateTimeOffset.UtcNow);
         // Mock hierarchy: parent -> page
         var parentId = Guid.NewGuid();
         

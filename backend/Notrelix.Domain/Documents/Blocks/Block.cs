@@ -6,6 +6,7 @@ namespace Notrelix.Domain.Documents.Blocks;
 
 public class Block : AggregateRoot
 {
+    public Guid WorkspaceId { get; private set; }
     public Guid PageId { get; private set; }
     public Guid? ParentId { get; private set; }
     public BlockType Type { get; private set; }
@@ -16,14 +17,17 @@ public class Block : AggregateRoot
     private Block() : base() { }
 
     public static Block Create(
+        Guid workspaceId,
         Guid pageId, 
         BlockType type, 
         BlockContent content, 
         FractionalIndex position, 
         Guid createdBy,
+        DateTimeOffset createdAt,
         Guid? parentId = null,
         BlockProperties? properties = null)
     {
+        Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(pageId);
         Guard.NotEmpty(createdBy);
         Guard.NotNull(content);
@@ -33,6 +37,7 @@ public class Block : AggregateRoot
 
         var block = new Block
         {
+            WorkspaceId = workspaceId,
             PageId = pageId,
             ParentId = parentId,
             Type = type,
@@ -41,46 +46,56 @@ public class Block : AggregateRoot
             Position = position
         };
 
-        block.SetAuditOnCreate(createdBy);
-        block.AddDomainEvent(new BlockCreatedEvent(pageId, block.Id, type, createdBy));
+        block.SetAuditOnCreate(createdBy, createdAt);
+        block.AddDomainEvent(new BlockCreatedEvent(workspaceId, pageId, block.Id, type, createdBy, createdAt));
 
         return block;
     }
 
-    public void UpdateContent(BlockContent newContent, Guid updatedBy)
+    public void UpdateContent(BlockContent newContent, Guid updatedBy, DateTimeOffset updatedAt)
     {
+        EnsureNotDeleted();
         Guard.NotNull(newContent);
         Rules.BlockContentValidator.Validate(Type, newContent);
 
         if (Content == newContent) return;
 
         Content = newContent;
-        SetAuditOnUpdate(updatedBy);
-        AddDomainEvent(new BlockUpdatedEvent(Id, PageId, updatedBy));
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new BlockContentUpdatedEvent(WorkspaceId, Id, PageId, updatedBy, updatedAt));
     }
 
-    public void Move(Guid? newParentId, FractionalIndex newPosition, Guid updatedBy)
+    public void UpdateProperties(BlockProperties newProperties, Guid updatedBy, DateTimeOffset updatedAt)
     {
+        EnsureNotDeleted();
+        Guard.NotNull(newProperties);
+
+        if (Properties == newProperties) return;
+
+        Properties = newProperties;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        AddDomainEvent(new BlockPropertiesUpdatedEvent(WorkspaceId, Id, PageId, updatedBy, updatedAt));
+    }
+
+    public void Move(Guid? newParentId, FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
         Guard.NotNull(newPosition);
         
         if (ParentId == newParentId && Position == newPosition) return;
 
-        // Note: Cycle detection for nested blocks would require a tree rule similar to PageTreeRules
-        // but typically blocks are shallow-nested or handled at Application level for complexity.
-
         var oldParentId = ParentId;
         ParentId = newParentId;
         Position = newPosition;
-        SetAuditOnUpdate(updatedBy);
+        SetAuditOnUpdate(updatedBy, updatedAt);
         
-        AddDomainEvent(new BlockMovedEvent(Id, PageId, oldParentId, newParentId, newPosition.Value, updatedBy));
+        AddDomainEvent(new BlockMovedEvent(WorkspaceId, Id, PageId, oldParentId, newParentId, newPosition.Value, updatedBy, updatedAt));
     }
 
-    public void Delete(Guid deletedBy)
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
-        AddDomainEvent(new BlockDeletedEvent(Id, PageId, deletedBy));
-        // Physically delete from Domain perspective for blocks, or soft delete if required by schema.
-        // The SQL schema shows soft delete for many tables, but blocks are often physically deleted 
-        // to avoid cluttering. Let's check the schema for block table.
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        AddDomainEvent(new BlockSoftDeletedEvent(WorkspaceId, Id, PageId, deletedBy, deletedAt));
     }
 }

@@ -21,7 +21,7 @@ public class PageTemplate : AggregateRoot
 
     private PageTemplate() : base() { }
 
-    public static PageTemplate Create(string name, JsonValue pageSnapshot, JsonValue blocksSnapshot, Guid? workspaceId = null)
+    public static PageTemplate Create(string name, JsonValue pageSnapshot, JsonValue blocksSnapshot, DateTimeOffset createdAt, Guid? workspaceId = null)
     {
         Guard.NotNullOrWhiteSpace(name);
         Guard.NotNull(pageSnapshot);
@@ -35,7 +35,7 @@ public class PageTemplate : AggregateRoot
             Status = PageTemplateStatus.Draft
         };
 
-        template.AddDomainEvent(new PageTemplateCreatedEvent(template.Id, template.Name));
+        template.AddDomainEvent(new PageTemplateCreatedEvent(workspaceId ?? Guid.Empty, template.Id, template.Name, createdAt));
         return template;
     }
 }
