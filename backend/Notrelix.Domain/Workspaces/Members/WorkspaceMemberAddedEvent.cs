@@ -1,5 +1,4 @@
 using Notrelix.Domain.Common;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Domain.Workspaces.Members;
 
@@ -8,6 +7,6 @@ public sealed record WorkspaceMemberAddedEvent(
     Guid MemberId,
     Guid UserId,
     WorkspaceRole Role,
-    Guid AddedBy,
+    Guid ActorId,
     DateTimeOffset OccurredAt
 ) : DomainEvent(OccurredAt);
