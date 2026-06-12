@@ -1,6 +1,6 @@
 using Notrelix.Domain.Common;
 
-namespace Notrelix.Domain.Workspaces.Members;
+namespace Notrelix.Domain.Workspaces.Members.Events;
 
 public sealed record WorkspaceMemberSuspendedEvent(
     Guid WorkspaceId,

@@ -1,12 +1,11 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.SharedKernel;
 
-namespace Notrelix.Domain.Workspaces.Teams;
+namespace Notrelix.Domain.Workspaces.Teams.Events;
 
-public sealed record TeamMemberRemovedEvent(
+public sealed record TeamArchivedEvent(
     Guid WorkspaceId,
     Guid TeamId,
-    Guid UserId,
-    Guid RemovedBy,
+    Guid ArchivedBy,
     DateTimeOffset OccurredAt
 ) : DomainEvent(OccurredAt);

@@ -1,7 +1,7 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.SharedKernel;
 
-namespace Notrelix.Domain.Workspaces.Workspaces;
+namespace Notrelix.Domain.Workspaces.Workspaces.Events;
 
 public sealed record WorkspaceCreatedEvent(
     Guid WorkspaceId,

@@ -1,12 +1,10 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.SharedKernel;
 
-namespace Notrelix.Domain.Workspaces.Spaces;
+namespace Notrelix.Domain.Workspaces.Workspaces.Events;
 
-public sealed record SpaceCreatedEvent(
-    Guid SpaceId,
+public sealed record WorkspaceRestoredEvent(
     Guid WorkspaceId,
-    string Name,
-    Guid CreatedBy,
+    Guid RestoredBy,
     DateTimeOffset OccurredAt
 ) : DomainEvent(OccurredAt);

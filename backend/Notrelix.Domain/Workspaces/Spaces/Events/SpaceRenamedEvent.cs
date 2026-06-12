@@ -1,7 +1,7 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.SharedKernel;
 
-namespace Notrelix.Domain.Workspaces.Spaces;
+namespace Notrelix.Domain.Workspaces.Spaces.Events;
 
 public sealed record SpaceRenamedEvent(
     Guid WorkspaceId,

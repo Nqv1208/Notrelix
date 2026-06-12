@@ -1,6 +1,8 @@
 using FluentAssertions;
+using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Workspaces.Spaces;
+using Notrelix.Domain.Workspaces.Spaces.Events;
 using Xunit;
 
 namespace Notrelix.Domain.Tests.Workspaces;
@@ -33,18 +35,28 @@ public class SpaceTests
     }
 
     [Fact]
-    public void Move_ShouldSucceed_AndRaiseEvent()
+    public void Move_CrossWorkspace_ShouldThrow()
     {
         var oldWorkspaceId = Guid.NewGuid();
         var newWorkspaceId = Guid.NewGuid();
         var space = Space.Create(oldWorkspaceId, "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        var act = () => space.Move(newWorkspaceId, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*not allowed*");
+    }
+
+    [Fact]
+    public void Move_SameWorkspace_ShouldBeNoOp()
+    {
+        var workspaceId = Guid.NewGuid();
+        var space = Space.Create(workspaceId, "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
         space.ClearDomainEvents();
 
-        var movedBy = Guid.NewGuid();
-        space.Move(newWorkspaceId, movedBy, DateTimeOffset.UtcNow);
+        space.Move(workspaceId, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        space.WorkspaceId.Should().Be(newWorkspaceId);
-        space.DomainEvents.Should().ContainSingle(e => e is SpaceMovedEvent);
+        space.WorkspaceId.Should().Be(workspaceId);
+        space.DomainEvents.Should().BeEmpty();
     }
 
     [Fact]
@@ -71,7 +83,7 @@ public class SpaceTests
     }
 
     [Fact]
-    public void SoftDelete_ShouldSetStatusToSoftDeleted()
+    public void SoftDelete_ShouldSetStatusToSoftDeleted_AndRaiseEvent()
     {
         var space = Space.Create(Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -83,7 +95,7 @@ public class SpaceTests
     }
 
     [Fact]
-    public void Restore_ShouldSetStatusToActive()
+    public void Restore_ShouldSetStatusToActive_AndRaiseEvent()
     {
         var space = Space.Create(Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
         space.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -94,5 +106,15 @@ public class SpaceTests
         space.Status.Should().Be(SpaceStatus.Active);
         space.IsDeleted.Should().BeFalse();
         space.DomainEvents.Should().Contain(e => e is SpaceRestoredEvent);
+    }
+
+    [Fact]
+    public void Rename_OnDeletedSpace_ShouldThrow()
+    {
+        var space = Space.Create(Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        var act = () => space.Rename("Sales", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        act.Should().Throw<DomainException>().WithMessage("*deleted and cannot be modified*");
     }
 }

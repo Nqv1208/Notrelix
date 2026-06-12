@@ -1,6 +1,8 @@
 using FluentAssertions;
+using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Workspaces.Teams;
+using Notrelix.Domain.Workspaces.Teams.Events;
 using Xunit;
 
 namespace Notrelix.Domain.Tests.Workspaces;
@@ -96,5 +98,54 @@ public class TeamTests
 
         var member = team.Members.First(m => m.UserId == userId);
         member.Status.Should().Be(TeamMemberStatus.Removed);
+    }
+
+    [Fact]
+    public void AddMember_DuplicateActiveMember_ShouldThrow()
+    {
+        var team = Team.Create(Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var userId = Guid.NewGuid();
+        team.AddMember(userId, TeamMemberRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        var act = () => team.AddMember(userId, TeamMemberRole.Lead, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        act.Should().Throw<BusinessRuleException>().WithMessage("*already a member of this team*");
+    }
+
+    [Fact]
+    public void AddMember_ReAddRemovedMember_ShouldReactivateMember()
+    {
+        var team = Team.Create(Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var userId = Guid.NewGuid();
+        var actor = Guid.NewGuid();
+        
+        // Add member
+        team.AddMember(userId, TeamMemberRole.Member, actor, DateTimeOffset.UtcNow);
+        
+        // Remove member
+        team.RemoveMember(userId, actor, DateTimeOffset.UtcNow);
+        team.Members.First(m => m.UserId == userId).Status.Should().Be(TeamMemberStatus.Removed);
+        team.ClearDomainEvents();
+
+        // Re-add/reactivate
+        var reactivateTime = DateTimeOffset.UtcNow.AddMinutes(5);
+        team.AddMember(userId, TeamMemberRole.Lead, actor, reactivateTime);
+
+        var member = team.Members.First(m => m.UserId == userId);
+        team.Members.Should().HaveCount(1, "reactivated member should not create a duplicate row");
+        member.Status.Should().Be(TeamMemberStatus.Active);
+        member.Role.Should().Be(TeamMemberRole.Lead);
+        member.UpdatedBy.Should().Be(actor);
+        member.UpdatedAt.Should().Be(reactivateTime);
+        team.DomainEvents.Should().ContainSingle(e => e is TeamMemberAddedEvent);
+    }
+
+    [Fact]
+    public void Rename_ShouldThrow_WhenArchived()
+    {
+        var team = Team.Create(Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        team.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        var act = () => team.Rename("New Name", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        act.Should().Throw<DomainException>().WithMessage("*archived*");
     }
 }

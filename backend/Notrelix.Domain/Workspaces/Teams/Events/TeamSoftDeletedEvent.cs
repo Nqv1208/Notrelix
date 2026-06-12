@@ -1,10 +1,11 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.SharedKernel;
 
-namespace Notrelix.Domain.Workspaces.Workspaces;
+namespace Notrelix.Domain.Workspaces.Teams.Events;
 
-public sealed record WorkspaceRestoredEvent(
+public sealed record TeamSoftDeletedEvent(
     Guid WorkspaceId,
-    Guid RestoredBy,
+    Guid TeamId,
+    Guid DeletedBy,
     DateTimeOffset OccurredAt
 ) : DomainEvent(OccurredAt);

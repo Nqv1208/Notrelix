@@ -1,12 +1,11 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.SharedKernel;
 
-namespace Notrelix.Domain.Workspaces.Invitations;
+namespace Notrelix.Domain.Workspaces.Invitations.Events;
 
-public sealed record WorkspaceInvitationAcceptedEvent(
+public sealed record WorkspaceInvitationRevokedEvent(
     Guid InvitationId,
     Guid WorkspaceId,
-    Guid UserId,
-    Guid AcceptedBy,
+    Guid RevokedBy,
     DateTimeOffset OccurredAt
 ) : DomainEvent(OccurredAt);
