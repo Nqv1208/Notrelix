@@ -1,5 +1,6 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
+using Notrelix.Domain.Workspaces.Spaces.Events;
 
 namespace Notrelix.Domain.Workspaces.Spaces;
 
@@ -17,6 +18,7 @@ public class Space : AggregateRoot
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(name);
+        Guard.NotEmpty(createdBy);
 
         var space = new Space
         {
@@ -38,6 +40,7 @@ public class Space : AggregateRoot
         if (Status == SpaceStatus.Archived)
             throw new BusinessRuleException("Cannot rename an archived space.");
         Guard.NotNullOrWhiteSpace(newName);
+        Guard.NotEmpty(updatedBy);
 
         var oldName = Name;
         var normalizedName = newName.Trim();
@@ -54,18 +57,18 @@ public class Space : AggregateRoot
         if (Status == SpaceStatus.Archived)
             throw new BusinessRuleException("Cannot move an archived space.");
         Guard.NotEmpty(newWorkspaceId);
+        Guard.NotEmpty(movedBy);
 
-        var oldWorkspaceId = WorkspaceId;
-        if (WorkspaceId == newWorkspaceId) return;
-
-        WorkspaceId = newWorkspaceId;
-        SetAuditOnUpdate(movedBy, movedAt);
-        AddDomainEvent(new SpaceMovedEvent(Id, oldWorkspaceId, newWorkspaceId, movedBy, movedAt));
+        if (WorkspaceId != newWorkspaceId)
+        {
+            throw new BusinessRuleException("Moving a space across workspaces is not allowed to maintain workspace isolation boundaries.");
+        }
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(archivedBy);
         if (Status == SpaceStatus.Archived) return;
 
         Status = SpaceStatus.Archived;
@@ -75,6 +78,7 @@ public class Space : AggregateRoot
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         Status = SpaceStatus.SoftDeleted;
         base.SoftDelete(deletedBy, deletedAt, reason);
@@ -83,6 +87,7 @@ public class Space : AggregateRoot
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         Status = SpaceStatus.Active;
         base.Restore(restoredBy, restoredAt);

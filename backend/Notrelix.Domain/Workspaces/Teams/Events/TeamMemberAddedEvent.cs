@@ -1,11 +1,13 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.SharedKernel;
 
-namespace Notrelix.Domain.Workspaces.Teams;
+namespace Notrelix.Domain.Workspaces.Teams.Events;
 
-public sealed record TeamRestoredEvent(
+public sealed record TeamMemberAddedEvent(
     Guid WorkspaceId,
     Guid TeamId,
-    Guid RestoredBy,
+    Guid UserId,
+    TeamMemberRole Role,
+    Guid AddedBy,
     DateTimeOffset OccurredAt
 ) : DomainEvent(OccurredAt);

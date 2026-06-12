@@ -1,10 +1,11 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.SharedKernel;
 
-namespace Notrelix.Domain.Workspaces.Invitations;
+namespace Notrelix.Domain.Workspaces.Spaces.Events;
 
-public sealed record WorkspaceInvitationExpiredEvent(
-    Guid InvitationId,
+public sealed record SpaceArchivedEvent(
     Guid WorkspaceId,
+    Guid SpaceId,
+    Guid ArchivedBy,
     DateTimeOffset OccurredAt
 ) : DomainEvent(OccurredAt);

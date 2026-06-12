@@ -2,6 +2,7 @@ using Notrelix.Domain.Common;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.SharedKernel;
+using Notrelix.Domain.Workspaces.Workspaces.Events;
 
 namespace Notrelix.Domain.Workspaces.Workspaces;
 
@@ -42,21 +43,27 @@ public class Workspace : AggregateRoot
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(newName);
 
+        if (Status == WorkspaceStatus.Archived)
+            throw new BusinessRuleException("Cannot rename an archived workspace.");
+
         var oldName = Name;
         if (Name == newName.Trim()) return;
 
         Name = newName.Trim();
         SetAuditOnUpdate(updatedBy, updatedAt);
+
         AddDomainEvent(new WorkspaceRenamedEvent(Id, oldName, Name, updatedBy, updatedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();
+
         if (Status == WorkspaceStatus.Archived) return;
 
         Status = WorkspaceStatus.Archived;
         SetAuditOnUpdate(archivedBy, archivedAt);
+
         AddDomainEvent(new WorkspaceArchivedEvent(Id, archivedBy, archivedAt));
     }
 
@@ -65,6 +72,7 @@ public class Workspace : AggregateRoot
         if (IsDeleted) return;
         Status = WorkspaceStatus.SoftDeleted;
         base.SoftDelete(deletedBy, deletedAt, reason);
+
         AddDomainEvent(new WorkspaceSoftDeletedEvent(Id, deletedBy, deletedAt));
     }
 
@@ -73,6 +81,20 @@ public class Workspace : AggregateRoot
         if (!IsDeleted) return;
         Status = WorkspaceStatus.Active;
         base.Restore(restoredBy, restoredAt);
+        
         AddDomainEvent(new WorkspaceRestoredEvent(Id, restoredBy, restoredAt));
+    }
+
+    public void UpdateSettings(WorkspaceSettings newSettings, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        Guard.NotNull(newSettings);
+
+        if (Status == WorkspaceStatus.Archived)
+            throw new BusinessRuleException("Cannot update settings of an archived workspace.");
+
+        Settings = newSettings;
+        SetAuditOnUpdate(updatedBy, updatedAt);
     }
 }

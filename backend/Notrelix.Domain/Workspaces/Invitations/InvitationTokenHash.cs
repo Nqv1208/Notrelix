@@ -1,31 +1,24 @@
-using System.Security.Cryptography;
-using System.Text;
 using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Workspaces.Invitations;
 
 public sealed class InvitationTokenHash : ValueObject
 {
-    public string Hash { get; }
+    public string Value { get; }
 
-    private InvitationTokenHash(string hash)
+    private InvitationTokenHash(string value)
     {
-        Hash = hash;
+        Value = value;
     }
 
-    public static InvitationTokenHash Create(string rawToken)
+    public static InvitationTokenHash Create(string hash)
     {
-        Guard.NotNullOrWhiteSpace(rawToken);
-
-        using var sha256 = SHA256.Create();
-        var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(rawToken));
-        var hash = Convert.ToBase64String(bytes);
-
-        return new InvitationTokenHash(hash);
+        Guard.NotNullOrWhiteSpace(hash);
+        return new InvitationTokenHash(hash.Trim());
     }
 
     protected override IEnumerable<object?> GetEqualityComponents()
     {
-        yield return Hash;
+        yield return Value;
     }
 }

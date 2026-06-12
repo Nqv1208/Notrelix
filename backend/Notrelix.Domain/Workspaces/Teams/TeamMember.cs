@@ -2,7 +2,7 @@ using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Workspaces.Teams;
 
-public class TeamMember : Entity
+public class TeamMember : AuditableEntity
 {
     public Guid TeamId { get; private set; }
     public Guid UserId { get; private set; }
@@ -12,12 +12,19 @@ public class TeamMember : Entity
 
     private TeamMember() : base() { }
 
-    public static TeamMember Create(Guid teamId, Guid userId, TeamMemberRole role, Guid? workspaceMemberId = null)
+    public static TeamMember Create(
+        Guid teamId, 
+        Guid userId, 
+        TeamMemberRole role, 
+        Guid addedBy, 
+        DateTimeOffset createdAt, 
+        Guid? workspaceMemberId = null)
     {
         Guard.NotEmpty(teamId);
         Guard.NotEmpty(userId);
+        Guard.NotEmpty(addedBy);
 
-        return new TeamMember
+        var member = new TeamMember
         {
             TeamId = teamId,
             UserId = userId,
@@ -25,10 +32,26 @@ public class TeamMember : Entity
             Status = TeamMemberStatus.Active,
             WorkspaceMemberId = workspaceMemberId
         };
+
+        member.SetAuditOnCreate(addedBy, createdAt);
+        return member;
+    }
+
+    public void Reactivate(TeamMemberRole role, Guid? workspaceMemberId, Guid activatedBy, DateTimeOffset activatedAt)
+    {
+        Status = TeamMemberStatus.Active;
+        Role = role;
+        WorkspaceMemberId = workspaceMemberId;
+        SetAuditOnUpdate(activatedBy, activatedAt);
     }
 
     public void Remove(Guid removedBy, DateTimeOffset removedAt)
     {
+        Guard.NotEmpty(removedBy);
+
+        if (Status == TeamMemberStatus.Removed) return;
+
         Status = TeamMemberStatus.Removed;
+        SetAuditOnUpdate(removedBy, removedAt);
     }
 }
