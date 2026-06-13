@@ -1,5 +1,6 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
+using Notrelix.Domain.Analytics.Dashboards.Events;
 using Notrelix.Domain.Analytics.Widgets;
 using Notrelix.Domain.Analytics.Rules;
 
@@ -40,7 +41,7 @@ public class DashboardWidget : Entity
     }
 }
 
-public class Dashboard : SoftDeletableEntity
+public class Dashboard : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public string Name { get; private set; } = null!;
@@ -75,16 +76,23 @@ public class Dashboard : SoftDeletableEntity
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(name);
 
-        Name = name.Trim();
+        var normalizedName = name.Trim();
+        if (Name == normalizedName) return;
+
+        Name = normalizedName;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new DashboardRenamedEvent(WorkspaceId, Id, Name, updatedBy, updatedAt));
     }
 
     public void ChangeVisibility(DashboardVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (Visibility == visibility) return;
+
         Visibility = visibility;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new DashboardVisibilityChangedEvent(WorkspaceId, Id, Visibility, updatedBy, updatedAt));
     }
 
@@ -98,6 +106,7 @@ public class Dashboard : SoftDeletableEntity
         var widget = DashboardWidget.Create(Id, title, type, config, position);
         _widgets.Add(widget);
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new DashboardWidgetAddedEvent(WorkspaceId, Id, widget.Id, updatedBy, updatedAt));
     }
 
@@ -109,6 +118,7 @@ public class Dashboard : SoftDeletableEntity
 
         _widgets.Remove(widget);
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new DashboardWidgetRemovedEvent(WorkspaceId, Id, widgetId, updatedBy, updatedAt));
     }
 
@@ -123,6 +133,7 @@ public class Dashboard : SoftDeletableEntity
 
         widget.UpdatePosition(newPosition);
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new DashboardWidgetMovedEvent(WorkspaceId, Id, widgetId, newPosition, updatedBy, updatedAt));
     }
 
@@ -131,6 +142,9 @@ public class Dashboard : SoftDeletableEntity
         if (IsDeleted) return;
         Status = DashboardStatus.Archived;
         base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new DashboardDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -138,5 +152,8 @@ public class Dashboard : SoftDeletableEntity
         if (!IsDeleted) return;
         Status = DashboardStatus.Active;
         base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new DashboardRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }
