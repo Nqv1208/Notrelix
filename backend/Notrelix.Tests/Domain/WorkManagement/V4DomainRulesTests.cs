@@ -45,7 +45,7 @@ public class V4DomainRulesTests
             position: FractionalIndex.Initial(), 
             configJson: null);
 
-        Action act = () => form.AddQuestion(question);
+        Action act = () => form.AddQuestion(question, _actorId, _now);
 
         act.Should().Throw<WorkspaceMismatchException>();
     }

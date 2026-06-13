@@ -2,6 +2,7 @@ using FluentAssertions;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.SharedKernel;
+using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.WorkManagement.Fields;
@@ -100,7 +101,8 @@ public class Phase1AuditTests
         var item = BoardItem.Create(_workspaceId, _boardId, groupId, "Item", position, _actorId, _now);
         var version = item.Version;
 
-        item.MoveToGroup(groupId, position, _actorId, _now);
+        var boardGroupRef = new BoardGroupRef(_workspaceId, _boardId, groupId);
+        item.MoveToGroup(boardGroupRef, position, _actorId, _now);
 
         item.Version.Should().Be(version);
     }

@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.SharedKernel;
+using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Items;
 using Xunit;
@@ -64,7 +65,8 @@ public class BoardItemTests
         var newPosition = FractionalIndex.Create("b0");
         var updatedBy = Guid.NewGuid();
         
-        item.MoveToGroup(newGroup, newPosition, updatedBy, DateTimeOffset.UtcNow);
+        var boardGroupRef = new BoardGroupRef(item.WorkspaceId, item.BoardId, newGroup);
+        item.MoveToGroup(boardGroupRef, newPosition, updatedBy, DateTimeOffset.UtcNow);
         
         item.GroupId.Should().Be(newGroup);
         item.Position.Should().Be(newPosition);
