@@ -14,10 +14,11 @@ public class Workspace : AggregateRoot
     public WorkspaceStatus Status { get; private set; }
     public WorkspaceSettings Settings { get; private set; } = null!;
     public bool IsPersonal { get; private set; }
+    public Guid? AccountId { get; private set; }
 
     private Workspace() : base() { }
 
-    public static Workspace Create(Guid ownerId, string name, string slug, DateTimeOffset createdAt, bool isPersonal = false)
+    public static Workspace Create(Guid ownerId, string name, string slug, DateTimeOffset createdAt, bool isPersonal = false, Guid? accountId = null)
     {
         Guard.NotEmpty(ownerId);
         Guard.NotNullOrWhiteSpace(name);
@@ -29,13 +30,26 @@ public class Workspace : AggregateRoot
             Slug = slug.Trim().ToLowerInvariant(),
             Status = WorkspaceStatus.Active,
             Settings = WorkspaceSettings.Create(),
-            IsPersonal = isPersonal
+            IsPersonal = isPersonal,
+            AccountId = accountId
         };
 
         workspace.SetAuditOnCreate(ownerId, createdAt);
         workspace.AddDomainEvent(new WorkspaceCreatedEvent(workspace.Id, workspace.Name, workspace.Slug, ownerId, createdAt));
 
         return workspace;
+    }
+
+    public void AssignToAccount(Guid accountId, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(accountId);
+
+        if (AccountId == accountId) return;
+
+        AccountId = accountId;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
     }
 
     public void Rename(string newName, Guid updatedBy, DateTimeOffset updatedAt)

@@ -3,7 +3,7 @@ using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Billing.Subscriptions;
 
-public class Subscription : AggregateRoot
+public class Subscription : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid PlanId { get; private set; }

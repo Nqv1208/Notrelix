@@ -2,8 +2,9 @@ using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Workspaces.Teams;
 
-public class TeamMember : AuditableEntity
+public class TeamMember : AuditableEntity, IWorkspaceScoped
 {
+    public Guid WorkspaceId { get; private set; }
     public Guid TeamId { get; private set; }
     public Guid UserId { get; private set; }
     public TeamMemberRole Role { get; private set; }
@@ -13,6 +14,7 @@ public class TeamMember : AuditableEntity
     private TeamMember() : base() { }
 
     public static TeamMember Create(
+        Guid workspaceId,
         Guid teamId, 
         Guid userId, 
         TeamMemberRole role, 
@@ -20,12 +22,14 @@ public class TeamMember : AuditableEntity
         DateTimeOffset createdAt, 
         Guid? workspaceMemberId = null)
     {
+        Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(teamId);
         Guard.NotEmpty(userId);
         Guard.NotEmpty(addedBy);
 
         var member = new TeamMember
         {
+            WorkspaceId = workspaceId,
             TeamId = teamId,
             UserId = userId,
             Role = role,

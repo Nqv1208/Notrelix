@@ -5,7 +5,7 @@ using Notrelix.Domain.Workspaces.Invitations.Events;
 
 namespace Notrelix.Domain.Workspaces.Invitations;
 
-public class WorkspaceInvitation : AggregateRoot
+public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public string Email { get; private set; } = null!;

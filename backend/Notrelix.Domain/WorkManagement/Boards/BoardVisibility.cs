@@ -4,5 +4,5 @@ public enum BoardVisibility
 {
     Private,
     Workspace,
-    Public
+    PublicLink
 }

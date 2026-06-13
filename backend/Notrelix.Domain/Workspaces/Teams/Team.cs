@@ -4,7 +4,7 @@ using Notrelix.Domain.Workspaces.Teams.Events;
 
 namespace Notrelix.Domain.Workspaces.Teams;
 
-public class Team : AggregateRoot
+public class Team : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public string Name { get; private set; } = null!;
@@ -82,7 +82,7 @@ public class Team : AggregateRoot
         }
         else
         {
-            var member = TeamMember.Create(Id, userId, role, addedBy, addedAt, workspaceMemberId);
+            var member = TeamMember.Create(WorkspaceId, Id, userId, role, addedBy, addedAt, workspaceMemberId);
             _members.Add(member);
         }
         
