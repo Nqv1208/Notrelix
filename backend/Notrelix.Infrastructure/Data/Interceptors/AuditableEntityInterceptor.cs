@@ -43,12 +43,12 @@ public class AuditableEntityInterceptor : SaveChangesInterceptor
             switch (entry.State)
             {
                 case EntityState.Added:
-                    entry.Entity.CreatedAt = DateTime.UtcNow;
+                    entry.Entity.CreatedAt = DateTimeOffset.UtcNow;
                     if (_currentUser.IsAuthenticated)
                         entry.Entity.CreatedBy = _currentUser.UserId;
                     break;
                 case EntityState.Modified:
-                    entry.Entity.UpdatedAt = DateTime.UtcNow;
+                    entry.Entity.UpdatedAt = DateTimeOffset.UtcNow;
                     if (_currentUser.IsAuthenticated)
                         entry.Entity.UpdatedBy = _currentUser.UserId;
                     break;
