@@ -6,6 +6,7 @@ using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.WorkManagement.Commands.Boards;
 using global::Notrelix.Application.Features.WorkManagement.DTOs;
 using global::Notrelix.Domain.Workspaces;
+using global::Notrelix.Domain.WorkManagement.BoardGroups;
 using global::Notrelix.Domain.WorkManagement.Items;
 
 namespace Notrelix.Application.Features.WorkManagement.Commands;
@@ -49,7 +50,7 @@ public class MoveCardCommandHandler : IRequestHandler<MoveCardCommand, Result>
         await _permissions.EnsureCanEditBoardAsync(card.Group.BoardId, _currentUser.UserId, cancellationToken);
 
         // Cập nhật vị trí và danh sách
-        card.MoveToGroup(request.GroupId, request.Position, _currentUser.UserId);
+        card.MoveToGroup(BoardGroupRef.From(targetList), request.Position, _currentUser.UserId);
 
         await _context.SaveChangesAsync(cancellationToken);
 

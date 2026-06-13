@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Security;
 using Notrelix.Application.Features.WorkManagement.DTOs;
+using Notrelix.Domain.WorkManagement.BoardGroups;
 
 namespace Notrelix.Application.Features.WorkManagement.Commands;
 
@@ -45,7 +46,7 @@ public class MoveBoardItemCommandHandler : IRequestHandler<MoveBoardItemCommand,
         if (group == null)
             throw new NotFoundException("BoardGroup", request.NewGroupId);
 
-        item.MoveToGroup(request.NewGroupId, request.Position, _currentUser.UserId);
+        item.MoveToGroup(BoardGroupRef.From(group), request.Position, _currentUser.UserId);
 
         await _context.SaveChangesAsync(cancellationToken);
 
