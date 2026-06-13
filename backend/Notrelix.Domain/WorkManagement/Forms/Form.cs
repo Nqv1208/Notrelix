@@ -49,6 +49,7 @@ public class Form : AggregateRoot, IWorkspaceScoped
         };
 
         form.SetAuditOnCreate(createdBy, createdAt);
+        form.AddDomainEvent(new FormCreatedDomainEvent(workspaceId, form.Id, boardId, form.Name, createdBy, createdAt));
         return form;
     }
 
@@ -69,23 +70,46 @@ public class Form : AggregateRoot, IWorkspaceScoped
     public void Publish(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (Status == FormStatus.Closed)
+            throw new BusinessRuleException("Cannot publish a closed form.");
+
+        if (_questions.Count == 0)
+            throw new BusinessRuleException("Cannot publish a form with no questions.");
+
+        var oldStatus = Status;
         Status = FormStatus.Published;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new FormPublishedDomainEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void Close(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (Status == FormStatus.Closed) return;
+
         Status = FormStatus.Closed;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new FormClosedDomainEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
-    public void AddQuestion(FormQuestion question)
+    public void EnsureAcceptsSubmissions()
+    {
+        EnsureNotDeleted();
+        if (Status == FormStatus.Draft)
+            throw new BusinessRuleException("Cannot submit to a draft form.");
+        if (Status == FormStatus.Closed)
+            throw new BusinessRuleException("Cannot submit to a closed form.");
+    }
+
+    public void AddQuestion(FormQuestion question, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Guard.NotNull(question);
+
+        if (Status == FormStatus.Closed)
+            throw new BusinessRuleException("Cannot add a question to a closed form.");
 
         if (question.WorkspaceId != WorkspaceId)
             throw new WorkspaceMismatchException(WorkspaceId, question.WorkspaceId);
@@ -94,6 +118,8 @@ public class Form : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException($"A question with key '{question.QuestionKey}' already exists.");
 
         _questions.Add(question);
+        SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new FormQuestionAddedDomainEvent(WorkspaceId, Id, question.QuestionKey, updatedBy, updatedAt));
     }
 }

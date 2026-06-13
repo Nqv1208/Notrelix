@@ -137,19 +137,16 @@ public class Board : AggregateRoot, IWorkspaceScoped
         IncrementVersion();
     }
 
-    public long GenerateNextItemSequence()
+    public (long Sequence, string Key) GenerateNextItemIdentity(Guid actorUserId, DateTimeOffset now)
     {
         EnsureNotDeleted();
         ItemSequence++;
+        var key = string.IsNullOrWhiteSpace(ItemKeyPrefix)
+            ? ItemSequence.ToString()
+            : $"{ItemKeyPrefix}-{ItemSequence}";
+        SetAuditOnUpdate(actorUserId, now);
         IncrementVersion();
-        return ItemSequence;
-    }
-
-    public string GenerateItemKey()
-    {
-        if (string.IsNullOrWhiteSpace(ItemKeyPrefix))
-            return ItemSequence.ToString();
-        return $"{ItemKeyPrefix}-{ItemSequence}";
+        return (ItemSequence, key);
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)

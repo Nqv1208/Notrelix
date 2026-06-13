@@ -1,6 +1,7 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.SharedKernel;
+using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Fields;
 
 namespace Notrelix.Domain.WorkManagement.Items;
@@ -78,23 +79,30 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
 
         Name = normalizedName;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new BoardItemRenamedEvent(WorkspaceId, Id, BoardId, oldName, Name, updatedBy, updatedAt));
     }
 
-    public void MoveToGroup(Guid newGroupId, FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
+    public void MoveToGroup(BoardGroupRef group, FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        Guard.NotEmpty(newGroupId);
+        Guard.NotNull(group);
         Guard.NotNull(newPosition);
 
-        var oldGroupId = GroupId;
-        if (GroupId == newGroupId && Position == newPosition) return;
+        if (group.WorkspaceId != WorkspaceId)
+            throw new WorkspaceMismatchException(WorkspaceId, group.WorkspaceId);
 
-        GroupId = newGroupId;
+        if (group.BoardId != BoardId)
+            throw new BoardMismatchException(BoardId, group.BoardId);
+
+        var oldGroupId = GroupId;
+        if (GroupId == group.GroupId && Position == newPosition) return;
+
+        GroupId = group.GroupId;
         Position = newPosition;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        
-        AddDomainEvent(new BoardItemMovedEvent(WorkspaceId, Id, BoardId, oldGroupId, newGroupId, newPosition.Value, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new BoardItemMovedEvent(WorkspaceId, Id, BoardId, oldGroupId, group.GroupId, newPosition.Value, updatedBy, updatedAt));
     }
 
     public void UpdateFieldValue(BoardField field, FieldValue newValue, Guid updatedBy, DateTimeOffset updatedAt)
@@ -156,6 +164,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         }
 
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new BoardItemFieldValueChangedEvent(WorkspaceId, Id, BoardId, field.Id, oldValue, newValue, updatedBy, updatedAt));
     }
 
@@ -194,6 +203,8 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
     {
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
         AddDomainEvent(new BoardItemSoftDeletedEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
@@ -201,6 +212,8 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
     {
         if (!IsDeleted) return;
         base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
         AddDomainEvent(new BoardItemRestoredEvent(WorkspaceId, Id, BoardId, restoredBy, restoredAt));
     }
 }
