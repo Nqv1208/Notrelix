@@ -7,7 +7,7 @@ public sealed class JsonValue : ValueObject
 {
     public string Value { get; }
 
-    private JsonValue(string value)
+    private JsonValue() { }    private JsonValue(string value)
     {
         Value = value;
     }

@@ -8,7 +8,7 @@ public sealed class FilterRule : ValueObject
     public FilterOperator Operator { get; }
     public string? Value { get; }
 
-    private FilterRule(Guid fieldId, FilterOperator op, string? value)
+    private FilterRule() { }    private FilterRule(Guid fieldId, FilterOperator op, string? value)
     {
         FieldId = fieldId;
         Operator = op;

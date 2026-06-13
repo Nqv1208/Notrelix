@@ -7,7 +7,7 @@ public sealed class Url : ValueObject
 {
     public string Value { get; }
 
-    private Url(string value)
+    private Url() { }    private Url(string value)
     {
         Value = value;
     }

@@ -11,7 +11,7 @@ public class SyncHash : ValueObject
 {
     public string Value { get; private set; }
 
-    private SyncHash(string value)
+    private SyncHash() { }    private SyncHash(string value)
     {
         Value = value;
     }

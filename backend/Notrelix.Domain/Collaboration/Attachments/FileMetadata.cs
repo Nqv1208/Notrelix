@@ -10,7 +10,7 @@ public sealed class FileMetadata : ValueObject
     public string? StorageKey { get; }
     public string? Url { get; }
 
-    private FileMetadata(string fileName, long size, string contentType, string? storageKey, string? url)
+    private FileMetadata() { }    private FileMetadata(string fileName, long size, string contentType, string? storageKey, string? url)
     {
         FileName = fileName;
         Size = size;

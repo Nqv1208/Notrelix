@@ -11,7 +11,7 @@ public sealed class Slug : ValueObject
 
     public string Value { get; }
 
-    private Slug(string value)
+    private Slug() { }    private Slug(string value)
     {
         Value = value;
     }

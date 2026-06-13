@@ -6,7 +6,7 @@ public sealed class WidgetConfig : ValueObject
 {
     public JsonValue Data { get; }
 
-    private WidgetConfig(JsonValue data)
+    private WidgetConfig() { }    private WidgetConfig(JsonValue data)
     {
         Data = data;
     }

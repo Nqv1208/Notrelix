@@ -6,7 +6,7 @@ public sealed class UserPreferences : ValueObject
 {
     public JsonValue Data { get; }
 
-    private UserPreferences(JsonValue data)
+    private UserPreferences() { }    private UserPreferences(JsonValue data)
     {
         Data = data;
     }

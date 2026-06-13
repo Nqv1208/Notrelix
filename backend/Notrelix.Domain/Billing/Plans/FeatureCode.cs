@@ -6,7 +6,7 @@ public sealed class FeatureCode : ValueObject
 {
     public string Code { get; }
 
-    private FeatureCode(string code)
+    private FeatureCode() { }    private FeatureCode(string code)
     {
         Code = code;
     }

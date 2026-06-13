@@ -8,7 +8,7 @@ public sealed class ShareLinkTokenHash : ValueObject
 {
     public string Hash { get; }
 
-    private ShareLinkTokenHash(string hash)
+    private ShareLinkTokenHash() { }    private ShareLinkTokenHash(string hash)
     {
         Hash = hash;
     }

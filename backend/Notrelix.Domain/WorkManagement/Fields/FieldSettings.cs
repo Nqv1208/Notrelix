@@ -6,7 +6,7 @@ public sealed class FieldSettings : ValueObject
 {
     public JsonValue Data { get; }
 
-    private FieldSettings(JsonValue data)
+    private FieldSettings() { }    private FieldSettings(JsonValue data)
     {
         Data = data;
     }

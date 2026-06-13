@@ -6,7 +6,7 @@ public sealed class InvitationTokenHash : ValueObject
 {
     public string Value { get; }
 
-    private InvitationTokenHash(string value)
+    private InvitationTokenHash() { }    private InvitationTokenHash(string value)
     {
         Value = value;
     }
