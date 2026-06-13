@@ -3,7 +3,7 @@ using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Billing.Payments;
 
-public class Invoice : AggregateRoot
+public class Invoice : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid SubscriptionId { get; private set; }
@@ -30,7 +30,7 @@ public class Invoice : AggregateRoot
             DueAt = dueAt
         };
 
-        invoice.SetAuditOnCreate(Guid.Empty, createdAt);
+        invoice.SetAuditOnCreate(null, createdAt);
         return invoice;
     }
 
@@ -39,7 +39,7 @@ public class Invoice : AggregateRoot
         if (Status != InvoiceStatus.Draft)
             throw new BusinessRuleException("Only draft invoices can be issued.");
         Status = InvoiceStatus.Open;
-        SetAuditOnUpdate(Guid.Empty, issuedAt);
+        SetAuditOnUpdate(null, issuedAt);
         AddDomainEvent(new InvoiceIssuedEvent(Id, WorkspaceId, Amount, issuedAt));
     }
 
@@ -50,7 +50,7 @@ public class Invoice : AggregateRoot
         if (Status == InvoiceStatus.Paid) return;
 
         Status = InvoiceStatus.Paid;
-        SetAuditOnUpdate(Guid.Empty, paidAt);
+        SetAuditOnUpdate(null, paidAt);
         AddDomainEvent(new InvoicePaidEvent(Id, WorkspaceId, paidAt));
     }
 
@@ -62,7 +62,7 @@ public class Invoice : AggregateRoot
             throw new BusinessRuleException("Cannot fail a void invoice.");
 
         Status = InvoiceStatus.Uncollectible;
-        SetAuditOnUpdate(Guid.Empty, failedAt);
+        SetAuditOnUpdate(null, failedAt);
         AddDomainEvent(new InvoiceFailedEvent(Id, WorkspaceId, reason, failedAt));
     }
 
@@ -73,6 +73,6 @@ public class Invoice : AggregateRoot
         if (Status == InvoiceStatus.Void) return;
 
         Status = InvoiceStatus.Void;
-        SetAuditOnUpdate(Guid.Empty, voidedAt);
+        SetAuditOnUpdate(null, voidedAt);
     }
 }

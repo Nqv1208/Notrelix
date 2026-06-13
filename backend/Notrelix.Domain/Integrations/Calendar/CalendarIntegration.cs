@@ -32,7 +32,7 @@ public class CalendarEventLink : Entity
     }
 }
 
-public class CalendarIntegration : AggregateRoot
+public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid ConnectionId { get; private set; }

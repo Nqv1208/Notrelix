@@ -1,4 +1,5 @@
 using Notrelix.Domain.Common;
+using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Collaboration.Watchers;
 
@@ -9,7 +10,7 @@ public enum WatchLevel
     None
 }
 
-public class ResourceWatcher : AggregateRoot
+public class ResourceWatcher : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public ResourceRef Target { get; private set; } = null!;
@@ -23,6 +24,9 @@ public class ResourceWatcher : AggregateRoot
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(target);
         Guard.NotEmpty(userId);
+
+        if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
+            throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
 
         var watcher = new ResourceWatcher
         {

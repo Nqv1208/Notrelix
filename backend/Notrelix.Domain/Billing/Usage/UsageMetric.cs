@@ -3,7 +3,7 @@ using Notrelix.Domain.Billing.Rules;
 
 namespace Notrelix.Domain.Billing.Usage;
 
-public class UsageMetric : AggregateRoot
+public class UsageMetric : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public UsageMetricKey Key { get; private set; } = null!;

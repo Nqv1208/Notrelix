@@ -36,7 +36,7 @@ public class ChecklistItem : Entity
     }
 }
 
-public class Checklist : AggregateRoot
+public class Checklist : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid ItemId { get; private set; }

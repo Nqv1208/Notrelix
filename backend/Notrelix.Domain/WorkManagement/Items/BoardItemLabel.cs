@@ -2,7 +2,7 @@ using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.WorkManagement.Items;
 
-public class BoardItemLabel : Entity
+public class BoardItemLabel : Entity, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid BoardId { get; private set; }

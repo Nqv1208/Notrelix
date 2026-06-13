@@ -80,6 +80,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         
         Settings = settings;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new BoardFieldUpdatedEvent(WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
 
@@ -95,6 +96,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         var option = FieldOption.Create(Id, name, color, position);
         _options.Add(option);
         SetAuditOnUpdate(addedBy, addedAt);
+        IncrementVersion();
         AddDomainEvent(new FieldOptionAddedEvent(WorkspaceId, Id, option.Id, option.Name, addedBy, addedAt));
     }
 
@@ -106,6 +108,8 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException("Cannot delete a system field.");
 
         base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
         AddDomainEvent(new BoardFieldDeletedEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
@@ -122,6 +126,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         DataClassification = classification;
         IsSensitive = isSensitive;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
     }
 
     public void UpdateFormula(bool isFormula, string? expression, Guid updatedBy, DateTimeOffset updatedAt)
@@ -130,5 +135,6 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         IsFormula = isFormula;
         FormulaExpression = expression;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
     }
 }

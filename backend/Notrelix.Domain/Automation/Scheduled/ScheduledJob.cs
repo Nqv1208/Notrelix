@@ -2,7 +2,7 @@ using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Automation.Scheduled;
 
-public class ScheduledJob : AggregateRoot
+public class ScheduledJob : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid RuleId { get; private set; }
@@ -27,7 +27,7 @@ public class ScheduledJob : AggregateRoot
             Status = ScheduledJobStatus.Active
         };
 
-        job.SetAuditOnCreate(Guid.Empty, createdAt);
+        job.SetAuditOnCreate(null, createdAt);
         job.AddDomainEvent(new ScheduledJobCreatedEvent(workspaceId, job.Id, ruleId, createdAt));
         return job;
     }
@@ -36,7 +36,7 @@ public class ScheduledJob : AggregateRoot
     {
         if (Status == ScheduledJobStatus.Paused) return;
         Status = ScheduledJobStatus.Paused;
-        SetAuditOnUpdate(Guid.Empty, updatedAt);
+        SetAuditOnUpdate(null, updatedAt);
         AddDomainEvent(new ScheduledJobPausedEvent(WorkspaceId, Id, updatedAt));
     }
 
@@ -44,7 +44,7 @@ public class ScheduledJob : AggregateRoot
     {
         if (Status != ScheduledJobStatus.Paused) return;
         Status = ScheduledJobStatus.Active;
-        SetAuditOnUpdate(Guid.Empty, updatedAt);
+        SetAuditOnUpdate(null, updatedAt);
     }
 
     public void Cancel(DateTimeOffset cancelledAt)

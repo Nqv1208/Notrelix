@@ -2,7 +2,7 @@ using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Documents.Versions;
 
-public class DocumentVersion : AggregateRoot
+public class DocumentVersion : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid PageId { get; private set; }

@@ -29,7 +29,7 @@ public class PageTemplate : AggregateRoot
             Status = PageTemplateStatus.Draft
         };
 
-        template.SetAuditOnCreate(Guid.Empty, createdAt);
+        template.SetAuditOnCreate(null, createdAt);
         template.AddDomainEvent(new PageTemplateCreatedEvent(template.WorkspaceId, template.Id, template.Name, createdAt));
         return template;
     }

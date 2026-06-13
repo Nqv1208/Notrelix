@@ -65,7 +65,7 @@ public class Workspace : AggregateRoot
 
         Name = newName.Trim();
         SetAuditOnUpdate(updatedBy, updatedAt);
-
+        IncrementVersion();
         AddDomainEvent(new WorkspaceRenamedEvent(Id, oldName, Name, updatedBy, updatedAt));
     }
 
@@ -77,7 +77,7 @@ public class Workspace : AggregateRoot
 
         Status = WorkspaceStatus.Archived;
         SetAuditOnUpdate(archivedBy, archivedAt);
-
+        IncrementVersion();
         AddDomainEvent(new WorkspaceArchivedEvent(Id, archivedBy, archivedAt));
     }
 
@@ -86,7 +86,8 @@ public class Workspace : AggregateRoot
         if (IsDeleted) return;
         Status = WorkspaceStatus.SoftDeleted;
         base.SoftDelete(deletedBy, deletedAt, reason);
-
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
         AddDomainEvent(new WorkspaceSoftDeletedEvent(Id, deletedBy, deletedAt));
     }
 
@@ -95,7 +96,8 @@ public class Workspace : AggregateRoot
         if (!IsDeleted) return;
         Status = WorkspaceStatus.Active;
         base.Restore(restoredBy, restoredAt);
-        
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
         AddDomainEvent(new WorkspaceRestoredEvent(Id, restoredBy, restoredAt));
     }
 
@@ -110,5 +112,6 @@ public class Workspace : AggregateRoot
 
         Settings = newSettings;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
     }
 }

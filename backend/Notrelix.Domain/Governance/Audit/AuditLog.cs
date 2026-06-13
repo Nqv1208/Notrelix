@@ -2,7 +2,7 @@ using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Governance.Audit;
 
-public class AuditLog : Entity
+public class AuditLog : Entity, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid ActorId { get; private set; }

@@ -3,7 +3,7 @@ using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Collaboration.Comments;
 
-public class Comment : SoftDeletableEntity
+public class Comment : SoftDeletableEntity, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public ResourceRef Target { get; private set; } = null!;
@@ -27,6 +27,9 @@ public class Comment : SoftDeletableEntity
         Guard.NotNull(target);
         Guard.NotNullOrWhiteSpace(content);
         Guard.NotEmpty(createdBy);
+
+        if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
+            throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
 
         var comment = new Comment
         {

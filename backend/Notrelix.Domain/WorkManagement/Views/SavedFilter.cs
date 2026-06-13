@@ -3,7 +3,7 @@ using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.WorkManagement.Views;
 
-public class SavedFilter : AggregateRoot
+public class SavedFilter : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid BoardId { get; private set; }

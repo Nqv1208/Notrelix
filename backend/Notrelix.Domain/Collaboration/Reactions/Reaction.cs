@@ -1,8 +1,9 @@
 using Notrelix.Domain.Common;
+using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Collaboration.Reactions;
 
-public class Reaction : AggregateRoot
+public class Reaction : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public ResourceRef Target { get; private set; } = null!;
@@ -17,6 +18,9 @@ public class Reaction : AggregateRoot
         Guard.NotNull(target);
         Guard.NotEmpty(userId);
         Guard.NotNull(emoji);
+
+        if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
+            throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
 
         var reaction = new Reaction
         {

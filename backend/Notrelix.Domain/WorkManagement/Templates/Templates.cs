@@ -30,7 +30,7 @@ public class BoardTemplate : AggregateRoot
     }
 }
 
-public class ItemTemplate : AggregateRoot
+public class ItemTemplate : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid BoardId { get; private set; }

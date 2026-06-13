@@ -3,7 +3,7 @@ using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Documents.ResourceLinks;
 
-public class ResourceLink : SoftDeletableEntity
+public class ResourceLink : SoftDeletableEntity, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public ResourceRef Source { get; private set; } = null!;

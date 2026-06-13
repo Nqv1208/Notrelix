@@ -3,7 +3,7 @@ using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Collaboration.Notifications;
 
-public class Notification : AggregateRoot
+public class Notification : AggregateRoot, IWorkspaceScoped
 {
     public Guid UserId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -31,6 +31,9 @@ public class Notification : AggregateRoot
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(title);
         Guard.NotNullOrWhiteSpace(content);
+
+        if (target?.WorkspaceId.HasValue == true && target.WorkspaceId.Value != workspaceId)
+            throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
 
         var notification = new Notification
         {

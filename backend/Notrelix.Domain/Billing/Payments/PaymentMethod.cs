@@ -2,7 +2,7 @@ using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Billing.Payments;
 
-public class PaymentMethod : AggregateRoot
+public class PaymentMethod : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public PaymentProvider Provider { get; private set; }

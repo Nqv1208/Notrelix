@@ -65,6 +65,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
 
         Config = config;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new BoardViewConfigUpdatedEvent(WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
 
@@ -79,6 +80,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
 
         Name = normalizedName;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new BoardViewRenamedEvent(WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
     }
 
@@ -87,6 +89,8 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         if (IsDeleted) return;
 
         base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
         AddDomainEvent(new BoardViewDeletedEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 }

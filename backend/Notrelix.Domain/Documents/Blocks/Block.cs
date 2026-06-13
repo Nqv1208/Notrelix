@@ -4,7 +4,7 @@ using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Domain.Documents.Blocks;
 
-public class Block : AggregateRoot
+public class Block : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid PageId { get; private set; }
@@ -62,6 +62,7 @@ public class Block : AggregateRoot
 
         Content = newContent;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new BlockContentUpdatedEvent(WorkspaceId, Id, PageId, updatedBy, updatedAt));
     }
 
@@ -74,6 +75,7 @@ public class Block : AggregateRoot
 
         Properties = newProperties;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new BlockPropertiesUpdatedEvent(WorkspaceId, Id, PageId, updatedBy, updatedAt));
     }
 
@@ -88,7 +90,7 @@ public class Block : AggregateRoot
         ParentId = newParentId;
         Position = newPosition;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        
+        IncrementVersion();
         AddDomainEvent(new BlockMovedEvent(WorkspaceId, Id, PageId, oldParentId, newParentId, newPosition.Value, updatedBy, updatedAt));
     }
 
@@ -96,6 +98,8 @@ public class Block : AggregateRoot
     {
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
         AddDomainEvent(new BlockSoftDeletedEvent(WorkspaceId, Id, PageId, deletedBy, deletedAt));
     }
 
@@ -103,5 +107,7 @@ public class Block : AggregateRoot
     {
         if (!IsDeleted) return;
         base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
     }
 }

@@ -1,8 +1,9 @@
 using Notrelix.Domain.Common;
+using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Collaboration.Mentions;
 
-public class Mention : Entity
+public class Mention : Entity, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public ResourceRef Source { get; private set; } = null!;
@@ -17,6 +18,9 @@ public class Mention : Entity
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(source);
         Guard.NotEmpty(mentionedId);
+
+        if (source.WorkspaceId.HasValue && source.WorkspaceId.Value != workspaceId)
+            throw new WorkspaceMismatchException(workspaceId, source.WorkspaceId.Value);
 
         return new Mention
         {

@@ -1,8 +1,9 @@
 using Notrelix.Domain.Common;
+using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Collaboration.Attachments;
 
-public class Attachment : SoftDeletableEntity
+public class Attachment : SoftDeletableEntity, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public ResourceRef Target { get; private set; } = null!;
@@ -16,6 +17,9 @@ public class Attachment : SoftDeletableEntity
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(target);
         Guard.NotNull(metadata);
+
+        if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
+            throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
 
         var attachment = new Attachment
         {

@@ -1,4 +1,5 @@
 using Notrelix.Domain.Common;
+using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.WorkManagement.Approvals;
 
@@ -27,7 +28,7 @@ public class ApprovalStep : Entity
     }
 }
 
-public class ApprovalRequest : AggregateRoot
+public class ApprovalRequest : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public ResourceRef Target { get; private set; } = null!;
@@ -46,6 +47,9 @@ public class ApprovalRequest : AggregateRoot
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(target);
         Guard.NotNullOrWhiteSpace(title);
+
+        if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
+            throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
 
         var request = new ApprovalRequest
         {

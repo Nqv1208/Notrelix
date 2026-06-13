@@ -3,7 +3,7 @@ using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Documents.Pages;
 
-public class Page : SoftDeletableEntity
+public class Page : SoftDeletableEntity, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid? ParentId { get; private set; }

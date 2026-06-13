@@ -47,7 +47,7 @@ public class IntegrationSecretVersion : Entity
     }
 }
 
-public class IntegrationConnection : AggregateRoot
+public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public IntegrationProvider Provider { get; private set; }
@@ -101,6 +101,7 @@ public class IntegrationConnection : AggregateRoot
 
         Status = IntegrationConnectionStatus.Revoked;
         SetAuditOnUpdate(updatedBy, occurredAt);
+        IncrementVersion();
         AddDomainEvent(new IntegrationConnectionRevokedEvent(WorkspaceId, Id, updatedBy, occurredAt));
     }
 
@@ -116,6 +117,7 @@ public class IntegrationConnection : AggregateRoot
         ProviderAccountId = providerAccountId;
         ExpiresAt = expiresAt;
         SetAuditOnUpdate(updatedBy, occurredAt);
+        IncrementVersion();
         AddDomainEvent(new IntegrationConnectionReauthorizedEvent(WorkspaceId, Id, updatedBy, occurredAt));
     }
 
@@ -126,6 +128,7 @@ public class IntegrationConnection : AggregateRoot
 
         Status = IntegrationConnectionStatus.Expired;
         SetAuditOnUpdate(updatedBy, occurredAt);
+        IncrementVersion();
     }
 
     public void RotateSecret(string version, SecretRef secretRef, Guid updatedBy, DateTimeOffset occurredAt)
@@ -143,6 +146,7 @@ public class IntegrationConnection : AggregateRoot
         _secretVersions.Add(newVersion);
 
         SetAuditOnUpdate(updatedBy, occurredAt);
+        IncrementVersion();
         AddDomainEvent(new IntegrationSecretRotatedEvent(WorkspaceId, Id, version, updatedBy, occurredAt));
     }
 
@@ -154,6 +158,7 @@ public class IntegrationConnection : AggregateRoot
 
         _scopes.Add(IntegrationScope.Create(Id, scope));
         SetAuditOnUpdate(addedBy, occurredAt);
+        IncrementVersion();
         AddDomainEvent(new IntegrationScopeAddedEvent(WorkspaceId, Id, scope, addedBy, occurredAt));
     }
 
@@ -166,6 +171,7 @@ public class IntegrationConnection : AggregateRoot
 
         _scopes.Remove(scopeObj);
         SetAuditOnUpdate(removedBy, occurredAt);
+        IncrementVersion();
         AddDomainEvent(new IntegrationScopeRemovedEvent(WorkspaceId, Id, scope, removedBy, occurredAt));
     }
 }

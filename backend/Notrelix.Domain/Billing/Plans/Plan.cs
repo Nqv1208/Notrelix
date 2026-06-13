@@ -61,7 +61,7 @@ public class Plan : AggregateRoot
             Status = PlanStatus.Active
         };
 
-        plan.SetAuditOnCreate(Guid.Empty, createdAt);
+        plan.SetAuditOnCreate(null, createdAt);
         plan.AddDomainEvent(new PlanCreatedEvent(plan.Id, plan.Name, createdAt));
         return plan;
     }

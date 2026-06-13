@@ -3,7 +3,7 @@ using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.WorkManagement.Views;
 
-public class BoardViewUserPreference : AggregateRoot
+public class BoardViewUserPreference : AggregateRoot, IWorkspaceScoped
 {
     private readonly List<FilterRule> _filterRules = new();
     private readonly List<SortRule> _sortRules = new();

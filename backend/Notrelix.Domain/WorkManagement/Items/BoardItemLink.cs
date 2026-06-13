@@ -1,8 +1,9 @@
 using Notrelix.Domain.Common;
+using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.WorkManagement.Items;
 
-public class BoardItemLink : Entity
+public class BoardItemLink : Entity, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid BoardId { get; private set; }
@@ -27,6 +28,9 @@ public class BoardItemLink : Entity
         Guard.NotEmpty(boardId);
         Guard.NotEmpty(sourceItemId);
         Guard.NotNull(target);
+
+        if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
+            throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
 
         return new BoardItemLink
         {
