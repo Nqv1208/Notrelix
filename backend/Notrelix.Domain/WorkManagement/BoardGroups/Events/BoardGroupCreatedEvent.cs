@@ -10,4 +10,4 @@ public sealed record BoardGroupCreatedEvent(
     string Title,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, CreatedBy);

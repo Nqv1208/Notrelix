@@ -6,4 +6,4 @@ public sealed record EmailVerificationTokenCreatedEvent(
     Guid TokenId,
     Guid UserId,
     DateTimeOffset CreatedAt
-) : DomainEvent(CreatedAt);
+) : DomainEvent(CreatedAt, null, null);

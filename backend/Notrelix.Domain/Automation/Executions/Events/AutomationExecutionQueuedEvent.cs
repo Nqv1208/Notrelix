@@ -7,4 +7,4 @@ public sealed record AutomationExecutionQueuedEvent(
     Guid ExecutionId,
     Guid RuleId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

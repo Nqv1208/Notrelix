@@ -8,4 +8,4 @@ public sealed record AutomationTemplateCreatedEvent(
     Guid TemplateId,
     string Name,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

@@ -13,4 +13,4 @@ public sealed record ResourcePermissionGrantedEvent(
     PermissionLevel Level,
     Guid GrantedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, GrantedBy);

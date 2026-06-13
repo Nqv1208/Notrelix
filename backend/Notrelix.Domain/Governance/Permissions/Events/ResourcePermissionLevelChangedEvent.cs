@@ -14,4 +14,4 @@ public sealed record ResourcePermissionLevelChangedEvent(
     PermissionLevel NewLevel,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, UpdatedBy);

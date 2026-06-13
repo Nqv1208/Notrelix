@@ -8,4 +8,4 @@ public sealed record CommentResolvedEvent(
     Guid CommentId,
     Guid ResolvedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, ResolvedBy);

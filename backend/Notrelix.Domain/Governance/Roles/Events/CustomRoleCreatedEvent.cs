@@ -9,4 +9,4 @@ public sealed record CustomRoleCreatedEvent(
     string Name,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, CreatedBy);

@@ -8,4 +8,4 @@ public sealed record InvoiceIssuedEvent(
     Guid WorkspaceId,
     Money Amount,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

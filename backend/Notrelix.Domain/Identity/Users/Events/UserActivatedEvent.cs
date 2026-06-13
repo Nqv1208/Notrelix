@@ -8,4 +8,4 @@ public sealed record UserActivatedEvent(
     Guid ActivatedBy,
     DateTimeOffset ActivatedAt,
     string? Reason
-) : DomainEvent(ActivatedAt);
+) : DomainEvent(ActivatedAt, null, null);

@@ -9,4 +9,4 @@ public sealed record BoardItemMemberAssignedEvent(
     Guid UserId,
     Guid AssignedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, AssignedBy);

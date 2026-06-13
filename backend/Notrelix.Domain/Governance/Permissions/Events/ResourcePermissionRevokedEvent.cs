@@ -12,4 +12,4 @@ public sealed record ResourcePermissionRevokedEvent(
     Guid SubjectId,
     Guid RevokedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, RevokedBy);

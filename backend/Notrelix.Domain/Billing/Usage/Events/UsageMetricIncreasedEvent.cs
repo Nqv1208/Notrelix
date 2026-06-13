@@ -8,4 +8,4 @@ public sealed record UsageMetricIncreasedEvent(
     UsageMetricKey Key,
     int Amount,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

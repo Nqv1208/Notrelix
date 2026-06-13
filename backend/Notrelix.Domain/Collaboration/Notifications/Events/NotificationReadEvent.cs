@@ -7,4 +7,4 @@ public sealed record NotificationReadEvent(
     Guid WorkspaceId,
     Guid NotificationId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

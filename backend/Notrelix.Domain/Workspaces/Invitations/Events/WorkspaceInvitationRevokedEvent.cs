@@ -8,4 +8,4 @@ public sealed record WorkspaceInvitationRevokedEvent(
     Guid WorkspaceId,
     Guid RevokedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, RevokedBy);

@@ -8,4 +8,4 @@ public sealed record TeamArchivedEvent(
     Guid TeamId,
     Guid ArchivedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, ArchivedBy);

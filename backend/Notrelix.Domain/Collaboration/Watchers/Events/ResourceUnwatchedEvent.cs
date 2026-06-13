@@ -7,4 +7,4 @@ public sealed record ResourceUnwatchedEvent(
     Guid WorkspaceId,
     Guid WatcherId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

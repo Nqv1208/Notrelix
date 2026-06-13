@@ -8,4 +8,4 @@ public sealed record IntegrationScopeAddedEvent(
     string Scope,
     Guid AddedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, AddedBy);

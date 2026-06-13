@@ -11,4 +11,4 @@ public sealed record BoardGroupColorChangedEvent(
     Color NewColor,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, UpdatedBy);

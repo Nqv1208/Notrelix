@@ -9,4 +9,4 @@ public sealed record BoardItemLinkedEvent(
     ResourceRef Target,
     BoardItemLinkType LinkType,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

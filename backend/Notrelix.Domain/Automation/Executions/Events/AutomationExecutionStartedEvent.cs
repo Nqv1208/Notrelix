@@ -8,4 +8,4 @@ public sealed record AutomationExecutionStartedEvent(
     Guid ExecutionId,
     Guid RuleId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

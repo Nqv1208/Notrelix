@@ -8,4 +8,4 @@ public sealed record AuditLogRecordedEvent(
     Guid WorkspaceId,
     string Action,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

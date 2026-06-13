@@ -8,4 +8,4 @@ public sealed record SubscriptionRenewedEvent(
     DateTimeOffset NewPeriodStart,
     DateTimeOffset NewPeriodEnd,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

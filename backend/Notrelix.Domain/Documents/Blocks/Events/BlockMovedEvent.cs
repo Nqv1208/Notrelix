@@ -12,4 +12,4 @@ public sealed record BlockMovedEvent(
     string NewPosition,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, UpdatedBy);

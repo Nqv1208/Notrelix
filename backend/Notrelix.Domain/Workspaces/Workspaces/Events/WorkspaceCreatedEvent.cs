@@ -9,4 +9,4 @@ public sealed record WorkspaceCreatedEvent(
     string Slug,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, CreatedBy);

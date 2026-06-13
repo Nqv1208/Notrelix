@@ -8,4 +8,4 @@ public sealed record UserSuspendedEvent(
     Guid SuspendedBy,
     DateTimeOffset SuspendedAt,
     string? Reason
-) : DomainEvent(SuspendedAt);
+) : DomainEvent(SuspendedAt, null, null);

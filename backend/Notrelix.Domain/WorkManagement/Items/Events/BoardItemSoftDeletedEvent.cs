@@ -9,4 +9,4 @@ public sealed record BoardItemSoftDeletedEvent(
     Guid BoardId,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, DeletedBy);

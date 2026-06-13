@@ -5,4 +5,4 @@ namespace Notrelix.Domain.Identity.Security.Events;
 public sealed record UserSecuritySettingsUpdatedEvent(
     Guid UserId,
     DateTimeOffset UpdatedAt
-) : DomainEvent(UpdatedAt);
+) : DomainEvent(UpdatedAt, null, null);

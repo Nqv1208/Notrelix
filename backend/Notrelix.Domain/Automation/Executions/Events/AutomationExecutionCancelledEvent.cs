@@ -9,4 +9,4 @@ public sealed record AutomationExecutionCancelledEvent(
     Guid RuleId,
     Guid CancelledBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, CancelledBy);

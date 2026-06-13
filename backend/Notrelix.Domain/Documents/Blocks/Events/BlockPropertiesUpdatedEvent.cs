@@ -9,4 +9,4 @@ public sealed record BlockPropertiesUpdatedEvent(
     Guid PageId,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, UpdatedBy);

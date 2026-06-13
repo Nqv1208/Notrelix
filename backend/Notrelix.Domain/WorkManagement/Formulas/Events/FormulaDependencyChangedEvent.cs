@@ -8,4 +8,4 @@ public sealed record FormulaDependencyChangedEvent(
     Guid FormulaFieldId,
     Guid DependsOnFieldId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

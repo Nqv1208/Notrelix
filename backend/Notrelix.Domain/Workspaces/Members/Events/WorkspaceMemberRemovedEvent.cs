@@ -8,4 +8,4 @@ public sealed record WorkspaceMemberRemovedEvent(
     Guid UserId,
     Guid ActorId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, ActorId);

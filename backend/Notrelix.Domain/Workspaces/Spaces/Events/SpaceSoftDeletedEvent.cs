@@ -8,4 +8,4 @@ public sealed record SpaceSoftDeletedEvent(
     Guid SpaceId,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, DeletedBy);

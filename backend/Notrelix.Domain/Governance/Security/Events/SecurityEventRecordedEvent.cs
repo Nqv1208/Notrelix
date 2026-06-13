@@ -8,4 +8,4 @@ public sealed record SecurityEventRecordedEvent(
     Guid WorkspaceId,
     SecurityEventType Type,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

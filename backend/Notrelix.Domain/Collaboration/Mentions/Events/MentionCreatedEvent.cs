@@ -9,4 +9,4 @@ public sealed record MentionCreatedEvent(
     ResourceRef Source,
     Guid MentionedId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

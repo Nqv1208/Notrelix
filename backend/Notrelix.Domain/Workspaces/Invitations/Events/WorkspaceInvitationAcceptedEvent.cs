@@ -9,4 +9,4 @@ public sealed record WorkspaceInvitationAcceptedEvent(
     Guid UserId,
     Guid AcceptedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, AcceptedBy);

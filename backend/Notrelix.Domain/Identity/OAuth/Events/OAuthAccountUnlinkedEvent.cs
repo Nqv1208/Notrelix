@@ -7,4 +7,4 @@ public sealed record OAuthAccountUnlinkedEvent(
     OAuthProvider Provider,
     string ProviderId,
     DateTimeOffset UnlinkedAt
-) : DomainEvent(UnlinkedAt);
+) : DomainEvent(UnlinkedAt, null, null);

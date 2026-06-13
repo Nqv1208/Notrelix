@@ -9,4 +9,4 @@ public sealed record IntegrationConnectionCreatedEvent(
     IntegrationProvider Provider,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, CreatedBy);

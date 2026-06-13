@@ -9,4 +9,4 @@ public sealed record CommentCreatedEvent(
     ResourceRef Target,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, CreatedBy);

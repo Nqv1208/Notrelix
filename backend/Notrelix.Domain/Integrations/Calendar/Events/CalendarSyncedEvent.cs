@@ -7,4 +7,4 @@ public sealed record CalendarSyncedEvent(
     Guid WorkspaceId,
     Guid IntegrationId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

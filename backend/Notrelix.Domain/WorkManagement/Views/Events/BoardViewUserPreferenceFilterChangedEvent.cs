@@ -10,4 +10,4 @@ public sealed record BoardViewUserPreferenceFilterChangedEvent(
     Guid UserId,
     Guid PreferenceId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

@@ -8,4 +8,4 @@ public sealed record TeamSoftDeletedEvent(
     Guid TeamId,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, DeletedBy);

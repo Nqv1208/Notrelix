@@ -8,4 +8,4 @@ public sealed record PageRestoredEvent(
     Guid PageId,
     Guid RestoredBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, RestoredBy);

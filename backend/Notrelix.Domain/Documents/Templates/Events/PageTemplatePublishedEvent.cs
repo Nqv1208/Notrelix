@@ -7,4 +7,4 @@ public sealed record PageTemplatePublishedEvent(
     Guid? WorkspaceId,
     Guid TemplateId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

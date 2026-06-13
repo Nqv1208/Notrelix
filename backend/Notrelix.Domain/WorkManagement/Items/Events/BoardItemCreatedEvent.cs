@@ -11,4 +11,4 @@ public sealed record BoardItemCreatedEvent(
     string Name,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, CreatedBy);

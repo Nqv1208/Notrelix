@@ -9,4 +9,4 @@ public sealed record BillingEventProcessedEvent(
     string ProviderEventId,
     BillingEventStatus Status,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

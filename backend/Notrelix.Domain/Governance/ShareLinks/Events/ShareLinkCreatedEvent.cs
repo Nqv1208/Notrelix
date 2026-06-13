@@ -10,4 +10,4 @@ public sealed record ShareLinkCreatedEvent(
     Guid ResourceId,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, CreatedBy);

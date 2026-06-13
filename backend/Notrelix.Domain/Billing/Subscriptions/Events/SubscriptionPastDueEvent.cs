@@ -6,4 +6,4 @@ public sealed record SubscriptionPastDueEvent(
     Guid WorkspaceId,
     Guid SubscriptionId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

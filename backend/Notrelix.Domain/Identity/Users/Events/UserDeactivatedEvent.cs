@@ -8,4 +8,4 @@ public sealed record UserDeactivatedEvent(
     Guid DeactivatedBy,
     DateTimeOffset DeactivatedAt,
     string? Reason
-) : DomainEvent(DeactivatedAt);
+) : DomainEvent(DeactivatedAt, null, null);

@@ -7,4 +7,4 @@ public sealed record UserEmailChangedEvent(
     Email OldEmail,
     Email NewEmail,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, null, null);

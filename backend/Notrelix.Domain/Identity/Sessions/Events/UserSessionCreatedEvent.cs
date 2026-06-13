@@ -6,4 +6,4 @@ public sealed record UserSessionCreatedEvent(
     Guid SessionId,
     Guid UserId,
     DateTimeOffset CreatedAt
-) : DomainEvent(CreatedAt);
+) : DomainEvent(CreatedAt, null, null);

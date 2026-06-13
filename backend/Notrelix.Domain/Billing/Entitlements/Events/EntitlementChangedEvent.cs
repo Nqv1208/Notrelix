@@ -8,4 +8,4 @@ public sealed record EntitlementChangedEvent(
     string FeatureCode,
     int NewLimit,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

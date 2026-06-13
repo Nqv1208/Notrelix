@@ -8,4 +8,4 @@ public sealed record IntegrationSyncFailedEvent(
     Guid SyncCursorId,
     string Error,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

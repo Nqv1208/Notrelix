@@ -7,4 +7,4 @@ public sealed record UserMfaRequirementEnabledEvent(
     Guid UserId,
     MfaMethodType PreferredMethod,
     DateTimeOffset EnabledAt
-) : DomainEvent(EnabledAt);
+) : DomainEvent(EnabledAt, null, null);

@@ -6,4 +6,4 @@ public sealed record UserRegisteredEvent(
     Guid UserId,
     Email Email,
     DateTimeOffset RegisteredAt
-) : DomainEvent(RegisteredAt);
+) : DomainEvent(RegisteredAt, null, null);

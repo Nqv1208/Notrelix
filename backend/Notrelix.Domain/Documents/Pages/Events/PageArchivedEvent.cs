@@ -8,4 +8,4 @@ public sealed record PageArchivedEvent(
     Guid PageId,
     Guid ArchivedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, ArchivedBy);

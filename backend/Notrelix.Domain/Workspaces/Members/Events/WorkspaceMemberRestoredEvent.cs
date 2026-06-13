@@ -8,4 +8,4 @@ public sealed record WorkspaceMemberRestoredEvent(
     Guid UserId,
     Guid RestoredBy,
     DateTimeOffset RestoredAt
-) : DomainEvent(RestoredAt);
+) : DomainEvent(RestoredAt, WorkspaceId, RestoredBy);

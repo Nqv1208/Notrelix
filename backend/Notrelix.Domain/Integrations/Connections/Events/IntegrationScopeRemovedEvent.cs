@@ -8,4 +8,4 @@ public sealed record IntegrationScopeRemovedEvent(
     string Scope,
     Guid RemovedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, RemovedBy);

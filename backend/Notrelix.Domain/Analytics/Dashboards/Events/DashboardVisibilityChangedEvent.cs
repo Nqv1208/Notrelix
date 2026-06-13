@@ -8,4 +8,4 @@ public sealed record DashboardVisibilityChangedEvent(
     DashboardVisibility NewVisibility,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, UpdatedBy);

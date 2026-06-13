@@ -9,4 +9,4 @@ public sealed record FieldOptionRemovedEvent(
     Guid OptionId,
     Guid RemovedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, RemovedBy);

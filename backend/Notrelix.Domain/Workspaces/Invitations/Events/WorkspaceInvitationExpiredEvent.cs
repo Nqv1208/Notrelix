@@ -7,4 +7,4 @@ public sealed record WorkspaceInvitationExpiredEvent(
     Guid InvitationId,
     Guid WorkspaceId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

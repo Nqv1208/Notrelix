@@ -8,4 +8,4 @@ public sealed record WebhookSubscriptionCreatedEvent(
     Guid WorkspaceId,
     string TargetUrl,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

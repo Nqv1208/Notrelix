@@ -8,4 +8,4 @@ public sealed record AutomationRuleDeletedEvent(
     Guid RuleId,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, DeletedBy);

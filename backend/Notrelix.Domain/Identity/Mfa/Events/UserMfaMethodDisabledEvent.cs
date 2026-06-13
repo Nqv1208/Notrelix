@@ -7,4 +7,4 @@ public sealed record UserMfaMethodDisabledEvent(
     Guid UserId,
     MfaMethodType Type,
     DateTimeOffset DisabledAt
-) : DomainEvent(DisabledAt);
+) : DomainEvent(DisabledAt, null, null);

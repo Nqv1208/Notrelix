@@ -6,4 +6,4 @@ public sealed record OAuthTokenReferenceRotatedEvent(
     Guid UserId,
     OAuthProvider Provider,
     DateTimeOffset RotatedAt
-) : DomainEvent(RotatedAt);
+) : DomainEvent(RotatedAt, null, null);

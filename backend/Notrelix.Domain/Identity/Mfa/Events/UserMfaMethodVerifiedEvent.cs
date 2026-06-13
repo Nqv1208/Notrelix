@@ -7,4 +7,4 @@ public sealed record UserMfaMethodVerifiedEvent(
     Guid UserId,
     MfaMethodType Type,
     DateTimeOffset VerifiedAt
-) : DomainEvent(VerifiedAt);
+) : DomainEvent(VerifiedAt, null, null);

@@ -11,4 +11,4 @@ public sealed record SavedFilterCreatedEvent(
     Guid CreatedBy,
     DateTimeOffset OccurredAt,
     Guid? ViewId = null
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, CreatedBy);

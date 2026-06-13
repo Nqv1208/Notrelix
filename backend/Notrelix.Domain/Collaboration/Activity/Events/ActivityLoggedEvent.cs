@@ -8,4 +8,4 @@ public sealed record ActivityLoggedEvent(
     Guid WorkspaceId,
     ActivityType Type,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

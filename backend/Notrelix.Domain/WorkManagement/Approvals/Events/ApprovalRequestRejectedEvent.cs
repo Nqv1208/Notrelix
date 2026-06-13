@@ -9,4 +9,4 @@ public sealed record ApprovalRequestRejectedEvent(
     Guid DecidedBy,
     string? Note,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, DecidedBy);

@@ -8,4 +8,4 @@ public sealed record BoardGroupArchivedEvent(
     Guid GroupId,
     Guid ArchivedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, ArchivedBy);

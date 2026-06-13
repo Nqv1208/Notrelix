@@ -9,4 +9,4 @@ public sealed record ChecklistItemToggledEvent(
     Guid ItemId,
     bool IsDone,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

@@ -8,4 +8,4 @@ public sealed record PresenceUpdatedEvent(
     Guid UserId,
     PresenceStatus Status,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

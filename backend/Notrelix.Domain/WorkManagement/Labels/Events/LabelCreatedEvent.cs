@@ -9,4 +9,4 @@ public sealed record LabelCreatedEvent(
     Guid LabelId,
     string Name,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

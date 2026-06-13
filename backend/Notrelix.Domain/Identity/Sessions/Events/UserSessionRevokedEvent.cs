@@ -7,4 +7,4 @@ public sealed record UserSessionRevokedEvent(
     Guid UserId,
     DateTimeOffset RevokedAt,
     string? Reason
-) : DomainEvent(RevokedAt);
+) : DomainEvent(RevokedAt, null, null);

@@ -8,4 +8,4 @@ public sealed record CommentSoftDeletedEvent(
     Guid CommentId,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, DeletedBy);

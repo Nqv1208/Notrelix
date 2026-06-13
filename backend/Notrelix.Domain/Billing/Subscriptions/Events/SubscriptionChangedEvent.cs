@@ -8,4 +8,4 @@ public sealed record SubscriptionChangedEvent(
     Guid OldPlanId,
     Guid NewPlanId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

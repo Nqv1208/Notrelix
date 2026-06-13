@@ -8,4 +8,4 @@ public sealed record ApprovalRequestApprovedEvent(
     Guid RequestId,
     Guid DecidedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, DecidedBy);

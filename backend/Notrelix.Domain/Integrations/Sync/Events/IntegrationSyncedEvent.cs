@@ -8,4 +8,4 @@ public sealed record IntegrationSyncedEvent(
     Guid SyncCursorId,
     DateTimeOffset SyncedAt,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

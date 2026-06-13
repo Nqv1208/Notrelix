@@ -6,4 +6,4 @@ public sealed record PasswordResetTokenCreatedEvent(
     Guid TokenId,
     Guid UserId,
     DateTimeOffset CreatedAt
-) : DomainEvent(CreatedAt);
+) : DomainEvent(CreatedAt, null, null);

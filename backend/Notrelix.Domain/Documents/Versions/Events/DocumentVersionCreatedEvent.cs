@@ -8,4 +8,4 @@ public sealed record DocumentVersionCreatedEvent(
     Guid PageId,
     int VersionNumber,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

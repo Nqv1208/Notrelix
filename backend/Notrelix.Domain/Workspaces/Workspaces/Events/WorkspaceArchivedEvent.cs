@@ -7,4 +7,4 @@ public sealed record WorkspaceArchivedEvent(
     Guid WorkspaceId,
     Guid ArchivedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, ArchivedBy);

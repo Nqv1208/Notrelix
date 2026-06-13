@@ -8,4 +8,4 @@ public sealed record AutomationRuleDisabledEvent(
     Guid RuleId,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, UpdatedBy);

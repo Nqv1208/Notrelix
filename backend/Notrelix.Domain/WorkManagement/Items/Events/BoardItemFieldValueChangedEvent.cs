@@ -12,4 +12,4 @@ public sealed record BoardItemFieldValueChangedEvent(
     FieldValue NewValue,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, UpdatedBy);

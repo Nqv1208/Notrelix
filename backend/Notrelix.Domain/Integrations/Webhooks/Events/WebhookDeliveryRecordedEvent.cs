@@ -9,4 +9,4 @@ public sealed record WebhookDeliveryRecordedEvent(
     Guid DeliveryId,
     WebhookDeliveryStatus Status,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

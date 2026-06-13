@@ -9,4 +9,4 @@ public sealed record ResourceWatchedEvent(
     ResourceRef Target,
     Guid UserId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

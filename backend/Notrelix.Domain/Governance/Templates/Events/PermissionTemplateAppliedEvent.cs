@@ -9,4 +9,4 @@ public sealed record PermissionTemplateAppliedEvent(
     Guid TargetResourceId,
     Guid AppliedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, AppliedBy);

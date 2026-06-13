@@ -7,4 +7,4 @@ public sealed record UserMfaMethodSetAsPrimaryEvent(
     Guid UserId,
     MfaMethodType Type,
     DateTimeOffset UpdatedAt
-) : DomainEvent(UpdatedAt);
+) : DomainEvent(UpdatedAt, null, null);

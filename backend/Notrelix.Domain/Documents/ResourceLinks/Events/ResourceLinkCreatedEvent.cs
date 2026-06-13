@@ -9,4 +9,4 @@ public sealed record ResourceLinkCreatedEvent(
     Guid TargetId,
     LinkType Type,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

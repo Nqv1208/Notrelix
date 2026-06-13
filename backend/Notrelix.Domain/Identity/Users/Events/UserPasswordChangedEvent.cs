@@ -5,4 +5,4 @@ namespace Notrelix.Domain.Identity.Users.Events;
 public sealed record UserPasswordChangedEvent(
     Guid UserId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, null, null);

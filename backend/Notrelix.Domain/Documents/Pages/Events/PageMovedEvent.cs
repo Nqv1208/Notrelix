@@ -10,4 +10,4 @@ public sealed record PageMovedEvent(
     Guid? NewParentId,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, UpdatedBy);

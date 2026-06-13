@@ -10,4 +10,4 @@ public sealed record BoardFieldReorderedEvent(
     double NewPosition,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, UpdatedBy);

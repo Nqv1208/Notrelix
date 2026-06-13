@@ -11,4 +11,4 @@ public sealed record FieldPermissionGrantedEvent(
     PermissionLevel Level,
     Guid GrantedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, GrantedBy);

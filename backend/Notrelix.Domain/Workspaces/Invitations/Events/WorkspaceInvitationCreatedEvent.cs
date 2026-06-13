@@ -10,4 +10,4 @@ public sealed record WorkspaceInvitationCreatedEvent(
     WorkspaceRole Role,
     Guid InvitedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, InvitedBy);

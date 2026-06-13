@@ -9,4 +9,4 @@ public sealed record BoardGroupRestoredEvent(
     Guid GroupId,
     Guid RestoredBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, RestoredBy);

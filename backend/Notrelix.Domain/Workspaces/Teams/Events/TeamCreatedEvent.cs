@@ -9,4 +9,4 @@ public sealed record TeamCreatedEvent(
     string Name,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, CreatedBy);

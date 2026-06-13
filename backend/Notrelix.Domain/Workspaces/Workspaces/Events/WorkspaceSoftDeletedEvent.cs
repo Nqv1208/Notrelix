@@ -7,4 +7,4 @@ public sealed record WorkspaceSoftDeletedEvent(
     Guid WorkspaceId,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, DeletedBy);

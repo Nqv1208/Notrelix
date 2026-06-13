@@ -10,4 +10,4 @@ public sealed record TeamMemberAddedEvent(
     TeamMemberRole Role,
     Guid AddedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, AddedBy);

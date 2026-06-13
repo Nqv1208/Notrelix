@@ -8,4 +8,4 @@ public sealed record PageSoftDeletedEvent(
     Guid PageId,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, DeletedBy);

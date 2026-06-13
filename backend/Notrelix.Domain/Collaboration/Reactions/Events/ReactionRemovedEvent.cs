@@ -9,4 +9,4 @@ public sealed record ReactionRemovedEvent(
     Guid UserId,
     Emoji Emoji,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

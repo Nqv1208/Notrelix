@@ -8,4 +8,4 @@ public sealed record SubscriptionStartedEvent(
     Guid SubscriptionId,
     Guid PlanId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

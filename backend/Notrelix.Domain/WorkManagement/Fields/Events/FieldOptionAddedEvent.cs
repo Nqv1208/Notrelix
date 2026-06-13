@@ -10,4 +10,4 @@ public sealed record FieldOptionAddedEvent(
     string Name,
     Guid AddedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, AddedBy);

@@ -9,4 +9,4 @@ public sealed record LoginAttemptRecordedEvent(
     bool Succeeded,
     string? FailureReason,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, null, null);

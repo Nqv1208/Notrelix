@@ -9,4 +9,4 @@ public sealed record ChecklistCreatedEvent(
     Guid ChecklistId,
     string Title,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

@@ -11,4 +11,4 @@ public sealed record BoardViewCreatedEvent(
     ViewType Type,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, CreatedBy);

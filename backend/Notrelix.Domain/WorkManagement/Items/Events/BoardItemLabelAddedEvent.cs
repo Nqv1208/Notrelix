@@ -8,4 +8,4 @@ public sealed record BoardItemLabelAddedEvent(
     Guid ItemId,
     Guid LabelId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

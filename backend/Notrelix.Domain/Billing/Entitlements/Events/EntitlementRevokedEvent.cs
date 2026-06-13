@@ -7,4 +7,4 @@ public sealed record EntitlementRevokedEvent(
     Guid WorkspaceId,
     string FeatureCode,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

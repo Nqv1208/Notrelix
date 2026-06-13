@@ -5,4 +5,4 @@ namespace Notrelix.Domain.Identity.Profiles.Events;
 public sealed record UserProfileUpdatedEvent(
     Guid UserId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, null, null);

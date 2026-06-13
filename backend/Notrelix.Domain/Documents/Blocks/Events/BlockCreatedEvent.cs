@@ -10,4 +10,4 @@ public sealed record BlockCreatedEvent(
     BlockType Type,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, CreatedBy);

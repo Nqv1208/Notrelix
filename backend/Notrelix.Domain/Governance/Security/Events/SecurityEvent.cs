@@ -2,7 +2,7 @@ using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Governance.Security.Events;
 
-public class SecurityEvent : AggregateRoot
+public class SecurityEvent : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public SecurityEventType Type { get; private set; }

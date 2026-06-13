@@ -8,4 +8,4 @@ public sealed record SpaceArchivedEvent(
     Guid SpaceId,
     Guid ArchivedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, ArchivedBy);

@@ -9,4 +9,4 @@ public sealed record PageCreatedEvent(
     string Title,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, CreatedBy);

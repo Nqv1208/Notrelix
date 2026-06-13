@@ -7,4 +7,4 @@ public sealed record InvoicePaidEvent(
     Guid InvoiceId,
     Guid WorkspaceId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

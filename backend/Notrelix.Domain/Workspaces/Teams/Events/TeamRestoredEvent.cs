@@ -8,4 +8,4 @@ public sealed record TeamRestoredEvent(
     Guid TeamId,
     Guid RestoredBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, RestoredBy);

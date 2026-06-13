@@ -9,4 +9,4 @@ public sealed record WorkspaceMemberAddedEvent(
     WorkspaceRole Role,
     Guid ActorId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, ActorId);

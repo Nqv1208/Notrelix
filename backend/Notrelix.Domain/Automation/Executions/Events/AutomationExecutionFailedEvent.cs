@@ -9,4 +9,4 @@ public sealed record AutomationExecutionFailedEvent(
     Guid RuleId,
     string Error,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

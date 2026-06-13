@@ -7,4 +7,4 @@ public sealed record ScheduledJobPausedEvent(
     Guid WorkspaceId,
     Guid JobId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

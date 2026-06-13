@@ -10,4 +10,4 @@ public sealed record FieldPermissionRevokedEvent(
     Guid SubjectId,
     Guid RevokedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, RevokedBy);

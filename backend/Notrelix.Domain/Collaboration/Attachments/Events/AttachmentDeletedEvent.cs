@@ -7,4 +7,4 @@ public sealed record AttachmentDeletedEvent(
     Guid WorkspaceId,
     Guid AttachmentId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

@@ -7,4 +7,4 @@ public sealed record UsageLimitExceededEvent(
     Guid WorkspaceId,
     UsageMetricKey Key,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

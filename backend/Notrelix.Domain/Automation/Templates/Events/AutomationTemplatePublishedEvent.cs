@@ -7,4 +7,4 @@ public sealed record AutomationTemplatePublishedEvent(
     Guid WorkspaceId,
     Guid TemplateId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

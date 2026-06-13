@@ -9,4 +9,4 @@ public sealed record SpaceMovedEvent(
     Guid NewWorkspaceId,
     Guid MovedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, NewWorkspaceId, MovedBy);

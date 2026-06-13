@@ -7,4 +7,4 @@ public sealed record PlanCreatedEvent(
     Guid PlanId,
     string Name,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, null, null);

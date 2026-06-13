@@ -8,4 +8,4 @@ public sealed record ScheduledJobCreatedEvent(
     Guid JobId,
     Guid RuleId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

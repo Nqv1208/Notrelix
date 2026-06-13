@@ -8,4 +8,4 @@ public sealed record InvoiceFailedEvent(
     Guid WorkspaceId,
     string Error,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);
