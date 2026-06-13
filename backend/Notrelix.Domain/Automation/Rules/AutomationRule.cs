@@ -3,7 +3,7 @@ using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Automation.Rules;
 
-public class AutomationRule : AggregateRoot
+public class AutomationRule : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public string Name { get; private set; } = null!;

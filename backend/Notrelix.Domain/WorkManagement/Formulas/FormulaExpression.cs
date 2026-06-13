@@ -6,7 +6,7 @@ public sealed class FormulaExpression : ValueObject
 {
     public string Expression { get; }
 
-    private FormulaExpression(string expression)
+    private FormulaExpression() { }    private FormulaExpression(string expression)
     {
         Expression = expression;
     }

@@ -8,7 +8,7 @@ public class ReactionConfiguration : IEntityTypeConfiguration<Reaction>
 {
     public void Configure(EntityTypeBuilder<Reaction> builder)
     {
-        builder.ToTable("reactions");
+        builder.ToTable("reactions", DbSchemas.Collab);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");

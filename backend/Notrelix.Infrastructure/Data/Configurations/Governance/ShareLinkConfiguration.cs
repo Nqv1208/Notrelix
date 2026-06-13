@@ -8,7 +8,7 @@ public class ShareLinkConfiguration : IEntityTypeConfiguration<ShareLink>
 {
     public void Configure(EntityTypeBuilder<ShareLink> builder)
     {
-        builder.ToTable("share_links");
+        builder.ToTable("share_links", DbSchemas.Governance);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");

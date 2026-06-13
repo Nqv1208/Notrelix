@@ -21,6 +21,7 @@ public class OAuthAccount : Entity
     {
         Guard.NotEmpty(userId);
         Guard.NotNullOrWhiteSpace(providerId);
+        Guard.NotNull(rawProfile);
 
         return new OAuthAccount
         {
@@ -32,16 +33,9 @@ public class OAuthAccount : Entity
         };
     }
 
-    public void Link(OAuthToken token, DateTimeOffset linkedAt)
+    internal void UpdateToken(OAuthToken token)
     {
         Guard.NotNull(token);
         Token = token;
-        AddDomainEvent(new OAuthAccountLinkedEvent(UserId, Provider, linkedAt));
-    }
-
-    public void Unlink(DateTimeOffset unlinkedAt)
-    {
-        Token = null;
-        AddDomainEvent(new OAuthAccountUnlinkedEvent(UserId, Provider, unlinkedAt));
     }
 }

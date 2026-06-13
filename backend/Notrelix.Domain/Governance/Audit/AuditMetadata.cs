@@ -8,7 +8,7 @@ public sealed class AuditMetadata : ValueObject
     public string? UserAgent { get; }
     public string? TraceId { get; }
 
-    private AuditMetadata(string? ip, string? ua, string? traceId)
+    private AuditMetadata() { }    private AuditMetadata(string? ip, string? ua, string? traceId)
     {
         IpAddress = ip;
         UserAgent = ua;

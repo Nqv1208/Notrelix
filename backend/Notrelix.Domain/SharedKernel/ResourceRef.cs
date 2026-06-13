@@ -7,7 +7,7 @@ public sealed class ResourceRef : ValueObject
     public string ResourceType { get; }
     public Guid ResourceId { get; }
 
-    private ResourceRef(string resourceType, Guid resourceId)
+    private ResourceRef() { }    private ResourceRef(string resourceType, Guid resourceId)
     {
         ResourceType = resourceType;
         ResourceId = resourceId;

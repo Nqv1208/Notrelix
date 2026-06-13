@@ -1,0 +1,40 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Notrelix.Domain.Automation.Agents;
+
+namespace Notrelix.Infrastructure.Data.Configurations.Automation;
+
+public class AiAgentConfiguration : IEntityTypeConfiguration<AiAgent>
+{
+    public void Configure(EntityTypeBuilder<AiAgent> builder)
+    {
+        builder.ToTable("ai_agents", DbSchemas.Automation);
+
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).HasColumnName("id");
+
+        builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
+        builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
+        builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(2048);
+        builder.Property(x => x.ScopeType).HasColumnName("scope_type").HasConversion<string>().IsRequired().HasMaxLength(50);
+        builder.Property(x => x.ScopeResourceId).HasColumnName("scope_resource_id");
+        builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
+        builder.Property(x => x.ModelPolicy).HasColumnName("model_policy").HasColumnType("jsonb").IsRequired();
+        builder.Property(x => x.Instruction).HasColumnName("instruction").HasColumnType("jsonb").IsRequired();
+        builder.Property(x => x.ToolPermissions).HasColumnName("tool_permissions").HasColumnType("jsonb").IsRequired();
+
+        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
+        builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
+        builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
+        builder.Property(x => x.RestoredAt).HasColumnName("restored_at");
+        builder.Property(x => x.RestoredBy).HasColumnName("restored_by");
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
+        builder.Property(x => x.CreatedBy).HasColumnName("created_by");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
+
+        builder.HasIndex(x => x.WorkspaceId).HasDatabaseName("idx_ai_agents_workspace_id");
+        builder.HasIndex(x => x.Status).HasDatabaseName("idx_ai_agents_status");
+    }
+}

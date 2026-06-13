@@ -1,29 +1,41 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
+using Notrelix.Domain.Workspaces.Spaces.Events;
 
 namespace Notrelix.Domain.Workspaces.Spaces;
 
-public class Space : AggregateRoot
+public class Space : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
     public SpaceVisibility Visibility { get; private set; }
     public SpaceStatus Status { get; private set; }
+    public SpaceType SpaceType { get; private set; } = SpaceType.Folder;
 
     private Space() : base() { }
 
-    public static Space Create(Guid workspaceId, string name, SpaceVisibility visibility, Guid createdBy, DateTimeOffset createdAt)
+    public static Space Create(
+        Guid workspaceId, 
+        string name, 
+        SpaceVisibility visibility, 
+        Guid createdBy, 
+        DateTimeOffset createdAt,
+        SpaceType spaceType = SpaceType.Folder,
+        string? description = null)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(name);
+        Guard.NotEmpty(createdBy);
 
         var space = new Space
         {
             WorkspaceId = workspaceId,
             Name = name.Trim(),
+            Description = description?.Trim(),
             Visibility = visibility,
-            Status = SpaceStatus.Active
+            Status = SpaceStatus.Active,
+            SpaceType = spaceType
         };
 
         space.SetAuditOnCreate(createdBy, createdAt);
@@ -38,6 +50,7 @@ public class Space : AggregateRoot
         if (Status == SpaceStatus.Archived)
             throw new BusinessRuleException("Cannot rename an archived space.");
         Guard.NotNullOrWhiteSpace(newName);
+        Guard.NotEmpty(updatedBy);
 
         var oldName = Name;
         var normalizedName = newName.Trim();
@@ -54,18 +67,18 @@ public class Space : AggregateRoot
         if (Status == SpaceStatus.Archived)
             throw new BusinessRuleException("Cannot move an archived space.");
         Guard.NotEmpty(newWorkspaceId);
+        Guard.NotEmpty(movedBy);
 
-        var oldWorkspaceId = WorkspaceId;
-        if (WorkspaceId == newWorkspaceId) return;
-
-        WorkspaceId = newWorkspaceId;
-        SetAuditOnUpdate(movedBy, movedAt);
-        AddDomainEvent(new SpaceMovedEvent(Id, oldWorkspaceId, newWorkspaceId, movedBy, movedAt));
+        if (WorkspaceId != newWorkspaceId)
+        {
+            throw new BusinessRuleException("Moving a space across workspaces is not allowed to maintain workspace isolation boundaries.");
+        }
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(archivedBy);
         if (Status == SpaceStatus.Archived) return;
 
         Status = SpaceStatus.Archived;
@@ -75,6 +88,7 @@ public class Space : AggregateRoot
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         Status = SpaceStatus.SoftDeleted;
         base.SoftDelete(deletedBy, deletedAt, reason);
@@ -83,6 +97,7 @@ public class Space : AggregateRoot
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         Status = SpaceStatus.Active;
         base.Restore(restoredBy, restoredAt);

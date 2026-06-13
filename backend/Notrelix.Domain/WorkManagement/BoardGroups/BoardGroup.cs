@@ -3,7 +3,7 @@ using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Domain.WorkManagement.BoardGroups;
 
-public class BoardGroup : SoftDeletableEntity
+public class BoardGroup : SoftDeletableEntity, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid BoardId { get; private set; }

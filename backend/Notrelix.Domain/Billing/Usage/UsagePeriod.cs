@@ -7,7 +7,7 @@ public sealed class UsagePeriod : ValueObject
     public DateTimeOffset Start { get; }
     public DateTimeOffset End { get; }
 
-    private UsagePeriod(DateTimeOffset start, DateTimeOffset end)
+    private UsagePeriod() { }    private UsagePeriod(DateTimeOffset start, DateTimeOffset end)
     {
         Start = start;
         End = end;

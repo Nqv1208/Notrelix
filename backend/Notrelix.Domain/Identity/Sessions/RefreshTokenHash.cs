@@ -8,7 +8,7 @@ public sealed class RefreshTokenHash : ValueObject
 {
     public string Hash { get; }
 
-    private RefreshTokenHash(string hash)
+    private RefreshTokenHash() { }    private RefreshTokenHash(string hash)
     {
         Hash = hash;
     }

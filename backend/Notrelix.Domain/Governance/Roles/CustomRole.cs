@@ -4,7 +4,7 @@ using Notrelix.Domain.Governance.Permissions;
 
 namespace Notrelix.Domain.Governance.Roles;
 
-public class CustomRole : SoftDeletableEntity
+public class CustomRole : SoftDeletableEntity, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public string Name { get; private set; } = null!;

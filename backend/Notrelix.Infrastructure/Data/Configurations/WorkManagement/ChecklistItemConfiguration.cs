@@ -8,7 +8,7 @@ public class ChecklistItemConfiguration : IEntityTypeConfiguration<ChecklistItem
 {
     public void Configure(EntityTypeBuilder<ChecklistItem> builder)
     {
-        builder.ToTable("checklist_items");
+        builder.ToTable("checklist_items", DbSchemas.Work);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");

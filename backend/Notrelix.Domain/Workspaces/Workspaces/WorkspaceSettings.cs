@@ -7,7 +7,7 @@ public sealed class WorkspaceSettings : ValueObject
     public bool AllowPublicSharing { get; }
     public bool EnforceMfa { get; }
 
-    private WorkspaceSettings(bool allowPublicSharing, bool enforceMfa)
+    private WorkspaceSettings() { }    private WorkspaceSettings(bool allowPublicSharing, bool enforceMfa)
     {
         AllowPublicSharing = allowPublicSharing;
         EnforceMfa = enforceMfa;

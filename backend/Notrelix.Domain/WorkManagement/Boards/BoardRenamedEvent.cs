@@ -10,4 +10,4 @@ public sealed record BoardRenamedEvent(
     string NewTitle,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, UpdatedBy);

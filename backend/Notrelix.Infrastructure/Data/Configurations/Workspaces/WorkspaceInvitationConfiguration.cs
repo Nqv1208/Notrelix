@@ -8,7 +8,7 @@ public class WorkspaceInvitationConfiguration : IEntityTypeConfiguration<Workspa
 {
     public void Configure(EntityTypeBuilder<WorkspaceInvitation> builder)
     {
-        builder.ToTable("workspace_invitations");
+        builder.ToTable("workspace_invitations", DbSchemas.Workspace);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");

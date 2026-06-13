@@ -6,7 +6,7 @@ public sealed class ProviderEventId : ValueObject
 {
     public string Value { get; }
 
-    private ProviderEventId(string value)
+    private ProviderEventId() { }    private ProviderEventId(string value)
     {
         Value = value;
     }

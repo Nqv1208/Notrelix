@@ -8,7 +8,7 @@ public class BoardFieldConfiguration : IEntityTypeConfiguration<BoardField>
 {
     public void Configure(EntityTypeBuilder<BoardField> builder)
     {
-        builder.ToTable("board_fields");
+        builder.ToTable("board_fields", DbSchemas.Work);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");

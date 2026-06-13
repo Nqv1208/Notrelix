@@ -88,7 +88,7 @@ public class IntegrationConnectionTests
         var now = DateTimeOffset.UtcNow;
 
         connection.RotateSecret("v1", secretRef1, actor, now);
-        connection.SecretVersions.Should().ContainSingle(v => v.Version == "v1" && v.SecretReference.Key == "secret-key-1");
+        connection.SecretVersions.Should().ContainSingle(v => v.Version == "v1" && v.SecretReference.Value == "secret-key-1");
         connection.DomainEvents.Should().Contain(e => e is IntegrationSecretRotatedEvent);
 
         var act = () => connection.RotateSecret("v1", secretRef2, actor, now);

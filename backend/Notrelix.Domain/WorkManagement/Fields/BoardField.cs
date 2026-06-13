@@ -4,7 +4,7 @@ using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Domain.WorkManagement.Fields;
 
-public class BoardField : AggregateRoot
+public class BoardField : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid BoardId { get; private set; }
@@ -14,6 +14,11 @@ public class BoardField : AggregateRoot
     public FractionalIndex Position { get; private set; } = null!;
     public string? DefaultValue { get; private set; }
     public bool IsSystem { get; private set; }
+    public DataClassification DataClassification { get; private set; } = DataClassification.Internal;
+    public bool IsSensitive { get; private set; }
+    public bool IsFormula { get; private set; }
+    public string? FormulaExpression { get; private set; }
+    public string MirrorSourceJson { get; private set; } = "{}";
 
     private readonly List<FieldOption> _options = new();
     public IReadOnlyCollection<FieldOption> Options => _options.AsReadOnly();
@@ -30,7 +35,12 @@ public class BoardField : AggregateRoot
         Guid createdBy,
         DateTimeOffset createdAt,
         string? defaultValue = null, 
-        bool isSystem = false)
+        bool isSystem = false,
+        DataClassification dataClassification = DataClassification.Internal,
+        bool isSensitive = false,
+        bool isFormula = false,
+        string? formulaExpression = null,
+        string? mirrorSourceJson = null)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(boardId);
@@ -49,7 +59,12 @@ public class BoardField : AggregateRoot
             Settings = settings,
             Position = position,
             DefaultValue = defaultValue,
-            IsSystem = isSystem
+            IsSystem = isSystem,
+            DataClassification = dataClassification,
+            IsSensitive = isSensitive,
+            IsFormula = isFormula,
+            FormulaExpression = formulaExpression,
+            MirrorSourceJson = mirrorSourceJson ?? "{}"
         };
 
         field.SetAuditOnCreate(createdBy, createdAt);
@@ -99,5 +114,21 @@ public class BoardField : AggregateRoot
         return Type is FieldType.Status
             or FieldType.Select
             or FieldType.Person;
+    }
+
+    public void UpdateClassification(DataClassification classification, bool isSensitive, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        DataClassification = classification;
+        IsSensitive = isSensitive;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+    }
+
+    public void UpdateFormula(bool isFormula, string? expression, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        IsFormula = isFormula;
+        FormulaExpression = expression;
+        SetAuditOnUpdate(updatedBy, updatedAt);
     }
 }

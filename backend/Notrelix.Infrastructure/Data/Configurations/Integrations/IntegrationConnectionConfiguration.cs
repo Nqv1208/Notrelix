@@ -8,7 +8,7 @@ public class IntegrationConnectionConfiguration : IEntityTypeConfiguration<Integ
 {
     public void Configure(EntityTypeBuilder<IntegrationConnection> builder)
     {
-        builder.ToTable("integration_connections");
+        builder.ToTable("integration_connections", DbSchemas.Integration);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");

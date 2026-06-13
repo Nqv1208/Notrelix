@@ -2,7 +2,7 @@ using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.WorkManagement.Workload;
 
-public class WorkloadAllocation : Entity
+public class WorkloadAllocation : Entity, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid? BoardId { get; private set; }
@@ -10,6 +10,7 @@ public class WorkloadAllocation : Entity
     public Guid UserId { get; private set; }
     public DateTime AllocationDate { get; private set; }
     public int AllocatedMinutes { get; private set; }
+    public long Version { get; private set; } = 1;
 
     private WorkloadAllocation() : base() { }
 

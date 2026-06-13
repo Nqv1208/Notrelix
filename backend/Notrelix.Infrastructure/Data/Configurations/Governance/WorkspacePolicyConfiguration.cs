@@ -8,7 +8,7 @@ public class WorkspacePolicyConfiguration : IEntityTypeConfiguration<WorkspacePo
 {
     public void Configure(EntityTypeBuilder<WorkspacePolicy> builder)
     {
-        builder.ToTable("workspace_policies");
+        builder.ToTable("workspace_policies", DbSchemas.Governance);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");

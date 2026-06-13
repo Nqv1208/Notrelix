@@ -1,7 +1,9 @@
 using FluentAssertions;
 using Notrelix.Domain.Common;
+using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Identity.OAuth;
-using Notrelix.Domain.SharedKernel;
+using Notrelix.Domain.Identity.OAuth.Events;
+using Notrelix.Domain.Identity.Users;
 using Xunit;
 
 namespace Notrelix.Domain.Tests.Identity;
@@ -9,20 +11,22 @@ namespace Notrelix.Domain.Tests.Identity;
 public class OAuthAccountTests
 {
     private static readonly JsonValue EmptyProfile = JsonValue.EmptyObject();
+    private static readonly SecretRef AccessRef = SecretRef.Create("access-token-ref-123");
+    private static readonly SecretRef RefreshRef = SecretRef.Create("refresh-token-ref-456");
 
     [Fact]
     public void Create_WithToken_ShouldStoreOAuthToken()
     {
         var userId = Guid.NewGuid();
-        var token = OAuthToken.Create("access123", "refresh456", DateTimeOffset.UtcNow.AddDays(30));
+        var token = OAuthToken.Create(AccessRef, RefreshRef, DateTimeOffset.UtcNow.AddDays(30));
 
         var account = OAuthAccount.Create(userId, OAuthProvider.Google, "provider-id-123", EmptyProfile, token);
 
         account.Provider.Should().Be(OAuthProvider.Google);
         account.ProviderId.Should().Be("provider-id-123");
         account.Token.Should().NotBeNull();
-        account.Token!.AccessTokenRef.Should().Be("access123");
-        account.Token.RefreshTokenRef.Should().Be("refresh456");
+        account.Token!.AccessTokenRef.Value.Should().Be("access-token-ref-123");
+        account.Token.RefreshTokenRef!.Value.Should().Be("refresh-token-ref-456");
     }
 
     [Fact]
@@ -51,56 +55,89 @@ public class OAuthAccountTests
     }
 
     [Fact]
-    public void Link_ShouldRaiseLinkedEvent()
+    public void User_LinkOAuthAccount_ShouldAddAccountAndRaiseEvent()
     {
-        var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
-        var account = OAuthAccount.Create(userId, OAuthProvider.Google, "provider-id", EmptyProfile);
-        var token = OAuthToken.Create("access", "refresh");
+        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        user.ClearDomainEvents();
 
-        account.Link(token, now);
+        var token = OAuthToken.Create(AccessRef, RefreshRef);
+        user.LinkOAuthAccount(OAuthProvider.Google, "provider-id-123", EmptyProfile, token, now.AddMinutes(5));
 
+        user.OAuthAccounts.Should().ContainSingle();
+        var account = user.OAuthAccounts.Single();
+        account.Provider.Should().Be(OAuthProvider.Google);
+        account.ProviderId.Should().Be("provider-id-123");
         account.Token.Should().Be(token);
-        account.DomainEvents.Should().ContainSingle(e => e is OAuthAccountLinkedEvent);
-        var evt = (OAuthAccountLinkedEvent)account.DomainEvents.First(e => e is OAuthAccountLinkedEvent);
-        evt.UserId.Should().Be(userId);
+
+        user.DomainEvents.Should().ContainSingle(e => e is OAuthAccountLinkedEvent);
+        var evt = (OAuthAccountLinkedEvent)user.DomainEvents.Single(e => e is OAuthAccountLinkedEvent);
+        evt.UserId.Should().Be(user.Id);
         evt.Provider.Should().Be(OAuthProvider.Google);
+        evt.ProviderId.Should().Be("provider-id-123");
+        evt.LinkedAt.Should().Be(now.AddMinutes(5));
     }
 
     [Fact]
-    public void Unlink_ShouldClearTokenAndRaiseEvent()
+    public void User_LinkDuplicateProviderDifferentId_ShouldThrow()
     {
-        var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
-        var token = OAuthToken.Create("access", "refresh");
-        var account = OAuthAccount.Create(userId, OAuthProvider.Apple, "apple-id", EmptyProfile, token);
-        account.ClearDomainEvents();
+        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        user.LinkOAuthAccount(OAuthProvider.Google, "id-1", EmptyProfile, null, now);
 
-        account.Unlink(now);
+        var act = () => user.LinkOAuthAccount(OAuthProvider.Google, "id-2", EmptyProfile, null, now);
 
-        account.Token.Should().BeNull();
-        account.DomainEvents.Should().ContainSingle(e => e is OAuthAccountUnlinkedEvent);
+        act.Should().Throw<BusinessRuleException>().WithMessage("*already linked with a different account*");
+    }
+
+    [Fact]
+    public void User_UnlinkOAuthAccount_ShouldRemoveAccountAndRaiseEvent()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        user.LinkOAuthAccount(OAuthProvider.Google, "provider-id-123", EmptyProfile, null, now);
+        user.ClearDomainEvents();
+
+        user.UnlinkOAuthAccount(OAuthProvider.Google, now.AddMinutes(5));
+
+        user.OAuthAccounts.Should().BeEmpty();
+        user.DomainEvents.Should().ContainSingle(e => e is OAuthAccountUnlinkedEvent);
+        var evt = (OAuthAccountUnlinkedEvent)user.DomainEvents.Single(e => e is OAuthAccountUnlinkedEvent);
+        evt.UserId.Should().Be(user.Id);
+        evt.Provider.Should().Be(OAuthProvider.Google);
+        evt.ProviderId.Should().Be("provider-id-123");
+        evt.UnlinkedAt.Should().Be(now.AddMinutes(5));
+    }
+
+    [Fact]
+    public void User_RotateOAuthToken_ShouldUpdateTokenAndRaiseEvent()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        var oldToken = OAuthToken.Create(AccessRef);
+        user.LinkOAuthAccount(OAuthProvider.Google, "provider-id-123", EmptyProfile, oldToken, now);
+        user.ClearDomainEvents();
+
+        var newToken = OAuthToken.Create(SecretRef.Create("new-access-ref"));
+        user.RotateOAuthToken(OAuthProvider.Google, newToken, now.AddMinutes(5));
+
+        user.OAuthAccounts.Single().Token.Should().Be(newToken);
+        user.DomainEvents.Should().ContainSingle(e => e is OAuthTokenReferenceRotatedEvent);
+        var evt = (OAuthTokenReferenceRotatedEvent)user.DomainEvents.Single(e => e is OAuthTokenReferenceRotatedEvent);
+        evt.UserId.Should().Be(user.Id);
+        evt.Provider.Should().Be(OAuthProvider.Google);
+        evt.RotatedAt.Should().Be(now.AddMinutes(5));
     }
 
     [Fact]
     public void OAuthToken_ShouldBeImmutableValueObject()
     {
-        var token1 = OAuthToken.Create("token-a", "refresh-a");
-        var token2 = OAuthToken.Create("token-a", "refresh-a");
-        var token3 = OAuthToken.Create("token-b", "refresh-b");
+        var token1 = OAuthToken.Create(AccessRef, RefreshRef);
+        var token2 = OAuthToken.Create(AccessRef, RefreshRef);
+        var token3 = OAuthToken.Create(AccessRef, null);
 
         token1.Should().Be(token2);
         token1.Should().NotBe(token3);
         token1.GetHashCode().Should().Be(token2.GetHashCode());
-    }
-
-    [Fact]
-    public void OAuthToken_EqualTokens_ShouldBeEqual()
-    {
-        var expiresAt = DateTimeOffset.UtcNow.AddDays(30);
-        var token1 = OAuthToken.Create("access123", "refresh456", expiresAt);
-        var token2 = OAuthToken.Create("access123", "refresh456", expiresAt);
-
-        token1.Should().Be(token2);
     }
 }

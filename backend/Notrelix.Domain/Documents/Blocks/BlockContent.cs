@@ -6,7 +6,7 @@ public sealed class BlockContent : ValueObject
 {
     public JsonValue Data { get; }
 
-    private BlockContent(JsonValue data)
+    private BlockContent() { }    private BlockContent(JsonValue data)
     {
         Data = data;
     }

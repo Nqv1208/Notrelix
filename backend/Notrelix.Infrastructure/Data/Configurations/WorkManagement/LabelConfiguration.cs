@@ -8,7 +8,7 @@ public class LabelConfiguration : IEntityTypeConfiguration<Label>
 {
     public void Configure(EntityTypeBuilder<Label> builder)
     {
-        builder.ToTable("labels");
+        builder.ToTable("labels", DbSchemas.Work);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");

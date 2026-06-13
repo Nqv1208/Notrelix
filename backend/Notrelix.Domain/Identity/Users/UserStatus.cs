@@ -1,4 +1,4 @@
-namespace Notrelix.Domain.Identity;
+namespace Notrelix.Domain.Identity.Users;
 
 // Trạng thái của User
 public enum UserStatus

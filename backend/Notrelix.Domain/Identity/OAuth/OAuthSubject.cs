@@ -6,7 +6,7 @@ public sealed class OAuthSubject : ValueObject
 {
     public string Value { get; }
 
-    private OAuthSubject(string value)
+    private OAuthSubject() { }    private OAuthSubject(string value)
     {
         Value = value;
     }

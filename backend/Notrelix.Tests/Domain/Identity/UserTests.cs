@@ -22,7 +22,8 @@ public class UserTests
         user.DomainEvents.Should().ContainSingle(e => e is UserRegisteredEvent);
         var evt = (UserRegisteredEvent)user.DomainEvents.First(e => e is UserRegisteredEvent);
         evt.UserId.Should().Be(user.Id);
-        evt.Email.Should().Be("test@example.com");
+        evt.Email.Value.Should().Be("test@example.com");
+        user.CreatedBy.Should().BeNull();
     }
 
     [Fact]
@@ -48,7 +49,7 @@ public class UserTests
         user.LastLoginAt.Should().Be(loginTime);
         user.DomainEvents.Should().ContainSingle(e => e is UserLoggedInEvent);
         var evt = (UserLoggedInEvent)user.DomainEvents.First(e => e is UserLoggedInEvent);
-        evt.LoggedInAt.Should().Be(loginTime);
+        evt.OccurredAt.Should().Be(loginTime);
     }
 
     [Fact]
@@ -106,7 +107,7 @@ public class UserTests
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hash123", now);
 
-        user.Suspend();
+        user.Suspend(user.Id, now);
 
         user.Status.Should().Be(UserStatus.Suspended);
     }
@@ -116,9 +117,9 @@ public class UserTests
     {
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hash123", now);
-        user.Suspend();
+        user.Suspend(user.Id, now);
 
-        user.Activate();
+        user.Activate(user.Id, now);
 
         user.Status.Should().Be(UserStatus.Active);
     }

@@ -4,7 +4,7 @@ using Notrelix.Domain.Governance.Permissions;
 
 namespace Notrelix.Domain.Governance.ShareLinks;
 
-public class ShareLink : AuditableEntity
+public class ShareLink : AuditableEntity, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public ResourceType ResourceType { get; private set; }

@@ -7,7 +7,7 @@ public sealed class ScheduleDefinition : ValueObject
     public string CronExpression { get; }
     public string TimeZone { get; }
 
-    private ScheduleDefinition(string cronExpression, string timeZone)
+    private ScheduleDefinition() { }    private ScheduleDefinition(string cronExpression, string timeZone)
     {
         CronExpression = cronExpression;
         TimeZone = timeZone;

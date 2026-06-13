@@ -6,7 +6,7 @@ public sealed class ActionConfig : ValueObject
 {
     public JsonValue Data { get; }
 
-    private ActionConfig(JsonValue data)
+    private ActionConfig() { }    private ActionConfig(JsonValue data)
     {
         Data = data;
     }

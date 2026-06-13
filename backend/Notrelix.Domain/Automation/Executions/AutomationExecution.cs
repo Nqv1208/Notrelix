@@ -50,7 +50,7 @@ public class AutomationExecutionStep : Entity
     }
 }
 
-public class AutomationExecution : AggregateRoot
+public class AutomationExecution : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid RuleId { get; private set; }

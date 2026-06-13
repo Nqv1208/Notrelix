@@ -11,7 +11,7 @@ public sealed class Email : ValueObject
 
     public string Value { get; }
 
-    private Email(string value)
+    private Email() { }    private Email(string value)
     {
         Value = value;
     }

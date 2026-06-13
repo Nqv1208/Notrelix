@@ -4,20 +4,20 @@ namespace Notrelix.Domain.Identity.OAuth;
 
 public sealed class OAuthToken : ValueObject
 {
-    public string AccessTokenRef { get; }
-    public string? RefreshTokenRef { get; }
+    public SecretRef AccessTokenRef { get; }
+    public SecretRef? RefreshTokenRef { get; }
     public DateTimeOffset? ExpiresAt { get; }
 
-    private OAuthToken(string accessTokenRef, string? refreshTokenRef, DateTimeOffset? expiresAt)
+    private OAuthToken() { }    private OAuthToken(SecretRef accessTokenRef, SecretRef? refreshTokenRef, DateTimeOffset? expiresAt)
     {
         AccessTokenRef = accessTokenRef;
         RefreshTokenRef = refreshTokenRef;
         ExpiresAt = expiresAt;
     }
 
-    public static OAuthToken Create(string accessTokenRef, string? refreshTokenRef = null, DateTimeOffset? expiresAt = null)
+    public static OAuthToken Create(SecretRef accessTokenRef, SecretRef? refreshTokenRef = null, DateTimeOffset? expiresAt = null)
     {
-        Guard.NotNullOrWhiteSpace(accessTokenRef);
+        Guard.NotNull(accessTokenRef);
         return new OAuthToken(accessTokenRef, refreshTokenRef, expiresAt);
     }
 

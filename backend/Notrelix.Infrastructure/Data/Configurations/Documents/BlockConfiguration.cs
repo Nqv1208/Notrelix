@@ -8,7 +8,7 @@ public class BlockConfiguration : IEntityTypeConfiguration<Block>
 {
     public void Configure(EntityTypeBuilder<Block> builder)
     {
-        builder.ToTable("blocks");
+        builder.ToTable("blocks", DbSchemas.Docs);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");

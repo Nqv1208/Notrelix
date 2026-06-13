@@ -1,11 +1,10 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
+using Notrelix.Domain.Workspaces.Teams.Events;
 
 namespace Notrelix.Domain.Workspaces.Teams;
 
-
-
-public class Team : AggregateRoot
+public class Team : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public string Name { get; private set; } = null!;
@@ -21,6 +20,7 @@ public class Team : AggregateRoot
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(name);
+        Guard.NotEmpty(createdBy);
 
         var team = new Team
         {
@@ -39,6 +39,10 @@ public class Team : AggregateRoot
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(name);
+        Guard.NotEmpty(updatedBy);
+
+        if (Status == TeamStatus.Archived)
+            throw new BusinessRuleException("Cannot rename an archived team.");
 
         var oldName = Name;
         var normalizedName = name.Trim();
@@ -52,6 +56,7 @@ public class Team : AggregateRoot
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(archivedBy);
         if (Status == TeamStatus.Archived) return;
 
         Status = TeamStatus.Archived;
@@ -64,11 +69,22 @@ public class Team : AggregateRoot
         EnsureNotDeleted();
         if (Status == TeamStatus.Archived)
             throw new BusinessRuleException("Cannot add a member to an archived team.");
-        if (_members.Any(m => m.UserId == userId))
-            throw new BusinessRuleException("User is already a member of this team.");
+        Guard.NotEmpty(userId);
+        Guard.NotEmpty(addedBy);
 
-        var member = TeamMember.Create(Id, userId, role, workspaceMemberId);
-        _members.Add(member);
+        var existing = _members.FirstOrDefault(m => m.UserId == userId);
+        if (existing != null)
+        {
+            if (existing.Status == TeamMemberStatus.Active)
+                throw new BusinessRuleException("User is already a member of this team.");
+
+            existing.Reactivate(role, workspaceMemberId, addedBy, addedAt);
+        }
+        else
+        {
+            var member = TeamMember.Create(WorkspaceId, Id, userId, role, addedBy, addedAt, workspaceMemberId);
+            _members.Add(member);
+        }
         
         SetAuditOnUpdate(addedBy, addedAt);
         AddDomainEvent(new TeamMemberAddedEvent(WorkspaceId, Id, userId, role, addedBy, addedAt));
@@ -79,6 +95,9 @@ public class Team : AggregateRoot
         EnsureNotDeleted();
         if (Status == TeamStatus.Archived)
             throw new BusinessRuleException("Cannot remove a member from an archived team.");
+        Guard.NotEmpty(userId);
+        Guard.NotEmpty(removedBy);
+
         var member = _members.FirstOrDefault(m => m.UserId == userId);
         if (member == null) return;
 
@@ -89,6 +108,7 @@ public class Team : AggregateRoot
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         Status = TeamStatus.SoftDeleted;
         base.SoftDelete(deletedBy, deletedAt, reason);
@@ -97,6 +117,7 @@ public class Team : AggregateRoot
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         Status = TeamStatus.Active;
         base.Restore(restoredBy, restoredAt);

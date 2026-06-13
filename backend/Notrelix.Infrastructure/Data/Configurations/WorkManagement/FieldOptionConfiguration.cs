@@ -8,7 +8,7 @@ public class FieldOptionConfiguration : IEntityTypeConfiguration<FieldOption>
 {
     public void Configure(EntityTypeBuilder<FieldOption> builder)
     {
-        builder.ToTable("field_options");
+        builder.ToTable("field_options", DbSchemas.Work);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
