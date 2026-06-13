@@ -6,7 +6,7 @@ public sealed class BoardGroupColor : ValueObject
 {
     public string Hex { get; }
 
-    private BoardGroupColor(string hex)
+    private BoardGroupColor() { }    private BoardGroupColor(string hex)
     {
         Hex = hex;
     }

@@ -7,7 +7,7 @@ public sealed class DocumentSnapshot : ValueObject
 {
     public JsonValue Data { get; }
 
-    private DocumentSnapshot(JsonValue data)
+    private DocumentSnapshot() { }    private DocumentSnapshot(JsonValue data)
     {
         Data = data;
     }

@@ -6,7 +6,7 @@ public sealed class LabelColor : ValueObject
 {
     public string Hex { get; }
 
-    private LabelColor(string hex)
+    private LabelColor() { }    private LabelColor(string hex)
     {
         Hex = hex;
     }

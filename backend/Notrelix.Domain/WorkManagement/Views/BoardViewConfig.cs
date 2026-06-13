@@ -6,7 +6,7 @@ public class BoardViewConfig : ValueObject
 {
     public JsonValue Data { get; }
 
-    protected BoardViewConfig(JsonValue data)
+    private BoardViewConfig() { }    protected BoardViewConfig(JsonValue data)
     {
         Data = data;
     }

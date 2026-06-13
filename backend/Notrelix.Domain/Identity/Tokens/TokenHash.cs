@@ -6,7 +6,7 @@ public sealed class TokenHash : ValueObject
 {
     public string Value { get; }
 
-    private TokenHash(string value)
+    private TokenHash() { }    private TokenHash(string value)
     {
         Value = value;
     }

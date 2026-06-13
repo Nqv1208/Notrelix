@@ -6,7 +6,7 @@ public sealed class GroupRule : ValueObject
 {
     public Guid FieldId { get; }
 
-    private GroupRule(Guid fieldId)
+    private GroupRule() { }    private GroupRule(Guid fieldId)
     {
         FieldId = fieldId;
     }

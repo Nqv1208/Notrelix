@@ -6,7 +6,7 @@ public sealed class FractionalIndex : ValueObject, IComparable<FractionalIndex>
 {
     public string Value { get; }
 
-    private FractionalIndex(string value)
+    private FractionalIndex() { }    private FractionalIndex(string value)
     {
         Guard.NotNullOrWhiteSpace(value);
         Value = value;

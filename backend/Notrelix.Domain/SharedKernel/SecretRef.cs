@@ -6,7 +6,7 @@ public sealed class SecretRef : ValueObject
 {
     public string Value { get; }
 
-    private SecretRef(string value)
+    private SecretRef() { }    private SecretRef(string value)
     {
         Value = value;
     }

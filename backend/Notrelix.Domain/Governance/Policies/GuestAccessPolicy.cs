@@ -7,7 +7,7 @@ public sealed class GuestAccessPolicy : ValueObject
     public bool AllowGuestInvites { get; }
     public IReadOnlyCollection<string> AllowedDomains { get; }
 
-    private GuestAccessPolicy(bool allowGuestInvites, IEnumerable<string>? allowedDomains)
+    private GuestAccessPolicy() { }    private GuestAccessPolicy(bool allowGuestInvites, IEnumerable<string>? allowedDomains)
     {
         AllowGuestInvites = allowGuestInvites;
         AllowedDomains = allowedDomains?.ToList().AsReadOnly() ?? new List<string>().AsReadOnly();

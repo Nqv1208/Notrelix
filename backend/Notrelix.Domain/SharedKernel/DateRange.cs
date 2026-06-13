@@ -7,7 +7,7 @@ public sealed class DateRange : ValueObject
     public DateTimeOffset Start { get; }
     public DateTimeOffset? End { get; }
 
-    private DateRange(DateTimeOffset start, DateTimeOffset? end)
+    private DateRange() { }    private DateRange(DateTimeOffset start, DateTimeOffset? end)
     {
         Start = start;
         End = end;

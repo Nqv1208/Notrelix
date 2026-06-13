@@ -11,7 +11,7 @@ public sealed class Color : ValueObject
 
     public string Value { get; }
 
-    private Color(string value)
+    private Color() { }    private Color(string value)
     {
         Value = value;
     }

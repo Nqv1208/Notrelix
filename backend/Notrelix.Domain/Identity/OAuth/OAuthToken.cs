@@ -8,7 +8,7 @@ public sealed class OAuthToken : ValueObject
     public SecretRef? RefreshTokenRef { get; }
     public DateTimeOffset? ExpiresAt { get; }
 
-    private OAuthToken(SecretRef accessTokenRef, SecretRef? refreshTokenRef, DateTimeOffset? expiresAt)
+    private OAuthToken() { }    private OAuthToken(SecretRef accessTokenRef, SecretRef? refreshTokenRef, DateTimeOffset? expiresAt)
     {
         AccessTokenRef = accessTokenRef;
         RefreshTokenRef = refreshTokenRef;

@@ -6,7 +6,7 @@ public sealed class Emoji : ValueObject
 {
     public string Code { get; }
 
-    private Emoji(string code)
+    private Emoji() { }    private Emoji(string code)
     {
         Code = code;
     }

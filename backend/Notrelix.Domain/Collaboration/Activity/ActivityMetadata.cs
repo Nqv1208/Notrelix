@@ -6,7 +6,7 @@ public sealed class ActivityMetadata : ValueObject
 {
     public JsonValue Data { get; }
 
-    private ActivityMetadata(JsonValue data)
+    private ActivityMetadata() { }    private ActivityMetadata(JsonValue data)
     {
         Data = data;
     }
