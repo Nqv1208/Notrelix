@@ -8,7 +8,7 @@ public class PageConfiguration : IEntityTypeConfiguration<Page>
 {
     public void Configure(EntityTypeBuilder<Page> builder)
     {
-        builder.ToTable("pages");
+        builder.ToTable("pages", DbSchemas.Docs);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");

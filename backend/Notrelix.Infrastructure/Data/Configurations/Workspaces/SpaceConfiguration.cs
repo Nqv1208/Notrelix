@@ -8,7 +8,7 @@ public class SpaceConfiguration : IEntityTypeConfiguration<Space>
 {
     public void Configure(EntityTypeBuilder<Space> builder)
     {
-        builder.ToTable("spaces");
+        builder.ToTable("spaces", DbSchemas.Workspace);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");

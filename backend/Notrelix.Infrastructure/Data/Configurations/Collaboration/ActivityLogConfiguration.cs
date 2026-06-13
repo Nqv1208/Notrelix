@@ -8,7 +8,7 @@ public class ActivityLogConfiguration : IEntityTypeConfiguration<ActivityLog>
 {
     public void Configure(EntityTypeBuilder<ActivityLog> builder)
     {
-        builder.ToTable("activity_logs");
+        builder.ToTable("activity_logs", DbSchemas.Collab);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");

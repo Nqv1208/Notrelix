@@ -8,7 +8,7 @@ public class BoardViewConfiguration : IEntityTypeConfiguration<BoardView>
 {
     public void Configure(EntityTypeBuilder<BoardView> builder)
     {
-        builder.ToTable("board_views");
+        builder.ToTable("board_views", DbSchemas.Work);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");

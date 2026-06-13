@@ -8,7 +8,7 @@ public class BoardItemLinkConfiguration : IEntityTypeConfiguration<BoardItemLink
 {
     public void Configure(EntityTypeBuilder<BoardItemLink> builder)
     {
-        builder.ToTable("board_item_links");
+        builder.ToTable("board_item_links", DbSchemas.Work);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");

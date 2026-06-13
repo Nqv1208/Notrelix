@@ -8,7 +8,7 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
 {
     public void Configure(EntityTypeBuilder<Workspace> builder)
     {
-        builder.ToTable("workspaces");
+        builder.ToTable("workspaces", DbSchemas.Workspace);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
@@ -18,6 +18,7 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(1024);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.IsPersonal).HasColumnName("is_personal");
+        builder.Property(x => x.AccountId).HasColumnName("account_id");
 
         builder.OwnsOne(x => x.Settings, settings =>
         {

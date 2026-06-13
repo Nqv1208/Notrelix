@@ -8,7 +8,7 @@ public class BoardMemberConfiguration : IEntityTypeConfiguration<BoardMember>
 {
     public void Configure(EntityTypeBuilder<BoardMember> builder)
     {
-        builder.ToTable("board_members");
+        builder.ToTable("board_members", DbSchemas.Work);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");

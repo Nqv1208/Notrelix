@@ -8,7 +8,7 @@ public class OAuthAccountConfiguration : IEntityTypeConfiguration<OAuthAccount>
 {
     public void Configure(EntityTypeBuilder<OAuthAccount> builder)
     {
-        builder.ToTable("oauth_accounts");
+        builder.ToTable("oauth_accounts", DbSchemas.Identity);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");

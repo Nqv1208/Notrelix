@@ -8,7 +8,7 @@ public class BoardItemValueConfiguration : IEntityTypeConfiguration<BoardItemVal
 {
     public void Configure(EntityTypeBuilder<BoardItemValue> builder)
     {
-        builder.ToTable("board_item_values");
+        builder.ToTable("board_item_values", DbSchemas.Work);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
