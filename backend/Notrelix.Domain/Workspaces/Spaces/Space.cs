@@ -4,17 +4,25 @@ using Notrelix.Domain.Workspaces.Spaces.Events;
 
 namespace Notrelix.Domain.Workspaces.Spaces;
 
-public class Space : AggregateRoot
+public class Space : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
     public SpaceVisibility Visibility { get; private set; }
     public SpaceStatus Status { get; private set; }
+    public SpaceType SpaceType { get; private set; } = SpaceType.Folder;
 
     private Space() : base() { }
 
-    public static Space Create(Guid workspaceId, string name, SpaceVisibility visibility, Guid createdBy, DateTimeOffset createdAt)
+    public static Space Create(
+        Guid workspaceId, 
+        string name, 
+        SpaceVisibility visibility, 
+        Guid createdBy, 
+        DateTimeOffset createdAt,
+        SpaceType spaceType = SpaceType.Folder,
+        string? description = null)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(name);
@@ -24,8 +32,10 @@ public class Space : AggregateRoot
         {
             WorkspaceId = workspaceId,
             Name = name.Trim(),
+            Description = description?.Trim(),
             Visibility = visibility,
-            Status = SpaceStatus.Active
+            Status = SpaceStatus.Active,
+            SpaceType = spaceType
         };
 
         space.SetAuditOnCreate(createdBy, createdAt);

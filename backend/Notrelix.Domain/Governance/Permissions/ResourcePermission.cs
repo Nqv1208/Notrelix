@@ -3,7 +3,7 @@ using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Governance.Permissions;
 
-public class ResourcePermission : AggregateRoot
+public class ResourcePermission : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public ResourceType ResourceType { get; private set; }
@@ -11,6 +11,9 @@ public class ResourcePermission : AggregateRoot
     public PermissionSubjectType SubjectType { get; private set; }
     public Guid SubjectId { get; private set; }
     public PermissionLevel Level { get; private set; }
+    public PermissionEffect Effect { get; private set; } = PermissionEffect.Allow;
+    public string ConditionJson { get; private set; } = "{}";
+    public int Priority { get; private set; } = 100;
 
     private ResourcePermission() : base() { }
 
@@ -22,7 +25,10 @@ public class ResourcePermission : AggregateRoot
         Guid subjectId, 
         PermissionLevel level,
         Guid grantedBy,
-        DateTimeOffset grantedAt)
+        DateTimeOffset grantedAt,
+        PermissionEffect effect = PermissionEffect.Allow,
+        string? conditionJson = null,
+        int priority = 100)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(resourceId);
@@ -35,7 +41,10 @@ public class ResourcePermission : AggregateRoot
             ResourceId = resourceId,
             SubjectType = subjectType,
             SubjectId = subjectId,
-            Level = level
+            Level = level,
+            Effect = effect,
+            ConditionJson = conditionJson ?? "{}",
+            Priority = priority
         };
 
         permission.SetAuditOnCreate(grantedBy, grantedAt);

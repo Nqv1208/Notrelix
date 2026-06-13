@@ -4,7 +4,7 @@ using Notrelix.Domain.Workspaces.Members.Events;
 
 namespace Notrelix.Domain.Workspaces.Members;
 
-public class WorkspaceMember : AggregateRoot
+public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid UserId { get; private set; }

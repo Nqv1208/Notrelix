@@ -5,13 +5,20 @@ using Notrelix.Domain.WorkManagement.Fields;
 
 namespace Notrelix.Domain.WorkManagement.Items;
 
-public class BoardItem : SoftDeletableEntity
+public class BoardItem : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid BoardId { get; private set; }
     public Guid GroupId { get; private set; }
     public string Name { get; private set; } = null!;
     public FractionalIndex Position { get; private set; } = null!;
+    public Guid? ParentItemId { get; private set; }
+    public string? ItemKey { get; private set; }
+    public long? ItemSequence { get; private set; }
+    public int ItemLevel { get; private set; }
+    public DateTimeOffset? StartedAt { get; private set; }
+    public DateTimeOffset? DueAt { get; private set; }
+    public DateTimeOffset? CompletedAt { get; private set; }
     
     private readonly List<BoardItemValue> _fieldValues = new();
     public IReadOnlyCollection<BoardItemValue> FieldValues => _fieldValues.AsReadOnly();
@@ -25,7 +32,13 @@ public class BoardItem : SoftDeletableEntity
         string name, 
         FractionalIndex position, 
         Guid createdBy,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt,
+        Guid? parentItemId = null,
+        string? itemKey = null,
+        long? itemSequence = null,
+        int itemLevel = 0,
+        DateTimeOffset? startedAt = null,
+        DateTimeOffset? dueAt = null)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(boardId);
@@ -39,7 +52,13 @@ public class BoardItem : SoftDeletableEntity
             BoardId = boardId,
             GroupId = groupId,
             Name = name.Trim(),
-            Position = position
+            Position = position,
+            ParentItemId = parentItemId,
+            ItemKey = itemKey,
+            ItemSequence = itemSequence,
+            ItemLevel = itemLevel,
+            StartedAt = startedAt,
+            DueAt = dueAt
         };
 
         item.SetAuditOnCreate(createdBy, createdAt);
@@ -138,6 +157,37 @@ public class BoardItem : SoftDeletableEntity
 
         SetAuditOnUpdate(updatedBy, updatedAt);
         AddDomainEvent(new BoardItemFieldValueChangedEvent(WorkspaceId, Id, BoardId, field.Id, oldValue, newValue, updatedBy, updatedAt));
+    }
+
+    public void AssignParentItem(Guid? parentItemId, int itemLevel)
+    {
+        EnsureNotDeleted();
+        if (parentItemId == Id)
+            throw new BusinessRuleException("An item cannot be its own parent.");
+
+        ParentItemId = parentItemId;
+        ItemLevel = itemLevel;
+        IncrementVersion();
+    }
+
+    public void SetTimeline(DateTimeOffset? startedAt, DateTimeOffset? dueAt, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        if (startedAt != null && dueAt != null && dueAt < startedAt)
+            throw new BusinessRuleException("Due date must be after start date.");
+
+        StartedAt = startedAt;
+        DueAt = dueAt;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+    }
+
+    public void Complete(DateTimeOffset? completedAt, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        CompletedAt = completedAt;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
