@@ -1,4 +1,5 @@
 using Notrelix.Domain.Common.Exceptions;
+using Notrelix.Domain.WorkManagement.Boards.Events;
 
 namespace Notrelix.Domain.WorkManagement.Boards;
 
@@ -54,16 +55,6 @@ public class Board : AggregateRoot, IWorkspaceScoped
         return board;
     }
 
-    public static Board Create(
-        Guid workspaceId,
-        Guid createdBy,
-        string title,
-        string? description,
-        BoardVisibility visibility = BoardVisibility.Workspace)
-    {
-        return Create(workspaceId, createdBy, title, description, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), visibility);
-    }
-
     public void Rename(string title, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
@@ -75,21 +66,27 @@ public class Board : AggregateRoot, IWorkspaceScoped
 
         Title = normalizedTitle;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new BoardRenamedEvent(WorkspaceId, Id, oldTitle, Title, updatedBy, updatedAt));
     }
 
     public void UpdateDescription(string? description, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        Description = description?.Trim();
+        var normalized = description?.Trim();
+        if (Description == normalized) return;
+        Description = normalized;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
     }
 
     public void UpdateBackground(string background, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        Background = string.IsNullOrWhiteSpace(background) ? Background : background;
+        if (string.IsNullOrWhiteSpace(background) || Background == background) return;
+        Background = background;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
     }
 
     public void ChangeVisibility(BoardVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
@@ -100,6 +97,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
 
         Visibility = visibility;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new BoardVisibilityChangedEvent(WorkspaceId, Id, oldVisibility, Visibility, updatedBy, updatedAt));
     }
 
@@ -109,6 +107,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
         if (IsArchived) return;
         IsArchived = true;
         SetAuditOnUpdate(archivedBy, archivedAt);
+        IncrementVersion();
         AddDomainEvent(new BoardArchivedEvent(WorkspaceId, Id, archivedBy, archivedAt));
     }
 
@@ -118,12 +117,15 @@ public class Board : AggregateRoot, IWorkspaceScoped
         if (!IsArchived) return;
         IsArchived = false;
         SetAuditOnUpdate(unarchivedBy, unarchivedAt);
+        IncrementVersion();
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
         AddDomainEvent(new BoardSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
 
@@ -154,6 +156,8 @@ public class Board : AggregateRoot, IWorkspaceScoped
     {
         if (!IsDeleted) return;
         base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
         AddDomainEvent(new BoardRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

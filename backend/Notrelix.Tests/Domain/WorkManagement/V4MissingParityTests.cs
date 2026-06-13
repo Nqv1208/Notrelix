@@ -1,10 +1,9 @@
-using System;
-using System.Linq;
 using FluentAssertions;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.Automation.Agents;
+using Notrelix.Domain.Automation.Agents.Events;
 using Notrelix.Domain.Collaboration.Notifications;
 using Notrelix.Domain.Analytics.Dashboards;
 using Xunit;
@@ -146,7 +145,7 @@ public class V4MissingParityTests
             notificationId,
             _workspaceId,
             recipientUserId,
-            NotificationChannel.Slack,
+            NotificationChannel.Email,
             _now);
 
         delivery.Status.Should().Be(NotificationDeliveryStatus.Pending);
