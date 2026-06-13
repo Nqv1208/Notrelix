@@ -6,6 +6,13 @@ namespace Notrelix.Domain.Common;
 /// </summary>
 public abstract class AggregateRoot : SoftDeletableEntity
 {
+    public long Version { get; private set; } = 1;
+
     protected AggregateRoot() : base() { }
     protected AggregateRoot(Guid id) : base(id) { }
+
+    protected void IncrementVersion()
+    {
+        Version++;
+    }
 }
