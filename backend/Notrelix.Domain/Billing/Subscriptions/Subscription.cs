@@ -43,9 +43,13 @@ public class Subscription : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(newPlanId);
 
+        if (Status is SubscriptionStatus.Canceled or SubscriptionStatus.Expired)
+            throw new BusinessRuleException("Cannot change plan of an inactive subscription.");
+
         var oldPlanId = PlanId;
         PlanId = newPlanId;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new SubscriptionChangedEvent(WorkspaceId, Id, oldPlanId, newPlanId, updatedAt));
     }
 
@@ -55,6 +59,7 @@ public class Subscription : AggregateRoot, IWorkspaceScoped
         if (CancelAtPeriodEnd) return;
         CancelAtPeriodEnd = true;
         SetAuditOnUpdate(updatedBy, occurredAt);
+        IncrementVersion();
     }
 
     public void CancelImmediately(Guid updatedBy, DateTimeOffset cancelledAt)
@@ -63,6 +68,7 @@ public class Subscription : AggregateRoot, IWorkspaceScoped
         if (Status == SubscriptionStatus.Canceled) return;
         Status = SubscriptionStatus.Canceled;
         SetAuditOnUpdate(updatedBy, cancelledAt);
+        IncrementVersion();
         AddDomainEvent(new SubscriptionCancelledEvent(WorkspaceId, Id, cancelledAt));
     }
 
@@ -77,6 +83,7 @@ public class Subscription : AggregateRoot, IWorkspaceScoped
         CancelAtPeriodEnd = false;
         Status = SubscriptionStatus.Active;
         SetAuditOnUpdate(updatedBy, renewedAt);
+        IncrementVersion();
         AddDomainEvent(new SubscriptionRenewedEvent(WorkspaceId, Id, newStart, newEnd, renewedAt));
     }
 
@@ -86,6 +93,7 @@ public class Subscription : AggregateRoot, IWorkspaceScoped
         if (Status == SubscriptionStatus.Expired) return;
         Status = SubscriptionStatus.Expired;
         SetAuditOnUpdate(updatedBy, expiredAt);
+        IncrementVersion();
         AddDomainEvent(new SubscriptionExpiredEvent(WorkspaceId, Id, expiredAt));
     }
 
@@ -95,6 +103,7 @@ public class Subscription : AggregateRoot, IWorkspaceScoped
         if (Status == SubscriptionStatus.PastDue) return;
         Status = SubscriptionStatus.PastDue;
         SetAuditOnUpdate(updatedBy, occurredAt);
+        IncrementVersion();
         AddDomainEvent(new SubscriptionPastDueEvent(WorkspaceId, Id, occurredAt));
     }
 }

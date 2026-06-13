@@ -23,6 +23,9 @@ public class Entitlement : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(feature);
 
+        if (limit < 0)
+            throw new BusinessRuleException("Entitlement limit cannot be negative.");
+
         return new Entitlement
         {
             WorkspaceId = workspaceId,

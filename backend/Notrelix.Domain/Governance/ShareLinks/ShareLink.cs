@@ -30,6 +30,9 @@ public class ShareLink : AuditableEntity, IWorkspaceScoped
         Guard.NotEmpty(resourceId);
         Guard.NotNull(tokenHash);
 
+        if (accessMode == ShareLinkAccessMode.Public && !expiresAt.HasValue)
+            throw new BusinessRuleException("Public share links must have an expiration date.");
+
         var link = new ShareLink
         {
             WorkspaceId = workspaceId,
@@ -79,7 +82,7 @@ public class ShareLink : AuditableEntity, IWorkspaceScoped
         if (Status != ShareLinkStatus.Active) return;
 
         Status = ShareLinkStatus.Expired;
-        SetAuditOnUpdate(Guid.Empty, expiredAt);
+        SetAuditOnUpdate(null, expiredAt);
         AddDomainEvent(new ShareLinkExpiredEvent(WorkspaceId, Id, expiredAt));
     }
 }

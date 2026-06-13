@@ -12,7 +12,6 @@ public class AutomationRule : AggregateRoot, IWorkspaceScoped
     public string TriggerEvent { get; private set; } = null!;
     public string ActionType { get; private set; } = null!;
     public string? Configuration { get; private set; }
-    public DateTimeOffset? LastRunAt { get; private set; }
 
     public bool IsEnabled => Status == AutomationRuleStatus.Active;
 
@@ -59,6 +58,7 @@ public class AutomationRule : AggregateRoot, IWorkspaceScoped
 
         Status = AutomationRuleStatus.Active;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new AutomationRuleEnabledEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
@@ -69,18 +69,16 @@ public class AutomationRule : AggregateRoot, IWorkspaceScoped
 
         Status = AutomationRuleStatus.Disabled;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new AutomationRuleDisabledEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void UpdateConfiguration(string config)
     {
         EnsureNotDeleted();
+        if (Configuration == config) return;
         Configuration = config;
-    }
-
-    public void RecordExecution(DateTimeOffset runAt)
-    {
-        LastRunAt = runAt;
+        IncrementVersion();
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -88,6 +86,8 @@ public class AutomationRule : AggregateRoot, IWorkspaceScoped
         if (IsDeleted) return;
         Status = AutomationRuleStatus.Disabled;
         base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
         AddDomainEvent(new AutomationRuleDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
 
@@ -96,5 +96,8 @@ public class AutomationRule : AggregateRoot, IWorkspaceScoped
         if (!IsDeleted) return;
         Status = AutomationRuleStatus.Draft;
         base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new AutomationRuleCreatedEvent(WorkspaceId, Id, Name, restoredBy, restoredAt));
     }
 }

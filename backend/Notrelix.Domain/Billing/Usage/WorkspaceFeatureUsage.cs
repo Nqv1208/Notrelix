@@ -30,6 +30,21 @@ public class WorkspaceFeatureUsage : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(feature);
 
+        if (currentUsage < 0)
+            throw new BusinessRuleException("Current usage cannot be negative.");
+
+        if (hardLimit < 0)
+            throw new BusinessRuleException("Hard limit cannot be negative.");
+
+        if (softLimit < 0)
+            throw new BusinessRuleException("Soft limit cannot be negative.");
+
+        if (softLimit.HasValue && hardLimit.HasValue && softLimit > hardLimit)
+            throw new BusinessRuleException("Soft limit cannot exceed hard limit.");
+
+        if (!overageAllowed && hardLimit.HasValue && currentUsage > hardLimit.Value)
+            throw new BusinessRuleException("Current usage exceeds hard limit and overage is not allowed.");
+
         return new WorkspaceFeatureUsage
         {
             WorkspaceId = workspaceId,
@@ -45,7 +60,7 @@ public class WorkspaceFeatureUsage : AggregateRoot, IWorkspaceScoped
     public void Consume(decimal amount, Guid actorUserId, DateTimeOffset occurredAt)
     {
         EnsureNotDeleted();
-        if (amount < 0)
+        if (amount <= 0)
             throw new BusinessRuleException("Amount to consume must be positive.");
 
         if (HardLimit.HasValue && !OverageAllowed && CurrentUsage + amount > HardLimit.Value)
@@ -64,7 +79,7 @@ public class WorkspaceFeatureUsage : AggregateRoot, IWorkspaceScoped
     public void Release(decimal amount, Guid actorUserId, DateTimeOffset occurredAt)
     {
         EnsureNotDeleted();
-        if (amount < 0)
+        if (amount <= 0)
             throw new BusinessRuleException("Amount to release must be positive.");
 
         if (CurrentUsage - amount < 0)

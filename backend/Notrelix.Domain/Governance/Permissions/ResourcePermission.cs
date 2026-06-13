@@ -62,6 +62,7 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         var oldLevel = Level;
         Level = newLevel;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new ResourcePermissionLevelChangedEvent(WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, oldLevel, newLevel, updatedBy, updatedAt));
     }
 
@@ -69,6 +70,7 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         SoftDelete(revokedBy, revokedAt);
+        IncrementVersion();
         AddDomainEvent(new ResourcePermissionRevokedEvent(WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, revokedBy, revokedAt));
     }
 }
