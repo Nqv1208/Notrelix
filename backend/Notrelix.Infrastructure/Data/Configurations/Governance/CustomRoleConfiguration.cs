@@ -8,7 +8,7 @@ public class CustomRoleConfiguration : IEntityTypeConfiguration<CustomRole>
 {
     public void Configure(EntityTypeBuilder<CustomRole> builder)
     {
-        builder.ToTable("custom_roles");
+        builder.ToTable("custom_roles", DbSchemas.Governance);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");

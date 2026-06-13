@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Notrelix.Domain.Governance.Security;
+using Notrelix.Domain.Governance.Security.Events;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Governance;
 
@@ -8,7 +8,7 @@ public class SecurityEventConfiguration : IEntityTypeConfiguration<SecurityEvent
 {
     public void Configure(EntityTypeBuilder<SecurityEvent> builder)
     {
-        builder.ToTable("security_events");
+        builder.ToTable("security_events", DbSchemas.Governance);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");

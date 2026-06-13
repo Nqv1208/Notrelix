@@ -8,7 +8,7 @@ public class WebhookSubscriptionConfiguration : IEntityTypeConfiguration<Webhook
 {
     public void Configure(EntityTypeBuilder<WebhookSubscription> builder)
     {
-        builder.ToTable("webhook_subscriptions");
+        builder.ToTable("webhook_subscriptions", DbSchemas.Integration);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");

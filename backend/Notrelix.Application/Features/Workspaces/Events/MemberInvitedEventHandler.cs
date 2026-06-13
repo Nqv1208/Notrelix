@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using global::Notrelix.Application.Common.Events;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Domain.Workspaces.Invitations;
+using global::Notrelix.Domain.Workspaces.Invitations.Events;
 using global::Notrelix.Domain.Collaboration.Notifications;
 using global::Notrelix.Domain.SharedKernel;
 

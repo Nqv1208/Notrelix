@@ -8,7 +8,7 @@ public class AutomationRuleConfiguration : IEntityTypeConfiguration<AutomationRu
 {
     public void Configure(EntityTypeBuilder<AutomationRule> builder)
     {
-        builder.ToTable("automation_rules");
+        builder.ToTable("automation_rules", DbSchemas.Automation);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");

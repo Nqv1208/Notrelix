@@ -8,7 +8,7 @@ public class WorkspaceMemberConfiguration : IEntityTypeConfiguration<WorkspaceMe
 {
     public void Configure(EntityTypeBuilder<WorkspaceMember> builder)
     {
-        builder.ToTable("workspace_members");
+        builder.ToTable("workspace_members", DbSchemas.Workspace);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");

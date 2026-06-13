@@ -8,7 +8,7 @@ public class CalendarIntegrationConfiguration : IEntityTypeConfiguration<Calenda
 {
     public void Configure(EntityTypeBuilder<CalendarIntegration> builder)
     {
-        builder.ToTable("calendar_integrations");
+        builder.ToTable("calendar_integrations", DbSchemas.Integration);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");

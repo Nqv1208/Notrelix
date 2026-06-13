@@ -8,7 +8,7 @@ public class BoardGroupConfiguration : IEntityTypeConfiguration<BoardGroup>
 {
     public void Configure(EntityTypeBuilder<BoardGroup> builder)
     {
-        builder.ToTable("board_groups");
+        builder.ToTable("board_groups", DbSchemas.Work);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
