@@ -4,7 +4,7 @@ using Notrelix.Domain.Governance.Permissions;
 
 namespace Notrelix.Domain.Governance.ShareLinks;
 
-public class ShareLink : AuditableEntity, IWorkspaceScoped
+public class ShareLink : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public ResourceType ResourceType { get; private set; }
@@ -63,6 +63,7 @@ public class ShareLink : AuditableEntity, IWorkspaceScoped
 
         Status = ShareLinkStatus.Disabled;
         SetAuditOnUpdate(disabledBy, disabledAt);
+        IncrementVersion();
         AddDomainEvent(new ShareLinkDisabledEvent(WorkspaceId, Id, disabledBy, disabledAt));
     }
 
@@ -73,8 +74,27 @@ public class ShareLink : AuditableEntity, IWorkspaceScoped
         TokenHash = newHash;
         Status = ShareLinkStatus.Active;
         SetAuditOnUpdate(rotatedBy, rotatedAt);
+        IncrementVersion();
         
         AddDomainEvent(new ShareLinkRotatedEvent(WorkspaceId, Id, rotatedBy, rotatedAt));
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new ShareLinkSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new ShareLinkRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 
     public void Expire(DateTimeOffset expiredAt)
@@ -83,6 +103,7 @@ public class ShareLink : AuditableEntity, IWorkspaceScoped
 
         Status = ShareLinkStatus.Expired;
         SetAuditOnUpdate(null, expiredAt);
+        IncrementVersion();
         AddDomainEvent(new ShareLinkExpiredEvent(WorkspaceId, Id, expiredAt));
     }
 }

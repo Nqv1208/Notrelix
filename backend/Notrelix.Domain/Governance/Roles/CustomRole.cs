@@ -4,7 +4,7 @@ using Notrelix.Domain.Governance.Permissions;
 
 namespace Notrelix.Domain.Governance.Roles;
 
-public class CustomRole : SoftDeletableEntity, IWorkspaceScoped
+public class CustomRole : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public string Name { get; private set; } = null!;
@@ -45,6 +45,7 @@ public class CustomRole : SoftDeletableEntity, IWorkspaceScoped
 
         Name = newName;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new CustomRoleUpdatedEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
@@ -57,6 +58,7 @@ public class CustomRole : SoftDeletableEntity, IWorkspaceScoped
 
         _permissions.Add(CustomRolePermission.Create(Id, action));
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new CustomRoleUpdatedEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
@@ -69,18 +71,23 @@ public class CustomRole : SoftDeletableEntity, IWorkspaceScoped
 
         _permissions.Remove(permission);
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new CustomRoleUpdatedEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void AssignToMember(Guid memberId, Guid assignedBy, DateTimeOffset assignedAt)
     {
         EnsureNotDeleted();
+        SetAuditOnUpdate(assignedBy, assignedAt);
+        IncrementVersion();
         AddDomainEvent(new CustomRoleAssignedEvent(WorkspaceId, Id, memberId, assignedBy, assignedAt));
     }
 
     public void RevokeFromMember(Guid memberId, Guid revokedBy, DateTimeOffset revokedAt)
     {
         EnsureNotDeleted();
+        SetAuditOnUpdate(revokedBy, revokedAt);
+        IncrementVersion();
         AddDomainEvent(new CustomRoleRevokedEvent(WorkspaceId, Id, memberId, revokedBy, revokedAt));
     }
 
@@ -91,6 +98,8 @@ public class CustomRole : SoftDeletableEntity, IWorkspaceScoped
 
         Status = CustomRoleStatus.Archived;
         SetAuditOnUpdate(archivedBy, archivedAt);
+        IncrementVersion();
+        AddDomainEvent(new CustomRoleArchivedEvent(WorkspaceId, Id, archivedBy, archivedAt));
     }
 
     public void Activate(Guid activatedBy, DateTimeOffset activatedAt)
@@ -99,6 +108,8 @@ public class CustomRole : SoftDeletableEntity, IWorkspaceScoped
 
         Status = CustomRoleStatus.Active;
         SetAuditOnUpdate(activatedBy, activatedAt);
+        IncrementVersion();
+        AddDomainEvent(new CustomRoleActivatedEvent(WorkspaceId, Id, activatedBy, activatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -106,6 +117,9 @@ public class CustomRole : SoftDeletableEntity, IWorkspaceScoped
         if (IsDeleted) return;
         Status = CustomRoleStatus.Archived;
         base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new CustomRoleSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -113,5 +127,8 @@ public class CustomRole : SoftDeletableEntity, IWorkspaceScoped
         if (!IsDeleted) return;
         Status = CustomRoleStatus.Active;
         base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new CustomRoleRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

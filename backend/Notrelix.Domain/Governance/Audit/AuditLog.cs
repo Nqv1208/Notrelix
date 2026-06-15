@@ -7,8 +7,7 @@ public class AuditLog : Entity, IWorkspaceScoped
     public Guid WorkspaceId { get; private set; }
     public Guid ActorId { get; private set; }
     public string Action { get; private set; } = null!;
-    public string ResourceType { get; private set; } = null!;
-    public Guid ResourceId { get; private set; }
+    public ResourceRef Target { get; private set; } = null!;
     public AuditMetadata Metadata { get; private set; } = null!;
     public AuditSeverity Severity { get; private set; }
     public DateTimeOffset Timestamp { get; private set; }
@@ -21,8 +20,7 @@ public class AuditLog : Entity, IWorkspaceScoped
         Guid workspaceId,
         Guid actorId,
         string action,
-        string resourceType,
-        Guid resourceId,
+        ResourceRef target,
         AuditMetadata metadata,
         AuditSeverity severity,
         string ipAddress,
@@ -32,15 +30,16 @@ public class AuditLog : Entity, IWorkspaceScoped
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(actorId);
         Guard.NotNullOrWhiteSpace(action);
-        Guard.NotNullOrWhiteSpace(resourceType);
+        Guard.NotNull(target);
+
+        target.EnsureSameWorkspace(workspaceId);
 
         var log = new AuditLog
         {
             WorkspaceId = workspaceId,
             ActorId = actorId,
             Action = action.Trim(),
-            ResourceType = resourceType.Trim(),
-            ResourceId = resourceId,
+            Target = target,
             Metadata = metadata,
             Severity = severity,
             Timestamp = timestamp,

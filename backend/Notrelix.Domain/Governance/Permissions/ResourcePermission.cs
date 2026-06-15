@@ -66,6 +66,24 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         AddDomainEvent(new ResourcePermissionLevelChangedEvent(WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, oldLevel, newLevel, updatedBy, updatedAt));
     }
 
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new ResourcePermissionSoftDeletedEvent(WorkspaceId, Id, ResourceType, ResourceId, deletedBy, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new ResourcePermissionRestoredEvent(WorkspaceId, Id, ResourceType, ResourceId, restoredBy, restoredAt));
+    }
+
     public void Revoke(Guid revokedBy, DateTimeOffset revokedAt)
     {
         EnsureNotDeleted();
