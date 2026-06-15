@@ -3,7 +3,7 @@ using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Documents.Pages;
 
-public class Page : SoftDeletableEntity, IWorkspaceScoped
+public class Page : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid? ParentId { get; private set; }
@@ -48,6 +48,7 @@ public class Page : SoftDeletableEntity, IWorkspaceScoped
 
         Title = newTitle.Trim();
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new PageRenamedEvent(WorkspaceId, Id, oldTitle, Title, updatedBy, updatedAt));
     }
 
@@ -66,6 +67,7 @@ public class Page : SoftDeletableEntity, IWorkspaceScoped
         var oldParentId = ParentId;
         ParentId = newParentId;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new PageMovedEvent(WorkspaceId, Id, oldParentId, ParentId, updatedBy, updatedAt));
     }
 
@@ -76,6 +78,7 @@ public class Page : SoftDeletableEntity, IWorkspaceScoped
 
         Status = PageStatus.Archived;
         SetAuditOnUpdate(archivedBy, archivedAt);
+        IncrementVersion();
         AddDomainEvent(new PageArchivedEvent(WorkspaceId, Id, archivedBy, archivedAt));
     }
 
@@ -84,6 +87,8 @@ public class Page : SoftDeletableEntity, IWorkspaceScoped
         if (IsDeleted) return;
         Status = PageStatus.SoftDeleted;
         base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
         AddDomainEvent(new PageSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
 
@@ -92,6 +97,8 @@ public class Page : SoftDeletableEntity, IWorkspaceScoped
         if (!IsDeleted) return;
         Status = PageStatus.Active;
         base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
         AddDomainEvent(new PageRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

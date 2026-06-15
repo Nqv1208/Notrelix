@@ -1,8 +1,9 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Analytics.Dashboards.Events;
-using Notrelix.Domain.Analytics.Widgets;
 using Notrelix.Domain.Analytics.Rules;
+using Notrelix.Domain.Analytics.Widgets;
+using WidgetType = Notrelix.Domain.Analytics.Dashboards.WidgetType;
 
 namespace Notrelix.Domain.Analytics.Dashboards;
 
@@ -10,18 +11,22 @@ public class DashboardWidget : Entity
 {
     public Guid DashboardId { get; private set; }
     public string Title { get; private set; } = null!;
-    public string Type { get; private set; } = null!;
+    public WidgetType Type { get; private set; }
     public JsonValue Config { get; private set; } = null!;
     public WidgetPosition Position { get; private set; } = null!;
 
     private DashboardWidget() : base() { }
 
-    public static DashboardWidget Create(Guid dashboardId, string title, string type, JsonValue config, WidgetPosition position)
+    public static DashboardWidget Create(Guid dashboardId, string title, WidgetType type, JsonValue config, WidgetPosition position)
     {
         Guard.NotEmpty(dashboardId);
         Guard.NotNullOrWhiteSpace(title);
-        Guard.NotNullOrWhiteSpace(type);
         Guard.NotNull(config);
+
+        var (isValid, error) = WidgetConfigValidator.Validate(type, config);
+        if (!isValid)
+            throw new BusinessRuleException($"Invalid widget config: {error}");
+
         WidgetRules.ValidatePosition(position);
 
         return new DashboardWidget
@@ -96,11 +101,10 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         AddDomainEvent(new DashboardVisibilityChangedEvent(WorkspaceId, Id, Visibility, updatedBy, updatedAt));
     }
 
-    public void AddWidget(string title, string type, JsonValue config, WidgetPosition position, Guid updatedBy, DateTimeOffset updatedAt)
+    public void AddWidget(string title, WidgetType type, JsonValue config, WidgetPosition position, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(title);
-        Guard.NotNullOrWhiteSpace(type);
         WidgetRules.ValidatePosition(position);
 
         var widget = DashboardWidget.Create(Id, title, type, config, position);

@@ -77,6 +77,7 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
         Status = AiAgentRunStatus.Running;
         StartedAt = startedAt;
         SetAuditOnUpdate(ActorUserId, startedAt);
+        IncrementVersion();
         AddDomainEvent(new AiAgentRunStartedEvent(WorkspaceId, Id, AiAgentId, startedAt));
     }
 
@@ -91,6 +92,7 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
         Output = output;
         FinishedAt = finishedAt;
         SetAuditOnUpdate(ActorUserId, finishedAt);
+        IncrementVersion();
         AddDomainEvent(new AiAgentRunSucceededEvent(WorkspaceId, Id, AiAgentId, finishedAt));
     }
 
@@ -105,6 +107,7 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
         Error = error;
         FinishedAt = finishedAt;
         SetAuditOnUpdate(ActorUserId, finishedAt);
+        IncrementVersion();
         AddDomainEvent(new AiAgentRunFailedEvent(WorkspaceId, Id, AiAgentId, error.ToString(), finishedAt));
     }
 
@@ -117,6 +120,7 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
         Status = AiAgentRunStatus.Cancelled;
         FinishedAt = cancelledAt;
         SetAuditOnUpdate(cancelledBy, cancelledAt);
+        IncrementVersion();
         AddDomainEvent(new AiAgentRunCancelledEvent(WorkspaceId, Id, AiAgentId, cancelledBy, cancelledAt));
     }
 }

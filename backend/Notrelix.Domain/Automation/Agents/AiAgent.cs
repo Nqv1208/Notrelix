@@ -126,6 +126,8 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
         if (Status == AiAgentStatus.Deleted) return;
         Status = AiAgentStatus.Deleted;
         base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
         AddDomainEvent(new AiAgentStatusChangedEvent(WorkspaceId, Id, Status, deletedBy, deletedAt));
     }
 
@@ -134,6 +136,8 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
         if (Status != AiAgentStatus.Deleted) return;
         Status = AiAgentStatus.Draft;
         base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
         AddDomainEvent(new AiAgentStatusChangedEvent(WorkspaceId, Id, Status, restoredBy, restoredAt));
     }
 }

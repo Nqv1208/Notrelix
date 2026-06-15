@@ -98,6 +98,6 @@ public class AutomationRule : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new AutomationRuleCreatedEvent(WorkspaceId, Id, Name, restoredBy, restoredAt));
+        AddDomainEvent(new AutomationRuleRestoredEvent(WorkspaceId, Id, Name, restoredBy, restoredAt));
     }
 }

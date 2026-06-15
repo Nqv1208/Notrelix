@@ -79,11 +79,14 @@ public class Block : AggregateRoot, IWorkspaceScoped
         AddDomainEvent(new BlockPropertiesUpdatedEvent(WorkspaceId, Id, PageId, updatedBy, updatedAt));
     }
 
-    public void Move(Guid? newParentId, FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
+    public void Move(Guid? newParentId, FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt, Func<Guid, Guid?>? getParentId = null)
     {
         EnsureNotDeleted();
         Guard.NotNull(newPosition);
-        
+
+        if (getParentId != null)
+            BlockTreeRules.EnsureNoCycle(Id, newParentId, getParentId);
+
         if (ParentId == newParentId && Position == newPosition) return;
 
         var oldParentId = ParentId;
@@ -109,5 +112,6 @@ public class Block : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
+        AddDomainEvent(new BlockRestoredEvent(WorkspaceId, Id, PageId, restoredBy, restoredAt));
     }
 }

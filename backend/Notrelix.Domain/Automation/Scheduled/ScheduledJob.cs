@@ -51,6 +51,6 @@ public class ScheduledJob : AggregateRoot, IWorkspaceScoped
     {
         if (Status == ScheduledJobStatus.Cancelled) return;
         Status = ScheduledJobStatus.Cancelled;
-        SetAuditOnUpdate(Guid.Empty, cancelledAt);
+        SetAuditOnUpdate(null, cancelledAt);
     }
 }

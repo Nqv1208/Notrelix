@@ -91,6 +91,7 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
     public void SetPayload(string payload)
     {
         Payload = payload;
+        IncrementVersion();
     }
 
     public void Start(DateTimeOffset startedAt)
@@ -99,6 +100,7 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException("Execution can only start from Queued state.");
         Status = AutomationExecutionStatus.Running;
         StartedAt = startedAt;
+        IncrementVersion();
         AddDomainEvent(new AutomationExecutionStartedEvent(WorkspaceId, Id, RuleId, startedAt));
     }
 
@@ -108,6 +110,7 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException("Execution can only succeed from Running state.");
         Status = AutomationExecutionStatus.Succeeded;
         FinishedAt = finishedAt;
+        IncrementVersion();
         AddDomainEvent(new AutomationExecutionSucceededEvent(WorkspaceId, Id, RuleId, finishedAt));
     }
 
@@ -121,6 +124,7 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
         Status = AutomationExecutionStatus.Failed;
         Error = error;
         FinishedAt = finishedAt;
+        IncrementVersion();
         AddDomainEvent(new AutomationExecutionFailedEvent(WorkspaceId, Id, RuleId, error, finishedAt));
     }
 
@@ -131,6 +135,7 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
 
         Status = AutomationExecutionStatus.Cancelled;
         FinishedAt = cancelledAt;
+        IncrementVersion();
         AddDomainEvent(new AutomationExecutionCancelledEvent(WorkspaceId, Id, RuleId, cancelledBy, cancelledAt));
     }
 }

@@ -12,18 +12,24 @@ public class AutomationTemplate : AggregateRoot
 
     private AutomationTemplate() : base() { }
 
-    public static AutomationTemplate Create(string name, string category, JsonValue definition)
+    public static AutomationTemplate Create(string name, string category, JsonValue definition, Guid createdBy, DateTimeOffset createdAt)
     {
         Guard.NotNullOrWhiteSpace(name);
         Guard.NotNullOrWhiteSpace(category);
         Guard.NotNull(definition);
 
-        return new AutomationTemplate
+        var template = new AutomationTemplate
         {
             Name = name.Trim(),
             Category = category.Trim(),
             Definition = definition,
             Status = AutomationTemplateStatus.Published
         };
+
+        template.SetAuditOnCreate(createdBy, createdAt);
+        template.AddDomainEvent(new Events.AutomationTemplateCreatedEvent(
+            Guid.Empty, template.Id, template.Name, createdAt));
+
+        return template;
     }
 }

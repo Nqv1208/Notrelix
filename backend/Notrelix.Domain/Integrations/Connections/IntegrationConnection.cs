@@ -129,6 +129,7 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
         Status = IntegrationConnectionStatus.Expired;
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
+        AddDomainEvent(new IntegrationConnectionExpiredEvent(WorkspaceId, Id, updatedBy, occurredAt));
     }
 
     public void RotateSecret(string version, SecretRef secretRef, Guid updatedBy, DateTimeOffset occurredAt)
