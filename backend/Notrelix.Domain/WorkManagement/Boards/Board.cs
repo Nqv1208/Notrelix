@@ -75,18 +75,22 @@ public class Board : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         var normalized = description?.Trim();
         if (Description == normalized) return;
+        var oldDescription = Description;
         Description = normalized;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new BoardDescriptionUpdatedEvent(WorkspaceId, Id, oldDescription, Description, updatedBy, updatedAt));
     }
 
     public void UpdateBackground(string background, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         if (string.IsNullOrWhiteSpace(background) || Background == background) return;
+        var oldBackground = Background;
         Background = background;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new BoardBackgroundUpdatedEvent(WorkspaceId, Id, oldBackground, Background, updatedBy, updatedAt));
     }
 
     public void ChangeVisibility(BoardVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
@@ -118,6 +122,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
         IsArchived = false;
         SetAuditOnUpdate(unarchivedBy, unarchivedAt);
         IncrementVersion();
+        AddDomainEvent(new BoardUnarchivedEvent(WorkspaceId, Id, unarchivedBy, unarchivedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -132,9 +137,11 @@ public class Board : AggregateRoot, IWorkspaceScoped
     public void SetDefaultGroup(Guid groupId, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (DefaultItemGroupId == groupId) return;
         DefaultItemGroupId = groupId;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new BoardDefaultGroupSetEvent(WorkspaceId, Id, groupId, updatedBy, updatedAt));
     }
 
     public (long Sequence, string Key) GenerateNextItemIdentity(Guid actorUserId, DateTimeOffset now)

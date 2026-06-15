@@ -65,6 +65,8 @@ public class SavedFilter : AggregateRoot, IWorkspaceScoped
 
         Name = name.Trim();
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+        AddDomainEvent(new SavedFilterRenamedEvent(WorkspaceId, Id, BoardId, Name, updatedBy, updatedAt));
     }
 
     public void UpdateVisibility(SavedFilterVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
@@ -73,6 +75,8 @@ public class SavedFilter : AggregateRoot, IWorkspaceScoped
 
         Visibility = visibility;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+        AddDomainEvent(new SavedFilterVisibilityUpdatedEvent(WorkspaceId, Id, BoardId, visibility, updatedBy, updatedAt));
     }
 
     public void UpdateFilters(IEnumerable<FilterRule> rules, Guid updatedBy, DateTimeOffset updatedAt)
@@ -83,6 +87,8 @@ public class SavedFilter : AggregateRoot, IWorkspaceScoped
         _rules.Clear();
         _rules.AddRange(rules);
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+        AddDomainEvent(new SavedFilterFiltersUpdatedEvent(WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
 
     public void UpdateSorts(IEnumerable<SortRule> sortRules, Guid updatedBy, DateTimeOffset updatedAt)
@@ -93,6 +99,8 @@ public class SavedFilter : AggregateRoot, IWorkspaceScoped
         _sortRules.Clear();
         _sortRules.AddRange(sortRules);
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+        AddDomainEvent(new SavedFilterSortsUpdatedEvent(WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
 
     public void UpdateGroup(GroupRule? groupRule, Guid updatedBy, DateTimeOffset updatedAt)
@@ -101,17 +109,25 @@ public class SavedFilter : AggregateRoot, IWorkspaceScoped
 
         GroupRule = groupRule;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+        AddDomainEvent(new SavedFilterGroupUpdatedEvent(WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new SavedFilterSoftDeletedEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
         base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new SavedFilterRestoredEvent(WorkspaceId, Id, BoardId, restoredBy, restoredAt));
     }
 }

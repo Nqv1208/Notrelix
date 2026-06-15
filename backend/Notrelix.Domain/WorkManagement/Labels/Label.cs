@@ -69,4 +69,13 @@ public class Label : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         AddDomainEvent(new LabelSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new LabelRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
+    }
 }

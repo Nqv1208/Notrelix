@@ -93,4 +93,13 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         IncrementVersion();
         AddDomainEvent(new BoardViewDeletedEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new BoardViewRestoredEvent(WorkspaceId, Id, BoardId, restoredBy, restoredAt));
+    }
 }

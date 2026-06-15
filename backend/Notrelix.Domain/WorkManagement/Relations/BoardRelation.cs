@@ -1,9 +1,10 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
+using Notrelix.Domain.WorkManagement.Relations.Events;
 
 namespace Notrelix.Domain.WorkManagement.Relations;
 
-public class BoardRelation : SoftDeletableEntity, IWorkspaceScoped
+public class BoardRelation : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid SourceBoardId { get; private set; }
@@ -15,7 +16,6 @@ public class BoardRelation : SoftDeletableEntity, IWorkspaceScoped
     public BoardRelationSyncMode SyncMode { get; private set; } = BoardRelationSyncMode.Manual;
     public BoardRelationStatus Status { get; private set; } = BoardRelationStatus.Active;
     public string ConfigJson { get; private set; } = "{}";
-    public long Version { get; private set; } = 1;
 
     private BoardRelation() : base() { }
 
@@ -54,28 +54,38 @@ public class BoardRelation : SoftDeletableEntity, IWorkspaceScoped
         };
 
         relation.SetAuditOnCreate(createdBy, createdAt);
+        relation.AddDomainEvent(new BoardRelationCreatedDomainEvent(workspaceId, relation.Id, sourceBoardId, targetBoardId, createdBy, createdAt));
         return relation;
     }
 
-    public void Pause()
+    public void Pause(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (Status == BoardRelationStatus.Paused) return;
         Status = BoardRelationStatus.Paused;
-        Version++;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+        AddDomainEvent(new BoardRelationPausedEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
-    public void Resume()
+    public void Resume(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (Status == BoardRelationStatus.Active) return;
         Status = BoardRelationStatus.Active;
-        Version++;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+        AddDomainEvent(new BoardRelationResumedEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
-    public void MarkBroken()
+    public void MarkBroken(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (Status == BoardRelationStatus.Broken) return;
         Status = BoardRelationStatus.Broken;
-        Version++;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+        AddDomainEvent(new BoardRelationMarkedBrokenEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -83,5 +93,18 @@ public class BoardRelation : SoftDeletableEntity, IWorkspaceScoped
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
         Status = BoardRelationStatus.Deleted;
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new BoardRelationDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        Status = BoardRelationStatus.Active;
+        base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new BoardRelationRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

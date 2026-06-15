@@ -168,7 +168,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         AddDomainEvent(new BoardItemFieldValueChangedEvent(WorkspaceId, Id, BoardId, field.Id, oldValue, newValue, updatedBy, updatedAt));
     }
 
-    public void AssignParentItem(Guid? parentItemId, int itemLevel)
+    public void AssignParentItem(Guid? parentItemId, int itemLevel, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         if (parentItemId == Id)
@@ -176,7 +176,9 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
 
         ParentItemId = parentItemId;
         ItemLevel = itemLevel;
+        SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new BoardItemParentAssignedEvent(WorkspaceId, BoardId, Id, parentItemId, itemLevel, updatedBy, updatedAt));
     }
 
     public void SetTimeline(DateTimeOffset? startedAt, DateTimeOffset? dueAt, Guid updatedBy, DateTimeOffset updatedAt)
@@ -185,18 +187,22 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         if (startedAt != null && dueAt != null && dueAt < startedAt)
             throw new BusinessRuleException("Due date must be after start date.");
 
+        if (StartedAt == startedAt && DueAt == dueAt) return;
         StartedAt = startedAt;
         DueAt = dueAt;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new BoardItemTimelineSetEvent(WorkspaceId, BoardId, Id, startedAt, dueAt, updatedBy, updatedAt));
     }
 
     public void Complete(DateTimeOffset? completedAt, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (CompletedAt == completedAt) return;
         CompletedAt = completedAt;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new BoardItemCompletedEvent(WorkspaceId, BoardId, Id, completedAt, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)

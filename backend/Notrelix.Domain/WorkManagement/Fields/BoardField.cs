@@ -77,7 +77,8 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotNull(settings);
-        
+        FieldSettingsValidator.Validate(settings, Type);
+
         Settings = settings;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
@@ -123,18 +124,31 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
     public void UpdateClassification(DataClassification classification, bool isSensitive, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (DataClassification == classification && IsSensitive == isSensitive) return;
         DataClassification = classification;
         IsSensitive = isSensitive;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new BoardFieldClassificationUpdatedEvent(WorkspaceId, BoardId, Id, classification, isSensitive, updatedBy, updatedAt));
     }
 
     public void UpdateFormula(bool isFormula, string? expression, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (IsFormula == isFormula && FormulaExpression == expression) return;
         IsFormula = isFormula;
         FormulaExpression = expression;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new BoardFieldFormulaUpdatedEvent(WorkspaceId, BoardId, Id, isFormula, expression, updatedBy, updatedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new BoardFieldRestoredEvent(WorkspaceId, BoardId, Id, restoredBy, restoredAt));
     }
 }
