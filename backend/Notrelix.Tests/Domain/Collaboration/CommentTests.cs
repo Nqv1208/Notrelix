@@ -12,7 +12,7 @@ public class CommentTests
     [Fact]
     public void Create_ShouldSucceed_AndRaiseEvent()
     {
-        var target = ResourceRef.Create("BoardItem", Guid.NewGuid());
+        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid());
         var createdBy = Guid.NewGuid();
         
         var comment = Comment.Create(Guid.NewGuid(), target, "Test comment", createdBy, DateTimeOffset.UtcNow);
@@ -26,7 +26,7 @@ public class CommentTests
     [Fact]
     public void Resolve_ShouldUpdateStatus_AndRaiseEvent()
     {
-        var comment = Comment.Create(Guid.NewGuid(), ResourceRef.Create("Page", Guid.NewGuid()), "Content", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var comment = Comment.Create(Guid.NewGuid(), ResourceRef.Create(ResourceType.Page, Guid.NewGuid()), "Content", Guid.NewGuid(), DateTimeOffset.UtcNow);
         comment.ClearDomainEvents();
 
         var resolvedBy = Guid.NewGuid();

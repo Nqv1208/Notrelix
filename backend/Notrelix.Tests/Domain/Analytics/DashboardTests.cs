@@ -6,6 +6,8 @@ using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.SharedKernel;
 using Xunit;
 
+using WidgetType = Notrelix.Domain.Analytics.Dashboards.WidgetType;
+
 namespace Notrelix.Domain.Tests.Analytics;
 
 public class DashboardTests
@@ -59,10 +61,10 @@ public class DashboardTests
         var actor = Guid.NewGuid();
         var dashboard = Dashboard.Create(Guid.NewGuid(), "Dashboard", actor, now);
 
-        var act1 = () => dashboard.AddWidget("Test", "Chart", JsonValue.EmptyObject(), WidgetPosition.Create(-1, 0, 1, 1), actor, now);
+        var act1 = () => dashboard.AddWidget("Test", WidgetType.TextWidget, JsonValue.Create("{\"content\":\"test\"}"), WidgetPosition.Create(-1, 0, 1, 1), actor, now);
         act1.Should().Throw<DomainException>().WithMessage("Widget coordinates (X, Y) must be non-negative.");
 
-        var act2 = () => dashboard.AddWidget("Test", "Chart", JsonValue.EmptyObject(), WidgetPosition.Create(0, 0, 0, 1), actor, now);
+        var act2 = () => dashboard.AddWidget("Test", WidgetType.TextWidget, JsonValue.Create("{\"content\":\"test\"}"), WidgetPosition.Create(0, 0, 0, 1), actor, now);
         act2.Should().Throw<DomainException>().WithMessage("Widget dimensions (W, H) must be positive.");
     }
 
@@ -74,11 +76,11 @@ public class DashboardTests
         var dashboard = Dashboard.Create(Guid.NewGuid(), "Dashboard", actor, now);
         var position = WidgetPosition.Create(0, 0, 2, 2);
 
-        dashboard.AddWidget("Stats Widget", "PieChart", JsonValue.EmptyObject(), position, actor, now);
+        dashboard.AddWidget("Stats Widget", WidgetType.TextWidget, JsonValue.Create("{\"content\":\"test\"}"), position, actor, now);
 
         dashboard.Widgets.Should().ContainSingle();
         dashboard.Widgets.First().Title.Should().Be("Stats Widget");
-        dashboard.Widgets.First().Type.Should().Be("PieChart");
+        dashboard.Widgets.First().Type.Should().Be(WidgetType.TextWidget);
         dashboard.Widgets.First().Position.Should().Be(position);
         dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetAddedEvent);
     }
@@ -92,7 +94,7 @@ public class DashboardTests
         var position1 = WidgetPosition.Create(0, 0, 2, 2);
         var position2 = WidgetPosition.Create(2, 2, 4, 4);
 
-        dashboard.AddWidget("Stats Widget", "PieChart", JsonValue.EmptyObject(), position1, actor, now);
+        dashboard.AddWidget("Stats Widget", WidgetType.TextWidget, JsonValue.Create("{\"content\":\"test\"}"), position1, actor, now);
         var widgetId = dashboard.Widgets.First().Id;
 
         dashboard.MoveWidget(widgetId, position2, actor, now);
@@ -109,7 +111,7 @@ public class DashboardTests
         var dashboard = Dashboard.Create(Guid.NewGuid(), "Dashboard", actor, now);
         var position = WidgetPosition.Create(0, 0, 2, 2);
 
-        dashboard.AddWidget("Stats Widget", "PieChart", JsonValue.EmptyObject(), position, actor, now);
+        dashboard.AddWidget("Stats Widget", WidgetType.TextWidget, JsonValue.Create("{\"content\":\"test\"}"), position, actor, now);
         var widgetId = dashboard.Widgets.First().Id;
 
         dashboard.RemoveWidget(widgetId, actor, now);

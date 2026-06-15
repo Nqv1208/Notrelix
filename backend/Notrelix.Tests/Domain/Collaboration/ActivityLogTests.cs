@@ -13,7 +13,7 @@ public class ActivityLogTests
     {
         var workspaceId = Guid.NewGuid();
         var actorId = Guid.NewGuid();
-        var target = ResourceRef.Create("Board", Guid.NewGuid());
+        var target = ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
 
         var timestamp = DateTimeOffset.UtcNow;
         var log = ActivityLog.Record(workspaceId, actorId, ActivityType.Created, target, timestamp);

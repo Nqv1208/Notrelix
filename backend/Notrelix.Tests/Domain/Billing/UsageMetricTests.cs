@@ -15,7 +15,7 @@ public class UsageMetricTests
         var key = UsageMetricKey.Create("BOARD_COUNT");
         var period = UsagePeriod.Create(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(30));
 
-        var metric = UsageMetric.Create(workspaceId, key, period);
+        var metric = UsageMetric.Create(workspaceId, key, period, DateTimeOffset.UtcNow);
 
         metric.WorkspaceId.Should().Be(workspaceId);
         metric.Key.Should().Be(key);
@@ -27,7 +27,7 @@ public class UsageMetricTests
     public void Increase_WithinLimit_ShouldSucceed_AndRaiseEvent()
     {
         var now = DateTimeOffset.UtcNow;
-        var metric = UsageMetric.Create(Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)));
+        var metric = UsageMetric.Create(Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
 
         metric.Increase(3, 5, isHardLimit: true, now);
 
@@ -40,7 +40,7 @@ public class UsageMetricTests
     public void Increase_ExceedingHardLimit_ShouldThrowException_AndRaiseLimitExceededEvent()
     {
         var now = DateTimeOffset.UtcNow;
-        var metric = UsageMetric.Create(Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)));
+        var metric = UsageMetric.Create(Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
 
         var act = () => metric.Increase(6, 5, isHardLimit: true, now);
 
@@ -52,7 +52,7 @@ public class UsageMetricTests
     public void Increase_ExceedingSoftLimit_ShouldSucceed_AndRaiseBothEvents()
     {
         var now = DateTimeOffset.UtcNow;
-        var metric = UsageMetric.Create(Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)));
+        var metric = UsageMetric.Create(Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
 
         metric.Increase(6, 5, isHardLimit: false, now);
 
@@ -65,7 +65,7 @@ public class UsageMetricTests
     public void Decrease_ShouldReduceValue_AndNotAllowNegative()
     {
         var now = DateTimeOffset.UtcNow;
-        var metric = UsageMetric.Create(Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)));
+        var metric = UsageMetric.Create(Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
 
         metric.Increase(4, 10, isHardLimit: true, now);
         metric.Decrease(2, now);
@@ -81,7 +81,7 @@ public class UsageMetricTests
     public void Reset_ShouldClearValue()
     {
         var now = DateTimeOffset.UtcNow;
-        var metric = UsageMetric.Create(Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)));
+        var metric = UsageMetric.Create(Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
 
         metric.Increase(4, 10, isHardLimit: true, now);
         

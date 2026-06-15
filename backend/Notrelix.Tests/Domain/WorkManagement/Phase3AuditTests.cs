@@ -123,7 +123,7 @@ public class Phase3AuditTests
     public void Form_Publish_ShouldEmitEventAndUpdateStatus()
     {
         var form = Form.Create(WsA, BoardA, "Form", "form", Actor, Now);
-        form.AddQuestion(FormQuestion.Create(WsA, form.Id, null, "q1", "Q1", "text", true, FractionalIndex.Create("a0")), Actor, Now);
+        form.AddQuestion(FormQuestion.Create(WsA, form.Id, null, "q1", "Q1", FormQuestionType.ShortText, true, FractionalIndex.Create("a0")), Actor, Now);
         form.ClearDomainEvents();
 
         form.Publish(Actor, Now);
@@ -146,7 +146,7 @@ public class Phase3AuditTests
     public void Form_Publish_WhenClosed_ShouldThrow()
     {
         var form = Form.Create(WsA, BoardA, "Form", "form", Actor, Now);
-        form.AddQuestion(FormQuestion.Create(WsA, form.Id, null, "q1", "Q1", "text", true, FractionalIndex.Create("a0")), Actor, Now);
+        form.AddQuestion(FormQuestion.Create(WsA, form.Id, null, "q1", "Q1", FormQuestionType.ShortText, true, FractionalIndex.Create("a0")), Actor, Now);
         form.Close(Actor, Now);
 
         var act = () => form.Publish(Actor, Now);
@@ -184,7 +184,7 @@ public class Phase3AuditTests
         var form = Form.Create(WsA, BoardA, "Form", "form", Actor, Now);
         form.ClearDomainEvents();
 
-        var question = FormQuestion.Create(WsA, form.Id, null, "q1", "Q1", "text", true, FractionalIndex.Create("a0"));
+        var question = FormQuestion.Create(WsA, form.Id, null, "q1", "Q1", FormQuestionType.ShortText, true, FractionalIndex.Create("a0"));
         form.AddQuestion(question, Actor, Now);
 
         form.Questions.Should().HaveCount(1);
@@ -197,7 +197,7 @@ public class Phase3AuditTests
         var form = Form.Create(WsA, BoardA, "Form", "form", Actor, Now);
         form.Close(Actor, Now);
 
-        var question = FormQuestion.Create(WsA, form.Id, null, "q1", "Q1", "text", true, FractionalIndex.Create("a0"));
+        var question = FormQuestion.Create(WsA, form.Id, null, "q1", "Q1", FormQuestionType.ShortText, true, FractionalIndex.Create("a0"));
         var act = () => form.AddQuestion(question, Actor, Now);
         act.Should().Throw<BusinessRuleException>().WithMessage("*closed*");
     }
@@ -225,7 +225,7 @@ public class Phase3AuditTests
     public void Form_EnsureAcceptsSubmissions_WhenPublished_ShouldSucceed()
     {
         var form = Form.Create(WsA, BoardA, "Form", "form", Actor, Now);
-        form.AddQuestion(FormQuestion.Create(WsA, form.Id, null, "q1", "Q1", "text", true, FractionalIndex.Create("a0")), Actor, Now);
+        form.AddQuestion(FormQuestion.Create(WsA, form.Id, null, "q1", "Q1", FormQuestionType.ShortText, true, FractionalIndex.Create("a0")), Actor, Now);
         form.Publish(Actor, Now);
 
         var act = () => form.EnsureAcceptsSubmissions();

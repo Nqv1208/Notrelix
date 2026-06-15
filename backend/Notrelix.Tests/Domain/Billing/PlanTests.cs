@@ -25,7 +25,7 @@ public class PlanTests
         var plan = Plan.Create("Free", Money.Create(0, "USD"), BillingPeriod.Monthly, DateTimeOffset.UtcNow);
         var feature = FeatureCode.Create("BOARD_COUNT");
 
-        plan.AddLimit(feature, 5);
+        plan.AddLimit(feature, 5, DateTimeOffset.UtcNow);
 
         plan.Limits.Should().HaveCount(1);
         plan.Limits.First().Feature.Should().Be(feature);
