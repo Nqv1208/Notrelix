@@ -2,12 +2,6 @@ using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Identity.Security;
 
-public enum SsoProviderType
-{
-    SAML,
-    OIDC
-}
-
 public enum SsoProviderStatus
 {
     Draft,
@@ -22,8 +16,7 @@ public class SsoProvider : AggregateRoot, IWorkspaceScoped
     public SsoProviderType ProviderType { get; private set; }
     public string Name { get; private set; } = null!;
     public SsoProviderStatus Status { get; private set; } = SsoProviderStatus.Draft;
-    public string? Domain { get; private set; }
-    public string MetadataJson { get; private set; } = "{}";
+    public SsoProviderConfiguration? Configuration { get; private set; }
 
     private SsoProvider() : base() { }
 
@@ -31,10 +24,9 @@ public class SsoProvider : AggregateRoot, IWorkspaceScoped
         Guid workspaceId,
         SsoProviderType type,
         string name,
-        string? domain,
         Guid createdBy,
         DateTimeOffset createdAt,
-        string? metadataJson = null)
+        SsoProviderConfiguration? configuration = null)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(name);
@@ -44,12 +36,12 @@ public class SsoProvider : AggregateRoot, IWorkspaceScoped
             WorkspaceId = workspaceId,
             ProviderType = type,
             Name = name.Trim(),
-            Domain = domain?.Trim().ToLowerInvariant(),
-            MetadataJson = metadataJson ?? "{}",
+            Configuration = configuration,
             Status = SsoProviderStatus.Draft
         };
 
         provider.SetAuditOnCreate(createdBy, createdAt);
+        provider.AddDomainEvent(new SsoProviderCreatedDomainEvent(workspaceId, provider.Id, provider.Name, createdBy, createdAt));
         return provider;
     }
 
@@ -65,8 +57,28 @@ public class SsoProvider : AggregateRoot, IWorkspaceScoped
     public void Disable(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (Status == SsoProviderStatus.Disabled) return;
         Status = SsoProviderStatus.Disabled;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new SsoProviderDisabledDomainEvent(WorkspaceId, Id, updatedBy, updatedAt));
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new SsoProviderSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new SsoProviderRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

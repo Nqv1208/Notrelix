@@ -26,6 +26,7 @@ public class UserSecuritySettings : AggregateRoot
             SettingsJson = JsonValue.Create("{}")
         };
         settings.SetAuditOnCreate(userId, createdAt);
+        settings.AddDomainEvent(new UserSecuritySettingsCreatedDomainEvent(settings.Id, userId, createdAt));
         return settings;
     }
 
@@ -92,5 +93,23 @@ public class UserSecuritySettings : AggregateRoot
         
         SetAuditOnUpdate(UserId, updatedAt);
         AddDomainEvent(new UserSecuritySettingsUpdatedEvent(UserId, updatedAt));
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new UserSecuritySettingsSoftDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, reason));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new UserSecuritySettingsRestoredDomainEvent(Id, UserId, restoredBy, restoredAt));
     }
 }

@@ -22,6 +22,7 @@ public class UserProfile : AggregateRoot
             UserId = userId
         };
         profile.SetAuditOnCreate(userId, createdAt);
+        profile.AddDomainEvent(new UserProfileCreatedDomainEvent(profile.Id, userId, createdAt));
         return profile;
     }
 

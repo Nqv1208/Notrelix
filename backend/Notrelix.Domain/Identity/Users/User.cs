@@ -1,5 +1,6 @@
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Identity.Profiles;
+using Notrelix.Domain.Identity.Profiles.Events;
 using Notrelix.Domain.Identity.OAuth;
 using Notrelix.Domain.Identity.OAuth.Events;
 using Notrelix.Domain.Identity.Users.Events;
@@ -58,6 +59,8 @@ public class User : AggregateRoot
         Avatar = avatar?.Trim();
         
         SetAuditOnUpdate(Id, updatedAt);
+        IncrementVersion();
+        AddDomainEvent(new UserProfileUpdatedEvent(Id, updatedAt));
     }
 
     public void UpdateEmail(
@@ -71,6 +74,7 @@ public class User : AggregateRoot
         Email = Email.Create(email);
         
         SetAuditOnUpdate(Id, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new UserEmailChangedEvent(
             Id,
             oldEmail,
@@ -88,6 +92,7 @@ public class User : AggregateRoot
         PasswordHash = passwordHash;
 
         SetAuditOnUpdate(Id, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new UserPasswordChangedEvent(Id, updatedAt));
     }
 
@@ -97,6 +102,8 @@ public class User : AggregateRoot
 
         LastLoginAt = loggedInAt;
 
+        SetAuditOnUpdate(Id, loggedInAt);
+        IncrementVersion();
         AddDomainEvent(new UserLoggedInEvent(Id, loggedInAt));
     }
 
@@ -111,6 +118,7 @@ public class User : AggregateRoot
 
         Status = UserStatus.Active;
         SetAuditOnUpdate(activatedBy, activatedAt);
+        IncrementVersion();
 
         AddDomainEvent(new UserActivatedEvent(
             Id,
@@ -134,6 +142,7 @@ public class User : AggregateRoot
 
         Status = UserStatus.Inactive;
         SetAuditOnUpdate(deactivatedBy, deactivatedAt);
+        IncrementVersion();
 
         AddDomainEvent(new UserDeactivatedEvent(
             Id,
@@ -157,6 +166,7 @@ public class User : AggregateRoot
 
         Status = UserStatus.Suspended;
         SetAuditOnUpdate(suspendedBy, suspendedAt);
+        IncrementVersion();
 
         AddDomainEvent(new UserSuspendedEvent(
             Id,
@@ -196,6 +206,7 @@ public class User : AggregateRoot
         }
 
         SetAuditOnUpdate(Id, linkedAt);
+        IncrementVersion();
         AddDomainEvent(new OAuthAccountLinkedEvent(Id, provider, providerId, linkedAt));
     }
 
@@ -207,6 +218,7 @@ public class User : AggregateRoot
 
         _oauthAccounts.Remove(existing);
         SetAuditOnUpdate(Id, unlinkedAt);
+        IncrementVersion();
         AddDomainEvent(new OAuthAccountUnlinkedEvent(Id, provider, existing.ProviderId, unlinkedAt));
     }
 
@@ -222,6 +234,25 @@ public class User : AggregateRoot
 
         existing.UpdateToken(newToken);
         SetAuditOnUpdate(Id, rotatedAt);
+        IncrementVersion();
         AddDomainEvent(new OAuthTokenReferenceRotatedEvent(Id, provider, rotatedAt));
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new UserSoftDeletedDomainEvent(Id, deletedBy, deletedAt, reason));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new UserRestoredDomainEvent(Id, restoredBy, restoredAt));
     }
 }

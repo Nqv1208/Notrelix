@@ -40,23 +40,28 @@ public class ScimDirectorySync : AggregateRoot, IWorkspaceScoped
         };
 
         sync.SetAuditOnCreate(createdBy, createdAt);
+        sync.AddDomainEvent(new ScimDirectorySyncCreatedDomainEvent(workspaceId, sync.Id, sync.ProviderName, createdBy, createdAt));
         return sync;
     }
 
     public void Pause(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (Status == ScimSyncStatus.Paused) return;
         Status = ScimSyncStatus.Paused;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new ScimDirectorySyncPausedDomainEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void Resume(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (Status == ScimSyncStatus.Enabled) return;
         Status = ScimSyncStatus.Enabled;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new ScimDirectorySyncResumedDomainEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void RecordSync(string cursorJson, DateTimeOffset syncAt)
@@ -66,5 +71,23 @@ public class ScimDirectorySync : AggregateRoot, IWorkspaceScoped
         CursorJson = cursorJson ?? "{}";
         AddDomainEvent(new ScimSyncCompletedDomainEvent(WorkspaceId, Id, syncAt));
         IncrementVersion();
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new ScimDirectorySyncSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new ScimDirectorySyncRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

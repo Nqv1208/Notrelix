@@ -61,6 +61,8 @@ public class UserSession : AggregateRoot
 
         RefreshTokenHash = newTokenHash;
         SetAuditOnUpdate(UserId, updatedAt);
+        IncrementVersion();
+        AddDomainEvent(new UserSessionRefreshTokenRotatedDomainEvent(Id, UserId, updatedAt));
     }
 
     public void Revoke(DateTimeOffset revokedAt, string? reason = null)
@@ -95,5 +97,23 @@ public class UserSession : AggregateRoot
 
         SetAuditOnUpdate(UserId, expiredAt);
         AddDomainEvent(new UserSessionExpiredEvent(Id, UserId, expiredAt));
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new UserSessionSoftDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, reason));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new UserSessionRestoredDomainEvent(Id, UserId, restoredBy, restoredAt));
     }
 }
