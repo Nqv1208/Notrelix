@@ -58,7 +58,7 @@ public class RedisNotificationService : INotificationService
             
         if (notification != null)
         {
-            notification.MarkAsRead();
+            notification.MarkAsRead(DateTimeOffset.UtcNow);
             await _context.SaveChangesAsync(cancellationToken);
         }
     }
@@ -66,12 +66,12 @@ public class RedisNotificationService : INotificationService
     public async Task MarkAllAsReadAsync(Guid userId, Guid workspaceId, CancellationToken cancellationToken = default)
     {
         var unreadNotifications = await _context.Notifications
-            .Where(n => n.UserId == userId && n.WorkspaceId == workspaceId && n.Status == NotificationStatus.Unread)
+            .Where(n => n.UserId == userId && n.WorkspaceId == workspaceId && !n.IsRead)
             .ToListAsync(cancellationToken);
 
         foreach (var notification in unreadNotifications)
         {
-            notification.MarkAsRead();
+            notification.MarkAsRead(DateTimeOffset.UtcNow);
         }
 
         if (unreadNotifications.Any())

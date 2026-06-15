@@ -21,7 +21,7 @@ public class InboundWebhookEventConfiguration : IEntityTypeConfiguration<Inbound
         builder.Property(x => x.Payload).HasColumnName("payload").HasColumnType("jsonb").HasConversion<JsonValueConverter>().IsRequired();
         builder.Property(x => x.ReceivedAt).HasColumnName("received_at").IsRequired();
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");

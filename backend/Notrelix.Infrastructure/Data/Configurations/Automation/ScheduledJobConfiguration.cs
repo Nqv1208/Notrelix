@@ -25,7 +25,7 @@ public class ScheduledJobConfiguration : IEntityTypeConfiguration<ScheduledJob>
             s.Property(p => p.TimeZone).HasColumnName("timezone").IsRequired().HasMaxLength(64).HasDefaultValue("UTC");
         });
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");

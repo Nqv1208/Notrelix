@@ -27,7 +27,7 @@ public class AiAgentRunConfiguration : IEntityTypeConfiguration<AiAgentRun>
         builder.Property(x => x.ActorUserId).HasColumnName("actor_user_id");
         builder.Property(x => x.CorrelationId).HasColumnName("correlation_id");
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
