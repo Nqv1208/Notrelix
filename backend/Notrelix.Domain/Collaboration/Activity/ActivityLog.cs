@@ -3,7 +3,7 @@ using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Collaboration.Activity;
 
-public class ActivityLog : AggregateRoot, IWorkspaceScoped
+public class ActivityLog : Entity, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid ActorId { get; private set; }
