@@ -18,7 +18,7 @@ public class CustomRoleConfiguration : IEntityTypeConfiguration<CustomRole>
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(512);
         builder.Property(x => x.Permissions).HasColumnName("permissions").HasColumnType("jsonb").IsRequired();
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");

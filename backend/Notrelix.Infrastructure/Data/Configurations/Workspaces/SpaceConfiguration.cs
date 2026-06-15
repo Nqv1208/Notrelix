@@ -19,7 +19,7 @@ public class SpaceConfiguration : IEntityTypeConfiguration<Space>
         builder.Property(x => x.Visibility).HasColumnName("visibility").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");

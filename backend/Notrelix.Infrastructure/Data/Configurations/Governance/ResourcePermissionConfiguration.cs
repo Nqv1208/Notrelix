@@ -14,14 +14,16 @@ public class ResourcePermissionConfiguration : IEntityTypeConfiguration<Resource
         builder.Property(x => x.Id).HasColumnName("id");
 
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
-        builder.Property(x => x.ResourceType).HasColumnName("resource_type").IsRequired().HasMaxLength(50);
+        builder.Property(x => x.ResourceType).HasColumnName("resource_type").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.ResourceId).HasColumnName("resource_id").IsRequired();
-        builder.Property(x => x.UserId).HasColumnName("user_id");
-        builder.Property(x => x.RoleId).HasColumnName("role_id");
-        builder.Property(x => x.PermissionLevel).HasColumnName("permission_level").HasConversion<string>().IsRequired().HasMaxLength(50);
-        builder.Property(x => x.GrantedBy).HasColumnName("granted_by");
+        builder.Property(x => x.SubjectType).HasColumnName("subject_type").HasConversion<string>().IsRequired().HasMaxLength(50);
+        builder.Property(x => x.SubjectId).HasColumnName("subject_id").IsRequired();
+        builder.Property(x => x.Level).HasColumnName("permission_level").HasConversion<string>().IsRequired().HasMaxLength(50);
+        builder.Property(x => x.Effect).HasColumnName("effect").HasConversion<string>().IsRequired().HasMaxLength(20);
+        builder.Property(x => x.ConditionJson).HasColumnName("condition_json").HasColumnType("jsonb");
+        builder.Property(x => x.Priority).HasColumnName("priority").HasDefaultValue(100);
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
@@ -33,6 +35,6 @@ public class ResourcePermissionConfiguration : IEntityTypeConfiguration<Resource
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
         builder.HasIndex(x => new { x.ResourceType, x.ResourceId }).HasDatabaseName("idx_resource_permissions_resource");
-        builder.HasIndex(x => x.UserId).HasDatabaseName("idx_resource_permissions_user_id");
+        builder.HasIndex(x => x.SubjectId).HasDatabaseName("idx_resource_permissions_subject_id");
     }
 }

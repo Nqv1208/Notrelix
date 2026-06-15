@@ -17,10 +17,17 @@ public class SsoProviderConfiguration : IEntityTypeConfiguration<SsoProvider>
         builder.Property(x => x.ProviderType).HasColumnName("provider_type").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
-        builder.Property(x => x.Domain).HasColumnName("domain").HasMaxLength(256);
-        builder.Property(x => x.MetadataJson).HasColumnName("metadata").IsRequired().HasDefaultValue("{}");
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.OwnsOne(x => x.Configuration, config =>
+        {
+            config.Property(c => c.EntityId).HasColumnName("entity_id").HasMaxLength(512);
+            config.Property(c => c.SsoUrl).HasColumnName("sso_url").HasMaxLength(2048);
+            config.Property(c => c.CertificateRef).HasColumnName("certificate_ref").HasMaxLength(512);
+            config.Property(c => c.Domain).HasColumnName("domain").HasMaxLength(256);
+            config.Property(c => c.RedirectUri).HasColumnName("redirect_uri").HasMaxLength(2048);
+        });
+
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
