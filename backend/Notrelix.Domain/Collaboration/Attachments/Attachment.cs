@@ -3,7 +3,7 @@ using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Collaboration.Attachments;
 
-public class Attachment : SoftDeletableEntity, IWorkspaceScoped
+public class Attachment : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public ResourceRef Target { get; private set; } = null!;
@@ -38,6 +38,8 @@ public class Attachment : SoftDeletableEntity, IWorkspaceScoped
     {
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
         AddDomainEvent(new AttachmentDeletedEvent(WorkspaceId, Id, deletedAt));
     }
 
@@ -45,5 +47,8 @@ public class Attachment : SoftDeletableEntity, IWorkspaceScoped
     {
         if (!IsDeleted) return;
         base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new AttachmentRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

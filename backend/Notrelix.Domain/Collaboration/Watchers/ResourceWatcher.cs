@@ -19,11 +19,12 @@ public class ResourceWatcher : AggregateRoot, IWorkspaceScoped
 
     private ResourceWatcher() : base() { }
 
-    public static ResourceWatcher Create(Guid workspaceId, ResourceRef target, Guid userId, DateTimeOffset createdAt, WatchLevel level = WatchLevel.All)
+    public static ResourceWatcher Create(Guid workspaceId, ResourceRef target, Guid userId, Guid createdBy, DateTimeOffset createdAt, WatchLevel level = WatchLevel.All)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(target);
         Guard.NotEmpty(userId);
+        Guard.NotEmpty(createdBy);
 
         if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
             throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
@@ -36,12 +37,19 @@ public class ResourceWatcher : AggregateRoot, IWorkspaceScoped
             Level = level
         };
 
+        watcher.SetAuditOnCreate(createdBy, createdAt);
         watcher.AddDomainEvent(new ResourceWatchedEvent(workspaceId, watcher.Id, target, userId, createdAt));
         return watcher;
     }
 
-    public void Unwatch(DateTimeOffset removedAt)
+    public void Unwatch(Guid unwatchedBy, DateTimeOffset removedAt)
     {
+        EnsureNotDeleted();
+        Guard.NotEmpty(unwatchedBy);
+
+        base.SoftDelete(unwatchedBy, removedAt);
+        SetAuditOnUpdate(unwatchedBy, removedAt);
+        IncrementVersion();
         AddDomainEvent(new ResourceUnwatchedEvent(WorkspaceId, Id, removedAt));
     }
 }

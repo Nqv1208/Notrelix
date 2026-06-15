@@ -60,6 +60,7 @@ public class Notification : AggregateRoot, IWorkspaceScoped
         IsRead = true;
         ReadAt = readAt;
         SetAuditOnUpdate(UserId, readAt);
+        IncrementVersion();
         AddDomainEvent(new NotificationReadEvent(WorkspaceId, Id, readAt));
     }
 
@@ -70,6 +71,7 @@ public class Notification : AggregateRoot, IWorkspaceScoped
         IsArchived = true;
         ArchivedAt = archivedAt;
         SetAuditOnUpdate(UserId, archivedAt);
+        IncrementVersion();
         AddDomainEvent(new NotificationArchivedEvent(WorkspaceId, Id, archivedAt));
     }
 }

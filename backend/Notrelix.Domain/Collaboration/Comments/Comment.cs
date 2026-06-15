@@ -3,7 +3,7 @@ using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Collaboration.Comments;
 
-public class Comment : SoftDeletableEntity, IWorkspaceScoped
+public class Comment : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public ResourceRef Target { get; private set; } = null!;
@@ -56,6 +56,7 @@ public class Comment : SoftDeletableEntity, IWorkspaceScoped
 
         Content = newContent.Trim();
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new CommentUpdatedEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
@@ -66,6 +67,7 @@ public class Comment : SoftDeletableEntity, IWorkspaceScoped
 
         CommentStatus = CommentStatus.Resolved;
         SetAuditOnUpdate(resolvedBy, resolvedAt);
+        IncrementVersion();
         AddDomainEvent(new CommentResolvedEvent(WorkspaceId, Id, resolvedBy, resolvedAt));
     }
 
@@ -74,6 +76,18 @@ public class Comment : SoftDeletableEntity, IWorkspaceScoped
         if (IsDeleted) return;
         CommentStatus = CommentStatus.SoftDeleted;
         base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
         AddDomainEvent(new CommentSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        CommentStatus = CommentStatus.Active;
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new CommentRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }
