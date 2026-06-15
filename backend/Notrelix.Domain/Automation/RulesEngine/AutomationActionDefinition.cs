@@ -1,0 +1,53 @@
+using System.Text.Json;
+using Notrelix.Domain.Common;
+using Notrelix.Domain.Common.Exceptions;
+
+namespace Notrelix.Domain.Automation.RulesEngine;
+
+public sealed class AutomationActionDefinition : ValueObject
+{
+    private static readonly HashSet<string> ValidActions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "SendEmail", "UpdateField", "CreateItem", "MoveItem",
+        "NotifyMember", "Webhook", "SlackMessage"
+    };
+
+    public string Type { get; }
+    public string? Configuration { get; }
+
+    private AutomationActionDefinition() { }    private AutomationActionDefinition(string type, string? configuration)
+    {
+        Type = type;
+        Configuration = configuration;
+    }
+
+    public static AutomationActionDefinition Create(string type, string? configuration = null)
+    {
+        Guard.NotNullOrWhiteSpace(type);
+        Guard.Assert(ValidActions.Contains(type), $"Invalid action type '{type}'. Valid types: {string.Join(", ", ValidActions)}");
+
+        if (configuration is not null)
+        {
+            try
+            {
+                using var document = JsonDocument.Parse(configuration);
+                if (document.RootElement.ValueKind == JsonValueKind.Null)
+                    throw new BusinessRuleException("Action configuration cannot be null JSON.");
+            }
+            catch (JsonException ex)
+            {
+                throw new BusinessRuleException($"Invalid action configuration JSON: {ex.Message}");
+            }
+        }
+
+        return new AutomationActionDefinition(type, configuration);
+    }
+
+    protected override IEnumerable<object?> GetEqualityComponents()
+    {
+        yield return Type;
+        yield return Configuration;
+    }
+
+    public override string ToString() => Type;
+}

@@ -1,0 +1,11 @@
+using Notrelix.Domain.Common;
+using Notrelix.Domain.Billing.Plans;
+
+namespace Notrelix.Domain.Billing.Usage.Events;
+
+public sealed record WorkspaceFeatureUsageRestoredEvent(
+    Guid WorkspaceId,
+    FeatureCode Feature,
+    Guid RestoredBy,
+    DateTimeOffset OccurredAt
+) : DomainEvent(OccurredAt, WorkspaceId, RestoredBy);
