@@ -6,9 +6,6 @@ using Notrelix.Domain.Common;
 
 namespace Notrelix.Infrastructure.Data.Interceptors;
 
-/// <summary>
-/// Dispatch domain events sau khi SaveChanges thành công
-/// </summary>
 public class DomainEventInterceptor : SaveChangesInterceptor
 {
     private readonly IMediator _mediator;
@@ -58,7 +55,7 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         }
     }
 
-    private static object CreateDomainEventNotification(DomainEvent domainEvent)
+    private static object CreateDomainEventNotification(IDomainEvent domainEvent)
     {
         var notificationType = typeof(DomainEventNotification<>).MakeGenericType(domainEvent.GetType());
         return Activator.CreateInstance(notificationType, domainEvent)!;

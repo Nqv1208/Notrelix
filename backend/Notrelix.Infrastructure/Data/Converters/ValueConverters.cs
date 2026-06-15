@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Notrelix.Domain.Billing.Usage;
+using Notrelix.Domain.Collaboration.Activity;
 using Notrelix.Domain.Documents.Versions;
+using Notrelix.Domain.Governance.Security.Events;
 using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Domain.Integrations.Sync;
 using Notrelix.Domain.SharedKernel;
@@ -70,6 +72,30 @@ public class SyncCursorValueConverter : ValueConverter<SyncCursorValue, string>
 {
     public SyncCursorValueConverter()
         : base(v => v.Value, v => SyncCursorValue.Create(v))
+    {
+    }
+}
+
+public class ApiTokenScopesConverter : ValueConverter<ApiTokenScopes, string>
+{
+    public ApiTokenScopesConverter()
+        : base(v => v.ToJson(), v => ApiTokenScopes.FromJson(v))
+    {
+    }
+}
+
+public class ActivityMetadataConverter : ValueConverter<ActivityMetadata, string>
+{
+    public ActivityMetadataConverter()
+        : base(v => v.Data.Value, v => ActivityMetadata.Create(JsonValue.Create(v)))
+    {
+    }
+}
+
+public class SecurityEventMetadataConverter : ValueConverter<SecurityEventMetadata, string>
+{
+    public SecurityEventMetadataConverter()
+        : base(v => v.Data.Value, v => SecurityEventMetadata.Create(JsonValue.Create(v)))
     {
     }
 }

@@ -5,9 +5,6 @@ using Notrelix.Domain.Common;
 
 namespace Notrelix.Infrastructure.Data.Interceptors;
 
-/// <summary>
-/// Tự động set CreatedAt/UpdatedAt/CreatedBy/UpdatedBy cho AuditableEntity
-/// </summary>
 public class AuditableEntityInterceptor : SaveChangesInterceptor
 {
     private readonly ICurrentUser _currentUser;
@@ -38,19 +35,18 @@ public class AuditableEntityInterceptor : SaveChangesInterceptor
     {
         if (context is null) return;
 
+        var now = DateTimeOffset.UtcNow;
+        Guid? userId = _currentUser.IsAuthenticated ? _currentUser.UserId : null;
+
         foreach (var entry in context.ChangeTracker.Entries<AuditableEntity>())
         {
             switch (entry.State)
             {
                 case EntityState.Added:
-                    entry.Entity.CreatedAt = DateTimeOffset.UtcNow;
-                    if (_currentUser.IsAuthenticated)
-                        entry.Entity.CreatedBy = _currentUser.UserId;
+                    entry.Entity.SetAuditOnCreate(userId, now);
                     break;
                 case EntityState.Modified:
-                    entry.Entity.UpdatedAt = DateTimeOffset.UtcNow;
-                    if (_currentUser.IsAuthenticated)
-                        entry.Entity.UpdatedBy = _currentUser.UserId;
+                    entry.Entity.SetAuditOnUpdate(userId, now);
                     break;
             }
         }

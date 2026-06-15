@@ -112,6 +112,7 @@ public interface IApplicationDbContext
     DbSet<Label> Labels { get; }
     DbSet<Checklist> Checklists { get; }
     DbSet<ChecklistItem> ChecklistItems { get; }
+    DbSet<BoardMember> BoardMembers { get; }
     DbSet<BoardSubscriber> BoardSubscribers { get; }
     DbSet<BoardRelation> BoardRelations { get; }
     DbSet<BoardItemConnection> BoardItemConnections { get; }

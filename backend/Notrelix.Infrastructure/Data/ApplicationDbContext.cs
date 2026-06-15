@@ -68,6 +68,7 @@ using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Spaces;
 using Notrelix.Domain.Workspaces.Teams;
 using Notrelix.Domain.Workspaces.Workspaces;
+using System.Linq.Expressions;
 
 namespace Notrelix.Infrastructure.Data;
 
@@ -123,6 +124,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Label> Labels => Set<Label>();
     public DbSet<Checklist> Checklists => Set<Checklist>();
     public DbSet<ChecklistItem> ChecklistItems => Set<ChecklistItem>();
+    public DbSet<BoardMember> BoardMembers => Set<BoardMember>();
     public DbSet<BoardSubscriber> BoardSubscribers => Set<BoardSubscriber>();
     public DbSet<BoardRelation> BoardRelations => Set<BoardRelation>();
     public DbSet<BoardItemConnection> BoardItemConnections => Set<BoardItemConnection>();
@@ -230,35 +232,50 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         {
             if (typeof(SoftDeletableEntity).IsAssignableFrom(entityType.ClrType))
             {
-                modelBuilder.Entity(entityType.ClrType)
-                    .HasQueryFilter(e => !((SoftDeletableEntity)e).IsDeleted);
+                var param = Expression.Parameter(entityType.ClrType, "e");
+                var body = Expression.Equal(
+                    Expression.PropertyOrField(param, "DeletedAt"),
+                    Expression.Constant(null, typeof(DateTimeOffset?)));
+                var lambda = Expression.Lambda(body, param);
+                modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
             }
         }
 
-        modelBuilder.Properties<JsonValue>()
-            .HaveConversion<Converters.JsonValueConverter>()
-            .HasColumnType("jsonb");
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (typeof(Entity).IsAssignableFrom(entityType.ClrType))
+            {
+                modelBuilder.Entity(entityType.ClrType)
+                    .Property(nameof(Entity.Id))
+                    .ValueGeneratedNever();
+            }
+        }
 
-        modelBuilder.Properties<FractionalIndex>()
-            .HaveConversion<Converters.FractionalIndexConverter>();
-
-        modelBuilder.Properties<SecretRef>()
-            .HaveConversion<Converters.SecretRefConverter>();
-
-        modelBuilder.Properties<TokenHash>()
-            .HaveConversion<Converters.TokenHashConverter>();
-
-        modelBuilder.Properties<DocumentSnapshot>()
-            .HaveConversion<Converters.DocumentSnapshotConverter>();
-
-        modelBuilder.Properties<UsageMetricKey>()
-            .HaveConversion<Converters.UsageMetricKeyConverter>();
-
-        modelBuilder.Properties<GroupRule>()
-            .HaveConversion<Converters.GroupRuleConverter>();
-
-        modelBuilder.Properties<SyncCursorValue>()
-            .HaveConversion<Converters.SyncCursorValueConverter>();
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType == typeof(JsonValue))
+                {
+                    property.SetValueConverter(new Converters.JsonValueConverter());
+                    property.SetColumnType("jsonb");
+                }
+                else if (property.ClrType == typeof(FractionalIndex))
+                    property.SetValueConverter(new Converters.FractionalIndexConverter());
+                else if (property.ClrType == typeof(SecretRef))
+                    property.SetValueConverter(new Converters.SecretRefConverter());
+                else if (property.ClrType == typeof(TokenHash))
+                    property.SetValueConverter(new Converters.TokenHashConverter());
+                else if (property.ClrType == typeof(DocumentSnapshot))
+                    property.SetValueConverter(new Converters.DocumentSnapshotConverter());
+                else if (property.ClrType == typeof(UsageMetricKey))
+                    property.SetValueConverter(new Converters.UsageMetricKeyConverter());
+                else if (property.ClrType == typeof(GroupRule))
+                    property.SetValueConverter(new Converters.GroupRuleConverter());
+                else if (property.ClrType == typeof(SyncCursorValue))
+                    property.SetValueConverter(new Converters.SyncCursorValueConverter());
+            }
+        }
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
