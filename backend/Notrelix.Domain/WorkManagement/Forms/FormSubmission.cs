@@ -1,4 +1,5 @@
 using Notrelix.Domain.Common;
+using Notrelix.Domain.WorkManagement.Forms.Events;
 
 namespace Notrelix.Domain.WorkManagement.Forms;
 
@@ -35,7 +36,7 @@ public class FormSubmission : Entity, IWorkspaceScoped
         Guard.NotEmpty(formId);
         Guard.NotEmpty(boardId);
 
-        return new FormSubmission
+        var submission = new FormSubmission
         {
             WorkspaceId = workspaceId,
             FormId = formId,
@@ -49,23 +50,30 @@ public class FormSubmission : Entity, IWorkspaceScoped
             Status = FormSubmissionStatus.Accepted,
             SubmittedAt = submittedAt
         };
+
+        submission.AddDomainEvent(new FormSubmissionCreatedEvent(workspaceId, submission.Id, formId, boardId, submitterUserId, submittedAt));
+
+        return submission;
     }
 
     public void Reject(DateTimeOffset processedAt)
     {
         Status = FormSubmissionStatus.Rejected;
         ProcessedAt = processedAt;
+        AddDomainEvent(new FormSubmissionRejectedEvent(WorkspaceId, Id, FormId, processedAt));
     }
 
     public void MarkAsSpam(DateTimeOffset processedAt)
     {
         Status = FormSubmissionStatus.Spam;
         ProcessedAt = processedAt;
+        AddDomainEvent(new FormSubmissionMarkedAsSpamEvent(WorkspaceId, Id, FormId, processedAt));
     }
 
     public void MarkProcessed(Guid createdItemId, DateTimeOffset processedAt)
     {
         CreatedItemId = createdItemId;
         ProcessedAt = processedAt;
+        AddDomainEvent(new FormSubmissionProcessedEvent(WorkspaceId, Id, FormId, createdItemId, processedAt));
     }
 }

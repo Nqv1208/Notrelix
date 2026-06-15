@@ -100,4 +100,22 @@ public class Checklist : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(updatedBy, updatedAt);
         AddDomainEvent(new ChecklistItemRemovedEvent(WorkspaceId, Id, item.Id, updatedAt));
     }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new ChecklistSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new ChecklistRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
+    }
 }
