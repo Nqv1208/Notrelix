@@ -21,7 +21,7 @@ public class PageConfiguration : IEntityTypeConfiguration<Page>
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.Visibility).HasColumnName("visibility").HasConversion<string>().IsRequired().HasMaxLength(50);
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
@@ -37,7 +37,7 @@ public class PageConfiguration : IEntityTypeConfiguration<Page>
             .HasForeignKey(x => x.ParentId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(x => x.WorkspaceId).HasFilter("is_deleted = false").HasDatabaseName("idx_pages_workspace_id");
-        builder.HasIndex(x => x.ParentId).HasFilter("parent_id IS NOT NULL AND is_deleted = false").HasDatabaseName("idx_pages_parent_id");
+        builder.HasIndex(x => x.WorkspaceId).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_pages_workspace_id");
+        builder.HasIndex(x => x.ParentId).HasFilter("parent_id IS NOT NULL AND deleted_at IS NULL").HasDatabaseName("idx_pages_parent_id");
     }
 }

@@ -19,7 +19,7 @@ public class DocumentVersionConfiguration : IEntityTypeConfiguration<DocumentVer
         builder.Property(x => x.Snapshot).HasColumnName("snapshot").IsRequired();
         builder.Property(x => x.ChangeSummary).HasColumnName("change_summary").HasMaxLength(2048);
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");

@@ -18,8 +18,10 @@ public class NotificationConfiguration : IEntityTypeConfiguration<Notification>
         builder.Property(x => x.Type).HasColumnName("type").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.Title).HasColumnName("title").IsRequired().HasMaxLength(256);
         builder.Property(x => x.Content).HasColumnName("content").IsRequired().HasMaxLength(2048);
-        builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
-        builder.Property(x => x.Timestamp).HasColumnName("timestamp").IsRequired();
+        builder.Property(x => x.IsRead).HasColumnName("is_read");
+        builder.Property(x => x.ReadAt).HasColumnName("read_at");
+        builder.Property(x => x.IsArchived).HasColumnName("is_archived");
+        builder.Property(x => x.ArchivedAt).HasColumnName("archived_at");
 
         builder.OwnsOne(x => x.Target, target =>
         {
@@ -27,7 +29,7 @@ public class NotificationConfiguration : IEntityTypeConfiguration<Notification>
             target.Property(t => t.ResourceId).HasColumnName("target_id");
         });
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
@@ -40,6 +42,7 @@ public class NotificationConfiguration : IEntityTypeConfiguration<Notification>
 
         builder.HasIndex(x => x.UserId).HasDatabaseName("idx_notifications_user_id");
         builder.HasIndex(x => x.WorkspaceId).HasDatabaseName("idx_notifications_workspace_id");
-        builder.HasIndex(x => x.Status).HasDatabaseName("idx_notifications_status");
+        builder.HasIndex(x => x.IsRead).HasDatabaseName("idx_notifications_is_read");
+        builder.HasIndex(x => x.IsArchived).HasDatabaseName("idx_notifications_is_archived");
     }
 }

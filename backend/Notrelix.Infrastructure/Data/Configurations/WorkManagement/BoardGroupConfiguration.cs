@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.WorkManagement.BoardGroups;
+using Notrelix.Domain.WorkManagement.Boards;
 
 namespace Notrelix.Infrastructure.Data.Configurations.WorkManagement;
 
@@ -23,12 +24,9 @@ public class BoardGroupConfiguration : IEntityTypeConfiguration<BoardGroup>
             color.Property(c => c.Value).HasColumnName("color").IsRequired().HasMaxLength(50);
         });
 
-        builder.OwnsOne(x => x.Position, pos =>
-        {
-            pos.Property(p => p.Value).HasColumnName("position").HasColumnType("float8").IsRequired();
-        });
+        builder.Property(x => x.Position).HasColumnName("position").HasMaxLength(50).IsRequired();
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
@@ -44,6 +42,6 @@ public class BoardGroupConfiguration : IEntityTypeConfiguration<BoardGroup>
             .HasForeignKey(x => x.BoardId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(x => new { x.BoardId, x.Position }).HasFilter("is_deleted = false").HasDatabaseName("idx_board_groups_board_position");
+        builder.HasIndex(x => new { x.BoardId, x.Position }).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_board_groups_board_position");
     }
 }

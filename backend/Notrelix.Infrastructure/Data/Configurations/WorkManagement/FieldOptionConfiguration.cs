@@ -15,8 +15,11 @@ public class FieldOptionConfiguration : IEntityTypeConfiguration<FieldOption>
 
         builder.Property(x => x.FieldId).HasColumnName("field_id").IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
-        builder.Property(x => x.Color).HasColumnName("color").HasMaxLength(50);
-        builder.Property(x => x.Position).HasColumnName("position").HasColumnType("float8").IsRequired();
+        builder.OwnsOne(x => x.Color, color =>
+        {
+            color.Property(c => c.Value).HasColumnName("color").HasMaxLength(50);
+        });
+        builder.Property(x => x.Position).HasColumnName("position").HasMaxLength(50).IsRequired();
 
         builder.HasOne<BoardField>()
             .WithMany(x => x.Options)

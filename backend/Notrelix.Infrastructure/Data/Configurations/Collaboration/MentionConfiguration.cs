@@ -14,13 +14,18 @@ public class MentionConfiguration : IEntityTypeConfiguration<Mention>
         builder.Property(x => x.Id).HasColumnName("id");
 
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
-        builder.Property(x => x.SourceType).HasColumnName("source_type").IsRequired().HasMaxLength(50);
-        builder.Property(x => x.SourceId).HasColumnName("source_id").IsRequired();
-        builder.Property(x => x.MentionedUserId).HasColumnName("mentioned_user_id").IsRequired();
-        builder.Property(x => x.MentionedBy).HasColumnName("mentioned_by").IsRequired();
+        builder.Property(x => x.Type).HasColumnName("type").HasConversion<string>().IsRequired().HasMaxLength(50);
+        builder.Property(x => x.MentionedId).HasColumnName("mentioned_user_id").IsRequired();
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
 
-        builder.HasIndex(x => x.MentionedUserId).HasDatabaseName("idx_mentions_mentioned_user_id");
-        builder.HasIndex(x => new { x.SourceType, x.SourceId }).HasDatabaseName("idx_mentions_source");
+        builder.OwnsOne(x => x.Source, source =>
+        {
+            source.Property(s => s.ResourceType).HasColumnName("source_type").HasConversion<string>().IsRequired().HasMaxLength(50);
+            source.Property(s => s.ResourceId).HasColumnName("source_id").IsRequired();
+            source.Property(s => s.WorkspaceId).HasColumnName("source_workspace_id");
+            source.HasIndex(s => new { s.ResourceType, s.ResourceId }).HasDatabaseName("idx_mentions_source");
+        });
+
+        builder.HasIndex(x => x.MentionedId).HasDatabaseName("idx_mentions_mentioned_user_id");
     }
 }

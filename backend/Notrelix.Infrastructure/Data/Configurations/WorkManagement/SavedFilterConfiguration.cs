@@ -20,7 +20,7 @@ public class SavedFilterConfiguration : IEntityTypeConfiguration<SavedFilter>
         builder.Property(x => x.Visibility).HasColumnName("visibility").IsRequired();
         builder.Property(x => x.GroupRule).HasColumnName("group_rule_id");
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
@@ -58,6 +58,6 @@ public class SavedFilterConfiguration : IEntityTypeConfiguration<SavedFilter>
             .HasForeignKey(x => x.ViewId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        builder.HasIndex(x => new { x.BoardId, x.Name }).HasFilter("is_deleted = false").HasDatabaseName("idx_saved_filters_board_name");
+        builder.HasIndex(x => new { x.BoardId, x.Name }).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_saved_filters_board_name");
     }
 }

@@ -1,5 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Notrelix.Domain.WorkManagement.BoardGroups;
+using Notrelix.Domain.WorkManagement.Boards;
+using Notrelix.Domain.WorkManagement.BoardGroups;
+using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Items;
 
 namespace Notrelix.Infrastructure.Data.Configurations.WorkManagement;
@@ -18,12 +22,9 @@ public class BoardItemConfiguration : IEntityTypeConfiguration<BoardItem>
         builder.Property(x => x.GroupId).HasColumnName("group_id").IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(1024);
 
-        builder.OwnsOne(x => x.Position, pos =>
-        {
-            pos.Property(p => p.Value).HasColumnName("position").HasColumnType("float8").IsRequired();
-        });
+        builder.Property(x => x.Position).HasColumnName("position").IsRequired();
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
@@ -48,7 +49,7 @@ public class BoardItemConfiguration : IEntityTypeConfiguration<BoardItem>
             .HasForeignKey(x => x.BoardId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(x => new { x.GroupId, x.Position }).HasFilter("is_deleted = false").HasDatabaseName("idx_board_items_group_position");
-        builder.HasIndex(x => x.BoardId).HasFilter("is_deleted = false").HasDatabaseName("idx_board_items_board_id");
+        builder.HasIndex(x => new { x.GroupId, x.Position }).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_board_items_group_position");
+        builder.HasIndex(x => x.BoardId).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_board_items_board_id");
     }
 }
