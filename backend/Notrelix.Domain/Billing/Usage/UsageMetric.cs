@@ -1,5 +1,6 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Billing.Rules;
+using Notrelix.Domain.Billing.Usage.Events;
 
 namespace Notrelix.Domain.Billing.Usage;
 
@@ -15,19 +16,22 @@ public class UsageMetric : AggregateRoot, IWorkspaceScoped
 
     private UsageMetric() : base() { }
 
-    public static UsageMetric Create(Guid workspaceId, UsageMetricKey key, UsagePeriod period)
+    public static UsageMetric Create(Guid workspaceId, UsageMetricKey key, UsagePeriod period, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(key);
         Guard.NotNull(period);
 
-        return new UsageMetric
+        var metric = new UsageMetric
         {
             WorkspaceId = workspaceId,
             Key = key,
             CurrentValue = 0,
             CurrentPeriod = period
         };
+
+        metric.AddDomainEvent(new UsageMetricCreatedEvent(workspaceId, key, createdAt));
+        return metric;
     }
 
     public void Increase(int amount, int limit, bool isHardLimit, DateTimeOffset occurredAt)
@@ -58,6 +62,8 @@ public class UsageMetric : AggregateRoot, IWorkspaceScoped
 
         CurrentValue -= amount;
         _history.Add(UsageMetricHistory.Create(Id, -amount, occurredAt));
+        IncrementVersion();
+        AddDomainEvent(new UsageMetricDecreasedEvent(WorkspaceId, Key, amount, occurredAt));
     }
 
     public void Reset(UsagePeriod newPeriod, DateTimeOffset occurredAt)
@@ -67,5 +73,23 @@ public class UsageMetric : AggregateRoot, IWorkspaceScoped
 
         CurrentValue = 0;
         CurrentPeriod = newPeriod;
+        IncrementVersion();
+        AddDomainEvent(new UsageMetricResetEvent(WorkspaceId, Key, occurredAt));
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        IncrementVersion();
+        AddDomainEvent(new UsageMetricSoftDeletedEvent(WorkspaceId, Key, deletedBy, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new UsageMetricRestoredEvent(WorkspaceId, Key, restoredBy, restoredAt));
     }
 }

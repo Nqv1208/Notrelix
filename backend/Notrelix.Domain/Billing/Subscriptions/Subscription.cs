@@ -1,5 +1,6 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
+using Notrelix.Domain.Billing.Subscriptions.Events;
 
 namespace Notrelix.Domain.Billing.Subscriptions;
 
@@ -60,6 +61,7 @@ public class Subscription : AggregateRoot, IWorkspaceScoped
         CancelAtPeriodEnd = true;
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
+        AddDomainEvent(new SubscriptionCancellationScheduledEvent(WorkspaceId, Id, updatedBy, occurredAt));
     }
 
     public void CancelImmediately(Guid updatedBy, DateTimeOffset cancelledAt)
@@ -105,5 +107,21 @@ public class Subscription : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
         AddDomainEvent(new SubscriptionPastDueEvent(WorkspaceId, Id, occurredAt));
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        IncrementVersion();
+        AddDomainEvent(new SubscriptionSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new SubscriptionRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

@@ -1,5 +1,6 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
+using Notrelix.Domain.Billing.Payments.Events;
 
 namespace Notrelix.Domain.Billing.Payments;
 
@@ -31,6 +32,7 @@ public class Invoice : AggregateRoot, IWorkspaceScoped
         };
 
         invoice.SetAuditOnCreate(null, createdAt);
+        invoice.AddDomainEvent(new InvoiceCreatedEvent(invoice.Id, workspaceId, amount, dueAt, createdAt));
         return invoice;
     }
 
@@ -74,5 +76,23 @@ public class Invoice : AggregateRoot, IWorkspaceScoped
 
         Status = InvoiceStatus.Void;
         SetAuditOnUpdate(null, voidedAt);
+        IncrementVersion();
+        AddDomainEvent(new InvoiceVoidedEvent(Id, WorkspaceId, voidedAt));
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        IncrementVersion();
+        AddDomainEvent(new InvoiceSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new InvoiceRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

@@ -2,6 +2,7 @@ using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Billing.Plans;
 using Notrelix.Domain.Billing.Events;
+using Notrelix.Domain.Billing.Entitlements.Events;
 
 namespace Notrelix.Domain.Billing.Entitlements;
 
@@ -18,7 +19,7 @@ public class Entitlement : AggregateRoot, IWorkspaceScoped
 
     private Entitlement() : base() { }
 
-    public static Entitlement Create(Guid workspaceId, FeatureCode feature, int limit, EntitlementSource source, DateTimeOffset? expiresAt = null)
+    public static Entitlement Create(Guid workspaceId, FeatureCode feature, int limit, EntitlementSource source, DateTimeOffset createdAt, DateTimeOffset? expiresAt = null)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(feature);
@@ -26,7 +27,7 @@ public class Entitlement : AggregateRoot, IWorkspaceScoped
         if (limit < 0)
             throw new BusinessRuleException("Entitlement limit cannot be negative.");
 
-        return new Entitlement
+        var entitlement = new Entitlement
         {
             WorkspaceId = workspaceId,
             Feature = feature,
@@ -35,6 +36,10 @@ public class Entitlement : AggregateRoot, IWorkspaceScoped
             Status = EntitlementStatus.Active,
             ExpiresAt = expiresAt
         };
+
+        entitlement.AddDomainEvent(new EntitlementGrantedDomainEvent(
+            workspaceId, entitlement.Id, feature.Code, limit, null, createdAt));
+        return entitlement;
     }
 
     public void ChangeLimit(int newLimit, Guid actorUserId, DateTimeOffset occurredAt)
@@ -104,6 +109,7 @@ public class Entitlement : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException("Cannot expire a revoked entitlement.");
 
         Status = EntitlementStatus.Expired;
+        SetAuditOnUpdate(null, occurredAt);
         IncrementVersion();
 
         AddDomainEvent(new EntitlementExpiredDomainEvent(
@@ -116,5 +122,21 @@ public class Entitlement : AggregateRoot, IWorkspaceScoped
         if (Status != EntitlementStatus.Active) return false;
         if (ExpiresAt.HasValue && ExpiresAt.Value <= now) return false;
         return true;
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        IncrementVersion();
+        AddDomainEvent(new EntitlementSoftDeletedEvent(WorkspaceId, Id, Feature.Code, deletedBy, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new EntitlementRestoredEvent(WorkspaceId, Id, Feature.Code, restoredBy, restoredAt));
     }
 }
