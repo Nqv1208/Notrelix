@@ -54,6 +54,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         Role = newRole;
 
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new WorkspaceMemberRoleChangedEvent(
             WorkspaceId, Id, UserId, oldRole, newRole, updatedBy, updatedAt));
     }
@@ -73,6 +74,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         Status = WorkspaceMemberStatus.Suspended;
 
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new WorkspaceMemberSuspendedEvent(
             WorkspaceId, Id, UserId, updatedBy, updatedAt));
     }
@@ -91,7 +93,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         
         Status = WorkspaceMemberStatus.Active;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        
+        IncrementVersion();
         AddDomainEvent(new WorkspaceMemberActivatedEvent(WorkspaceId, Id, UserId, updatedBy, updatedAt));
     }
 
@@ -103,6 +105,8 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         
         Status = WorkspaceMemberStatus.Removed;
         base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
         AddDomainEvent(new WorkspaceMemberRemovedEvent(WorkspaceId, Id, UserId, deletedBy, deletedAt));
     }
 
@@ -124,7 +128,8 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
 
         Status = WorkspaceMemberStatus.Active;
         base.Restore(restoredBy, restoredAt);
-
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
         AddDomainEvent(new WorkspaceMemberRestoredEvent(
             WorkspaceId,
             Id,

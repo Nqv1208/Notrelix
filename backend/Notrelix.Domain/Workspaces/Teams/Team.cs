@@ -50,6 +50,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
 
         Name = normalizedName;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new TeamRenamedEvent(WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
     }
 
@@ -61,6 +62,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
 
         Status = TeamStatus.Archived;
         SetAuditOnUpdate(archivedBy, archivedAt);
+        IncrementVersion();
         AddDomainEvent(new TeamArchivedEvent(WorkspaceId, Id, archivedBy, archivedAt));
     }
 
@@ -87,6 +89,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
         }
         
         SetAuditOnUpdate(addedBy, addedAt);
+        IncrementVersion();
         AddDomainEvent(new TeamMemberAddedEvent(WorkspaceId, Id, userId, role, addedBy, addedAt));
     }
 
@@ -103,6 +106,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
 
         member.Remove(removedBy, removedAt);
         SetAuditOnUpdate(removedBy, removedAt);
+        IncrementVersion();
         AddDomainEvent(new TeamMemberRemovedEvent(WorkspaceId, Id, userId, removedBy, removedAt));
     }
 
@@ -112,6 +116,8 @@ public class Team : AggregateRoot, IWorkspaceScoped
         if (IsDeleted) return;
         Status = TeamStatus.SoftDeleted;
         base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
         AddDomainEvent(new TeamSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
 
@@ -121,6 +127,8 @@ public class Team : AggregateRoot, IWorkspaceScoped
         if (!IsDeleted) return;
         Status = TeamStatus.Active;
         base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
         AddDomainEvent(new TeamRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

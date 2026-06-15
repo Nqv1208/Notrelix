@@ -58,6 +58,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
 
         Name = normalizedName;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new SpaceRenamedEvent(WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
     }
 
@@ -83,6 +84,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
 
         Status = SpaceStatus.Archived;
         SetAuditOnUpdate(archivedBy, archivedAt);
+        IncrementVersion();
         AddDomainEvent(new SpaceArchivedEvent(WorkspaceId, Id, archivedBy, archivedAt));
     }
 
@@ -92,6 +94,8 @@ public class Space : AggregateRoot, IWorkspaceScoped
         if (IsDeleted) return;
         Status = SpaceStatus.SoftDeleted;
         base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
         AddDomainEvent(new SpaceSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
 
@@ -101,6 +105,8 @@ public class Space : AggregateRoot, IWorkspaceScoped
         if (!IsDeleted) return;
         Status = SpaceStatus.Active;
         base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
         AddDomainEvent(new SpaceRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }
