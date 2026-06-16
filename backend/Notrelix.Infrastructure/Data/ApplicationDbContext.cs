@@ -68,6 +68,7 @@ using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Spaces;
 using Notrelix.Domain.Workspaces.Teams;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Infrastructure.Data.Outbox;
 using System.Linq.Expressions;
 
 namespace Notrelix.Infrastructure.Data;
@@ -201,6 +202,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<UsageMetricHistory> UsageMetricHistories => Set<UsageMetricHistory>();
     public DbSet<WorkspaceFeatureUsage> WorkspaceFeatureUsages => Set<WorkspaceFeatureUsage>();
     public DbSet<FeatureUsageLedger> FeatureUsageLedger => Set<FeatureUsageLedger>();
+
+    // Infrastructure
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     // Analytics
     public DbSet<Dashboard> Dashboards => Set<Dashboard>();

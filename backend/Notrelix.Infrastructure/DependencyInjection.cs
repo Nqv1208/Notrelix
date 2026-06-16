@@ -70,6 +70,7 @@ public static class DependencyInjection
         
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, CurrentUser>();
+        services.AddScoped<ICurrentWorkspace, CurrentWorkspace>();
         
         // Register new services
         services.AddScoped<IDateTimeProvider, DateTimeProvider>();
@@ -79,6 +80,7 @@ public static class DependencyInjection
         services.AddSingleton<IBackgroundJobQueueReader>(provider => provider.GetRequiredService<InMemoryJobQueue>());
         services.AddScoped<N8nDispatchService>();
         services.AddHostedService<QueuedJobWorker>();
+        services.AddHostedService<OutboxDispatcher>();
         services.AddHttpClient<IN8nClient, N8nClient>((_, client) =>
         {
             var baseUrl = configuration.GetSection("N8n")["InternalBaseUrl"] ?? "http://n8n:5678";

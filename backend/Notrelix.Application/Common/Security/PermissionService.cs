@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.Security;
+using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Domain.WorkManagement.Boards;
@@ -10,10 +10,12 @@ namespace Notrelix.Application.Common.Security;
 public class PermissionService : IPermissionService
 {
     private readonly IApplicationDbContext _context;
+    private readonly IDateTimeProvider _clock;
 
-    public PermissionService(IApplicationDbContext context)
+    public PermissionService(IApplicationDbContext context, IDateTimeProvider clock)
     {
         _context = context;
+        _clock = clock;
     }
 
     public async Task<PermissionDecision> EvaluateAsync(
@@ -41,7 +43,14 @@ public class PermissionService : IPermissionService
             return new PermissionDecision(false, "missing_permission");
         }
 
-        // 4. Resource specific permissions
+        // 4. Check PermissionRule (future source of truth)
+        var ruleDecision = await EvaluateRulesAsync(context, cancellationToken);
+        if (ruleDecision is not null)
+        {
+            return ruleDecision;
+        }
+
+        // 5. Resource specific permissions (legacy fallback)
         if (context.ResourceType == ResourceType.Board && context.ResourceId.HasValue)
         {
             var board = await _context.Boards
@@ -63,17 +72,15 @@ public class PermissionService : IPermissionService
                     .AnyAsync(p => p.WorkspaceId == context.WorkspaceId &&
                                    p.ResourceType == ResourceType.Board &&
                                    p.ResourceId == board.Id &&
-                                   p.SubjectType == SubjectType.User &&
+                                   p.SubjectType == PermissionSubjectType.User &&
                                    p.SubjectId == context.UserId &&
-                                   p.IsRevoked == false &&
-                                   (p.ExpiresAt == null || p.ExpiresAt > DateTime.UtcNow), cancellationToken);
+                                   p.IsDeleted == false, cancellationToken);
 
                 if (boardMember is null && !hasExplicitPermission)
                 {
-                    return new PermissionDecision(false, "resource_not_found"); // Shielding private board
+                    return new PermissionDecision(false, "resource_not_found");
                 }
 
-                // If user has BoardRole, check action
                 if (boardMember is not null)
                 {
                     if (context.Action == PermissionAction.UpdateItem && boardMember.Role == BoardRole.Observer)
@@ -89,7 +96,6 @@ public class PermissionService : IPermissionService
             // Workspace board
             if (board.Visibility == BoardVisibility.Workspace)
             {
-                // Guest in workspace cannot view private/workspace boards unless explicit member
                 if (workspaceMember.Role == WorkspaceRole.Guest)
                 {
                     var boardMember = await _context.BoardMembers
@@ -101,7 +107,6 @@ public class PermissionService : IPermissionService
                     }
                 }
 
-                // Check board membership roles
                 var boardMemberCheck = await _context.BoardMembers
                     .FirstOrDefaultAsync(m => m.BoardId == board.Id && m.UserId == context.UserId, cancellationToken);
 
@@ -119,6 +124,77 @@ public class PermissionService : IPermissionService
         }
 
         return new PermissionDecision(true, null, PermissionLevel.Viewer);
+    }
+
+    private async Task<PermissionDecision?> EvaluateRulesAsync(
+        PermissionContext context,
+        CancellationToken cancellationToken)
+    {
+        var now = _clock.UtcNow;
+
+        var rules = await _context.PermissionRules
+            .Where(r => r.WorkspaceId == context.WorkspaceId
+                && r.Status == PermissionRuleStatus.Active
+                && r.IsDeleted == false
+                && (r.StartsAt == null || r.StartsAt <= now)
+                && (r.ExpiresAt == null || r.ExpiresAt > now))
+            .OrderBy(r => r.Priority)
+            .ToListAsync(cancellationToken);
+
+        foreach (var rule in rules)
+        {
+            if (!MatchesScope(rule, context)) continue;
+            if (!MatchesSubject(rule, context)) continue;
+            if (!MatchesAction(rule, context.Action)) continue;
+
+            if (rule.Effect == PermissionEffect.Deny)
+            {
+                return new PermissionDecision(false, "denied_by_rule", PermissionLevel.None);
+            }
+
+            return new PermissionDecision(true, null, PermissionLevel.Editor);
+        }
+
+        return null;
+    }
+
+    private static bool MatchesScope(PermissionRule rule, PermissionContext context)
+    {
+        if (rule.ScopeType == PermissionScopeType.Workspace)
+            return true;
+
+        if (rule.ResourceType.HasValue && rule.ResourceType.Value != context.ResourceType)
+            return false;
+
+        if (rule.ResourceId.HasValue && rule.ResourceId.Value != context.ResourceId)
+            return false;
+
+        return true;
+    }
+
+    private static bool MatchesSubject(PermissionRule rule, PermissionContext context)
+    {
+        return rule.SubjectType switch
+        {
+            PermissionSubjectType.User => rule.SubjectId == context.UserId,
+            _ => false
+        };
+    }
+
+    private static bool MatchesAction(PermissionRule rule, PermissionAction action)
+    {
+        return rule.Action == action;
+    }
+
+    public async Task EnsureAllowedAsync(
+        PermissionContext context,
+        CancellationToken cancellationToken = default)
+    {
+        var decision = await EvaluateAsync(context, cancellationToken);
+        if (!decision.IsAllowed)
+        {
+            throw new AppForbidden(decision.ReasonCode ?? "missing_permission");
+        }
     }
 
     private static PermissionLevel MapBoardRole(BoardRole role)
