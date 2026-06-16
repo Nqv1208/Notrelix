@@ -140,6 +140,18 @@ public class TeamTests
     }
 
     [Fact]
+    public void Rename_ShouldSucceed_AndRaiseEvent()
+    {
+        var team = Team.Create(Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        team.ClearDomainEvents();
+
+        team.Rename("QA Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        team.Name.Should().Be("QA Team");
+        team.DomainEvents.Should().ContainSingle(e => e is TeamRenamedEvent);
+    }
+
+    [Fact]
     public void Rename_ShouldThrow_WhenArchived()
     {
         var team = Team.Create(Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
