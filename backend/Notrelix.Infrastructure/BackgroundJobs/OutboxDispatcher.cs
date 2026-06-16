@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Events;
 using Notrelix.Domain.Common;
 using Notrelix.Infrastructure.Data;
@@ -58,18 +59,26 @@ internal sealed class OutboxDispatcher : BackgroundService
         await using var scope = _scopeFactory.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+        var eventTypeRegistry = scope.ServiceProvider.GetRequiredService<IEventTypeRegistry>();
+        var dateTimeProvider = scope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
+
+        var now = dateTimeProvider.UtcNow;
 
         var messages = await context.Set<OutboxMessage>()
-            .Where(m => m.Status == OutboxStatus.Pending && m.NextAttemptAt <= DateTimeOffset.UtcNow)
-            .OrderBy(m => m.CreatedAt)
-            .Take(OutboxDefaults.BatchSize)
+            .FromSqlRaw("""
+                SELECT * FROM ops.outbox_messages
+                WHERE status = 'Pending' AND next_attempt_at <= {0}
+                ORDER BY created_at
+                LIMIT {1}
+                FOR UPDATE SKIP LOCKED
+            """, now.UtcDateTime, OutboxDefaults.BatchSize)
             .ToListAsync(cancellationToken);
 
         if (messages.Count == 0) return;
 
         foreach (var message in messages)
         {
-            await ProcessMessageAsync(message, mediator, context, cancellationToken);
+            await ProcessMessageAsync(message, eventTypeRegistry, mediator, context, cancellationToken);
         }
 
         await context.SaveChangesAsync(cancellationToken);
@@ -77,6 +86,7 @@ internal sealed class OutboxDispatcher : BackgroundService
 
     private async Task ProcessMessageAsync(
         OutboxMessage message,
+        IEventTypeRegistry eventTypeRegistry,
         IMediator mediator,
         ApplicationDbContext context,
         CancellationToken cancellationToken)
@@ -85,9 +95,7 @@ internal sealed class OutboxDispatcher : BackgroundService
 
         try
         {
-            var domainEventType = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(a => a.GetTypes())
-                .FirstOrDefault(t => t.FullName == message.EventType || t.Name == message.EventType);
+            var domainEventType = eventTypeRegistry.GetEventType(message.EventType);
 
             if (domainEventType is null)
             {

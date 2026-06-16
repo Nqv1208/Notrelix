@@ -8,10 +8,12 @@ namespace Notrelix.Infrastructure.Data.Interceptors;
 public class AuditableEntityInterceptor : SaveChangesInterceptor
 {
     private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public AuditableEntityInterceptor(ICurrentUser currentUser)
+    public AuditableEntityInterceptor(ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public override InterceptionResult<int> SavingChanges(
@@ -35,7 +37,7 @@ public class AuditableEntityInterceptor : SaveChangesInterceptor
     {
         if (context is null) return;
 
-        var now = DateTimeOffset.UtcNow;
+        var now = _dateTimeProvider.UtcNow;
         Guid? userId = _currentUser.IsAuthenticated ? _currentUser.UserId : null;
 
         foreach (var entry in context.ChangeTracker.Entries<AuditableEntity>())

@@ -1,0 +1,21 @@
+using MassTransit;
+using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Common.Events;
+
+namespace Notrelix.Infrastructure.Messaging;
+
+public sealed class IntegrationEventBus : IIntegrationEventBus
+{
+    private readonly IPublishEndpoint _publishEndpoint;
+
+    public IntegrationEventBus(IPublishEndpoint publishEndpoint)
+    {
+        _publishEndpoint = publishEndpoint;
+    }
+
+    public async Task PublishAsync<T>(T integrationEvent, CancellationToken cancellationToken = default)
+        where T : IIntegrationEvent
+    {
+        await _publishEndpoint.Publish(integrationEvent, cancellationToken);
+    }
+}

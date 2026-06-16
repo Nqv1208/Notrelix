@@ -8,10 +8,12 @@ namespace Notrelix.Infrastructure.Services;
 public class CurrentUser : ICurrentUser
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ICurrentWorkspace _currentWorkspace;
 
-    public CurrentUser(IHttpContextAccessor httpContextAccessor)
+    public CurrentUser(IHttpContextAccessor httpContextAccessor, ICurrentWorkspace currentWorkspace)
     {
         _httpContextAccessor = httpContextAccessor;
+        _currentWorkspace = currentWorkspace;
     }
 
     public Guid UserId
@@ -52,4 +54,6 @@ public class CurrentUser : ICurrentUser
     }
 
     public bool IsAuthenticated => _httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
+
+    public Guid? WorkspaceId => _currentWorkspace.WorkspaceId;
 }

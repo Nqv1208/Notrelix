@@ -48,7 +48,7 @@ public sealed class N8nDispatchService
             return;
         }
 
-        if (!N8nAutomationConfiguration.TryGetWebhookPath(rule.Configuration, out var webhookPath))
+        if (!TryGetWebhookPath(rule.Configuration, out var webhookPath))
         {
             execution.Fail("Automation rule is missing configuration.webhookPath.", DateTimeOffset.UtcNow);
             await _context.SaveChangesAsync(cancellationToken);
@@ -74,5 +74,16 @@ public sealed class N8nDispatchService
         }
 
         await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    private static bool TryGetWebhookPath(Domain.Automation.RulesEngine.AutomationConfiguration config, out string webhookPath)
+    {
+        if (config.Action.Type != "Webhook" || string.IsNullOrWhiteSpace(config.Action.Configuration))
+        {
+            webhookPath = string.Empty;
+            return false;
+        }
+
+        return N8nAutomationConfiguration.TryGetWebhookPath(config.Action.Configuration, out webhookPath);
     }
 }

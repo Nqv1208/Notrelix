@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Automation.Rules;
+using Notrelix.Domain.Automation.RulesEngine;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Automation;
 
@@ -16,10 +17,12 @@ public class AutomationRuleConfiguration : IEntityTypeConfiguration<AutomationRu
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(1024);
-        builder.Property(x => x.TriggerEvent).HasColumnName("trigger_event").IsRequired().HasMaxLength(100);
-        builder.Property(x => x.ActionType).HasColumnName("action_type").IsRequired().HasMaxLength(100);
-        builder.Property(x => x.Configuration).HasColumnName("configuration").HasColumnType("jsonb");
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
+
+        builder.OwnsOne(x => x.Configuration, cfg =>
+        {
+            cfg.ToJson("configuration");
+        });
 
         builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
@@ -33,6 +36,5 @@ public class AutomationRuleConfiguration : IEntityTypeConfiguration<AutomationRu
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
         builder.HasIndex(x => x.WorkspaceId).HasDatabaseName("idx_automation_rules_workspace_id");
-        builder.HasIndex(x => x.TriggerEvent).HasDatabaseName("idx_automation_rules_trigger_event");
     }
 }

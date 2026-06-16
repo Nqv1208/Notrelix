@@ -1,5 +1,6 @@
 using System.Text;
 using System.IdentityModel.Tokens.Jwt;
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -17,6 +18,8 @@ using Notrelix.Infrastructure.Otp;
 using Notrelix.Infrastructure.RateLimit;
 using Notrelix.Infrastructure.Data.Interceptors;
 using Notrelix.Infrastructure.BackgroundJobs;
+using Notrelix.Infrastructure.Data.Outbox;
+using Notrelix.Infrastructure.Messaging;
 using Notrelix.Infrastructure.Services;
 using Notrelix.Application.Common.Models;
 using Microsoft.Extensions.DependencyInjection;
@@ -91,6 +94,23 @@ public static class DependencyInjection
         // Register Interceptors
         services.AddScoped<AuditableEntityInterceptor>();
         services.AddScoped<DomainEventInterceptor>();
+
+        // Register Outbox infrastructure
+        services.AddSingleton<IEventTypeRegistry, EventTypeRegistry>();
+
+        // Register Integration Event Bus (MassTransit in-memory transport)
+        services.AddMassTransit(cfg =>
+        {
+            cfg.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("notrelix", false));
+            cfg.AddConsumers(typeof(DependencyInjection).Assembly);
+
+            cfg.UsingInMemory((ctx, mem) =>
+            {
+                mem.ConfigureEndpoints(ctx);
+            });
+        });
+
+        services.AddScoped<IIntegrationEventBus, IntegrationEventBus>();
     }
 
     public static IServiceCollection AddDatabaseContext(

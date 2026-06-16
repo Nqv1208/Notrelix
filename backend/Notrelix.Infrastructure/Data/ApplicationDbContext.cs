@@ -75,8 +75,11 @@ namespace Notrelix.Infrastructure.Data;
 
 public class ApplicationDbContext : DbContext, IApplicationDbContext
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
+    private readonly ICurrentWorkspace? _currentWorkspace;
+
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentWorkspace? currentWorkspace = null) : base(options)
     {
+        _currentWorkspace = currentWorkspace;
     }
 
     // Identity
@@ -234,15 +237,35 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
-            if (typeof(SoftDeletableEntity).IsAssignableFrom(entityType.ClrType))
+            var isSoftDeletable = typeof(SoftDeletableEntity).IsAssignableFrom(entityType.ClrType);
+            var isWorkspaceScoped = typeof(IWorkspaceScoped).IsAssignableFrom(entityType.ClrType);
+
+            if (!isSoftDeletable && !isWorkspaceScoped)
+                continue;
+
+            var param = Expression.Parameter(entityType.ClrType, "e");
+            Expression? filterBody = null;
+
+            if (isSoftDeletable)
             {
-                var param = Expression.Parameter(entityType.ClrType, "e");
-                var body = Expression.Equal(
+                filterBody = Expression.Equal(
                     Expression.PropertyOrField(param, "DeletedAt"),
                     Expression.Constant(null, typeof(DateTimeOffset?)));
-                var lambda = Expression.Lambda(body, param);
-                modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
             }
+
+            if (isWorkspaceScoped && _currentWorkspace is not null)
+            {
+                var wsFilter = Expression.Equal(
+                    Expression.PropertyOrField(param, "WorkspaceId"),
+                    Expression.Property(Expression.Constant(_currentWorkspace), "WorkspaceId"));
+
+                filterBody = filterBody is not null
+                    ? Expression.AndAlso(filterBody, wsFilter)
+                    : wsFilter;
+            }
+
+            var lambda = Expression.Lambda(filterBody!, param);
+            modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
         }
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
