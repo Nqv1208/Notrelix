@@ -66,11 +66,16 @@ internal sealed class OutboxDispatcher : BackgroundService
 
         var messages = await context.Set<OutboxMessage>()
             .FromSqlRaw("""
-                SELECT * FROM ops.outbox_messages
-                WHERE status = 'Pending' AND next_attempt_at <= {0}
-                ORDER BY created_at
-                LIMIT {1}
-                FOR UPDATE SKIP LOCKED
+                UPDATE ops.outbox_messages
+                SET status = 'Processing'
+                WHERE id IN (
+                    SELECT id FROM ops.outbox_messages
+                    WHERE status = 'Pending' AND next_attempt_at <= {0}
+                    ORDER BY created_at
+                    LIMIT {1}
+                    FOR UPDATE SKIP LOCKED
+                )
+                RETURNING *
             """, now.UtcDateTime, OutboxDefaults.BatchSize)
             .ToListAsync(cancellationToken);
 
@@ -78,7 +83,7 @@ internal sealed class OutboxDispatcher : BackgroundService
 
         foreach (var message in messages)
         {
-            await ProcessMessageAsync(message, eventTypeRegistry, mediator, context, cancellationToken);
+            await ProcessMessageAsync(message, eventTypeRegistry, mediator, dateTimeProvider, context, cancellationToken);
         }
 
         await context.SaveChangesAsync(cancellationToken);
@@ -88,6 +93,7 @@ internal sealed class OutboxDispatcher : BackgroundService
         OutboxMessage message,
         IEventTypeRegistry eventTypeRegistry,
         IMediator mediator,
+        IDateTimeProvider dateTimeProvider,
         ApplicationDbContext context,
         CancellationToken cancellationToken)
     {
@@ -100,7 +106,7 @@ internal sealed class OutboxDispatcher : BackgroundService
             if (domainEventType is null)
             {
                 _logger.LogWarning("Outbox message {Id}: event type {EventType} not found", message.Id, message.EventType);
-                message.MarkProcessed();
+                message.MarkProcessed(dateTimeProvider.UtcNow);
                 return;
             }
 
@@ -109,7 +115,7 @@ internal sealed class OutboxDispatcher : BackgroundService
             if (domainEvent is null)
             {
                 _logger.LogError("Outbox message {Id}: failed to deserialize payload as {EventType}", message.Id, message.EventType);
-                message.MarkFailed("Deserialization returned null or unexpected type");
+                message.MarkFailed("Deserialization returned null or unexpected type", dateTimeProvider.UtcNow);
                 return;
             }
 
@@ -118,7 +124,7 @@ internal sealed class OutboxDispatcher : BackgroundService
 
             await mediator.Publish(notification, cancellationToken);
 
-            message.MarkProcessed();
+            message.MarkProcessed(dateTimeProvider.UtcNow);
             _logger.LogDebug("Outbox message {Id}: {EventType} processed (attempt {Retry})",
                 message.Id, message.EventType, message.RetryCount + 1);
         }
@@ -126,7 +132,7 @@ internal sealed class OutboxDispatcher : BackgroundService
         {
             _logger.LogError(ex, "Outbox message {Id}: {EventType} failed (attempt {Retry})",
                 message.Id, message.EventType, message.RetryCount + 1);
-            message.MarkFailed(ex.ToString());
+            message.MarkFailed(ex.ToString(), dateTimeProvider.UtcNow);
         }
     }
 }

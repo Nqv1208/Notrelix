@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Events;
 using Notrelix.Domain.Common;
 using Notrelix.Infrastructure.Data.Outbox;
@@ -10,11 +11,13 @@ namespace Notrelix.Infrastructure.Data.Interceptors;
 public class DomainEventInterceptor : SaveChangesInterceptor
 {
     private readonly IMediator _mediator;
+    private readonly IDateTimeProvider _dateTimeProvider;
     private readonly AsyncLocal<List<IDomainEvent>?> _syncEvents = new();
 
-    public DomainEventInterceptor(IMediator mediator)
+    public DomainEventInterceptor(IMediator mediator, IDateTimeProvider dateTimeProvider)
     {
         _mediator = mediator;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public override InterceptionResult<int> SavingChanges(
@@ -74,9 +77,10 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         if (domainEvents.Count == 0) return;
 
         var outboxEvents = domainEvents.OfType<IOutboxEvent>().ToList();
+        var now = _dateTimeProvider.UtcNow;
         foreach (var outboxEvent in outboxEvents)
         {
-            var message = OutboxMessage.From((IDomainEvent)outboxEvent);
+            var message = OutboxMessage.From((IDomainEvent)outboxEvent, now);
             context.Set<OutboxMessage>().Add(message);
         }
 

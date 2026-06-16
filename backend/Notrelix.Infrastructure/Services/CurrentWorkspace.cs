@@ -26,14 +26,6 @@ public class CurrentWorkspace : ICurrentWorkspace
             if (context?.Items.TryGetValue(ItemsKey, out var value) == true && value is Guid guid)
                 return guid;
 
-            if (context?.Request.RouteValues.TryGetValue("workspaceId", out var routeValue) == true
-                && Guid.TryParse(routeValue?.ToString(), out var routeGuid))
-                return routeGuid;
-
-            if (context?.Request.Headers.TryGetValue("X-Workspace-Id", out var headerValue) == true
-                && Guid.TryParse(headerValue.FirstOrDefault(), out var headerGuid))
-                return headerGuid;
-
             return null;
         }
     }

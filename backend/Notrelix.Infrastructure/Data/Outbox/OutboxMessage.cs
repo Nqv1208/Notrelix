@@ -30,9 +30,8 @@ public sealed class OutboxMessage
 
     private OutboxMessage() { }
 
-    public static OutboxMessage From(IDomainEvent domainEvent)
+    public static OutboxMessage From(IDomainEvent domainEvent, DateTimeOffset now)
     {
-        var now = DateTimeOffset.UtcNow;
         var eventType = domainEvent is IOutboxEvent outboxEvent
             ? outboxEvent.EventType
             : domainEvent.GetType().FullName!;
@@ -59,13 +58,13 @@ public sealed class OutboxMessage
         Status = OutboxStatus.Processing;
     }
 
-    public void MarkProcessed()
+    public void MarkProcessed(DateTimeOffset now)
     {
         Status = OutboxStatus.Processed;
-        ProcessedAt = DateTimeOffset.UtcNow;
+        ProcessedAt = now;
     }
 
-    public void MarkFailed(string error)
+    public void MarkFailed(string error, DateTimeOffset now)
     {
         RetryCount++;
         Error = error;
@@ -77,7 +76,7 @@ public sealed class OutboxMessage
         else
         {
             Status = OutboxStatus.Failed;
-            NextAttemptAt = DateTimeOffset.UtcNow.AddSeconds(
+            NextAttemptAt = now.AddSeconds(
                 Math.Min(Math.Pow(2, RetryCount), OutboxDefaults.MaxBackoffSeconds));
         }
     }
