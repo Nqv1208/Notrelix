@@ -9,13 +9,16 @@ public sealed class AutomationTriggerDefinition : ValueObject
     private static readonly HashSet<string> ValidTriggers = new(StringComparer.OrdinalIgnoreCase)
     {
         "FieldChanged", "ItemCreated", "ItemUpdated", "ItemDeleted",
-        "ItemMovedToGroup", "FormSubmitted", "ScheduleTrigger"
+        "ItemMovedToGroup", "FormSubmitted", "ScheduleTrigger",
+        "ItemAssigned"
     };
 
-    public string Type { get; }
-    public string? Configuration { get; }
+    public string Type { get; private set; }
+    public string? Configuration { get; private set; }
 
-    private AutomationTriggerDefinition() { }    private AutomationTriggerDefinition(string type, string? configuration)
+    private AutomationTriggerDefinition() { }
+
+    private AutomationTriggerDefinition(string type, string? configuration)
     {
         Type = type;
         Configuration = configuration;

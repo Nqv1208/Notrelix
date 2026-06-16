@@ -168,11 +168,10 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         AddDomainEvent(new BoardItemFieldValueChangedEvent(WorkspaceId, Id, BoardId, field.Id, oldValue, newValue, updatedBy, updatedAt));
     }
 
-    public void AssignParentItem(Guid? parentItemId, int itemLevel, Guid updatedBy, DateTimeOffset updatedAt)
+    public void AssignParentItem(Guid? parentItemId, int itemLevel, Func<Guid, Guid?> getAncestorParentId, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        if (parentItemId == Id)
-            throw new BusinessRuleException("An item cannot be its own parent.");
+        BoardItemRules.EnsureNoCycle(Id, parentItemId, getAncestorParentId);
 
         ParentItemId = parentItemId;
         ItemLevel = itemLevel;

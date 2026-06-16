@@ -153,6 +153,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
             : $"{ItemKeyPrefix}-{ItemSequence}";
         SetAuditOnUpdate(actorUserId, now);
         IncrementVersion();
+        AddDomainEvent(new BoardItemIdentityGeneratedEvent(WorkspaceId, Id, ItemSequence, key, actorUserId, now));
         return (ItemSequence, key);
     }
 

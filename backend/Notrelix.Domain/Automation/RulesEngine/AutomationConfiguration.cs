@@ -4,11 +4,13 @@ namespace Notrelix.Domain.Automation.RulesEngine;
 
 public sealed class AutomationConfiguration : ValueObject
 {
-    public AutomationTriggerDefinition Trigger { get; }
-    public AutomationActionDefinition Action { get; }
-    public AutomationConditionDefinition? Condition { get; }
+    public AutomationTriggerDefinition Trigger { get; private set; }
+    public AutomationActionDefinition Action { get; private set; }
+    public AutomationConditionDefinition? Condition { get; private set; }
 
-    private AutomationConfiguration() { }    private AutomationConfiguration(
+    private AutomationConfiguration() { }
+
+    private AutomationConfiguration(
         AutomationTriggerDefinition trigger,
         AutomationActionDefinition action,
         AutomationConditionDefinition? condition)

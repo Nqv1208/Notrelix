@@ -6,9 +6,11 @@ namespace Notrelix.Domain.Automation.RulesEngine;
 
 public sealed class AutomationConditionDefinition : ValueObject
 {
-    public string RawJson { get; }
+    public string RawJson { get; private set; }
 
-    private AutomationConditionDefinition() { }    private AutomationConditionDefinition(string rawJson)
+    private AutomationConditionDefinition() { }
+
+    private AutomationConditionDefinition(string rawJson)
     {
         RawJson = rawJson;
     }
