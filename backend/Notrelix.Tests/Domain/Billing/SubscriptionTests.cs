@@ -105,4 +105,201 @@ public class SubscriptionTests
         subscription.Status.Should().Be(SubscriptionStatus.PastDue);
         subscription.DomainEvents.Should().Contain(e => e is SubscriptionPastDueEvent);
     }
+
+    [Fact]
+    public void ScheduleCancellation_ShouldSetFlag_AndRaiseEvent()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
+
+        subscription.ScheduleCancellation(actor, now);
+
+        subscription.CancelAtPeriodEnd.Should().BeTrue();
+        subscription.DomainEvents.Should().Contain(e => e is SubscriptionCancellationScheduledEvent);
+    }
+
+    [Fact]
+    public void ScheduleCancellation_WhenAlreadyScheduled_ShouldBeNoOp()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
+        subscription.ScheduleCancellation(actor, now);
+        subscription.ClearDomainEvents();
+
+        subscription.ScheduleCancellation(actor, now);
+
+        subscription.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void CancelImmediately_WhenAlreadyCanceled_ShouldBeNoOp()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
+        subscription.CancelImmediately(actor, now);
+        subscription.ClearDomainEvents();
+
+        subscription.CancelImmediately(actor, now);
+
+        subscription.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Expire_WhenAlreadyExpired_ShouldBeNoOp()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
+        subscription.Expire(actor, now);
+        subscription.ClearDomainEvents();
+
+        subscription.Expire(actor, now);
+
+        subscription.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void MarkPastDue_WhenAlreadyPastDue_ShouldBeNoOp()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
+        subscription.MarkPastDue(actor, now);
+        subscription.ClearDomainEvents();
+
+        subscription.MarkPastDue(actor, now);
+
+        subscription.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ChangePlan_WhenCanceled_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
+        subscription.CancelImmediately(actor, now);
+
+        var act = () => subscription.ChangePlan(Guid.NewGuid(), actor, now);
+        act.Should().Throw<BusinessRuleException>().WithMessage("*inactive*");
+    }
+
+    [Fact]
+    public void ChangePlan_WhenExpired_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
+        subscription.Expire(actor, now);
+
+        var act = () => subscription.ChangePlan(Guid.NewGuid(), actor, now);
+        act.Should().Throw<BusinessRuleException>().WithMessage("*inactive*");
+    }
+
+    [Fact]
+    public void Renew_WithInvalidPeriod_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
+
+        var act = () => subscription.Renew(now.AddDays(30), now.AddDays(20), actor, now);
+        act.Should().Throw<BusinessRuleException>().WithMessage("*must be before end*");
+    }
+
+    [Fact]
+    public void Renew_ShouldResetCancelFlag()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
+        subscription.ScheduleCancellation(actor, now);
+
+        subscription.Renew(now.AddDays(30), now.AddDays(60), actor, now);
+
+        subscription.CancelAtPeriodEnd.Should().BeFalse();
+    }
+
+    [Fact]
+    public void SoftDelete_ShouldMarkDeleted_AndRaiseEvent()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
+        subscription.ClearDomainEvents();
+
+        subscription.SoftDelete(actor, now);
+
+        subscription.IsDeleted.Should().BeTrue();
+        subscription.DomainEvents.Should().Contain(e => e is SubscriptionSoftDeletedEvent);
+    }
+
+    [Fact]
+    public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
+        subscription.SoftDelete(actor, now);
+        subscription.ClearDomainEvents();
+
+        subscription.SoftDelete(actor, now);
+
+        subscription.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Restore_ShouldRestore_AndRaiseEvent()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
+        subscription.SoftDelete(actor, now);
+        subscription.ClearDomainEvents();
+
+        subscription.Restore(actor, now);
+
+        subscription.IsDeleted.Should().BeFalse();
+        subscription.DomainEvents.Should().Contain(e => e is SubscriptionRestoredEvent);
+    }
+
+    [Fact]
+    public void Restore_WhenNotDeleted_ShouldBeNoOp()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
+        subscription.ClearDomainEvents();
+
+        subscription.Restore(actor, now);
+
+        subscription.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ChangePlan_WhenDeleted_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
+        subscription.SoftDelete(actor, now);
+
+        var act = () => subscription.ChangePlan(Guid.NewGuid(), actor, now);
+        act.Should().Throw<DomainException>().WithMessage("*deleted*");
+    }
+
+    [Fact]
+    public void Renew_WhenDeleted_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
+        subscription.SoftDelete(actor, now);
+
+        var act = () => subscription.Renew(now.AddDays(30), now.AddDays(60), actor, now);
+        act.Should().Throw<DomainException>().WithMessage("*deleted*");
+    }
 }
