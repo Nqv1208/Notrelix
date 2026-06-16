@@ -33,7 +33,7 @@ public class UpdateBoardItemCommandHandler : IRequestHandler<UpdateBoardItemComm
 
         await _permissions.EnsureCanEditBoardAsync(card.BoardId, _currentUser.UserId, ct);
 
-        var now = new DateTimeOffset(_timeProvider.UtcNow, TimeSpan.Zero);
+        var now = _timeProvider.UtcNow;
 
         if (request.Title is not null) card.Rename(request.Title, _currentUser.UserId, now);
         if (request.DueDate.HasValue || request.StartDate.HasValue)

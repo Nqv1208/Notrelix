@@ -5,7 +5,7 @@ public record AutomationRuleDto(
     Guid Id,
     Guid WorkspaceId,
     string Name,
-    string TriggerEvent,
+    string TriggerType,
     string ActionType,
     string Configuration,
     bool IsEnabled,

@@ -5,5 +5,5 @@ namespace Notrelix.Application.Common.Abstractions;
 /// </summary>
 public interface IDateTimeProvider
 {
-    DateTime UtcNow { get; }
+    DateTimeOffset UtcNow { get; }
 }

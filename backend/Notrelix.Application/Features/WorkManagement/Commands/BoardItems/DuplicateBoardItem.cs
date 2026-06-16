@@ -34,7 +34,7 @@ public class DuplicateBoardItemCommandHandler : IRequestHandler<DuplicateBoardIt
             ? FractionalIndex.Create(lastItem.Position.Value + "1")
             : FractionalIndex.Initial();
 
-        var now = new DateTimeOffset(_timeProvider.UtcNow, TimeSpan.Zero);
+        var now = _timeProvider.UtcNow;
 
         var duplicate = DuplicateBoardGroupCommandHandler.CloneCard(
             source,

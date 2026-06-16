@@ -42,7 +42,7 @@ public class UpdateBoardItemStatusCommandHandler : IRequestHandler<UpdateBoardIt
         if (statusField == null)
             return Result.Failure("No status field found on this board.");
 
-        var now = new DateTimeOffset(_timeProvider.UtcNow, TimeSpan.Zero);
+        var now = _timeProvider.UtcNow;
         var fieldValue = FieldValue.Create(JsonValue.Create(System.Text.Json.JsonSerializer.Serialize(request.Status)));
 
         card.UpdateFieldValue(statusField, fieldValue, _currentUser.UserId, now);

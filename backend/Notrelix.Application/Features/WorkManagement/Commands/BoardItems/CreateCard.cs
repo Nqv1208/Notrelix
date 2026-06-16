@@ -53,7 +53,7 @@ public class CreateCardCommandHandler : IRequestHandler<CreateCardCommand, Resul
         if (board == null)
             throw new NotFoundException(nameof(Board), list.BoardId);
 
-        var now = new DateTimeOffset(_timeProvider.UtcNow, TimeSpan.Zero);
+        var now = _timeProvider.UtcNow;
 
         var card = BoardItem.Create(
             board.WorkspaceId,

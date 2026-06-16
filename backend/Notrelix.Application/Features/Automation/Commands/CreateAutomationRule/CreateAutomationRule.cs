@@ -2,6 +2,7 @@ using MediatR;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Domain.Automation.Rules;
+using Notrelix.Domain.Automation.RulesEngine;
 
 namespace Notrelix.Application.Features.Automation.Commands.CreateAutomationRule;
 
@@ -35,14 +36,16 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
     {
         await _permissions.EnsureCanManageWorkspaceAsync(request.WorkspaceId, _currentUser.UserId, cancellationToken);
 
+        var trigger = AutomationTriggerDefinition.Create(request.TriggerEvent, request.Configuration);
+        var action = AutomationActionDefinition.Create(request.ActionType, request.Configuration);
+        var config = AutomationConfiguration.Create(trigger, action);
+
         var rule = AutomationRule.Create(
             request.WorkspaceId,
             request.Name,
-            request.TriggerEvent,
-            request.ActionType,
+            config,
             _currentUser.UserId,
-            _dateTimeProvider.UtcNow,
-            request.Configuration);
+            _dateTimeProvider.UtcNow);
 
         _context.AutomationRules.Add(rule);
         await _context.SaveChangesAsync(cancellationToken);

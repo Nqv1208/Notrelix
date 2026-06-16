@@ -33,13 +33,17 @@ public class CardAssignedN8nAutomationHandler : INotificationHandler<DomainEvent
         var rules = await _context.AutomationRules
             .Where(rule =>
                 rule.WorkspaceId == card.WorkspaceId &&
-                rule.IsEnabled &&
-                rule.TriggerEvent == "card.assigned" &&
-                rule.ActionType == "n8n.webhook")
+                rule.IsEnabled)
             .ToListAsync(cancellationToken);
 
         foreach (var rule in rules)
         {
+            if (rule.Configuration.Trigger.Type != "ItemAssigned" ||
+                rule.Configuration.Action.Type != "Webhook")
+            {
+                continue;
+            }
+
             var exists = await _context.AutomationExecutions
                 .AsNoTracking()
                 .AnyAsync(execution =>

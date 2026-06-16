@@ -33,7 +33,7 @@ public class ArchiveBoardItemCommandHandler : IRequestHandler<ArchiveBoardItemCo
 
         await _permissions.EnsureCanEditBoardAsync(card.BoardId, _currentUser.UserId, ct);
 
-        var now = new DateTimeOffset(_timeProvider.UtcNow, TimeSpan.Zero);
+        var now = _timeProvider.UtcNow;
         card.SoftDelete(_currentUser.UserId, now);
 
         await _context.SaveChangesAsync(ct);

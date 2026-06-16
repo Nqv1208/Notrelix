@@ -1,3 +1,4 @@
+using System.Text.Json;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
@@ -35,18 +36,20 @@ public class GetWorkspaceAutomationsQueryHandler : IRequestHandler<GetWorkspaceA
             .AsNoTracking()
             .Where(item => item.WorkspaceId == request.WorkspaceId)
             .OrderBy(item => item.Name)
-            .Select(item => new AutomationRuleDto(
+            .ToListAsync(cancellationToken);
+
+        var dtos = automations.Select(item => new AutomationRuleDto(
                 item.Id,
                 item.WorkspaceId,
                 item.Name,
-                item.TriggerEvent,
-                item.ActionType,
-                item.Configuration,
+                item.Configuration.Trigger.Type,
+                item.Configuration.Action.Type,
+                JsonSerializer.Serialize(item.Configuration),
                 item.IsEnabled,
                 item.CreatedAt.DateTime,
                 item.UpdatedAt.HasValue ? item.UpdatedAt.Value.DateTime : null))
-            .ToListAsync(cancellationToken);
+            .ToList();
 
-        return Result<IReadOnlyList<AutomationRuleDto>>.Success(automations);
+        return Result<IReadOnlyList<AutomationRuleDto>>.Success(dtos);
     }
 }

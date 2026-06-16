@@ -1,5 +1,5 @@
 using FluentValidation;
-using Notrelix.Application.Features.Integrations;
+using Notrelix.Domain.Automation.RulesEngine;
 
 namespace Notrelix.Application.Features.Automation.Commands.CreateAutomationRule;
 
@@ -12,10 +12,21 @@ public class CreateAutomationRuleCommandValidator : AbstractValidator<CreateAuto
         RuleFor(x => x.TriggerEvent).NotEmpty().MaximumLength(120);
         RuleFor(x => x.ActionType).NotEmpty().MaximumLength(80);
         RuleFor(x => x.Configuration).NotEmpty();
-        RuleFor(x => x.Configuration)
-            .Must((command, configuration) =>
-                !string.Equals(command.ActionType, "n8n.webhook", StringComparison.OrdinalIgnoreCase) ||
-                N8nAutomationConfiguration.TryGetWebhookPath(configuration, out _))
-            .WithMessage("N8n webhook automations require configuration.webhookPath.");
+        RuleFor(x => x)
+            .Must(x =>
+            {
+                try
+                {
+                    var trigger = AutomationTriggerDefinition.Create(x.TriggerEvent, x.Configuration);
+                    var action = AutomationActionDefinition.Create(x.ActionType, x.Configuration);
+                    AutomationConfiguration.Create(trigger, action);
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
+            })
+            .WithMessage("Invalid automation trigger and/or action configuration.");
     }
 }

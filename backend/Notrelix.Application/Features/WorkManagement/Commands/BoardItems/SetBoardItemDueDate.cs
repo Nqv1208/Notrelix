@@ -33,7 +33,7 @@ public class SetBoardItemDueDateCommandHandler : IRequestHandler<SetBoardItemDue
 
         await _permissions.EnsureCanEditBoardAsync(card.BoardId, _currentUser.UserId, ct);
 
-        var now = new DateTimeOffset(_timeProvider.UtcNow, TimeSpan.Zero);
+        var now = _timeProvider.UtcNow;
         card.SetTimeline(
             request.StartDate.HasValue ? new DateTimeOffset(request.StartDate.Value, TimeSpan.Zero) : card.StartedAt,
             request.DueDate.HasValue ? new DateTimeOffset(request.DueDate.Value, TimeSpan.Zero) : card.DueAt,

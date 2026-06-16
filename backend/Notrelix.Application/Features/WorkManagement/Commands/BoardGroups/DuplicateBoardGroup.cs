@@ -41,7 +41,7 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
             .FirstOrDefaultAsync(b => b.Id == source.BoardId, ct);
         if (board is null) throw new NotFoundException(nameof(Board), source.BoardId);
 
-        var now = new DateTimeOffset(_timeProvider.UtcNow, TimeSpan.Zero);
+        var now = _timeProvider.UtcNow;
 
         var duplicate = BoardGroup.Create(board.WorkspaceId, source.BoardId, $"{source.Title} copy", source.Color, nextPosition, _currentUser.UserId, now);
         _context.BoardGroups.Add(duplicate);

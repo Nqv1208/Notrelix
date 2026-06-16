@@ -7,7 +7,7 @@ using Notrelix.Domain.WorkManagement.Boards;
 
 namespace Notrelix.Application.Common.Security;
 
-public class PermissionService : IPermissionService
+public class PermissionService : IPermissionService, IPermissionEvaluator
 {
     private readonly IApplicationDbContext _context;
     private readonly IDateTimeProvider _clock;

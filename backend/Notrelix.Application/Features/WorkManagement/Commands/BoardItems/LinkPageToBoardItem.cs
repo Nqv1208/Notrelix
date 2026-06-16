@@ -46,7 +46,7 @@ public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoard
         if (card.WorkspaceId != page.WorkspaceId)
             throw new BusinessRuleViolationException("CardPageWorkspaceMismatch", "BoardItem chỉ được link với page cùng workspace.");
 
-        var now = new DateTimeOffset(_timeProvider.UtcNow, TimeSpan.Zero);
+        var now = _timeProvider.UtcNow;
 
         var link = BoardItemLink.Create(
             card.WorkspaceId,

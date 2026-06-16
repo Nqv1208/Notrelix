@@ -46,7 +46,7 @@ public class MoveCardCommandHandler : IRequestHandler<MoveCardCommand, Result>
 
         await _permissions.EnsureCanEditBoardAsync(card.BoardId, _currentUser.UserId, cancellationToken);
 
-        var now = new DateTimeOffset(_timeProvider.UtcNow, TimeSpan.Zero);
+        var now = _timeProvider.UtcNow;
         var position = FractionalIndex.Create(request.Position.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
         card.MoveToGroup(BoardGroupRef.From(targetList), position, _currentUser.UserId, now);

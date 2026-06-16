@@ -38,7 +38,7 @@ public class CreateBoardItemCommandHandler : IRequestHandler<CreateBoardItemComm
         if (group == null)
             throw new NotFoundException("BoardGroup", request.GroupId);
 
-        var now = new DateTimeOffset(_timeProvider.UtcNow, TimeSpan.Zero);
+        var now = _timeProvider.UtcNow;
         var position = FractionalIndex.Create(request.Position.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
         var item = BoardItem.Create(

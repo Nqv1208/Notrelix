@@ -34,7 +34,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
 
         await _permissions.EnsureCanEditBoardAsync(card.BoardId, _currentUser.UserId, ct);
 
-        var now = new DateTimeOffset(_timeProvider.UtcNow, TimeSpan.Zero);
+        var now = _timeProvider.UtcNow;
 
         var columns = await _context.BoardFields.AsNoTracking()
             .Where(column => column.BoardId == card.BoardId && request.Values.Keys.Contains(column.Id))

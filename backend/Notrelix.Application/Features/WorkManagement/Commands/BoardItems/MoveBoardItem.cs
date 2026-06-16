@@ -45,7 +45,7 @@ public class MoveBoardItemCommandHandler : IRequestHandler<MoveBoardItemCommand,
         if (group == null)
             throw new NotFoundException("BoardGroup", request.NewGroupId);
 
-        var now = new DateTimeOffset(_timeProvider.UtcNow, TimeSpan.Zero);
+        var now = _timeProvider.UtcNow;
         var position = FractionalIndex.Create(request.Position.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
         item.MoveToGroup(BoardGroupRef.From(group), position, _currentUser.UserId, now);

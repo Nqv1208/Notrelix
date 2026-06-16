@@ -44,7 +44,7 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
         if (field == null)
             throw new NotFoundException("BoardField", request.FieldId);
 
-        var now = new DateTimeOffset(_timeProvider.UtcNow, TimeSpan.Zero);
+        var now = _timeProvider.UtcNow;
         var jsonString = System.Text.Json.JsonSerializer.Serialize(request.Value);
         var fieldValue = FieldValue.Create(JsonValue.Create(jsonString));
 
