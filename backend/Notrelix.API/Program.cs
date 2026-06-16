@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.HttpOverrides;
 using Notrelix.Infrastructure;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Infrastructure.Middleware;
 using Notrelix.API.Middleware;
 using Notrelix.API.Extensions;
 
@@ -57,6 +58,7 @@ if (app.Configuration.GetValue<bool>("HttpsRedirection:Enabled"))
 }
 
 app.UseAuthentication();
+app.UseWorkspaceResolution();
 app.UseAuthorization();
 
 // ── Minimal API endpoints (replaces app.MapControllers()) ────
