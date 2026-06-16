@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Common;
+using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Integrations.Webhooks;
 using Notrelix.Domain.SharedKernel;
 using Xunit;
@@ -47,5 +48,54 @@ public class WebhookSubscriptionTests
 
         sub.IsDeleted.Should().BeTrue();
         sub.IsActive.Should().BeFalse();
+    }
+
+    [Fact]
+    public void RotateSecret_ShouldUpdateHash()
+    {
+        var sub = WebhookSubscription.Create(Guid.NewGuid(), Url.Create("https://example.com/webhook"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var newHash = WebhookSecretHash.Create("sha256=newhash");
+
+        sub.RotateSecret(newHash, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        sub.SecretHash.Should().Be(newHash);
+    }
+
+    [Fact]
+    public void RotateSecret_WhenDeleted_ShouldThrow()
+    {
+        var sub = WebhookSubscription.Create(Guid.NewGuid(), Url.Create("https://example.com/webhook"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        sub.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        var act = () => sub.RotateSecret(WebhookSecretHash.Create("sha256=x"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        act.Should().Throw<DomainException>().WithMessage("*deleted*");
+    }
+
+    [Fact]
+    public void RotateSecret_WithNullHash_ShouldThrow()
+    {
+        var sub = WebhookSubscription.Create(Guid.NewGuid(), Url.Create("https://example.com/webhook"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var act = () => sub.RotateSecret(null!, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void Enable_WhenDeleted_ShouldThrow()
+    {
+        var sub = WebhookSubscription.Create(Guid.NewGuid(), Url.Create("https://example.com/webhook"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        sub.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        var act = () => sub.Enable(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        act.Should().Throw<DomainException>().WithMessage("*deleted*");
+    }
+
+    [Fact]
+    public void Disable_WhenDeleted_ShouldThrow()
+    {
+        var sub = WebhookSubscription.Create(Guid.NewGuid(), Url.Create("https://example.com/webhook"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        sub.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        var act = () => sub.Disable(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 }
