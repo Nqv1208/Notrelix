@@ -1,0 +1,129 @@
+/* ------------------------------------------------------------------ *
+ * Notrelix — Editorial Swiss landing (v2)
+ * Self-contained design tokens + helpers. Scoped under .editorial-root
+ * so nothing here leaks into the rest of the app.
+ * ------------------------------------------------------------------ */
+
+.editorial-root {
+  /* Surfaces — warm newsprint, not flat zinc */
+  --paper: #f4f1ea;
+  --paper-2: #ece8dd;
+  --paper-ink: #14120d; /* near-black blocks on light */
+
+  /* Ink */
+  --ink: #1a1813;
+  --ink-soft: #57534a;
+  --ink-faint: #8b857a;
+
+  /* Structure */
+  --rule: #d9d3c5;
+  --rule-strong: #b7b0a0;
+
+  /* The one accent — Swiss vermillion */
+  --accent: #df3b1f;
+  --accent-ink: #f8f5ee;
+
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-editorial-sans), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv01";
+  -webkit-font-smoothing: antialiased;
+}
+
+.dark .editorial-root {
+  --paper: #13120e;
+  --paper-2: #1b1914;
+  --paper-ink: #f2eee4;
+
+  --ink: #f1ede2;
+  --ink-soft: #a8a293;
+  --ink-faint: #726c5f;
+
+  --rule: #2d2a22;
+  --rule-strong: #423d32;
+
+  --accent: #ff5a3c;
+  --accent-ink: #13120e;
+}
+
+/* Subtle paper grain for atmosphere */
+.editorial-grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.dark .editorial-grain::before {
+  opacity: 0.06;
+}
+
+/* ---- Type ---- */
+.ed-serif {
+  font-family: var(--font-editorial-serif), ui-serif, Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+.ed-mono {
+  font-family: var(--font-editorial-mono), ui-monospace, "SFMono-Regular", monospace;
+}
+
+/* ---- Color helpers ---- */
+.ed-paper      { background-color: var(--paper); }
+.ed-paper-2    { background-color: var(--paper-2); }
+.ed-ink-block  { background-color: var(--paper-ink); color: var(--paper); }
+.ed-ink        { color: var(--ink); }
+.ed-ink-soft   { color: var(--ink-soft); }
+.ed-ink-faint  { color: var(--ink-faint); }
+.ed-accent     { color: var(--accent); }
+.ed-bg-accent  { background-color: var(--accent); color: var(--accent-ink); }
+
+/* ---- Rules / borders ---- */
+.ed-rule        { border-color: var(--rule); }
+.ed-rule-strong { border-color: var(--rule-strong); }
+
+/* A label-style uppercase mono caption used across sections */
+.ed-eyebrow {
+  font-family: var(--font-editorial-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* Hover underline that draws from the left */
+.ed-link {
+  position: relative;
+}
+.ed-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  height: 1px;
+  width: 100%;
+  background-color: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ed-link:hover::after {
+  transform: scaleX(1);
+}
+
+/* Marquee */
+@keyframes ed-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.ed-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: ed-marquee 38s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ed-marquee-track { animation: none; }
+}

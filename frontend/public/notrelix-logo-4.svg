@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" width="1200" height="320" fill="none">
+  <defs>
+    <linearGradient id="g4a" x1="90" y1="240" x2="250" y2="110" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2F7BFF"/>
+      <stop offset="1" stop-color="#3B64F4"/>
+    </linearGradient>
+    <linearGradient id="g4b" x1="210" y1="214" x2="332" y2="290" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4A35F3"/>
+      <stop offset="1" stop-color="#8E49FF"/>
+    </linearGradient>
+    <linearGradient id="g4c" x1="258" y1="100" x2="344" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF8C00"/>
+      <stop offset="1" stop-color="#FDB82C"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Geometric N -->
+  <path d="M82 246 L178 150 C189 139 206 139 217 150 L254 187 C266 198 266 217 254 228 L214 268 C203 279 186 279 174 268 L82 176 Z" fill="url(#g4a)"/>
+  <path d="M176 150 L213 187 C225 199 242 199 254 187 L303 138 C315 126 334 135 334 153 V236 C334 249 323 260 310 260 H279 C272 260 265 257 260 252 L176 168 C166 158 166 160 176 150Z" fill="url(#g4b)"/>
+  <path d="M255 132 L334 58 C347 46 366 56 366 74 V118 C366 126 363 133 357 139 L314 182 C300 196 277 186 277 166 V152 C277 145 280 138 285 133Z" fill="url(#g4c)"/>
+
+  <!-- Wordmark -->
+  <text x="420" y="228" fill="#0C1733" font-size="152" font-weight="800"
+        font-family="Inter, Poppins, Arial, sans-serif" letter-spacing="-4">Notrelix</text>
+</svg>

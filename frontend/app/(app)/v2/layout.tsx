@@ -1,22 +1,39 @@
 import type { Metadata } from "next"
-import { Instrument_Serif } from "next/font/google"
+import { Fraunces, Archivo, IBM_Plex_Mono } from "next/font/google"
 
 import { cn } from "@/lib/utils"
+import "./editorial.css"
 
-const landingSerif = Instrument_Serif({
-  subsets: ["latin", "latin-ext"],
-  variable: "--font-landing-serif",
-  weight: "400",
+// Display — characterful optical serif for editorial headlines
+const editorialSerif = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-editorial-serif",
+  display: "swap",
+})
+
+// Body — neutral grotesque with Swiss DNA
+const editorialSans = Archivo({
+  subsets: ["latin"],
+  variable: "--font-editorial-sans",
+  display: "swap",
+})
+
+// Labels, indices, captions
+const editorialMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  variable: "--font-editorial-mono",
+  weight: ["400", "500"],
   display: "swap",
 })
 
 export const metadata: Metadata = {
-  title: "Notrelix — Workspace cho docs, board & công việc",
+  title: "Notrelix — One workspace for docs, boards & work",
   description:
-    "Ghi chú như Notion, kéo thả như Trello — một nơi để viết, lên kế hoạch và ship. Phiên bản landing mới.",
+    "Notrelix brings flexible documents, drag-and-drop boards, and a synced calendar into a single workspace — so your team plans, writes, and ships in the same place.",
   openGraph: {
-    title: "Notrelix — Workspace cho docs, board & công việc",
-    description: "Viết, lên kế hoạch và phối hợp trong một workspace hiện đại.",
+    title: "Notrelix — One workspace for docs, boards & work",
+    description:
+      "Documents, boards, and calendar in one calm, fast workspace built for modern teams.",
     type: "website",
     siteName: "Notrelix",
   },
@@ -30,8 +47,10 @@ export default function LandingV2Layout({
   return (
     <div
       className={cn(
-        landingSerif.variable,
-        "min-h-screen bg-zinc-50 text-zinc-950 antialiased dark:bg-zinc-950 dark:text-zinc-50"
+        editorialSerif.variable,
+        editorialSans.variable,
+        editorialMono.variable,
+        "editorial-root min-h-screen antialiased"
       )}
     >
       {children}

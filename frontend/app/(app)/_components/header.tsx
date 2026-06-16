@@ -2,7 +2,8 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { Menu, X, Layers } from "lucide-react"
+import Image from "next/image"
+import { Menu, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/app/(app)/_components/theme-toggle"
@@ -42,12 +43,13 @@ export function Header() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href={routes.home} className="flex items-center gap-2.5 group">
-            <div className="relative flex items-center justify-center size-9 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 shadow-lg shadow-violet-500/20 group-hover:shadow-violet-500/40 transition-shadow">
-              <Layers className="size-[18px] text-white" />
-            </div>
-            <span className="text-xl font-bold tracking-tight">
-              Notre<span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">lix</span>
-            </span>
+            <Image
+              src="/logo2_no_text.png"
+              alt="Notrelix"
+              width={36}
+              height={36}
+              className="size-9"
+            />
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">

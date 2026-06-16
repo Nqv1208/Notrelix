@@ -1,5 +1,5 @@
+import Image from "next/image"
 import Link from "next/link"
-import { Layers } from "lucide-react"
 
 import { Separator } from "@/components/ui/separator"
 import { routes } from "@/lib/routes"
@@ -51,12 +51,13 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 lg:gap-12">
           <div className="col-span-2 md:col-span-1">
             <Link href={routes.home} className="flex items-center gap-2 mb-4">
-              <div className="flex items-center justify-center size-8 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600">
-                <Layers className="size-4 text-white" />
-              </div>
-              <span className="font-bold text-lg">
-                Notre<span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">lix</span>
-              </span>
+              <Image
+                src="/logo_no_text.png"
+                alt="Notrelix"
+                width={32}
+                height={32}
+                className="size-8"
+              />
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Docs, tasks, and boards — unified in one beautiful workspace.
