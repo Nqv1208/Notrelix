@@ -22,7 +22,7 @@ public class SearchPagesQueryHandler : IRequestHandler<SearchPagesQuery, Result<
         if (query.Length < 2) return Result<List<PageDto>>.Success([]);
 
         var pageEntities = await _context.Pages.AsNoTracking()
-            .Where(page => page.WorkspaceId == request.WorkspaceId && !page.IsDeleted && !page.IsArchived)
+            .Where(page => page.WorkspaceId == request.WorkspaceId && !page.IsDeleted && page.Status != PageStatus.Archived)
             .Where(page => page.Title.ToLower().Contains(query))
             .OrderBy(page => page.Title)
             .Take(25)

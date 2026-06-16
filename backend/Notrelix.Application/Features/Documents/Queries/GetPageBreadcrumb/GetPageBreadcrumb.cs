@@ -20,7 +20,7 @@ public class GetPageBreadcrumbQueryHandler : IRequestHandler<GetPageBreadcrumbQu
     {
         var pages = await _context.Pages.AsNoTracking()
             .Where(page => !page.IsDeleted)
-            .Select(page => new { page.Id, page.ParentId, page.Title, page.IconType, page.IconValue })
+            .Select(page => new { page.Id, page.ParentId, page.Title, page.Icon })
             .ToListAsync(ct);
 
         var byId = pages.ToDictionary(page => page.Id);
@@ -30,7 +30,7 @@ public class GetPageBreadcrumbQueryHandler : IRequestHandler<GetPageBreadcrumbQu
         var currentId = request.PageId;
         while (byId.TryGetValue(currentId, out var current))
         {
-            breadcrumb.Add(new PageBreadcrumbDto(current.Id, current.Title, current.IconType, current.IconValue));
+            breadcrumb.Add(new PageBreadcrumbDto(current.Id, current.Title, current.Icon));
             if (!current.ParentId.HasValue) break;
             currentId = current.ParentId.Value;
         }

@@ -16,17 +16,20 @@ public class MemberInvitedEventHandler : INotificationHandler<DomainEventNotific
     private readonly IEmailService _emailService;
     private readonly INotificationService _notificationService;
     private readonly IConfiguration _configuration;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public MemberInvitedEventHandler(
         IApplicationDbContext context,
         IEmailService emailService,
         INotificationService notificationService,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _emailService = emailService;
         _notificationService = notificationService;
         _configuration = configuration;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task Handle(DomainEventNotification<WorkspaceInvitationCreatedEvent> notification, CancellationToken cancellationToken)
@@ -44,7 +47,7 @@ public class MemberInvitedEventHandler : INotificationHandler<DomainEventNotific
 
         var workspaceName = workspace?.Name ?? "Workspace";
         var frontendUrl = _configuration["JwtSettings:Audience"] ?? "http://localhost:3000";
-        var inviteLink = $"{frontendUrl.TrimEnd('/')}/invite/{invitation.Token}";
+        var inviteLink = $"{frontendUrl.TrimEnd('/')}/invite/{invitation.Token.Value}";
         var subject = $"Invitation to join workspace '{workspaceName}'";
 
         var emailBody = $@"
@@ -67,13 +70,15 @@ public class MemberInvitedEventHandler : INotificationHandler<DomainEventNotific
 
         if (targetUser != null)
         {
+            var now = _dateTimeProvider.UtcNow;
             var dbNotification = Notification.Create(
                 targetUser.Id,
                 domainEvent.WorkspaceId,
                 NotificationType.WorkspaceInvite,
                 $"Invitation to '{workspaceName}'",
                 $"You've been invited as {domainEvent.Role}",
-                ResourceRef.Create("Workspace", domainEvent.WorkspaceId)
+                now,
+                ResourceRef.Create(ResourceType.Workspace, domainEvent.WorkspaceId, domainEvent.WorkspaceId)
             );
 
             _context.Notifications.Add(dbNotification);

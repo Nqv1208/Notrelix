@@ -4,13 +4,12 @@ using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Security;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.DTOs;
+using Notrelix.Domain.Collaboration.Activity;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Governance;
-using System.Security.Cryptography;
-using System.Text;
+using Notrelix.Domain.Governance.ShareLinks;
+using SharedKernel = Notrelix.Domain.SharedKernel;
 using System.Text.Json;
-
-using ResourceTypeEnum = Notrelix.Domain.Governance.Permissions.ResourceType;
 
 namespace Notrelix.Application.Features.Governance.Commands;
 
@@ -26,33 +25,37 @@ public record CreateShareLinkCommand(
     string Level,
     DateTime? ExpiresAt = null) : IRequest<Result<CreateShareLinkResponse>>, IAuthorizeableRequest
 {
-    ResourceTypeEnum IAuthorizeableRequest.ResourceType => Enum.Parse<ResourceTypeEnum>(ResourceType, true);
+    SharedKernel.ResourceType IAuthorizeableRequest.ResourceType => Enum.Parse<SharedKernel.ResourceType>(ResourceType, true);
     Guid IAuthorizeableRequest.ResourceId => ResourceId;
-    PermissionAction IAuthorizeableRequest.Action => Enum.Parse<ResourceTypeEnum>(ResourceType, true) switch
+    PermissionAction IAuthorizeableRequest.Action => Enum.Parse<SharedKernel.ResourceType>(ResourceType, true) switch
     {
-        ResourceTypeEnum.Board => PermissionAction.ShareBoardView,
-        ResourceTypeEnum.Page => PermissionAction.SharePage,
+        SharedKernel.ResourceType.Board => PermissionAction.ShareBoardView,
+        SharedKernel.ResourceType.Page => PermissionAction.SharePage,
         _ => PermissionAction.ManageWorkspace
     };
 }
 
-public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkCommand, Result<CreateShareLinkResponse>>
-{
-    private readonly IApplicationDbContext _context;
-    private readonly ICurrentUser _currentUser;
-
-    public CreateShareLinkCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkCommand, Result<CreateShareLinkResponse>>
     {
-        _context = context;
-        _currentUser = currentUser;
-    }
+        private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
+        private readonly IDateTimeProvider _dateTimeProvider;
+
+        public CreateShareLinkCommandHandler(
+            IApplicationDbContext context,
+            ICurrentUser currentUser,
+            IDateTimeProvider dateTimeProvider)
+        {
+            _context = context;
+            _currentUser = currentUser;
+            _dateTimeProvider = dateTimeProvider;
+        }
 
     public async Task<Result<CreateShareLinkResponse>> Handle(
         CreateShareLinkCommand request,
         CancellationToken cancellationToken)
     {
-        if (!Enum.TryParse<ResourceType>(request.ResourceType, true, out var resourceType) ||
-            !Enum.TryParse<PermissionLevel>(request.Level, true, out var level))
+        if (!Enum.TryParse<SharedKernel.ResourceType>(request.ResourceType, true, out var resourceType))
         {
             return Result<CreateShareLinkResponse>.Failure("Invalid format for enum parameters.");
         }
@@ -61,16 +64,17 @@ public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkComm
 
         // Generate raw secure token
         var rawToken = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
-        var tokenHash = HashToken(rawToken);
+        var tokenHash = ShareLinkTokenHash.Create(rawToken);
 
         var shareLink = ShareLink.Create(
             request.WorkspaceId,
             resourceType,
             request.ResourceId,
             tokenHash,
-            level,
-            request.ExpiresAt,
-            actorId
+            ShareLinkAccessMode.WorkspaceOnly,
+            actorId,
+            _dateTimeProvider.UtcNow,
+            request.ExpiresAt
         );
 
         _context.ShareLinks.Add(shareLink);
@@ -83,14 +87,13 @@ public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkComm
             shareLinkId = shareLink.Id
         });
 
-        var auditLog = ActivityLog.Create(
+        var auditLog = ActivityLog.Record(
             request.WorkspaceId,
             actorId,
-            "CreateShareLink",
-            resourceType,
-            request.ResourceId,
-            resourceTitle: null,
-            metadata: metadata
+            ActivityType.Created,
+            SharedKernel.ResourceRef.Create(resourceType, request.ResourceId),
+            _dateTimeProvider.UtcNow,
+            ActivityMetadata.Create(SharedKernel.JsonValue.Create(metadata))
         );
         _context.ActivityLogs.Add(auditLog);
 
@@ -101,18 +104,12 @@ public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkComm
             shareLink.WorkspaceId,
             shareLink.ResourceType.ToString(),
             shareLink.ResourceId,
-            shareLink.TokenHash,
-            shareLink.Level.ToString(),
-            shareLink.IsEnabled,
+            shareLink.TokenHash.Hash,
+            shareLink.AccessMode.ToString(),
+            shareLink.Status == ShareLinkStatus.Active,
             shareLink.ExpiresAt);
 
         return Result<CreateShareLinkResponse>.Success(new CreateShareLinkResponse(dto, rawToken));
     }
 
-    private static string HashToken(string token)
-    {
-        var bytes = Encoding.UTF8.GetBytes(token);
-        var hash = SHA256.HashData(bytes);
-        return Convert.ToHexString(hash).ToLower();
-    }
 }

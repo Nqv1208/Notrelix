@@ -19,15 +19,18 @@ public class UnarchiveBoardCommandHandler : IRequestHandler<UnarchiveBoardComman
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public UnarchiveBoardCommandHandler(
         IApplicationDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions)
+        IWorkspacePermissionService permissions,
+        IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
         _permissions = permissions;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(UnarchiveBoardCommand request, CancellationToken ct)
@@ -35,7 +38,7 @@ public class UnarchiveBoardCommandHandler : IRequestHandler<UnarchiveBoardComman
         var board = await _context.Boards.FirstOrDefaultAsync(b => b.Id == request.BoardId, ct);
         if (board is null) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
         await _permissions.EnsureCanManageBoardAsync(board.Id, _currentUser.UserId, ct);
-        board.Unarchive();
+        board.Unarchive(_currentUser.UserId, _dateTimeProvider.UtcNow);
         await _context.SaveChangesAsync(ct);
         return Result.Success();
     }

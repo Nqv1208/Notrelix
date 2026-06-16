@@ -29,14 +29,14 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
 
         var lists = await _context.BoardGroups
             .AsNoTracking()
-            .Where(l => l.BoardId == request.BoardId && !l.IsArchived)
+            .Where(l => l.BoardId == request.BoardId && l.DeletedAt == null)
             .OrderBy(l => l.Position)
             .ToListAsync(cancellationToken);
 
         var listIds = lists.Select(list => list.Id).ToList();
         var cards = await _context.BoardItems
             .AsNoTracking()
-            .Where(card => listIds.Contains(card.GroupId) && !card.IsDeleted && !card.IsArchived)
+            .Where(card => listIds.Contains(card.GroupId) && !card.IsDeleted)
             .OrderBy(card => card.Position)
             .ToListAsync(cancellationToken);
 
@@ -44,65 +44,65 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
 
         var cardMembers = await _context.BoardItemMembers
             .AsNoTracking()
-            .Where(member => cardIds.Contains(member.BoardItemId))
+            .Where(member => cardIds.Contains(member.ItemId))
             .Join(_context.Users.AsNoTracking(),
                 member => member.UserId,
                 user => user.Id,
                 (member, user) => new
                 {
-                    member.BoardItemId,
+                    member.ItemId,
                     Dto = new BoardItemMemberDto(member.UserId, user.Name, user.Avatar, member.AssignedAt)
                 })
             .ToListAsync(cancellationToken);
 
         var cardLabels = await _context.BoardItemLabels
             .AsNoTracking()
-            .Where(cardLabel => cardIds.Contains(cardLabel.BoardItemId))
+            .Where(cardLabel => cardIds.Contains(cardLabel.ItemId))
             .Join(_context.Labels.AsNoTracking(),
                 cardLabel => cardLabel.LabelId,
                 label => label.Id,
                 (cardLabel, label) => new
                 {
-                    cardLabel.BoardItemId,
-                    Dto = new BoardItemLabelDto(label.Id, label.Name, label.Color)
+                    cardLabel.ItemId,
+                    Dto = new BoardItemLabelDto(label.Id, label.Name, label.Color.ToString())
                 })
             .ToListAsync(cancellationToken);
 
         var checklistItems = await _context.ChecklistItems
             .AsNoTracking()
-            .Join(_context.Checklists.AsNoTracking().Where(checklist => cardIds.Contains(checklist.BoardItemId)),
+            .Join(_context.Checklists.AsNoTracking().Where(checklist => cardIds.Contains(checklist.ItemId)),
                 item => item.ChecklistId,
                 checklist => checklist.Id,
-                (item, checklist) => new { checklist.BoardItemId, item.IsChecked })
+                (item, checklist) => new { checklist.ItemId, IsDone = item.Status == ChecklistItemStatus.Done })
             .ToListAsync(cancellationToken);
 
         var commentCounts = await _context.Comments
             .AsNoTracking()
-            .Where(comment => comment.ResourceType == ResourceType.BoardItem && cardIds.Contains(comment.ResourceId))
-            .GroupBy(comment => comment.ResourceId)
+            .Where(comment => comment.Target.ResourceType == ResourceType.BoardItem && cardIds.Contains(comment.Target.ResourceId))
+            .GroupBy(comment => comment.Target.ResourceId)
             .Select(group => new { BoardItemId = group.Key, Count = group.Count() })
             .ToDictionaryAsync(item => item.BoardItemId, item => item.Count, cancellationToken);
 
         var attachmentCounts = await _context.Attachments
             .AsNoTracking()
-            .Where(attachment => attachment.ResourceType == ResourceType.BoardItem && cardIds.Contains(attachment.ResourceId))
-            .GroupBy(attachment => attachment.ResourceId)
+            .Where(attachment => attachment.Target.ResourceType == ResourceType.BoardItem && cardIds.Contains(attachment.Target.ResourceId))
+            .GroupBy(attachment => attachment.Target.ResourceId)
             .Select(group => new { BoardItemId = group.Key, Count = group.Count() })
             .ToDictionaryAsync(item => item.BoardItemId, item => item.Count, cancellationToken);
 
         var membersByCardId = cardMembers
-            .GroupBy(member => member.BoardItemId)
+            .GroupBy(member => member.ItemId)
             .ToDictionary(group => group.Key, group => group.Select(member => member.Dto).ToList());
         var labelsByCardId = cardLabels
-            .GroupBy(label => label.BoardItemId)
+            .GroupBy(label => label.ItemId)
             .ToDictionary(group => group.Key, group => group.Select(label => label.Dto).ToList());
         var checklistStatsByCardId = checklistItems
-            .GroupBy(item => item.BoardItemId)
+            .GroupBy(item => item.ItemId)
             .ToDictionary(
                 group => group.Key,
                 group => new
                 {
-                    Done = group.Count(item => item.IsChecked),
+                    Done = group.Count(item => item.IsDone),
                     Total = group.Count()
                 });
 
@@ -116,14 +116,7 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
 
                     return new BoardItemSummaryDto(
                         card.Id,
-                        card.Title,
-                        card.LinkedPageId,
-                        card.Priority?.ToString(),
-                        card.Status.ToString(),
-                        card.DueDate,
-                        card.StartDate,
-                        card.CompletedAt,
-                        card.Cover,
+                        card.Name,
                         membersByCardId.TryGetValue(card.Id, out var cardMemberDtos) ? cardMemberDtos.Count : 0,
                         membersByCardId.TryGetValue(card.Id, out var memberDtos) ? memberDtos : [],
                         labelsByCardId.TryGetValue(card.Id, out var labelDtos) ? labelDtos : [],
@@ -131,10 +124,9 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                         checklistStats?.Total ?? 0,
                         commentCounts.GetValueOrDefault(card.Id),
                         attachmentCounts.GetValueOrDefault(card.Id),
-                        card.Position,
-                        card.ValuesJson,
-                        card.CreatedAt,
-                        card.UpdatedAt
+                        card.Position.Value,
+                        card.CreatedAt.DateTime,
+                        card.UpdatedAt?.DateTime
                     );
                 })
                 .ToList());
@@ -143,9 +135,9 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
             .Select(list => new BoardGroupDto(
                 list.Id,
                 list.Title,
-                list.Color,
-                list.Position,
-                list.IsArchived,
+                list.Color.ToString(),
+                list.Position.Value,
+                list.DeletedAt != null,
                 cardsByListId.GetValueOrDefault(list.Id) ?? []))
             .ToList();
 
@@ -156,15 +148,12 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
             .Select(column => new BoardFieldDto(
                 column.Id,
                 column.BoardId,
-                column.Key,
                 column.Name,
                 column.Type.ToString(),
                 JsonSerializer.Serialize(column.Settings, (JsonSerializerOptions?)null),
                 column.DefaultValue,
-                column.Position,
-                column.IsRequired,
+                column.Position.Value,
                 column.IsSystem,
-                column.IsHidden,
                 column.IsDeleted
             ))
             .ToListAsync(cancellationToken);
@@ -174,15 +163,12 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
             columns.Insert(0, new BoardFieldDto(
                 board.Id,
                 board.Id,
-                "title",
                 "Task",
                 "text",
                 """{"system":"title"}""",
                 null,
-                0,
+                "a0",
                 true,
-                true,
-                false,
                 false
             ));
         }
@@ -198,7 +184,7 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                     u.Name,
                     u.Avatar,
                     m.Role.ToString(),
-                    m.JoinedAt
+                    m.JoinedAt.DateTime
                 ))
             .ToListAsync(cancellationToken);
 

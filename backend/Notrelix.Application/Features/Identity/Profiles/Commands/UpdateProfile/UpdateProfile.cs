@@ -2,7 +2,6 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
-using Notrelix.Domain.Identity;
 
 namespace Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile;
 
@@ -18,10 +17,12 @@ public record UpdateProfileCommand : IRequest<Result<UserDto>>
 public class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileCommand, Result<UserDto>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public UpdateProfileCommandHandler(IApplicationDbContext context)
+    public UpdateProfileCommandHandler(IApplicationDbContext context, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<UserDto>> Handle(UpdateProfileCommand request, CancellationToken cancellationToken)
@@ -34,7 +35,7 @@ public class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileCommand,
             return Result<UserDto>.Failure("User not found");
         }
 
-        user.UpdateProfile(request.Name, request.Avatar);
+        user.UpdateProfile(request.Name, request.Avatar, _dateTimeProvider.UtcNow);
         await _context.SaveChangesAsync(cancellationToken);
 
         return Result<UserDto>.Success(new UserDto

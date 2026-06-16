@@ -34,12 +34,12 @@ public class GetBoardQueryHandler : IRequestHandler<GetBoardQuery, Result<BoardD
         if (board is null) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
 
         var memberCount = await _context.BoardMembers.CountAsync(m => m.BoardId == board.Id, ct);
-        var listCount = await _context.BoardGroups.CountAsync(l => l.BoardId == board.Id && !l.IsArchived, ct);
+        var listCount = await _context.BoardGroups.CountAsync(l => l.BoardId == board.Id && l.DeletedAt == null, ct);
 
         return Result<BoardDto>.Success(new BoardDto(
             board.Id, board.WorkspaceId, board.Title, board.Description,
             board.Background, board.Visibility.ToString(), board.IsArchived,
-            memberCount, listCount, board.CreatedAt
+            memberCount, listCount, board.CreatedAt.DateTime
         ));
     }
 }

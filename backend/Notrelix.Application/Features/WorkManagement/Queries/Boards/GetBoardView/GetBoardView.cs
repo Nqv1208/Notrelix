@@ -3,9 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Common.Security;
-using global::Notrelix.Application.Features.WorkManagement.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
 
 namespace Notrelix.Application.Features.WorkManagement.Queries.GetBoardView;
 
@@ -30,11 +27,11 @@ public class GetBoardViewQueryHandler : IRequestHandler<GetBoardViewQuery, Resul
     public async Task<Result<object>> Handle(GetBoardViewQuery request, CancellationToken ct)
     {
         var view = await _context.BoardViews.AsNoTracking()
-            .FirstOrDefaultAsync(v => v.BoardId == request.BoardId && v.UserId == _currentUser.UserId, ct);
+            .FirstOrDefaultAsync(v => v.BoardId == request.BoardId && v.CreatedBy == _currentUser.UserId, ct);
 
         if (view is null)
-            return Result<object>.Success(new { viewMode = "Table", filters = "{}", config = "{}" });
+            return Result<object>.Success(new { type = "Table", config = "{}" });
 
-        return Result<object>.Success(new { viewMode = view.ViewMode.ToString(), filters = view.Filters, config = view.Filters });
+        return Result<object>.Success(new { type = view.Type.ToString(), config = view.Config.Data.Value });
     }
 }

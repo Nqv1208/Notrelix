@@ -3,9 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Workspaces.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
-
 using global::Notrelix.Application.Common.Security;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspaceBySlug;
@@ -30,7 +27,7 @@ public class GetWorkspaceBySlugQueryHandler : IRequestHandler<GetWorkspaceBySlug
     {
         var workspace = await _context.Workspaces
             .AsNoTracking()
-            .FirstOrDefaultAsync(w => w.Slug == request.Slug && !w.IsArchived, ct);
+            .FirstOrDefaultAsync(w => w.Slug == request.Slug && w.Status == WorkspaceStatus.Active && !w.IsDeleted, ct);
 
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.Slug);
@@ -44,14 +41,14 @@ public class GetWorkspaceBySlugQueryHandler : IRequestHandler<GetWorkspaceBySlug
             workspace.Slug,
             workspace.Description,
             workspace.IsPersonal,
-            workspace.Plan.ToString(),
-            workspace.Icon.Type.ToString(),
-            workspace.Icon.Value,
-            workspace.CoverUrl,
-            workspace.IsArchived,
+            "free",
+            null,
+            null,
+            null,
+            false,
             memberCount,
-            workspace.CreatedAt,
-            workspace.Settings
+            workspace.CreatedAt.DateTime,
+            null
         ));
     }
 }

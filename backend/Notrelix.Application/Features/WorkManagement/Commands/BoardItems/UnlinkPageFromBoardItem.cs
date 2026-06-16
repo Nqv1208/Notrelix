@@ -1,12 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
-using global::Notrelix.Application.Common.Abstractions;
-using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.WorkManagement.Commands.Boards;
-using global::Notrelix.Application.Features.WorkManagement.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
+using Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.WorkManagement.Commands;
 
@@ -31,11 +25,16 @@ public class UnlinkPageFromBoardItemCommandHandler : IRequestHandler<UnlinkPageF
     public async Task<Result> Handle(UnlinkPageFromBoardItemCommand request, CancellationToken ct)
     {
         var card = await _context.BoardItems
-            .Include(c => c.Group)
             .FirstOrDefaultAsync(c => c.Id == request.BoardItemId, ct);
         if (card is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
-        await _permissions.EnsureCanEditBoardAsync(card.Group.BoardId, _currentUser.UserId, ct);
-        card.UnlinkPage(_currentUser.UserId);
+
+        await _permissions.EnsureCanEditBoardAsync(card.BoardId, _currentUser.UserId, ct);
+
+        var existingLinks = await _context.BoardItemLinks
+            .Where(l => l.SourceItemId == card.Id)
+            .ToListAsync(ct);
+        _context.BoardItemLinks.RemoveRange(existingLinks);
+
         await _context.SaveChangesAsync(ct);
         return Result.Success();
     }

@@ -33,14 +33,18 @@ public class RemoveBoardMemberCommandHandler : IRequestHandler<RemoveBoardMember
     public async Task<Result> Handle(RemoveBoardMemberCommand request, CancellationToken ct)
     {
         var board = await _context.Boards
-            .Include(b => b.Members)
             .FirstOrDefaultAsync(b => b.Id == request.BoardId, ct);
 
         if (board is null) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
 
         await _permissions.EnsureCanManageBoardAsync(board.Id, _currentUser.UserId, ct);
 
-        board.RemoveMember(request.UserId);
+        var member = await _context.BoardMembers
+            .FirstOrDefaultAsync(m => m.BoardId == board.Id && m.UserId == request.UserId, ct);
+
+        if (member is not null)
+            _context.BoardMembers.Remove(member);
+
         await _context.SaveChangesAsync(ct);
         return Result.Success();
     }

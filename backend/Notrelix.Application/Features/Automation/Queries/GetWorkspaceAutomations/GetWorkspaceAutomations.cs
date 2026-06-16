@@ -43,8 +43,8 @@ public class GetWorkspaceAutomationsQueryHandler : IRequestHandler<GetWorkspaceA
                 item.ActionType,
                 item.Configuration,
                 item.IsEnabled,
-                item.CreatedAt,
-                item.UpdatedAt))
+                item.CreatedAt.DateTime,
+                item.UpdatedAt.HasValue ? item.UpdatedAt.Value.DateTime : null))
             .ToListAsync(cancellationToken);
 
         return Result<IReadOnlyList<AutomationRuleDto>>.Success(automations);

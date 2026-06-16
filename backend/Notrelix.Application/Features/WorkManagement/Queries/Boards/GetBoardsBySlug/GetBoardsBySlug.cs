@@ -3,9 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.WorkManagement.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
-
 using global::Notrelix.Application.Common.Security;
 
 namespace Notrelix.Application.Features.WorkManagement.Queries.GetBoardsBySlug;
@@ -34,14 +31,16 @@ public class GetBoardsBySlugQueryHandler : IRequestHandler<GetBoardsBySlugQuery,
 
         var boards = await _context.Boards.AsNoTracking()
             .Where(b => b.WorkspaceId == workspace.Id && !b.IsArchived)
-            .Select(b => new BoardDto(
-                b.Id, b.WorkspaceId, b.Title, b.Description,
-                b.Background, b.Visibility.ToString(), b.IsArchived,
-                _context.BoardMembers.Count(m => m.BoardId == b.Id),
-                _context.BoardGroups.Count(l => l.BoardId == b.Id && !l.IsArchived),
-                b.CreatedAt
-            )).ToListAsync(ct);
+            .ToListAsync(ct);
 
-        return Result<List<BoardDto>>.Success(boards);
+        var result = boards.Select(b => new BoardDto(
+            b.Id, b.WorkspaceId, b.Title, b.Description,
+            b.Background, b.Visibility.ToString(), b.IsArchived,
+            _context.BoardMembers.Count(m => m.BoardId == b.Id),
+            _context.BoardGroups.Count(l => l.BoardId == b.Id && !l.IsDeleted),
+            b.CreatedAt.DateTime
+        )).ToList();
+
+        return Result<List<BoardDto>>.Success(result);
     }
 }

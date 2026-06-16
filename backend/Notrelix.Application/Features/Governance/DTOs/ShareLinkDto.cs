@@ -6,7 +6,7 @@ public record ShareLinkDto(
     string ResourceType,
     Guid ResourceId,
     string TokenHash,
-    string Level,
+    string AccessMode,
     bool IsEnabled,
-    DateTime? ExpiresAt
+    DateTimeOffset? ExpiresAt
 );

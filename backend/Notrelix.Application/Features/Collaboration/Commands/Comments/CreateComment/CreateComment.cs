@@ -2,9 +2,6 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.Shared.Comments.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
 
 namespace Notrelix.Application.Features.Shared.Commands.Comments.CreateComment;
 
@@ -14,32 +11,32 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public CreateCommentCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public CreateCommentCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<Guid>> Handle(CreateCommentCommand request, CancellationToken ct)
     {
         var resourceType = Enum.Parse<ResourceType>(request.ResourceType, ignoreCase: true);
 
-        // Resolve workspaceId from the resource
         Guid workspaceId;
         if (resourceType == ResourceType.BoardItem)
         {
             var card = await _context.BoardItems.AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == request.ResourceId, ct);
             if (card is null) throw new NotFoundException("BoardItem", request.ResourceId);
-
             var list = await _context.BoardGroups.AsNoTracking()
                 .FirstOrDefaultAsync(l => l.Id == card.GroupId, ct);
             var board = await _context.Boards.AsNoTracking()
                 .FirstOrDefaultAsync(b => b.Id == list!.BoardId, ct);
             workspaceId = board!.WorkspaceId;
         }
-        else // Page
+        else
         {
             var page = await _context.Pages.AsNoTracking()
                 .FirstOrDefaultAsync(p => p.Id == request.ResourceId, ct);
@@ -47,14 +44,8 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
             workspaceId = page.WorkspaceId;
         }
 
-        var comment = Comment.Create(workspaceId, resourceType, request.ResourceId, _currentUser.UserId, request.ContentMd);
-
-        if (request.ParentCommentId.HasValue)
-        {
-            // Validate parent exists
-            var parentExists = await _context.Comments.AnyAsync(c => c.Id == request.ParentCommentId.Value, ct);
-            if (!parentExists) throw new NotFoundException("Comment", request.ParentCommentId.Value);
-        }
+        var target = ResourceRef.Create(resourceType, request.ResourceId, workspaceId);
+        var comment = Comment.Create(workspaceId, target, request.ContentMd, _currentUser.UserId, _dateTimeProvider.UtcNow, parentId: request.ParentCommentId);
 
         _context.Comments.Add(comment);
         await _context.SaveChangesAsync(ct);

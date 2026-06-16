@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Security;
 using Notrelix.Application.Features.WorkManagement.DTOs;
+using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.WorkManagement.Commands;
 
@@ -21,11 +22,13 @@ public class UpdateBoardViewConfigCommandHandler : IRequestHandler<UpdateBoardVi
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public UpdateBoardViewConfigCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public UpdateBoardViewConfigCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<BoardViewDto> Handle(UpdateBoardViewConfigCommand request, CancellationToken cancellationToken)
@@ -36,7 +39,8 @@ public class UpdateBoardViewConfigCommandHandler : IRequestHandler<UpdateBoardVi
         if (view == null)
             throw new NotFoundException("BoardView", request.ViewId);
 
-        view.UpdateConfig(request.ConfigJson, _currentUser.UserId);
+        var config = BoardViewConfig.Create(JsonValue.Create(request.ConfigJson));
+        view.UpdateConfig(config, _currentUser.UserId, _dateTimeProvider.UtcNow);
 
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -44,12 +48,9 @@ public class UpdateBoardViewConfigCommandHandler : IRequestHandler<UpdateBoardVi
             view.Id,
             view.BoardId,
             view.Name,
-            view.ViewMode.ToString(),
-            view.Filters,
-            view.Config,
-            view.Position,
-            view.IsDefault,
-            view.IsPrivate
+            view.Type.ToString(),
+            view.Config.Data.Value,
+            view.IsDefault
         );
     }
 }

@@ -24,39 +24,40 @@ public class GetBoardSchemaQueryHandler : IRequestHandler<GetBoardSchemaQuery, B
 
     public async Task<BoardSchemaDto> Handle(GetBoardSchemaQuery request, CancellationToken cancellationToken)
     {
+        var boardId = request.BoardId;
+
         var board = await _context.Boards
             .AsNoTracking()
-            .Include(b => b.Groups)
-            .Include(b => b.Fields)
-            .FirstOrDefaultAsync(b => b.Id == request.BoardId, cancellationToken);
+            .FirstOrDefaultAsync(b => b.Id == boardId, cancellationToken);
 
         if (board == null)
-            throw new NotFoundException(nameof(Board), request.BoardId);
+            throw new NotFoundException(nameof(Board), boardId);
 
-        var fields = board.Fields
+        var fields = await _context.BoardFields
+            .AsNoTracking()
+            .Where(f => f.BoardId == boardId)
             .OrderBy(f => f.Position)
             .Select(f => new BoardFieldSchemaDto(
                 f.Id,
-                f.Key,
                 f.Name,
                 f.Type.ToString(),
-                f.Settings.ToJson(),
+                f.Settings.Data.Value,
                 f.DefaultValue,
-                f.Position,
-                f.IsRequired,
-                f.IsSystem,
-                f.IsHidden
-            )).ToList();
+                f.Position.Value,
+                f.IsSystem
+            )).ToListAsync(cancellationToken);
 
-        var groups = board.Groups
+        var groups = await _context.BoardGroups
+            .AsNoTracking()
+            .Where(g => g.BoardId == boardId)
             .OrderBy(g => g.Position)
             .Select(g => new BoardGroupSchemaDto(
                 g.Id,
                 g.Title,
-                g.Color,
-                g.Position,
+                g.Color.ToString(),
+                g.Position.Value,
                 g.IsCollapsed
-            )).ToList();
+            )).ToListAsync(cancellationToken);
 
         return new BoardSchemaDto(
             board.Id,

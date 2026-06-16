@@ -3,9 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Workspaces.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
-
 using global::Notrelix.Application.Common.Security;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspaceMembersBySlug;
@@ -46,7 +43,7 @@ public class GetWorkspaceMembersBySlugQueryHandler : IRequestHandler<GetWorkspac
                     u.Name,
                     u.AvatarUrl,
                     m.Role.ToString(),
-                    m.JoinedAt
+                    m.CreatedAt.DateTime
                 ))
             .ToListAsync(ct);
 

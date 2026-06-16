@@ -36,7 +36,7 @@ public class GetBoardMembersQueryHandler : IRequestHandler<GetBoardMembersQuery,
         var members = await _context.BoardMembers.AsNoTracking()
             .Where(m => m.BoardId == request.BoardId)
             .Join(_context.Users.AsNoTracking(), m => m.UserId, u => u.Id,
-                (m, u) => new BoardMemberDto(m.UserId, u.Name, u.AvatarUrl, m.Role.ToString(), m.JoinedAt))
+                (m, u) => new BoardMemberDto(m.UserId, u.Name, u.AvatarUrl, m.Role.ToString(), m.JoinedAt.DateTime))
             .ToListAsync(ct);
 
         return Result<List<BoardMemberDto>>.Success(members);

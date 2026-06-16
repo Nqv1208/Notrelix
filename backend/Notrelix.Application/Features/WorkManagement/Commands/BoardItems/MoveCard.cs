@@ -1,13 +1,8 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
-using global::Notrelix.Application.Common.Abstractions;
-using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.WorkManagement.Commands.Boards;
-using global::Notrelix.Application.Features.WorkManagement.DTOs;
-using global::Notrelix.Domain.Workspaces;
-using global::Notrelix.Domain.WorkManagement.BoardGroups;
-using global::Notrelix.Domain.WorkManagement.Items;
+using Notrelix.Application.Common.Models;
+using Notrelix.Domain.WorkManagement.BoardGroups;
+using Notrelix.Domain.WorkManagement.Items;
 
 namespace Notrelix.Application.Features.WorkManagement.Commands;
 
@@ -18,21 +13,23 @@ public class MoveCardCommandHandler : IRequestHandler<MoveCardCommand, Result>
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
+    private readonly IDateTimeProvider _timeProvider;
 
     public MoveCardCommandHandler(
         IApplicationDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions)
+        IWorkspacePermissionService permissions,
+        IDateTimeProvider timeProvider)
     {
         _context = context;
         _currentUser = currentUser;
         _permissions = permissions;
+        _timeProvider = timeProvider;
     }
 
     public async Task<Result> Handle(MoveCardCommand request, CancellationToken cancellationToken)
     {
         var card = await _context.BoardItems
-            .Include(c => c.Group) // Lấy thông tin list cũ để publish event
             .FirstOrDefaultAsync(x => x.Id == request.BoardItemId, cancellationToken);
 
         if (card == null)
@@ -44,13 +41,15 @@ public class MoveCardCommandHandler : IRequestHandler<MoveCardCommand, Result>
         if (targetList == null)
             throw new NotFoundException(nameof(BoardGroup), request.GroupId);
 
-        if (card.Group.BoardId != targetList.BoardId)
+        if (card.BoardId != targetList.BoardId)
             throw new BusinessRuleViolationException("CardBoardMismatch", "BoardItem can only be moved between groups on the same board.");
 
-        await _permissions.EnsureCanEditBoardAsync(card.Group.BoardId, _currentUser.UserId, cancellationToken);
+        await _permissions.EnsureCanEditBoardAsync(card.BoardId, _currentUser.UserId, cancellationToken);
 
-        // Cập nhật vị trí và danh sách
-        card.MoveToGroup(BoardGroupRef.From(targetList), request.Position, _currentUser.UserId);
+        var now = new DateTimeOffset(_timeProvider.UtcNow, TimeSpan.Zero);
+        var position = FractionalIndex.Create(request.Position.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+        card.MoveToGroup(BoardGroupRef.From(targetList), position, _currentUser.UserId, now);
 
         await _context.SaveChangesAsync(cancellationToken);
 

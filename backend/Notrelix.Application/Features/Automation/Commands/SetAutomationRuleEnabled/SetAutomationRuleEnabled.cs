@@ -2,7 +2,6 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
-using Notrelix.Domain.Automation;
 
 namespace Notrelix.Application.Features.Automation.Commands.SetAutomationRuleEnabled;
 
@@ -12,15 +11,18 @@ public class SetAutomationRuleEnabledCommandHandler : IRequestHandler<SetAutomat
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspacePermissionService _permissions;
 
     public SetAutomationRuleEnabledCommandHandler(
         IApplicationDbContext context,
         ICurrentUser currentUser,
+        IDateTimeProvider dateTimeProvider,
         IWorkspacePermissionService permissions)
     {
         _context = context;
         _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
         _permissions = permissions;
     }
 
@@ -32,8 +34,8 @@ public class SetAutomationRuleEnabledCommandHandler : IRequestHandler<SetAutomat
 
         await _permissions.EnsureCanManageWorkspaceAsync(rule.WorkspaceId, _currentUser.UserId, cancellationToken);
 
-        if (request.IsEnabled) rule.Enable(_currentUser.UserId);
-        else rule.Disable(_currentUser.UserId);
+        if (request.IsEnabled) rule.Enable(_currentUser.UserId, _dateTimeProvider.UtcNow);
+        else rule.Disable(_currentUser.UserId, _dateTimeProvider.UtcNow);
 
         await _context.SaveChangesAsync(cancellationToken);
         return Result.Success();

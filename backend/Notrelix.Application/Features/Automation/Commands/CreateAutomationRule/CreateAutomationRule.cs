@@ -1,7 +1,7 @@
 using MediatR;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
-using Notrelix.Domain.Automation;
+using Notrelix.Domain.Automation.Rules;
 
 namespace Notrelix.Application.Features.Automation.Commands.CreateAutomationRule;
 
@@ -16,15 +16,18 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspacePermissionService _permissions;
 
     public CreateAutomationRuleCommandHandler(
         IApplicationDbContext context,
         ICurrentUser currentUser,
+        IDateTimeProvider dateTimeProvider,
         IWorkspacePermissionService permissions)
     {
         _context = context;
         _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
         _permissions = permissions;
     }
 
@@ -34,10 +37,11 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
 
         var rule = AutomationRule.Create(
             request.WorkspaceId,
-            _currentUser.UserId,
             request.Name,
             request.TriggerEvent,
             request.ActionType,
+            _currentUser.UserId,
+            _dateTimeProvider.UtcNow,
             request.Configuration);
 
         _context.AutomationRules.Add(rule);

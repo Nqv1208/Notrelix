@@ -2,10 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.Document.Common;
-using global::Notrelix.Application.Features.Document.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
+using global::Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.Document.Commands.Pages.CreatePage;
 
@@ -19,25 +16,22 @@ public class CreatePageCommandHandler : IRequestHandler<CreatePageCommand, Resul
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public CreatePageCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public CreatePageCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<Guid>> Handle(CreatePageCommand request, CancellationToken ct)
     {
         var workspaceExists = await _context.Workspaces.AsNoTracking()
-            .AnyAsync(workspace => workspace.Id == request.WorkspaceId && !workspace.IsArchived, ct);
+            .AnyAsync(workspace => workspace.Id == request.WorkspaceId && workspace.Status == WorkspaceStatus.Active && !workspace.IsDeleted, ct);
         if (!workspaceExists) throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
-        var position = await _context.Pages
-            .Where(page => page.WorkspaceId == request.WorkspaceId && page.ParentId == request.ParentId && !page.IsDeleted)
-            .MaxAsync(page => (double?)page.Position, ct) + 1024d ?? 1024d;
-
-        var page = Page.Create(request.WorkspaceId, _currentUser.UserId, request.Title, request.ParentId);
-        page.Move(request.ParentId, position);
+        var page = Page.Create(request.WorkspaceId, request.Title, _currentUser.UserId, _dateTimeProvider.UtcNow, request.ParentId);
         _context.Pages.Add(page);
         await _context.SaveChangesAsync(ct);
 

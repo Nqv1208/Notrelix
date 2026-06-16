@@ -2,9 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.Workspaces.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
+using global::Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Commands.UpdateWorkspace;
 
@@ -20,8 +18,15 @@ public record UpdateWorkspaceCommand(
 public class UpdateWorkspaceCommandHandler : IRequestHandler<UpdateWorkspaceCommand, Result>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public UpdateWorkspaceCommandHandler(IApplicationDbContext context) => _context = context;
+    public UpdateWorkspaceCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
+    }
 
     public async Task<Result> Handle(UpdateWorkspaceCommand request, CancellationToken ct)
     {
@@ -31,17 +36,9 @@ public class UpdateWorkspaceCommandHandler : IRequestHandler<UpdateWorkspaceComm
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
-        if (request.Name is not null) workspace.UpdateName(request.Name);
-        if (request.Description is not null) workspace.UpdateDescription(request.Description);
-        if (request.IconType is not null && request.IconValue is not null)
-        {
-            var iconType = Enum.Parse<IconType>(request.IconType, ignoreCase: true);
-            var icon = iconType == IconType.Emoji
-                ? Domain.ValueObjects.Icon.FromEmoji(request.IconValue)
-                : Domain.ValueObjects.Icon.FromName(request.IconValue);
-            workspace.UpdateIcon(icon);
-        }
-        if (request.Settings is not null) workspace.UpdateSettings(request.Settings);
+        var now = _dateTimeProvider.UtcNow;
+        if (request.Name is not null) workspace.Rename(request.Name, _currentUser.UserId, now);
+        if (request.Settings is not null) workspace.UpdateSettings(WorkspaceSettings.Create(), _currentUser.UserId, now);
 
         await _context.SaveChangesAsync(ct);
         return Result.Success();

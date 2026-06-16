@@ -9,6 +9,7 @@ using global::Notrelix.Application.Features.WorkManagement.Commands.Boards.SaveB
 using global::Notrelix.Application.Features.WorkManagement.Commands.Boards;
 using global::Notrelix.Application.Features.WorkManagement.DTOs;
 using global::Notrelix.Domain.Identity;
+using global::Notrelix.Domain.WorkManagement.Views;
 using global::Notrelix.Domain.Workspaces;
 
 namespace Notrelix.Application.Features.WorkManagement.Commands.Boards.SaveBoardView;
@@ -28,14 +29,26 @@ public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand,
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public SaveBoardViewCommandHandler(
         IApplicationDbContext context,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
     }
+
+    private static ViewType MapViewModeToViewType(ViewMode viewMode) => viewMode switch
+    {
+        ViewMode.Kanban => ViewType.Kanban,
+        ViewMode.Calendar => ViewType.Calendar,
+        ViewMode.Timeline => ViewType.Timeline,
+        ViewMode.Table or ViewMode.List => ViewType.Table,
+        _ => ViewType.Table
+    };
 
     public async Task<Result> Handle(SaveBoardViewCommand request, CancellationToken ct)
     {
@@ -44,20 +57,28 @@ public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand,
             .AnyAsync(board => board.Id == request.BoardId && !board.IsArchived, ct);
         if (!boardExists) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
 
-        var view = await _context.BoardViews
-            .FirstOrDefaultAsync(v => v.BoardId == request.BoardId && v.UserId == _currentUser.UserId, ct);
-
         var viewMode = Enum.Parse<ViewMode>(request.ViewMode, ignoreCase: true);
+        var viewType = MapViewModeToViewType(viewMode);
+        var now = _dateTimeProvider.UtcNow;
+        var config = BoardViewConfig.Create(JsonValue.Create(request.Filters ?? "{}"));
+
+        var view = await _context.BoardViews
+            .FirstOrDefaultAsync(v => v.BoardId == request.BoardId, ct);
 
         if (view is not null)
         {
-            view.UpdateViewMode(viewMode);
-            view.UpdateFilters(request.Filters ?? "{}");
+            view.UpdateConfig(config, _currentUser.UserId, now);
         }
         else
         {
-            view = BoardView.Create(request.WorkspaceId, request.BoardId, _currentUser.UserId, viewMode);
-            view.UpdateFilters(request.Filters ?? "{}");
+            view = BoardView.Create(
+                request.WorkspaceId,
+                request.BoardId,
+                viewType.ToString(),
+                viewType,
+                config,
+                _currentUser.UserId,
+                now);
             _context.BoardViews.Add(view);
         }
 

@@ -2,7 +2,6 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
-using Notrelix.Domain.Automation;
 
 namespace Notrelix.Application.Features.Integrations.Commands.HandleN8nCallback;
 
@@ -15,10 +14,12 @@ public record HandleN8nCallbackCommand(
 public class HandleN8nCallbackCommandHandler : IRequestHandler<HandleN8nCallbackCommand, Result>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public HandleN8nCallbackCommandHandler(IApplicationDbContext context)
+    public HandleN8nCallbackCommandHandler(IApplicationDbContext context, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(HandleN8nCallbackCommand request, CancellationToken cancellationToken)
@@ -27,20 +28,21 @@ public class HandleN8nCallbackCommandHandler : IRequestHandler<HandleN8nCallback
             .FirstOrDefaultAsync(item => item.Id == request.ExecutionId, cancellationToken);
         if (execution is null) throw new NotFoundException(nameof(AutomationExecution), request.ExecutionId);
 
+        var now = _dateTimeProvider.UtcNow;
         switch (request.Status.Trim().ToLowerInvariant())
         {
             case "delivered":
             case "success":
             case "succeeded":
-                execution.MarkDelivered(request.Response);
+                execution.Succeed(now);
                 break;
             case "retried":
             case "retry":
-                execution.MarkRetried(request.Error);
+                execution.Cancel(Guid.Empty, now);
                 break;
             case "failed":
             case "error":
-                execution.MarkFailed(request.Error);
+                execution.Fail(request.Error ?? "Unknown error", now);
                 break;
             default:
                 return Result.Failure($"Unsupported n8n callback status '{request.Status}'.");

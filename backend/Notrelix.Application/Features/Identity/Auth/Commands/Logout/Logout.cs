@@ -3,6 +3,8 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
+using Notrelix.Domain.Identity.Sessions;
+using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.Logout;
 
@@ -16,33 +18,37 @@ public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Result>
 {
     private readonly IApplicationDbContext _context;
     private readonly IJwtBlacklistService _jwtBlacklist;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public LogoutCommandHandler(IApplicationDbContext context, IJwtBlacklistService jwtBlacklist)
+    public LogoutCommandHandler(IApplicationDbContext context, IJwtBlacklistService jwtBlacklist, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _jwtBlacklist = jwtBlacklist;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(LogoutCommand request, CancellationToken cancellationToken)
     {
+        var tokenHash = RefreshTokenHash.Create(request.RefreshToken);
         var session = await _context.Sessions
-            .FirstOrDefaultAsync(s => s.RefreshToken == request.RefreshToken, cancellationToken);
+            .FirstOrDefaultAsync(s => s.RefreshTokenHash == tokenHash, cancellationToken);
 
         if (session is not null)
         {
-            session.Revoke();
+            session.Revoke(_dateTimeProvider.UtcNow);
             await _context.SaveChangesAsync(cancellationToken);
         }
 
         if (!string.IsNullOrWhiteSpace(request.AccessToken))
         {
-            BlacklistAccessToken(request.AccessToken);
+            var now = _dateTimeProvider.UtcNow;
+            BlacklistAccessToken(request.AccessToken, now);
         }
 
         return Result.Success();
     }
 
-    private async void BlacklistAccessToken(string token)
+    private async void BlacklistAccessToken(string token, DateTimeOffset now)
     {
         try
         {
@@ -66,15 +72,14 @@ public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Result>
 
             if (jti is null) return;
 
-            var expTime = DateTimeOffset.FromUnixTimeSeconds(exp).UtcDateTime;
-            if (expTime <= DateTime.UtcNow) return;
+            var expTime = DateTimeOffset.FromUnixTimeSeconds(exp);
+            if (expTime <= now) return;
 
-            var remaining = expTime - DateTime.UtcNow;
+            var remaining = expTime - now;
             await _jwtBlacklist.BlacklistAsync(jti, remaining);
         }
         catch
         {
-            // Invalid token format — silently ignore
         }
     }
 }

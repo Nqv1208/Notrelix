@@ -7,6 +7,7 @@ using global::Notrelix.Application.Features.WorkManagement.Commands.Boards;
 using global::Notrelix.Application.Features.WorkManagement.Commands.Common;
 using global::Notrelix.Application.Features.WorkManagement.DTOs;
 using global::Notrelix.Domain.Identity;
+using global::Notrelix.Domain.SharedKernel;
 using global::Notrelix.Domain.Workspaces;
 
 namespace Notrelix.Application.Features.WorkManagement.Commands;
@@ -18,15 +19,18 @@ public class ReorderBoardGroupsCommandHandler : IRequestHandler<ReorderBoardGrou
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public ReorderBoardGroupsCommandHandler(
         IApplicationDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions)
+        IWorkspacePermissionService permissions,
+        IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
         _permissions = permissions;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(ReorderBoardGroupsCommand request, CancellationToken ct)
@@ -44,10 +48,11 @@ public class ReorderBoardGroupsCommandHandler : IRequestHandler<ReorderBoardGrou
         if (lists.Any(list => list.BoardId != request.BoardId))
             throw new BusinessRuleViolationException("ListBoardMismatch", "All reordered groups must belong to the requested board.");
 
+        var now = _dateTimeProvider.UtcNow;
         var positionsById = request.Items.ToDictionary(item => item.Id, item => item.NewPosition);
         foreach (var list in lists)
         {
-            list.Move(positionsById[list.Id], _currentUser.UserId);
+            list.UpdatePosition(FractionalIndex.Create(positionsById[list.Id].ToString("F0")), _currentUser.UserId, now);
         }
 
         await _context.SaveChangesAsync(ct);

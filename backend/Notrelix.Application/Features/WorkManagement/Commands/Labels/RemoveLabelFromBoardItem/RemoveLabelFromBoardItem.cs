@@ -1,14 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.WorkManagement.Commands.Boards;
-using global::Notrelix.Application.Features.WorkManagement.Commands.Labels.RemoveLabelFromBoardItem;
-using global::Notrelix.Application.Features.WorkManagement.Commands.Labels;
-using global::Notrelix.Application.Features.WorkManagement.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
 
 namespace Notrelix.Application.Features.WorkManagement.Commands.Labels.RemoveLabelFromBoardItem;
 
@@ -22,7 +15,7 @@ public class RemoveLabelFromCardCommandHandler : IRequestHandler<RemoveLabelFrom
     public async Task<Result> Handle(RemoveLabelFromCardCommand request, CancellationToken ct)
     {
         var cl = await _context.BoardItemLabels
-            .FirstOrDefaultAsync(l => l.BoardItemId == request.BoardItemId && l.LabelId == request.LabelId, ct);
+            .FirstOrDefaultAsync(l => l.ItemId == request.BoardItemId && l.LabelId == request.LabelId, ct);
         if (cl is not null)
         {
             _context.BoardItemLabels.Remove(cl);

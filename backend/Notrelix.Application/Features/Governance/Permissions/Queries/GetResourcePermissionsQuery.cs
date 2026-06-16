@@ -5,8 +5,7 @@ using Notrelix.Application.Common.Security;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.DTOs;
 using Notrelix.Domain.Common;
-
-using ResourceTypeEnum = Notrelix.Domain.Governance.Permissions.ResourceType;
+using SharedKernel = Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.Governance.Queries;
 
@@ -15,12 +14,12 @@ public record GetResourcePermissionsQuery(
     string ResourceType,
     Guid ResourceId) : IRequest<Result<List<ResourcePermissionDto>>>, IAuthorizeableRequest
 {
-    ResourceTypeEnum IAuthorizeableRequest.ResourceType => Enum.Parse<ResourceTypeEnum>(ResourceType, true);
+    SharedKernel.ResourceType IAuthorizeableRequest.ResourceType => Enum.Parse<SharedKernel.ResourceType>(ResourceType, true);
     Guid IAuthorizeableRequest.ResourceId => ResourceId;
-    PermissionAction IAuthorizeableRequest.Action => Enum.Parse<ResourceTypeEnum>(ResourceType, true) switch
+    PermissionAction IAuthorizeableRequest.Action => Enum.Parse<SharedKernel.ResourceType>(ResourceType, true) switch
     {
-        ResourceTypeEnum.Board => PermissionAction.ManageBoardPermission,
-        ResourceTypeEnum.Page => PermissionAction.SharePage,
+        SharedKernel.ResourceType.Board => PermissionAction.ManageBoardPermission,
+        SharedKernel.ResourceType.Page => PermissionAction.SharePage,
         _ => PermissionAction.ManageWorkspace
     };
 }
@@ -38,7 +37,7 @@ public class GetResourcePermissionsQueryHandler : IRequestHandler<GetResourcePer
         GetResourcePermissionsQuery request,
         CancellationToken cancellationToken)
     {
-        if (!Enum.TryParse<ResourceType>(request.ResourceType, true, out var resourceType))
+        if (!Enum.TryParse<SharedKernel.ResourceType>(request.ResourceType, true, out var resourceType))
         {
             return Result<List<ResourcePermissionDto>>.Failure("Invalid resource type format.");
         }
@@ -56,10 +55,9 @@ public class GetResourcePermissionsQueryHandler : IRequestHandler<GetResourcePer
                 p.SubjectType.ToString(),
                 p.SubjectId,
                 p.Level.ToString(),
-                p.GrantedBy,
-                p.ExpiresAt,
-                p.IsRevoked,
-                p.RevokedAt))
+                p.CreatedBy,
+                p.IsDeleted,
+                p.DeletedAt))
             .ToListAsync(cancellationToken);
 
         return Result<List<ResourcePermissionDto>>.Success(permissions);

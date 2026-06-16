@@ -1,12 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
-using global::Notrelix.Application.Common.Abstractions;
-using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.WorkManagement.Commands.Boards;
-using global::Notrelix.Application.Features.WorkManagement.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
+using Notrelix.Application.Common.Models;
+using Notrelix.Domain.WorkManagement.Fields;
 
 namespace Notrelix.Application.Features.WorkManagement.Commands;
 
@@ -17,25 +12,41 @@ public class UpdateBoardItemStatusCommandHandler : IRequestHandler<UpdateBoardIt
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
+    private readonly IDateTimeProvider _timeProvider;
 
     public UpdateBoardItemStatusCommandHandler(
         IApplicationDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions)
+        IWorkspacePermissionService permissions,
+        IDateTimeProvider timeProvider)
     {
         _context = context;
         _currentUser = currentUser;
         _permissions = permissions;
+        _timeProvider = timeProvider;
     }
 
     public async Task<Result> Handle(UpdateBoardItemStatusCommand request, CancellationToken ct)
     {
         var card = await _context.BoardItems
-            .Include(c => c.Group)
             .FirstOrDefaultAsync(c => c.Id == request.BoardItemId, ct);
         if (card is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
-        await _permissions.EnsureCanEditBoardAsync(card.Group.BoardId, _currentUser.UserId, ct);
-        card.ChangeStatus(Enum.Parse<CardStatus>(request.Status, ignoreCase: true), _currentUser.UserId);
+
+        await _permissions.EnsureCanEditBoardAsync(card.BoardId, _currentUser.UserId, ct);
+
+        var statusFields = await _context.BoardFields
+            .Where(f => f.BoardId == card.BoardId && f.Type == FieldType.Status && !f.IsDeleted)
+            .ToListAsync(ct);
+
+        var statusField = statusFields.FirstOrDefault();
+        if (statusField == null)
+            return Result.Failure("No status field found on this board.");
+
+        var now = new DateTimeOffset(_timeProvider.UtcNow, TimeSpan.Zero);
+        var fieldValue = FieldValue.Create(JsonValue.Create(System.Text.Json.JsonSerializer.Serialize(request.Status)));
+
+        card.UpdateFieldValue(statusField, fieldValue, _currentUser.UserId, now);
+
         await _context.SaveChangesAsync(ct);
         return Result.Success();
     }

@@ -1,12 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
-using global::Notrelix.Application.Common.Abstractions;
-using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.WorkManagement.Commands.Boards;
-using global::Notrelix.Application.Features.WorkManagement.DTOs;
-using global::Notrelix.Domain.Workspaces;
-using global::Notrelix.Domain.WorkManagement.Items;
+using Notrelix.Application.Common.Models;
+using Notrelix.Domain.WorkManagement.Items;
 
 namespace Notrelix.Application.Features.WorkManagement.Commands;
 
@@ -17,15 +12,18 @@ public class CreateCardCommandHandler : IRequestHandler<CreateCardCommand, Resul
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
+    private readonly IDateTimeProvider _timeProvider;
 
     public CreateCardCommandHandler(
         IApplicationDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions)
+        IWorkspacePermissionService permissions,
+        IDateTimeProvider timeProvider)
     {
         _context = context;
         _currentUser = currentUser;
         _permissions = permissions;
+        _timeProvider = timeProvider;
     }
 
     public async Task<Result<Guid>> Handle(CreateCardCommand request, CancellationToken cancellationToken)
@@ -38,12 +36,16 @@ public class CreateCardCommandHandler : IRequestHandler<CreateCardCommand, Resul
 
         await _permissions.EnsureCanEditBoardAsync(list.BoardId, _currentUser.UserId, cancellationToken);
 
-        // Tính toán position (mặc định đặt ở cuối danh sách)
-        var maxPosition = await _context.BoardItems
+        var lastItem = await _context.BoardItems
             .Where(x => x.GroupId == request.GroupId && !x.IsDeleted)
-            .MaxAsync(x => (double?)x.Position, cancellationToken) ?? 0;
+            .OrderByDescending(x => x.Position)
+            .FirstOrDefaultAsync(cancellationToken);
 
-        var newPosition = request.Position ?? maxPosition + 65536.0; // Khoảng cách an toàn ban đầu
+        var position = request.Position.HasValue
+            ? FractionalIndex.Create(request.Position.Value.ToString(System.Globalization.CultureInfo.InvariantCulture))
+            : lastItem != null
+                ? FractionalIndex.Create(lastItem.Position.Value + "1")
+                : FractionalIndex.Initial();
 
         var board = await _context.Boards
             .AsNoTracking()
@@ -51,14 +53,16 @@ public class CreateCardCommandHandler : IRequestHandler<CreateCardCommand, Resul
         if (board == null)
             throw new NotFoundException(nameof(Board), list.BoardId);
 
+        var now = new DateTimeOffset(_timeProvider.UtcNow, TimeSpan.Zero);
+
         var card = BoardItem.Create(
-            groupId: request.GroupId,
-            boardId: list.BoardId,
-            workspaceId: board.WorkspaceId,
-            createdBy: _currentUser.UserId,
-            title: request.Title,
-            position: newPosition
-        );
+            board.WorkspaceId,
+            list.BoardId,
+            request.GroupId,
+            request.Title,
+            position,
+            _currentUser.UserId,
+            now);
 
         _context.BoardItems.Add(card);
         await _context.SaveChangesAsync(cancellationToken);

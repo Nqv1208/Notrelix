@@ -1,32 +1,31 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.WorkManagement.Commands.Boards.UpdateBoard;
-using global::Notrelix.Application.Features.WorkManagement.Commands.Boards;
-using global::Notrelix.Application.Features.WorkManagement.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
+using global::Notrelix.Domain.SharedKernel;
+using global::Notrelix.Domain.WorkManagement.Fields;
 
 namespace Notrelix.Application.Features.WorkManagement.Commands;
 
-public record UpdateBoardFieldCommand(Guid BoardId, Guid ColumnId, string? Name, string? FieldType, string? Settings, bool? IsHidden) : IRequest<Result>;
+public record UpdateBoardFieldCommand(Guid BoardId, Guid ColumnId, string? Name, string? FieldType, string? Settings) : IRequest<Result>;
 
 public class UpdateBoardFieldCommandHandler : IRequestHandler<UpdateBoardFieldCommand, Result>
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public UpdateBoardFieldCommandHandler(
         IApplicationDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions)
+        IWorkspacePermissionService permissions,
+        IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
         _permissions = permissions;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(UpdateBoardFieldCommand request, CancellationToken ct)
@@ -37,19 +36,13 @@ public class UpdateBoardFieldCommandHandler : IRequestHandler<UpdateBoardFieldCo
             .FirstOrDefaultAsync(item => item.Id == request.ColumnId && item.BoardId == request.BoardId, ct);
         if (column is null) throw new NotFoundException(nameof(BoardField), request.ColumnId);
 
-        var settings = string.IsNullOrWhiteSpace(request.Settings)
-            ? column.Settings
-            : FieldSettings.FromJson(request.Settings);
+        var now = _dateTimeProvider.UtcNow;
 
-        var type = Enum.TryParse<FieldType>(request.FieldType, true, out var parsedType)
-            ? parsedType
-            : column.Type;
-
-        column.Update(
-            request.Name ?? column.Name,
-            type,
-            settings,
-            request.IsHidden ?? column.IsHidden);
+        if (request.Settings is not null)
+        {
+            var settings = FieldSettings.Create(JsonValue.Create(request.Settings)!);
+            column.UpdateSettings(settings, _currentUser.UserId, now);
+        }
 
         await _context.SaveChangesAsync(ct);
         return Result.Success();

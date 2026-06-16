@@ -23,14 +23,14 @@ public class GetPageHistoryQueryHandler : IRequestHandler<GetPageHistoryQuery, R
         if (!pageExists) throw new NotFoundException(nameof(Page), request.PageId);
 
         var history = await _context.ActivityLogs.AsNoTracking()
-            .Where(activity => activity.ResourceType == ResourceType.Page && activity.ResourceId == request.PageId)
-            .OrderByDescending(activity => activity.CreatedAt)
+            .Where(activity => activity.Target.ResourceType == ResourceType.Page && activity.Target.ResourceId == request.PageId)
+            .OrderByDescending(activity => activity.Timestamp)
             .Select(activity => new PageHistoryDto(
                 activity.Id,
                 activity.ActorId,
-                activity.Action,
-                activity.ResourceTitle,
-                activity.CreatedAt
+                activity.Type.ToString(),
+                null,
+                activity.Timestamp.DateTime
             ))
             .ToListAsync(ct);
 

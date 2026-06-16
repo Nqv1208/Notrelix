@@ -1,12 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
-using global::Notrelix.Application.Common.Abstractions;
-using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.WorkManagement.Commands.Boards;
-using global::Notrelix.Application.Features.WorkManagement.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
+using Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.WorkManagement.Commands;
 
@@ -16,33 +10,41 @@ public class DuplicateBoardItemCommandHandler : IRequestHandler<DuplicateBoardIt
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _timeProvider;
 
-    public DuplicateBoardItemCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public DuplicateBoardItemCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider)
     {
         _context = context;
         _currentUser = currentUser;
+        _timeProvider = timeProvider;
     }
 
     public async Task<Result<Guid>> Handle(DuplicateBoardItemCommand request, CancellationToken ct)
     {
         var source = await _context.BoardItems
-            .Include(c => c.Group)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == request.BoardItemId && !c.IsDeleted && !c.IsArchived, ct);
+            .FirstOrDefaultAsync(c => c.Id == request.BoardItemId && !c.IsDeleted, ct);
         if (source is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
-        var nextPosition = await _context.BoardItems
-            .Where(c => c.GroupId == source.GroupId && !c.IsDeleted && !c.IsArchived)
-            .MaxAsync(c => (double?)c.Position, ct) + 1 ?? source.Position + 1;
+        var lastItem = await _context.BoardItems
+            .Where(c => c.GroupId == source.GroupId && !c.IsDeleted)
+            .OrderByDescending(c => c.Position)
+            .FirstOrDefaultAsync(ct);
+
+        var nextPosition = lastItem != null
+            ? FractionalIndex.Create(lastItem.Position.Value + "1")
+            : FractionalIndex.Initial();
+
+        var now = new DateTimeOffset(_timeProvider.UtcNow, TimeSpan.Zero);
 
         var duplicate = DuplicateBoardGroupCommandHandler.CloneCard(
             source,
             source.GroupId,
-            source.Group.BoardId,
+            source.BoardId,
             source.WorkspaceId,
             _currentUser.UserId,
-            $"{source.Title} copy",
-            nextPosition);
+            $"{source.Name} copy",
+            nextPosition,
+            now);
 
         _context.BoardItems.Add(duplicate);
         await _context.SaveChangesAsync(ct);

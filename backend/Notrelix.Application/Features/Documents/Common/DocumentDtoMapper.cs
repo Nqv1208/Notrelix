@@ -8,30 +8,22 @@ internal static class DocumentDtoMapper
         page.WorkspaceId,
         page.ParentId,
         page.Title,
-        page.IconType,
-        page.IconValue,
-        page.CoverUrl,
-        page.Position,
-        page.Depth,
-        page.IsTemplate,
-        page.IsArchived,
-        page.PublishedAt,
-        page.Deadline,
-        page.CreatedAt,
-        page.UpdatedAt
+        page.Icon,
+        page.CoverImage,
+        page.CreatedAt.DateTime,
+        page.UpdatedAt?.DateTime
     );
 
     public static BlockDto ToBlockDto(Block block) => new(
         block.Id,
         block.PageId,
-        block.ParentBlockId,
-        block.Type,
-        block.Properties,
-        block.Properties,
-        block.Position,
-        block.Version,
-        block.CreatedByUserId,
-        block.CreatedAt,
-        block.UpdatedAt
+        block.ParentId,
+        block.Type.ToString(),
+        block.Content.ToString(),
+        block.Properties.ToString(),
+        block.Position.Value,
+        (int)block.Version,
+        block.CreatedAt.DateTime,
+        block.UpdatedAt?.DateTime
     );
 }

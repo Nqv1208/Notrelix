@@ -1,6 +1,5 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Security;
 using Notrelix.Application.Features.WorkManagement.DTOs;
 
@@ -22,18 +21,18 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _timeProvider;
 
-    public UpdateBoardItemFieldValueCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public UpdateBoardItemFieldValueCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider)
     {
         _context = context;
         _currentUser = currentUser;
+        _timeProvider = timeProvider;
     }
 
     public async Task<BoardItemSlimDto> Handle(UpdateBoardItemFieldValueCommand request, CancellationToken cancellationToken)
     {
         var item = await _context.BoardItems
-            .Include(item => item.Members)
-            .Include(item => item.Labels)
             .FirstOrDefaultAsync(item => item.Id == request.ItemId, cancellationToken);
 
         if (item == null)
@@ -45,24 +44,31 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
         if (field == null)
             throw new NotFoundException("BoardField", request.FieldId);
 
-        // Gọi domain method để validate và cập nhật giá trị
-        item.UpdateFieldValue(request.FieldId, request.Value, field.Type, field.Settings, request.BoardId, _currentUser.UserId);
+        var now = new DateTimeOffset(_timeProvider.UtcNow, TimeSpan.Zero);
+        var jsonString = System.Text.Json.JsonSerializer.Serialize(request.Value);
+        var fieldValue = FieldValue.Create(JsonValue.Create(jsonString));
+
+        item.UpdateFieldValue(field, fieldValue, _currentUser.UserId, now);
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        var memberIds = await _context.BoardItemMembers
+            .Where(m => m.ItemId == item.Id)
+            .Select(m => m.UserId)
+            .ToListAsync(cancellationToken);
+
+        var labelIds = await _context.BoardItemLabels
+            .Where(l => l.ItemId == item.Id)
+            .Select(l => l.LabelId)
+            .ToListAsync(cancellationToken);
 
         return new BoardItemSlimDto(
             item.Id,
             item.GroupId,
-            item.Title,
-            item.DescriptionMd,
-            item.Position,
-            item.Priority?.ToString(),
-            item.Status.ToString(),
-            item.DueDate,
-            item.StartDate,
-            item.ValuesJson,
-            item.Members.Select(m => m.UserId).ToList(),
-            item.Labels.Select(l => l.LabelId).ToList()
+            item.Name,
+            item.Position.Value,
+            memberIds,
+            labelIds
         );
     }
 }

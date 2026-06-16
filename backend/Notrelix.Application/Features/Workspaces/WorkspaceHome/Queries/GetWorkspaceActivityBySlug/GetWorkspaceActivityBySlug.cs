@@ -2,10 +2,6 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.Workspaces.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
-
 using global::Notrelix.Application.Common.Security;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspaceActivityBySlug;
@@ -41,18 +37,17 @@ public class GetWorkspaceActivityBySlugQueryHandler : IRequestHandler<GetWorkspa
         var logs = await _context.ActivityLogs
             .AsNoTracking()
             .Where(a => a.WorkspaceId == workspace.Id)
-            .OrderByDescending(a => a.CreatedAt)
+            .OrderByDescending(a => a.Timestamp)
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
             .Select(a => new
             {
                 a.Id,
                 a.ActorId,
-                a.Action,
-                ResourceType = a.ResourceType.ToString(),
-                a.ResourceId,
-                a.ResourceTitle,
-                a.CreatedAt
+                Action = a.Type.ToString(),
+                ResourceType = a.Target.ResourceType.ToString(),
+                ResourceId = a.Target.ResourceId,
+                a.Timestamp
             })
             .ToListAsync(ct);
 

@@ -1,6 +1,5 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Security;
 using Notrelix.Application.Features.WorkManagement.DTOs;
 using Notrelix.Domain.WorkManagement.BoardGroups;
@@ -23,18 +22,18 @@ public class MoveBoardItemCommandHandler : IRequestHandler<MoveBoardItemCommand,
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _timeProvider;
 
-    public MoveBoardItemCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public MoveBoardItemCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider)
     {
         _context = context;
         _currentUser = currentUser;
+        _timeProvider = timeProvider;
     }
 
     public async Task<BoardItemSlimDto> Handle(MoveBoardItemCommand request, CancellationToken cancellationToken)
     {
         var item = await _context.BoardItems
-            .Include(item => item.Members)
-            .Include(item => item.Labels)
             .FirstOrDefaultAsync(item => item.Id == request.ItemId, cancellationToken);
 
         if (item == null)
@@ -46,23 +45,30 @@ public class MoveBoardItemCommandHandler : IRequestHandler<MoveBoardItemCommand,
         if (group == null)
             throw new NotFoundException("BoardGroup", request.NewGroupId);
 
-        item.MoveToGroup(BoardGroupRef.From(group), request.Position, _currentUser.UserId);
+        var now = new DateTimeOffset(_timeProvider.UtcNow, TimeSpan.Zero);
+        var position = FractionalIndex.Create(request.Position.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+        item.MoveToGroup(BoardGroupRef.From(group), position, _currentUser.UserId, now);
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        var memberIds = await _context.BoardItemMembers
+            .Where(m => m.ItemId == item.Id)
+            .Select(m => m.UserId)
+            .ToListAsync(cancellationToken);
+
+        var labelIds = await _context.BoardItemLabels
+            .Where(l => l.ItemId == item.Id)
+            .Select(l => l.LabelId)
+            .ToListAsync(cancellationToken);
 
         return new BoardItemSlimDto(
             item.Id,
             item.GroupId,
-            item.Title,
-            item.DescriptionMd,
-            item.Position,
-            item.Priority?.ToString(),
-            item.Status.ToString(),
-            item.DueDate,
-            item.StartDate,
-            item.ValuesJson,
-            item.Members.Select(m => m.UserId).ToList(),
-            item.Labels.Select(l => l.LabelId).ToList()
+            item.Name,
+            item.Position.Value,
+            memberIds,
+            labelIds
         );
     }
 }

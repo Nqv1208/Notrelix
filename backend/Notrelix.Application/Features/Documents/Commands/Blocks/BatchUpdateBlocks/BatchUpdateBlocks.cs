@@ -2,10 +2,8 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.Document.Common;
-using global::Notrelix.Application.Features.Document.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
+using global::Notrelix.Domain.Documents.Blocks;
+using global::Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.Document.Commands.Blocks.BatchUpdateBlocks;
 
@@ -18,14 +16,21 @@ public record BatchUpdateBlockItem(
     Guid Id,
     string? Type,
     string? Properties,
-    double? Position,
+    string? Position,
     Guid? ParentBlockId
 );
 
 public class BatchUpdateBlocksCommandHandler : IRequestHandler<BatchUpdateBlocksCommand, Result<List<Guid>>>
 {
     private readonly IApplicationDbContext _context;
-    public BatchUpdateBlocksCommandHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _dateTimeProvider;
+    public BatchUpdateBlocksCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
+    }
 
     public async Task<Result<List<Guid>>> Handle(BatchUpdateBlocksCommand request, CancellationToken ct)
     {
@@ -34,15 +39,20 @@ public class BatchUpdateBlocksCommandHandler : IRequestHandler<BatchUpdateBlocks
             .Where(block => block.PageId == request.PageId && blockIds.Contains(block.Id) && !block.IsDeleted)
             .ToDictionaryAsync(block => block.Id, ct);
 
+        var now = _dateTimeProvider.UtcNow;
         var updatedIds = new List<Guid>();
         foreach (var patch in request.Blocks)
         {
             if (!blocks.TryGetValue(patch.Id, out var block))
                 return Result<List<Guid>>.Failure($"Block '{patch.Id}' was not found on page '{request.PageId}'.");
 
-            if (patch.Type is not null) block.UpdateType(patch.Type);
-            if (patch.Properties is not null) block.UpdateProperties(patch.Properties);
-            if (patch.Position.HasValue || patch.ParentBlockId.HasValue) block.Move(patch.Position ?? block.Position, patch.ParentBlockId);
+            if (patch.Properties is not null)
+                block.UpdateProperties(BlockProperties.Create(JsonValue.Create(patch.Properties)), _currentUser.UserId, now);
+            if (patch.Position is not null || patch.ParentBlockId is not null)
+            {
+                var newPosition = patch.Position is not null ? FractionalIndex.Create(patch.Position) : block.Position;
+                block.Move(patch.ParentBlockId, newPosition, _currentUser.UserId, now);
+            }
             updatedIds.Add(block.Id);
         }
 

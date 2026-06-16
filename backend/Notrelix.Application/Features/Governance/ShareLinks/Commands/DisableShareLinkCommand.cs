@@ -3,8 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Security;
 using Notrelix.Application.Common.Models;
+using Notrelix.Domain.Collaboration.Activity;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Governance;
+using Notrelix.Domain.SharedKernel;
 using System.Text.Json;
 
 namespace Notrelix.Application.Features.Governance.Commands;
@@ -25,18 +27,21 @@ public record DisableShareLinkCommand(
     };
 }
 
-public class DisableShareLinkCommandHandler : IRequestHandler<DisableShareLinkCommand, Result>
-{
-    private readonly IApplicationDbContext _context;
-    private readonly ICurrentUser _currentUser;
-
-    public DisableShareLinkCommandHandler(
-        IApplicationDbContext context,
-        ICurrentUser currentUser)
+    public class DisableShareLinkCommandHandler : IRequestHandler<DisableShareLinkCommand, Result>
     {
-        _context = context;
-        _currentUser = currentUser;
-    }
+        private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
+        private readonly IDateTimeProvider _dateTimeProvider;
+
+        public DisableShareLinkCommandHandler(
+            IApplicationDbContext context,
+            ICurrentUser currentUser,
+            IDateTimeProvider dateTimeProvider)
+        {
+            _context = context;
+            _currentUser = currentUser;
+            _dateTimeProvider = dateTimeProvider;
+        }
 
     public async Task<Result> Handle(
         DisableShareLinkCommand request,
@@ -52,23 +57,21 @@ public class DisableShareLinkCommandHandler : IRequestHandler<DisableShareLinkCo
 
         var userId = _currentUser.UserId;
 
-        shareLink.Disable(userId);
+        shareLink.Disable(userId, _dateTimeProvider.UtcNow);
 
         // Write Audit Log
         var metadata = JsonSerializer.Serialize(new
         {
             shareLinkId = shareLink.Id,
-            level = shareLink.Level.ToString()
+            level = shareLink.AccessMode.ToString()
         });
 
-        var auditLog = ActivityLog.Create(
+        var auditLog = ActivityLog.Record(
             shareLink.WorkspaceId,
             userId,
-            "DisableShareLink",
-            shareLink.ResourceType,
-            shareLink.ResourceId,
-            resourceTitle: null,
-            metadata: metadata
+            ActivityType.Updated,
+            ResourceRef.Create(shareLink.ResourceType, shareLink.ResourceId),
+            _dateTimeProvider.UtcNow
         );
         _context.ActivityLogs.Add(auditLog);
 

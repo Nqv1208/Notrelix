@@ -1,14 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.WorkManagement.Commands.Boards;
-using global::Notrelix.Application.Features.WorkManagement.Commands.Labels.UpdateLabel;
-using global::Notrelix.Application.Features.WorkManagement.Commands.Labels;
-using global::Notrelix.Application.Features.WorkManagement.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
 
 namespace Notrelix.Application.Features.WorkManagement.Commands.Labels.UpdateLabel;
 
@@ -17,14 +10,23 @@ public record UpdateLabelCommand(Guid LabelId, string? Name, string? Color) : IR
 public class UpdateLabelCommandHandler : IRequestHandler<UpdateLabelCommand, Result>
 {
     private readonly IApplicationDbContext _context;
-    public UpdateLabelCommandHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _dateTimeProvider;
+
+    public UpdateLabelCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
+    }
 
     public async Task<Result> Handle(UpdateLabelCommand request, CancellationToken ct)
     {
         var label = await _context.Labels.FirstOrDefaultAsync(l => l.Id == request.LabelId, ct);
         if (label is null) throw new NotFoundException(nameof(Label), request.LabelId);
-        if (request.Name is not null) label.UpdateName(request.Name);
-        if (request.Color is not null) label.UpdateColor(request.Color);
+        var name = request.Name ?? label.Name;
+        var color = request.Color is not null ? LabelColor.Create(request.Color) : label.Color;
+        label.Update(name, color, _currentUser.UserId, _dateTimeProvider.UtcNow);
         await _context.SaveChangesAsync(ct);
         return Result.Success();
     }

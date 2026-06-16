@@ -24,27 +24,41 @@ public class GetBoardItemsQueryHandler : IRequestHandler<GetBoardItemsQuery, Lis
 
     public async Task<List<BoardItemSlimDto>> Handle(GetBoardItemsQuery request, CancellationToken cancellationToken)
     {
+        var boardGroupIds = await _context.BoardGroups
+            .AsNoTracking()
+            .Where(g => g.BoardId == request.BoardId)
+            .Select(g => g.Id)
+            .ToListAsync(cancellationToken);
+
         var items = await _context.BoardItems
             .AsNoTracking()
-            .Include(item => item.Members)
-            .Include(item => item.Labels)
-            .Where(item => item.Group.BoardId == request.BoardId && !item.IsDeleted)
+            .Where(item => boardGroupIds.Contains(item.GroupId) && !item.IsDeleted)
             .OrderBy(item => item.Position)
             .ToListAsync(cancellationToken);
+
+        var itemIds = items.Select(item => item.Id).ToList();
+
+        var memberIds = await _context.BoardItemMembers
+            .AsNoTracking()
+            .Where(m => itemIds.Contains(m.ItemId))
+            .GroupBy(m => m.ItemId)
+            .Select(g => new { ItemId = g.Key, UserIds = g.Select(m => m.UserId).ToList() })
+            .ToDictionaryAsync(x => x.ItemId, x => x.UserIds, cancellationToken);
+
+        var labelIds = await _context.BoardItemLabels
+            .AsNoTracking()
+            .Where(l => itemIds.Contains(l.ItemId))
+            .GroupBy(l => l.ItemId)
+            .Select(g => new { ItemId = g.Key, LabelIds = g.Select(l => l.LabelId).ToList() })
+            .ToDictionaryAsync(x => x.ItemId, x => x.LabelIds, cancellationToken);
 
         return items.Select(item => new BoardItemSlimDto(
             item.Id,
             item.GroupId,
-            item.Title,
-            item.DescriptionMd,
-            item.Position,
-            item.Priority?.ToString(),
-            item.Status.ToString(),
-            item.DueDate,
-            item.StartDate,
-            item.ValuesJson,
-            item.Members.Select(m => m.UserId).ToList(),
-            item.Labels.Select(l => l.LabelId).ToList()
+            item.Name,
+            item.Position.Value,
+            memberIds.GetValueOrDefault(item.Id) ?? [],
+            labelIds.GetValueOrDefault(item.Id) ?? []
         )).ToList();
     }
 }

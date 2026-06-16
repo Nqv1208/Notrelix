@@ -19,15 +19,18 @@ public class UpdateBoardCommandHandler : IRequestHandler<UpdateBoardCommand, Res
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public UpdateBoardCommandHandler(
         IApplicationDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions)
+        IWorkspacePermissionService permissions,
+        IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
         _permissions = permissions;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(UpdateBoardCommand request, CancellationToken ct)
@@ -37,13 +40,14 @@ public class UpdateBoardCommandHandler : IRequestHandler<UpdateBoardCommand, Res
 
         await _permissions.EnsureCanManageBoardAsync(board.Id, _currentUser.UserId, ct);
 
-        if (request.Title is not null) board.Rename(request.Title, _currentUser.UserId);
-        if (request.Description is not null) board.UpdateDescription(request.Description);
-        if (request.Background is not null) board.UpdateBackground(request.Background);
+        var now = _dateTimeProvider.UtcNow;
+        if (request.Title is not null) board.Rename(request.Title, _currentUser.UserId, now);
+        if (request.Description is not null) board.UpdateDescription(request.Description, _currentUser.UserId, now);
+        if (request.Background is not null) board.UpdateBackground(request.Background, _currentUser.UserId, now);
         if (request.Visibility is not null)
         {
             var visibility = Enum.Parse<BoardVisibility>(request.Visibility, ignoreCase: true);
-            board.UpdateVisibility(visibility);
+            board.ChangeVisibility(visibility, _currentUser.UserId, now);
         }
 
         await _context.SaveChangesAsync(ct);

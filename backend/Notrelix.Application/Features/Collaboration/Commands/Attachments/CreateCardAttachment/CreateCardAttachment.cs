@@ -3,8 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Shared.Attachments.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
 
 namespace Notrelix.Application.Features.Shared.Commands.Attachments.CreateCardAttachment;
 
@@ -14,11 +12,13 @@ public class CreateCardAttachmentCommandHandler : IRequestHandler<CreateCardAtta
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public CreateCardAttachmentCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public CreateCardAttachmentCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<AttachmentDto>> Handle(CreateCardAttachmentCommand request, CancellationToken ct)
@@ -26,7 +26,7 @@ public class CreateCardAttachmentCommandHandler : IRequestHandler<CreateCardAtta
         if (!Uri.TryCreate(request.Url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
             return Result<AttachmentDto>.Failure("Attachment URL must be an absolute HTTP(S) URL.");
 
-        var context = await _context.BoardItems.AsNoTracking()
+        var item = await _context.BoardItems.AsNoTracking()
             .Where(card => card.Id == request.BoardItemId && !card.IsDeleted)
             .Join(_context.BoardGroups.AsNoTracking(),
                 card => card.GroupId,
@@ -37,33 +37,27 @@ public class CreateCardAttachmentCommandHandler : IRequestHandler<CreateCardAtta
                 board => board.Id,
                 (item, board) => new { item.card, board.WorkspaceId })
             .FirstOrDefaultAsync(ct);
-        if (context is null) throw new NotFoundException("BoardItem", request.BoardItemId);
+        if (item is null) throw new NotFoundException("BoardItem", request.BoardItemId);
 
-        var attachment = Attachment.Create(
-            context.WorkspaceId,
-            ResourceType.BoardItem,
-            request.BoardItemId,
-            _currentUser.UserId,
-            request.Filename,
-            request.Url,
-            request.SizeBytes,
-            request.ContentType
-        );
+        var now = _dateTimeProvider.UtcNow;
+        var target = ResourceRef.Create(ResourceType.BoardItem, request.BoardItemId, item.WorkspaceId);
+        var metadata = FileMetadata.Create(request.Filename, request.SizeBytes ?? 0, request.ContentType ?? "application/octet-stream", url: request.Url);
+        var attachment = Attachment.Create(item.WorkspaceId, target, AttachmentType.Link, metadata, _currentUser.UserId, now);
 
         _context.Attachments.Add(attachment);
         await _context.SaveChangesAsync(ct);
 
         return Result<AttachmentDto>.Success(new AttachmentDto(
             attachment.Id,
-            attachment.ResourceId,
-            attachment.Filename,
-            attachment.Url,
-            attachment.SizeBytes ?? 0,
-            attachment.MimeType ?? "application/octet-stream",
-            request.Source ?? "link",
-            attachment.UploadedBy,
+            attachment.Target.ResourceId,
+            attachment.Metadata.FileName,
+            attachment.Metadata.Url ?? "",
+            attachment.Metadata.Size,
+            attachment.Metadata.ContentType,
+            attachment.Type.ToString(),
+            attachment.CreatedBy!.Value,
             null,
-            attachment.CreatedAt
+            attachment.CreatedAt.DateTime
         ));
     }
 }

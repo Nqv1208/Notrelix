@@ -9,10 +9,8 @@ public record NotificationDto(
     Guid WorkspaceId,
     string WorkspaceName,
     Guid UserId,
-    Guid? ActorId,
-    string ActorName,
     string Type,
-    string Payload,
+    string Content,
     bool IsRead,
     DateTime CreatedAt
 );
@@ -41,7 +39,7 @@ public class GetUserNotificationsQueryHandler : IRequestHandler<GetUserNotificat
             .AsNoTracking()
             .Where(n => n.UserId == _currentUser.UserId)
             .OrderByDescending(n => n.CreatedAt)
-            .Take(50) // Limit to top 50 notifications
+            .Take(50)
             .ToListAsync(ct);
 
         var result = new List<NotificationDto>();
@@ -53,26 +51,15 @@ public class GetUserNotificationsQueryHandler : IRequestHandler<GetUserNotificat
                 .FirstOrDefaultAsync(w => w.Id == n.WorkspaceId, ct);
             var workspaceName = workspace?.Name ?? "Workspace";
 
-            var actorName = "Ai đó";
-            if (n.ActorId.HasValue)
-            {
-                var actor = await _context.Users
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(u => u.Id == n.ActorId.Value, ct);
-                actorName = actor?.Name ?? actor?.Email?.Value ?? "Người dùng";
-            }
-
             result.Add(new NotificationDto(
                 n.Id,
                 n.WorkspaceId,
                 workspaceName,
                 n.UserId,
-                n.ActorId,
-                actorName,
-                n.Type,
-                n.Payload,
+                n.Type.ToString(),
+                n.Content,
                 n.IsRead,
-                n.CreatedAt
+                n.CreatedAt.DateTime
             ));
         }
 

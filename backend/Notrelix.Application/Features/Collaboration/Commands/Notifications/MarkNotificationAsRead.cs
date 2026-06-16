@@ -10,11 +10,13 @@ public class MarkNotificationAsReadCommandHandler : IRequestHandler<MarkNotifica
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public MarkNotificationAsReadCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public MarkNotificationAsReadCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(MarkNotificationAsReadCommand request, CancellationToken ct)
@@ -25,7 +27,7 @@ public class MarkNotificationAsReadCommandHandler : IRequestHandler<MarkNotifica
         if (notification is null)
             throw new NotFoundException(nameof(Notification), request.NotificationId);
 
-        notification.MarkAsRead();
+        notification.MarkAsRead(_dateTimeProvider.UtcNow);
         await _context.SaveChangesAsync(ct);
 
         return Result.Success();

@@ -61,15 +61,15 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
         }
 
         var hash = _passwordHasher.HashPassword(request.NewPassword);
-        user.UpdatePassword(hash);
+        user.UpdatePassword(hash, DateTimeOffset.UtcNow);
 
         var activeSessions = await _context.Sessions
-            .Where(s => s.UserId == user.Id && !s.IsRevoked)
+            .Where(s => s.UserId == user.Id && s.Status == SessionStatus.Active)
             .ToListAsync(cancellationToken);
 
         foreach (var session in activeSessions)
         {
-            session.Revoke();
+            session.Revoke(DateTimeOffset.UtcNow);
         }
 
         await _context.SaveChangesAsync(cancellationToken);

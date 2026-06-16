@@ -1,9 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Security;
 using Notrelix.Application.Features.WorkManagement.DTOs;
-using Notrelix.Domain.WorkManagement;
 
 namespace Notrelix.Application.Features.WorkManagement.Commands;
 
@@ -23,11 +21,13 @@ public class CreateBoardItemCommandHandler : IRequestHandler<CreateBoardItemComm
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _timeProvider;
 
-    public CreateBoardItemCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public CreateBoardItemCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider)
     {
         _context = context;
         _currentUser = currentUser;
+        _timeProvider = timeProvider;
     }
 
     public async Task<BoardItemSlimDto> Handle(CreateBoardItemCommand request, CancellationToken cancellationToken)
@@ -38,7 +38,17 @@ public class CreateBoardItemCommandHandler : IRequestHandler<CreateBoardItemComm
         if (group == null)
             throw new NotFoundException("BoardGroup", request.GroupId);
 
-        var item = BoardItem.Create(request.GroupId, request.BoardId, request.WorkspaceId, _currentUser.UserId, request.Title, request.Position);
+        var now = new DateTimeOffset(_timeProvider.UtcNow, TimeSpan.Zero);
+        var position = FractionalIndex.Create(request.Position.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+        var item = BoardItem.Create(
+            request.WorkspaceId,
+            request.BoardId,
+            request.GroupId,
+            request.Title,
+            position,
+            _currentUser.UserId,
+            now);
 
         _context.BoardItems.Add(item);
         await _context.SaveChangesAsync(cancellationToken);
@@ -46,14 +56,8 @@ public class CreateBoardItemCommandHandler : IRequestHandler<CreateBoardItemComm
         return new BoardItemSlimDto(
             item.Id,
             item.GroupId,
-            item.Title,
-            item.DescriptionMd,
-            item.Position,
-            item.Priority?.ToString(),
-            item.Status.ToString(),
-            item.DueDate,
-            item.StartDate,
-            item.ValuesJson,
+            item.Name,
+            item.Position.Value,
             new List<Guid>(),
             new List<Guid>()
         );

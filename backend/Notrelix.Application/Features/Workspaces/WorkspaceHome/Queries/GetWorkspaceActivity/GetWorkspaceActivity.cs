@@ -2,11 +2,8 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.Workspaces.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
-
 using global::Notrelix.Application.Common.Security;
+using global::Notrelix.Domain.Workspaces.Workspaces;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspaceActivity;
 
@@ -30,7 +27,7 @@ public class GetWorkspaceActivityQueryHandler : IRequestHandler<GetWorkspaceActi
     {
         var workspaceExists = await _context.Workspaces
             .AsNoTracking()
-            .AnyAsync(w => w.Id == request.WorkspaceId && !w.IsArchived, ct);
+            .AnyAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && !w.IsDeleted, ct);
 
         if (!workspaceExists)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
@@ -41,18 +38,17 @@ public class GetWorkspaceActivityQueryHandler : IRequestHandler<GetWorkspaceActi
         var logs = await _context.ActivityLogs
             .AsNoTracking()
             .Where(a => a.WorkspaceId == request.WorkspaceId)
-            .OrderByDescending(a => a.CreatedAt)
+            .OrderByDescending(a => a.Timestamp)
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
             .Select(a => new
             {
                 a.Id,
                 a.ActorId,
-                a.Action,
-                ResourceType = a.ResourceType.ToString(),
-                a.ResourceId,
-                a.ResourceTitle,
-                a.CreatedAt
+                Action = a.Type.ToString(),
+                ResourceType = a.Target.ResourceType.ToString(),
+                ResourceId = a.Target.ResourceId,
+                a.Timestamp
             })
             .ToListAsync(ct);
 

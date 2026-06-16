@@ -1,12 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
-using global::Notrelix.Application.Common.Abstractions;
-using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.WorkManagement.Commands.Boards;
-using global::Notrelix.Application.Features.WorkManagement.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
+using Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.WorkManagement.Commands;
 
@@ -17,41 +12,39 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
+    private readonly IDateTimeProvider _timeProvider;
 
     public UpdateBoardItemFieldValuesCommandHandler(
         IApplicationDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions)
+        IWorkspacePermissionService permissions,
+        IDateTimeProvider timeProvider)
     {
         _context = context;
         _currentUser = currentUser;
         _permissions = permissions;
+        _timeProvider = timeProvider;
     }
 
     public async Task<Result> Handle(UpdateBoardItemFieldValuesCommand request, CancellationToken ct)
     {
         var card = await _context.BoardItems
-            .Include(c => c.Members)
             .FirstOrDefaultAsync(c => c.Id == request.BoardItemId && !c.IsDeleted, ct);
         if (card is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
-        var boardInfo = await _context.BoardGroups.AsNoTracking()
-            .Where(list => list.Id == card.GroupId)
-            .Select(list => new { list.BoardId, list.Board.WorkspaceId })
-            .FirstOrDefaultAsync(ct);
-        if (boardInfo is null) throw new NotFoundException(nameof(BoardGroup), card.GroupId);
+        await _permissions.EnsureCanEditBoardAsync(card.BoardId, _currentUser.UserId, ct);
 
-        await _permissions.EnsureCanEditBoardAsync(boardInfo.BoardId, _currentUser.UserId, ct);
+        var now = new DateTimeOffset(_timeProvider.UtcNow, TimeSpan.Zero);
 
         var columns = await _context.BoardFields.AsNoTracking()
-            .Where(column => column.BoardId == boardInfo.BoardId && request.Values.Keys.Contains(column.Id))
+            .Where(column => column.BoardId == card.BoardId && request.Values.Keys.Contains(column.Id))
             .ToDictionaryAsync(column => column.Id, ct);
 
         foreach (var (columnId, value) in request.Values)
         {
-            if (columnId == boardInfo.BoardId)
+            if (columnId == card.BoardId)
             {
-                card.Rename(ReadString(value) ?? card.Title, _currentUser.UserId);
+                card.Rename(ReadString(value) ?? card.Name, _currentUser.UserId, now);
                 continue;
             }
 
@@ -62,31 +55,49 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
             switch (semanticField)
             {
                 case "title":
-                    card.Rename(ReadString(value) ?? card.Title, _currentUser.UserId);
+                    card.Rename(ReadString(value) ?? card.Name, _currentUser.UserId, now);
                     break;
                 case "status":
-                    card.ChangeStatus(ParseEnum<CardStatus>(value, column.Name), _currentUser.UserId);
-                    break;
                 case "priority":
-                    card.ChangePriority(ParseEnum<CardPriority>(value, column.Name), _currentUser.UserId);
-                    break;
+                    {
+                        var fv = FieldValue.Create(JsonValue.Create(JsonSerializer.Serialize(NormalizeStoredValue(value))));
+                        card.UpdateFieldValue(column, fv, _currentUser.UserId, now);
+                        break;
+                    }
                 case "due_date":
-                    card.SetDueDate(ReadDateTime(value), _currentUser.UserId);
-                    break;
+                    {
+                        var dt = ReadDateTime(value);
+                        card.SetTimeline(
+                            card.StartedAt,
+                            dt.HasValue ? new DateTimeOffset(dt.Value, TimeSpan.Zero) : null,
+                            _currentUser.UserId,
+                            now);
+                        break;
+                    }
                 case "linked_page":
-                    var pageId = ReadGuid(value);
-                    if (pageId.HasValue)
                     {
-                        await EnsurePageCanBeLinkedAsync(pageId.Value, boardInfo.WorkspaceId, ct);
-                        card.LinkPage(pageId.Value);
+                        var pageId = ReadGuid(value);
+                        if (pageId.HasValue)
+                        {
+                            await EnsurePageCanBeLinkedAsync(pageId.Value, card.WorkspaceId, ct);
+                            var link = BoardItemLink.Create(
+                                card.WorkspaceId, card.BoardId, card.Id,
+                                ResourceRef.Create(ResourceType.Page, pageId.Value, card.WorkspaceId),
+                                BoardItemLinkType.Reference,
+                                _currentUser.UserId, now);
+                            _context.BoardItemLinks.Add(link);
+                        }
+                        else
+                        {
+                            var existingLinks = await _context.BoardItemLinks
+                                .Where(l => l.SourceItemId == card.Id)
+                                .ToListAsync(ct);
+                            _context.BoardItemLinks.RemoveRange(existingLinks);
+                        }
+                        break;
                     }
-                    else
-                    {
-                        card.UnlinkPage(_currentUser.UserId);
-                    }
-                    break;
                 case "assignees":
-                    await ReplaceMembers(card, ReadGuidList(value), ct);
+                    await ReplaceMembers(card, ReadGuidList(value), ct, now);
                     break;
                 case "text":
                 case "number":
@@ -96,8 +107,11 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
                 case "progress":
                 case "select":
                 case "multi_select":
-                    card.UpdateFieldValue(columnId, NormalizeStoredValue(value), column.Type, column.Settings, boardInfo.BoardId, _currentUser.UserId);
-                    break;
+                    {
+                        var fv = FieldValue.Create(JsonValue.Create(JsonSerializer.Serialize(NormalizeStoredValue(value))));
+                        card.UpdateFieldValue(column, fv, _currentUser.UserId, now);
+                        break;
+                    }
                 default:
                     return Result.Failure($"Unsupported field '{column.Name}'.");
             }
@@ -124,10 +138,10 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
                 "BoardItem can only be linked to a page in the same workspace.");
     }
 
-    private async Task ReplaceMembers(BoardItem card, IReadOnlyCollection<Guid> userIds, CancellationToken ct)
+    private async Task ReplaceMembers(BoardItem card, IReadOnlyCollection<Guid> userIds, CancellationToken ct, DateTimeOffset now)
     {
         var existingMembers = await _context.BoardItemMembers
-            .Where(member => member.BoardItemId == card.Id)
+            .Where(member => member.ItemId == card.Id)
             .ToListAsync(ct);
 
         var requested = userIds.ToHashSet();
@@ -139,7 +153,10 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
         var existingUserIds = existingMembers.Select(member => member.UserId).ToHashSet();
         foreach (var userId in requested.Where(userId => !existingUserIds.Contains(userId)))
         {
-            card.AssignMember(userId, _currentUser.UserId);
+            var member = BoardItemMember.Create(
+                card.WorkspaceId, card.BoardId, card.Id,
+                userId, _currentUser.UserId, now);
+            _context.BoardItemMembers.Add(member);
         }
     }
 
@@ -149,8 +166,6 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
         var normalizedType = Normalize(column.Type.ToString());
 
         if (normalizedName is "task" or "title" or "name") return "title";
-        if (normalizedName.Contains("status")) return "status";
-        if (normalizedName.Contains("priority")) return "priority";
         if (normalizedName.Contains("due") && normalizedName.Contains("date")) return "due_date";
         if (normalizedName.Contains("linked") && (normalizedName.Contains("doc") || normalizedName.Contains("page"))) return "linked_page";
         if (normalizedName.Contains("assignee") || normalizedName.Contains("owner") || normalizedType is "person" or "people") return "assignees";
@@ -159,7 +174,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
         {
             "linked_page" => "linked_page",
             "person" or "people" => "assignees",
-            "text" or "number" or "checkbox" or "date" or "timeline" or "progress" or "select" or "multi_select" => normalizedType,
+            "text" or "number" or "checkbox" or "date" or "timeline" or "progress" or "select" or "multi_select" or "status" or "priority" => normalizedType,
             _ => normalizedName
         };
     }
@@ -245,32 +260,5 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
             JsonValueKind.Object => element.EnumerateObject().ToDictionary(property => property.Name, property => NormalizeJsonElement(property.Value)),
             _ => element.ToString()
         };
-    }
-
-    private static TEnum ParseEnum<TEnum>(object? value, string fieldName) where TEnum : struct
-    {
-        var raw = value?.ToString();
-        if (string.IsNullOrWhiteSpace(raw))
-            throw new ArgumentException($"{fieldName} cannot be empty.");
-
-        var normalizedRaw = raw.Trim().ToLowerInvariant().Replace("_", "-", StringComparison.Ordinal).Replace(" ", "-", StringComparison.Ordinal);
-        if (typeof(TEnum) == typeof(CardStatus))
-        {
-            normalizedRaw = normalizedRaw switch
-            {
-                "status-working" or "working" or "in-progress" or "inprogress" => "InProgress",
-                "status-done" or "done" => "Done",
-                "status-completed" or "completed" => "Done",
-                "status-stuck" or "stuck" or "blocked" => "Cancelled",
-                "status-not-started" or "not-started" or "open" => "Open",
-                "in-review" or "inreview" => "InReview",
-                _ => raw
-            };
-        }
-
-        var normalized = normalizedRaw.Replace("_", "", StringComparison.Ordinal).Replace("-", "", StringComparison.Ordinal).Replace(" ", "", StringComparison.Ordinal);
-        if (Enum.TryParse<TEnum>(normalized, ignoreCase: true, out var parsed)) return parsed;
-
-        throw new ArgumentException($"{fieldName} value '{raw}' is not supported.");
     }
 }

@@ -1,14 +1,8 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.WorkManagement.Commands.Boards;
-using global::Notrelix.Application.Features.WorkManagement.Commands.Checklists.CreateChecklist;
-using global::Notrelix.Application.Features.WorkManagement.Commands.Checklists;
-using global::Notrelix.Application.Features.WorkManagement.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
+using global::Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.WorkManagement.Commands.Checklists.CreateChecklist;
 
@@ -17,15 +11,26 @@ public record CreateChecklistCommand(Guid BoardItemId, string Title) : IRequest<
 public class CreateChecklistCommandHandler : IRequestHandler<CreateChecklistCommand, Result<Guid>>
 {
     private readonly IApplicationDbContext _context;
-    public CreateChecklistCommandHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _dateTimeProvider;
+
+    public CreateChecklistCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
+    }
 
     public async Task<Result<Guid>> Handle(CreateChecklistCommand request, CancellationToken ct)
     {
-        var position = await _context.Checklists
-            .Where(c => c.BoardItemId == request.BoardItemId)
-            .MaxAsync(c => (double?)c.Position, ct) + 1 ?? 0;
+        var item = await _context.BoardItems
+            .FirstOrDefaultAsync(i => i.Id == request.BoardItemId, ct);
 
-        var checklist = Checklist.Create(request.BoardItemId, request.Title, position);
+        if (item is null)
+            throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
+
+        var position = FractionalIndex.Initial();
+        var checklist = Checklist.Create(item.WorkspaceId, request.BoardItemId, request.Title, position, _currentUser.UserId, _dateTimeProvider.UtcNow);
         _context.Checklists.Add(checklist);
         await _context.SaveChangesAsync(ct);
         return Result<Guid>.Success(checklist.Id);

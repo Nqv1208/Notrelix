@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Security;
 using Notrelix.Application.Features.WorkManagement.DTOs;
-using Notrelix.Domain.WorkManagement;
 
 namespace Notrelix.Application.Features.WorkManagement.Commands;
 
@@ -12,7 +11,7 @@ public record CreateBoardViewCommand(
     Guid BoardId,
     string Name,
     string ViewMode,
-    double Position) : IRequest<BoardViewDto>, IAuthorizeableRequest
+    string ConfigJson) : IRequest<BoardViewDto>, IAuthorizeableRequest
 {
     public ResourceType ResourceType => ResourceType.Board;
     public Guid ResourceId => BoardId;
@@ -23,11 +22,13 @@ public class CreateBoardViewCommandHandler : IRequestHandler<CreateBoardViewComm
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public CreateBoardViewCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public CreateBoardViewCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<BoardViewDto> Handle(CreateBoardViewCommand request, CancellationToken cancellationToken)
@@ -38,12 +39,14 @@ public class CreateBoardViewCommandHandler : IRequestHandler<CreateBoardViewComm
         if (board == null)
             throw new NotFoundException("Board", request.BoardId);
 
-        if (!Enum.TryParse<ViewMode>(request.ViewMode, true, out var mode))
+        if (!Enum.TryParse<ViewType>(request.ViewMode, true, out var type))
         {
             throw new ArgumentException($"Invalid view mode: {request.ViewMode}");
         }
 
-        var view = BoardView.CreateSaved(request.WorkspaceId, request.BoardId, _currentUser.UserId, request.Name, mode, request.Position, isDefault: false, isPrivate: false);
+        var configData = JsonValue.Create(request.ConfigJson);
+        var config = BoardViewConfig.Create(configData);
+        var view = BoardView.Create(request.WorkspaceId, request.BoardId, request.Name, type, config, _currentUser.UserId, _dateTimeProvider.UtcNow);
 
         _context.BoardViews.Add(view);
         await _context.SaveChangesAsync(cancellationToken);
@@ -52,12 +55,9 @@ public class CreateBoardViewCommandHandler : IRequestHandler<CreateBoardViewComm
             view.Id,
             view.BoardId,
             view.Name,
-            view.ViewMode.ToString(),
-            view.Filters,
-            view.Config,
-            view.Position,
-            view.IsDefault,
-            view.IsPrivate
+            view.Type.ToString(),
+            view.Config.Data.Value,
+            view.IsDefault
         );
     }
 }

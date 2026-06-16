@@ -1,12 +1,8 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.WorkManagement.Commands.Boards;
-using global::Notrelix.Application.Features.WorkManagement.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
+using global::Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.WorkManagement.Commands;
 
@@ -16,15 +12,18 @@ public class UpdateBoardGroupCommandHandler : IRequestHandler<UpdateBoardGroupCo
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspacePermissionService _permissions;
 
     public UpdateBoardGroupCommandHandler(
         IApplicationDbContext context,
         ICurrentUser currentUser,
+        IDateTimeProvider dateTimeProvider,
         IWorkspacePermissionService permissions)
     {
         _context = context;
         _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
         _permissions = permissions;
     }
 
@@ -35,8 +34,9 @@ public class UpdateBoardGroupCommandHandler : IRequestHandler<UpdateBoardGroupCo
 
         await _permissions.EnsureCanEditBoardAsync(list.BoardId, _currentUser.UserId, ct);
 
-        if (request.Title is not null) list.Rename(request.Title, _currentUser.UserId);
-        if (request.Color is not null) list.ChangeColor(request.Color, _currentUser.UserId);
+        var now = _dateTimeProvider.UtcNow;
+        if (request.Title is not null) list.Rename(request.Title, _currentUser.UserId, now);
+        if (request.Color is not null) list.UpdateColor(Color.Create(request.Color), _currentUser.UserId, now);
         await _context.SaveChangesAsync(ct);
         return Result.Success();
     }

@@ -1,4 +1,5 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
+using BoardMemberEntity = global::Notrelix.Domain.WorkManagement.Boards.BoardMember;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -19,21 +20,23 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public AddBoardMemberCommandHandler(
         IApplicationDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions)
+        IWorkspacePermissionService permissions,
+        IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
         _permissions = permissions;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(AddBoardMemberCommand request, CancellationToken ct)
     {
         var board = await _context.Boards
-            .Include(b => b.Members)
             .FirstOrDefaultAsync(b => b.Id == request.BoardId, ct);
 
         if (board is null) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
@@ -50,11 +53,17 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
                 "Board member must belong to the same workspace.");
         }
 
+        var alreadyMember = await _context.BoardMembers
+            .AnyAsync(m => m.BoardId == board.Id && m.UserId == request.UserId, ct);
+        if (alreadyMember) return Result.Success();
+
         var role = request.Role is not null
             ? Enum.Parse<BoardRole>(request.Role, ignoreCase: true)
             : BoardRole.Member;
 
-        board.AddMember(request.UserId, role);
+        var member = BoardMemberEntity.Create(board.Id, request.UserId, role, _dateTimeProvider.UtcNow);
+        _context.BoardMembers.Add(member);
+
         await _context.SaveChangesAsync(ct);
         return Result.Success();
     }

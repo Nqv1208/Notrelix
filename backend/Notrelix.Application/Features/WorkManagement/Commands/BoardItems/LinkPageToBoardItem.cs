@@ -1,13 +1,8 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
-using global::Notrelix.Application.Common.Abstractions;
-using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.WorkManagement.Commands.Boards;
-using global::Notrelix.Application.Features.WorkManagement.DTOs;
-using global::Notrelix.Domain.Workspaces;
-using global::Notrelix.Domain.WorkManagement.Items;
+using Notrelix.Application.Common.Models;
+using Notrelix.Domain.WorkManagement.Items;
 
 namespace Notrelix.Application.Features.WorkManagement.Commands;
 
@@ -18,21 +13,23 @@ public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoard
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
+    private readonly IDateTimeProvider _timeProvider;
 
     public LinkPageToBoardItemCommandHandler(
         IApplicationDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions)
+        IWorkspacePermissionService permissions,
+        IDateTimeProvider timeProvider)
     {
         _context = context;
         _currentUser = currentUser;
         _permissions = permissions;
+        _timeProvider = timeProvider;
     }
 
     public async Task<Result> Handle(LinkPageToBoardItemCommand request, CancellationToken cancellationToken)
     {
         var card = await _context.BoardItems
-            .Include(c => c.Group)
             .FirstOrDefaultAsync(x => x.Id == request.BoardItemId, cancellationToken);
 
         if (card == null)
@@ -44,20 +41,23 @@ public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoard
         if (page == null)
             throw new NotFoundException(nameof(Page), request.PageId);
 
-        var board = await _context.Boards
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == card.Group.BoardId, cancellationToken);
+        await _permissions.EnsureCanEditBoardAsync(card.BoardId, _currentUser.UserId, cancellationToken);
 
-        if (board == null)
-            throw new NotFoundException(nameof(BoardEntity), card.Group.BoardId);
-
-        await _permissions.EnsureCanEditBoardAsync(board.Id, _currentUser.UserId, cancellationToken);
-
-        if (board.WorkspaceId != page.WorkspaceId)
+        if (card.WorkspaceId != page.WorkspaceId)
             throw new BusinessRuleViolationException("CardPageWorkspaceMismatch", "BoardItem chỉ được link với page cùng workspace.");
 
-        // Map link
-        card.LinkPage(request.PageId);
+        var now = new DateTimeOffset(_timeProvider.UtcNow, TimeSpan.Zero);
+
+        var link = BoardItemLink.Create(
+            card.WorkspaceId,
+            card.BoardId,
+            card.Id,
+            ResourceRef.Create(ResourceType.Page, request.PageId, card.WorkspaceId),
+            BoardItemLinkType.Reference,
+            _currentUser.UserId,
+            now);
+
+        _context.BoardItemLinks.Add(link);
 
         await _context.SaveChangesAsync(cancellationToken);
 

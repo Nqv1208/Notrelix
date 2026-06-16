@@ -28,15 +28,12 @@ public record FullBoardDto(
 public record BoardFieldDto(
     Guid Id,
     Guid BoardId,
-    string Key,
     string Name,
     string FieldType,
     string Settings,
     string? DefaultValue,
-    double Position,
-    bool IsRequired,
+    string Position,
     bool IsSystem,
-    bool IsHidden,
     bool IsDeleted
 );
 
@@ -52,21 +49,14 @@ public record BoardGroupDto(
     Guid Id,
     string Title,
     string Color,
-    double Position,
+    string Position,
     bool IsArchived,
     List<BoardItemSummaryDto> BoardItems
 );
 
 public record BoardItemSummaryDto(
     Guid Id,
-    string Title,
-    Guid? LinkedPageId,
-    string? Priority,
-    string Status,
-    DateTime? DueDate,
-    DateTime? StartDate,
-    DateTime? CompletedAt,
-    string? Cover,
+    string Name,
     int MemberCount,
     List<BoardItemMemberDto> Members,
     List<BoardItemLabelDto> Labels,
@@ -74,8 +64,7 @@ public record BoardItemSummaryDto(
     int ChecklistTotal,
     int CommentCount,
     int AttachmentCount,
-    double Position,
-    string FieldValues,
+    string Position,
     DateTime CreatedAt,
     DateTime? UpdatedAt
 );
@@ -85,43 +74,34 @@ public record BoardItemDto(
     Guid BoardId,
     Guid WorkspaceId,
     Guid GroupId,
-    string Title,
-    string? DescriptionMd,
-    Guid? LinkedPageId,
-    string? Priority,
-    string Status,
-    DateTime? DueDate,
-    DateTime? StartDate,
-    DateTime? CompletedAt,
-    string? Cover,
-    double Position,
+    string Name,
     List<BoardItemMemberDto> Members,
     List<BoardItemLabelDto> Labels,
     List<ChecklistDto> Checklists,
     int CommentCount,
     int AttachmentCount,
-    string FieldValues,
+    string Position,
     DateTime CreatedAt,
     DateTime? UpdatedAt
 );
 
-public record BoardItemMemberDto(Guid UserId, string Name, string? Avatar, DateTime AssignedAt);
+public record BoardItemMemberDto(Guid UserId, string Name, string? Avatar, DateTimeOffset AssignedAt);
 public record BoardItemLabelDto(Guid LabelId, string? Name, string Color);
 
 public record ChecklistDto(
     Guid Id,
     string Title,
-    double Position,
+    string Position,
     List<ChecklistItemDto> Items
 );
 
 public record ChecklistItemDto(
     Guid Id,
     string Title,
-    bool IsChecked,
-    DateTime? DueDate,
-    Guid? AssigneeId,
-    double Position
+    string Status,
+    DateTime? DueAt,
+    Guid? AssigneeUserId,
+    string Position
 );
 
 // ────────────────────────────────────────────────────────
@@ -130,34 +110,25 @@ public record ChecklistItemDto(
 
 public record BoardFieldSchemaDto(
     Guid Id,
-    string Key,
     string Name,
     string Type,
     string Settings,
     string? DefaultValue,
-    double Position,
-    bool IsRequired,
-    bool IsSystem,
-    bool IsHidden);
+    string Position,
+    bool IsSystem);
 
 public record BoardGroupSchemaDto(
     Guid Id,
     string Title,
     string Color,
-    double Position,
+    string Position,
     bool IsCollapsed);
 
 public record BoardItemSlimDto(
     Guid Id,
     Guid GroupId,
-    string Title,
-    string? DescriptionMd,
-    double Position,
-    string? Priority,
-    string Status,
-    DateTime? DueDate,
-    DateTime? StartDate,
-    string ValuesJson,
+    string Name,
+    string Position,
     List<Guid> MemberIds,
     List<Guid> LabelIds);
 
@@ -172,9 +143,6 @@ public record BoardViewDto(
     Guid Id,
     Guid BoardId,
     string Name,
-    string ViewMode,
-    string Filters,
+    string Type,
     string Config,
-    double Position,
-    bool IsDefault,
-    bool IsPrivate);
+    bool IsDefault);

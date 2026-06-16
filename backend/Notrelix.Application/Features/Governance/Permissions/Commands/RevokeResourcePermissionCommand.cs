@@ -3,11 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Security;
 using Notrelix.Application.Common.Models;
+using Notrelix.Domain.Collaboration.Activity;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Governance;
+using SharedKernel = Notrelix.Domain.SharedKernel;
 using System.Text.Json;
-
-using ResourceTypeEnum = Notrelix.Domain.Governance.Permissions.ResourceType;
 
 namespace Notrelix.Application.Features.Governance.Commands;
 
@@ -17,32 +17,37 @@ public record RevokeResourcePermissionCommand(
     Guid ResourceId,
     Guid PermissionId) : IRequest<Result>, IAuthorizeableRequest
 {
-    ResourceTypeEnum IAuthorizeableRequest.ResourceType => Enum.Parse<ResourceTypeEnum>(ResourceType, true);
+    SharedKernel.ResourceType IAuthorizeableRequest.ResourceType => Enum.Parse<SharedKernel.ResourceType>(ResourceType, true);
     Guid IAuthorizeableRequest.ResourceId => ResourceId;
-    PermissionAction IAuthorizeableRequest.Action => Enum.Parse<ResourceTypeEnum>(ResourceType, true) switch
+    PermissionAction IAuthorizeableRequest.Action => Enum.Parse<SharedKernel.ResourceType>(ResourceType, true) switch
     {
-        ResourceTypeEnum.Board => PermissionAction.ManageBoardPermission,
-        ResourceTypeEnum.Page => PermissionAction.SharePage,
+        SharedKernel.ResourceType.Board => PermissionAction.ManageBoardPermission,
+        SharedKernel.ResourceType.Page => PermissionAction.SharePage,
         _ => PermissionAction.ManageWorkspace
     };
 }
 
-public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeResourcePermissionCommand, Result>
-{
-    private readonly IApplicationDbContext _context;
-    private readonly ICurrentUser _currentUser;
-
-    public RevokeResourcePermissionCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeResourcePermissionCommand, Result>
     {
-        _context = context;
-        _currentUser = currentUser;
-    }
+        private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
+        private readonly IDateTimeProvider _dateTimeProvider;
+
+        public RevokeResourcePermissionCommandHandler(
+            IApplicationDbContext context,
+            ICurrentUser currentUser,
+            IDateTimeProvider dateTimeProvider)
+        {
+            _context = context;
+            _currentUser = currentUser;
+            _dateTimeProvider = dateTimeProvider;
+        }
 
     public async Task<Result> Handle(
         RevokeResourcePermissionCommand request,
         CancellationToken cancellationToken)
     {
-        if (!Enum.TryParse<ResourceType>(request.ResourceType, true, out var resourceType))
+        if (!Enum.TryParse<SharedKernel.ResourceType>(request.ResourceType, true, out var resourceType))
         {
             return Result.Failure("Invalid resource type format.");
         }
@@ -64,24 +69,16 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
         _context.ResourcePermissions.Remove(permission);
 
         // Write Audit Log
-        var beforeJson = JsonSerializer.Serialize(new
-        {
-            id = permission.Id,
-            level = permission.Level.ToString(),
-            expiresAt = permission.ExpiresAt,
-            subjectType = permission.SubjectType.ToString(),
-            subjectId = permission.SubjectId
-        });
-
-        var changes = JsonSerializer.Serialize(new { before = beforeJson, after = (string?)null });
-
         var auditLog = AuditLog.Record(
             request.WorkspaceId,
-            resourceType,
-            request.ResourceId,
-            "RevokeResourcePermission",
             actorId,
-            changes
+            "RevokeResourcePermission",
+            SharedKernel.ResourceRef.Create(resourceType, request.ResourceId),
+            AuditMetadata.Create(),
+            AuditSeverity.Info,
+            "",
+            "",
+            DateTimeOffset.UtcNow
         );
         _context.AuditLogs.Add(auditLog);
 
@@ -93,14 +90,13 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
             level = permission.Level.ToString()
         });
 
-        var activityLog = ActivityLog.Create(
+        var activityLog = ActivityLog.Record(
             request.WorkspaceId,
             actorId,
-            "RevokeResourcePermission",
-            resourceType,
-            request.ResourceId,
-            resourceTitle: null,
-            metadata: metadata
+            ActivityType.Deleted,
+            SharedKernel.ResourceRef.Create(resourceType, request.ResourceId),
+            _dateTimeProvider.UtcNow,
+            ActivityMetadata.Create(SharedKernel.JsonValue.Create(metadata))
         );
         _context.ActivityLogs.Add(activityLog);
 

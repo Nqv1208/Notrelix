@@ -44,26 +44,19 @@ public class GetAutomationExecutionsQueryHandler : IRequestHandler<GetAutomation
 
         var executions = await _context.AutomationExecutions
             .AsNoTracking()
-            .Where(item => item.AutomationRuleId == request.AutomationRuleId)
+            .Where(item => item.RuleId == request.AutomationRuleId)
             .OrderByDescending(item => item.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(item => new AutomationExecutionDto(
                 item.Id,
                 item.WorkspaceId,
-                item.AutomationRuleId,
-                item.EventId,
-                item.EventType,
-                item.ResourceType,
-                item.ResourceId,
+                item.RuleId,
                 item.Status,
                 item.AttemptCount,
                 item.Payload,
-                item.Response,
                 item.Error,
-                item.CreatedAt,
-                item.DeliveredAt,
-                item.FailedAt))
+                item.CreatedAt.DateTime))
             .ToListAsync(cancellationToken);
 
         return Result<IReadOnlyList<AutomationExecutionDto>>.Success(executions);

@@ -1,31 +1,31 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.WorkManagement.Commands.Boards;
-using global::Notrelix.Application.Features.WorkManagement.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
+using global::Notrelix.Domain.SharedKernel;
+using global::Notrelix.Domain.WorkManagement.Fields;
 
 namespace Notrelix.Application.Features.WorkManagement.Commands;
 
-public record CreateBoardFieldCommand(Guid BoardId, string Name, string FieldType, string? Settings, double? Position) : IRequest<Result<Guid>>;
+public record CreateBoardFieldCommand(Guid BoardId, string Name, string FieldType, string? Settings, string? Position) : IRequest<Result<Guid>>;
 
 public class CreateBoardFieldCommandHandler : IRequestHandler<CreateBoardFieldCommand, Result<Guid>>
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public CreateBoardFieldCommandHandler(
         IApplicationDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions)
+        IWorkspacePermissionService permissions,
+        IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
         _permissions = permissions;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<Guid>> Handle(CreateBoardFieldCommand request, CancellationToken ct)
@@ -36,11 +36,14 @@ public class CreateBoardFieldCommandHandler : IRequestHandler<CreateBoardFieldCo
 
         await _permissions.EnsureCanEditBoardAsync(request.BoardId, _currentUser.UserId, ct);
 
-        var position = request.Position ?? await _context.BoardFields
-            .Where(column => column.BoardId == request.BoardId)
-            .MaxAsync(column => (double?)column.Position, ct) + 1 ?? 0;
+        var now = _dateTimeProvider.UtcNow;
+        var position = request.Position is not null
+            ? FractionalIndex.Create(request.Position)
+            : FractionalIndex.Create("z");
 
-        var settings = FieldSettings.FromJson(request.Settings);
+        var settings = request.Settings is not null
+            ? FieldSettings.Create(JsonValue.Create(request.Settings)!)
+            : FieldSettings.Empty();
 
         var type = Enum.TryParse<FieldType>(request.FieldType, true, out var parsedType)
             ? parsedType
@@ -52,7 +55,9 @@ public class CreateBoardFieldCommandHandler : IRequestHandler<CreateBoardFieldCo
             request.Name,
             type,
             settings,
-            position);
+            position,
+            _currentUser.UserId,
+            now);
 
         _context.BoardFields.Add(column);
         await _context.SaveChangesAsync(ct);
