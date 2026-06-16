@@ -1,0 +1,55 @@
+using FluentAssertions;
+using Notrelix.Domain.Collaboration.Reactions;
+using Notrelix.Domain.Common;
+using Notrelix.Domain.Common.Exceptions;
+using Notrelix.Domain.SharedKernel;
+using Xunit;
+
+namespace Notrelix.Domain.Tests.Collaboration;
+
+public class ReactionTests
+{
+    [Fact]
+    public void Create_ShouldSucceed_AndRaiseEvent()
+    {
+        var workspaceId = Guid.NewGuid();
+        var target = ResourceRef.Create(ResourceType.Comment, Guid.NewGuid(), workspaceId);
+        var userId = Guid.NewGuid();
+        var emoji = Emoji.Create("+1");
+
+        var reaction = Reaction.Create(workspaceId, target, userId, emoji, DateTimeOffset.UtcNow);
+
+        reaction.WorkspaceId.Should().Be(workspaceId);
+        reaction.Target.Should().Be(target);
+        reaction.UserId.Should().Be(userId);
+        reaction.Emoji.Should().Be(emoji);
+        reaction.DomainEvents.Should().ContainSingle(e => e is ReactionCreatedEvent);
+    }
+
+    [Fact]
+    public void Create_WithWorkspaceMismatch_ShouldThrow()
+    {
+        var workspaceId = Guid.NewGuid();
+        var target = ResourceRef.Create(ResourceType.Comment, Guid.NewGuid(), Guid.NewGuid());
+
+        var act = () => Reaction.Create(workspaceId, target, Guid.NewGuid(), Emoji.Create("heart"), DateTimeOffset.UtcNow);
+        act.Should().Throw<WorkspaceMismatchException>();
+    }
+
+    [Fact]
+    public void Remove_ShouldRaiseEvent()
+    {
+        var reaction = CreateReaction();
+        reaction.ClearDomainEvents();
+
+        reaction.Remove(DateTimeOffset.UtcNow);
+
+        reaction.DomainEvents.Should().ContainSingle(e => e is ReactionRemovedEvent);
+    }
+
+    private static Reaction CreateReaction()
+    {
+        var workspaceId = Guid.NewGuid();
+        return Reaction.Create(workspaceId, ResourceRef.Create(ResourceType.Comment, Guid.NewGuid(), workspaceId), Guid.NewGuid(), Emoji.Create("rocket"), DateTimeOffset.UtcNow);
+    }
+}
