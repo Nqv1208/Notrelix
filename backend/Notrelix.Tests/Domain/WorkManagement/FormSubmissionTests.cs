@@ -1,0 +1,116 @@
+using FluentAssertions;
+using Notrelix.Domain.Common;
+using Notrelix.Domain.Common.Exceptions;
+using Notrelix.Domain.WorkManagement.Forms;
+using Notrelix.Domain.WorkManagement.Forms.Events;
+using Xunit;
+
+namespace Notrelix.Domain.Tests.WorkManagement;
+
+public class FormSubmissionTests
+{
+    [Fact]
+    public void Create_ShouldSucceed()
+    {
+        var workspaceId = Guid.NewGuid();
+        var formId = Guid.NewGuid();
+        var boardId = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+
+        var submission = FormSubmission.Create(workspaceId, formId, boardId, null, null, null, "{}", null, null, now);
+
+        submission.WorkspaceId.Should().Be(workspaceId);
+        submission.FormId.Should().Be(formId);
+        submission.BoardId.Should().Be(boardId);
+        submission.Status.Should().Be(FormSubmissionStatus.Accepted);
+        submission.SubmittedAt.Should().Be(now);
+        submission.DomainEvents.Should().ContainSingle(e => e is FormSubmissionCreatedEvent);
+    }
+
+    [Fact]
+    public void Create_ShouldDefaultPayloadToEmptyObject()
+    {
+        var submission = FormSubmission.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null, null, null, null!, null, null, DateTimeOffset.UtcNow);
+
+        submission.PayloadJson.Should().Be("{}");
+    }
+
+    [Fact]
+    public void Create_WithEmptyWorkspaceId_ShouldThrow()
+    {
+        var act = () => FormSubmission.Create(Guid.Empty, Guid.NewGuid(), Guid.NewGuid(), null, null, null, "{}", null, null, DateTimeOffset.UtcNow);
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void Create_WithEmptyFormId_ShouldThrow()
+    {
+        var act = () => FormSubmission.Create(Guid.NewGuid(), Guid.Empty, Guid.NewGuid(), null, null, null, "{}", null, null, DateTimeOffset.UtcNow);
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void Create_WithEmptyBoardId_ShouldThrow()
+    {
+        var act = () => FormSubmission.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.Empty, null, null, null, "{}", null, null, DateTimeOffset.UtcNow);
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void Reject_ShouldSetStatusAndRaiseEvent()
+    {
+        var submission = CreateSubmission();
+        var now = DateTimeOffset.UtcNow;
+
+        submission.Reject(now);
+
+        submission.Status.Should().Be(FormSubmissionStatus.Rejected);
+        submission.ProcessedAt.Should().Be(now);
+        submission.DomainEvents.Should().ContainSingle(e => e is FormSubmissionRejectedEvent);
+    }
+
+    [Fact]
+    public void MarkAsSpam_ShouldSetStatusAndRaiseEvent()
+    {
+        var submission = CreateSubmission();
+        var now = DateTimeOffset.UtcNow;
+
+        submission.MarkAsSpam(now);
+
+        submission.Status.Should().Be(FormSubmissionStatus.Spam);
+        submission.ProcessedAt.Should().Be(now);
+        submission.DomainEvents.Should().ContainSingle(e => e is FormSubmissionMarkedAsSpamEvent);
+    }
+
+    [Fact]
+    public void MarkProcessed_ShouldSetStatusAndRaiseEvent()
+    {
+        var submission = CreateSubmission();
+        var createdItemId = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+
+        submission.MarkProcessed(createdItemId, now);
+
+        submission.CreatedItemId.Should().Be(createdItemId);
+        submission.ProcessedAt.Should().Be(now);
+        submission.DomainEvents.Should().ContainSingle(e => e is FormSubmissionProcessedEvent);
+    }
+
+    [Fact]
+    public void Reject_MultipleCalls_ShouldOverwriteProcessedAt()
+    {
+        var submission = CreateSubmission();
+        submission.Reject(DateTimeOffset.UtcNow);
+        submission.ClearDomainEvents();
+
+        var later = DateTimeOffset.UtcNow.AddMinutes(5);
+        submission.Reject(later);
+
+        submission.ProcessedAt.Should().Be(later);
+    }
+
+    private static FormSubmission CreateSubmission()
+    {
+        return FormSubmission.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null, null, null, "{}", null, null, DateTimeOffset.UtcNow);
+    }
+}
