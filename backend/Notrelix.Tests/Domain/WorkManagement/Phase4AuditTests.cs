@@ -250,7 +250,7 @@ public class Phase4AuditTests
         var version = item.Version;
         var parentId = Guid.NewGuid();
 
-        item.AssignParentItem(parentId, 1, Actor, Now);
+        item.AssignParentItem(parentId, 1, _ => null, Actor, Now);
 
         item.Version.Should().Be(version + 1);
         item.ParentItemId.Should().Be(parentId);
@@ -266,8 +266,42 @@ public class Phase4AuditTests
     {
         var item = BoardItem.Create(WsA, BoardA, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Actor, Now);
 
-        var act = () => item.AssignParentItem(item.Id, 0, Actor, Now);
+        var act = () => item.AssignParentItem(item.Id, 0, _ => null, Actor, Now);
         act.Should().Throw<BusinessRuleException>().WithMessage("*own parent*");
+    }
+
+    [Fact]
+    public void BoardItem_AssignParentItem_WithCycle_ShouldThrow()
+    {
+        var item = BoardItem.Create(WsA, BoardA, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Actor, Now);
+
+        // Simulate: item → parent → grandparent → item (cycle back to item)
+        var grandparent = Guid.NewGuid();
+        var parent = Guid.NewGuid();
+        var lookup = new Dictionary<Guid, Guid?>
+        {
+            [grandparent] = item.Id,  // grandparent's parent is item — creates cycle
+            [parent] = grandparent,
+        };
+
+        var act = () => item.AssignParentItem(parent, 1, id => lookup.GetValueOrDefault(id), Actor, Now);
+        act.Should().Throw<BusinessRuleException>().WithMessage("*cycle*");
+    }
+
+    [Fact]
+    public void BoardItem_AssignParentItem_WithNull_ShouldClearParent()
+    {
+        var item = BoardItem.Create(WsA, BoardA, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Actor, Now);
+        item.AssignParentItem(Guid.NewGuid(), 1, _ => null, Actor, Now);
+        item.ClearDomainEvents();
+        var version = item.Version;
+
+        item.AssignParentItem(null, 0, _ => null, Actor, Now);
+
+        item.ParentItemId.Should().BeNull();
+        item.ItemLevel.Should().Be(0);
+        item.Version.Should().Be(version + 1);
+        item.DomainEvents.Should().ContainSingle(e => e is BoardItemParentAssignedEvent);
     }
 
     #endregion

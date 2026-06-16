@@ -3,9 +3,10 @@ using Moq;
 using Notrelix.Application.Common.Events;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Security;
-using Notrelix.Application.Features.Extensibility.Commands.CreateAutomationRule;
-using Notrelix.Application.Features.Extensibility.Events;
-using Notrelix.Application.Features.Extensibility.Jobs;
+using Notrelix.Application.Features.Automation.Events;
+using Notrelix.Application.Features.Automation.Jobs;
+using Notrelix.Domain.Automation.RulesEngine;
+using Notrelix.Domain.Automation.Rules;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Entities.Boards;
 using Notrelix.Domain.Entities.Extensibility;
@@ -18,6 +19,13 @@ namespace Notrelix.Application.Tests.Extensibility;
 
 public class N8nAutomationTests
 {
+    private static AutomationConfiguration CreateN8nConfig()
+    {
+        var trigger = AutomationTriggerDefinition.Create("ItemAssigned");
+        var action = AutomationActionDefinition.Create("Webhook", """{"webhookPath":"notrelix-card-assigned"}""");
+        return AutomationConfiguration.Create(trigger, action);
+    }
+
     [Fact]
     public async Task CreateAutomationRule_ShouldRequireWorkspaceManagePermission()
     {
@@ -38,9 +46,9 @@ public class N8nAutomationTests
             new CreateAutomationRuleCommand(
                 workspace.Id,
                 "Card assigned alert",
-                "card.assigned",
-                "n8n.webhook",
-                "{}"),
+                "ItemAssigned",
+                "Webhook",
+                """{"webhookPath":"notrelix-card-assigned"}"""),
             CancellationToken.None);
 
         await act.Should().ThrowAsync<ForbiddenException>();
@@ -58,13 +66,13 @@ public class N8nAutomationTests
         var board = Board.Create(workspace.Id, ownerId, "Board", null);
         var list = BoardList.Create(board.Id, "Todo", 1024);
         var card = Card.Create(list.Id, board.Id, ownerId, "Task", 1024);
+        var config = CreateN8nConfig();
         var rule = AutomationRule.Create(
             workspace.Id,
-            ownerId,
             "Card assigned alert",
-            "card.assigned",
-            "n8n.webhook",
-            """{"webhookPath":"notrelix-card-assigned"}""");
+            config,
+            ownerId,
+            DateTimeOffset.UtcNow);
 
         context.Workspaces.Add(workspace);
         context.Boards.Add(board);

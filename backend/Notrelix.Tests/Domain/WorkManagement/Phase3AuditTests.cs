@@ -117,6 +117,26 @@ public class Phase3AuditTests
 
     #endregion
 
+    #region Phase 3b.2 — Item identity generation events
+
+    [Fact]
+    public void GenerateNextItemIdentity_ShouldEmitEvent()
+    {
+        var board = Board.Create(WsA, Actor, "Board", null, Now);
+        board.ClearDomainEvents();
+
+        var (sequence, key) = board.GenerateNextItemIdentity(Actor, Now);
+
+        var ev = board.DomainEvents.Should().ContainSingle().Subject.Should().BeOfType<BoardItemIdentityGeneratedEvent>().Subject;
+        ev.BoardId.Should().Be(board.Id);
+        ev.SequenceNumber.Should().Be(sequence);
+        ev.ItemKey.Should().Be(key);
+        ev.WorkspaceId.Should().Be(WsA);
+        ev.UpdatedBy.Should().Be(Actor);
+    }
+
+    #endregion
+
     #region Phase 3c — Form events and validations
 
     [Fact]

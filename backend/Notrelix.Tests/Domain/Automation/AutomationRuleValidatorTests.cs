@@ -11,7 +11,10 @@ public class AutomationRuleValidatorTests
     [Fact]
     public void Validate_WithValidRule_ShouldNotThrow()
     {
-        var rule = AutomationRule.Create(Guid.NewGuid(), "Valid Rule", "item.created", "send_email", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var config = AutomationConfiguration.Create(
+            AutomationTriggerDefinition.Create("ItemCreated"),
+            AutomationActionDefinition.Create("SendEmail"));
+        var rule = AutomationRule.Create(Guid.NewGuid(), "Valid Rule", config, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => AutomationRuleValidator.Validate(rule);
         act.Should().NotThrow();
@@ -20,7 +23,10 @@ public class AutomationRuleValidatorTests
     [Fact]
     public void Validate_WithEmptyName_ShouldThrow()
     {
-        var rule = AutomationRule.Create(Guid.NewGuid(), "Valid", "trigger", "action", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var config = AutomationConfiguration.Create(
+            AutomationTriggerDefinition.Create("ItemCreated"),
+            AutomationActionDefinition.Create("SendEmail"));
+        var rule = AutomationRule.Create(Guid.NewGuid(), "Valid", config, Guid.NewGuid(), DateTimeOffset.UtcNow);
         rule.GetType().GetProperty("Name")!.SetValue(rule, "");
 
         var act = () => AutomationRuleValidator.Validate(rule);
