@@ -38,7 +38,7 @@ public class EmailVerificationToken : AggregateRoot
         };
 
         token.SetAuditOnCreate(userId, createdAt);
-        token.AddDomainEvent(new EmailVerificationTokenCreatedEvent(token.Id, userId, createdAt));
+        token.AddDomainEvent(new EmailVerificationTokenCreatedDomainEvent(token.Id, userId, createdAt));
 
         return token;
     }
@@ -60,7 +60,7 @@ public class EmailVerificationToken : AggregateRoot
         Status = UserTokenStatus.Used;
         UsedAt = usedAt;
         SetAuditOnUpdate(UserId, usedAt);
-        AddDomainEvent(new EmailVerificationTokenUsedEvent(Id, UserId, usedAt));
+        AddDomainEvent(new EmailVerificationTokenUsedDomainEvent(Id, UserId, usedAt));
     }
 
     public void Expire(DateTimeOffset expiredAt)
@@ -77,6 +77,6 @@ public class EmailVerificationToken : AggregateRoot
         Status = UserTokenStatus.Expired;
         ExpiredAt = expiredAt;
         SetAuditOnUpdate(UserId, expiredAt);
-        AddDomainEvent(new EmailVerificationTokenExpiredEvent(Id, UserId, expiredAt));
+        AddDomainEvent(new EmailVerificationTokenExpiredDomainEvent(Id, UserId, expiredAt));
     }
 }

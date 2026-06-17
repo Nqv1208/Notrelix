@@ -1,3 +1,4 @@
+using Notrelix.Domain.WorkManagement.Forms.Events;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.WorkManagement.Boards;
@@ -66,7 +67,7 @@ public class Form : AggregateRoot, IWorkspaceScoped
         
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new FormDetailsUpdatedEvent(WorkspaceId, Id, BoardId, Name, SettingsJson, SubmitterPolicyJson, updatedBy, updatedAt));
+        AddDomainEvent(new FormDetailsUpdatedDomainEvent(WorkspaceId, Id, BoardId, Name, SettingsJson, SubmitterPolicyJson, updatedBy, updatedAt));
     }
 
     public void Publish(Guid updatedBy, DateTimeOffset updatedAt)
@@ -131,7 +132,7 @@ public class Form : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new FormSoftDeletedEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
+        AddDomainEvent(new FormSoftDeletedDomainEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -140,6 +141,6 @@ public class Form : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new FormRestoredEvent(WorkspaceId, Id, BoardId, restoredBy, restoredAt));
+        AddDomainEvent(new FormRestoredDomainEvent(WorkspaceId, Id, BoardId, restoredBy, restoredAt));
     }
 }

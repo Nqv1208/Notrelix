@@ -64,7 +64,7 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
         };
 
         run.SetAuditOnCreate(actorUserId, createdAt);
-        run.AddDomainEvent(new AiAgentRunQueuedEvent(workspaceId, run.Id, aiAgentId, createdAt));
+        run.AddDomainEvent(new AiAgentRunQueuedDomainEvent(workspaceId, run.Id, aiAgentId, createdAt));
         return run;
     }
 
@@ -78,7 +78,7 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
         StartedAt = startedAt;
         SetAuditOnUpdate(ActorUserId, startedAt);
         IncrementVersion();
-        AddDomainEvent(new AiAgentRunStartedEvent(WorkspaceId, Id, AiAgentId, startedAt));
+        AddDomainEvent(new AiAgentRunStartedDomainEvent(WorkspaceId, Id, AiAgentId, startedAt));
     }
 
     public void Succeed(JsonValue output, DateTimeOffset finishedAt)
@@ -93,7 +93,7 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
         FinishedAt = finishedAt;
         SetAuditOnUpdate(ActorUserId, finishedAt);
         IncrementVersion();
-        AddDomainEvent(new AiAgentRunSucceededEvent(WorkspaceId, Id, AiAgentId, finishedAt));
+        AddDomainEvent(new AiAgentRunSucceededDomainEvent(WorkspaceId, Id, AiAgentId, finishedAt));
     }
 
     public void Fail(JsonValue error, DateTimeOffset finishedAt)
@@ -108,7 +108,7 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
         FinishedAt = finishedAt;
         SetAuditOnUpdate(ActorUserId, finishedAt);
         IncrementVersion();
-        AddDomainEvent(new AiAgentRunFailedEvent(WorkspaceId, Id, AiAgentId, error.ToString(), finishedAt));
+        AddDomainEvent(new AiAgentRunFailedDomainEvent(WorkspaceId, Id, AiAgentId, error.ToString(), finishedAt));
     }
 
     public void Cancel(Guid? cancelledBy, DateTimeOffset cancelledAt)
@@ -121,6 +121,6 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
         FinishedAt = cancelledAt;
         SetAuditOnUpdate(cancelledBy, cancelledAt);
         IncrementVersion();
-        AddDomainEvent(new AiAgentRunCancelledEvent(WorkspaceId, Id, AiAgentId, cancelledBy, cancelledAt));
+        AddDomainEvent(new AiAgentRunCancelledDomainEvent(WorkspaceId, Id, AiAgentId, cancelledBy, cancelledAt));
     }
 }

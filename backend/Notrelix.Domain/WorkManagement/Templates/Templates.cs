@@ -25,7 +25,7 @@ public class BoardTemplate : AggregateRoot
             Status = TemplateStatus.Published
         };
 
-        template.AddDomainEvent(new BoardTemplateCreatedEvent(template.WorkspaceId, template.Id, template.Name, createdAt));
+        template.AddDomainEvent(new BoardTemplateCreatedDomainEvent(template.WorkspaceId, template.Id, template.Name, createdAt));
         return template;
     }
 }
@@ -56,7 +56,7 @@ public class ItemTemplate : AggregateRoot, IWorkspaceScoped
             Status = TemplateStatus.Published
         };
 
-        template.AddDomainEvent(new ItemTemplateCreatedEvent(workspaceId, template.Id, template.Name, createdAt));
+        template.AddDomainEvent(new ItemTemplateCreatedDomainEvent(workspaceId, template.Id, template.Name, createdAt));
         return template;
     }
 }

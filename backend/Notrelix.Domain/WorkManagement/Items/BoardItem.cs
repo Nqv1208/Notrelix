@@ -63,7 +63,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         };
 
         item.SetAuditOnCreate(createdBy, createdAt);
-        item.AddDomainEvent(new BoardItemCreatedEvent(workspaceId, boardId, groupId, item.Id, item.Name, createdBy, createdAt));
+        item.AddDomainEvent(new BoardItemCreatedDomainEvent(workspaceId, boardId, groupId, item.Id, item.Name, createdBy, createdAt));
         
         return item;
     }
@@ -80,7 +80,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         Name = normalizedName;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardItemRenamedEvent(WorkspaceId, Id, BoardId, oldName, Name, updatedBy, updatedAt));
+        AddDomainEvent(new BoardItemRenamedDomainEvent(WorkspaceId, Id, BoardId, oldName, Name, updatedBy, updatedAt));
     }
 
     public void MoveToGroup(BoardGroupRef group, FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
@@ -102,7 +102,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         Position = newPosition;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardItemMovedEvent(WorkspaceId, Id, BoardId, oldGroupId, group.GroupId, newPosition.Value, updatedBy, updatedAt));
+        AddDomainEvent(new BoardItemMovedDomainEvent(WorkspaceId, Id, BoardId, oldGroupId, group.GroupId, newPosition.Value, updatedBy, updatedAt));
     }
 
     public void UpdateFieldValue(BoardField field, FieldValue newValue, Guid updatedBy, DateTimeOffset updatedAt)
@@ -165,7 +165,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
 
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardItemFieldValueChangedEvent(WorkspaceId, Id, BoardId, field.Id, oldValue, newValue, updatedBy, updatedAt));
+        AddDomainEvent(new BoardItemFieldValueChangedDomainEvent(WorkspaceId, Id, BoardId, field.Id, oldValue, newValue, updatedBy, updatedAt));
     }
 
     public void AssignParentItem(Guid? parentItemId, int itemLevel, Func<Guid, Guid?> getAncestorParentId, Guid updatedBy, DateTimeOffset updatedAt)
@@ -177,7 +177,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         ItemLevel = itemLevel;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardItemParentAssignedEvent(WorkspaceId, BoardId, Id, parentItemId, itemLevel, updatedBy, updatedAt));
+        AddDomainEvent(new BoardItemParentAssignedDomainEvent(WorkspaceId, BoardId, Id, parentItemId, itemLevel, updatedBy, updatedAt));
     }
 
     public void SetTimeline(DateTimeOffset? startedAt, DateTimeOffset? dueAt, Guid updatedBy, DateTimeOffset updatedAt)
@@ -191,7 +191,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         DueAt = dueAt;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardItemTimelineSetEvent(WorkspaceId, BoardId, Id, startedAt, dueAt, updatedBy, updatedAt));
+        AddDomainEvent(new BoardItemTimelineSetDomainEvent(WorkspaceId, BoardId, Id, startedAt, dueAt, updatedBy, updatedAt));
     }
 
     public void Complete(DateTimeOffset? completedAt, Guid updatedBy, DateTimeOffset updatedAt)
@@ -201,7 +201,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         CompletedAt = completedAt;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardItemCompletedEvent(WorkspaceId, BoardId, Id, completedAt, updatedBy, updatedAt));
+        AddDomainEvent(new BoardItemCompletedDomainEvent(WorkspaceId, BoardId, Id, completedAt, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -210,7 +210,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardItemSoftDeletedEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
+        AddDomainEvent(new BoardItemSoftDeletedDomainEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -219,6 +219,6 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new BoardItemRestoredEvent(WorkspaceId, Id, BoardId, restoredBy, restoredAt));
+        AddDomainEvent(new BoardItemRestoredDomainEvent(WorkspaceId, Id, BoardId, restoredBy, restoredAt));
     }
 }

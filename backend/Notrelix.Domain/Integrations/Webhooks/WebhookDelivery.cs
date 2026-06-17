@@ -38,7 +38,7 @@ public class WebhookDelivery : AggregateRoot, IWorkspaceScoped
             MaxRetries = maxRetries
         };
 
-        delivery.AddDomainEvent(new WebhookDeliveryRecordedEvent(workspaceId, subscriptionId, delivery.Id, WebhookDeliveryStatus.Pending, createdAt));
+        delivery.AddDomainEvent(new WebhookDeliveryRecordedDomainEvent(workspaceId, subscriptionId, delivery.Id, WebhookDeliveryStatus.Pending, createdAt));
         return delivery;
     }
 
@@ -52,7 +52,7 @@ public class WebhookDelivery : AggregateRoot, IWorkspaceScoped
         ResponseBody = responseBody;
         DeliveredAt = deliveredAt;
         IncrementVersion();
-        AddDomainEvent(new WebhookDeliveryRecordedEvent(WorkspaceId, WebhookSubscriptionId, Id, WebhookDeliveryStatus.Sent, deliveredAt));
+        AddDomainEvent(new WebhookDeliveryRecordedDomainEvent(WorkspaceId, WebhookSubscriptionId, Id, WebhookDeliveryStatus.Sent, deliveredAt));
     }
 
     public void MarkFailed(int? statusCode, string? responseBody, DateTimeOffset failedAt, string? reason = null)
@@ -66,7 +66,7 @@ public class WebhookDelivery : AggregateRoot, IWorkspaceScoped
         FailedAt = failedAt;
         FailureReason = reason;
         IncrementVersion();
-        AddDomainEvent(new WebhookDeliveryRecordedEvent(WorkspaceId, WebhookSubscriptionId, Id, WebhookDeliveryStatus.Failed, failedAt));
+        AddDomainEvent(new WebhookDeliveryRecordedDomainEvent(WorkspaceId, WebhookSubscriptionId, Id, WebhookDeliveryStatus.Failed, failedAt));
     }
 
     public void ScheduleRetry(DateTimeOffset nextRetryAt)

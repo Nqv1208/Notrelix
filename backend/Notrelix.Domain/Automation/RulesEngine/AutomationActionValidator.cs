@@ -21,6 +21,17 @@ public static class AutomationActionValidator
             case "UpdateField":
                 ValidateUpdateFieldConfig(action.Configuration);
                 break;
+            case "CreateItem":
+                ValidateCreateItemConfig(action.Configuration);
+                break;
+            case "MoveItem":
+                ValidateMoveItemConfig(action.Configuration);
+                break;
+            case "NotifyMember":
+                ValidateNotifyMemberConfig(action.Configuration);
+                break;
+            default:
+                throw new BusinessRuleException($"Unknown action type '{action.Type}'.");
         }
     }
 
@@ -97,6 +108,63 @@ public static class AutomationActionValidator
         catch (JsonException ex)
         {
             throw new BusinessRuleException($"Invalid UpdateField configuration JSON: {ex.Message}");
+        }
+    }
+
+    private static void ValidateCreateItemConfig(string? configuration)
+    {
+        if (string.IsNullOrWhiteSpace(configuration))
+            throw new BusinessRuleException("CreateItem action requires a configuration with 'targetGroupId' property.");
+
+        try
+        {
+            using var doc = JsonDocument.Parse(configuration);
+            var root = doc.RootElement;
+
+            if (!root.TryGetProperty("targetGroupId", out _))
+                throw new BusinessRuleException("CreateItem action configuration must contain 'targetGroupId'.");
+        }
+        catch (JsonException ex)
+        {
+            throw new BusinessRuleException($"Invalid CreateItem configuration JSON: {ex.Message}");
+        }
+    }
+
+    private static void ValidateMoveItemConfig(string? configuration)
+    {
+        if (string.IsNullOrWhiteSpace(configuration))
+            throw new BusinessRuleException("MoveItem action requires a configuration with 'targetGroupId' property.");
+
+        try
+        {
+            using var doc = JsonDocument.Parse(configuration);
+            var root = doc.RootElement;
+
+            if (!root.TryGetProperty("targetGroupId", out _))
+                throw new BusinessRuleException("MoveItem action configuration must contain 'targetGroupId'.");
+        }
+        catch (JsonException ex)
+        {
+            throw new BusinessRuleException($"Invalid MoveItem configuration JSON: {ex.Message}");
+        }
+    }
+
+    private static void ValidateNotifyMemberConfig(string? configuration)
+    {
+        if (string.IsNullOrWhiteSpace(configuration))
+            throw new BusinessRuleException("NotifyMember action requires a configuration with 'userId' or 'teamId' property.");
+
+        try
+        {
+            using var doc = JsonDocument.Parse(configuration);
+            var root = doc.RootElement;
+
+            if (!root.TryGetProperty("userId", out _) && !root.TryGetProperty("teamId", out _))
+                throw new BusinessRuleException("NotifyMember action configuration must contain 'userId' or 'teamId'.");
+        }
+        catch (JsonException ex)
+        {
+            throw new BusinessRuleException($"Invalid NotifyMember configuration JSON: {ex.Message}");
         }
     }
 }

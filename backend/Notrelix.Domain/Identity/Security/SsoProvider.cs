@@ -1,3 +1,4 @@
+using Notrelix.Domain.Identity.Security.Events;
 using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Identity.Security;

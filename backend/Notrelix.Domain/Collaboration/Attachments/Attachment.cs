@@ -30,7 +30,7 @@ public class Attachment : AggregateRoot, IWorkspaceScoped
         };
 
         attachment.SetAuditOnCreate(createdBy, createdAt);
-        attachment.AddDomainEvent(new AttachmentCreatedEvent(workspaceId, attachment.Id, target, createdAt));
+        attachment.AddDomainEvent(new AttachmentCreatedDomainEvent(workspaceId, attachment.Id, target, createdAt));
         return attachment;
     }
 
@@ -40,7 +40,7 @@ public class Attachment : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new AttachmentDeletedEvent(WorkspaceId, Id, deletedAt));
+        AddDomainEvent(new AttachmentDeletedDomainEvent(WorkspaceId, Id, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -49,6 +49,6 @@ public class Attachment : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new AttachmentRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new AttachmentRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

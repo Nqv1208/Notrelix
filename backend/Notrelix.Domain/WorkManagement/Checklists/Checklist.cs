@@ -64,7 +64,7 @@ public class Checklist : AggregateRoot, IWorkspaceScoped
         };
 
         checklist.SetAuditOnCreate(createdBy, createdAt);
-        checklist.AddDomainEvent(new ChecklistCreatedEvent(workspaceId, itemId, checklist.Id, checklist.Title, createdAt));
+        checklist.AddDomainEvent(new ChecklistCreatedDomainEvent(workspaceId, itemId, checklist.Id, checklist.Title, createdAt));
 
         return checklist;
     }
@@ -76,7 +76,7 @@ public class Checklist : AggregateRoot, IWorkspaceScoped
         var item = ChecklistItem.Create(Id, title, position);
         _items.Add(item);
         SetAuditOnUpdate(addedBy, addedAt);
-        AddDomainEvent(new ChecklistItemAddedEvent(WorkspaceId, Id, item.Id, title, addedAt));
+        AddDomainEvent(new ChecklistItemAddedDomainEvent(WorkspaceId, Id, item.Id, title, addedAt));
     }
 
     public void ToggleItem(Guid itemId, Guid updatedBy, DateTimeOffset updatedAt)
@@ -87,7 +87,7 @@ public class Checklist : AggregateRoot, IWorkspaceScoped
 
         item.Toggle(updatedAt);
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new ChecklistItemToggledEvent(WorkspaceId, Id, item.Id, item.Status == ChecklistItemStatus.Done, updatedAt));
+        AddDomainEvent(new ChecklistItemToggledDomainEvent(WorkspaceId, Id, item.Id, item.Status == ChecklistItemStatus.Done, updatedAt));
     }
 
     public void RemoveItem(Guid itemId, Guid updatedBy, DateTimeOffset updatedAt)
@@ -98,7 +98,7 @@ public class Checklist : AggregateRoot, IWorkspaceScoped
 
         _items.Remove(item);
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new ChecklistItemRemovedEvent(WorkspaceId, Id, item.Id, updatedAt));
+        AddDomainEvent(new ChecklistItemRemovedDomainEvent(WorkspaceId, Id, item.Id, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -107,7 +107,7 @@ public class Checklist : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new ChecklistSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new ChecklistSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -116,6 +116,6 @@ public class Checklist : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new ChecklistRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new ChecklistRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

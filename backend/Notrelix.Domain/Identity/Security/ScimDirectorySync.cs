@@ -1,3 +1,4 @@
+using Notrelix.Domain.Identity.Security.Events;
 using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Identity.Security;
@@ -69,7 +70,7 @@ public class ScimDirectorySync : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         LastSyncAt = syncAt;
         CursorJson = cursorJson ?? "{}";
-        AddDomainEvent(new ScimSyncCompletedDomainEvent(WorkspaceId, Id, syncAt));
+        AddDomainEvent(new ScimDirectorySyncCompletedDomainEvent(WorkspaceId, Id, syncAt));
         IncrementVersion();
     }
 

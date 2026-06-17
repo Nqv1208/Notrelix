@@ -33,7 +33,7 @@ public class ResourceLink : AggregateRoot, IWorkspaceScoped
         };
 
         link.SetAuditOnCreate(createdBy, createdAt);
-        link.AddDomainEvent(new ResourceLinkCreatedEvent(workspaceId, source.ResourceId, target.ResourceId, type, createdAt));
+        link.AddDomainEvent(new ResourceLinkCreatedDomainEvent(workspaceId, source.ResourceId, target.ResourceId, type, createdAt));
         return link;
     }
 
@@ -43,6 +43,6 @@ public class ResourceLink : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new ResourceLinkDeletedEvent(WorkspaceId, Id, deletedAt));
+        AddDomainEvent(new ResourceLinkDeletedDomainEvent(WorkspaceId, Id, deletedAt));
     }
 }

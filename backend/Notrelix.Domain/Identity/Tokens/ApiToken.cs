@@ -1,3 +1,4 @@
+using Notrelix.Domain.Identity.Tokens.Events;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
 

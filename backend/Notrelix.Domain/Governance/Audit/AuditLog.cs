@@ -47,7 +47,7 @@ public class AuditLog : Entity, IWorkspaceScoped
             UserAgent = userAgent
         };
 
-        log.AddDomainEvent(new AuditLogRecordedEvent(log.Id, workspaceId, log.Action, timestamp));
+        log.AddDomainEvent(new AuditLogRecordedDomainEvent(log.Id, workspaceId, log.Action, timestamp));
         
         return log;
     }

@@ -72,7 +72,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         };
 
         dashboard.SetAuditOnCreate(createdBy, createdAt);
-        dashboard.AddDomainEvent(new DashboardCreatedEvent(workspaceId, dashboard.Id, createdBy, createdAt));
+        dashboard.AddDomainEvent(new DashboardCreatedDomainEvent(workspaceId, dashboard.Id, createdBy, createdAt));
         return dashboard;
     }
 
@@ -87,7 +87,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         Name = normalizedName;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardRenamedEvent(WorkspaceId, Id, Name, updatedBy, updatedAt));
+        AddDomainEvent(new DashboardRenamedDomainEvent(WorkspaceId, Id, Name, updatedBy, updatedAt));
     }
 
     public void ChangeVisibility(DashboardVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
@@ -98,7 +98,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         Visibility = visibility;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardVisibilityChangedEvent(WorkspaceId, Id, Visibility, updatedBy, updatedAt));
+        AddDomainEvent(new DashboardVisibilityChangedDomainEvent(WorkspaceId, Id, Visibility, updatedBy, updatedAt));
     }
 
     public void AddWidget(string title, WidgetType type, JsonValue config, WidgetPosition position, Guid updatedBy, DateTimeOffset updatedAt)
@@ -111,7 +111,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         _widgets.Add(widget);
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardWidgetAddedEvent(WorkspaceId, Id, widget.Id, updatedBy, updatedAt));
+        AddDomainEvent(new DashboardWidgetAddedDomainEvent(WorkspaceId, Id, widget.Id, updatedBy, updatedAt));
     }
 
     public void RemoveWidget(Guid widgetId, Guid updatedBy, DateTimeOffset updatedAt)
@@ -123,7 +123,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         _widgets.Remove(widget);
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardWidgetRemovedEvent(WorkspaceId, Id, widgetId, updatedBy, updatedAt));
+        AddDomainEvent(new DashboardWidgetRemovedDomainEvent(WorkspaceId, Id, widgetId, updatedBy, updatedAt));
     }
 
     public void MoveWidget(Guid widgetId, WidgetPosition newPosition, Guid updatedBy, DateTimeOffset updatedAt)
@@ -138,7 +138,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         widget.UpdatePosition(newPosition);
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardWidgetMovedEvent(WorkspaceId, Id, widgetId, newPosition, updatedBy, updatedAt));
+        AddDomainEvent(new DashboardWidgetMovedDomainEvent(WorkspaceId, Id, widgetId, newPosition, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -148,7 +148,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new DashboardDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -158,6 +158,6 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new DashboardRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

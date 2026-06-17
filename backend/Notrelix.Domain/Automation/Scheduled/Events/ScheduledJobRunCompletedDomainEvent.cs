@@ -1,0 +1,11 @@
+using Notrelix.Domain.Common;
+using Notrelix.Domain.SharedKernel;
+
+namespace Notrelix.Domain.Automation.Scheduled.Events;
+
+public sealed record ScheduledJobRunCompletedDomainEvent(
+    Guid WorkspaceId,
+    Guid JobId,
+    DateTimeOffset OccurredAt,
+    DateTimeOffset NextRunAt
+) : DomainEvent(OccurredAt, WorkspaceId, null);

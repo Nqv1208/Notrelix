@@ -63,7 +63,7 @@ public class Plan : AggregateRoot
         };
 
         plan.SetAuditOnCreate(null, createdAt);
-        plan.AddDomainEvent(new PlanCreatedEvent(plan.Id, plan.Name, createdAt));
+        plan.AddDomainEvent(new PlanCreatedDomainEvent(plan.Id, plan.Name, createdAt));
         return plan;
     }
 
@@ -81,7 +81,7 @@ public class Plan : AggregateRoot
     {
         Description = description?.Trim();
         IncrementVersion();
-        AddDomainEvent(new PlanDescriptionUpdatedEvent(Id, description, updatedAt));
+        AddDomainEvent(new PlanDescriptionUpdatedDomainEvent(Id, description, updatedAt));
     }
 
     public void Archive(DateTimeOffset archivedAt)
@@ -89,7 +89,7 @@ public class Plan : AggregateRoot
         if (Status == PlanStatus.Archived) return;
         Status = PlanStatus.Archived;
         IncrementVersion();
-        AddDomainEvent(new PlanArchivedEvent(Id, archivedAt));
+        AddDomainEvent(new PlanArchivedDomainEvent(Id, archivedAt));
     }
 
     public void Deprecate(DateTimeOffset deprecatedAt)
@@ -97,7 +97,7 @@ public class Plan : AggregateRoot
         if (Status == PlanStatus.Deprecated) return;
         Status = PlanStatus.Deprecated;
         IncrementVersion();
-        AddDomainEvent(new PlanDeprecatedEvent(Id, deprecatedAt));
+        AddDomainEvent(new PlanDeprecatedDomainEvent(Id, deprecatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -105,7 +105,7 @@ public class Plan : AggregateRoot
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
         IncrementVersion();
-        AddDomainEvent(new PlanSoftDeletedEvent(Id, deletedBy, deletedAt));
+        AddDomainEvent(new PlanSoftDeletedDomainEvent(Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -113,6 +113,6 @@ public class Plan : AggregateRoot
         if (!IsDeleted) return;
         base.Restore(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new PlanRestoredEvent(Id, restoredBy, restoredAt));
+        AddDomainEvent(new PlanRestoredDomainEvent(Id, restoredBy, restoredAt));
     }
 }

@@ -47,7 +47,7 @@ public class Block : AggregateRoot, IWorkspaceScoped
         };
 
         block.SetAuditOnCreate(createdBy, createdAt);
-        block.AddDomainEvent(new BlockCreatedEvent(workspaceId, pageId, block.Id, type, createdBy, createdAt));
+        block.AddDomainEvent(new BlockCreatedDomainEvent(workspaceId, pageId, block.Id, type, createdBy, createdAt));
 
         return block;
     }
@@ -63,7 +63,7 @@ public class Block : AggregateRoot, IWorkspaceScoped
         Content = newContent;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BlockContentUpdatedEvent(WorkspaceId, Id, PageId, updatedBy, updatedAt));
+        AddDomainEvent(new BlockContentUpdatedDomainEvent(WorkspaceId, Id, PageId, updatedBy, updatedAt));
     }
 
     public void UpdateProperties(BlockProperties newProperties, Guid updatedBy, DateTimeOffset updatedAt)
@@ -76,7 +76,7 @@ public class Block : AggregateRoot, IWorkspaceScoped
         Properties = newProperties;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BlockPropertiesUpdatedEvent(WorkspaceId, Id, PageId, updatedBy, updatedAt));
+        AddDomainEvent(new BlockPropertiesUpdatedDomainEvent(WorkspaceId, Id, PageId, updatedBy, updatedAt));
     }
 
     public void Move(Guid? newParentId, FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt, Func<Guid, Guid?>? getParentId = null)
@@ -94,7 +94,7 @@ public class Block : AggregateRoot, IWorkspaceScoped
         Position = newPosition;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BlockMovedEvent(WorkspaceId, Id, PageId, oldParentId, newParentId, newPosition.Value, updatedBy, updatedAt));
+        AddDomainEvent(new BlockMovedDomainEvent(WorkspaceId, Id, PageId, oldParentId, newParentId, newPosition.Value, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -103,7 +103,7 @@ public class Block : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new BlockSoftDeletedEvent(WorkspaceId, Id, PageId, deletedBy, deletedAt));
+        AddDomainEvent(new BlockSoftDeletedDomainEvent(WorkspaceId, Id, PageId, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -112,6 +112,6 @@ public class Block : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new BlockRestoredEvent(WorkspaceId, Id, PageId, restoredBy, restoredAt));
+        AddDomainEvent(new BlockRestoredDomainEvent(WorkspaceId, Id, PageId, restoredBy, restoredAt));
     }
 }

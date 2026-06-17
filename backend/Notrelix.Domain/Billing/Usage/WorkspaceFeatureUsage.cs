@@ -1,6 +1,6 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.Billing.Events;
+using Notrelix.Domain.Billing.Usage.Events;
 using Notrelix.Domain.Billing.Plans;
 using Notrelix.Domain.Billing.Usage.Events;
 
@@ -58,7 +58,7 @@ public class WorkspaceFeatureUsage : AggregateRoot, IWorkspaceScoped
             ResetPeriod = resetPeriod
         };
 
-        usage.AddDomainEvent(new WorkspaceFeatureUsageInitializedEvent(
+        usage.AddDomainEvent(new WorkspaceFeatureUsageInitializedDomainEvent(
             workspaceId, feature, currentUsage, hardLimit, softLimit, createdAt));
         return usage;
     }
@@ -106,7 +106,7 @@ public class WorkspaceFeatureUsage : AggregateRoot, IWorkspaceScoped
         LastResetAt = resetAt;
         SetAuditOnUpdate(actorUserId, resetAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceFeatureUsageResetEvent(WorkspaceId, Feature, resetAt));
+        AddDomainEvent(new WorkspaceFeatureUsageResetDomainEvent(WorkspaceId, Feature, resetAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -114,7 +114,7 @@ public class WorkspaceFeatureUsage : AggregateRoot, IWorkspaceScoped
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceFeatureUsageSoftDeletedEvent(WorkspaceId, Feature, deletedBy, deletedAt));
+        AddDomainEvent(new WorkspaceFeatureUsageSoftDeletedDomainEvent(WorkspaceId, Feature, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -122,6 +122,6 @@ public class WorkspaceFeatureUsage : AggregateRoot, IWorkspaceScoped
         if (!IsDeleted) return;
         base.Restore(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceFeatureUsageRestoredEvent(WorkspaceId, Feature, restoredBy, restoredAt));
+        AddDomainEvent(new WorkspaceFeatureUsageRestoredDomainEvent(WorkspaceId, Feature, restoredBy, restoredAt));
     }
 }

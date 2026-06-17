@@ -28,7 +28,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         };
 
         member.SetAuditOnCreate(addedBy, createdAt);
-        member.AddDomainEvent(new WorkspaceMemberAddedEvent(workspaceId, member.Id, userId, role, addedBy, createdAt));
+        member.AddDomainEvent(new WorkspaceMemberAddedDomainEvent(workspaceId, member.Id, userId, role, addedBy, createdAt));
         return member;
     }
 
@@ -55,7 +55,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
 
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceMemberRoleChangedEvent(
+        AddDomainEvent(new WorkspaceMemberRoleChangedDomainEvent(
             WorkspaceId, Id, UserId, oldRole, newRole, updatedBy, updatedAt));
     }
 
@@ -75,7 +75,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
 
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceMemberSuspendedEvent(
+        AddDomainEvent(new WorkspaceMemberSuspendedDomainEvent(
             WorkspaceId, Id, UserId, updatedBy, updatedAt));
     }
 
@@ -94,7 +94,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         Status = WorkspaceMemberStatus.Active;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceMemberActivatedEvent(WorkspaceId, Id, UserId, updatedBy, updatedAt));
+        AddDomainEvent(new WorkspaceMemberActivatedDomainEvent(WorkspaceId, Id, UserId, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -107,7 +107,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceMemberRemovedEvent(WorkspaceId, Id, UserId, deletedBy, deletedAt));
+        AddDomainEvent(new WorkspaceMemberRemovedDomainEvent(WorkspaceId, Id, UserId, deletedBy, deletedAt));
     }
 
     public void Remove(int activeOwnerCount, Guid removedBy, DateTimeOffset removedAt, string? reason = null)
@@ -130,7 +130,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceMemberRestoredEvent(
+        AddDomainEvent(new WorkspaceMemberRestoredDomainEvent(
             WorkspaceId,
             Id,
             UserId,

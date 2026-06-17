@@ -35,7 +35,7 @@ public class Subscription : AggregateRoot, IWorkspaceScoped
         };
 
         subscription.SetAuditOnCreate(createdBy, createdAt);
-        subscription.AddDomainEvent(new SubscriptionStartedEvent(workspaceId, subscription.Id, planId, createdAt));
+        subscription.AddDomainEvent(new SubscriptionStartedDomainEvent(workspaceId, subscription.Id, planId, createdAt));
         return subscription;
     }
 
@@ -51,7 +51,7 @@ public class Subscription : AggregateRoot, IWorkspaceScoped
         PlanId = newPlanId;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new SubscriptionChangedEvent(WorkspaceId, Id, oldPlanId, newPlanId, updatedAt));
+        AddDomainEvent(new SubscriptionChangedDomainEvent(WorkspaceId, Id, oldPlanId, newPlanId, updatedAt));
     }
 
     public void ScheduleCancellation(Guid updatedBy, DateTimeOffset occurredAt)
@@ -61,7 +61,7 @@ public class Subscription : AggregateRoot, IWorkspaceScoped
         CancelAtPeriodEnd = true;
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
-        AddDomainEvent(new SubscriptionCancellationScheduledEvent(WorkspaceId, Id, updatedBy, occurredAt));
+        AddDomainEvent(new SubscriptionCancellationScheduledDomainEvent(WorkspaceId, Id, updatedBy, occurredAt));
     }
 
     public void CancelImmediately(Guid updatedBy, DateTimeOffset cancelledAt)
@@ -71,7 +71,7 @@ public class Subscription : AggregateRoot, IWorkspaceScoped
         Status = SubscriptionStatus.Canceled;
         SetAuditOnUpdate(updatedBy, cancelledAt);
         IncrementVersion();
-        AddDomainEvent(new SubscriptionCancelledEvent(WorkspaceId, Id, cancelledAt));
+        AddDomainEvent(new SubscriptionCanceledDomainEvent(WorkspaceId, Id, updatedBy, cancelledAt));
     }
 
     public void Renew(DateTimeOffset newStart, DateTimeOffset newEnd, Guid updatedBy, DateTimeOffset renewedAt)
@@ -86,7 +86,7 @@ public class Subscription : AggregateRoot, IWorkspaceScoped
         Status = SubscriptionStatus.Active;
         SetAuditOnUpdate(updatedBy, renewedAt);
         IncrementVersion();
-        AddDomainEvent(new SubscriptionRenewedEvent(WorkspaceId, Id, newStart, newEnd, renewedAt));
+        AddDomainEvent(new SubscriptionRenewedDomainEvent(WorkspaceId, Id, newStart, newEnd, renewedAt));
     }
 
     public void Expire(Guid updatedBy, DateTimeOffset expiredAt)
@@ -96,7 +96,7 @@ public class Subscription : AggregateRoot, IWorkspaceScoped
         Status = SubscriptionStatus.Expired;
         SetAuditOnUpdate(updatedBy, expiredAt);
         IncrementVersion();
-        AddDomainEvent(new SubscriptionExpiredEvent(WorkspaceId, Id, expiredAt));
+        AddDomainEvent(new SubscriptionExpiredDomainEvent(WorkspaceId, Id, expiredAt));
     }
 
     public void MarkPastDue(Guid updatedBy, DateTimeOffset occurredAt)
@@ -106,7 +106,7 @@ public class Subscription : AggregateRoot, IWorkspaceScoped
         Status = SubscriptionStatus.PastDue;
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
-        AddDomainEvent(new SubscriptionPastDueEvent(WorkspaceId, Id, occurredAt));
+        AddDomainEvent(new SubscriptionPastDueDomainEvent(WorkspaceId, Id, occurredAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -114,7 +114,7 @@ public class Subscription : AggregateRoot, IWorkspaceScoped
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
         IncrementVersion();
-        AddDomainEvent(new SubscriptionSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new SubscriptionSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -122,6 +122,6 @@ public class Subscription : AggregateRoot, IWorkspaceScoped
         if (!IsDeleted) return;
         base.Restore(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new SubscriptionRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new SubscriptionRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

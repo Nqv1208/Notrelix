@@ -53,7 +53,7 @@ public class SavedFilter : AggregateRoot, IWorkspaceScoped
             filter._sortRules.AddRange(sortRules);
 
         filter.SetAuditOnCreate(createdBy, createdAt);
-        filter.AddDomainEvent(new SavedFilterCreatedEvent(filter.Id, workspaceId, boardId, filter.Name, createdBy, createdAt, viewId));
+        filter.AddDomainEvent(new SavedFilterCreatedDomainEvent(filter.Id, workspaceId, boardId, filter.Name, createdBy, createdAt, viewId));
 
         return filter;
     }
@@ -66,7 +66,7 @@ public class SavedFilter : AggregateRoot, IWorkspaceScoped
         Name = name.Trim();
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new SavedFilterRenamedEvent(WorkspaceId, Id, BoardId, Name, updatedBy, updatedAt));
+        AddDomainEvent(new SavedFilterRenamedDomainEvent(WorkspaceId, Id, BoardId, Name, updatedBy, updatedAt));
     }
 
     public void UpdateVisibility(SavedFilterVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
@@ -76,7 +76,7 @@ public class SavedFilter : AggregateRoot, IWorkspaceScoped
         Visibility = visibility;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new SavedFilterVisibilityUpdatedEvent(WorkspaceId, Id, BoardId, visibility, updatedBy, updatedAt));
+        AddDomainEvent(new SavedFilterVisibilityUpdatedDomainEvent(WorkspaceId, Id, BoardId, visibility, updatedBy, updatedAt));
     }
 
     public void UpdateFilters(IEnumerable<FilterRule> rules, Guid updatedBy, DateTimeOffset updatedAt)
@@ -88,7 +88,7 @@ public class SavedFilter : AggregateRoot, IWorkspaceScoped
         _rules.AddRange(rules);
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new SavedFilterFiltersUpdatedEvent(WorkspaceId, Id, BoardId, updatedBy, updatedAt));
+        AddDomainEvent(new SavedFilterFiltersUpdatedDomainEvent(WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
 
     public void UpdateSorts(IEnumerable<SortRule> sortRules, Guid updatedBy, DateTimeOffset updatedAt)
@@ -100,7 +100,7 @@ public class SavedFilter : AggregateRoot, IWorkspaceScoped
         _sortRules.AddRange(sortRules);
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new SavedFilterSortsUpdatedEvent(WorkspaceId, Id, BoardId, updatedBy, updatedAt));
+        AddDomainEvent(new SavedFilterSortsUpdatedDomainEvent(WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
 
     public void UpdateGroup(GroupRule? groupRule, Guid updatedBy, DateTimeOffset updatedAt)
@@ -110,7 +110,7 @@ public class SavedFilter : AggregateRoot, IWorkspaceScoped
         GroupRule = groupRule;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new SavedFilterGroupUpdatedEvent(WorkspaceId, Id, BoardId, updatedBy, updatedAt));
+        AddDomainEvent(new SavedFilterGroupUpdatedDomainEvent(WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -119,7 +119,7 @@ public class SavedFilter : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new SavedFilterSoftDeletedEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
+        AddDomainEvent(new SavedFilterSoftDeletedDomainEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -128,6 +128,6 @@ public class SavedFilter : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new SavedFilterRestoredEvent(WorkspaceId, Id, BoardId, restoredBy, restoredAt));
+        AddDomainEvent(new SavedFilterRestoredDomainEvent(WorkspaceId, Id, BoardId, restoredBy, restoredAt));
     }
 }

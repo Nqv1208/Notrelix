@@ -61,7 +61,7 @@ public class ApprovalRequest : AggregateRoot, IWorkspaceScoped
         };
 
         request.SetAuditOnCreate(requestedBy, createdAt);
-        request.AddDomainEvent(new ApprovalRequestCreatedEvent(request.Id, workspaceId, target, createdAt));
+        request.AddDomainEvent(new ApprovalRequestCreatedDomainEvent(request.Id, workspaceId, target, createdAt));
 
         return request;
     }
@@ -72,7 +72,7 @@ public class ApprovalRequest : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new ApprovalRequestSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new ApprovalRequestSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -81,6 +81,6 @@ public class ApprovalRequest : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new ApprovalRequestRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new ApprovalRequestRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

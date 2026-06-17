@@ -27,7 +27,7 @@ public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
         };
 
         subscription.SetAuditOnCreate(createdBy, createdAt);
-        subscription.AddDomainEvent(new WebhookSubscriptionCreatedEvent(subscription.Id, workspaceId, subscription.TargetUrl.Value, createdAt));
+        subscription.AddDomainEvent(new WebhookSubscriptionCreatedDomainEvent(subscription.Id, workspaceId, subscription.TargetUrl.Value, createdAt));
 
         return subscription;
     }

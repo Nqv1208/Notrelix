@@ -61,7 +61,7 @@ public class Notification : AggregateRoot, IWorkspaceScoped
         ReadAt = readAt;
         SetAuditOnUpdate(UserId, readAt);
         IncrementVersion();
-        AddDomainEvent(new NotificationReadEvent(WorkspaceId, Id, readAt));
+        AddDomainEvent(new NotificationReadDomainEvent(WorkspaceId, Id, readAt));
     }
 
     public void Archive(DateTimeOffset archivedAt)
@@ -72,6 +72,6 @@ public class Notification : AggregateRoot, IWorkspaceScoped
         ArchivedAt = archivedAt;
         SetAuditOnUpdate(UserId, archivedAt);
         IncrementVersion();
-        AddDomainEvent(new NotificationArchivedEvent(WorkspaceId, Id, archivedAt));
+        AddDomainEvent(new NotificationArchivedDomainEvent(WorkspaceId, Id, archivedAt));
     }
 }

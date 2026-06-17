@@ -16,7 +16,6 @@ using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Governance.ShareLinks;
 using Notrelix.Domain.Billing.Plans;
 using Notrelix.Domain.Billing.Usage;
-using Notrelix.Domain.Billing.Events;
 using Xunit;
 
 namespace Notrelix.Domain.Tests.WorkManagement;

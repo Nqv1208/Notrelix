@@ -41,7 +41,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         };
 
         view.SetAuditOnCreate(createdBy, createdAt);
-        view.AddDomainEvent(new BoardViewCreatedEvent(workspaceId, boardId, view.Id, view.Name, type, createdBy, createdAt));
+        view.AddDomainEvent(new BoardViewCreatedDomainEvent(workspaceId, boardId, view.Id, view.Name, type, createdBy, createdAt));
         
         return view;
     }
@@ -66,7 +66,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         Config = config;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardViewConfigUpdatedEvent(WorkspaceId, Id, BoardId, updatedBy, updatedAt));
+        AddDomainEvent(new BoardViewConfigUpdatedDomainEvent(WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
 
     public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
@@ -81,7 +81,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         Name = normalizedName;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardViewRenamedEvent(WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
+        AddDomainEvent(new BoardViewRenamedDomainEvent(WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -91,7 +91,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardViewDeletedEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
+        AddDomainEvent(new BoardViewDeletedDomainEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -100,6 +100,6 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new BoardViewRestoredEvent(WorkspaceId, Id, BoardId, restoredBy, restoredAt));
+        AddDomainEvent(new BoardViewRestoredDomainEvent(WorkspaceId, Id, BoardId, restoredBy, restoredAt));
     }
 }

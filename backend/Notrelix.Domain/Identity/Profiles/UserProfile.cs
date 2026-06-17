@@ -31,7 +31,7 @@ public class UserProfile : AggregateRoot
         EnsureNotDeleted();
         Timezone = string.IsNullOrWhiteSpace(timezone) ? "UTC" : timezone.Trim();
         SetAuditOnUpdate(UserId, updatedAt);
-        AddDomainEvent(new UserProfileUpdatedEvent(UserId, updatedAt));
+        AddDomainEvent(new UserProfileUpdatedDomainEvent(UserId, updatedAt));
     }
 
     public void UpdateLocale(string locale, DateTimeOffset updatedAt)
@@ -39,7 +39,7 @@ public class UserProfile : AggregateRoot
         EnsureNotDeleted();
         Locale = string.IsNullOrWhiteSpace(locale) ? "vi" : locale.Trim();
         SetAuditOnUpdate(UserId, updatedAt);
-        AddDomainEvent(new UserProfileUpdatedEvent(UserId, updatedAt));
+        AddDomainEvent(new UserProfileUpdatedDomainEvent(UserId, updatedAt));
     }
 
     public void UpdateTheme(string theme, DateTimeOffset updatedAt)
@@ -58,7 +58,7 @@ public class UserProfile : AggregateRoot
             Theme = theme.Trim().ToLowerInvariant();
         }
         SetAuditOnUpdate(UserId, updatedAt);
-        AddDomainEvent(new UserProfileUpdatedEvent(UserId, updatedAt));
+        AddDomainEvent(new UserProfileUpdatedDomainEvent(UserId, updatedAt));
     }
 
     public void UpdatePreferences(string preferences, DateTimeOffset updatedAt)
@@ -75,6 +75,6 @@ public class UserProfile : AggregateRoot
         }
         Preferences = json;
         SetAuditOnUpdate(UserId, updatedAt);
-        AddDomainEvent(new UserProfileUpdatedEvent(UserId, updatedAt));
+        AddDomainEvent(new UserProfileUpdatedDomainEvent(UserId, updatedAt));
     }
 }

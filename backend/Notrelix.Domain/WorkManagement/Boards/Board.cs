@@ -51,7 +51,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
         };
 
         board.SetAuditOnCreate(createdBy, createdAt);
-        board.AddDomainEvent(new BoardCreatedEvent(workspaceId, board.Id, board.Title, createdBy, createdAt));
+        board.AddDomainEvent(new BoardCreatedDomainEvent(workspaceId, board.Id, board.Title, createdBy, createdAt));
         return board;
     }
 
@@ -67,7 +67,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
         Title = normalizedTitle;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardRenamedEvent(WorkspaceId, Id, oldTitle, Title, updatedBy, updatedAt));
+        AddDomainEvent(new BoardRenamedDomainEvent(WorkspaceId, Id, oldTitle, Title, updatedBy, updatedAt));
     }
 
     public void UpdateDescription(string? description, Guid updatedBy, DateTimeOffset updatedAt)
@@ -79,7 +79,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
         Description = normalized;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardDescriptionUpdatedEvent(WorkspaceId, Id, oldDescription, Description, updatedBy, updatedAt));
+        AddDomainEvent(new BoardDescriptionUpdatedDomainEvent(WorkspaceId, Id, oldDescription, Description, updatedBy, updatedAt));
     }
 
     public void UpdateBackground(string background, Guid updatedBy, DateTimeOffset updatedAt)
@@ -90,7 +90,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
         Background = background;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardBackgroundUpdatedEvent(WorkspaceId, Id, oldBackground, Background, updatedBy, updatedAt));
+        AddDomainEvent(new BoardBackgroundUpdatedDomainEvent(WorkspaceId, Id, oldBackground, Background, updatedBy, updatedAt));
     }
 
     public void ChangeVisibility(BoardVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
@@ -102,7 +102,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
         Visibility = visibility;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardVisibilityChangedEvent(WorkspaceId, Id, oldVisibility, Visibility, updatedBy, updatedAt));
+        AddDomainEvent(new BoardVisibilityChangedDomainEvent(WorkspaceId, Id, oldVisibility, Visibility, updatedBy, updatedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
@@ -112,7 +112,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
         IsArchived = true;
         SetAuditOnUpdate(archivedBy, archivedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardArchivedEvent(WorkspaceId, Id, archivedBy, archivedAt));
+        AddDomainEvent(new BoardArchivedDomainEvent(WorkspaceId, Id, archivedBy, archivedAt));
     }
 
     public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
@@ -122,7 +122,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
         IsArchived = false;
         SetAuditOnUpdate(unarchivedBy, unarchivedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardUnarchivedEvent(WorkspaceId, Id, unarchivedBy, unarchivedAt));
+        AddDomainEvent(new BoardUnarchivedDomainEvent(WorkspaceId, Id, unarchivedBy, unarchivedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -131,7 +131,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new BoardSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public void SetDefaultGroup(Guid groupId, Guid updatedBy, DateTimeOffset updatedAt)
@@ -141,7 +141,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
         DefaultItemGroupId = groupId;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardDefaultGroupSetEvent(WorkspaceId, Id, groupId, updatedBy, updatedAt));
+        AddDomainEvent(new BoardDefaultGroupSetDomainEvent(WorkspaceId, Id, groupId, updatedBy, updatedAt));
     }
 
     public (long Sequence, string Key) GenerateNextItemIdentity(Guid actorUserId, DateTimeOffset now)
@@ -153,7 +153,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
             : $"{ItemKeyPrefix}-{ItemSequence}";
         SetAuditOnUpdate(actorUserId, now);
         IncrementVersion();
-        AddDomainEvent(new BoardItemIdentityGeneratedEvent(WorkspaceId, Id, ItemSequence, key, actorUserId, now));
+        AddDomainEvent(new BoardItemIdentityGeneratedDomainEvent(WorkspaceId, Id, ItemSequence, key, actorUserId, now));
         return (ItemSequence, key);
     }
 
@@ -163,6 +163,6 @@ public class Board : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new BoardRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new BoardRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

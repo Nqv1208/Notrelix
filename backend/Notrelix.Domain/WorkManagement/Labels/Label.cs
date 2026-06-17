@@ -50,7 +50,7 @@ public class Label : AggregateRoot, IWorkspaceScoped
         };
 
         label.SetAuditOnCreate(createdBy, createdAt);
-        label.AddDomainEvent(new LabelCreatedEvent(workspaceId, boardId, label.Id, label.Name, createdAt));
+        label.AddDomainEvent(new LabelCreatedDomainEvent(workspaceId, boardId, label.Id, label.Name, createdAt));
 
         return label;
     }
@@ -60,14 +60,14 @@ public class Label : AggregateRoot, IWorkspaceScoped
         Name = name.Trim();
         Color = color;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new LabelUpdatedEvent(WorkspaceId, Id, updatedBy, updatedAt));
+        AddDomainEvent(new LabelUpdatedDomainEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new LabelSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new LabelSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -76,6 +76,6 @@ public class Label : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new LabelRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new LabelRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

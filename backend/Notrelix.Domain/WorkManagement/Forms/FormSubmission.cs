@@ -51,7 +51,7 @@ public class FormSubmission : Entity, IWorkspaceScoped
             SubmittedAt = submittedAt
         };
 
-        submission.AddDomainEvent(new FormSubmissionCreatedEvent(workspaceId, submission.Id, formId, boardId, submitterUserId, submittedAt));
+        submission.AddDomainEvent(new FormSubmissionCreatedDomainEvent(workspaceId, submission.Id, formId, boardId, submitterUserId, submittedAt));
 
         return submission;
     }
@@ -60,20 +60,20 @@ public class FormSubmission : Entity, IWorkspaceScoped
     {
         Status = FormSubmissionStatus.Rejected;
         ProcessedAt = processedAt;
-        AddDomainEvent(new FormSubmissionRejectedEvent(WorkspaceId, Id, FormId, processedAt));
+        AddDomainEvent(new FormSubmissionRejectedDomainEvent(WorkspaceId, Id, FormId, processedAt));
     }
 
     public void MarkAsSpam(DateTimeOffset processedAt)
     {
         Status = FormSubmissionStatus.Spam;
         ProcessedAt = processedAt;
-        AddDomainEvent(new FormSubmissionMarkedAsSpamEvent(WorkspaceId, Id, FormId, processedAt));
+        AddDomainEvent(new FormSubmissionMarkedAsSpamDomainEvent(WorkspaceId, Id, FormId, processedAt));
     }
 
     public void MarkProcessed(Guid createdItemId, DateTimeOffset processedAt)
     {
         CreatedItemId = createdItemId;
         ProcessedAt = processedAt;
-        AddDomainEvent(new FormSubmissionProcessedEvent(WorkspaceId, Id, FormId, createdItemId, processedAt));
+        AddDomainEvent(new FormSubmissionProcessedDomainEvent(WorkspaceId, Id, FormId, createdItemId, processedAt));
     }
 }

@@ -18,6 +18,28 @@ public static class AutomationTriggerValidator
             case "ItemMovedToGroup":
                 ValidateItemMovedToGroupConfig(trigger.Configuration);
                 break;
+            case "ItemCreated":
+            case "ItemUpdated":
+            case "ItemDeleted":
+            case "FormSubmitted":
+            case "ItemAssigned":
+                ValidateHasJsonConfig(trigger.Configuration);
+                break;
+            default:
+                throw new BusinessRuleException($"Unknown trigger type '{trigger.Type}'.");
+        }
+    }
+
+    private static void ValidateHasJsonConfig(string? configuration)
+    {
+        if (configuration is null) return;
+        try
+        {
+            using var doc = JsonDocument.Parse(configuration);
+        }
+        catch (JsonException ex)
+        {
+            throw new BusinessRuleException($"Invalid trigger configuration JSON: {ex.Message}");
         }
     }
 

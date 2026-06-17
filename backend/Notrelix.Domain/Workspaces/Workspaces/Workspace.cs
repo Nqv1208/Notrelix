@@ -35,7 +35,7 @@ public class Workspace : AggregateRoot
         };
 
         workspace.SetAuditOnCreate(ownerId, createdAt);
-        workspace.AddDomainEvent(new WorkspaceCreatedEvent(workspace.Id, workspace.Name, workspace.Slug, ownerId, createdAt));
+        workspace.AddDomainEvent(new WorkspaceCreatedDomainEvent(workspace.Id, workspace.Name, workspace.Slug, ownerId, createdAt));
 
         return workspace;
     }
@@ -66,7 +66,7 @@ public class Workspace : AggregateRoot
         Name = newName.Trim();
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceRenamedEvent(Id, oldName, Name, updatedBy, updatedAt));
+        AddDomainEvent(new WorkspaceRenamedDomainEvent(Id, oldName, Name, updatedBy, updatedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
@@ -78,7 +78,7 @@ public class Workspace : AggregateRoot
         Status = WorkspaceStatus.Archived;
         SetAuditOnUpdate(archivedBy, archivedAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceArchivedEvent(Id, archivedBy, archivedAt));
+        AddDomainEvent(new WorkspaceArchivedDomainEvent(Id, archivedBy, archivedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -88,7 +88,7 @@ public class Workspace : AggregateRoot
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceSoftDeletedEvent(Id, deletedBy, deletedAt));
+        AddDomainEvent(new WorkspaceSoftDeletedDomainEvent(Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -98,7 +98,7 @@ public class Workspace : AggregateRoot
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceRestoredEvent(Id, restoredBy, restoredAt));
+        AddDomainEvent(new WorkspaceRestoredDomainEvent(Id, restoredBy, restoredAt));
     }
 
     public void UpdateSettings(WorkspaceSettings newSettings, Guid updatedBy, DateTimeOffset updatedAt)

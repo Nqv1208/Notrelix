@@ -1,6 +1,6 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
-
+using Notrelix.Domain.Governance.Permissions.Events;
 namespace Notrelix.Domain.Governance.Permissions;
 
 public class PermissionRule : AggregateRoot, IWorkspaceScoped

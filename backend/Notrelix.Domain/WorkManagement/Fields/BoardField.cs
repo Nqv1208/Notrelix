@@ -68,7 +68,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         };
 
         field.SetAuditOnCreate(createdBy, createdAt);
-        field.AddDomainEvent(new BoardFieldCreatedEvent(workspaceId, boardId, field.Id, field.Name, type, createdBy, createdAt));
+        field.AddDomainEvent(new BoardFieldCreatedDomainEvent(workspaceId, boardId, field.Id, field.Name, type, createdBy, createdAt));
         
         return field;
     }
@@ -82,7 +82,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         Settings = settings;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardFieldUpdatedEvent(WorkspaceId, Id, BoardId, updatedBy, updatedAt));
+        AddDomainEvent(new BoardFieldUpdatedDomainEvent(WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
 
     public void AddOption(string name, Color color, FractionalIndex position, Guid addedBy, DateTimeOffset addedAt)
@@ -98,7 +98,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         _options.Add(option);
         SetAuditOnUpdate(addedBy, addedAt);
         IncrementVersion();
-        AddDomainEvent(new FieldOptionAddedEvent(WorkspaceId, Id, option.Id, option.Name, addedBy, addedAt));
+        AddDomainEvent(new FieldOptionAddedDomainEvent(WorkspaceId, Id, option.Id, option.Name, addedBy, addedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -111,7 +111,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardFieldDeletedEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
+        AddDomainEvent(new BoardFieldDeletedDomainEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
     public bool CanBeUsedAsKanbanColumn()
@@ -129,7 +129,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         IsSensitive = isSensitive;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardFieldClassificationUpdatedEvent(WorkspaceId, BoardId, Id, classification, isSensitive, updatedBy, updatedAt));
+        AddDomainEvent(new BoardFieldClassificationUpdatedDomainEvent(WorkspaceId, BoardId, Id, classification, isSensitive, updatedBy, updatedAt));
     }
 
     public void UpdateFormula(bool isFormula, string? expression, Guid updatedBy, DateTimeOffset updatedAt)
@@ -140,7 +140,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         FormulaExpression = expression;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardFieldFormulaUpdatedEvent(WorkspaceId, BoardId, Id, isFormula, expression, updatedBy, updatedAt));
+        AddDomainEvent(new BoardFieldFormulaUpdatedDomainEvent(WorkspaceId, BoardId, Id, isFormula, expression, updatedBy, updatedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -149,6 +149,6 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new BoardFieldRestoredEvent(WorkspaceId, BoardId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new BoardFieldRestoredDomainEvent(WorkspaceId, BoardId, Id, restoredBy, restoredAt));
     }
 }

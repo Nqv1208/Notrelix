@@ -31,12 +31,12 @@ public class Reaction : AggregateRoot, IWorkspaceScoped
         };
 
         reaction.SetAuditOnCreate(userId, createdAt);
-        reaction.AddDomainEvent(new ReactionCreatedEvent(workspaceId, reaction.Id, target, userId, emoji, createdAt));
+        reaction.AddDomainEvent(new ReactionCreatedDomainEvent(workspaceId, reaction.Id, target, userId, emoji, createdAt));
         return reaction;
     }
 
     public void Remove(DateTimeOffset removedAt)
     {
-        AddDomainEvent(new ReactionRemovedEvent(WorkspaceId, Id, Target, UserId, Emoji, removedAt));
+        AddDomainEvent(new ReactionRemovedDomainEvent(WorkspaceId, Id, Target, UserId, Emoji, removedAt));
     }
 }

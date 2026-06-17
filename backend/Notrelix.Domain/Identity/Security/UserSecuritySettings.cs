@@ -41,7 +41,7 @@ public class UserSecuritySettings : AggregateRoot
         LastSecurityReviewAt = updatedAt;
 
         SetAuditOnUpdate(UserId, updatedAt);
-        AddDomainEvent(new UserMfaRequirementEnabledEvent(UserId, method, updatedAt));
+        AddDomainEvent(new UserMfaRequirementEnabledDomainEvent(UserId, method, updatedAt));
     }
 
     public void DisableMfa(DateTimeOffset updatedAt)
@@ -57,7 +57,7 @@ public class UserSecuritySettings : AggregateRoot
         LastSecurityReviewAt = updatedAt;
         
         SetAuditOnUpdate(UserId, updatedAt);
-        AddDomainEvent(new UserMfaRequirementDisabledEvent(UserId, previousMethod, updatedAt));
+        AddDomainEvent(new UserMfaRequirementDisabledDomainEvent(UserId, previousMethod, updatedAt));
     }
 
     public void RequirePasswordChangeNow(DateTimeOffset updatedAt)
@@ -68,7 +68,7 @@ public class UserSecuritySettings : AggregateRoot
         LastSecurityReviewAt = updatedAt;
         
         SetAuditOnUpdate(UserId, updatedAt);
-        AddDomainEvent(new PasswordChangeRequiredEvent(UserId, updatedAt));
+        AddDomainEvent(new PasswordChangeRequiredDomainEvent(UserId, updatedAt));
     }
 
     public void MarkPasswordChanged(DateTimeOffset updatedAt)
@@ -80,7 +80,7 @@ public class UserSecuritySettings : AggregateRoot
         LastSecurityReviewAt = updatedAt;
         
         SetAuditOnUpdate(UserId, updatedAt);
-        AddDomainEvent(new UserSecurityPasswordChangedEvent(UserId, updatedAt));
+        AddDomainEvent(new UserSecurityPasswordChangedDomainEvent(UserId, updatedAt));
     }
 
     public void UpdateSettings(JsonValue settings, DateTimeOffset updatedAt)
@@ -92,7 +92,7 @@ public class UserSecuritySettings : AggregateRoot
         LastSecurityReviewAt = updatedAt;
         
         SetAuditOnUpdate(UserId, updatedAt);
-        AddDomainEvent(new UserSecuritySettingsUpdatedEvent(UserId, updatedAt));
+        AddDomainEvent(new UserSecuritySettingsUpdatedDomainEvent(UserId, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)

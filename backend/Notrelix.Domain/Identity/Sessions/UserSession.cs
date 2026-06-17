@@ -44,7 +44,7 @@ public class UserSession : AggregateRoot
         };
 
         session.SetAuditOnCreate(userId, createdAt);
-        session.AddDomainEvent(new UserSessionCreatedEvent(session.Id, userId, createdAt));
+        session.AddDomainEvent(new UserSessionCreatedDomainEvent(session.Id, userId, createdAt));
         
         return session;
     }
@@ -79,7 +79,7 @@ public class UserSession : AggregateRoot
         RevokedAt = revokedAt;
 
         SetAuditOnUpdate(UserId, revokedAt);
-        AddDomainEvent(new UserSessionRevokedEvent(Id, UserId, revokedAt, reason));
+        AddDomainEvent(new UserSessionRevokedDomainEvent(Id, UserId, revokedAt, reason));
     }
 
     public void Expire(DateTimeOffset expiredAt)
@@ -96,7 +96,7 @@ public class UserSession : AggregateRoot
         ExpiredAt = expiredAt;
 
         SetAuditOnUpdate(UserId, expiredAt);
-        AddDomainEvent(new UserSessionExpiredEvent(Id, UserId, expiredAt));
+        AddDomainEvent(new UserSessionExpiredDomainEvent(Id, UserId, expiredAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)

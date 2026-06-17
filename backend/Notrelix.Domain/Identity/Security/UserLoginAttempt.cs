@@ -51,7 +51,7 @@ public class UserLoginAttempt : AggregateRoot
             OccurredAt = occurredAt
         };
 
-        attempt.AddDomainEvent(new LoginAttemptRecordedEvent(
+        attempt.AddDomainEvent(new LoginAttemptRecordedDomainEvent(
             attempt.Id,
             attempt.UserId,
             attempt.AttemptedEmail,

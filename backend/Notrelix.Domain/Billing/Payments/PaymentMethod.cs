@@ -32,7 +32,7 @@ public class PaymentMethod : AggregateRoot, IWorkspaceScoped
         };
 
         method.SetAuditOnCreate(createdBy, createdAt);
-        method.AddDomainEvent(new PaymentMethodAddedEvent(workspaceId, method.Id, provider, last4, brand, createdAt));
+        method.AddDomainEvent(new PaymentMethodAddedDomainEvent(workspaceId, method.Id, provider, last4, brand, createdAt));
         return method;
     }
 

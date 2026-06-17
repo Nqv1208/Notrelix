@@ -84,7 +84,7 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
             AttemptCount = 0
         };
 
-        execution.AddDomainEvent(new AutomationExecutionQueuedEvent(workspaceId, execution.Id, ruleId, startedAt));
+        execution.AddDomainEvent(new AutomationExecutionQueuedDomainEvent(workspaceId, execution.Id, ruleId, startedAt));
         return execution;
     }
 
@@ -101,7 +101,7 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
         Status = AutomationExecutionStatus.Running;
         StartedAt = startedAt;
         IncrementVersion();
-        AddDomainEvent(new AutomationExecutionStartedEvent(WorkspaceId, Id, RuleId, startedAt));
+        AddDomainEvent(new AutomationExecutionStartedDomainEvent(WorkspaceId, Id, RuleId, startedAt));
     }
 
     public void Succeed(DateTimeOffset finishedAt)
@@ -111,7 +111,7 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
         Status = AutomationExecutionStatus.Succeeded;
         FinishedAt = finishedAt;
         IncrementVersion();
-        AddDomainEvent(new AutomationExecutionSucceededEvent(WorkspaceId, Id, RuleId, finishedAt));
+        AddDomainEvent(new AutomationExecutionSucceededDomainEvent(WorkspaceId, Id, RuleId, finishedAt));
     }
 
     public void Fail(string error, DateTimeOffset finishedAt)
@@ -125,7 +125,7 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
         Error = error;
         FinishedAt = finishedAt;
         IncrementVersion();
-        AddDomainEvent(new AutomationExecutionFailedEvent(WorkspaceId, Id, RuleId, error, finishedAt));
+        AddDomainEvent(new AutomationExecutionFailedDomainEvent(WorkspaceId, Id, RuleId, error, finishedAt));
     }
 
     public void Cancel(Guid cancelledBy, DateTimeOffset cancelledAt)
@@ -136,6 +136,6 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
         Status = AutomationExecutionStatus.Cancelled;
         FinishedAt = cancelledAt;
         IncrementVersion();
-        AddDomainEvent(new AutomationExecutionCancelledEvent(WorkspaceId, Id, RuleId, cancelledBy, cancelledAt));
+        AddDomainEvent(new AutomationExecutionCancelledDomainEvent(WorkspaceId, Id, RuleId, cancelledBy, cancelledAt));
     }
 }

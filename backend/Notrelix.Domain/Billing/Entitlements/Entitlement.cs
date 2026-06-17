@@ -1,7 +1,7 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Billing.Plans;
-using Notrelix.Domain.Billing.Events;
+using Notrelix.Domain.Billing.Entitlements.Events;
 using Notrelix.Domain.Billing.Entitlements.Events;
 
 namespace Notrelix.Domain.Billing.Entitlements;
@@ -129,7 +129,7 @@ public class Entitlement : AggregateRoot, IWorkspaceScoped
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
         IncrementVersion();
-        AddDomainEvent(new EntitlementSoftDeletedEvent(WorkspaceId, Id, Feature.Code, deletedBy, deletedAt));
+        AddDomainEvent(new EntitlementSoftDeletedDomainEvent(WorkspaceId, Id, Feature.Code, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -137,6 +137,6 @@ public class Entitlement : AggregateRoot, IWorkspaceScoped
         if (!IsDeleted) return;
         base.Restore(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new EntitlementRestoredEvent(WorkspaceId, Id, Feature.Code, restoredBy, restoredAt));
+        AddDomainEvent(new EntitlementRestoredDomainEvent(WorkspaceId, Id, Feature.Code, restoredBy, restoredAt));
     }
 }

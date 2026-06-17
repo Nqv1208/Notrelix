@@ -7,7 +7,6 @@ using Notrelix.Domain.Billing.Plans;
 using Notrelix.Domain.Billing.Plans.Events;
 using Notrelix.Domain.Billing.Subscriptions;
 using Notrelix.Domain.Billing.Subscriptions.Events;
-using Notrelix.Domain.Billing.Events;
 using Notrelix.Domain.Billing.Usage;
 using Notrelix.Domain.Billing.Usage.Events;
 using Notrelix.Domain.SharedKernel;

@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Billing.Events;
 using Notrelix.Domain.Billing.Plans;
 using Notrelix.Domain.Billing.Usage;
 using Notrelix.Domain.Billing.Usage.Events;
