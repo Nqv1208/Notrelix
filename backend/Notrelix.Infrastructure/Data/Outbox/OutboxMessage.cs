@@ -1,7 +1,14 @@
 using System.Text.Json;
+using Notrelix.Application.Common.Events;
 using Notrelix.Domain.Common;
 
 namespace Notrelix.Infrastructure.Data.Outbox;
+
+public enum OutboxMessageType
+{
+    DomainEvent = 1,
+    IntegrationEvent = 2,
+}
 
 public sealed class OutboxMessage
 {
@@ -13,7 +20,10 @@ public sealed class OutboxMessage
 
     public Guid Id { get; private set; }
     public Guid EventId { get; private set; }
-    public string EventType { get; private set; } = null!;
+    public Guid? SourceEventId { get; private set; }
+    public string MessageName { get; private set; } = null!;
+    public int SchemaVersion { get; private set; }
+    public OutboxMessageType MessageType { get; private set; }
     public int EventVersion { get; private set; }
     public Guid? WorkspaceId { get; private set; }
     public Guid? ActorUserId { get; private set; }
@@ -24,24 +34,23 @@ public sealed class OutboxMessage
     public int RetryCount { get; private set; }
     public int MaxRetries { get; private set; } = OutboxDefaults.MaxRetries;
     public DateTimeOffset? NextAttemptAt { get; private set; }
+    public DateTimeOffset? ProcessingStartedAt { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset? ProcessedAt { get; private set; }
     public string? Error { get; private set; }
 
     private OutboxMessage() { }
 
-    public static OutboxMessage From(IDomainEvent domainEvent, DateTimeOffset now)
+    public static OutboxMessage From(IDomainEvent domainEvent, DateTimeOffset now, string messageName)
     {
-        var eventType = domainEvent is IOutboxEvent outboxEvent
-            ? outboxEvent.EventType
-            : domainEvent.GetType().FullName!;
-
         return new OutboxMessage
         {
             Id = Guid.CreateVersion7(),
             EventId = domainEvent.EventId,
-            EventType = eventType,
             EventVersion = domainEvent.EventVersion,
+            MessageName = messageName,
+            SchemaVersion = 1,
+            MessageType = OutboxMessageType.DomainEvent,
             WorkspaceId = domainEvent.WorkspaceId,
             ActorUserId = domainEvent.ActorUserId,
             CorrelationId = domainEvent.CorrelationId,
@@ -53,9 +62,32 @@ public sealed class OutboxMessage
         };
     }
 
-    public void MarkProcessing()
+    public static OutboxMessage From(IIntegrationEvent integrationEvent, DateTimeOffset now)
+    {
+        return new OutboxMessage
+        {
+            Id = Guid.CreateVersion7(),
+            EventId = integrationEvent.EventId,
+            SourceEventId = integrationEvent.SourceEventId,
+            EventVersion = integrationEvent.SchemaVersion,
+            MessageName = integrationEvent.MessageName,
+            SchemaVersion = integrationEvent.SchemaVersion,
+            MessageType = OutboxMessageType.IntegrationEvent,
+            WorkspaceId = integrationEvent.WorkspaceId,
+            ActorUserId = integrationEvent.ActorUserId,
+            CorrelationId = integrationEvent.CorrelationId,
+            CausationId = integrationEvent.CausationId,
+            PayloadJson = JsonSerializer.Serialize(integrationEvent, integrationEvent.GetType(), JsonOptions),
+            Status = OutboxStatus.Pending,
+            NextAttemptAt = now,
+            CreatedAt = now,
+        };
+    }
+
+    public void MarkProcessing(DateTimeOffset now)
     {
         Status = OutboxStatus.Processing;
+        ProcessingStartedAt = now;
     }
 
     public void MarkProcessed(DateTimeOffset now)
@@ -88,6 +120,7 @@ public static class OutboxDefaults
     public const int MaxBackoffSeconds = 60;
     public const int BatchSize = 20;
     public const int PollIntervalMs = 5000;
+    public const int ProcessingTimeoutSeconds = 60;
 }
 
 public static class OutboxStatus

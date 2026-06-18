@@ -1,36 +1,63 @@
 using System.Collections.Concurrent;
+using System.Reflection;
 using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Common.Events;
+using Notrelix.Domain.Common;
 
 namespace Notrelix.Infrastructure.Data.Outbox;
 
 public sealed class EventTypeRegistry : IEventTypeRegistry
 {
-    private readonly ConcurrentDictionary<string, Type> _cache;
+    private readonly ConcurrentDictionary<string, Type> _nameToType;
+    private readonly ConcurrentDictionary<Type, string> _typeToName;
 
     public EventTypeRegistry()
     {
-        _cache = new ConcurrentDictionary<string, Type>(StringComparer.Ordinal);
+        _nameToType = new ConcurrentDictionary<string, Type>(StringComparer.Ordinal);
+        _typeToName = new ConcurrentDictionary<Type, string>();
 
-        var eventTypes = AppDomain.CurrentDomain.GetAssemblies()
+        var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+        var types = assemblies
             .SelectMany(a =>
             {
                 try { return a.GetTypes(); }
                 catch { return []; }
             })
-            .Where(t => !t.IsAbstract && !t.IsInterface)
-            .Where(t => typeof(IDomainEvent).IsAssignableFrom(t) || t.Name.EndsWith("Event"))
+            .Where(t => t is { IsAbstract: false, IsInterface: false })
+            .Where(t => typeof(IDomainEvent).IsAssignableFrom(t) || typeof(IIntegrationEvent).IsAssignableFrom(t))
             .Distinct();
 
-        foreach (var type in eventTypes)
+        foreach (var type in types)
         {
-            if (type.FullName is not null)
-                _cache.TryAdd(type.FullName, type);
-            _cache.TryAdd(type.Name, type);
+            var name = ResolveName(type);
+            _nameToType.TryAdd(name, type);
+            _typeToName.TryAdd(type, name);
         }
     }
 
-    public Type? GetEventType(string eventTypeName)
+    public Type? GetEventType(string messageName)
     {
-        return _cache.TryGetValue(eventTypeName, out var type) ? type : null;
+        return _nameToType.TryGetValue(messageName, out var type) ? type : null;
+    }
+
+    public string GetMessageName(Type type)
+    {
+        if (_typeToName.TryGetValue(type, out var name))
+            return name;
+        return ResolveName(type);
+    }
+
+    public string GetMessageName<T>()
+    {
+        return GetMessageName(typeof(T));
+    }
+
+    private static string ResolveName(Type type)
+    {
+        var attr = type.GetCustomAttribute<EventNameAttribute>();
+        if (attr is not null)
+            return attr.Name;
+
+        return type.FullName ?? type.Name;
     }
 }

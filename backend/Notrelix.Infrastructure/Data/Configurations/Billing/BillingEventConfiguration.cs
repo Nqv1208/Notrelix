@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Notrelix.Domain.Billing.Events;
+using Notrelix.Domain.Billing.BillingEvents;
 using Notrelix.Infrastructure.Data.Converters;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Billing;

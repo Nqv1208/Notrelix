@@ -18,4 +18,9 @@ public sealed class IntegrationEventBus : IIntegrationEventBus
     {
         await _publishEndpoint.Publish(integrationEvent, cancellationToken);
     }
+
+    public async Task PublishAsync(IIntegrationEvent integrationEvent, CancellationToken cancellationToken = default)
+    {
+        await _publishEndpoint.Publish(integrationEvent, cancellationToken);
+    }
 }

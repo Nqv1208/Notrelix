@@ -6,7 +6,7 @@ using Notrelix.Domain.Automation.Rules;
 using Notrelix.Domain.Automation.Scheduled;
 using Notrelix.Domain.Automation.Templates;
 using Notrelix.Domain.Billing.Entitlements;
-using Notrelix.Domain.Billing.Events;
+using Notrelix.Domain.Billing.BillingEvents;
 using Notrelix.Domain.Billing.Payments;
 using Notrelix.Domain.Billing.Plans;
 using Notrelix.Domain.Billing.Subscriptions;
