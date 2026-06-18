@@ -8,7 +8,7 @@ namespace Notrelix.Application.Features.Workspaces.Members.Commands.RemoveMember
 public record RemoveMemberBySlugCommand(
     string Slug,
     Guid UserId
-) : IRequest<Result>;
+) : ICommand<Result>;
 
 public class RemoveMemberBySlugCommandHandler : IRequestHandler<RemoveMemberBySlugCommand, Result>
 {

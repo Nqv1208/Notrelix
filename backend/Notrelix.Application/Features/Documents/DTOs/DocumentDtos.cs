@@ -1,4 +1,4 @@
-namespace Notrelix.Application.Features.Document.DTOs;
+namespace Notrelix.Application.Features.Documents.DTOs;
 
 public record PageDto(
     Guid Id,

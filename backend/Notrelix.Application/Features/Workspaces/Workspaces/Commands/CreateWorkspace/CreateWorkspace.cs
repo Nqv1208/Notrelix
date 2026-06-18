@@ -10,7 +10,7 @@ public record CreateWorkspaceCommand(
     string Name,
     string? Description,
     bool IsPersonal
-) : IRequest<Result<Guid>>;
+) : ICommand<Result<Guid>>;
 
 public class CreateWorkspaceCommandHandler : IRequestHandler<CreateWorkspaceCommand, Result<Guid>>
 {

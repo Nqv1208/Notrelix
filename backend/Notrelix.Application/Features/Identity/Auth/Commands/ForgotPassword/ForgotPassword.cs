@@ -7,7 +7,7 @@ using Notrelix.Application.Common.Email;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.ForgotPassword;
 
-public record ForgotPasswordCommand : IRequest<Result>
+public record ForgotPasswordCommand : ICommand<Result>
 {
     public required string Email { get; init; }
 }

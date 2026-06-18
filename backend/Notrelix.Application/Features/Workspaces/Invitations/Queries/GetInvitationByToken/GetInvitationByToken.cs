@@ -18,7 +18,7 @@ public record WorkspaceInvitationDto(
     bool IsAccepted
 );
 
-public record GetInvitationByTokenQuery(string Token) : IRequest<Result<WorkspaceInvitationDto>>;
+public record GetInvitationByTokenQuery(string Token) : IQuery<Result<WorkspaceInvitationDto>>;
 
 public class GetInvitationByTokenQueryHandler : IRequestHandler<GetInvitationByTokenQuery, Result<WorkspaceInvitationDto>>
 {

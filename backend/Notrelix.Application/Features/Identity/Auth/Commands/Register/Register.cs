@@ -7,7 +7,7 @@ using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.Register;
 
-public record RegisterCommand : IRequest<Result<AuthResult>>
+public record RegisterCommand : ICommand<Result<AuthResult>>
 {
     public required string Email { get; init; }
     public required string Password { get; init; }

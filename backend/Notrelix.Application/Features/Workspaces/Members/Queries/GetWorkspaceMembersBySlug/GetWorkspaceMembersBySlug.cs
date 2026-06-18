@@ -5,9 +5,9 @@ using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Workspaces.DTOs;
 using global::Notrelix.Application.Common.Security;
 
-namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspaceMembersBySlug;
+namespace Notrelix.Application.Features.Workspaces.Members.Queries.GetWorkspaceMembersBySlug;
 
-public record GetWorkspaceMembersBySlugQuery(Guid WorkspaceId, string Slug) : IRequest<Result<List<WorkspaceMemberDto>>>, IAuthorizeableRequest
+public record GetWorkspaceMembersBySlugQuery(Guid WorkspaceId, string Slug) : IQuery<Result<List<WorkspaceMemberDto>>>, IAuthorizeableRequest
 {
     ResourceType IAuthorizeableRequest.ResourceType => ResourceType.Workspace;
     Guid IAuthorizeableRequest.ResourceId => WorkspaceId;

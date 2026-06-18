@@ -9,7 +9,7 @@ using Notrelix.Domain.WorkManagement.Items;
 
 namespace Notrelix.Application.Features.Automation.Events;
 
-public class CardAssignedN8nAutomationHandler : INotificationHandler<DomainEventNotification<BoardItemMemberAssignedEvent>>
+public class CardAssignedN8nAutomationHandler : INotificationHandler<DomainEventNotification<BoardItemMemberAssignedDomainEvent>>
 {
     private readonly IApplicationDbContext _context;
     private readonly IJobQueue _jobQueue;
@@ -20,7 +20,7 @@ public class CardAssignedN8nAutomationHandler : INotificationHandler<DomainEvent
         _jobQueue = jobQueue;
     }
 
-    public async Task Handle(DomainEventNotification<BoardItemMemberAssignedEvent> notification, CancellationToken cancellationToken)
+    public async Task Handle(DomainEventNotification<BoardItemMemberAssignedDomainEvent> notification, CancellationToken cancellationToken)
     {
         var domainEvent = notification.DomainEvent;
 

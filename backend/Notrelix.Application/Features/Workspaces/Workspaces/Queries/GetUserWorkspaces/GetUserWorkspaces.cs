@@ -7,7 +7,7 @@ using global::Notrelix.Domain.Workspaces.Workspaces;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetUserWorkspaces;
 
-public record GetUserWorkspacesQuery(Guid UserId) : IRequest<Result<List<WorkspaceDto>>>;
+public record GetUserWorkspacesQuery(Guid UserId) : IQuery<Result<List<WorkspaceDto>>>;
 
 public class GetUserWorkspacesQueryHandler : IRequestHandler<GetUserWorkspacesQuery, Result<List<WorkspaceDto>>>
 {

@@ -5,7 +5,7 @@ using global::Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Commands.ArchiveWorkspaceBySlug;
 
-public record ArchiveWorkspaceBySlugCommand(string Slug) : IRequest<Result>;
+public record ArchiveWorkspaceBySlugCommand(string Slug) : ICommand<Result>;
 
 public class ArchiveWorkspaceBySlugCommandHandler : IRequestHandler<ArchiveWorkspaceBySlugCommand, Result>
 {

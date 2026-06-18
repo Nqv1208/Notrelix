@@ -5,7 +5,7 @@ using Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile;
 
-public record UpdateProfileCommand : IRequest<Result<UserDto>>
+public record UpdateProfileCommand : ICommand<Result<UserDto>>
 {
     // Filled from JWT claims by controller
     public Guid UserId { get; init; }

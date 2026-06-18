@@ -13,7 +13,7 @@ public record UpdateWorkspaceCommand(
     string? IconType,
     string? IconValue,
     string? Settings
-) : IRequest<Result>;
+) : ICommand<Result>;
 
 public class UpdateWorkspaceCommandHandler : IRequestHandler<UpdateWorkspaceCommand, Result>
 {

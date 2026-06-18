@@ -8,7 +8,7 @@ using global::Notrelix.Domain.Workspaces.Workspaces;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspace;
 
-public record GetWorkspaceQuery(Guid WorkspaceId) : IRequest<Result<WorkspaceDto>>, IAuthorizeableRequest
+public record GetWorkspaceQuery(Guid WorkspaceId) : IQuery<Result<WorkspaceDto>>, IAuthorizeableRequest
 {
     ResourceType IAuthorizeableRequest.ResourceType => ResourceType.Workspace;
     Guid IAuthorizeableRequest.ResourceId => WorkspaceId;

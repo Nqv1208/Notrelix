@@ -4,9 +4,9 @@ using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Common.Security;
 
-namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspaceActivityBySlug;
+namespace Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceActivityBySlug;
 
-public record GetWorkspaceActivityBySlugQuery(Guid WorkspaceId, string Slug, int Page = 1, int PageSize = 20) : IRequest<Result<object>>, IAuthorizeableRequest
+public record GetWorkspaceActivityBySlugQuery(Guid WorkspaceId, string Slug, int Page = 1, int PageSize = 20) : IQuery<Result<object>>, IAuthorizeableRequest
 {
     ResourceType IAuthorizeableRequest.ResourceType => ResourceType.Workspace;
     Guid IAuthorizeableRequest.ResourceId => WorkspaceId;

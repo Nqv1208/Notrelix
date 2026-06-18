@@ -5,7 +5,7 @@ using global::Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Commands.ArchiveWorkspace;
 
-public record ArchiveWorkspaceCommand(Guid WorkspaceId) : IRequest<Result>;
+public record ArchiveWorkspaceCommand(Guid WorkspaceId) : ICommand<Result>;
 
 public class ArchiveWorkspaceCommandHandler : IRequestHandler<ArchiveWorkspaceCommand, Result>
 {

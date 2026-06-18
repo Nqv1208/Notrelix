@@ -7,7 +7,7 @@ using global::Notrelix.Application.Common.Security;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspaceBySlug;
 
-public record GetWorkspaceBySlugQuery(Guid WorkspaceId, string Slug) : IRequest<Result<WorkspaceDto>>, IAuthorizeableRequest
+public record GetWorkspaceBySlugQuery(Guid WorkspaceId, string Slug) : IQuery<Result<WorkspaceDto>>, IAuthorizeableRequest
 {
     ResourceType IAuthorizeableRequest.ResourceType => ResourceType.Workspace;
     Guid IAuthorizeableRequest.ResourceId => WorkspaceId;

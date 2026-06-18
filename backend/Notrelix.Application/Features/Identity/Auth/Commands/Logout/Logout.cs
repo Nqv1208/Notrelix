@@ -8,7 +8,7 @@ using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.Logout;
 
-public record LogoutCommand : IRequest<Result>
+public record LogoutCommand : ICommand<Result>
 {
     public required string RefreshToken { get; init; }
     public string? AccessToken { get; init; }

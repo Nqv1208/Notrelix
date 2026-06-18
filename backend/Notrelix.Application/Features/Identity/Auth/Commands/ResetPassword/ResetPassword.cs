@@ -7,7 +7,7 @@ using Notrelix.Application.Common.Email;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.ResetPassword;
 
-public record ResetPasswordCommand : IRequest<Result>
+public record ResetPasswordCommand : ICommand<Result>
 {
     public required string Email { get; init; }
     public required string Code { get; init; }

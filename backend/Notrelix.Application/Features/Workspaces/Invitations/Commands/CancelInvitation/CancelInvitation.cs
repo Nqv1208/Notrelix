@@ -9,7 +9,7 @@ namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.CancelIn
 public record CancelInvitationCommand(
     Guid WorkspaceId,
     Guid InvitationId
-) : IRequest<Result>;
+) : ICommand<Result>;
 
 public class CancelInvitationCommandHandler : IRequestHandler<CancelInvitationCommand, Result>
 {

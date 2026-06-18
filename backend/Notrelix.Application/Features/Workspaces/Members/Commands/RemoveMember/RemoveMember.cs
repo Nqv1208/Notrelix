@@ -8,7 +8,7 @@ namespace Notrelix.Application.Features.Workspaces.Members.Commands.RemoveMember
 public record RemoveMemberCommand(
     Guid WorkspaceId,
     Guid UserId
-) : IRequest<Result>;
+) : ICommand<Result>;
 
 public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, Result>
 {

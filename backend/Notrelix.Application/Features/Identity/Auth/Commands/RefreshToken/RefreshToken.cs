@@ -7,7 +7,7 @@ using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.RefreshToken;
 
-public record RefreshTokenCommand : IRequest<Result<AuthResult>>
+public record RefreshTokenCommand : ICommand<Result<AuthResult>>
 {
     public required string RefreshToken { get; init; }
 }

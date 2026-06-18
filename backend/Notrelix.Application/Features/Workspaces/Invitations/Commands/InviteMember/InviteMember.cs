@@ -14,7 +14,7 @@ public record InviteMemberCommand(
     Guid WorkspaceId,
     string Email,
     string Role
-) : IRequest<Result<Guid>>;
+) : ICommand<Result<Guid>>;
 
 public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, Result<Guid>>
 {

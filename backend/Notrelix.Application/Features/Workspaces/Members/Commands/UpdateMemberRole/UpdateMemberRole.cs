@@ -9,7 +9,7 @@ public record UpdateMemberRoleCommand(
     Guid WorkspaceId,
     Guid UserId,
     string Role
-) : IRequest<Result>;
+) : ICommand<Result>;
 
 public class UpdateMemberRoleCommandHandler : IRequestHandler<UpdateMemberRoleCommand, Result>
 {

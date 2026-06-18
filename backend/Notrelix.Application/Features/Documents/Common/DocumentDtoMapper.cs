@@ -1,5 +1,5 @@
-using Notrelix.Application.Features.Document.DTOs;
-namespace Notrelix.Application.Features.Document.Common;
+using Notrelix.Application.Features.Documents.DTOs;
+namespace Notrelix.Application.Features.Documents.Common;
 
 internal static class DocumentDtoMapper
 {

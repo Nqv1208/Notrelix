@@ -10,7 +10,7 @@ using global::Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.Workspaces.Events;
 
-public class MemberInvitedEventHandler : INotificationHandler<DomainEventNotification<WorkspaceInvitationCreatedEvent>>
+public class MemberInvitedEventHandler : INotificationHandler<DomainEventNotification<WorkspaceInvitationCreatedDomainEvent>>
 {
     private readonly IApplicationDbContext _context;
     private readonly IEmailService _emailService;
@@ -32,7 +32,7 @@ public class MemberInvitedEventHandler : INotificationHandler<DomainEventNotific
         _dateTimeProvider = dateTimeProvider;
     }
 
-    public async Task Handle(DomainEventNotification<WorkspaceInvitationCreatedEvent> notification, CancellationToken cancellationToken)
+    public async Task Handle(DomainEventNotification<WorkspaceInvitationCreatedDomainEvent> notification, CancellationToken cancellationToken)
     {
         var domainEvent = notification.DomainEvent;
 

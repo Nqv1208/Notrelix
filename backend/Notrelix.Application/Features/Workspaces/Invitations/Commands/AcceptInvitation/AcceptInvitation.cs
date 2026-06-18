@@ -11,7 +11,7 @@ namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptIn
 
 public record AcceptInvitationResultDto(string WorkspaceSlug, Guid WorkspaceId);
 
-public record AcceptInvitationCommand(string Token) : IRequest<Result<AcceptInvitationResultDto>>;
+public record AcceptInvitationCommand(string Token) : ICommand<Result<AcceptInvitationResultDto>>;
 
 public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCommand, Result<AcceptInvitationResultDto>>
 {

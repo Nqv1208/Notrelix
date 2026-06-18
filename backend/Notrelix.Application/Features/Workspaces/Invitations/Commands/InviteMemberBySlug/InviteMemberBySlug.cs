@@ -12,7 +12,7 @@ public record InviteMemberBySlugCommand(
     string Slug,
     string Email,
     string Role
-) : IRequest<Result<Guid>>;
+) : ICommand<Result<Guid>>;
 
 public class InviteMemberBySlugCommandHandler : IRequestHandler<InviteMemberBySlugCommand, Result<Guid>>
 {

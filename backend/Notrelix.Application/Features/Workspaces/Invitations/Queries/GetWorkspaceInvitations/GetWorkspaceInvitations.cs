@@ -7,9 +7,9 @@ using global::Notrelix.Application.Common.Security;
 using global::Notrelix.Domain.Workspaces.Invitations;
 using global::Notrelix.Domain.Workspaces.Workspaces;
 
-namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspaceInvitations;
+namespace Notrelix.Application.Features.Workspaces.Invitations.Queries.GetWorkspaceInvitations;
 
-public record GetWorkspaceInvitationsQuery(Guid WorkspaceId) : IRequest<Result<List<WorkspaceInvitationDto>>>, IAuthorizeableRequest
+public record GetWorkspaceInvitationsQuery(Guid WorkspaceId) : IQuery<Result<List<WorkspaceInvitationDto>>>, IAuthorizeableRequest
 {
     ResourceType IAuthorizeableRequest.ResourceType => ResourceType.Workspace;
     Guid IAuthorizeableRequest.ResourceId => WorkspaceId;
