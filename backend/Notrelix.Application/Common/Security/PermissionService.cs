@@ -123,7 +123,12 @@ public class PermissionService : IPermissionService, IPermissionEvaluator
             }
         }
 
-        return new PermissionDecision(true, null, PermissionLevel.Viewer);
+        return context.Action switch
+        {
+            PermissionAction.ViewWorkspace or PermissionAction.ViewBoard or PermissionAction.ViewMembers
+                => new PermissionDecision(true, null, PermissionLevel.Viewer),
+            _ => new PermissionDecision(false, "missing_permission")
+        };
     }
 
     private async Task<PermissionDecision?> EvaluateRulesAsync(
