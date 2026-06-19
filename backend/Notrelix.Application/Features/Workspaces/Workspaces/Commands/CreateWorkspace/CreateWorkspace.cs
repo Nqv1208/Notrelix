@@ -10,7 +10,7 @@ public record CreateWorkspaceCommand(
     string Name,
     string? Description,
     bool IsPersonal
-) : ICommand<Result<Guid>>;
+) : ICommand<Result<Guid>>, ITransactionalRequest;
 
 public class CreateWorkspaceCommandHandler : IRequestHandler<CreateWorkspaceCommand, Result<Guid>>
 {
@@ -38,8 +38,6 @@ public class CreateWorkspaceCommandHandler : IRequestHandler<CreateWorkspaceComm
         var workspace = Workspace.Create(_currentUser.UserId, request.Name, finalSlug, _dateTimeProvider.UtcNow, isPersonal: request.IsPersonal);
 
         _context.Workspaces.Add(workspace);
-        await _context.SaveChangesAsync(ct);
-
         return Result<Guid>.Success(workspace.Id);
     }
 }

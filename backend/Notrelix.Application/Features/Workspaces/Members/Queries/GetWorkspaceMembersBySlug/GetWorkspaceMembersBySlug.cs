@@ -3,15 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Workspaces.DTOs;
-using global::Notrelix.Application.Common.Security;
-
 namespace Notrelix.Application.Features.Workspaces.Members.Queries.GetWorkspaceMembersBySlug;
 
-public record GetWorkspaceMembersBySlugQuery(Guid WorkspaceId, string Slug) : IQuery<Result<List<WorkspaceMemberDto>>>, IAuthorizeableRequest
+public record GetWorkspaceMembersBySlugQuery(Guid WorkspaceId, string Slug) : IQuery<Result<List<WorkspaceMemberDto>>>, IRequirePermission
 {
-    ResourceType IAuthorizeableRequest.ResourceType => ResourceType.Workspace;
-    Guid IAuthorizeableRequest.ResourceId => WorkspaceId;
-    PermissionAction IAuthorizeableRequest.Action => PermissionAction.ViewMembers;
+    PermissionAction IRequirePermission.Action => PermissionAction.ViewMembers;
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
 }
 
 public class GetWorkspaceMembersBySlugQueryHandler : IRequestHandler<GetWorkspaceMembersBySlugQuery, Result<List<WorkspaceMemberDto>>>

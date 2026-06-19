@@ -28,7 +28,7 @@ public static class DependencyInjection
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         // Workspace context resolution
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(WorkspaceContextBehavior<,>));
-        // Authorization (supports both IAuthorizeableRequest legacy and IRequirePermission new)
+        // Authorization (IRequirePermission only)
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
         // Cache-first for ICacheableQuery
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CacheBehavior<,>));

@@ -9,7 +9,7 @@ public record UpdateMemberRoleCommand(
     Guid WorkspaceId,
     Guid UserId,
     string Role
-) : ICommand<Result>;
+) : ICommand<Result>, ITransactionalRequest;
 
 public class UpdateMemberRoleCommandHandler : IRequestHandler<UpdateMemberRoleCommand, Result>
 {
@@ -51,8 +51,6 @@ public class UpdateMemberRoleCommandHandler : IRequestHandler<UpdateMemberRoleCo
 
         var newRole = Enum.Parse<WorkspaceRole>(request.Role, ignoreCase: true);
         member.ChangeRole(newRole, _currentUser.UserId, activeOwnerCount, _dateTimeProvider.UtcNow);
-        await _context.SaveChangesAsync(ct);
-
         return Result.Success();
     }
 }

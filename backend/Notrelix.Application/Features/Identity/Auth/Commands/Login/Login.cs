@@ -7,7 +7,7 @@ using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.Login;
 
-public record LoginCommand : ICommand<Result<AuthResult>>
+public record LoginCommand : ICommand<Result<AuthResult>>, ITransactionalRequest
 {
     public required string Email { get; init; }
     public required string Password { get; init; }
@@ -58,8 +58,6 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
         _context.Sessions.Add(session);
 
         user.RecordLogin(now);
-
-        await _context.SaveChangesAsync(cancellationToken);
 
         return Result<AuthResult>.Success(new AuthResult
         {

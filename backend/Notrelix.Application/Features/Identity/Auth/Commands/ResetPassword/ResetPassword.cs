@@ -7,7 +7,7 @@ using Notrelix.Application.Common.Email;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.ResetPassword;
 
-public record ResetPasswordCommand : ICommand<Result>
+public record ResetPasswordCommand : ICommand<Result>, ITransactionalRequest
 {
     public required string Email { get; init; }
     public required string Code { get; init; }
@@ -71,8 +71,6 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
         {
             session.Revoke(DateTimeOffset.UtcNow);
         }
-
-        await _context.SaveChangesAsync(cancellationToken);
 
         try
         {

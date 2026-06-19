@@ -7,7 +7,7 @@ using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.Register;
 
-public record RegisterCommand : ICommand<Result<AuthResult>>
+public record RegisterCommand : ICommand<Result<AuthResult>>, ITransactionalRequest
 {
     public required string Email { get; init; }
     public required string Password { get; init; }
@@ -52,15 +52,12 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<Au
         var workspace = Workspace.Create(user.Id, $"{request.Name}'s Workspace", slug.Value, now, isPersonal: true);
         _context.Workspaces.Add(workspace);
 
-        await _context.SaveChangesAsync(cancellationToken);
-
         var accessToken = _jwtService.GenerateAccessToken(user);
         var refreshToken = _jwtService.GenerateRefreshToken();
         var tokenHash = RefreshTokenHash.Create(refreshToken);
 
         var session = UserSession.Create(user.Id, tokenHash, now.AddDays(30), now);
         _context.Sessions.Add(session);
-        await _context.SaveChangesAsync(cancellationToken);
 
         return Result<AuthResult>.Success(new AuthResult
         {

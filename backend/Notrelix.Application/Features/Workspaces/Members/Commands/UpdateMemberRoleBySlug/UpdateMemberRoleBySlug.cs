@@ -9,7 +9,7 @@ public record UpdateMemberRoleBySlugCommand(
     string Slug,
     Guid UserId,
     string Role
-) : ICommand<Result>;
+) : ICommand<Result>, ITransactionalRequest;
 
 public class UpdateMemberRoleBySlugCommandHandler : IRequestHandler<UpdateMemberRoleBySlugCommand, Result>
 {
@@ -43,8 +43,6 @@ public class UpdateMemberRoleBySlugCommandHandler : IRequestHandler<UpdateMember
 
         var newRole = Enum.Parse<WorkspaceRole>(request.Role, ignoreCase: true);
         member.ChangeRole(newRole, _currentUser.UserId, activeOwnerCount, _dateTimeProvider.UtcNow);
-        await _context.SaveChangesAsync(ct);
-
         return Result.Success();
     }
 }

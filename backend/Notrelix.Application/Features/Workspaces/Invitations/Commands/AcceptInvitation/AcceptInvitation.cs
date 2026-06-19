@@ -11,7 +11,7 @@ namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptIn
 
 public record AcceptInvitationResultDto(string WorkspaceSlug, Guid WorkspaceId);
 
-public record AcceptInvitationCommand(string Token) : ICommand<Result<AcceptInvitationResultDto>>;
+public record AcceptInvitationCommand(string Token) : ICommand<Result<AcceptInvitationResultDto>>, ITransactionalRequest;
 
 public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCommand, Result<AcceptInvitationResultDto>>
 {
@@ -65,7 +65,6 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         if (isAlreadyMember)
         {
             invitation.Accept(_currentUser.UserId, now);
-            await _context.SaveChangesAsync(ct);
             return Result<AcceptInvitationResultDto>.Success(new AcceptInvitationResultDto(workspace?.Slug ?? "", invitation.WorkspaceId));
         }
 
@@ -73,8 +72,6 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
 
         var member = WorkspaceMember.Create(invitation.WorkspaceId, _currentUser.UserId, invitation.Role, invitation.InvitedBy, now);
         _context.WorkspaceMembers.Add(member);
-
-        await _context.SaveChangesAsync(ct);
 
         return Result<AcceptInvitationResultDto>.Success(new AcceptInvitationResultDto(workspace?.Slug ?? "", invitation.WorkspaceId));
     }

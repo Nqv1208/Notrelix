@@ -49,33 +49,6 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
             return await next();
         }
 
-        if (request is IAuthorizeableRequest authorizeableRequest)
-        {
-            var userId = _currentUser.UserId;
-            if (userId == Guid.Empty)
-            {
-                throw new UnauthorizedAccessException("Bạn cần đăng nhập để thực hiện hành động này.");
-            }
-
-            var decision = await _permissionService.EvaluateAsync(
-                new PermissionContext(
-                    userId,
-                    authorizeableRequest.WorkspaceId,
-                    authorizeableRequest.ResourceType,
-                    authorizeableRequest.ResourceId,
-                    authorizeableRequest.Action),
-                cancellationToken);
-
-            if (!decision.IsAllowed)
-            {
-                if (decision.ReasonCode == "resource_not_found")
-                {
-                    throw new NotFoundException(authorizeableRequest.ResourceType.ToString(), authorizeableRequest.ResourceId);
-                }
-                throw new ForbiddenException("Bạn không có quyền thực hiện hành động này.");
-            }
-        }
-
         return await next();
     }
 }

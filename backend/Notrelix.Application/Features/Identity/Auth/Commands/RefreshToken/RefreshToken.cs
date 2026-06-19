@@ -7,7 +7,7 @@ using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.RefreshToken;
 
-public record RefreshTokenCommand : ICommand<Result<AuthResult>>
+public record RefreshTokenCommand : ICommand<Result<AuthResult>>, ITransactionalRequest
 {
     public required string RefreshToken { get; init; }
 }
@@ -61,8 +61,6 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
 
         var newSession = UserSession.Create(user.Id, newTokenHash, now.AddDays(30), now);
         _context.Sessions.Add(newSession);
-
-        await _context.SaveChangesAsync(cancellationToken);
 
         return Result<AuthResult>.Success(new AuthResult
         {

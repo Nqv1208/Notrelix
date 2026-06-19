@@ -5,7 +5,7 @@ using global::Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Commands.ArchiveWorkspace;
 
-public record ArchiveWorkspaceCommand(Guid WorkspaceId) : ICommand<Result>;
+public record ArchiveWorkspaceCommand(Guid WorkspaceId) : ICommand<Result>, ITransactionalRequest;
 
 public class ArchiveWorkspaceCommandHandler : IRequestHandler<ArchiveWorkspaceCommand, Result>
 {
@@ -29,7 +29,6 @@ public class ArchiveWorkspaceCommandHandler : IRequestHandler<ArchiveWorkspaceCo
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
         workspace.Archive(_currentUser.UserId, _dateTimeProvider.UtcNow);
-        await _context.SaveChangesAsync(ct);
         return Result.Success();
     }
 }

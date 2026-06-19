@@ -8,7 +8,7 @@ using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.Logout;
 
-public record LogoutCommand : ICommand<Result>
+public record LogoutCommand : ICommand<Result>, ITransactionalRequest
 {
     public required string RefreshToken { get; init; }
     public string? AccessToken { get; init; }
@@ -36,7 +36,6 @@ public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Result>
         if (session is not null)
         {
             session.Revoke(_dateTimeProvider.UtcNow);
-            await _context.SaveChangesAsync(cancellationToken);
         }
 
         if (!string.IsNullOrWhiteSpace(request.AccessToken))

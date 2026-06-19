@@ -2,15 +2,12 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Common.Security;
-
 namespace Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceActivityBySlug;
 
-public record GetWorkspaceActivityBySlugQuery(Guid WorkspaceId, string Slug, int Page = 1, int PageSize = 20) : IQuery<Result<object>>, IAuthorizeableRequest
+public record GetWorkspaceActivityBySlugQuery(Guid WorkspaceId, string Slug, int Page = 1, int PageSize = 20) : IQuery<Result<object>>, IRequirePermission
 {
-    ResourceType IAuthorizeableRequest.ResourceType => ResourceType.Workspace;
-    Guid IAuthorizeableRequest.ResourceId => WorkspaceId;
-    PermissionAction IAuthorizeableRequest.Action => PermissionAction.ViewWorkspace;
+    PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
 }
 
 public class GetWorkspaceActivityBySlugQueryHandler : IRequestHandler<GetWorkspaceActivityBySlugQuery, Result<object>>

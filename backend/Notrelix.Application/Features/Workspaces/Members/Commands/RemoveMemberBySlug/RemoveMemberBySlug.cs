@@ -8,7 +8,7 @@ namespace Notrelix.Application.Features.Workspaces.Members.Commands.RemoveMember
 public record RemoveMemberBySlugCommand(
     string Slug,
     Guid UserId
-) : ICommand<Result>;
+) : ICommand<Result>, ITransactionalRequest;
 
 public class RemoveMemberBySlugCommandHandler : IRequestHandler<RemoveMemberBySlugCommand, Result>
 {
@@ -41,7 +41,6 @@ public class RemoveMemberBySlugCommandHandler : IRequestHandler<RemoveMemberBySl
             .CountAsync(m => m.WorkspaceId == workspace.Id && m.Role == WorkspaceRole.Owner && m.Status == WorkspaceMemberStatus.Active, ct);
 
         member.Remove(activeOwnerCount, _currentUser.UserId, _dateTimeProvider.UtcNow);
-        await _context.SaveChangesAsync(ct);
         return Result.Success();
     }
 }

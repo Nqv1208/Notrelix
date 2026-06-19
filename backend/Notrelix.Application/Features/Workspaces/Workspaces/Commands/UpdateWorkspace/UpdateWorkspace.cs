@@ -13,7 +13,7 @@ public record UpdateWorkspaceCommand(
     string? IconType,
     string? IconValue,
     string? Settings
-) : ICommand<Result>;
+) : ICommand<Result>, ITransactionalRequest;
 
 public class UpdateWorkspaceCommandHandler : IRequestHandler<UpdateWorkspaceCommand, Result>
 {
@@ -40,7 +40,6 @@ public class UpdateWorkspaceCommandHandler : IRequestHandler<UpdateWorkspaceComm
         if (request.Name is not null) workspace.Rename(request.Name, _currentUser.UserId, now);
         if (request.Settings is not null) workspace.UpdateSettings(WorkspaceSettings.Create(), _currentUser.UserId, now);
 
-        await _context.SaveChangesAsync(ct);
         return Result.Success();
     }
 }

@@ -12,7 +12,7 @@ public record InviteMemberBySlugCommand(
     string Slug,
     string Email,
     string Role
-) : ICommand<Result<Guid>>;
+) : ICommand<Result<Guid>>, ITransactionalRequest;
 
 public class InviteMemberBySlugCommandHandler : IRequestHandler<InviteMemberBySlugCommand, Result<Guid>>
 {
@@ -41,8 +41,6 @@ public class InviteMemberBySlugCommandHandler : IRequestHandler<InviteMemberBySl
         var invitation = WorkspaceInvitation.Create(workspace.Id, request.Email.Trim().ToLowerInvariant(), role, token, _currentUser.UserId, now);
 
         _context.WorkspaceInvitations.Add(invitation);
-        await _context.SaveChangesAsync(ct);
-
         return Result<Guid>.Success(invitation.Id);
     }
 }

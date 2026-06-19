@@ -5,7 +5,7 @@ using Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile;
 
-public record UpdateProfileCommand : ICommand<Result<UserDto>>
+public record UpdateProfileCommand : ICommand<Result<UserDto>>, ITransactionalRequest
 {
     // Filled from JWT claims by controller
     public Guid UserId { get; init; }
@@ -36,7 +36,6 @@ public class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileCommand,
         }
 
         user.UpdateProfile(request.Name, request.Avatar, _dateTimeProvider.UtcNow);
-        await _context.SaveChangesAsync(cancellationToken);
 
         return Result<UserDto>.Success(new UserDto
         {

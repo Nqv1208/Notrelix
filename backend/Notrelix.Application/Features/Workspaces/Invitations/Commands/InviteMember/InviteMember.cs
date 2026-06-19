@@ -14,7 +14,7 @@ public record InviteMemberCommand(
     Guid WorkspaceId,
     string Email,
     string Role
-) : ICommand<Result<Guid>>;
+) : ICommand<Result<Guid>>, ITransactionalRequest;
 
 public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, Result<Guid>>
 {
@@ -76,8 +76,6 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         var invitation = WorkspaceInvitation.Create(request.WorkspaceId, cleanEmail, role, token, _currentUser.UserId, now);
 
         _context.WorkspaceInvitations.Add(invitation);
-        await _context.SaveChangesAsync(ct);
-
         return Result<Guid>.Success(invitation.Id);
     }
 }
