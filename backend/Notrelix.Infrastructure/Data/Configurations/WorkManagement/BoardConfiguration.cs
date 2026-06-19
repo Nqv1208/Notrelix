@@ -20,7 +20,7 @@ public class BoardConfiguration : IEntityTypeConfiguration<Board>
         builder.Property(x => x.Visibility).HasColumnName("visibility").HasConversion<string>().IsRequired().HasMaxLength(50).HasDefaultValue(BoardVisibility.Workspace);
         builder.Property(x => x.IsArchived).HasColumnName("is_archived");
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
@@ -31,7 +31,7 @@ public class BoardConfiguration : IEntityTypeConfiguration<Board>
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => x.WorkspaceId).HasFilter("is_deleted = false AND is_archived = false").HasDatabaseName("idx_boards_workspace_id");
+        builder.HasIndex(x => x.WorkspaceId).HasFilter("deleted_at IS NULL AND is_archived = false").HasDatabaseName("idx_boards_workspace_id");
         builder.HasIndex(x => x.Title).HasDatabaseName("idx_boards_title");
     }
 }

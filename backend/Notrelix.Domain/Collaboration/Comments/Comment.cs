@@ -3,7 +3,7 @@ using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Collaboration.Comments;
 
-public class Comment : SoftDeletableEntity
+public class Comment : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public ResourceRef Target { get; private set; } = null!;
@@ -28,6 +28,9 @@ public class Comment : SoftDeletableEntity
         Guard.NotNullOrWhiteSpace(content);
         Guard.NotEmpty(createdBy);
 
+        if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
+            throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
+
         var comment = new Comment
         {
             WorkspaceId = workspaceId,
@@ -39,7 +42,7 @@ public class Comment : SoftDeletableEntity
         };
 
         comment.SetAuditOnCreate(createdBy, createdAt);
-        comment.AddDomainEvent(new CommentCreatedEvent(workspaceId, comment.Id, target, createdBy, createdAt));
+        comment.AddDomainEvent(new CommentCreatedDomainEvent(workspaceId, comment.Id, target, createdBy, createdAt));
 
         return comment;
     }
@@ -53,7 +56,8 @@ public class Comment : SoftDeletableEntity
 
         Content = newContent.Trim();
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new CommentUpdatedEvent(WorkspaceId, Id, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new CommentUpdatedDomainEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void Resolve(Guid resolvedBy, DateTimeOffset resolvedAt)
@@ -63,7 +67,8 @@ public class Comment : SoftDeletableEntity
 
         CommentStatus = CommentStatus.Resolved;
         SetAuditOnUpdate(resolvedBy, resolvedAt);
-        AddDomainEvent(new CommentResolvedEvent(WorkspaceId, Id, resolvedBy, resolvedAt));
+        IncrementVersion();
+        AddDomainEvent(new CommentResolvedDomainEvent(WorkspaceId, Id, resolvedBy, resolvedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -71,6 +76,18 @@ public class Comment : SoftDeletableEntity
         if (IsDeleted) return;
         CommentStatus = CommentStatus.SoftDeleted;
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new CommentSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new CommentSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        CommentStatus = CommentStatus.Active;
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new CommentRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

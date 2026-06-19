@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Features.Identity.Commands.Logout;
-using Notrelix.Domain.Entities.Identity;
+using Notrelix.Application.Features.Identity.Auth.Commands.Logout;
+using Notrelix.Domain.Identity.Users;
+using Notrelix.Domain.Identity.Sessions;
 
 namespace Notrelix.Application.Tests.Auth;
 
@@ -12,24 +13,26 @@ public class LogoutCommandHandlerTests
     {
         using var context = AuthTestDbContextFactory.CreateInMemoryContext();
 
-        var user = User.Create("logout@example.com", "Logout User", "hashed");
+        var user = User.Create("logout@example.com", "Logout User", "hashed", DateTimeOffset.UtcNow);
         context.Users.Add(user);
 
         var refreshToken = "logout-token";
-        var session = Session.Create(user.Id, refreshToken, DateTime.UtcNow.AddMinutes(10));
+        var session = UserSession.Create(user.Id, RefreshTokenHash.Create(refreshToken), DateTimeOffset.UtcNow.AddMinutes(10), DateTimeOffset.UtcNow);
         context.Sessions.Add(session);
         await context.SaveChangesAsync();
 
         var jwtBlacklist = new Mock<IJwtBlacklistService>();
-        var handler = new LogoutCommandHandler(context, jwtBlacklist.Object);
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
+        var handler = new LogoutCommandHandler(context, jwtBlacklist.Object, dateTimeProvider.Object);
 
         await handler.Handle(new LogoutCommand
         {
             RefreshToken = refreshToken
         }, CancellationToken.None);
 
-        var updated = await context.Sessions.FirstAsync(s => s.RefreshToken == refreshToken);
-        updated.IsRevoked.Should().BeTrue();
+        var updated = await context.Sessions.FirstAsync(s => s.RefreshTokenHash == RefreshTokenHash.Create(refreshToken));
+        updated.Status.Should().Be(SessionStatus.Revoked);
     }
 
     [Fact]
@@ -38,7 +41,8 @@ public class LogoutCommandHandlerTests
         using var context = AuthTestDbContextFactory.CreateInMemoryContext();
 
         var jwtBlacklist = new Mock<IJwtBlacklistService>();
-        var handler = new LogoutCommandHandler(context, jwtBlacklist.Object);
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        var handler = new LogoutCommandHandler(context, jwtBlacklist.Object, dateTimeProvider.Object);
 
         var result = await handler.Handle(new LogoutCommand
         {

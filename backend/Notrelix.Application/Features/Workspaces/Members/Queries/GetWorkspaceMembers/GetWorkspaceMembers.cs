@@ -3,18 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Workspaces.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
+using global::Notrelix.Domain.Workspaces.Workspaces;
 
-using global::Notrelix.Application.Common.Security;
+namespace Notrelix.Application.Features.Workspaces.Members.Queries.GetWorkspaceMembers;
 
-namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspaceMembers;
-
-public record GetWorkspaceMembersQuery(Guid WorkspaceId) : IRequest<Result<List<WorkspaceMemberDto>>>, IAuthorizeableRequest
+public record GetWorkspaceMembersQuery(Guid WorkspaceId) : IQuery<Result<List<WorkspaceMemberDto>>>, IRequirePermission
 {
-    ResourceType IAuthorizeableRequest.ResourceType => ResourceType.Workspace;
-    Guid IAuthorizeableRequest.ResourceId => WorkspaceId;
-    PermissionAction IAuthorizeableRequest.Action => PermissionAction.ViewMembers;
+    PermissionAction IRequirePermission.Action => PermissionAction.ViewMembers;
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
 }
 
 public class GetWorkspaceMembersQueryHandler : IRequestHandler<GetWorkspaceMembersQuery, Result<List<WorkspaceMemberDto>>>
@@ -30,7 +26,7 @@ public class GetWorkspaceMembersQueryHandler : IRequestHandler<GetWorkspaceMembe
     {
         var workspaceExists = await _context.Workspaces
             .AsNoTracking()
-            .AnyAsync(w => w.Id == request.WorkspaceId && !w.IsArchived, ct);
+            .AnyAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && !w.IsDeleted, ct);
 
         if (!workspaceExists)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
@@ -46,7 +42,7 @@ public class GetWorkspaceMembersQueryHandler : IRequestHandler<GetWorkspaceMembe
                     u.Name,
                     u.AvatarUrl,
                     m.Role.ToString(),
-                    m.JoinedAt
+                    m.CreatedAt.DateTime
                 ))
             .ToListAsync(ct);
 

@@ -23,7 +23,7 @@ public class WorkspaceFeatureUsageConfiguration : IEntityTypeConfiguration<Works
         builder.Property(x => x.ResetPeriod).HasColumnName("reset_period").IsRequired().HasMaxLength(50);
         builder.Property(x => x.LastResetAt).HasColumnName("last_reset_at");
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");

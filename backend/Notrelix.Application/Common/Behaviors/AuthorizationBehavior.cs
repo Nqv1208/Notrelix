@@ -1,6 +1,9 @@
 using MediatR;
 using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Common.CQRS;
+using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Common.Security;
+
 namespace Notrelix.Application.Common.Behaviors;
 
 public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
@@ -17,7 +20,7 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
-        if (request is IAuthorizeableRequest authorizeableRequest)
+        if (request is IRequirePermission requirePermission)
         {
             var userId = _currentUser.UserId;
             if (userId == Guid.Empty)
@@ -28,20 +31,22 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
             var decision = await _permissionService.EvaluateAsync(
                 new PermissionContext(
                     userId,
-                    authorizeableRequest.WorkspaceId,
-                    authorizeableRequest.ResourceType,
-                    authorizeableRequest.ResourceId,
-                    authorizeableRequest.Action),
+                    requirePermission.Resource.WorkspaceId ?? Guid.Empty,
+                    requirePermission.Resource.ResourceType,
+                    requirePermission.Resource.ResourceId,
+                    requirePermission.Action),
                 cancellationToken);
 
             if (!decision.IsAllowed)
             {
                 if (decision.ReasonCode == "resource_not_found")
                 {
-                    throw new NotFoundException(authorizeableRequest.ResourceType.ToString(), authorizeableRequest.ResourceId);
+                    throw new NotFoundException(requirePermission.Resource.ResourceType.ToString(), requirePermission.Resource.ResourceId);
                 }
                 throw new ForbiddenException("Bạn không có quyền thực hiện hành động này.");
             }
+
+            return await next();
         }
 
         return await next();

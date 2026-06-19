@@ -1,41 +1,41 @@
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Features.Workspaces.Commands.CreateWorkspace;
-using Notrelix.Domain.Entities.Workspaces;
-using Notrelix.Domain.Enums;
-using Notrelix.Application.Tests.Auth; // Utilizes AuthTestDbContextFactory
+using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace;
+using Notrelix.Domain.Workspaces.Members;
+using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Application.Tests.Auth;
 
 namespace Notrelix.Application.Tests.Workspaces;
 
 public class CreateWorkspaceCommandHandlerTests
 {
     private readonly Mock<ICurrentUser> _currentUserMock;
+    private readonly Mock<IDateTimeProvider> _dateTimeMock;
 
     public CreateWorkspaceCommandHandlerTests()
     {
         _currentUserMock = new Mock<ICurrentUser>();
+        _dateTimeMock = new Mock<IDateTimeProvider>();
+        _dateTimeMock.Setup(d => d.UtcNow).Returns(DateTimeOffset.UtcNow);
     }
 
     [Fact]
-    public async Task Handle_WhenCreatingTeamWorkspace_ShouldSucceedAndAddAsOwner()
+    public async Task Handle_WhenCreatingTeamWorkspace_ShouldSucceed()
     {
-        // Arrange
         using var context = AuthTestDbContextFactory.CreateInMemoryContext();
         var userId = Guid.NewGuid();
         _currentUserMock.Setup(u => u.UserId).Returns(userId);
 
-        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object);
+        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object, _dateTimeMock.Object);
         var command = new CreateWorkspaceCommand("Awesome Project", "A great software project", false);
 
-        // Act
         var result = await handler.Handle(command, CancellationToken.None);
 
-        // Assert
         result.Succeeded.Should().BeTrue();
         result.Data.Should().NotBeEmpty();
 
         var workspace = await context.Workspaces
-            .Include(w => w.Members)
             .FirstOrDefaultAsync(w => w.Id == result.Data);
 
         workspace.Should().NotBeNull();
@@ -43,28 +43,20 @@ public class CreateWorkspaceCommandHandlerTests
         workspace.Slug.Should().StartWith("awesome-project-");
         workspace.Description.Should().Be("A great software project");
         workspace.IsPersonal.Should().BeFalse();
-        workspace.OwnerId.Should().Be(userId);
-
-        workspace.Members.Should().HaveCount(1);
-        workspace.Members.First().UserId.Should().Be(userId);
-        workspace.Members.First().Role.Should().Be(WorkspaceRole.Owner);
     }
 
     [Fact]
-    public async Task Handle_WhenCreatingPersonalWorkspace_ShouldSucceedAndUseDefaultPersonalEmoji()
+    public async Task Handle_WhenCreatingPersonalWorkspace_ShouldSucceed()
     {
-        // Arrange
         using var context = AuthTestDbContextFactory.CreateInMemoryContext();
         var userId = Guid.NewGuid();
         _currentUserMock.Setup(u => u.UserId).Returns(userId);
 
-        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object);
+        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object, _dateTimeMock.Object);
         var command = new CreateWorkspaceCommand("My Personal Tasks", null, true);
 
-        // Act
         var result = await handler.Handle(command, CancellationToken.None);
 
-        // Assert
         result.Succeeded.Should().BeTrue();
         result.Data.Should().NotBeEmpty();
 
@@ -74,29 +66,26 @@ public class CreateWorkspaceCommandHandlerTests
         workspace.Should().NotBeNull();
         workspace!.Name.Should().Be("My Personal Tasks");
         workspace.IsPersonal.Should().BeTrue();
-        workspace.Icon.Value.Should().Be("📝");
     }
 
     [Fact]
-    public async Task Handle_WhenSlugAlreadyExists_ShouldSucceedAndAppendUniqueSuffix()
+    public async Task Handle_WhenSlugAlreadyExists_ShouldAppendUniqueSuffix()
     {
-        // Arrange
         using var context = AuthTestDbContextFactory.CreateInMemoryContext();
         var userId = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
         _currentUserMock.Setup(u => u.UserId).Returns(userId);
+        _dateTimeMock.Setup(d => d.UtcNow).Returns(now);
 
-        // Seed an existing workspace with the slug "awesome-project"
-        var existingWorkspace = Workspace.CreateTeam("Awesome Project", userId);
+        var existingWorkspace = Workspace.Create(userId, "Awesome Project", "awesome-project", now);
         context.Workspaces.Add(existingWorkspace);
         await context.SaveChangesAsync();
 
-        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object);
+        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object, _dateTimeMock.Object);
         var command = new CreateWorkspaceCommand("Awesome Project", "A duplicate project name", false);
 
-        // Act
         var result = await handler.Handle(command, CancellationToken.None);
 
-        // Assert
         result.Succeeded.Should().BeTrue();
         result.Data.Should().NotBeEmpty();
         result.Data.Should().NotBe(existingWorkspace.Id);

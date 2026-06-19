@@ -324,7 +324,7 @@ internal static class InitDb
                 for (int i = 0; i < count && itemIndex < targets.BoardItemCount; i++, itemIndex++)
                 {
                     var creator = boardUsers[i % boardUsers.Count];
-                    var itemName = group.Name switch
+                    var itemName = group.Title switch
                     {
                         "Backlog" => $"[Idea] Task {itemIndex + 1}",
                         "To Do" => $"Task {itemIndex + 1}",
@@ -477,7 +477,7 @@ internal static class InitDb
 
             var comment = Comment.Create(
                 item.WorkspaceId,
-                ResourceRef.Create("BoardItem", item.Id),
+                ResourceRef.Create(ResourceType.BoardItem, item.Id),
                 text, author.Id, Epoch.AddDays(1));
             context.Comments.Add(comment);
         }

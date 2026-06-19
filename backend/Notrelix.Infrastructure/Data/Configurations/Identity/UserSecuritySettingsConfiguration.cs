@@ -21,7 +21,7 @@ public class UserSecuritySettingsConfiguration : IEntityTypeConfiguration<UserSe
         builder.Property(x => x.LastSecurityReviewAt).HasColumnName("last_security_review_at");
         builder.Property(x => x.SettingsJson).HasColumnName("settings").HasColumnType("jsonb").IsRequired();
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");

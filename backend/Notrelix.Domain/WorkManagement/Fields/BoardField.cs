@@ -68,7 +68,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         };
 
         field.SetAuditOnCreate(createdBy, createdAt);
-        field.AddDomainEvent(new BoardFieldCreatedEvent(workspaceId, boardId, field.Id, field.Name, type, createdBy, createdAt));
+        field.AddDomainEvent(new BoardFieldCreatedDomainEvent(workspaceId, boardId, field.Id, field.Name, type, createdBy, createdAt));
         
         return field;
     }
@@ -77,10 +77,12 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotNull(settings);
-        
+        FieldSettingsValidator.Validate(settings, Type);
+
         Settings = settings;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new BoardFieldUpdatedEvent(WorkspaceId, Id, BoardId, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new BoardFieldUpdatedDomainEvent(WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
 
     public void AddOption(string name, Color color, FractionalIndex position, Guid addedBy, DateTimeOffset addedAt)
@@ -95,7 +97,8 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         var option = FieldOption.Create(Id, name, color, position);
         _options.Add(option);
         SetAuditOnUpdate(addedBy, addedAt);
-        AddDomainEvent(new FieldOptionAddedEvent(WorkspaceId, Id, option.Id, option.Name, addedBy, addedAt));
+        IncrementVersion();
+        AddDomainEvent(new FieldOptionAddedDomainEvent(WorkspaceId, Id, option.Id, option.Name, addedBy, addedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -106,7 +109,9 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException("Cannot delete a system field.");
 
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new BoardFieldDeletedEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new BoardFieldDeletedDomainEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
     public bool CanBeUsedAsKanbanColumn()
@@ -119,16 +124,31 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
     public void UpdateClassification(DataClassification classification, bool isSensitive, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (DataClassification == classification && IsSensitive == isSensitive) return;
         DataClassification = classification;
         IsSensitive = isSensitive;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+        AddDomainEvent(new BoardFieldClassificationUpdatedDomainEvent(WorkspaceId, BoardId, Id, classification, isSensitive, updatedBy, updatedAt));
     }
 
     public void UpdateFormula(bool isFormula, string? expression, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (IsFormula == isFormula && FormulaExpression == expression) return;
         IsFormula = isFormula;
         FormulaExpression = expression;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+        AddDomainEvent(new BoardFieldFormulaUpdatedDomainEvent(WorkspaceId, BoardId, Id, isFormula, expression, updatedBy, updatedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new BoardFieldRestoredDomainEvent(WorkspaceId, BoardId, Id, restoredBy, restoredAt));
     }
 }

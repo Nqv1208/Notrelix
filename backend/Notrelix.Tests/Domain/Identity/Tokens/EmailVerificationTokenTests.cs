@@ -26,8 +26,8 @@ public class EmailVerificationTokenTests
         token.UsedAt.Should().BeNull();
         token.ExpiredAt.Should().BeNull();
 
-        token.DomainEvents.Should().ContainSingle(e => e is EmailVerificationTokenCreatedEvent);
-        var evt = (EmailVerificationTokenCreatedEvent)token.DomainEvents.Single(e => e is EmailVerificationTokenCreatedEvent);
+        token.DomainEvents.Should().ContainSingle(e => e is EmailVerificationTokenCreatedDomainEvent);
+        var evt = (EmailVerificationTokenCreatedDomainEvent)token.DomainEvents.Single(e => e is EmailVerificationTokenCreatedDomainEvent);
         evt.TokenId.Should().Be(token.Id);
         evt.UserId.Should().Be(userId);
         evt.CreatedAt.Should().Be(now);
@@ -55,8 +55,8 @@ public class EmailVerificationTokenTests
         token.Status.Should().Be(UserTokenStatus.Used);
         token.UsedAt.Should().Be(useTime);
 
-        token.DomainEvents.Should().ContainSingle(e => e is EmailVerificationTokenUsedEvent);
-        var evt = (EmailVerificationTokenUsedEvent)token.DomainEvents.Single(e => e is EmailVerificationTokenUsedEvent);
+        token.DomainEvents.Should().ContainSingle(e => e is EmailVerificationTokenUsedDomainEvent);
+        var evt = (EmailVerificationTokenUsedDomainEvent)token.DomainEvents.Single(e => e is EmailVerificationTokenUsedDomainEvent);
         evt.TokenId.Should().Be(token.Id);
         evt.UserId.Should().Be(token.UserId);
         evt.UsedAt.Should().Be(useTime);
@@ -103,8 +103,8 @@ public class EmailVerificationTokenTests
         token.Status.Should().Be(UserTokenStatus.Expired);
         token.ExpiredAt.Should().Be(expireTime);
 
-        token.DomainEvents.Should().ContainSingle(e => e is EmailVerificationTokenExpiredEvent);
-        var evt = (EmailVerificationTokenExpiredEvent)token.DomainEvents.Single(e => e is EmailVerificationTokenExpiredEvent);
+        token.DomainEvents.Should().ContainSingle(e => e is EmailVerificationTokenExpiredDomainEvent);
+        var evt = (EmailVerificationTokenExpiredDomainEvent)token.DomainEvents.Single(e => e is EmailVerificationTokenExpiredDomainEvent);
         evt.TokenId.Should().Be(token.Id);
         evt.UserId.Should().Be(token.UserId);
         evt.ExpiredAt.Should().Be(expireTime);

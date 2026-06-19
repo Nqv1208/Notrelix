@@ -31,8 +31,8 @@ public class UserLoginAttemptTests
         attempt.UserAgent.Should().Be("Mozilla");
         attempt.OccurredAt.Should().Be(now);
 
-        attempt.DomainEvents.Should().ContainSingle(e => e is LoginAttemptRecordedEvent);
-        var evt = (LoginAttemptRecordedEvent)attempt.DomainEvents.Single(e => e is LoginAttemptRecordedEvent);
+        attempt.DomainEvents.Should().ContainSingle(e => e is LoginAttemptRecordedDomainEvent);
+        var evt = (LoginAttemptRecordedDomainEvent)attempt.DomainEvents.Single(e => e is LoginAttemptRecordedDomainEvent);
         evt.LoginAttemptId.Should().Be(attempt.Id);
         evt.UserId.Should().Be(userId);
         evt.AttemptedEmail.Should().Be("test@example.com");
@@ -61,8 +61,8 @@ public class UserLoginAttemptTests
         attempt.FailureReason.Should().Be(LoginFailureReason.InvalidCredentials);
         attempt.OccurredAt.Should().Be(now);
 
-        attempt.DomainEvents.Should().ContainSingle(e => e is LoginAttemptRecordedEvent);
-        var evt = (LoginAttemptRecordedEvent)attempt.DomainEvents.Single(e => e is LoginAttemptRecordedEvent);
+        attempt.DomainEvents.Should().ContainSingle(e => e is LoginAttemptRecordedDomainEvent);
+        var evt = (LoginAttemptRecordedDomainEvent)attempt.DomainEvents.Single(e => e is LoginAttemptRecordedDomainEvent);
         evt.LoginAttemptId.Should().Be(attempt.Id);
         evt.UserId.Should().BeNull();
         evt.AttemptedEmail.Should().Be("test@example.com");

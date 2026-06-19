@@ -30,7 +30,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
         };
 
         team.SetAuditOnCreate(createdBy, createdAt);
-        team.AddDomainEvent(new TeamCreatedEvent(team.Id, workspaceId, team.Name, createdBy, createdAt));
+        team.AddDomainEvent(new TeamCreatedDomainEvent(team.Id, workspaceId, team.Name, createdBy, createdAt));
 
         return team;
     }
@@ -50,7 +50,8 @@ public class Team : AggregateRoot, IWorkspaceScoped
 
         Name = normalizedName;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new TeamRenamedEvent(WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new TeamRenamedDomainEvent(WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
@@ -61,7 +62,8 @@ public class Team : AggregateRoot, IWorkspaceScoped
 
         Status = TeamStatus.Archived;
         SetAuditOnUpdate(archivedBy, archivedAt);
-        AddDomainEvent(new TeamArchivedEvent(WorkspaceId, Id, archivedBy, archivedAt));
+        IncrementVersion();
+        AddDomainEvent(new TeamArchivedDomainEvent(WorkspaceId, Id, archivedBy, archivedAt));
     }
 
     public void AddMember(Guid userId, TeamMemberRole role, Guid addedBy, DateTimeOffset addedAt, Guid? workspaceMemberId = null)
@@ -87,7 +89,8 @@ public class Team : AggregateRoot, IWorkspaceScoped
         }
         
         SetAuditOnUpdate(addedBy, addedAt);
-        AddDomainEvent(new TeamMemberAddedEvent(WorkspaceId, Id, userId, role, addedBy, addedAt));
+        IncrementVersion();
+        AddDomainEvent(new TeamMemberAddedDomainEvent(WorkspaceId, Id, userId, role, addedBy, addedAt));
     }
 
     public void RemoveMember(Guid userId, Guid removedBy, DateTimeOffset removedAt)
@@ -103,7 +106,8 @@ public class Team : AggregateRoot, IWorkspaceScoped
 
         member.Remove(removedBy, removedAt);
         SetAuditOnUpdate(removedBy, removedAt);
-        AddDomainEvent(new TeamMemberRemovedEvent(WorkspaceId, Id, userId, removedBy, removedAt));
+        IncrementVersion();
+        AddDomainEvent(new TeamMemberRemovedDomainEvent(WorkspaceId, Id, userId, removedBy, removedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -112,7 +116,9 @@ public class Team : AggregateRoot, IWorkspaceScoped
         if (IsDeleted) return;
         Status = TeamStatus.SoftDeleted;
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new TeamSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new TeamSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -121,6 +127,8 @@ public class Team : AggregateRoot, IWorkspaceScoped
         if (!IsDeleted) return;
         Status = TeamStatus.Active;
         base.Restore(restoredBy, restoredAt);
-        AddDomainEvent(new TeamRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new TeamRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

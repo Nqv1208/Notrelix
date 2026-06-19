@@ -26,8 +26,8 @@ public class PasswordResetTokenTests
         token.UsedAt.Should().BeNull();
         token.ExpiredAt.Should().BeNull();
 
-        token.DomainEvents.Should().ContainSingle(e => e is PasswordResetTokenCreatedEvent);
-        var evt = (PasswordResetTokenCreatedEvent)token.DomainEvents.Single(e => e is PasswordResetTokenCreatedEvent);
+        token.DomainEvents.Should().ContainSingle(e => e is PasswordResetTokenCreatedDomainEvent);
+        var evt = (PasswordResetTokenCreatedDomainEvent)token.DomainEvents.Single(e => e is PasswordResetTokenCreatedDomainEvent);
         evt.TokenId.Should().Be(token.Id);
         evt.UserId.Should().Be(userId);
         evt.CreatedAt.Should().Be(now);
@@ -55,8 +55,8 @@ public class PasswordResetTokenTests
         token.Status.Should().Be(UserTokenStatus.Used);
         token.UsedAt.Should().Be(useTime);
 
-        token.DomainEvents.Should().ContainSingle(e => e is PasswordResetTokenUsedEvent);
-        var evt = (PasswordResetTokenUsedEvent)token.DomainEvents.Single(e => e is PasswordResetTokenUsedEvent);
+        token.DomainEvents.Should().ContainSingle(e => e is PasswordResetTokenUsedDomainEvent);
+        var evt = (PasswordResetTokenUsedDomainEvent)token.DomainEvents.Single(e => e is PasswordResetTokenUsedDomainEvent);
         evt.TokenId.Should().Be(token.Id);
         evt.UserId.Should().Be(token.UserId);
         evt.UsedAt.Should().Be(useTime);
@@ -103,8 +103,8 @@ public class PasswordResetTokenTests
         token.Status.Should().Be(UserTokenStatus.Expired);
         token.ExpiredAt.Should().Be(expireTime);
 
-        token.DomainEvents.Should().ContainSingle(e => e is PasswordResetTokenExpiredEvent);
-        var evt = (PasswordResetTokenExpiredEvent)token.DomainEvents.Single(e => e is PasswordResetTokenExpiredEvent);
+        token.DomainEvents.Should().ContainSingle(e => e is PasswordResetTokenExpiredDomainEvent);
+        var evt = (PasswordResetTokenExpiredDomainEvent)token.DomainEvents.Single(e => e is PasswordResetTokenExpiredDomainEvent);
         evt.TokenId.Should().Be(token.Id);
         evt.UserId.Should().Be(token.UserId);
         evt.ExpiredAt.Should().Be(expireTime);

@@ -22,11 +22,6 @@
 
   <!-- REALTIME - SignalR đã tích hợp sẵn trong ASP.NET Core -->
 
-  <!-- ERROR HANDLING - RFC 7807 -->
-  <ItemGroup>
-    <PackageReference Include="Hellang.Middleware.ProblemDetails" Version="6.5.1" />
-  </ItemGroup>
-
   <!-- EF MIGRATIONS -->
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">

@@ -38,7 +38,7 @@ public class PasswordResetToken : AggregateRoot
         };
 
         token.SetAuditOnCreate(userId, createdAt);
-        token.AddDomainEvent(new PasswordResetTokenCreatedEvent(token.Id, userId, createdAt));
+        token.AddDomainEvent(new PasswordResetTokenCreatedDomainEvent(token.Id, userId, createdAt));
 
         return token;
     }
@@ -60,7 +60,7 @@ public class PasswordResetToken : AggregateRoot
         Status = UserTokenStatus.Used;
         UsedAt = usedAt;
         SetAuditOnUpdate(UserId, usedAt);
-        AddDomainEvent(new PasswordResetTokenUsedEvent(Id, UserId, usedAt));
+        AddDomainEvent(new PasswordResetTokenUsedDomainEvent(Id, UserId, usedAt));
     }
 
     public void Expire(DateTimeOffset expiredAt)
@@ -77,6 +77,6 @@ public class PasswordResetToken : AggregateRoot
         Status = UserTokenStatus.Expired;
         ExpiredAt = expiredAt;
         SetAuditOnUpdate(UserId, expiredAt);
-        AddDomainEvent(new PasswordResetTokenExpiredEvent(Id, UserId, expiredAt));
+        AddDomainEvent(new PasswordResetTokenExpiredDomainEvent(Id, UserId, expiredAt));
     }
 }

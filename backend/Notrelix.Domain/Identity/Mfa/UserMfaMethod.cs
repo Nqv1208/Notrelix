@@ -41,7 +41,7 @@ public class UserMfaMethod : AggregateRoot
         };
 
         method.SetAuditOnCreate(userId, createdAt);
-        method.AddDomainEvent(new UserMfaMethodAddedEvent(method.Id, userId, type, createdAt));
+        method.AddDomainEvent(new UserMfaMethodAddedDomainEvent(method.Id, userId, type, createdAt));
 
         return method;
     }
@@ -60,7 +60,7 @@ public class UserMfaMethod : AggregateRoot
         VerifiedAt = verifiedAt;
         SetAuditOnUpdate(UserId, verifiedAt);
 
-        AddDomainEvent(new UserMfaMethodVerifiedEvent(Id, UserId, Type, verifiedAt));
+        AddDomainEvent(new UserMfaMethodVerifiedDomainEvent(Id, UserId, Type, verifiedAt));
     }
 
     public void SetAsPrimary(DateTimeOffset updatedAt)
@@ -76,7 +76,7 @@ public class UserMfaMethod : AggregateRoot
         IsPrimary = true;
         SetAuditOnUpdate(UserId, updatedAt);
         
-        AddDomainEvent(new UserMfaMethodSetAsPrimaryEvent(Id, UserId, Type, updatedAt));
+        AddDomainEvent(new UserMfaMethodSetAsPrimaryDomainEvent(Id, UserId, Type, updatedAt));
     }
 
     public void UnsetAsPrimary(DateTimeOffset updatedAt)
@@ -87,7 +87,7 @@ public class UserMfaMethod : AggregateRoot
         IsPrimary = false;
         SetAuditOnUpdate(UserId, updatedAt);
         
-        AddDomainEvent(new UserMfaMethodUnsetAsPrimaryEvent(Id, UserId, Type, updatedAt));
+        AddDomainEvent(new UserMfaMethodUnsetAsPrimaryDomainEvent(Id, UserId, Type, updatedAt));
     }
 
     public void Disable(DateTimeOffset disabledAt)
@@ -100,6 +100,24 @@ public class UserMfaMethod : AggregateRoot
         DisabledAt = disabledAt;
         SetAuditOnUpdate(UserId, disabledAt);
 
-        AddDomainEvent(new UserMfaMethodDisabledEvent(Id, UserId, Type, disabledAt));
+        AddDomainEvent(new UserMfaMethodDisabledDomainEvent(Id, UserId, Type, disabledAt));
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new UserMfaMethodSoftDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, reason));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new UserMfaMethodRestoredDomainEvent(Id, UserId, restoredBy, restoredAt));
     }
 }

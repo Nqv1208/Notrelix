@@ -3,7 +3,7 @@ using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Collaboration.Notifications;
 
-public class Notification : AggregateRoot
+public class Notification : AggregateRoot, IWorkspaceScoped
 {
     public Guid UserId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -32,6 +32,9 @@ public class Notification : AggregateRoot
         Guard.NotNullOrWhiteSpace(title);
         Guard.NotNullOrWhiteSpace(content);
 
+        if (target?.WorkspaceId.HasValue == true && target.WorkspaceId.Value != workspaceId)
+            throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
+
         var notification = new Notification
         {
             UserId = userId,
@@ -57,7 +60,8 @@ public class Notification : AggregateRoot
         IsRead = true;
         ReadAt = readAt;
         SetAuditOnUpdate(UserId, readAt);
-        AddDomainEvent(new NotificationReadEvent(WorkspaceId, Id, readAt));
+        IncrementVersion();
+        AddDomainEvent(new NotificationReadDomainEvent(WorkspaceId, Id, readAt));
     }
 
     public void Archive(DateTimeOffset archivedAt)
@@ -67,6 +71,7 @@ public class Notification : AggregateRoot
         IsArchived = true;
         ArchivedAt = archivedAt;
         SetAuditOnUpdate(UserId, archivedAt);
-        AddDomainEvent(new NotificationArchivedEvent(WorkspaceId, Id, archivedAt));
+        IncrementVersion();
+        AddDomainEvent(new NotificationArchivedDomainEvent(WorkspaceId, Id, archivedAt));
     }
 }

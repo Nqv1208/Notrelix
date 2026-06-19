@@ -18,7 +18,7 @@ public class IntegrationConnectionTests
 
         connection.Provider.Should().Be(IntegrationProvider.Slack);
         connection.Status.Should().Be(IntegrationConnectionStatus.Active);
-        connection.DomainEvents.Should().ContainSingle(e => e is IntegrationConnectionCreatedEvent);
+        connection.DomainEvents.Should().ContainSingle(e => e is IntegrationConnectionCreatedDomainEvent);
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public class IntegrationConnectionTests
         connection.Disconnect(actor, now);
 
         connection.Status.Should().Be(IntegrationConnectionStatus.Revoked);
-        connection.DomainEvents.Should().Contain(e => e is IntegrationConnectionRevokedEvent);
+        connection.DomainEvents.Should().Contain(e => e is IntegrationConnectionRevokedDomainEvent);
     }
 
     [Fact]
@@ -63,7 +63,7 @@ public class IntegrationConnectionTests
 
         connection.Status.Should().Be(IntegrationConnectionStatus.Active);
         connection.ProviderAccountId.Should().Be("provider-acc-1");
-        connection.DomainEvents.Should().Contain(e => e is IntegrationConnectionReauthorizedEvent);
+        connection.DomainEvents.Should().Contain(e => e is IntegrationConnectionReauthorizedDomainEvent);
 
         var act = () => connection.Reconnect("provider-acc-1", now.AddDays(-1), actor, now);
         act.Should().Throw<DomainException>().WithMessage("Expiration time must be in the future.");
@@ -89,7 +89,7 @@ public class IntegrationConnectionTests
 
         connection.RotateSecret("v1", secretRef1, actor, now);
         connection.SecretVersions.Should().ContainSingle(v => v.Version == "v1" && v.SecretReference.Value == "secret-key-1");
-        connection.DomainEvents.Should().Contain(e => e is IntegrationSecretRotatedEvent);
+        connection.DomainEvents.Should().Contain(e => e is IntegrationSecretRotatedDomainEvent);
 
         var act = () => connection.RotateSecret("v1", secretRef2, actor, now);
         act.Should().Throw<DomainException>().WithMessage("Secret version 'v1' already exists for this connection.");
@@ -104,7 +104,7 @@ public class IntegrationConnectionTests
 
         connection.AddScope("read", actor, now);
         connection.Scopes.Should().ContainSingle(s => s.Scope == "read");
-        connection.DomainEvents.Should().Contain(e => e is IntegrationScopeAddedEvent);
+        connection.DomainEvents.Should().Contain(e => e is IntegrationScopeAddedDomainEvent);
 
         // duplicate add ignored
         connection.AddScope("read", actor, now);
@@ -112,7 +112,7 @@ public class IntegrationConnectionTests
 
         connection.RemoveScope("read", actor, now);
         connection.Scopes.Should().BeEmpty();
-        connection.DomainEvents.Should().Contain(e => e is IntegrationScopeRemovedEvent);
+        connection.DomainEvents.Should().Contain(e => e is IntegrationScopeRemovedDomainEvent);
     }
 
     [Fact]
@@ -126,19 +126,19 @@ public class IntegrationConnectionTests
         var calendar = CalendarIntegration.Create(workspaceId, connectionId, CalendarProvider.Google, CalendarSyncDirection.Both, actor, now);
         calendar.IsActive.Should().BeTrue();
         calendar.SyncDirection.Should().Be(CalendarSyncDirection.Both);
-        calendar.DomainEvents.Should().Contain(e => e is CalendarIntegrationConnectedEvent);
+        calendar.DomainEvents.Should().Contain(e => e is CalendarIntegrationConnectedDomainEvent);
 
         calendar.Deactivate(actor, now);
         calendar.IsActive.Should().BeFalse();
-        calendar.DomainEvents.Should().Contain(e => e is CalendarIntegrationDeactivatedEvent);
+        calendar.DomainEvents.Should().Contain(e => e is CalendarIntegrationDeactivatedDomainEvent);
 
         calendar.Activate(actor, now);
         calendar.IsActive.Should().BeTrue();
-        calendar.DomainEvents.Should().Contain(e => e is CalendarIntegrationActivatedEvent);
+        calendar.DomainEvents.Should().Contain(e => e is CalendarIntegrationActivatedDomainEvent);
 
         calendar.ChangeSyncDirection(CalendarSyncDirection.Push, actor, now);
         calendar.SyncDirection.Should().Be(CalendarSyncDirection.Push);
-        calendar.DomainEvents.Should().Contain(e => e is CalendarIntegrationSyncDirectionChangedEvent);
+        calendar.DomainEvents.Should().Contain(e => e is CalendarIntegrationSyncDirectionChangedDomainEvent);
     }
 
     [Fact]

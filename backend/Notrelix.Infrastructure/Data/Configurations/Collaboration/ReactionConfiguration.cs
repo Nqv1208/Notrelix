@@ -14,12 +14,22 @@ public class ReactionConfiguration : IEntityTypeConfiguration<Reaction>
         builder.Property(x => x.Id).HasColumnName("id");
 
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
-        builder.Property(x => x.ResourceType).HasColumnName("resource_type").IsRequired().HasMaxLength(50);
-        builder.Property(x => x.ResourceId).HasColumnName("resource_id").IsRequired();
         builder.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
-        builder.Property(x => x.Emoji).HasColumnName("emoji").IsRequired().HasMaxLength(50);
 
-        builder.HasIndex(x => new { x.ResourceType, x.ResourceId }).HasDatabaseName("idx_reactions_resource");
-        builder.HasIndex(x => new { x.ResourceId, x.UserId, x.Emoji }).IsUnique().HasDatabaseName("idx_reactions_unique");
+        builder.OwnsOne(x => x.Target, target =>
+        {
+            target.Property(t => t.ResourceType).HasColumnName("resource_type").HasConversion<string>().IsRequired().HasMaxLength(50);
+            target.Property(t => t.ResourceId).HasColumnName("resource_id").IsRequired();
+            target.Property(t => t.WorkspaceId).HasColumnName("target_workspace_id");
+            target.HasIndex(t => new { t.ResourceType, t.ResourceId }).HasDatabaseName("idx_reactions_resource");
+            target.HasIndex(t => new { t.ResourceId }).HasDatabaseName("idx_reactions_target_resource_id");
+        });
+
+        builder.OwnsOne(x => x.Emoji, emoji =>
+        {
+            emoji.Property(e => e.Code).HasColumnName("emoji").IsRequired().HasMaxLength(50);
+        });
+
+        builder.HasIndex(x => new { x.UserId }).HasDatabaseName("idx_reactions_user_id");
     }
 }

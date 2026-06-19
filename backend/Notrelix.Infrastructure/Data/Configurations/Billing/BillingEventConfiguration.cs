@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Notrelix.Domain.Billing.Events;
+using Notrelix.Domain.Billing.BillingEvents;
 using Notrelix.Infrastructure.Data.Converters;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Billing;
@@ -21,7 +21,7 @@ public class BillingEventConfiguration : IEntityTypeConfiguration<BillingEvent>
         builder.Property(x => x.ReceivedAt).HasColumnName("received_at").IsRequired();
         builder.Property(x => x.Error).HasColumnName("error");
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");

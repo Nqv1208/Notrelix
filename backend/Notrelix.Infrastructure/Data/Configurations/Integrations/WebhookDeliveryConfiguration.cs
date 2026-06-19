@@ -26,7 +26,7 @@ public class WebhookDeliveryConfiguration : IEntityTypeConfiguration<WebhookDeli
         builder.Property(x => x.NextRetryAt).HasColumnName("next_retry_at");
         builder.Property(x => x.DeliveredAt).HasColumnName("delivered_at");
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");

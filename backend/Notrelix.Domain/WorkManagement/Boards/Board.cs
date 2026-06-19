@@ -1,4 +1,5 @@
 using Notrelix.Domain.Common.Exceptions;
+using Notrelix.Domain.WorkManagement.Boards.Events;
 
 namespace Notrelix.Domain.WorkManagement.Boards;
 
@@ -50,18 +51,8 @@ public class Board : AggregateRoot, IWorkspaceScoped
         };
 
         board.SetAuditOnCreate(createdBy, createdAt);
-        board.AddDomainEvent(new BoardCreatedEvent(workspaceId, board.Id, board.Title, createdBy, createdAt));
+        board.AddDomainEvent(new BoardCreatedDomainEvent(workspaceId, board.Id, board.Title, createdBy, createdAt));
         return board;
-    }
-
-    public static Board Create(
-        Guid workspaceId,
-        Guid createdBy,
-        string title,
-        string? description,
-        BoardVisibility visibility = BoardVisibility.Workspace)
-    {
-        return Create(workspaceId, createdBy, title, description, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), visibility);
     }
 
     public void Rename(string title, Guid updatedBy, DateTimeOffset updatedAt)
@@ -75,21 +66,31 @@ public class Board : AggregateRoot, IWorkspaceScoped
 
         Title = normalizedTitle;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new BoardRenamedEvent(WorkspaceId, Id, oldTitle, Title, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new BoardRenamedDomainEvent(WorkspaceId, Id, oldTitle, Title, updatedBy, updatedAt));
     }
 
     public void UpdateDescription(string? description, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        Description = description?.Trim();
+        var normalized = description?.Trim();
+        if (Description == normalized) return;
+        var oldDescription = Description;
+        Description = normalized;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+        AddDomainEvent(new BoardDescriptionUpdatedDomainEvent(WorkspaceId, Id, oldDescription, Description, updatedBy, updatedAt));
     }
 
     public void UpdateBackground(string background, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        Background = string.IsNullOrWhiteSpace(background) ? Background : background;
+        if (string.IsNullOrWhiteSpace(background) || Background == background) return;
+        var oldBackground = Background;
+        Background = background;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+        AddDomainEvent(new BoardBackgroundUpdatedDomainEvent(WorkspaceId, Id, oldBackground, Background, updatedBy, updatedAt));
     }
 
     public void ChangeVisibility(BoardVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
@@ -100,7 +101,8 @@ public class Board : AggregateRoot, IWorkspaceScoped
 
         Visibility = visibility;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new BoardVisibilityChangedEvent(WorkspaceId, Id, oldVisibility, Visibility, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new BoardVisibilityChangedDomainEvent(WorkspaceId, Id, oldVisibility, Visibility, updatedBy, updatedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
@@ -109,7 +111,8 @@ public class Board : AggregateRoot, IWorkspaceScoped
         if (IsArchived) return;
         IsArchived = true;
         SetAuditOnUpdate(archivedBy, archivedAt);
-        AddDomainEvent(new BoardArchivedEvent(WorkspaceId, Id, archivedBy, archivedAt));
+        IncrementVersion();
+        AddDomainEvent(new BoardArchivedDomainEvent(WorkspaceId, Id, archivedBy, archivedAt));
     }
 
     public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
@@ -118,42 +121,48 @@ public class Board : AggregateRoot, IWorkspaceScoped
         if (!IsArchived) return;
         IsArchived = false;
         SetAuditOnUpdate(unarchivedBy, unarchivedAt);
+        IncrementVersion();
+        AddDomainEvent(new BoardUnarchivedDomainEvent(WorkspaceId, Id, unarchivedBy, unarchivedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new BoardSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new BoardSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public void SetDefaultGroup(Guid groupId, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (DefaultItemGroupId == groupId) return;
         DefaultItemGroupId = groupId;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new BoardDefaultGroupSetDomainEvent(WorkspaceId, Id, groupId, updatedBy, updatedAt));
     }
 
-    public long GenerateNextItemSequence()
+    public (long Sequence, string Key) GenerateNextItemIdentity(Guid actorUserId, DateTimeOffset now)
     {
         EnsureNotDeleted();
         ItemSequence++;
+        var key = string.IsNullOrWhiteSpace(ItemKeyPrefix)
+            ? ItemSequence.ToString()
+            : $"{ItemKeyPrefix}-{ItemSequence}";
+        SetAuditOnUpdate(actorUserId, now);
         IncrementVersion();
-        return ItemSequence;
-    }
-
-    public string GenerateItemKey()
-    {
-        if (string.IsNullOrWhiteSpace(ItemKeyPrefix))
-            return ItemSequence.ToString();
-        return $"{ItemKeyPrefix}-{ItemSequence}";
+        AddDomainEvent(new BoardItemIdentityGeneratedDomainEvent(WorkspaceId, Id, ItemSequence, key, actorUserId, now));
+        return (ItemSequence, key);
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
         base.Restore(restoredBy, restoredAt);
-        AddDomainEvent(new BoardRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new BoardRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

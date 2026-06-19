@@ -11,7 +11,7 @@ using Notrelix.Domain.Automation.Rules;
 using Notrelix.Domain.Automation.Scheduled;
 using Notrelix.Domain.Automation.Templates;
 using Notrelix.Domain.Billing.Entitlements;
-using Notrelix.Domain.Billing.Events;
+using Notrelix.Domain.Billing.BillingEvents;
 using Notrelix.Domain.Billing.Payments;
 using Notrelix.Domain.Billing.Plans;
 using Notrelix.Domain.Billing.Subscriptions;
@@ -68,13 +68,18 @@ using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Spaces;
 using Notrelix.Domain.Workspaces.Teams;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Infrastructure.Data.Outbox;
+using System.Linq.Expressions;
 
 namespace Notrelix.Infrastructure.Data;
 
 public class ApplicationDbContext : DbContext, IApplicationDbContext
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
+    private readonly ICurrentWorkspace? _currentWorkspace;
+
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentWorkspace? currentWorkspace = null) : base(options)
     {
+        _currentWorkspace = currentWorkspace;
     }
 
     // Identity
@@ -123,6 +128,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Label> Labels => Set<Label>();
     public DbSet<Checklist> Checklists => Set<Checklist>();
     public DbSet<ChecklistItem> ChecklistItems => Set<ChecklistItem>();
+    public DbSet<BoardMember> BoardMembers => Set<BoardMember>();
     public DbSet<BoardSubscriber> BoardSubscribers => Set<BoardSubscriber>();
     public DbSet<BoardRelation> BoardRelations => Set<BoardRelation>();
     public DbSet<BoardItemConnection> BoardItemConnections => Set<BoardItemConnection>();
@@ -200,6 +206,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<WorkspaceFeatureUsage> WorkspaceFeatureUsages => Set<WorkspaceFeatureUsage>();
     public DbSet<FeatureUsageLedger> FeatureUsageLedger => Set<FeatureUsageLedger>();
 
+    // Infrastructure
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+    public DbSet<ProcessedEvent> ProcessedEvents => Set<ProcessedEvent>();
+
     // Analytics
     public DbSet<Dashboard> Dashboards => Set<Dashboard>();
     public DbSet<DashboardWidget> DashboardWidgets => Set<DashboardWidget>();
@@ -228,37 +238,72 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
-            if (typeof(SoftDeletableEntity).IsAssignableFrom(entityType.ClrType))
+            var isSoftDeletable = typeof(SoftDeletableEntity).IsAssignableFrom(entityType.ClrType);
+            var isWorkspaceScoped = typeof(IWorkspaceScoped).IsAssignableFrom(entityType.ClrType);
+
+            if (!isSoftDeletable && !isWorkspaceScoped)
+                continue;
+
+            var param = Expression.Parameter(entityType.ClrType, "e");
+            Expression? filterBody = null;
+
+            if (isSoftDeletable)
+            {
+                filterBody = Expression.Equal(
+                    Expression.PropertyOrField(param, "DeletedAt"),
+                    Expression.Constant(null, typeof(DateTimeOffset?)));
+            }
+
+            if (isWorkspaceScoped && _currentWorkspace is not null)
+            {
+                var wsFilter = Expression.Equal(
+                    Expression.PropertyOrField(param, "WorkspaceId"),
+                    Expression.Property(Expression.Constant(_currentWorkspace), "WorkspaceId"));
+
+                filterBody = filterBody is not null
+                    ? Expression.AndAlso(filterBody, wsFilter)
+                    : wsFilter;
+            }
+
+            var lambda = Expression.Lambda(filterBody!, param);
+            modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
+        }
+
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (typeof(Entity).IsAssignableFrom(entityType.ClrType))
             {
                 modelBuilder.Entity(entityType.ClrType)
-                    .HasQueryFilter(e => !((SoftDeletableEntity)e).IsDeleted);
+                    .Property(nameof(Entity.Id))
+                    .ValueGeneratedNever();
             }
         }
 
-        modelBuilder.Properties<JsonValue>()
-            .HaveConversion<Converters.JsonValueConverter>()
-            .HasColumnType("jsonb");
-
-        modelBuilder.Properties<FractionalIndex>()
-            .HaveConversion<Converters.FractionalIndexConverter>();
-
-        modelBuilder.Properties<SecretRef>()
-            .HaveConversion<Converters.SecretRefConverter>();
-
-        modelBuilder.Properties<TokenHash>()
-            .HaveConversion<Converters.TokenHashConverter>();
-
-        modelBuilder.Properties<DocumentSnapshot>()
-            .HaveConversion<Converters.DocumentSnapshotConverter>();
-
-        modelBuilder.Properties<UsageMetricKey>()
-            .HaveConversion<Converters.UsageMetricKeyConverter>();
-
-        modelBuilder.Properties<GroupRule>()
-            .HaveConversion<Converters.GroupRuleConverter>();
-
-        modelBuilder.Properties<SyncCursorValue>()
-            .HaveConversion<Converters.SyncCursorValueConverter>();
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType == typeof(JsonValue))
+                {
+                    property.SetValueConverter(new Converters.JsonValueConverter());
+                    property.SetColumnType("jsonb");
+                }
+                else if (property.ClrType == typeof(FractionalIndex))
+                    property.SetValueConverter(new Converters.FractionalIndexConverter());
+                else if (property.ClrType == typeof(SecretRef))
+                    property.SetValueConverter(new Converters.SecretRefConverter());
+                else if (property.ClrType == typeof(TokenHash))
+                    property.SetValueConverter(new Converters.TokenHashConverter());
+                else if (property.ClrType == typeof(DocumentSnapshot))
+                    property.SetValueConverter(new Converters.DocumentSnapshotConverter());
+                else if (property.ClrType == typeof(UsageMetricKey))
+                    property.SetValueConverter(new Converters.UsageMetricKeyConverter());
+                else if (property.ClrType == typeof(GroupRule))
+                    property.SetValueConverter(new Converters.GroupRuleConverter());
+                else if (property.ClrType == typeof(SyncCursorValue))
+                    property.SetValueConverter(new Converters.SyncCursorValueConverter());
+            }
+        }
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {

@@ -1,9 +1,10 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
+using Notrelix.Domain.Billing.Payments.Events;
 
 namespace Notrelix.Domain.Billing.Payments;
 
-public class Invoice : AggregateRoot
+public class Invoice : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid SubscriptionId { get; private set; }
@@ -30,7 +31,8 @@ public class Invoice : AggregateRoot
             DueAt = dueAt
         };
 
-        invoice.SetAuditOnCreate(Guid.Empty, createdAt);
+        invoice.SetAuditOnCreate(null, createdAt);
+        invoice.AddDomainEvent(new InvoiceCreatedDomainEvent(invoice.Id, workspaceId, amount, dueAt, createdAt));
         return invoice;
     }
 
@@ -39,8 +41,8 @@ public class Invoice : AggregateRoot
         if (Status != InvoiceStatus.Draft)
             throw new BusinessRuleException("Only draft invoices can be issued.");
         Status = InvoiceStatus.Open;
-        SetAuditOnUpdate(Guid.Empty, issuedAt);
-        AddDomainEvent(new InvoiceIssuedEvent(Id, WorkspaceId, Amount, issuedAt));
+        SetAuditOnUpdate(null, issuedAt);
+        AddDomainEvent(new InvoiceIssuedDomainEvent(Id, WorkspaceId, Amount, issuedAt));
     }
 
     public void MarkPaid(DateTimeOffset paidAt)
@@ -50,8 +52,8 @@ public class Invoice : AggregateRoot
         if (Status == InvoiceStatus.Paid) return;
 
         Status = InvoiceStatus.Paid;
-        SetAuditOnUpdate(Guid.Empty, paidAt);
-        AddDomainEvent(new InvoicePaidEvent(Id, WorkspaceId, paidAt));
+        SetAuditOnUpdate(null, paidAt);
+        AddDomainEvent(new InvoicePaidDomainEvent(Id, WorkspaceId, paidAt));
     }
 
     public void MarkFailed(string reason, DateTimeOffset failedAt)
@@ -62,8 +64,8 @@ public class Invoice : AggregateRoot
             throw new BusinessRuleException("Cannot fail a void invoice.");
 
         Status = InvoiceStatus.Uncollectible;
-        SetAuditOnUpdate(Guid.Empty, failedAt);
-        AddDomainEvent(new InvoiceFailedEvent(Id, WorkspaceId, reason, failedAt));
+        SetAuditOnUpdate(null, failedAt);
+        AddDomainEvent(new InvoiceFailedDomainEvent(Id, WorkspaceId, reason, failedAt));
     }
 
     public void Void(DateTimeOffset voidedAt)
@@ -73,6 +75,24 @@ public class Invoice : AggregateRoot
         if (Status == InvoiceStatus.Void) return;
 
         Status = InvoiceStatus.Void;
-        SetAuditOnUpdate(Guid.Empty, voidedAt);
+        SetAuditOnUpdate(null, voidedAt);
+        IncrementVersion();
+        AddDomainEvent(new InvoiceVoidedDomainEvent(Id, WorkspaceId, voidedAt));
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        IncrementVersion();
+        AddDomainEvent(new InvoiceSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new InvoiceRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

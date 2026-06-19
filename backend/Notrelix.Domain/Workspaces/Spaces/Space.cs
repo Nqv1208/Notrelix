@@ -39,7 +39,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
         };
 
         space.SetAuditOnCreate(createdBy, createdAt);
-        space.AddDomainEvent(new SpaceCreatedEvent(space.Id, workspaceId, space.Name, createdBy, createdAt));
+        space.AddDomainEvent(new SpaceCreatedDomainEvent(space.Id, workspaceId, space.Name, createdBy, createdAt));
 
         return space;
     }
@@ -58,7 +58,8 @@ public class Space : AggregateRoot, IWorkspaceScoped
 
         Name = normalizedName;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new SpaceRenamedEvent(WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new SpaceRenamedDomainEvent(WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
     }
 
     public void Move(Guid newWorkspaceId, Guid movedBy, DateTimeOffset movedAt)
@@ -83,7 +84,8 @@ public class Space : AggregateRoot, IWorkspaceScoped
 
         Status = SpaceStatus.Archived;
         SetAuditOnUpdate(archivedBy, archivedAt);
-        AddDomainEvent(new SpaceArchivedEvent(WorkspaceId, Id, archivedBy, archivedAt));
+        IncrementVersion();
+        AddDomainEvent(new SpaceArchivedDomainEvent(WorkspaceId, Id, archivedBy, archivedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -92,7 +94,9 @@ public class Space : AggregateRoot, IWorkspaceScoped
         if (IsDeleted) return;
         Status = SpaceStatus.SoftDeleted;
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new SpaceSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new SpaceSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -101,6 +105,8 @@ public class Space : AggregateRoot, IWorkspaceScoped
         if (!IsDeleted) return;
         Status = SpaceStatus.Active;
         base.Restore(restoredBy, restoredAt);
-        AddDomainEvent(new SpaceRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new SpaceRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

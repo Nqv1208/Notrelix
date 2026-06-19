@@ -7,7 +7,7 @@ public class PermissionTemplate : AggregateRoot
     public Guid? WorkspaceId { get; private set; } // Null for system templates
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
-    public Permissions.ResourceType? TargetResourceType { get; private set; }
+    public ResourceType? TargetResourceType { get; private set; }
     public JsonValue PermissionsJson { get; private set; } = null!;
     public bool IsSystem { get; private set; }
     public PermissionTemplateStatus Status { get; private set; }

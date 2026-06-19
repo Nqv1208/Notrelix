@@ -1,6 +1,5 @@
 // Common
 global using Notrelix.Domain.Common;
-global using Notrelix.Domain.Common.Exceptions;
 global using Notrelix.Domain.SharedKernel;
 
 // Contexts
@@ -48,7 +47,8 @@ global using Notrelix.Domain.Collaboration.Reactions;
 global using Notrelix.Domain.Collaboration.Notifications;
 global using Notrelix.Domain.Collaboration.Activity;
 global using Notrelix.Application.Common.Abstractions;
-global using Notrelix.Domain.Common.Exceptions;
+global using Notrelix.Application.Common.CQRS;
+global using Notrelix.Application.Common.Exceptions;
 global using Notrelix.Domain.Analytics.Dashboards.Events;
 global using Notrelix.Domain.Automation.Executions.Events;
 global using Notrelix.Domain.Automation.Rules.Events;

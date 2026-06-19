@@ -12,23 +12,17 @@ namespace Notrelix.Infrastructure.BackgroundJobs;
 
 public sealed class N8nDispatchService
 {
-    private const int MaxAttempts = 3;
-    private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(30);
-
     private readonly ApplicationDbContext _context;
     private readonly IN8nClient _n8nClient;
-    private readonly IJobQueue _jobQueue;
     private readonly ILogger<N8nDispatchService> _logger;
 
     public N8nDispatchService(
         ApplicationDbContext context,
         IN8nClient n8nClient,
-        IJobQueue jobQueue,
         ILogger<N8nDispatchService> logger)
     {
         _context = context;
         _n8nClient = n8nClient;
-        _jobQueue = jobQueue;
         _logger = logger;
     }
 
@@ -49,14 +43,14 @@ public sealed class N8nDispatchService
 
         if (rule is null || !rule.IsEnabled)
         {
-            execution.MarkFailed("Automation rule is missing or disabled.");
+            execution.Fail("Automation rule is missing or disabled.", DateTimeOffset.UtcNow);
             await _context.SaveChangesAsync(cancellationToken);
             return;
         }
 
-        if (!N8nAutomationConfiguration.TryGetWebhookPath(rule.Configuration, out var webhookPath))
+        if (!TryGetWebhookPath(rule.Configuration, out var webhookPath))
         {
-            execution.MarkFailed("Automation rule is missing configuration.webhookPath.");
+            execution.Fail("Automation rule is missing configuration.webhookPath.", DateTimeOffset.UtcNow);
             await _context.SaveChangesAsync(cancellationToken);
             return;
         }
@@ -67,38 +61,29 @@ public sealed class N8nDispatchService
 
             if (result.Succeeded)
             {
-                execution.MarkDelivered(result.Response);
+                execution.Succeed(DateTimeOffset.UtcNow);
             }
             else
             {
-                await RetryOrFailAsync(job, execution, $"n8n returned HTTP {result.StatusCode}: {result.Error}", cancellationToken);
-                return;
+                execution.Fail($"n8n returned HTTP {result.StatusCode}: {result.Error}", DateTimeOffset.UtcNow);
             }
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
-            await RetryOrFailAsync(job, execution, ex.Message, cancellationToken);
-            return;
+            execution.Fail(ex.Message, DateTimeOffset.UtcNow);
         }
 
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task RetryOrFailAsync(
-        N8nDispatchJob job,
-        AutomationExecution execution,
-        string error,
-        CancellationToken cancellationToken)
+    private static bool TryGetWebhookPath(Domain.Automation.RulesEngine.AutomationConfiguration config, out string webhookPath)
     {
-        if (execution.AttemptCount + 1 >= MaxAttempts)
+        if (config.Action.Type != "Webhook" || string.IsNullOrWhiteSpace(config.Action.Configuration))
         {
-            execution.MarkFailed(error);
-            await _context.SaveChangesAsync(cancellationToken);
-            return;
+            webhookPath = string.Empty;
+            return false;
         }
 
-        execution.MarkRetried(error);
-        await _context.SaveChangesAsync(cancellationToken);
-        await _jobQueue.EnqueueAsync(job, RetryDelay, cancellationToken);
+        return N8nAutomationConfiguration.TryGetWebhookPath(config.Action.Configuration, out webhookPath);
     }
 }

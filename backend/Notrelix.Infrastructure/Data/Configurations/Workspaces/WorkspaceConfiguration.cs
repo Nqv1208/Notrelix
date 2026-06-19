@@ -22,10 +22,11 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
 
         builder.OwnsOne(x => x.Settings, settings =>
         {
-            settings.Property(s => s.Value).HasColumnName("settings").HasColumnType("jsonb").IsRequired().HasDefaultValue("{}");
+            settings.Property(s => s.AllowPublicSharing).HasColumnName("settings_allow_public_sharing").HasDefaultValue(false);
+            settings.Property(s => s.EnforceMfa).HasColumnName("settings_enforce_mfa").HasDefaultValue(false);
         });
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");

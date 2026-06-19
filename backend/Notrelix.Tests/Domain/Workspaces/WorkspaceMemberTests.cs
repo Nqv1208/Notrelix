@@ -24,9 +24,9 @@ public class WorkspaceMemberTests
         member.UserId.Should().Be(userId);
         member.Role.Should().Be(WorkspaceRole.Member);
         member.Status.Should().Be(WorkspaceMemberStatus.Active);
-        member.DomainEvents.Should().ContainSingle(e => e is WorkspaceMemberAddedEvent);
+        member.DomainEvents.Should().ContainSingle(e => e is WorkspaceMemberAddedDomainEvent);
         
-        var evt = (WorkspaceMemberAddedEvent)member.DomainEvents.First();
+        var evt = (WorkspaceMemberAddedDomainEvent)member.DomainEvents.First();
         evt.WorkspaceId.Should().Be(workspaceId);
         evt.UserId.Should().Be(userId);
         evt.Role.Should().Be(WorkspaceRole.Member);
@@ -45,8 +45,8 @@ public class WorkspaceMemberTests
         member.ChangeRole(WorkspaceRole.Admin, actor, 2, now);
 
         member.Role.Should().Be(WorkspaceRole.Admin);
-        member.DomainEvents.Should().ContainSingle(e => e is WorkspaceMemberRoleChangedEvent);
-        var evt = (WorkspaceMemberRoleChangedEvent)member.DomainEvents.First();
+        member.DomainEvents.Should().ContainSingle(e => e is WorkspaceMemberRoleChangedDomainEvent);
+        var evt = (WorkspaceMemberRoleChangedDomainEvent)member.DomainEvents.First();
         evt.NewRole.Should().Be(WorkspaceRole.Admin);
         evt.ActorId.Should().Be(actor);
         evt.OccurredAt.Should().Be(now);
@@ -73,8 +73,8 @@ public class WorkspaceMemberTests
         member.Suspend(actor, now, 2);
 
         member.Status.Should().Be(WorkspaceMemberStatus.Suspended);
-        member.DomainEvents.Should().ContainSingle(e => e is WorkspaceMemberSuspendedEvent);
-        var evt = (WorkspaceMemberSuspendedEvent)member.DomainEvents.First();
+        member.DomainEvents.Should().ContainSingle(e => e is WorkspaceMemberSuspendedDomainEvent);
+        var evt = (WorkspaceMemberSuspendedDomainEvent)member.DomainEvents.First();
         evt.ActorId.Should().Be(actor);
         evt.OccurredAt.Should().Be(now);
     }
@@ -101,7 +101,7 @@ public class WorkspaceMemberTests
         member.Activate(actor, now);
 
         member.Status.Should().Be(WorkspaceMemberStatus.Active);
-        member.DomainEvents.Should().ContainSingle(e => e is WorkspaceMemberActivatedEvent);
+        member.DomainEvents.Should().ContainSingle(e => e is WorkspaceMemberActivatedDomainEvent);
     }
 
     [Fact]
@@ -126,7 +126,7 @@ public class WorkspaceMemberTests
 
         member.IsDeleted.Should().BeTrue();
         member.Status.Should().Be(WorkspaceMemberStatus.Removed);
-        member.DomainEvents.Should().ContainSingle(e => e is WorkspaceMemberRemovedEvent);
+        member.DomainEvents.Should().ContainSingle(e => e is WorkspaceMemberRemovedDomainEvent);
     }
 
     [Fact]
@@ -152,7 +152,7 @@ public class WorkspaceMemberTests
 
         member.Status.Should().Be(WorkspaceMemberStatus.Active);
         member.IsDeleted.Should().BeFalse();
-        member.DomainEvents.Should().ContainSingle(e => e is WorkspaceMemberRestoredEvent);
+        member.DomainEvents.Should().ContainSingle(e => e is WorkspaceMemberRestoredDomainEvent);
     }
 
     [Fact]

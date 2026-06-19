@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Templates;
 
 namespace Notrelix.Infrastructure.Data.Configurations.WorkManagement;
@@ -16,10 +17,10 @@ public class ItemTemplateConfiguration : IEntityTypeConfiguration<ItemTemplate>
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.BoardId).HasColumnName("board_id").IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
-        builder.Property(x => x.Values).HasColumnName("values").IsRequired();
-        builder.Property(x => x.Status).HasColumnName("status").IsRequired();
+        builder.Property(x => x.Values).HasColumnName("values").HasColumnType("jsonb").IsRequired();
+        builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
@@ -29,13 +30,12 @@ public class ItemTemplateConfiguration : IEntityTypeConfiguration<ItemTemplate>
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
-        builder.Property(x => x.Version).HasColumnName("version");
 
         builder.HasOne<Board>()
             .WithMany()
             .HasForeignKey(x => x.BoardId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(x => new { x.BoardId, x.Name }).HasFilter("is_deleted = false").HasDatabaseName("idx_item_templates_board_name");
+        builder.HasIndex(x => new { x.BoardId, x.Name }).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_item_templates_board_name");
     }
 }

@@ -7,4 +7,4 @@ public sealed record ShareLinkExpiredEvent(
     Guid WorkspaceId,
     Guid LinkId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, null);

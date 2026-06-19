@@ -14,15 +14,18 @@ public class SecurityEventConfiguration : IEntityTypeConfiguration<SecurityEvent
         builder.Property(x => x.Id).HasColumnName("id");
 
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id");
-        builder.Property(x => x.UserId).HasColumnName("user_id");
-        builder.Property(x => x.EventType).HasColumnName("event_type").IsRequired().HasMaxLength(100);
+        builder.Property(x => x.Type).HasColumnName("event_type").HasConversion<string>().IsRequired().HasMaxLength(100);
         builder.Property(x => x.Severity).HasColumnName("severity").HasConversion<string>().IsRequired().HasMaxLength(20);
-        builder.Property(x => x.IpAddress).HasColumnName("ip_address").HasMaxLength(45);
-        builder.Property(x => x.UserAgent).HasColumnName("user_agent").HasMaxLength(512);
-        builder.Property(x => x.Metadata).HasColumnName("metadata").HasColumnType("jsonb");
-        builder.Property(x => x.Timestamp).HasColumnName("timestamp").IsRequired();
+        builder.Property(x => x.Title).HasColumnName("title").IsRequired().HasMaxLength(256);
+        builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(1024);
+        builder.Property(x => x.OccurredAt).HasColumnName("occurred_at").IsRequired();
+
+        builder.OwnsOne(x => x.Metadata, metadata =>
+        {
+            metadata.Property(m => m.Data).HasColumnName("metadata").HasColumnType("jsonb");
+        });
 
         builder.HasIndex(x => x.WorkspaceId).HasDatabaseName("idx_security_events_workspace_id");
-        builder.HasIndex(x => x.Timestamp).HasDatabaseName("idx_security_events_timestamp");
+        builder.HasIndex(x => x.OccurredAt).HasDatabaseName("idx_security_events_occurred_at");
     }
 }

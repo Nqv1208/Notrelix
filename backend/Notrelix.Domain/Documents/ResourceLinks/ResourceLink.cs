@@ -3,7 +3,7 @@ using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Documents.ResourceLinks;
 
-public class ResourceLink : SoftDeletableEntity
+public class ResourceLink : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public ResourceRef Source { get; private set; } = null!;
@@ -21,6 +21,9 @@ public class ResourceLink : SoftDeletableEntity
         if (source == target)
             throw new BusinessRuleException("Cannot create a self-referencing resource link.");
 
+        if (target.WorkspaceId.HasValue && target.WorkspaceId != source.WorkspaceId)
+            throw new BusinessRuleException("Target resource must belong to the same workspace as the source resource.");
+
         var link = new ResourceLink
         {
             WorkspaceId = workspaceId,
@@ -30,7 +33,7 @@ public class ResourceLink : SoftDeletableEntity
         };
 
         link.SetAuditOnCreate(createdBy, createdAt);
-        link.AddDomainEvent(new ResourceLinkCreatedEvent(workspaceId, source.ResourceId, target.ResourceId, type, createdAt));
+        link.AddDomainEvent(new ResourceLinkCreatedDomainEvent(workspaceId, source.ResourceId, target.ResourceId, type, createdAt));
         return link;
     }
 
@@ -38,6 +41,8 @@ public class ResourceLink : SoftDeletableEntity
     {
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new ResourceLinkDeletedEvent(WorkspaceId, Id, deletedAt));
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new ResourceLinkDeletedDomainEvent(WorkspaceId, Id, deletedAt));
     }
 }

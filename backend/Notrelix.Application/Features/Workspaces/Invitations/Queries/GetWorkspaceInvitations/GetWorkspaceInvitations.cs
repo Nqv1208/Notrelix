@@ -3,18 +3,15 @@ using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Workspaces.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
+using global::Notrelix.Domain.Workspaces.Invitations;
+using global::Notrelix.Domain.Workspaces.Workspaces;
 
-using global::Notrelix.Application.Common.Security;
+namespace Notrelix.Application.Features.Workspaces.Invitations.Queries.GetWorkspaceInvitations;
 
-namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspaceInvitations;
-
-public record GetWorkspaceInvitationsQuery(Guid WorkspaceId) : IRequest<Result<List<WorkspaceInvitationDto>>>, IAuthorizeableRequest
+public record GetWorkspaceInvitationsQuery(Guid WorkspaceId) : IQuery<Result<List<WorkspaceInvitationDto>>>, IRequirePermission
 {
-    ResourceType IAuthorizeableRequest.ResourceType => ResourceType.Workspace;
-    Guid IAuthorizeableRequest.ResourceId => WorkspaceId;
-    PermissionAction IAuthorizeableRequest.Action => PermissionAction.ViewWorkspace;
+    PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
 }
 
 public class GetWorkspaceInvitationsQueryHandler : IRequestHandler<GetWorkspaceInvitationsQuery, Result<List<WorkspaceInvitationDto>>>
@@ -30,7 +27,7 @@ public class GetWorkspaceInvitationsQueryHandler : IRequestHandler<GetWorkspaceI
     {
         var workspaceExists = await _context.Workspaces
             .AsNoTracking()
-            .AnyAsync(w => w.Id == request.WorkspaceId && !w.IsArchived, ct);
+            .AnyAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && !w.IsDeleted, ct);
 
         if (!workspaceExists)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
@@ -39,16 +36,17 @@ public class GetWorkspaceInvitationsQueryHandler : IRequestHandler<GetWorkspaceI
             .AsNoTracking()
             .Where(invitation => invitation.WorkspaceId == request.WorkspaceId)
             .OrderByDescending(invitation => invitation.CreatedAt)
-            .Select(invitation => new WorkspaceInvitationDto(
-                invitation.Id,
-                invitation.Email,
-                invitation.Role.ToString(),
-                invitation.ExpiresAt,
-                invitation.IsAccepted,
-                invitation.CreatedAt
-            ))
             .ToListAsync(ct);
 
-        return Result<List<WorkspaceInvitationDto>>.Success(invitations);
+        var result = invitations.Select(invitation => new WorkspaceInvitationDto(
+            invitation.Id,
+            invitation.Email,
+            invitation.Role.ToString(),
+            invitation.ExpiresAt.DateTime,
+            invitation.Status == WorkspaceInvitationStatus.Accepted,
+            invitation.CreatedAt.DateTime
+        )).ToList();
+
+        return Result<List<WorkspaceInvitationDto>>.Success(result);
     }
 }

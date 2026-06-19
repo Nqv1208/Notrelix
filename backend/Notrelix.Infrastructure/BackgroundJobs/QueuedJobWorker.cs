@@ -1,7 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Notrelix.Application.Features.Extensibility.Jobs;
+using Notrelix.Application.Features.Automation.Jobs;
 
 namespace Notrelix.Infrastructure.BackgroundJobs;
 

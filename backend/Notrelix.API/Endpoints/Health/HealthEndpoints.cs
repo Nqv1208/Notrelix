@@ -1,5 +1,4 @@
-using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Abstractions;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Notrelix.API.Endpoints.Health;
 
@@ -28,36 +27,19 @@ public static class HealthEndpoints
         return app;
     }
 
-    private static async Task<IResult> GetHealth(IApplicationDbContext context)
+    private static async Task<IResult> GetHealth(HealthCheckService healthCheck, HttpContext context)
     {
-        var health = new
+        var report = await healthCheck.CheckHealthAsync();
+        return Results.Ok(new
         {
-            Status = "Healthy",
-            Timestamp = DateTime.UtcNow,
-            Services = new Dictionary<string, object>()
-        };
-
-        try
-        {
-            await context.Users.AnyAsync();
-            health.Services["database"] = new { Status = "Healthy", Message = "PostgreSQL connection OK" };
-        }
-        catch (Exception ex)
-        {
-            return Results.Json(
-                new
-                {
-                    Status = "Unhealthy",
-                    Timestamp = DateTime.UtcNow,
-                    Services = new Dictionary<string, object>
-                    {
-                        ["database"] = new { Status = "Unhealthy", Message = ex.Message }
-                    }
-                },
-                statusCode: 503);
-        }
-
-        return Results.Ok(health);
+            status = report.Status.ToString(),
+            checks = report.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString(),
+                duration = e.Value.Duration
+            })
+        });
     }
 
     private static IResult Live()
@@ -65,12 +47,12 @@ public static class HealthEndpoints
         return Results.Ok(new { status = "alive", timestamp = DateTime.UtcNow });
     }
 
-    private static async Task<IResult> Ready(IApplicationDbContext context)
+    private static async Task<IResult> Ready(HealthCheckService healthCheck)
     {
         try
         {
-            await context.Users.AnyAsync();
-            return Results.Ok(new { status = "ready", timestamp = DateTime.UtcNow });
+            var report = await healthCheck.CheckHealthAsync();
+            return Results.Ok(new { status = report.Status.ToString(), timestamp = DateTime.UtcNow });
         }
         catch
         {

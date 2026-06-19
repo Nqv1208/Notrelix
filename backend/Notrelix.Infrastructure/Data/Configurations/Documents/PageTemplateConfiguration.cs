@@ -21,7 +21,7 @@ public class PageTemplateConfiguration : IEntityTypeConfiguration<PageTemplate>
         builder.Property(x => x.BlocksSnapshot).HasColumnName("blocks_snapshot").HasColumnType("jsonb").IsRequired();
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
@@ -32,7 +32,7 @@ public class PageTemplateConfiguration : IEntityTypeConfiguration<PageTemplate>
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => x.WorkspaceId).HasFilter("workspace_id IS NOT NULL AND is_deleted = false").HasDatabaseName("idx_page_templates_workspace_id");
+        builder.HasIndex(x => x.WorkspaceId).HasFilter("workspace_id IS NOT NULL AND deleted_at IS NULL").HasDatabaseName("idx_page_templates_workspace_id");
         builder.HasIndex(x => x.Category).HasFilter("category IS NOT NULL").HasDatabaseName("idx_page_templates_category");
     }
 }

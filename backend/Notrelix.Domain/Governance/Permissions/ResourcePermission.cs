@@ -48,7 +48,7 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         };
 
         permission.SetAuditOnCreate(grantedBy, grantedAt);
-        permission.AddDomainEvent(new ResourcePermissionGrantedEvent(
+        permission.AddDomainEvent(new ResourcePermissionGrantedDomainEvent(
             workspaceId, permission.Id, resourceType, resourceId, subjectType, subjectId, level, grantedBy, grantedAt));
 
         return permission;
@@ -62,13 +62,33 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         var oldLevel = Level;
         Level = newLevel;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new ResourcePermissionLevelChangedEvent(WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, oldLevel, newLevel, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new ResourcePermissionLevelChangedDomainEvent(WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, oldLevel, newLevel, updatedBy, updatedAt));
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new ResourcePermissionSoftDeletedDomainEvent(WorkspaceId, Id, ResourceType, ResourceId, deletedBy, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new ResourcePermissionRestoredDomainEvent(WorkspaceId, Id, ResourceType, ResourceId, restoredBy, restoredAt));
     }
 
     public void Revoke(Guid revokedBy, DateTimeOffset revokedAt)
     {
         EnsureNotDeleted();
         SoftDelete(revokedBy, revokedAt);
-        AddDomainEvent(new ResourcePermissionRevokedEvent(WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, revokedBy, revokedAt));
+        IncrementVersion();
+        AddDomainEvent(new ResourcePermissionRevokedDomainEvent(WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, revokedBy, revokedAt));
     }
 }

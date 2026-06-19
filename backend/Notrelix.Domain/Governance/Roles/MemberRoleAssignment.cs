@@ -2,7 +2,7 @@ using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Governance.Roles;
 
-public class MemberRoleAssignment : Entity
+public class MemberRoleAssignment : Entity, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid MemberId { get; private set; }

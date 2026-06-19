@@ -18,7 +18,7 @@ public class BoardGroupTests
         group.UpdateColor(Color.Create("#FF0000"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         group.Color.Value.Should().Be("#FF0000");
-        group.DomainEvents.Should().ContainSingle(e => e is BoardGroupColorChangedEvent);
+        group.DomainEvents.Should().ContainSingle(e => e is BoardGroupColorChangedDomainEvent);
     }
 
     [Fact]
@@ -31,7 +31,7 @@ public class BoardGroupTests
 
         group.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        var deletedEvent = group.DomainEvents.OfType<BoardGroupSoftDeletedEvent>().Single();
+        var deletedEvent = group.DomainEvents.OfType<BoardGroupSoftDeletedDomainEvent>().Single();
         deletedEvent.BoardId.Should().Be(boardId);
         deletedEvent.WorkspaceId.Should().Be(workspaceId);
     }
@@ -47,6 +47,6 @@ public class BoardGroupTests
         group.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         group.IsDeleted.Should().BeFalse();
-        group.DomainEvents.Should().ContainSingle(e => e is BoardGroupRestoredEvent);
+        group.DomainEvents.Should().ContainSingle(e => e is BoardGroupRestoredDomainEvent);
     }
 }

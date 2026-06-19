@@ -2,7 +2,7 @@ using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Analytics.Snapshots;
 
-public class ReportingSnapshot : Entity
+public class ReportingSnapshot : Entity, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public string ReportType { get; private set; } = null!;

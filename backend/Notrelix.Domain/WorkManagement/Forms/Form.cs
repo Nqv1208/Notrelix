@@ -1,6 +1,8 @@
+using Notrelix.Domain.WorkManagement.Forms.Events;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.WorkManagement.Boards;
+using Notrelix.Domain.WorkManagement.Forms.Events;
 
 namespace Notrelix.Domain.WorkManagement.Forms;
 
@@ -49,6 +51,7 @@ public class Form : AggregateRoot, IWorkspaceScoped
         };
 
         form.SetAuditOnCreate(createdBy, createdAt);
+        form.AddDomainEvent(new FormCreatedDomainEvent(workspaceId, form.Id, boardId, form.Name, createdBy, createdAt));
         return form;
     }
 
@@ -64,28 +67,52 @@ public class Form : AggregateRoot, IWorkspaceScoped
         
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new FormDetailsUpdatedDomainEvent(WorkspaceId, Id, BoardId, Name, SettingsJson, SubmitterPolicyJson, updatedBy, updatedAt));
     }
 
     public void Publish(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (Status == FormStatus.Closed)
+            throw new BusinessRuleException("Cannot publish a closed form.");
+
+        if (_questions.Count == 0)
+            throw new BusinessRuleException("Cannot publish a form with no questions.");
+
+        var oldStatus = Status;
         Status = FormStatus.Published;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new FormPublishedDomainEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void Close(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (Status == FormStatus.Closed) return;
+
         Status = FormStatus.Closed;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new FormClosedDomainEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
-    public void AddQuestion(FormQuestion question)
+    public void EnsureAcceptsSubmissions()
+    {
+        EnsureNotDeleted();
+        if (Status == FormStatus.Draft)
+            throw new BusinessRuleException("Cannot submit to a draft form.");
+        if (Status == FormStatus.Closed)
+            throw new BusinessRuleException("Cannot submit to a closed form.");
+    }
+
+    public void AddQuestion(FormQuestion question, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Guard.NotNull(question);
+
+        if (Status == FormStatus.Closed)
+            throw new BusinessRuleException("Cannot add a question to a closed form.");
 
         if (question.WorkspaceId != WorkspaceId)
             throw new WorkspaceMismatchException(WorkspaceId, question.WorkspaceId);
@@ -94,6 +121,26 @@ public class Form : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException($"A question with key '{question.QuestionKey}' already exists.");
 
         _questions.Add(question);
+        SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new FormQuestionAddedDomainEvent(WorkspaceId, Id, question.QuestionKey, updatedBy, updatedAt));
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new FormSoftDeletedDomainEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new FormRestoredDomainEvent(WorkspaceId, Id, BoardId, restoredBy, restoredAt));
     }
 }

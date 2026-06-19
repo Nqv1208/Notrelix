@@ -23,7 +23,7 @@ public class AiAgentConfiguration : IEntityTypeConfiguration<AiAgent>
         builder.Property(x => x.Instruction).HasColumnName("instruction").HasColumnType("jsonb").IsRequired();
         builder.Property(x => x.ToolPermissions).HasColumnName("tool_permissions").HasColumnType("jsonb").IsRequired();
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");

@@ -2,12 +2,12 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Security;
-using Notrelix.Application.Features.Boards.Commands.BoardColumns.CreateBoardColumn;
-using Notrelix.Application.Features.Boards.Commands.Boards.AddBoardMember;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.AddBoardMember;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
 using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.Entities.Boards;
-using Notrelix.Domain.Entities.Workspaces;
-using Notrelix.Domain.Enums;
+using Notrelix.Domain.WorkManagement.Boards;
+using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Infrastructure.Data;
 
 namespace Notrelix.Application.Tests.Boards;
@@ -22,10 +22,14 @@ public class BoardCommandPermissionTests
         var memberId = Guid.NewGuid();
         var addedUserId = Guid.NewGuid();
         var board = await SeedBoardAsync(context, ownerId, memberId, WorkspaceRole.Member);
+        var timeProvider = new Mock<IDateTimeProvider>();
+        timeProvider.Setup(t => t.UtcNow).Returns(DateTimeOffset.UtcNow);
+        var evaluator = new PermissionService(context, timeProvider.Object);
         var handler = new AddBoardMemberCommandHandler(
             context,
             CurrentUser(memberId),
-            new WorkspacePermissionService(context));
+            new WorkspacePermissionService(evaluator, context),
+            timeProvider.Object);
 
         var act = () => handler.Handle(new AddBoardMemberCommand(board.Id, addedUserId, "member"), CancellationToken.None);
 
@@ -33,19 +37,23 @@ public class BoardCommandPermissionTests
     }
 
     [Fact]
-    public async Task CreateBoardColumn_ShouldRequireBoardEditPermission()
+    public async Task CreateBoardField_ShouldRequireBoardEditPermission()
     {
         await using var context = CreateContext();
         var ownerId = Guid.NewGuid();
         var guestId = Guid.NewGuid();
         var board = await SeedBoardAsync(context, ownerId, guestId, WorkspaceRole.Guest);
-        var handler = new CreateBoardColumnCommandHandler(
+        var timeProvider = new Mock<IDateTimeProvider>();
+        timeProvider.Setup(t => t.UtcNow).Returns(DateTimeOffset.UtcNow);
+        var evaluator = new PermissionService(context, timeProvider.Object);
+        var handler = new CreateBoardFieldCommandHandler(
             context,
             CurrentUser(guestId),
-            new WorkspacePermissionService(context));
+            new WorkspacePermissionService(evaluator, context),
+            timeProvider.Object);
 
         var act = () => handler.Handle(
-            new CreateBoardColumnCommand(board.Id, "Risk", "select", "{}", null),
+            new CreateBoardFieldCommand(board.Id, "Risk", "select", "{}", null),
             CancellationToken.None);
 
         await act.Should().ThrowAsync<ForbiddenException>();
@@ -57,11 +65,13 @@ public class BoardCommandPermissionTests
         Guid userId,
         WorkspaceRole userRole)
     {
-        var workspace = Workspace.CreateTeam("Workspace", ownerId);
-        workspace.AddMember(userId, userRole);
-        var board = Board.Create(workspace.Id, ownerId, "Board", null);
+        var now = DateTimeOffset.UtcNow;
+        var workspace = Workspace.Create(ownerId, "Workspace", "workspace", now);
+        var workspaceMember = WorkspaceMember.Create(workspace.Id, userId, userRole, ownerId, now);
+        var board = Board.Create(workspace.Id, ownerId, "Board", null, now);
 
         context.Workspaces.Add(workspace);
+        context.WorkspaceMembers.Add(workspaceMember);
         context.Boards.Add(board);
         await context.SaveChangesAsync();
 

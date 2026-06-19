@@ -20,7 +20,7 @@ public class EmailVerificationTokenConfiguration : IEntityTypeConfiguration<Emai
         builder.Property(x => x.UsedAt).HasColumnName("used_at");
         builder.Property(x => x.ExpiredAt).HasColumnName("expired_at");
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
@@ -32,6 +32,6 @@ public class EmailVerificationTokenConfiguration : IEntityTypeConfiguration<Emai
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
         builder.HasIndex(x => x.UserId).HasDatabaseName("idx_email_verification_tokens_user_id");
-        builder.HasIndex(x => x.ExpiresAt).HasFilter("is_deleted = false").HasDatabaseName("idx_email_verification_tokens_expires");
+        builder.HasIndex(x => x.ExpiresAt).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_email_verification_tokens_expires");
     }
 }

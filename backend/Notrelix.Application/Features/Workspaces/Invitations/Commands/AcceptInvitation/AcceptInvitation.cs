@@ -2,23 +2,28 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Domain.Workspaces;
+using global::Notrelix.Domain.SharedKernel;
+using global::Notrelix.Domain.Workspaces.Invitations;
+using global::Notrelix.Domain.Workspaces.Members;
+using global::Notrelix.Domain.Workspaces.Workspaces;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation;
 
 public record AcceptInvitationResultDto(string WorkspaceSlug, Guid WorkspaceId);
 
-public record AcceptInvitationCommand(string Token) : IRequest<Result<AcceptInvitationResultDto>>;
+public record AcceptInvitationCommand(string Token) : ICommand<Result<AcceptInvitationResultDto>>, ITransactionalRequest;
 
 public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCommand, Result<AcceptInvitationResultDto>>
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public AcceptInvitationCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public AcceptInvitationCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<AcceptInvitationResultDto>> Handle(AcceptInvitationCommand request, CancellationToken ct)
@@ -26,22 +31,24 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         if (!_currentUser.IsAuthenticated || _currentUser.UserId == Guid.Empty)
             return Result<AcceptInvitationResultDto>.Failure("Bạn cần đăng nhập để thực hiện hành động này.");
 
-        // Tìm lời mời theo token
+        var tokenHash = InvitationTokenHash.Create(request.Token);
         var invitation = await _context.WorkspaceInvitations
-            .Include(i => i.Workspace)
-            .FirstOrDefaultAsync(i => i.Token == request.Token, ct);
+            .FirstOrDefaultAsync(i => i.Token == tokenHash, ct);
 
         if (invitation == null)
             throw new NotFoundException(nameof(WorkspaceInvitation), request.Token);
 
-        // Kiểm tra tính hợp lệ (hết hạn, đã accept)
-        if (invitation.IsExpired)
+        var workspace = await _context.Workspaces.AsNoTracking()
+            .FirstOrDefaultAsync(w => w.Id == invitation.WorkspaceId, ct);
+
+        var now = _dateTimeProvider.UtcNow;
+
+        if (now >= invitation.ExpiresAt)
             return Result<AcceptInvitationResultDto>.Failure("Lời mời đã hết hạn.");
 
-        if (invitation.IsAccepted)
-            return Result<AcceptInvitationResultDto>.Failure("Lời mời này đã được chấp nhận trước đó.");
+        if (invitation.Status != WorkspaceInvitationStatus.Pending)
+            return Result<AcceptInvitationResultDto>.Failure("Lời mời này không còn hiệu lực.");
 
-        // Kiểm tra email khớp với email của user hiện tại
         var user = await _context.Users
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Id == _currentUser.UserId, ct);
@@ -52,27 +59,20 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         if (user.Email.Value.Trim().ToLowerInvariant() != invitation.Email)
             return Result<AcceptInvitationResultDto>.Failure($"Lời mời này chỉ dành cho địa chỉ email '{invitation.Email}'. Tài khoản hiện tại của bạn đăng ký bằng '{user.Email.Value}'.");
 
-        // Kiểm tra xem người dùng đã là thành viên trong workspace này chưa
         var isAlreadyMember = await _context.WorkspaceMembers
             .AnyAsync(m => m.WorkspaceId == invitation.WorkspaceId && m.UserId == _currentUser.UserId, ct);
 
         if (isAlreadyMember)
         {
-            // Nếu đã là thành viên rồi, đánh dấu accepted lời mời luôn để đóng
-            invitation.Accept();
-            await _context.SaveChangesAsync(ct);
-            return Result<AcceptInvitationResultDto>.Success(new AcceptInvitationResultDto(invitation.Workspace.Slug, invitation.WorkspaceId));
+            invitation.Accept(_currentUser.UserId, now);
+            return Result<AcceptInvitationResultDto>.Success(new AcceptInvitationResultDto(workspace?.Slug ?? "", invitation.WorkspaceId));
         }
 
-        // Chấp nhận lời mời
-        invitation.Accept();
+        invitation.Accept(_currentUser.UserId, now);
 
-        // Tạo thành viên WorkspaceMember mới
-        var member = WorkspaceMember.Create(invitation.WorkspaceId, _currentUser.UserId, invitation.Role, invitation.InvitedBy);
+        var member = WorkspaceMember.Create(invitation.WorkspaceId, _currentUser.UserId, invitation.Role, invitation.InvitedBy, now);
         _context.WorkspaceMembers.Add(member);
 
-        await _context.SaveChangesAsync(ct);
-
-        return Result<AcceptInvitationResultDto>.Success(new AcceptInvitationResultDto(invitation.Workspace.Slug, invitation.WorkspaceId));
+        return Result<AcceptInvitationResultDto>.Success(new AcceptInvitationResultDto(workspace?.Slug ?? "", invitation.WorkspaceId));
     }
 }

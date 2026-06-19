@@ -23,7 +23,7 @@ public class BoardTests
         board.IsArchived.Should().BeFalse();
         board.CreatedBy.Should().Be(createdBy);
         
-        board.DomainEvents.Should().ContainSingle(e => e is BoardCreatedEvent);
+        board.DomainEvents.Should().ContainSingle(e => e is BoardCreatedDomainEvent);
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public class BoardTests
         board.Title.Should().Be("New Title");
         board.UpdatedBy.Should().Be(updatedBy);
         
-        board.DomainEvents.Should().ContainSingle(e => e is BoardRenamedEvent);
+        board.DomainEvents.Should().ContainSingle(e => e is BoardRenamedDomainEvent);
     }
     
     [Fact]
@@ -63,7 +63,7 @@ public class BoardTests
         
         board.IsArchived.Should().BeTrue();
         board.UpdatedBy.Should().Be(archivedBy);
-        board.DomainEvents.Should().ContainSingle(e => e is BoardArchivedEvent);
+        board.DomainEvents.Should().ContainSingle(e => e is BoardArchivedDomainEvent);
     }
 
     [Fact]

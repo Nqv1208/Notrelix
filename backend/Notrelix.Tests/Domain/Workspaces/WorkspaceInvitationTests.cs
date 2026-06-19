@@ -21,7 +21,7 @@ public class WorkspaceInvitationTests
         invitation.Accept(userId, DateTimeOffset.UtcNow);
 
         invitation.Status.Should().Be(WorkspaceInvitationStatus.Accepted);
-        invitation.DomainEvents.Should().ContainSingle(e => e is WorkspaceInvitationAcceptedEvent);
+        invitation.DomainEvents.Should().ContainSingle(e => e is WorkspaceInvitationAcceptedDomainEvent);
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public class WorkspaceInvitationTests
 
         act.Should().Throw<BusinessRuleException>();
         invitation.Status.Should().Be(WorkspaceInvitationStatus.Pending);
-        invitation.DomainEvents.Should().NotContain(e => e is WorkspaceInvitationExpiredEvent);
+        invitation.DomainEvents.Should().NotContain(e => e is WorkspaceInvitationExpiredDomainEvent);
     }
 
     [Fact]
@@ -57,7 +57,7 @@ public class WorkspaceInvitationTests
 
         invitation.Status.Should().Be(WorkspaceInvitationStatus.Expired);
         invitation.UpdatedBy.Should().BeNull("expire should use null actor, not Guid.Empty");
-        invitation.DomainEvents.Should().Contain(e => e is WorkspaceInvitationExpiredEvent);
+        invitation.DomainEvents.Should().Contain(e => e is WorkspaceInvitationExpiredDomainEvent);
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class WorkspaceInvitationTests
         invitation.Expire(DateTimeOffset.UtcNow);
 
         invitation.Status.Should().Be(WorkspaceInvitationStatus.Expired);
-        invitation.DomainEvents.Should().NotContain(e => e is WorkspaceInvitationExpiredEvent);
+        invitation.DomainEvents.Should().NotContain(e => e is WorkspaceInvitationExpiredDomainEvent);
     }
 
     [Fact]

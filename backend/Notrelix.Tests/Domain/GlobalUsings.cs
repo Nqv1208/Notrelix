@@ -58,6 +58,7 @@ global using Notrelix.Domain.WorkManagement.BoardGroups.Events;
 global using Notrelix.Domain.WorkManagement.Boards.Events;
 global using Notrelix.Domain.WorkManagement.Checklists.Events;
 global using Notrelix.Domain.WorkManagement.Fields.Events;
+global using Notrelix.Domain.WorkManagement.Forms.Events;
 global using Notrelix.Domain.WorkManagement.Formulas.Events;
 global using Notrelix.Domain.WorkManagement.Items.Events;
 global using Notrelix.Domain.WorkManagement.Labels.Events;

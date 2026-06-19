@@ -20,8 +20,7 @@ public class AuditLogTests
             workspaceId,
             actorId,
             "DeleteBoard",
-            "Board",
-            resourceId,
+            ResourceRef.Create(ResourceType.Board, resourceId),
             metadata,
             AuditSeverity.Warning,
             "127.0.0.1",
@@ -31,7 +30,7 @@ public class AuditLogTests
         log.WorkspaceId.Should().Be(workspaceId);
         log.ActorId.Should().Be(actorId);
         log.Action.Should().Be("DeleteBoard");
-        log.DomainEvents.Should().ContainSingle(e => e is AuditLogRecordedEvent);
+        log.DomainEvents.Should().ContainSingle(e => e is AuditLogRecordedDomainEvent);
     }
 
     [Fact]

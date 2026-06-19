@@ -20,8 +20,8 @@ public class UserSessionTests
 
         session.UserId.Should().Be(userId);
         session.Status.Should().Be(SessionStatus.Active);
-        session.DomainEvents.Should().ContainSingle(e => e is UserSessionCreatedEvent);
-        var evt = (UserSessionCreatedEvent)session.DomainEvents.First(e => e is UserSessionCreatedEvent);
+        session.DomainEvents.Should().ContainSingle(e => e is UserSessionCreatedDomainEvent);
+        var evt = (UserSessionCreatedDomainEvent)session.DomainEvents.First(e => e is UserSessionCreatedDomainEvent);
         evt.UserId.Should().Be(userId);
         evt.SessionId.Should().Be(session.Id);
     }
@@ -47,8 +47,8 @@ public class UserSessionTests
         session.Revoke(revokeTime);
 
         session.Status.Should().Be(SessionStatus.Revoked);
-        session.DomainEvents.Should().ContainSingle(e => e is UserSessionRevokedEvent);
-        var evt = (UserSessionRevokedEvent)session.DomainEvents.First(e => e is UserSessionRevokedEvent);
+        session.DomainEvents.Should().ContainSingle(e => e is UserSessionRevokedDomainEvent);
+        var evt = (UserSessionRevokedDomainEvent)session.DomainEvents.First(e => e is UserSessionRevokedDomainEvent);
         evt.SessionId.Should().Be(session.Id);
         evt.UserId.Should().Be(session.UserId);
     }
@@ -98,8 +98,8 @@ public class UserSessionTests
         session.Expire(expireTime);
 
         session.Status.Should().Be(SessionStatus.Expired);
-        session.DomainEvents.Should().ContainSingle(e => e is UserSessionExpiredEvent);
-        var evt = (UserSessionExpiredEvent)session.DomainEvents.First(e => e is UserSessionExpiredEvent);
+        session.DomainEvents.Should().ContainSingle(e => e is UserSessionExpiredDomainEvent);
+        var evt = (UserSessionExpiredDomainEvent)session.DomainEvents.First(e => e is UserSessionExpiredDomainEvent);
         evt.SessionId.Should().Be(session.Id);
         evt.UserId.Should().Be(session.UserId);
         evt.ExpiredAt.Should().Be(expireTime);

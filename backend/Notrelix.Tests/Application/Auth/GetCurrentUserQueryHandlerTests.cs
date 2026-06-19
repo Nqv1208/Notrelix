@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Features.Identity.Queries.GetCurrentUser;
-using Notrelix.Domain.Entities.Identity;
+using Notrelix.Application.Features.Identity.Auth.Queries.GetCurrentUser;
+using Notrelix.Domain.Identity.Users;
 
 namespace Notrelix.Application.Tests.Auth;
 
@@ -27,7 +27,7 @@ public class GetCurrentUserQueryHandlerTests
     {
         using var context = AuthTestDbContextFactory.CreateInMemoryContext();
 
-        var user = User.Create("me@example.com", "Me", "hashed");
+        var user = User.Create("me@example.com", "Me", "hashed", DateTimeOffset.UtcNow);
         context.Users.Add(user);
         await context.SaveChangesAsync();
 

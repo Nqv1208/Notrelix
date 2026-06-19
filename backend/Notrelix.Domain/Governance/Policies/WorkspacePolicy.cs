@@ -2,7 +2,7 @@ using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Governance.Policies;
 
-public class WorkspacePolicy : AuditableEntity
+public class WorkspacePolicy : AuditableEntity, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public GuestAccessPolicy GuestPolicy { get; private set; } = null!;

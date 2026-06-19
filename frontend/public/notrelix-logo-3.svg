@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" width="1200" height="320" fill="none">
+  <defs>
+    <linearGradient id="g3" x1="92" y1="244" x2="326" y2="92" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1B7CFF"/>
+      <stop offset="0.35" stop-color="#4E55F7"/>
+      <stop offset="0.65" stop-color="#8F42E3"/>
+      <stop offset="1" stop-color="#FF6B3D"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Linked N / flow icon -->
+  <path d="M112 212 V148 C112 102 150 78 197 78 C229 78 255 90 278 114"
+        stroke="url(#g3)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M172 158 L240 226 C262 248 294 247 310 223 C320 208 322 186 322 161 V114"
+        stroke="url(#g3)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="112" cy="257" r="17" fill="#1B7CFF"/>
+  <circle cx="322" cy="80" r="17" fill="#FF6B3D"/>
+
+  <!-- Wordmark -->
+  <text x="390" y="228" fill="#0C1733" font-size="152" font-weight="800"
+        font-family="Inter, Poppins, Arial, sans-serif" letter-spacing="-4">Notrelix</text>
+</svg>

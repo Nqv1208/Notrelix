@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Items;
 
 namespace Notrelix.Infrastructure.Data.Configurations.WorkManagement;
@@ -18,7 +19,7 @@ public class BoardItemValueConfiguration : IEntityTypeConfiguration<BoardItemVal
 
         builder.OwnsOne(x => x.Value, val =>
         {
-            val.Property(v => v.Value).HasColumnName("value").HasColumnType("jsonb").IsRequired();
+            val.Property(v => v.Data).HasColumnName("value").HasColumnType("jsonb").IsRequired();
         });
 
         builder.HasOne<BoardItem>()
@@ -26,7 +27,7 @@ public class BoardItemValueConfiguration : IEntityTypeConfiguration<BoardItemVal
             .HasForeignKey(x => x.ItemId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne<BoardField>()
+        builder.HasOne<Notrelix.Domain.WorkManagement.Fields.BoardField>()
             .WithMany()
             .HasForeignKey(x => x.FieldId)
             .OnDelete(DeleteBehavior.Restrict);

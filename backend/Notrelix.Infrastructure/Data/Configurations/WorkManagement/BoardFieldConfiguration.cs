@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Notrelix.Domain.WorkManagement.Boards;
+using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Fields;
 
 namespace Notrelix.Infrastructure.Data.Configurations.WorkManagement;
@@ -22,15 +24,12 @@ public class BoardFieldConfiguration : IEntityTypeConfiguration<BoardField>
 
         builder.OwnsOne(x => x.Settings, settings =>
         {
-            settings.Property(s => s.Value).HasColumnName("settings").HasColumnType("jsonb").IsRequired().HasDefaultValue("{}");
+            settings.Property(s => s.Data).HasColumnName("settings").HasColumnType("jsonb").IsRequired().HasDefaultValueSql("'{}'::jsonb");
         });
 
-        builder.OwnsOne(x => x.Position, pos =>
-        {
-            pos.Property(p => p.Value).HasColumnName("position").HasColumnType("float8").IsRequired();
-        });
+        builder.Property(x => x.Position).HasColumnName("position").IsRequired();
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");

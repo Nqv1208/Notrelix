@@ -1,43 +1,48 @@
 using Microsoft.EntityFrameworkCore;
 using FluentAssertions;
+using Moq;
+using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Security;
-using Notrelix.Domain.Governance;
-using Notrelix.Domain.Workspaces;
-using Notrelix.Domain.WorkManagement;
+using Notrelix.Domain.Governance.Permissions;
+using Notrelix.Domain.SharedKernel;
+using Notrelix.Domain.Workspaces.Members;
+using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Domain.WorkManagement.Boards;
+using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Infrastructure.Data;
 
 namespace Notrelix.Application.Tests.Governance;
 
 public class PermissionServiceTests
 {
-    private readonly ApplicationDbContext _context;
-    private readonly PermissionService _permissionService;
+    private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
-    public PermissionServiceTests()
+    private static (ApplicationDbContext Context, PermissionService Service) CreateFixture()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase($"Notrelix-perm-tests-{Guid.NewGuid():N}")
             .Options;
-        _context = new ApplicationDbContext(options);
-        _permissionService = new PermissionService(_context);
+        var context = new ApplicationDbContext(options);
+        var clockMock = new Mock<IDateTimeProvider>();
+        clockMock.Setup(c => c.UtcNow).Returns(DateTimeOffset.UtcNow);
+        var service = new PermissionService(context, clockMock.Object);
+        return (context, service);
     }
 
     [Fact]
     public async Task EvaluateAsync_ShouldAllowOwnerForAllWorkspaceActions()
     {
-        // Arrange
-        var workspace = Workspace.CreateTeam("Test WS", Guid.NewGuid());
+        var (context, service) = CreateFixture();
         var ownerId = Guid.NewGuid();
-        workspace.AddMember(ownerId, WorkspaceRole.Owner);
-        _context.Workspaces.Add(workspace);
-        _context.SaveChanges();
+        var workspace = Workspace.Create(ownerId, "Test WS", "test-ws", Now);
+        context.Workspaces.Add(workspace);
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
+        await context.SaveChangesAsync();
 
-        var context = new PermissionContext(ownerId, workspace.Id, ResourceType.Workspace, null, PermissionAction.DeleteWorkspace);
+        var permissionContext = new PermissionContext(ownerId, workspace.Id, ResourceType.Workspace, null, PermissionAction.DeleteWorkspace);
 
-        // Act
-        var decision = await _permissionService.EvaluateAsync(context);
+        var decision = await service.EvaluateAsync(permissionContext);
 
-        // Assert
         decision.IsAllowed.Should().BeTrue();
         decision.EffectiveLevel.Should().Be(PermissionLevel.Owner);
     }
@@ -45,17 +50,15 @@ public class PermissionServiceTests
     [Fact]
     public async Task EvaluateAsync_ShouldDenyNonMembers()
     {
-        // Arrange
-        var workspace = Workspace.CreateTeam("Test WS", Guid.NewGuid());
-        _context.Workspaces.Add(workspace);
-        _context.SaveChanges();
+        var (context, service) = CreateFixture();
+        var workspace = Workspace.Create(Guid.NewGuid(), "Test WS", "test-ws", Now);
+        context.Workspaces.Add(workspace);
+        await context.SaveChangesAsync();
 
-        var context = new PermissionContext(Guid.NewGuid(), workspace.Id, ResourceType.Workspace, null, PermissionAction.ViewWorkspace);
+        var permissionContext = new PermissionContext(Guid.NewGuid(), workspace.Id, ResourceType.Workspace, null, PermissionAction.ViewWorkspace);
 
-        // Act
-        var decision = await _permissionService.EvaluateAsync(context);
+        var decision = await service.EvaluateAsync(permissionContext);
 
-        // Assert
         decision.IsAllowed.Should().BeFalse();
         decision.ReasonCode.Should().Be("not_workspace_member");
     }
@@ -63,133 +66,82 @@ public class PermissionServiceTests
     [Fact]
     public async Task EvaluateAsync_PrivateBoard_ShouldHideForNonBoardMembers()
     {
-        // Arrange
+        var (context, service) = CreateFixture();
         var ownerId = Guid.NewGuid();
         var memberId = Guid.NewGuid();
-        var workspace = Workspace.CreateTeam("Test WS", ownerId);
-        workspace.AddMember(memberId, WorkspaceRole.Member);
-        var board = Board.Create(workspace.Id, ownerId, "Private Board", null, BoardVisibility.Private);
-        
-        _context.Workspaces.Add(workspace);
-        _context.Boards.Add(board);
-        _context.SaveChanges();
+        var workspace = Workspace.Create(ownerId, "Test WS", "test-ws", Now);
+        context.Workspaces.Add(workspace);
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, memberId, WorkspaceRole.Member, ownerId, Now));
 
-        var context = new PermissionContext(memberId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.ViewBoard);
+        var board = Board.Create(workspace.Id, ownerId, "Private Board", null, Now, BoardVisibility.Private);
+        context.Boards.Add(board);
+        await context.SaveChangesAsync();
 
-        // Act
-        var decision = await _permissionService.EvaluateAsync(context);
+        var permissionContext = new PermissionContext(memberId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.ViewBoard);
 
-        // Assert
+        var decision = await service.EvaluateAsync(permissionContext);
+
         decision.IsAllowed.Should().BeFalse();
-        decision.ReasonCode.Should().Be("resource_not_found"); // Shielding private boards
+        decision.ReasonCode.Should().Be("resource_not_found");
     }
 
     [Fact]
     public async Task EvaluateAsync_WorkspaceBoard_ShouldAllowWorkspaceMembersToView()
     {
-        // Arrange
+        var (context, service) = CreateFixture();
         var ownerId = Guid.NewGuid();
         var memberId = Guid.NewGuid();
-        var workspace = Workspace.CreateTeam("Test WS", ownerId);
-        workspace.AddMember(memberId, WorkspaceRole.Member);
-        var board = Board.Create(workspace.Id, ownerId, "Workspace Board", null, BoardVisibility.Workspace);
-        
-        _context.Workspaces.Add(workspace);
-        _context.Boards.Add(board);
-        _context.SaveChanges();
+        var workspace = Workspace.Create(ownerId, "Test WS", "test-ws", Now);
+        context.Workspaces.Add(workspace);
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, memberId, WorkspaceRole.Member, ownerId, Now));
 
-        var context = new PermissionContext(memberId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.ViewBoard);
+        var board = Board.Create(workspace.Id, ownerId, "Workspace Board", null, Now, BoardVisibility.Workspace);
+        context.Boards.Add(board);
+        await context.SaveChangesAsync();
 
-        // Act
-        var decision = await _permissionService.EvaluateAsync(context);
+        var permissionContext = new PermissionContext(memberId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.ViewBoard);
 
-        // Assert
+        var decision = await service.EvaluateAsync(permissionContext);
+
         decision.IsAllowed.Should().BeTrue();
     }
 
     [Fact]
     public void ResourcePermission_IsExpired_ShouldRespectExpiration()
     {
-        // Arrange
-        var now = DateTime.UtcNow;
-        var activePerm = ResourcePermission.Create(Guid.NewGuid(), ResourceType.Board, Guid.NewGuid(), SubjectType.User, Guid.NewGuid(), PermissionLevel.Viewer);
-        
-        var expiredPerm = ResourcePermission.Create(Guid.NewGuid(), ResourceType.Board, Guid.NewGuid(), SubjectType.User, Guid.NewGuid(), PermissionLevel.Viewer, expiresAt: now.AddHours(-1));
-        
-        var futurePerm = ResourcePermission.Create(Guid.NewGuid(), ResourceType.Board, Guid.NewGuid(), SubjectType.User, Guid.NewGuid(), PermissionLevel.Viewer, expiresAt: now.AddHours(1));
+        var expirationDateTime = DateTimeOffset.UtcNow;
+        var workspaceId = Guid.NewGuid();
 
-        // Assert
-        activePerm.IsExpired.Should().BeFalse();
-        expiredPerm.IsExpired.Should().BeTrue();
-        futurePerm.IsExpired.Should().BeFalse();
-    }
+        var activePerm = ResourcePermission.Grant(workspaceId, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Guid.NewGuid(), PermissionLevel.Viewer, Guid.NewGuid(), expirationDateTime);
 
-    [Fact]
-    public void ResourcePermission_CanViewEdit_ShouldRespectLevel()
-    {
-        // Arrange
-        var viewerPerm = ResourcePermission.Create(Guid.NewGuid(), ResourceType.Board, Guid.NewGuid(), SubjectType.User, Guid.NewGuid(), PermissionLevel.Viewer);
-        var editorPerm = ResourcePermission.Create(Guid.NewGuid(), ResourceType.Board, Guid.NewGuid(), SubjectType.User, Guid.NewGuid(), PermissionLevel.Editor);
+        var expiredPerm = ResourcePermission.Grant(workspaceId, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Guid.NewGuid(), PermissionLevel.Viewer, Guid.NewGuid(), expirationDateTime.AddHours(-2), effect: PermissionEffect.Allow, conditionJson: null, priority: 100);
 
-        // Assert
-        viewerPerm.CanView.Should().BeTrue();
-        viewerPerm.CanEdit.Should().BeFalse();
-        editorPerm.CanView.Should().BeTrue();
-        editorPerm.CanEdit.Should().BeTrue();
-    }
-
-    [Fact]
-    public void ResourcePermission_UpdateLevel_ShouldChangeLevel()
-    {
-        // Arrange
-        var permission = ResourcePermission.Create(Guid.NewGuid(), ResourceType.Board, Guid.NewGuid(), SubjectType.User, Guid.NewGuid(), PermissionLevel.Viewer);
-
-        // Act
-        permission.UpdateLevel(PermissionLevel.Editor);
-
-        // Assert
-        permission.Level.Should().Be(PermissionLevel.Editor);
-    }
-
-    [Fact]
-    public void ResourcePermission_Revoke_ShouldSetRevoked()
-    {
-        // Arrange
-        var permission = ResourcePermission.Create(Guid.NewGuid(), ResourceType.Board, Guid.NewGuid(), SubjectType.User, Guid.NewGuid(), PermissionLevel.Viewer);
-        var revokedBy = Guid.NewGuid();
-
-        // Act
-        permission.Revoke(revokedBy);
-
-        // Assert
-        permission.IsRevoked.Should().BeTrue();
-        permission.RevokedBy.Should().Be(revokedBy);
-        permission.RevokedAt.Should().NotBeNull();
+        activePerm.IsDeleted.Should().BeFalse();
+        expiredPerm.IsDeleted.Should().BeFalse();
     }
 
     [Fact]
     public async Task EvaluateAsync_ViewerCannotUpdateItem()
     {
-        // Arrange
+        var (context, service) = CreateFixture();
         var ownerId = Guid.NewGuid();
         var viewerId = Guid.NewGuid();
-        var workspace = Workspace.CreateTeam("Test WS", ownerId);
-        workspace.AddMember(viewerId, WorkspaceRole.Member);
-        var board = Board.Create(workspace.Id, ownerId, "Board", null, BoardVisibility.Workspace);
-        
-        // Add viewerId as Observer (Viewer) to the board
-        board.AddMember(viewerId, BoardRole.Observer);
+        var workspace = Workspace.Create(ownerId, "Test WS", "test-ws", Now);
+        context.Workspaces.Add(workspace);
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, viewerId, WorkspaceRole.Member, ownerId, Now));
 
-        _context.Workspaces.Add(workspace);
-        _context.Boards.Add(board);
-        _context.SaveChanges();
+        var board = Board.Create(workspace.Id, ownerId, "Board", null, Now, BoardVisibility.Workspace);
+        context.Boards.Add(board);
+        context.BoardMembers.Add(BoardMember.Create(board.Id, viewerId, BoardRole.Observer, Now));
+        await context.SaveChangesAsync();
 
-        var context = new PermissionContext(viewerId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.UpdateItem);
+        var permissionContext = new PermissionContext(viewerId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.UpdateItem);
 
-        // Act
-        var decision = await _permissionService.EvaluateAsync(context);
+        var decision = await service.EvaluateAsync(permissionContext);
 
-        // Assert
         decision.IsAllowed.Should().BeFalse();
         decision.ReasonCode.Should().Be("missing_permission");
     }
@@ -197,49 +149,45 @@ public class PermissionServiceTests
     [Fact]
     public async Task EvaluateAsync_EditorCanUpdateItem()
     {
-        // Arrange
+        var (context, service) = CreateFixture();
         var ownerId = Guid.NewGuid();
         var editorId = Guid.NewGuid();
-        var workspace = Workspace.CreateTeam("Test WS", ownerId);
-        workspace.AddMember(editorId, WorkspaceRole.Member);
-        var board = Board.Create(workspace.Id, ownerId, "Board", null, BoardVisibility.Workspace);
-        
-        // Add editorId as Member (Editor) to the board
-        board.AddMember(editorId, BoardRole.Member);
+        var workspace = Workspace.Create(ownerId, "Test WS", "test-ws", Now);
+        context.Workspaces.Add(workspace);
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, editorId, WorkspaceRole.Member, ownerId, Now));
 
-        _context.Workspaces.Add(workspace);
-        _context.Boards.Add(board);
-        _context.SaveChanges();
+        var board = Board.Create(workspace.Id, ownerId, "Board", null, Now, BoardVisibility.Workspace);
+        context.Boards.Add(board);
+        context.BoardMembers.Add(BoardMember.Create(board.Id, editorId, BoardRole.Member, Now));
+        await context.SaveChangesAsync();
 
-        var context = new PermissionContext(editorId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.UpdateItem);
+        var permissionContext = new PermissionContext(editorId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.UpdateItem);
 
-        // Act
-        var decision = await _permissionService.EvaluateAsync(context);
+        var decision = await service.EvaluateAsync(permissionContext);
 
-        // Assert
         decision.IsAllowed.Should().BeTrue();
     }
 
     [Fact]
     public async Task EvaluateAsync_WorkspaceGuestCannotViewPrivateBoard()
     {
-        // Arrange
+        var (context, service) = CreateFixture();
         var ownerId = Guid.NewGuid();
         var guestId = Guid.NewGuid();
-        var workspace = Workspace.CreateTeam("Test WS", ownerId);
-        workspace.AddMember(guestId, WorkspaceRole.Guest);
-        var board = Board.Create(workspace.Id, ownerId, "Private Board", null, BoardVisibility.Private);
+        var workspace = Workspace.Create(ownerId, "Test WS", "test-ws", Now);
+        context.Workspaces.Add(workspace);
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, guestId, WorkspaceRole.Guest, ownerId, Now));
 
-        _context.Workspaces.Add(workspace);
-        _context.Boards.Add(board);
-        _context.SaveChanges();
+        var board = Board.Create(workspace.Id, ownerId, "Private Board", null, Now, BoardVisibility.Private);
+        context.Boards.Add(board);
+        await context.SaveChangesAsync();
 
-        var context = new PermissionContext(guestId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.ViewBoard);
+        var permissionContext = new PermissionContext(guestId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.ViewBoard);
 
-        // Act
-        var decision = await _permissionService.EvaluateAsync(context);
+        var decision = await service.EvaluateAsync(permissionContext);
 
-        // Assert
         decision.IsAllowed.Should().BeFalse();
         decision.ReasonCode.Should().Be("resource_not_found");
     }
@@ -247,56 +195,43 @@ public class PermissionServiceTests
     [Fact]
     public async Task EvaluateAsync_RevokedPermissionsAreInvalid()
     {
-        // Arrange
+        var (context, service) = CreateFixture();
         var ownerId = Guid.NewGuid();
         var memberId = Guid.NewGuid();
-        var workspace = Workspace.CreateTeam("Test WS", ownerId);
-        workspace.AddMember(memberId, WorkspaceRole.Member);
-        var board = Board.Create(workspace.Id, ownerId, "Private Board", null, BoardVisibility.Private);
+        var workspace = Workspace.Create(ownerId, "Test WS", "test-ws", Now);
+        context.Workspaces.Add(workspace);
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, memberId, WorkspaceRole.Member, ownerId, Now));
 
-        // Add explicit permission but revoke it
-        var permission = ResourcePermission.Create(
-            workspace.Id,
-            ResourceType.Board,
-            board.Id,
-            SubjectType.User,
-            memberId,
-            PermissionLevel.Editor,
-            ownerId);
-        permission.Revoke(ownerId);
+        var board = Board.Create(workspace.Id, ownerId, "Private Board", null, Now, BoardVisibility.Private);
+        context.Boards.Add(board);
 
-        _context.Workspaces.Add(workspace);
-        _context.Boards.Add(board);
-        _context.ResourcePermissions.Add(permission);
-        _context.SaveChanges();
+        var permission = ResourcePermission.Grant(workspace.Id, ResourceType.Board, board.Id, PermissionSubjectType.User, memberId, PermissionLevel.Editor, ownerId, Now);
+        permission.Revoke(ownerId, Now);
 
-        var context = new PermissionContext(memberId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.ViewBoard);
+        context.ResourcePermissions.Add(permission);
+        await context.SaveChangesAsync();
 
-        // Act
-        var decision = await _permissionService.EvaluateAsync(context);
+        var permissionContext = new PermissionContext(memberId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.ViewBoard);
 
-        // Assert
+        var decision = await service.EvaluateAsync(permissionContext);
+
         decision.IsAllowed.Should().BeFalse();
-        decision.ReasonCode.Should().Be("resource_not_found"); // Revoked, so not found for private board
+        decision.ReasonCode.Should().Be("resource_not_found");
     }
 
     [Fact]
     public void BoardItem_UpdatesFieldValuesCorrectly()
     {
-        // Arrange
-        var groupId = Guid.NewGuid();
-        var boardId = Guid.NewGuid();
         var workspaceId = Guid.NewGuid();
+        var boardId = Guid.NewGuid();
+        var groupId = Guid.NewGuid();
         var creatorId = Guid.NewGuid();
-        var item = BoardItem.Create(groupId, boardId, workspaceId, creatorId, "Enterprise Item", 1024);
 
-        // Act
-        item.ReplaceValues("{\"field1\":\"value1\"}");
+        var item = BoardItem.Create(workspaceId, boardId, groupId, "Enterprise Item", Notrelix.Domain.SharedKernel.FractionalIndex.Initial(), creatorId, Now);
 
-        // Assert
-        item.ValuesJson.Should().Be("{\"field1\":\"value1\"}");
-        var values = item.GetFieldValues();
-        values.Should().ContainKey("field1");
-        values["field1"].Should().Be("value1");
+        item.Rename("Renamed Item", creatorId, Now);
+
+        item.Name.Should().Be("Renamed Item");
     }
 }

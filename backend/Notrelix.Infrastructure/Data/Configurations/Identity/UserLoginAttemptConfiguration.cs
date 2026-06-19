@@ -21,7 +21,7 @@ public class UserLoginAttemptConfiguration : IEntityTypeConfiguration<UserLoginA
         builder.Property(x => x.UserAgent).HasColumnName("user_agent").HasMaxLength(512);
         builder.Property(x => x.OccurredAt).HasColumnName("occurred_at").IsRequired();
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");

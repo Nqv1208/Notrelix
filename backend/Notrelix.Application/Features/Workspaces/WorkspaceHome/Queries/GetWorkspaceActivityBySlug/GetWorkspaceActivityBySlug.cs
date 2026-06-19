@@ -2,19 +2,12 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.Workspaces.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
+namespace Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceActivityBySlug;
 
-using global::Notrelix.Application.Common.Security;
-
-namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspaceActivityBySlug;
-
-public record GetWorkspaceActivityBySlugQuery(Guid WorkspaceId, string Slug, int Page = 1, int PageSize = 20) : IRequest<Result<object>>, IAuthorizeableRequest
+public record GetWorkspaceActivityBySlugQuery(Guid WorkspaceId, string Slug, int Page = 1, int PageSize = 20) : IQuery<Result<object>>, IRequirePermission
 {
-    ResourceType IAuthorizeableRequest.ResourceType => ResourceType.Workspace;
-    Guid IAuthorizeableRequest.ResourceId => WorkspaceId;
-    PermissionAction IAuthorizeableRequest.Action => PermissionAction.ViewWorkspace;
+    PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
 }
 
 public class GetWorkspaceActivityBySlugQueryHandler : IRequestHandler<GetWorkspaceActivityBySlugQuery, Result<object>>
@@ -41,18 +34,17 @@ public class GetWorkspaceActivityBySlugQueryHandler : IRequestHandler<GetWorkspa
         var logs = await _context.ActivityLogs
             .AsNoTracking()
             .Where(a => a.WorkspaceId == workspace.Id)
-            .OrderByDescending(a => a.CreatedAt)
+            .OrderByDescending(a => a.Timestamp)
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
             .Select(a => new
             {
                 a.Id,
                 a.ActorId,
-                a.Action,
-                ResourceType = a.ResourceType.ToString(),
-                a.ResourceId,
-                a.ResourceTitle,
-                a.CreatedAt
+                Action = a.Type.ToString(),
+                ResourceType = a.Target.ResourceType.ToString(),
+                ResourceId = a.Target.ResourceId,
+                a.Timestamp
             })
             .ToListAsync(ct);
 

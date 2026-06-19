@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.SharedKernel;
+using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Items;
 using Xunit;
@@ -33,7 +34,7 @@ public class BoardItemTests
         item.FieldValues.Should().HaveCount(1);
         item.FieldValues.First().Value.Should().Be(value);
         item.UpdatedBy.Should().Be(updatedBy);
-        item.DomainEvents.Should().ContainSingle(e => e is BoardItemFieldValueChangedEvent);
+        item.DomainEvents.Should().ContainSingle(e => e is BoardItemFieldValueChangedDomainEvent);
     }
 
     [Fact]
@@ -64,11 +65,12 @@ public class BoardItemTests
         var newPosition = FractionalIndex.Create("b0");
         var updatedBy = Guid.NewGuid();
         
-        item.MoveToGroup(newGroup, newPosition, updatedBy, DateTimeOffset.UtcNow);
+        var boardGroupRef = new BoardGroupRef(item.WorkspaceId, item.BoardId, newGroup);
+        item.MoveToGroup(boardGroupRef, newPosition, updatedBy, DateTimeOffset.UtcNow);
         
         item.GroupId.Should().Be(newGroup);
         item.Position.Should().Be(newPosition);
-        item.DomainEvents.Should().ContainSingle(e => e is BoardItemMovedEvent);
+        item.DomainEvents.Should().ContainSingle(e => e is BoardItemMovedDomainEvent);
     }
 
     [Fact]
@@ -79,12 +81,12 @@ public class BoardItemTests
         
         item.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         item.IsDeleted.Should().BeTrue();
-        item.DomainEvents.Should().ContainSingle(e => e is BoardItemSoftDeletedEvent);
+        item.DomainEvents.Should().ContainSingle(e => e is BoardItemSoftDeletedDomainEvent);
         
         item.ClearDomainEvents();
         item.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
         item.IsDeleted.Should().BeFalse();
-        item.DomainEvents.Should().ContainSingle(e => e is BoardItemRestoredEvent);
+        item.DomainEvents.Should().ContainSingle(e => e is BoardItemRestoredDomainEvent);
     }
 
     [Fact]
@@ -149,6 +151,6 @@ public class BoardItemTests
         item.UpdateFieldValue(field, value, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         item.FieldValues.Should().HaveCount(1);
-        item.DomainEvents.Should().ContainSingle(e => e is BoardItemFieldValueChangedEvent);
+        item.DomainEvents.Should().ContainSingle(e => e is BoardItemFieldValueChangedDomainEvent);
     }
 }

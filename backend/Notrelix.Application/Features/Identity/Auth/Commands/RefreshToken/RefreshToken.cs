@@ -2,39 +2,42 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
-using Notrelix.Domain.Identity;
+using Notrelix.Domain.Identity.Sessions;
+using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.RefreshToken;
 
-// Command làm mới access token
-public record RefreshTokenCommand : IRequest<Result<AuthResult>>
+public record RefreshTokenCommand : ICommand<Result<AuthResult>>, ITransactionalRequest
 {
     public required string RefreshToken { get; init; }
 }
 
-// Handler cho RefreshTokenCommand
 public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, Result<AuthResult>>
 {
     private readonly IApplicationDbContext _context;
     private readonly IJwtService _jwtService;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public RefreshTokenCommandHandler(
         IApplicationDbContext context,
-        IJwtService jwtService)
+        IJwtService jwtService,
+        IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _jwtService = jwtService;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<AuthResult>> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
     {
-        // Tìm session hợp lệ theo refresh token
+        var now = _dateTimeProvider.UtcNow;
+        var tokenHash = RefreshTokenHash.Create(request.RefreshToken);
+
         var session = await _context.Sessions
-            .Include(s => s.User)
             .FirstOrDefaultAsync(s => 
-                s.RefreshToken == request.RefreshToken && 
-                !s.IsRevoked && 
-                s.ExpiresAt > DateTime.UtcNow, 
+                s.RefreshTokenHash == tokenHash && 
+                s.Status == SessionStatus.Active && 
+                s.ExpiresAt > now, 
                 cancellationToken);
 
         if (session is null)
@@ -42,20 +45,22 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             return Result<AuthResult>.Failure("Refresh token is invalid or expired");
         }
 
-        var user = session.User;
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Id == session.UserId, cancellationToken);
 
-        // Thu hồi session cũ
-        session.Revoke();
+        if (user is null)
+        {
+            return Result<AuthResult>.Failure("User not found");
+        }
 
-        // Generate tokens mới
+        session.Revoke(now);
+
         var accessToken = _jwtService.GenerateAccessToken(user);
         var newRefreshToken = _jwtService.GenerateRefreshToken();
+        var newTokenHash = RefreshTokenHash.Create(newRefreshToken);
 
-        // Tạo session mới
-        var newSession = Session.Create(user.Id, newRefreshToken, DateTime.UtcNow.AddDays(30));
+        var newSession = UserSession.Create(user.Id, newTokenHash, now.AddDays(30), now);
         _context.Sessions.Add(newSession);
-
-        await _context.SaveChangesAsync(cancellationToken);
 
         return Result<AuthResult>.Success(new AuthResult
         {

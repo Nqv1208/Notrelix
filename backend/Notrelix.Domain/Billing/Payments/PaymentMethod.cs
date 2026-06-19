@@ -1,8 +1,9 @@
 using Notrelix.Domain.Common;
+using Notrelix.Domain.Billing.Payments.Events;
 
 namespace Notrelix.Domain.Billing.Payments;
 
-public class PaymentMethod : AggregateRoot
+public class PaymentMethod : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public PaymentProvider Provider { get; private set; }
@@ -14,12 +15,12 @@ public class PaymentMethod : AggregateRoot
 
     private PaymentMethod() : base() { }
 
-    public static PaymentMethod Create(Guid workspaceId, PaymentProvider provider, string providerMethodId, string last4, string brand, bool isDefault = false)
+    public static PaymentMethod Create(Guid workspaceId, PaymentProvider provider, string providerMethodId, string last4, string brand, Guid createdBy, DateTimeOffset createdAt, bool isDefault = false)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(providerMethodId);
 
-        return new PaymentMethod
+        var method = new PaymentMethod
         {
             WorkspaceId = workspaceId,
             Provider = provider,
@@ -29,5 +30,23 @@ public class PaymentMethod : AggregateRoot
             Status = PaymentMethodStatus.Active,
             IsDefault = isDefault
         };
+
+        method.SetAuditOnCreate(createdBy, createdAt);
+        method.AddDomainEvent(new PaymentMethodAddedDomainEvent(workspaceId, method.Id, provider, last4, brand, createdAt));
+        return method;
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        IncrementVersion();
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        IncrementVersion();
     }
 }

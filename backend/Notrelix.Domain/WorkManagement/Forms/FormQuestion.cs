@@ -9,10 +9,10 @@ public class FormQuestion : Entity, IWorkspaceScoped
     public Guid? BoardFieldId { get; private set; }
     public string QuestionKey { get; private set; } = null!;
     public string Label { get; private set; } = null!;
-    public string QuestionType { get; private set; } = null!;
+    public FormQuestionType QuestionType { get; private set; }
     public bool IsRequired { get; private set; }
     public FractionalIndex Position { get; private set; } = null!;
-    public string ConfigJson { get; private set; } = "{}";
+    public FormQuestionConfig? Config { get; private set; }
     public long Version { get; private set; } = 1;
 
     private FormQuestion() : base() { }
@@ -23,16 +23,15 @@ public class FormQuestion : Entity, IWorkspaceScoped
         Guid? boardFieldId,
         string questionKey,
         string label,
-        string questionType,
+        FormQuestionType questionType,
         bool isRequired,
         FractionalIndex position,
-        string? configJson = null)
+        FormQuestionConfig? config = null)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(formId);
         Guard.NotNullOrWhiteSpace(questionKey);
         Guard.NotNullOrWhiteSpace(label);
-        Guard.NotNullOrWhiteSpace(questionType);
         Guard.NotNull(position);
 
         return new FormQuestion
@@ -45,11 +44,11 @@ public class FormQuestion : Entity, IWorkspaceScoped
             QuestionType = questionType,
             IsRequired = isRequired,
             Position = position,
-            ConfigJson = configJson ?? "{}"
+            Config = config
         };
     }
 
-    public void UpdateQuestion(string label, bool isRequired, FractionalIndex position, string? configJson)
+    public void UpdateQuestion(string label, bool isRequired, FractionalIndex position, FormQuestionConfig? config)
     {
         Guard.NotNullOrWhiteSpace(label);
         Guard.NotNull(position);
@@ -57,7 +56,7 @@ public class FormQuestion : Entity, IWorkspaceScoped
         Label = label.Trim();
         IsRequired = isRequired;
         Position = position;
-        ConfigJson = configJson ?? "{}";
+        Config = config;
         Version++;
     }
 }

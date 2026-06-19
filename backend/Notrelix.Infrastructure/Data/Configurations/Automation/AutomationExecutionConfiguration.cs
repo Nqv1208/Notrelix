@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Automation.Executions;
+using Notrelix.Domain.Automation.Rules;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Automation;
 
@@ -24,7 +25,7 @@ public class AutomationExecutionConfiguration : IEntityTypeConfiguration<Automat
         builder.Property(x => x.AttemptCount).HasColumnName("attempt_count");
         builder.Property(x => x.LastResponse).HasColumnName("last_response");
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");

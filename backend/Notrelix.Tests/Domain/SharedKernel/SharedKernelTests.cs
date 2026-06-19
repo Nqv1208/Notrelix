@@ -82,9 +82,9 @@ public class SharedKernelTests
     public void ResourceRef_Create_ShouldSucceed_WithValidInput()
     {
         var id = Guid.NewGuid();
-        var resourceRef = ResourceRef.Create("Board", id);
+        var resourceRef = ResourceRef.Create(ResourceType.Board, id);
         
-        resourceRef.ResourceType.Should().Be("Board");
+        resourceRef.ResourceType.Should().Be(ResourceType.Board);
         resourceRef.ResourceId.Should().Be(id);
     }
 }

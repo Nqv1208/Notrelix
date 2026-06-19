@@ -6,7 +6,7 @@ using Notrelix.Application.Common.Models;
 namespace Notrelix.Application.Features.Identity.Auth.Queries.GetCurrentUser;
 
 // Query lấy thông tin user hiện tại
-public record GetCurrentUserQuery : IRequest<Result<UserDto>>
+public record GetCurrentUserQuery : IQuery<Result<UserDto>>
 {
     public required Guid UserId { get; init; }
 }

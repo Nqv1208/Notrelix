@@ -70,8 +70,8 @@ public class OAuthAccountTests
         account.ProviderId.Should().Be("provider-id-123");
         account.Token.Should().Be(token);
 
-        user.DomainEvents.Should().ContainSingle(e => e is OAuthAccountLinkedEvent);
-        var evt = (OAuthAccountLinkedEvent)user.DomainEvents.Single(e => e is OAuthAccountLinkedEvent);
+        user.DomainEvents.Should().ContainSingle(e => e is OAuthAccountLinkedDomainEvent);
+        var evt = (OAuthAccountLinkedDomainEvent)user.DomainEvents.Single(e => e is OAuthAccountLinkedDomainEvent);
         evt.UserId.Should().Be(user.Id);
         evt.Provider.Should().Be(OAuthProvider.Google);
         evt.ProviderId.Should().Be("provider-id-123");
@@ -101,8 +101,8 @@ public class OAuthAccountTests
         user.UnlinkOAuthAccount(OAuthProvider.Google, now.AddMinutes(5));
 
         user.OAuthAccounts.Should().BeEmpty();
-        user.DomainEvents.Should().ContainSingle(e => e is OAuthAccountUnlinkedEvent);
-        var evt = (OAuthAccountUnlinkedEvent)user.DomainEvents.Single(e => e is OAuthAccountUnlinkedEvent);
+        user.DomainEvents.Should().ContainSingle(e => e is OAuthAccountUnlinkedDomainEvent);
+        var evt = (OAuthAccountUnlinkedDomainEvent)user.DomainEvents.Single(e => e is OAuthAccountUnlinkedDomainEvent);
         evt.UserId.Should().Be(user.Id);
         evt.Provider.Should().Be(OAuthProvider.Google);
         evt.ProviderId.Should().Be("provider-id-123");
@@ -122,8 +122,8 @@ public class OAuthAccountTests
         user.RotateOAuthToken(OAuthProvider.Google, newToken, now.AddMinutes(5));
 
         user.OAuthAccounts.Single().Token.Should().Be(newToken);
-        user.DomainEvents.Should().ContainSingle(e => e is OAuthTokenReferenceRotatedEvent);
-        var evt = (OAuthTokenReferenceRotatedEvent)user.DomainEvents.Single(e => e is OAuthTokenReferenceRotatedEvent);
+        user.DomainEvents.Should().ContainSingle(e => e is OAuthTokenReferenceRotatedDomainEvent);
+        var evt = (OAuthTokenReferenceRotatedDomainEvent)user.DomainEvents.Single(e => e is OAuthTokenReferenceRotatedDomainEvent);
         evt.UserId.Should().Be(user.Id);
         evt.Provider.Should().Be(OAuthProvider.Google);
         evt.RotatedAt.Should().Be(now.AddMinutes(5));

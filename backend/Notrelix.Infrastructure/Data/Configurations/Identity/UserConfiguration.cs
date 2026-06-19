@@ -16,6 +16,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.OwnsOne(x => x.Email, email =>
         {
             email.Property(e => e.Value).HasColumnName("email").IsRequired().HasMaxLength(256);
+            email.HasIndex(e => e.Value).IsUnique().HasDatabaseName("idx_users_email");
         });
 
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
@@ -26,23 +27,19 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Ignore(x => x.AvatarUrl);
 
+        builder.Ignore(x => x.IsDeleted);
+        builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
+        builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
+        builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
+        builder.Property(x => x.RestoredAt).HasColumnName("restored_at");
+        builder.Property(x => x.RestoredBy).HasColumnName("restored_by");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasOne(x => x.Profile)
-            .WithOne(x => x.User)
-            .HasForeignKey<UserProfile>(x => x.UserId);
-
-        builder.HasMany(x => x.Sessions)
-            .WithOne()
-            .HasForeignKey(x => x.UserId);
-
         builder.HasMany(x => x.OAuthAccounts)
             .WithOne()
             .HasForeignKey(x => x.UserId);
-
-        builder.HasIndex(x => x.Email).IsUnique().HasDatabaseName("idx_users_email");
     }
 }

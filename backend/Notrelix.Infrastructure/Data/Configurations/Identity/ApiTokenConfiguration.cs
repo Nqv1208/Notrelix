@@ -17,14 +17,14 @@ public class ApiTokenConfiguration : IEntityTypeConfiguration<ApiToken>
         builder.Property(x => x.UserId).HasColumnName("user_id");
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
         builder.Property(x => x.TokenHash).HasColumnName("token_hash").IsRequired();
-        builder.Property(x => x.ScopesJson).HasColumnName("scopes").IsRequired().HasDefaultValue("[]");
+        builder.Property(x => x.Scopes).HasColumnName("scopes").HasConversion<Infrastructure.Data.Converters.ApiTokenScopesConverter>();
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.LastUsedAt).HasColumnName("last_used_at");
         builder.Property(x => x.ExpiresAt).HasColumnName("expires_at");
         builder.Property(x => x.RevokedAt).HasColumnName("revoked_at");
         builder.Property(x => x.RevokedBy).HasColumnName("revoked_by");
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");

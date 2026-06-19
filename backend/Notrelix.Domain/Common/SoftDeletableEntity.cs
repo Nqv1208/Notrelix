@@ -4,7 +4,7 @@ namespace Notrelix.Domain.Common;
 
 public abstract class SoftDeletableEntity : AuditableEntity
 {
-    public bool IsDeleted { get; private set; }
+    public bool IsDeleted => DeletedAt.HasValue;
     public DateTimeOffset? DeletedAt { get; private set; }
     public Guid? DeletedBy { get; private set; }
     public string? DeleteReason { get; private set; }
@@ -17,7 +17,6 @@ public abstract class SoftDeletableEntity : AuditableEntity
     public virtual void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        IsDeleted = true;
         DeletedAt = deletedAt;
         DeletedBy = deletedBy;
         DeleteReason = reason;
@@ -26,7 +25,6 @@ public abstract class SoftDeletableEntity : AuditableEntity
     public virtual void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        IsDeleted = false;
         DeletedAt = null;
         DeletedBy = null;
         DeleteReason = null;

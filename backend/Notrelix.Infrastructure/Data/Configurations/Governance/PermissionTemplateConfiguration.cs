@@ -21,7 +21,7 @@ public class PermissionTemplateConfiguration : IEntityTypeConfiguration<Permissi
         builder.Property(x => x.IsSystem).HasColumnName("is_system");
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
@@ -32,7 +32,7 @@ public class PermissionTemplateConfiguration : IEntityTypeConfiguration<Permissi
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => x.WorkspaceId).HasFilter("workspace_id IS NOT NULL AND is_deleted = false").HasDatabaseName("idx_permission_templates_workspace_id");
+        builder.HasIndex(x => x.WorkspaceId).HasFilter("workspace_id IS NOT NULL AND deleted_at IS NULL").HasDatabaseName("idx_permission_templates_workspace_id");
         builder.HasIndex(x => x.Name).HasDatabaseName("idx_permission_templates_name");
     }
 }

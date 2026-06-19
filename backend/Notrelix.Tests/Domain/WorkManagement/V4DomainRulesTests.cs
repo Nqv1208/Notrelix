@@ -16,7 +16,6 @@ using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Governance.ShareLinks;
 using Notrelix.Domain.Billing.Plans;
 using Notrelix.Domain.Billing.Usage;
-using Notrelix.Domain.Billing.Events;
 using Xunit;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
@@ -40,12 +39,12 @@ public class V4DomainRulesTests
             boardFieldId: null, 
             questionKey: "FullName", 
             label: "Your Full Name", 
-            questionType: "text", 
+            questionType: FormQuestionType.ShortText, 
             isRequired: true, 
             position: FractionalIndex.Initial(), 
-            configJson: null);
+            config: null);
 
-        Action act = () => form.AddQuestion(question);
+        Action act = () => form.AddQuestion(question, _actorId, _now);
 
         act.Should().Throw<WorkspaceMismatchException>();
     }
@@ -132,13 +131,13 @@ public class V4DomainRulesTests
     {
         var ruleFuture = PermissionRule.Create(
             _workspaceId,
-            "Workspace",
+            PermissionScopeType.Workspace,
             null,
             null,
-            "User",
+            PermissionSubjectType.User,
             _actorId,
             null,
-            "read",
+            PermissionAction.ViewWorkspace,
             PermissionEffect.Allow,
             _actorId,
             _now,
@@ -146,13 +145,13 @@ public class V4DomainRulesTests
 
         var ruleExpired = PermissionRule.Create(
             _workspaceId,
-            "Workspace",
+            PermissionScopeType.Workspace,
             null,
             null,
-            "User",
+            PermissionSubjectType.User,
             _actorId,
             null,
-            "read",
+            PermissionAction.ViewWorkspace,
             PermissionEffect.Allow,
             _actorId,
             _now,
@@ -188,6 +187,7 @@ public class V4DomainRulesTests
             currentUsage: 8,
             hardLimit: 10,
             softLimit: null,
+            createdAt: _now,
             overageAllowed: false);
 
         // Consume 3 items when current is 8 (8+3=11 > 10) should fail
@@ -209,7 +209,8 @@ public class V4DomainRulesTests
             FeatureCode.Create("Boards"),
             currentUsage: 2,
             hardLimit: 10,
-            softLimit: null);
+            softLimit: null,
+            createdAt: _now);
 
         Action act = () => usage.Release(3, _actorId, _now);
 

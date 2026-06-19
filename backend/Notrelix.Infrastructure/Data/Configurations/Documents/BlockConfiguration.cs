@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Documents.Blocks;
+using Notrelix.Domain.Documents.Pages;
+using Notrelix.Infrastructure.Data.Converters;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Documents;
 
@@ -20,20 +22,17 @@ public class BlockConfiguration : IEntityTypeConfiguration<Block>
 
         builder.OwnsOne(x => x.Content, content =>
         {
-            content.Property(c => c.Value).HasColumnName("content").HasColumnType("jsonb").IsRequired();
+            content.Property(c => c.Data).HasColumnName("content").HasColumnType("jsonb").IsRequired();
         });
 
         builder.OwnsOne(x => x.Properties, props =>
         {
-            props.Property(p => p.Value).HasColumnName("properties").HasColumnType("jsonb").IsRequired();
+            props.Property(p => p.Data).HasColumnName("properties").HasColumnType("jsonb").IsRequired();
         });
 
-        builder.OwnsOne(x => x.Position, pos =>
-        {
-            pos.Property(p => p.Value).HasColumnName("position").HasColumnType("float8").IsRequired();
-        });
+        builder.Property(x => x.Position).HasColumnName("position").HasConversion<FractionalIndexConverter>().HasMaxLength(50).IsRequired();
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
@@ -54,7 +53,7 @@ public class BlockConfiguration : IEntityTypeConfiguration<Block>
             .HasForeignKey(x => x.ParentId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(x => new { x.PageId, x.Position }).HasFilter("is_deleted = false").HasDatabaseName("idx_blocks_page_position");
+        builder.HasIndex(x => new { x.PageId, x.Position }).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_blocks_page_position");
         builder.HasIndex(x => x.ParentId).HasFilter("parent_id IS NOT NULL").HasDatabaseName("idx_blocks_parent_id");
     }
 }

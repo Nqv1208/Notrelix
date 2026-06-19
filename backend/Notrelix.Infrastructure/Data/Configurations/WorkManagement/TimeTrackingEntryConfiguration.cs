@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Items;
 
 namespace Notrelix.Infrastructure.Data.Configurations.WorkManagement;
@@ -19,11 +20,11 @@ public class TimeTrackingEntryConfiguration : IEntityTypeConfiguration<TimeTrack
         builder.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(x => x.StartedAt).HasColumnName("started_at").IsRequired();
         builder.Property(x => x.EndedAt).HasColumnName("ended_at");
-        builder.Property(x => x.Status).HasColumnName("status").IsRequired();
+        builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.Note).HasColumnName("note");
         builder.Property(x => x.Version).HasColumnName("version");
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
@@ -39,12 +40,12 @@ public class TimeTrackingEntryConfiguration : IEntityTypeConfiguration<TimeTrack
             .HasForeignKey(x => x.ItemId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne<Board>()
+        builder.HasOne<Notrelix.Domain.WorkManagement.Boards.Board>()
             .WithMany()
             .HasForeignKey(x => x.BoardId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(x => new { x.ItemId, x.UserId }).HasFilter("is_deleted = false").HasDatabaseName("idx_time_tracking_item_user");
-        builder.HasIndex(x => x.Status).HasFilter("is_deleted = false").HasDatabaseName("idx_time_tracking_status");
+        builder.HasIndex(x => new { x.ItemId, x.UserId }).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_time_tracking_item_user");
+        builder.HasIndex(x => x.Status).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_time_tracking_status");
     }
 }
