@@ -74,7 +74,7 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
         };
 
         agent.SetAuditOnCreate(createdBy, createdAt);
-        agent.AddDomainEvent(new AiAgentCreatedEvent(workspaceId, agent.Id, name, createdBy, createdAt));
+        agent.AddDomainEvent(new AiAgentCreatedDomainEvent(workspaceId, agent.Id, name, createdBy, createdAt));
         return agent;
     }
 
@@ -101,7 +101,7 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
 
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new AiAgentUpdatedEvent(WorkspaceId, Id, Name, updatedBy, updatedAt));
+        AddDomainEvent(new AiAgentUpdatedDomainEvent(WorkspaceId, Id, Name, updatedBy, updatedAt));
     }
 
     public void ChangeStatus(AiAgentStatus newStatus, Guid updatedBy, DateTimeOffset updatedAt)
@@ -118,7 +118,7 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
         Status = newStatus;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new AiAgentStatusChangedEvent(WorkspaceId, Id, Status, updatedBy, updatedAt));
+        AddDomainEvent(new AiAgentStatusChangedDomainEvent(WorkspaceId, Id, Status, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -126,7 +126,9 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
         if (Status == AiAgentStatus.Deleted) return;
         Status = AiAgentStatus.Deleted;
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new AiAgentStatusChangedEvent(WorkspaceId, Id, Status, deletedBy, deletedAt));
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new AiAgentStatusChangedDomainEvent(WorkspaceId, Id, Status, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -134,6 +136,8 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
         if (Status != AiAgentStatus.Deleted) return;
         Status = AiAgentStatus.Draft;
         base.Restore(restoredBy, restoredAt);
-        AddDomainEvent(new AiAgentStatusChangedEvent(WorkspaceId, Id, Status, restoredBy, restoredAt));
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new AiAgentStatusChangedDomainEvent(WorkspaceId, Id, Status, restoredBy, restoredAt));
     }
 }

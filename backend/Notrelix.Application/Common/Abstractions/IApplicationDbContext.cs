@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Notrelix.Domain.Analytics.Dashboards;
 using Notrelix.Domain.Automation.Agents;
 using Notrelix.Domain.Automation.Executions;
@@ -6,7 +7,7 @@ using Notrelix.Domain.Automation.Rules;
 using Notrelix.Domain.Automation.Scheduled;
 using Notrelix.Domain.Automation.Templates;
 using Notrelix.Domain.Billing.Entitlements;
-using Notrelix.Domain.Billing.Events;
+using Notrelix.Domain.Billing.BillingEvents;
 using Notrelix.Domain.Billing.Payments;
 using Notrelix.Domain.Billing.Plans;
 using Notrelix.Domain.Billing.Subscriptions;
@@ -66,6 +67,7 @@ namespace Notrelix.Application.Common.Abstractions;
 
 public interface IApplicationDbContext
 {
+    DatabaseFacade Database { get; }
     // Identity
     DbSet<User> Users { get; }
     DbSet<UserProfile> UserProfiles { get; }
@@ -112,6 +114,7 @@ public interface IApplicationDbContext
     DbSet<Label> Labels { get; }
     DbSet<Checklist> Checklists { get; }
     DbSet<ChecklistItem> ChecklistItems { get; }
+    DbSet<BoardMember> BoardMembers { get; }
     DbSet<BoardSubscriber> BoardSubscribers { get; }
     DbSet<BoardRelation> BoardRelations { get; }
     DbSet<BoardItemConnection> BoardItemConnections { get; }

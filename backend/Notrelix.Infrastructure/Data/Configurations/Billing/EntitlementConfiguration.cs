@@ -23,7 +23,7 @@ public class EntitlementConfiguration : IEntityTypeConfiguration<Entitlement>
         builder.Property(x => x.RevokedAt).HasColumnName("revoked_at");
         builder.Property(x => x.RevokedBy).HasColumnName("revoked_by");
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");

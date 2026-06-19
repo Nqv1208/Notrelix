@@ -1,9 +1,10 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Billing.Rules;
+using Notrelix.Domain.Billing.Usage.Events;
 
 namespace Notrelix.Domain.Billing.Usage;
 
-public class UsageMetric : AggregateRoot
+public class UsageMetric : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public UsageMetricKey Key { get; private set; } = null!;
@@ -15,19 +16,22 @@ public class UsageMetric : AggregateRoot
 
     private UsageMetric() : base() { }
 
-    public static UsageMetric Create(Guid workspaceId, UsageMetricKey key, UsagePeriod period)
+    public static UsageMetric Create(Guid workspaceId, UsageMetricKey key, UsagePeriod period, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(key);
         Guard.NotNull(period);
 
-        return new UsageMetric
+        var metric = new UsageMetric
         {
             WorkspaceId = workspaceId,
             Key = key,
             CurrentValue = 0,
             CurrentPeriod = period
         };
+
+        metric.AddDomainEvent(new UsageMetricCreatedDomainEvent(workspaceId, key, createdAt));
+        return metric;
     }
 
     public void Increase(int amount, int limit, bool isHardLimit, DateTimeOffset occurredAt)
@@ -37,13 +41,13 @@ public class UsageMetric : AggregateRoot
 
         if (CurrentValue + amount > limit)
         {
-            AddDomainEvent(new UsageLimitExceededEvent(WorkspaceId, Key, occurredAt));
+            AddDomainEvent(new UsageLimitExceededDomainEvent(WorkspaceId, Key, occurredAt));
             UsageRules.EnsureCanIncrease(CurrentValue, amount, limit, isHardLimit);
         }
 
         CurrentValue += amount;
         _history.Add(UsageMetricHistory.Create(Id, amount, occurredAt));
-        AddDomainEvent(new UsageMetricIncreasedEvent(WorkspaceId, Key, amount, occurredAt));
+        AddDomainEvent(new UsageMetricIncreasedDomainEvent(WorkspaceId, Key, amount, occurredAt));
     }
 
     public void Decrease(int amount, DateTimeOffset occurredAt)
@@ -58,6 +62,8 @@ public class UsageMetric : AggregateRoot
 
         CurrentValue -= amount;
         _history.Add(UsageMetricHistory.Create(Id, -amount, occurredAt));
+        IncrementVersion();
+        AddDomainEvent(new UsageMetricDecreasedDomainEvent(WorkspaceId, Key, amount, occurredAt));
     }
 
     public void Reset(UsagePeriod newPeriod, DateTimeOffset occurredAt)
@@ -67,5 +73,23 @@ public class UsageMetric : AggregateRoot
 
         CurrentValue = 0;
         CurrentPeriod = newPeriod;
+        IncrementVersion();
+        AddDomainEvent(new UsageMetricResetDomainEvent(WorkspaceId, Key, occurredAt));
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        IncrementVersion();
+        AddDomainEvent(new UsageMetricSoftDeletedDomainEvent(WorkspaceId, Key, deletedBy, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new UsageMetricRestoredDomainEvent(WorkspaceId, Key, restoredBy, restoredAt));
     }
 }

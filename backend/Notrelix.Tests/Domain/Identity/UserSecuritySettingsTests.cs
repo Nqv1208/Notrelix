@@ -31,8 +31,8 @@ public class UserSecuritySettingsTests
 
         settings.IsMfaEnabled.Should().BeTrue();
         settings.PreferredMfaMethod.Should().Be(MfaMethodType.AuthenticatorApp);
-        settings.DomainEvents.Should().ContainSingle(e => e is UserMfaRequirementEnabledEvent);
-        var evt = (UserMfaRequirementEnabledEvent)settings.DomainEvents.Single(e => e is UserMfaRequirementEnabledEvent);
+        settings.DomainEvents.Should().ContainSingle(e => e is UserMfaRequirementEnabledDomainEvent);
+        var evt = (UserMfaRequirementEnabledDomainEvent)settings.DomainEvents.Single(e => e is UserMfaRequirementEnabledDomainEvent);
         evt.UserId.Should().Be(settings.UserId);
         evt.PreferredMethod.Should().Be(MfaMethodType.AuthenticatorApp);
         evt.EnabledAt.Should().Be(now);
@@ -50,8 +50,8 @@ public class UserSecuritySettingsTests
 
         settings.IsMfaEnabled.Should().BeFalse();
         settings.PreferredMfaMethod.Should().BeNull();
-        settings.DomainEvents.Should().ContainSingle(e => e is UserMfaRequirementDisabledEvent);
-        var evt = (UserMfaRequirementDisabledEvent)settings.DomainEvents.Single(e => e is UserMfaRequirementDisabledEvent);
+        settings.DomainEvents.Should().ContainSingle(e => e is UserMfaRequirementDisabledDomainEvent);
+        var evt = (UserMfaRequirementDisabledDomainEvent)settings.DomainEvents.Single(e => e is UserMfaRequirementDisabledDomainEvent);
         evt.UserId.Should().Be(settings.UserId);
         evt.PreviousMethod.Should().Be(MfaMethodType.AuthenticatorApp);
         evt.DisabledAt.Should().Be(now.AddMinutes(1));
@@ -66,8 +66,8 @@ public class UserSecuritySettingsTests
         settings.RequirePasswordChangeNow(now);
 
         settings.RequirePasswordChange.Should().BeTrue();
-        settings.DomainEvents.Should().ContainSingle(e => e is PasswordChangeRequiredEvent);
-        var evt = (PasswordChangeRequiredEvent)settings.DomainEvents.Single(e => e is PasswordChangeRequiredEvent);
+        settings.DomainEvents.Should().ContainSingle(e => e is PasswordChangeRequiredDomainEvent);
+        var evt = (PasswordChangeRequiredDomainEvent)settings.DomainEvents.Single(e => e is PasswordChangeRequiredDomainEvent);
         evt.UserId.Should().Be(settings.UserId);
         evt.RequiredAt.Should().Be(now);
     }
@@ -83,8 +83,8 @@ public class UserSecuritySettingsTests
         settings.MarkPasswordChanged(now.AddMinutes(1));
 
         settings.RequirePasswordChange.Should().BeFalse();
-        settings.DomainEvents.Should().ContainSingle(e => e is UserSecurityPasswordChangedEvent);
-        var evt = (UserSecurityPasswordChangedEvent)settings.DomainEvents.Single(e => e is UserSecurityPasswordChangedEvent);
+        settings.DomainEvents.Should().ContainSingle(e => e is UserSecurityPasswordChangedDomainEvent);
+        var evt = (UserSecurityPasswordChangedDomainEvent)settings.DomainEvents.Single(e => e is UserSecurityPasswordChangedDomainEvent);
         evt.UserId.Should().Be(settings.UserId);
         evt.ChangedAt.Should().Be(now.AddMinutes(1));
     }
@@ -99,8 +99,8 @@ public class UserSecuritySettingsTests
         settings.UpdateSettings(settingsJson, now);
 
         settings.SettingsJson.Value.Should().Be("{\"theme\":\"dark\"}");
-        settings.DomainEvents.Should().ContainSingle(e => e is UserSecuritySettingsUpdatedEvent);
-        var evt = (UserSecuritySettingsUpdatedEvent)settings.DomainEvents.Single(e => e is UserSecuritySettingsUpdatedEvent);
+        settings.DomainEvents.Should().ContainSingle(e => e is UserSecuritySettingsUpdatedDomainEvent);
+        var evt = (UserSecuritySettingsUpdatedDomainEvent)settings.DomainEvents.Single(e => e is UserSecuritySettingsUpdatedDomainEvent);
         evt.UserId.Should().Be(settings.UserId);
         evt.UpdatedAt.Should().Be(now);
     }

@@ -9,7 +9,7 @@ namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.CancelIn
 public record CancelInvitationCommand(
     Guid WorkspaceId,
     Guid InvitationId
-) : IRequest<Result>;
+) : ICommand<Result>, ITransactionalRequest;
 
 public class CancelInvitationCommandHandler : IRequestHandler<CancelInvitationCommand, Result>
 {
@@ -26,7 +26,6 @@ public class CancelInvitationCommandHandler : IRequestHandler<CancelInvitationCo
             throw new NotFoundException(nameof(WorkspaceInvitation), request.InvitationId);
 
         _context.WorkspaceInvitations.Remove(invitation);
-        await _context.SaveChangesAsync(ct);
         return Result.Success();
     }
 }

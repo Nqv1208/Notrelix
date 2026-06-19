@@ -21,7 +21,7 @@ public class ItemDependencyConfiguration : IEntityTypeConfiguration<ItemDependen
         builder.Property(x => x.LagMinutes).HasColumnName("lag_minutes");
         builder.Property(x => x.Version).HasColumnName("version");
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
@@ -42,7 +42,7 @@ public class ItemDependencyConfiguration : IEntityTypeConfiguration<ItemDependen
             .HasForeignKey(x => x.SuccessorItemId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(x => new { x.PredecessorItemId, x.SuccessorItemId }).IsUnique().HasFilter("is_deleted = false").HasDatabaseName("idx_item_dependencies_pair");
-        builder.HasIndex(x => x.SuccessorItemId).HasFilter("is_deleted = false").HasDatabaseName("idx_item_dependencies_successor");
+        builder.HasIndex(x => new { x.PredecessorItemId, x.SuccessorItemId }).IsUnique().HasFilter("deleted_at IS NULL").HasDatabaseName("idx_item_dependencies_pair");
+        builder.HasIndex(x => x.SuccessorItemId).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_item_dependencies_successor");
     }
 }

@@ -2,7 +2,7 @@ using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Collaboration.Presence;
 
-public class PresenceSession : Entity
+public class PresenceSession : Entity, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid UserId { get; private set; }

@@ -3,7 +3,7 @@ using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Domain.Integrations.Webhooks;
 
-public class WebhookSubscription : AggregateRoot
+public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Url TargetUrl { get; private set; } = null!;
@@ -27,7 +27,7 @@ public class WebhookSubscription : AggregateRoot
         };
 
         subscription.SetAuditOnCreate(createdBy, createdAt);
-        subscription.AddDomainEvent(new WebhookSubscriptionCreatedEvent(subscription.Id, workspaceId, subscription.TargetUrl.Value, createdAt));
+        subscription.AddDomainEvent(new WebhookSubscriptionCreatedDomainEvent(subscription.Id, workspaceId, subscription.TargetUrl.Value, createdAt));
 
         return subscription;
     }
@@ -39,6 +39,7 @@ public class WebhookSubscription : AggregateRoot
 
         IsActive = true;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
     }
 
     public void Disable(Guid updatedBy, DateTimeOffset updatedAt)
@@ -48,6 +49,7 @@ public class WebhookSubscription : AggregateRoot
 
         IsActive = false;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
     }
 
     public void RotateSecret(WebhookSecretHash newHash, Guid updatedBy, DateTimeOffset updatedAt)
@@ -57,6 +59,7 @@ public class WebhookSubscription : AggregateRoot
 
         SecretHash = newHash;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -64,5 +67,7 @@ public class WebhookSubscription : AggregateRoot
         if (IsDeleted) return;
         IsActive = false;
         base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
     }
 }

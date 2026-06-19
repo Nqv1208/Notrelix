@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Labels;
 
 namespace Notrelix.Infrastructure.Data.Configurations.WorkManagement;
@@ -20,10 +21,10 @@ public class LabelConfiguration : IEntityTypeConfiguration<Label>
 
         builder.OwnsOne(x => x.Color, color =>
         {
-            color.Property(c => c.Value).HasColumnName("color").IsRequired().HasMaxLength(50);
+            color.Property(c => c.Hex).HasColumnName("color").IsRequired().HasMaxLength(50);
         });
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");

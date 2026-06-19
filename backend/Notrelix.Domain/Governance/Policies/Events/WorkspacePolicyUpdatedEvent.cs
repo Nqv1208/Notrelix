@@ -7,4 +7,4 @@ public sealed record WorkspacePolicyUpdatedEvent(
     Guid WorkspaceId,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : DomainEvent(OccurredAt, WorkspaceId, UpdatedBy);

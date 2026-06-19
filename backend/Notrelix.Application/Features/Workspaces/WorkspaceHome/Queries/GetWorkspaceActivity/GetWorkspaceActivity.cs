@@ -2,19 +2,14 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.Workspaces.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
+using global::Notrelix.Domain.Workspaces.Workspaces;
 
-using global::Notrelix.Application.Common.Security;
+namespace Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceActivity;
 
-namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspaceActivity;
-
-public record GetWorkspaceActivityQuery(Guid WorkspaceId, int Page = 1, int PageSize = 20) : IRequest<Result<object>>, IAuthorizeableRequest
+public record GetWorkspaceActivityQuery(Guid WorkspaceId, int Page = 1, int PageSize = 20) : IQuery<Result<object>>, IRequirePermission
 {
-    ResourceType IAuthorizeableRequest.ResourceType => ResourceType.Workspace;
-    Guid IAuthorizeableRequest.ResourceId => WorkspaceId;
-    PermissionAction IAuthorizeableRequest.Action => PermissionAction.ViewWorkspace;
+    PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
 }
 
 public class GetWorkspaceActivityQueryHandler : IRequestHandler<GetWorkspaceActivityQuery, Result<object>>
@@ -30,7 +25,7 @@ public class GetWorkspaceActivityQueryHandler : IRequestHandler<GetWorkspaceActi
     {
         var workspaceExists = await _context.Workspaces
             .AsNoTracking()
-            .AnyAsync(w => w.Id == request.WorkspaceId && !w.IsArchived, ct);
+            .AnyAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && !w.IsDeleted, ct);
 
         if (!workspaceExists)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
@@ -41,18 +36,17 @@ public class GetWorkspaceActivityQueryHandler : IRequestHandler<GetWorkspaceActi
         var logs = await _context.ActivityLogs
             .AsNoTracking()
             .Where(a => a.WorkspaceId == request.WorkspaceId)
-            .OrderByDescending(a => a.CreatedAt)
+            .OrderByDescending(a => a.Timestamp)
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
             .Select(a => new
             {
                 a.Id,
                 a.ActorId,
-                a.Action,
-                ResourceType = a.ResourceType.ToString(),
-                a.ResourceId,
-                a.ResourceTitle,
-                a.CreatedAt
+                Action = a.Type.ToString(),
+                ResourceType = a.Target.ResourceType.ToString(),
+                ResourceId = a.Target.ResourceId,
+                a.Timestamp
             })
             .ToListAsync(ct);
 

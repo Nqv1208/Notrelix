@@ -2,7 +2,7 @@ using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Documents.Versions;
 
-public class DocumentVersion : AggregateRoot
+public class DocumentVersion : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid PageId { get; private set; }
@@ -29,12 +29,12 @@ public class DocumentVersion : AggregateRoot
         };
 
         version.SetAuditOnCreate(createdBy, createdAt);
-        version.AddDomainEvent(new DocumentVersionCreatedEvent(workspaceId, pageId, versionNumber, createdAt));
+        version.AddDomainEvent(new DocumentVersionCreatedDomainEvent(workspaceId, pageId, versionNumber, createdAt));
         return version;
     }
 
     public void ApplyRestore(Guid restoredBy, DateTimeOffset restoredAt)
     {
-        AddDomainEvent(new DocumentVersionRestoredEvent(WorkspaceId, PageId, VersionNumber, restoredAt));
+        AddDomainEvent(new DocumentVersionRestoredDomainEvent(WorkspaceId, PageId, VersionNumber, restoredAt));
     }
 }

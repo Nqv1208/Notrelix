@@ -46,7 +46,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         };
 
         invitation.SetAuditOnCreate(invitedBy, createdAt);
-        invitation.AddDomainEvent(new WorkspaceInvitationCreatedEvent(
+        invitation.AddDomainEvent(new WorkspaceInvitationCreatedDomainEvent(
             invitation.Id, workspaceId, invitation.Email, role, invitedBy, createdAt));
     
         return invitation;
@@ -66,7 +66,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         Status = WorkspaceInvitationStatus.Accepted;
         SetAuditOnUpdate(acceptedUserId, acceptedAt);
 
-        AddDomainEvent(new WorkspaceInvitationAcceptedEvent(
+        AddDomainEvent(new WorkspaceInvitationAcceptedDomainEvent(
             Id, WorkspaceId, acceptedUserId, acceptedUserId, acceptedAt));
     }
 
@@ -79,7 +79,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         Status = WorkspaceInvitationStatus.Expired;
         SetAuditOnUpdate(null, expiredAt);
 
-        AddDomainEvent(new WorkspaceInvitationExpiredEvent(
+        AddDomainEvent(new WorkspaceInvitationExpiredDomainEvent(
             Id, WorkspaceId, expiredAt));
     }
 
@@ -96,7 +96,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         Status = WorkspaceInvitationStatus.Revoked;
         SetAuditOnUpdate(revokedBy, revokedAt);
         
-        AddDomainEvent(new WorkspaceInvitationRevokedEvent(
+        AddDomainEvent(new WorkspaceInvitationRevokedDomainEvent(
             Id, WorkspaceId, revokedBy, revokedAt));
     }
 }

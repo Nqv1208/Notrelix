@@ -1,4 +1,4 @@
-namespace Notrelix.Application.Features.Shared.Activity.DTOs;
+namespace Notrelix.Application.Features.Collaboration.Activity.DTOs;
 
 public record ActivityLogDto(
     Guid Id,

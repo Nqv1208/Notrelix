@@ -1,9 +1,13 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Domain.Entities.Workspaces;
-using Notrelix.Domain.Events.Workspace;
+using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Common.Events;
+using Notrelix.Domain.Common;
+using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Domain.Workspaces.Workspaces.Events;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Interceptors;
+using Notrelix.Infrastructure.Data.Outbox;
 
 namespace Notrelix.Infrastructure.Tests.Data;
 
@@ -13,8 +17,15 @@ public class DomainEventInterceptorTests
     public async Task SaveChangesAsync_WhenEntityHasDomainEvent_ShouldPublishMediatRNotificationWrapper()
     {
         object? publishedNotification = null;
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        dateTimeProvider.Setup(x => x.UtcNow).Returns(DateTimeOffset.UtcNow);
+        var eventTypeRegistry = new Mock<IEventTypeRegistry>();
+        eventTypeRegistry.Setup(x => x.GetMessageName(It.IsAny<Type>())).Returns("test.event");
+        var integrationEventMapper = new Mock<IIntegrationEventMapper>();
+        integrationEventMapper.Setup(x => x.Map(It.IsAny<IDomainEvent>())).Returns([]);
         var mediator = CreateMediatorRejectingNonNotifications(notification => publishedNotification = notification);
-        var interceptor = new DomainEventInterceptor(mediator.Object);
+        var interceptor = new DomainEventInterceptor(
+            dateTimeProvider.Object, eventTypeRegistry.Object, integrationEventMapper.Object, mediator.Object);
         await using var context = CreateContext(interceptor);
 
         var workspace = Workspace.CreatePersonal("Personal Workspace", Guid.CreateVersion7());
@@ -26,7 +37,7 @@ public class DomainEventInterceptorTests
         publishedNotification.Should().BeAssignableTo<INotification>();
         publishedNotification!.GetType().Name.Should().StartWith("DomainEventNotification");
         publishedNotification.GetType().GenericTypeArguments.Should().ContainSingle()
-            .Which.Should().Be(typeof(WorkspaceCreatedEvent));
+            .Which.Should().Be(typeof(WorkspaceCreatedDomainEvent));
     }
 
     private static Mock<IMediator> CreateMediatorRejectingNonNotifications(Action<object> onPublish)

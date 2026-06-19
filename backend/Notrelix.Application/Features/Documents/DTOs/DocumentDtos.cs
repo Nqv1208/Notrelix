@@ -1,19 +1,12 @@
-namespace Notrelix.Application.Features.Document.DTOs;
+namespace Notrelix.Application.Features.Documents.DTOs;
 
 public record PageDto(
     Guid Id,
     Guid WorkspaceId,
     Guid? ParentId,
     string Title,
-    string? IconType,
-    string? IconValue,
-    string? CoverUrl,
-    double Position,
-    short Depth,
-    bool IsTemplate,
-    bool IsArchived,
-    DateTime? PublishedAt,
-    DateTime? Deadline,
+    string Icon,
+    string? CoverImage,
     DateTime CreatedAt,
     DateTime? UpdatedAt
 );
@@ -21,8 +14,7 @@ public record PageDto(
 public record PageBreadcrumbDto(
     Guid Id,
     string Title,
-    string? IconType,
-    string? IconValue
+    string Icon
 );
 
 public record PageHistoryDto(
@@ -36,24 +28,20 @@ public record PageHistoryDto(
 public record PageTreeItemDto(
     Guid Id,
     string Title,
-    string? IconType,
-    string? IconValue,
+    string Icon,
     Guid? ParentId,
-    double Position,
-    short Depth,
     bool HasChildren
 );
 
 public record BlockDto(
     Guid Id,
     Guid PageId,
-    Guid? ParentBlockId,
+    Guid? ParentId,
     string Type,
+    string Content,
     string Properties,
-    string PropertiesJson,
-    double Position,
+    string Position,
     int Version,
-    Guid CreatedByUserId,
     DateTime CreatedAt,
     DateTime? UpdatedAt
 );

@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Notrelix.Domain.WorkManagement.Boards;
+using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Relations;
 
 namespace Notrelix.Infrastructure.Data.Configurations.WorkManagement;
@@ -25,7 +27,7 @@ public class BoardRelationConfiguration : IEntityTypeConfiguration<BoardRelation
         builder.Property(x => x.ConfigJson).HasColumnName("config_json").IsRequired();
         builder.Property(x => x.Version).HasColumnName("version");
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
@@ -46,7 +48,7 @@ public class BoardRelationConfiguration : IEntityTypeConfiguration<BoardRelation
             .HasForeignKey(x => x.TargetBoardId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(x => x.SourceBoardId).HasFilter("is_deleted = false").HasDatabaseName("idx_board_relations_source_board");
-        builder.HasIndex(x => x.TargetBoardId).HasFilter("is_deleted = false").HasDatabaseName("idx_board_relations_target_board");
+        builder.HasIndex(x => x.SourceBoardId).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_board_relations_source_board");
+        builder.HasIndex(x => x.TargetBoardId).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_board_relations_target_board");
     }
 }

@@ -22,7 +22,7 @@ public class TeamTests
         team.Members.Should().HaveCount(1);
         team.Members.First().UserId.Should().Be(userId);
         team.Members.First().Status.Should().Be(TeamMemberStatus.Active);
-        team.DomainEvents.Should().ContainSingle(e => e is TeamMemberAddedEvent);
+        team.DomainEvents.Should().ContainSingle(e => e is TeamMemberAddedDomainEvent);
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public class TeamTests
 
         team.Status.Should().Be(TeamStatus.SoftDeleted);
         team.IsDeleted.Should().BeTrue();
-        team.DomainEvents.Should().Contain(e => e is TeamSoftDeletedEvent);
+        team.DomainEvents.Should().Contain(e => e is TeamSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public class TeamTests
 
         team.Status.Should().Be(TeamStatus.Active);
         team.IsDeleted.Should().BeFalse();
-        team.DomainEvents.Should().Contain(e => e is TeamRestoredEvent);
+        team.DomainEvents.Should().Contain(e => e is TeamRestoredDomainEvent);
     }
 
     [Fact]
@@ -136,7 +136,19 @@ public class TeamTests
         member.Role.Should().Be(TeamMemberRole.Lead);
         member.UpdatedBy.Should().Be(actor);
         member.UpdatedAt.Should().Be(reactivateTime);
-        team.DomainEvents.Should().ContainSingle(e => e is TeamMemberAddedEvent);
+        team.DomainEvents.Should().ContainSingle(e => e is TeamMemberAddedDomainEvent);
+    }
+
+    [Fact]
+    public void Rename_ShouldSucceed_AndRaiseEvent()
+    {
+        var team = Team.Create(Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        team.ClearDomainEvents();
+
+        team.Rename("QA Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        team.Name.Should().Be("QA Team");
+        team.DomainEvents.Should().ContainSingle(e => e is TeamRenamedDomainEvent);
     }
 
     [Fact]

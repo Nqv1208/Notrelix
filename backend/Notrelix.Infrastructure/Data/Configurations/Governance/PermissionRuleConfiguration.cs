@@ -29,7 +29,7 @@ public class PermissionRuleConfiguration : IEntityTypeConfiguration<PermissionRu
         builder.Property(x => x.Status).HasColumnName("status").IsRequired().HasMaxLength(50);
         builder.Property(x => x.Version).HasColumnName("version").IsConcurrencyToken().HasDefaultValue(1L);
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");

@@ -19,7 +19,7 @@ public class BoardViewUserPreferenceConfiguration : IEntityTypeConfiguration<Boa
         builder.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(x => x.GroupRule).HasColumnName("group_rule_id");
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
@@ -57,6 +57,6 @@ public class BoardViewUserPreferenceConfiguration : IEntityTypeConfiguration<Boa
             .HasForeignKey(x => x.ViewId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(x => new { x.ViewId, x.UserId }).IsUnique().HasFilter("is_deleted = false").HasDatabaseName("idx_board_view_user_prefs_view_user");
+        builder.HasIndex(x => new { x.ViewId, x.UserId }).IsUnique().HasFilter("deleted_at IS NULL").HasDatabaseName("idx_board_view_user_prefs_view_user");
     }
 }

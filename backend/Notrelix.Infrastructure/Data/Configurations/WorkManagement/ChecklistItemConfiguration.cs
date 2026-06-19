@@ -18,7 +18,7 @@ public class ChecklistItemConfiguration : IEntityTypeConfiguration<ChecklistItem
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.AssigneeUserId).HasColumnName("assignee_user_id");
         builder.Property(x => x.DueAt).HasColumnName("due_at");
-        builder.Property(x => x.Position).HasColumnName("position").HasColumnType("float8").IsRequired();
+        builder.Property(x => x.Position).HasColumnName("position").HasMaxLength(50).IsRequired();
         builder.Property(x => x.CompletedAt).HasColumnName("completed_at");
 
         builder.HasOne<Checklist>()

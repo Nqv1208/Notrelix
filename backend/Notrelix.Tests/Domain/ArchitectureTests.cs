@@ -1,7 +1,5 @@
+using System.Text.RegularExpressions;
 using FluentAssertions;
-using System.IO;
-using System.Linq;
-using Xunit;
 
 namespace Notrelix.Domain.Tests;
 
@@ -16,7 +14,6 @@ public class ArchitectureTests
         }
         if (current == null)
         {
-            // Try fallback using parent steps
             var fallback = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../Notrelix.Domain"));
             if (Directory.Exists(fallback)) return fallback;
 
@@ -25,56 +22,127 @@ public class ArchitectureTests
         return Path.Combine(current, "Notrelix.Domain");
     }
 
+    private static string[] GetDomainFiles()
+    {
+        var domainPath = GetDomainPath();
+        return Directory.GetFiles(domainPath, "*.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                     && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .ToArray();
+    }
+
     [Fact]
     public void DomainFiles_ShouldNotContain_RawUtcNow()
     {
-        var domainPath = GetDomainPath();
-        var files = Directory.GetFiles(domainPath, "*.cs", SearchOption.AllDirectories);
+        var files = GetDomainFiles();
 
         foreach (var file in files)
         {
-            // Skip obj/bin folders
-            if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") || 
-                file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
-            {
-                continue;
-            }
-
             var content = File.ReadAllText(file);
-            var cleanedContent = RemoveComments(content);
+            var cleaned = RemoveComments(content);
 
-            cleanedContent.Should().NotContain("DateTime.UtcNow", $"File '{Path.GetFileName(file)}' violates the rule: Do not use DateTime.UtcNow in Domain.");
-            cleanedContent.Should().NotContain("DateTimeOffset.UtcNow", $"File '{Path.GetFileName(file)}' violates the rule: Do not use DateTimeOffset.UtcNow in Domain.");
+            cleaned.Should().NotContain("DateTime.UtcNow", $"File '{Path.GetFileName(file)}' must not use DateTime.UtcNow.");
+            cleaned.Should().NotContain("DateTimeOffset.UtcNow", $"File '{Path.GetFileName(file)}' must not use DateTimeOffset.UtcNow.");
         }
     }
 
     [Fact]
     public void DomainFiles_ShouldNotReference_EntityFrameworkCore()
     {
-        var domainPath = GetDomainPath();
-        var files = Directory.GetFiles(domainPath, "*.cs", SearchOption.AllDirectories);
+        var files = GetDomainFiles();
 
         foreach (var file in files)
         {
-            if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") || 
-                file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
-            {
-                continue;
-            }
+            var content = RemoveComments(File.ReadAllText(file));
 
-            var content = File.ReadAllText(file);
-            var cleanedContent = RemoveComments(content);
-
-            cleanedContent.Should().NotContain("using Microsoft.EntityFrameworkCore", $"File '{Path.GetFileName(file)}' should not reference EF Core directly.");
+            content.Should().NotContain("using Microsoft.EntityFrameworkCore", $"File '{Path.GetFileName(file)}' must not reference EF Core.");
         }
+    }
+
+    public static readonly TheoryData<string> ForbiddenDomainPatterns = new()
+    {
+        "using Microsoft.Extensions.",
+        "using Microsoft.AspNetCore.",
+        "using System.Net.",
+        "using MediatR",
+        "using Newtonsoft.Json",
+    };
+
+    [Fact]
+    public void DomainFiles_ShouldNotReference_InfrastructureNamespaces()
+    {
+        var files = GetDomainFiles();
+
+        foreach (var file in files)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+
+            foreach (var pattern in ForbiddenDomainPatterns.Cast<string>())
+            {
+                content.Should().NotContain(pattern, $"File '{Path.GetFileName(file)}' must not use '{pattern}'.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Allowlist of files that may use System.Text.Json for legitimate domain JSON handling.
+    /// Domain uses JsonValue and JSON parsing for field settings, automation rules, etc.
+    /// </summary>
+    private static readonly HashSet<string> JsonAllowlist =
+    [
+        "JsonValue.cs",
+        "FieldSettingsValidator.cs",
+        "FieldValueValidator.cs",
+        "BoardItem.cs",
+        "FormQuestionConfig.cs",
+        "ApiTokenScopes.cs",
+        "SsoProviderConfiguration.cs",
+        "UserProfile.cs",
+        "AutomationActionValidator.cs",
+        "AutomationActionDefinition.cs",
+        "AutomationTriggerValidator.cs",
+        "AutomationTriggerDefinition.cs",
+        "AutomationConditionDefinition.cs",
+        "AiAgentInstruction.cs",
+        "AiAgentModelPolicy.cs",
+        "AiAgentToolPermissions.cs",
+        "WidgetConfigValidator.cs",
+    ];
+
+    [Fact]
+    public void DomainFiles_ShouldNotUse_JsonSerializationAttributes()
+    {
+        var files = GetDomainFiles();
+        var violations = new List<string>();
+
+        foreach (var file in files)
+        {
+            var fileName = Path.GetFileName(file);
+            if (JsonAllowlist.Contains(fileName)) continue;
+
+            var content = RemoveComments(File.ReadAllText(file));
+
+            if (content.Contains("[JsonPropertyName") ||
+                content.Contains("[JsonIgnore") ||
+                content.Contains("[JsonConverter") ||
+                content.Contains("[JsonProperty") ||
+                content.Contains("[DataMember") ||
+                content.Contains("[DataContract") ||
+                content.Contains("[IgnoreDataMember"))
+            {
+                violations.Add(fileName);
+            }
+        }
+
+        violations.Should().BeEmpty($"Files must not use serialization attributes in Domain: {string.Join(", ", violations)}");
     }
 
     private static string RemoveComments(string input)
     {
         var blockComments = @"/\*(.*?)\*/";
         var lineComments = @"//(.*?)\r?\n";
-        var cleaned = System.Text.RegularExpressions.Regex.Replace(input, blockComments, "", System.Text.RegularExpressions.RegexOptions.Singleline);
-        cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, lineComments, "\n");
+        var cleaned = Regex.Replace(input, blockComments, "", RegexOptions.Singleline);
+        cleaned = Regex.Replace(cleaned, lineComments, "\n");
         return cleaned;
     }
 }

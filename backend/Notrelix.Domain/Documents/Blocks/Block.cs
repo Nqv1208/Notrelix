@@ -4,7 +4,7 @@ using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Domain.Documents.Blocks;
 
-public class Block : AggregateRoot
+public class Block : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid PageId { get; private set; }
@@ -47,7 +47,7 @@ public class Block : AggregateRoot
         };
 
         block.SetAuditOnCreate(createdBy, createdAt);
-        block.AddDomainEvent(new BlockCreatedEvent(workspaceId, pageId, block.Id, type, createdBy, createdAt));
+        block.AddDomainEvent(new BlockCreatedDomainEvent(workspaceId, pageId, block.Id, type, createdBy, createdAt));
 
         return block;
     }
@@ -62,7 +62,8 @@ public class Block : AggregateRoot
 
         Content = newContent;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new BlockContentUpdatedEvent(WorkspaceId, Id, PageId, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new BlockContentUpdatedDomainEvent(WorkspaceId, Id, PageId, updatedBy, updatedAt));
     }
 
     public void UpdateProperties(BlockProperties newProperties, Guid updatedBy, DateTimeOffset updatedAt)
@@ -74,34 +75,43 @@ public class Block : AggregateRoot
 
         Properties = newProperties;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new BlockPropertiesUpdatedEvent(WorkspaceId, Id, PageId, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new BlockPropertiesUpdatedDomainEvent(WorkspaceId, Id, PageId, updatedBy, updatedAt));
     }
 
-    public void Move(Guid? newParentId, FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
+    public void Move(Guid? newParentId, FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt, Func<Guid, Guid?>? getParentId = null)
     {
         EnsureNotDeleted();
         Guard.NotNull(newPosition);
-        
+
+        if (getParentId != null)
+            BlockTreeRules.EnsureNoCycle(Id, newParentId, getParentId);
+
         if (ParentId == newParentId && Position == newPosition) return;
 
         var oldParentId = ParentId;
         ParentId = newParentId;
         Position = newPosition;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        
-        AddDomainEvent(new BlockMovedEvent(WorkspaceId, Id, PageId, oldParentId, newParentId, newPosition.Value, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new BlockMovedDomainEvent(WorkspaceId, Id, PageId, oldParentId, newParentId, newPosition.Value, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new BlockSoftDeletedEvent(WorkspaceId, Id, PageId, deletedBy, deletedAt));
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new BlockSoftDeletedDomainEvent(WorkspaceId, Id, PageId, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
         base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new BlockRestoredDomainEvent(WorkspaceId, Id, PageId, restoredBy, restoredAt));
     }
 }

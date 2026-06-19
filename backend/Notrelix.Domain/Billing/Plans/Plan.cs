@@ -1,5 +1,6 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
+using Notrelix.Domain.Billing.Plans.Events;
 
 namespace Notrelix.Domain.Billing.Plans;
 
@@ -61,33 +62,57 @@ public class Plan : AggregateRoot
             Status = PlanStatus.Active
         };
 
-        plan.SetAuditOnCreate(Guid.Empty, createdAt);
-        plan.AddDomainEvent(new PlanCreatedEvent(plan.Id, plan.Name, createdAt));
+        plan.SetAuditOnCreate(null, createdAt);
+        plan.AddDomainEvent(new PlanCreatedDomainEvent(plan.Id, plan.Name, createdAt));
         return plan;
     }
 
-    public void AddLimit(FeatureCode feature, int limit)
+    public void AddLimit(FeatureCode feature, int limit, DateTimeOffset occurredAt)
     {
         if (_limits.Any(l => l.Feature == feature))
             throw new BusinessRuleException($"Feature '{feature}' is already added to this plan.");
 
         _limits.Add(PlanLimit.Create(Id, feature, limit));
+        IncrementVersion();
+        AddDomainEvent(new PlanLimitAddedDomainEvent(Id, feature, limit, occurredAt));
     }
 
-    public void UpdateDescription(string description)
+    public void UpdateDescription(string description, DateTimeOffset updatedAt)
     {
         Description = description?.Trim();
+        IncrementVersion();
+        AddDomainEvent(new PlanDescriptionUpdatedDomainEvent(Id, description, updatedAt));
     }
 
-    public void Archive()
+    public void Archive(DateTimeOffset archivedAt)
     {
         if (Status == PlanStatus.Archived) return;
         Status = PlanStatus.Archived;
+        IncrementVersion();
+        AddDomainEvent(new PlanArchivedDomainEvent(Id, archivedAt));
     }
 
-    public void Deprecate()
+    public void Deprecate(DateTimeOffset deprecatedAt)
     {
         if (Status == PlanStatus.Deprecated) return;
         Status = PlanStatus.Deprecated;
+        IncrementVersion();
+        AddDomainEvent(new PlanDeprecatedDomainEvent(Id, deprecatedAt));
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        IncrementVersion();
+        AddDomainEvent(new PlanSoftDeletedDomainEvent(Id, deletedBy, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new PlanRestoredDomainEvent(Id, restoredBy, restoredAt));
     }
 }

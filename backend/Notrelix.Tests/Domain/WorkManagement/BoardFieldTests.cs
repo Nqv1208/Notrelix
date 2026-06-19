@@ -23,7 +23,7 @@ public class BoardFieldTests
         field.Name.Should().Be("Due Date");
         field.Type.Should().Be(FieldType.Date);
         field.Settings.Should().Be(settings);
-        field.DomainEvents.Should().ContainSingle(e => e is BoardFieldCreatedEvent);
+        field.DomainEvents.Should().ContainSingle(e => e is BoardFieldCreatedDomainEvent);
     }
 
     [Fact]
@@ -38,7 +38,7 @@ public class BoardFieldTests
 
         field.Options.Should().HaveCount(1);
         field.Options.First().Name.Should().Be("Done");
-        field.DomainEvents.Should().ContainSingle(e => e is FieldOptionAddedEvent);
+        field.DomainEvents.Should().ContainSingle(e => e is FieldOptionAddedDomainEvent);
     }
 
     [Fact]

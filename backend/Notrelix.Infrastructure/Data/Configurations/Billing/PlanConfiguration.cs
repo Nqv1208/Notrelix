@@ -25,7 +25,7 @@ public class PlanConfiguration : IEntityTypeConfiguration<Plan>
             p.Property(m => m.Currency).HasColumnName("price_currency").IsRequired().HasMaxLength(3).HasDefaultValue("USD");
         });
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");

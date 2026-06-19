@@ -84,13 +84,14 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
             AttemptCount = 0
         };
 
-        execution.AddDomainEvent(new AutomationExecutionQueuedEvent(workspaceId, execution.Id, ruleId, startedAt));
+        execution.AddDomainEvent(new AutomationExecutionQueuedDomainEvent(workspaceId, execution.Id, ruleId, startedAt));
         return execution;
     }
 
     public void SetPayload(string payload)
     {
         Payload = payload;
+        IncrementVersion();
     }
 
     public void Start(DateTimeOffset startedAt)
@@ -99,7 +100,8 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException("Execution can only start from Queued state.");
         Status = AutomationExecutionStatus.Running;
         StartedAt = startedAt;
-        AddDomainEvent(new AutomationExecutionStartedEvent(WorkspaceId, Id, RuleId, startedAt));
+        IncrementVersion();
+        AddDomainEvent(new AutomationExecutionStartedDomainEvent(WorkspaceId, Id, RuleId, startedAt));
     }
 
     public void Succeed(DateTimeOffset finishedAt)
@@ -108,7 +110,8 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException("Execution can only succeed from Running state.");
         Status = AutomationExecutionStatus.Succeeded;
         FinishedAt = finishedAt;
-        AddDomainEvent(new AutomationExecutionSucceededEvent(WorkspaceId, Id, RuleId, finishedAt));
+        IncrementVersion();
+        AddDomainEvent(new AutomationExecutionSucceededDomainEvent(WorkspaceId, Id, RuleId, finishedAt));
     }
 
     public void Fail(string error, DateTimeOffset finishedAt)
@@ -121,7 +124,8 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
         Status = AutomationExecutionStatus.Failed;
         Error = error;
         FinishedAt = finishedAt;
-        AddDomainEvent(new AutomationExecutionFailedEvent(WorkspaceId, Id, RuleId, error, finishedAt));
+        IncrementVersion();
+        AddDomainEvent(new AutomationExecutionFailedDomainEvent(WorkspaceId, Id, RuleId, error, finishedAt));
     }
 
     public void Cancel(Guid cancelledBy, DateTimeOffset cancelledAt)
@@ -131,6 +135,7 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
 
         Status = AutomationExecutionStatus.Cancelled;
         FinishedAt = cancelledAt;
-        AddDomainEvent(new AutomationExecutionCancelledEvent(WorkspaceId, Id, RuleId, cancelledBy, cancelledAt));
+        IncrementVersion();
+        AddDomainEvent(new AutomationExecutionCancelledDomainEvent(WorkspaceId, Id, RuleId, cancelledBy, cancelledAt));
     }
 }

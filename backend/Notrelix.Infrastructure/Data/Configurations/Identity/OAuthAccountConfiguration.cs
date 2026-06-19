@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Identity.OAuth;
+using Notrelix.Domain.Identity.Users;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Identity;
 
@@ -16,18 +17,14 @@ public class OAuthAccountConfiguration : IEntityTypeConfiguration<OAuthAccount>
         builder.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(x => x.Provider).HasColumnName("provider").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.ProviderId).HasColumnName("provider_id").IsRequired().HasMaxLength(256);
-        builder.Property(x => x.AccessToken).HasColumnName("access_token");
-        builder.Property(x => x.RefreshToken).HasColumnName("refresh_token");
-        builder.Property(x => x.TokenExpiresAt).HasColumnName("token_expires_at");
+        builder.Property(x => x.RawProfile).HasColumnName("raw_profile").HasColumnType("jsonb");
 
-        builder.OwnsOne(x => x.RawProfile, profile =>
+        builder.OwnsOne(x => x.Token, token =>
         {
-            profile.Property(p => p.Value).HasColumnName("raw_profile").HasColumnType("jsonb").IsRequired();
+            token.Property(t => t.ExpiresAt).HasColumnName("token_expires_at");
+            token.Property(t => t.AccessTokenRef).HasColumnName("access_token_ref").HasConversion<Infrastructure.Data.Converters.SecretRefConverter>();
+            token.Property(t => t.RefreshTokenRef).HasColumnName("refresh_token_ref").HasConversion<Infrastructure.Data.Converters.SecretRefConverter>();
         });
-
-        builder.HasOne<User>()
-            .WithMany(x => x.OAuthAccounts)
-            .HasForeignKey(x => x.UserId);
 
         builder.HasIndex(x => new { x.Provider, x.ProviderId }).IsUnique().HasDatabaseName("idx_oauth_accounts_provider");
         builder.HasIndex(x => x.UserId).HasDatabaseName("idx_oauth_accounts_user_id");

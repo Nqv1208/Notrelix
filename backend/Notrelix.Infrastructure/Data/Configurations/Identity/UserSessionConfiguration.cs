@@ -21,10 +21,10 @@ public class UserSessionConfiguration : IEntityTypeConfiguration<UserSession>
 
         builder.OwnsOne(x => x.RefreshTokenHash, token =>
         {
-            token.Property(t => t.Value).HasColumnName("refresh_token_hash").IsRequired();
+            token.Property(t => t.Hash).HasColumnName("refresh_token_hash").IsRequired();
         });
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
@@ -35,11 +35,7 @@ public class UserSessionConfiguration : IEntityTypeConfiguration<UserSession>
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasOne<User>()
-            .WithMany(x => x.Sessions)
-            .HasForeignKey(x => x.UserId);
-
         builder.HasIndex(x => x.UserId).HasDatabaseName("idx_user_sessions_user_id");
-        builder.HasIndex(x => x.ExpiresAt).HasFilter("is_deleted = false").HasDatabaseName("idx_user_sessions_expires");
+        builder.HasIndex(x => x.ExpiresAt).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_user_sessions_expires");
     }
 }

@@ -1,3 +1,4 @@
+using Notrelix.Domain.Identity.Tokens.Events;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
 
@@ -9,7 +10,7 @@ public class ApiToken : AggregateRoot, IWorkspaceScoped
     public Guid? UserId { get; private set; }
     public string Name { get; private set; } = null!;
     public string TokenHash { get; private set; } = null!;
-    public string ScopesJson { get; private set; } = "[]";
+    public ApiTokenScopes? Scopes { get; private set; }
     public ApiTokenStatus Status { get; private set; } = ApiTokenStatus.Active;
     public DateTimeOffset? LastUsedAt { get; private set; }
     public DateTimeOffset? ExpiresAt { get; private set; }
@@ -23,7 +24,7 @@ public class ApiToken : AggregateRoot, IWorkspaceScoped
         Guid? userId,
         string name,
         string tokenHash,
-        string? scopesJson,
+        ApiTokenScopes? scopes,
         Guid createdBy,
         DateTimeOffset createdAt,
         DateTimeOffset? expiresAt = null)
@@ -38,7 +39,7 @@ public class ApiToken : AggregateRoot, IWorkspaceScoped
             UserId = userId,
             Name = name.Trim(),
             TokenHash = tokenHash,
-            ScopesJson = scopesJson ?? "[]",
+            Scopes = scopes,
             Status = ApiTokenStatus.Active,
             ExpiresAt = expiresAt
         };
@@ -75,5 +76,23 @@ public class ApiToken : AggregateRoot, IWorkspaceScoped
 
         LastUsedAt = usedAt;
         IncrementVersion();
+    }
+
+    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new ApiTokenSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new ApiTokenRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

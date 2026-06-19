@@ -1,8 +1,9 @@
 using Notrelix.Domain.Common;
+using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Collaboration.Activity;
 
-public class ActivityLog : AggregateRoot
+public class ActivityLog : Entity, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid ActorId { get; private set; }
@@ -24,6 +25,9 @@ public class ActivityLog : AggregateRoot
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(actorId);
         Guard.NotNull(target);
+
+        if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
+            throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
 
         return new ActivityLog
         {

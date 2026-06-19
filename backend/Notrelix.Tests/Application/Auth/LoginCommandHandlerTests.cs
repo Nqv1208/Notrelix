@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Features.Identity.Commands.Login;
-using Notrelix.Domain.Entities.Identity;
+using Notrelix.Application.Features.Identity.Auth.Commands.Login;
+using Notrelix.Domain.Identity.Users;
 
 namespace Notrelix.Application.Tests.Auth;
 
@@ -14,8 +14,10 @@ public class LoginCommandHandlerTests
 
         var passwordHasher = new Mock<IPasswordHasher>();
         var jwtService = new Mock<IJwtService>();
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
 
-        var handler = new LoginCommandHandler(context, passwordHasher.Object, jwtService.Object);
+        var handler = new LoginCommandHandler(context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object);
 
         var result = await handler.Handle(new LoginCommand
         {
@@ -32,7 +34,7 @@ public class LoginCommandHandlerTests
     {
         using var context = AuthTestDbContextFactory.CreateInMemoryContext();
 
-        var user = User.Create("login@example.com", "User", "hashed");
+        var user = User.Create("login@example.com", "User", "hashed", DateTimeOffset.UtcNow);
         // Status default is Active
         context.Users.Add(user);
         await context.SaveChangesAsync();
@@ -44,9 +46,12 @@ public class LoginCommandHandlerTests
         jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>())).Returns("access-token");
         jwtService.Setup(x => x.GenerateRefreshToken()).Returns("refresh-token");
 
-        var handler = new LoginCommandHandler(context, passwordHasher.Object, jwtService.Object);
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
 
-        var before = DateTime.UtcNow;
+        var handler = new LoginCommandHandler(context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object);
+
+        var before = DateTimeOffset.UtcNow;
         var result = await handler.Handle(new LoginCommand
         {
             Email = "login@example.com",

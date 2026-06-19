@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Identity.Profiles;
+using Notrelix.Domain.Identity.Users;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Identity;
 
@@ -20,7 +21,7 @@ public class UserProfileConfiguration : IEntityTypeConfiguration<UserProfile>
         builder.Property(x => x.Preferences).HasColumnName("preferences").HasColumnType("jsonb").IsRequired().HasDefaultValue("{}");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 
-        builder.HasOne(x => x.User)
+        builder.HasOne<User>()
             .WithOne(x => x.Profile)
             .HasForeignKey<UserProfile>(x => x.UserId);
 

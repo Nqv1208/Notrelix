@@ -29,7 +29,7 @@ public class ResourcePermissionTests
         permission.ResourceType.Should().Be(ResourceType.Board);
         permission.Level.Should().Be(PermissionLevel.Editor);
         permission.CreatedBy.Should().Be(grantedBy);
-        permission.DomainEvents.Should().ContainSingle(e => e is ResourcePermissionGrantedEvent);
+        permission.DomainEvents.Should().ContainSingle(e => e is ResourcePermissionGrantedDomainEvent);
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public class ResourcePermissionTests
 
         permission.Level.Should().Be(PermissionLevel.Editor);
         permission.UpdatedBy.Should().Be(updatedBy);
-        permission.DomainEvents.Should().ContainSingle(e => e is ResourcePermissionLevelChangedEvent);
+        permission.DomainEvents.Should().ContainSingle(e => e is ResourcePermissionLevelChangedDomainEvent);
     }
 
     [Fact]
@@ -63,6 +63,6 @@ public class ResourcePermissionTests
 
         permission.IsDeleted.Should().BeTrue();
         permission.DeletedBy.Should().Be(revokedBy);
-        permission.DomainEvents.Should().ContainSingle(e => e is ResourcePermissionRevokedEvent);
+        permission.DomainEvents.Should().ContainSingle(e => e is ResourcePermissionRevokedDomainEvent);
     }
 }

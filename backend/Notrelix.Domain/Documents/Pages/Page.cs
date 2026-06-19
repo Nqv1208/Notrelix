@@ -3,7 +3,7 @@ using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Documents.Pages;
 
-public class Page : SoftDeletableEntity
+public class Page : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid? ParentId { get; private set; }
@@ -31,7 +31,7 @@ public class Page : SoftDeletableEntity
         };
 
         page.SetAuditOnCreate(createdBy, createdAt);
-        page.AddDomainEvent(new PageCreatedEvent(workspaceId, page.Id, page.Title, createdBy, createdAt));
+        page.AddDomainEvent(new PageCreatedDomainEvent(workspaceId, page.Id, page.Title, createdBy, createdAt));
 
         return page;
     }
@@ -48,7 +48,8 @@ public class Page : SoftDeletableEntity
 
         Title = newTitle.Trim();
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new PageRenamedEvent(WorkspaceId, Id, oldTitle, Title, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new PageRenamedDomainEvent(WorkspaceId, Id, oldTitle, Title, updatedBy, updatedAt));
     }
 
     public void Move(Guid? newParentId, Guid updatedBy, DateTimeOffset updatedAt, Func<Guid, Guid?> getParentId)
@@ -66,7 +67,8 @@ public class Page : SoftDeletableEntity
         var oldParentId = ParentId;
         ParentId = newParentId;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new PageMovedEvent(WorkspaceId, Id, oldParentId, ParentId, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new PageMovedDomainEvent(WorkspaceId, Id, oldParentId, ParentId, updatedBy, updatedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
@@ -76,7 +78,8 @@ public class Page : SoftDeletableEntity
 
         Status = PageStatus.Archived;
         SetAuditOnUpdate(archivedBy, archivedAt);
-        AddDomainEvent(new PageArchivedEvent(WorkspaceId, Id, archivedBy, archivedAt));
+        IncrementVersion();
+        AddDomainEvent(new PageArchivedDomainEvent(WorkspaceId, Id, archivedBy, archivedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -84,7 +87,9 @@ public class Page : SoftDeletableEntity
         if (IsDeleted) return;
         Status = PageStatus.SoftDeleted;
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new PageSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new PageSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -92,6 +97,8 @@ public class Page : SoftDeletableEntity
         if (!IsDeleted) return;
         Status = PageStatus.Active;
         base.Restore(restoredBy, restoredAt);
-        AddDomainEvent(new PageRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new PageRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

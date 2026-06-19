@@ -1,23 +1,27 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Notrelix.Application.Common.Abstractions;
 
 namespace Notrelix.Infrastructure.Data
 {
     public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<ApplicationDbContext>
     {
         public ApplicationDbContext CreateDbContext(string[] args)
-    {
-        var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
+        {
+            var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
 
-        optionsBuilder.UseNpgsql(
-            "Host=127.0.0.1;Port=5432;Database=notrelix_dev;Username=postgres;Password=postgres"
-        );
+            optionsBuilder.UseNpgsql(
+                "Host=127.0.0.1;Port=5432;Database=notrelix_dev;Username=postgres;Password=postgres"
+            );
 
-        return new ApplicationDbContext(optionsBuilder.Options);
-    }
+            return new ApplicationDbContext(optionsBuilder.Options, new DesignTimeCurrentWorkspace());
+        }
+
+        private sealed class DesignTimeCurrentWorkspace : ICurrentWorkspace
+        {
+            public Guid? WorkspaceId => null;
+            public bool IsSet => false;
+            public void SetWorkspace(Guid workspaceId) { }
+        }
     }
 }

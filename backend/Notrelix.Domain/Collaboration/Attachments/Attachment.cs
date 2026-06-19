@@ -1,8 +1,9 @@
 using Notrelix.Domain.Common;
+using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Collaboration.Attachments;
 
-public class Attachment : SoftDeletableEntity
+public class Attachment : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public ResourceRef Target { get; private set; } = null!;
@@ -17,6 +18,9 @@ public class Attachment : SoftDeletableEntity
         Guard.NotNull(target);
         Guard.NotNull(metadata);
 
+        if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
+            throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
+
         var attachment = new Attachment
         {
             WorkspaceId = workspaceId,
@@ -26,7 +30,7 @@ public class Attachment : SoftDeletableEntity
         };
 
         attachment.SetAuditOnCreate(createdBy, createdAt);
-        attachment.AddDomainEvent(new AttachmentCreatedEvent(workspaceId, attachment.Id, target, createdAt));
+        attachment.AddDomainEvent(new AttachmentCreatedDomainEvent(workspaceId, attachment.Id, target, createdAt));
         return attachment;
     }
 
@@ -34,12 +38,17 @@ public class Attachment : SoftDeletableEntity
     {
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new AttachmentDeletedEvent(WorkspaceId, Id, deletedAt));
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new AttachmentDeletedDomainEvent(WorkspaceId, Id, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
         base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new AttachmentRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

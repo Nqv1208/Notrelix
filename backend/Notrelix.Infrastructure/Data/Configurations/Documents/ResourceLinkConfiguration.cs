@@ -20,15 +20,17 @@ public class ResourceLinkConfiguration : IEntityTypeConfiguration<ResourceLink>
         {
             s.Property(p => p.ResourceType).HasColumnName("source_type").IsRequired().HasMaxLength(50);
             s.Property(p => p.ResourceId).HasColumnName("source_id").IsRequired();
+            s.HasIndex(p => new { p.ResourceType, p.ResourceId }).HasDatabaseName("idx_resource_links_source");
         });
 
         builder.OwnsOne(x => x.Target, t =>
         {
             t.Property(p => p.ResourceType).HasColumnName("target_type").IsRequired().HasMaxLength(50);
             t.Property(p => p.ResourceId).HasColumnName("target_id").IsRequired();
+            t.HasIndex(p => new { p.ResourceType, p.ResourceId }).HasDatabaseName("idx_resource_links_target");
         });
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
@@ -40,7 +42,5 @@ public class ResourceLinkConfiguration : IEntityTypeConfiguration<ResourceLink>
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
         builder.HasIndex(x => x.WorkspaceId).HasDatabaseName("idx_resource_links_workspace_id");
-        builder.HasIndex(x => new { x.Source.ResourceType, x.Source.ResourceId }).HasDatabaseName("idx_resource_links_source");
-        builder.HasIndex(x => new { x.Target.ResourceType, x.Target.ResourceId }).HasDatabaseName("idx_resource_links_target");
     }
 }

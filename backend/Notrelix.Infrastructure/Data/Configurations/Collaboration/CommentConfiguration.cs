@@ -14,14 +14,25 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
         builder.Property(x => x.Id).HasColumnName("id");
 
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
-        builder.Property(x => x.ResourceType).HasColumnName("resource_type").IsRequired().HasMaxLength(50);
-        builder.Property(x => x.ResourceId).HasColumnName("resource_id").IsRequired();
-        builder.Property(x => x.AuthorId).HasColumnName("author_id").IsRequired();
         builder.Property(x => x.ParentId).HasColumnName("parent_id");
         builder.Property(x => x.Content).HasColumnName("content").HasColumnType("jsonb").IsRequired();
-        builder.Property(x => x.IsEdited).HasColumnName("is_edited");
+        builder.Property(x => x.CommentStatus).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.OwnsOne(x => x.Target, target =>
+        {
+            target.Property(t => t.ResourceType).HasColumnName("resource_type").HasConversion<string>().IsRequired().HasMaxLength(50);
+            target.Property(t => t.ResourceId).HasColumnName("resource_id").IsRequired();
+            target.Property(t => t.WorkspaceId).HasColumnName("target_workspace_id");
+            target.HasIndex(t => new { t.ResourceType, t.ResourceId }).HasDatabaseName("idx_comments_resource");
+        });
+
+        builder.OwnsOne(x => x.Anchor, anchor =>
+        {
+            anchor.Property(a => a.Selector).HasColumnName("anchor_selector").HasMaxLength(256);
+            anchor.Property(a => a.Offset).HasColumnName("anchor_offset");
+        });
+
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
@@ -36,8 +47,5 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
             .WithMany()
             .HasForeignKey(x => x.ParentId)
             .OnDelete(DeleteBehavior.Restrict);
-
-        builder.HasIndex(x => new { x.ResourceType, x.ResourceId }).HasDatabaseName("idx_comments_resource");
-        builder.HasIndex(x => x.AuthorId).HasDatabaseName("idx_comments_author_id");
     }
 }

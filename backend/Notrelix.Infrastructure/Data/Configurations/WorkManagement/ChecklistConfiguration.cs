@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.WorkManagement.Checklists;
+using Notrelix.Domain.WorkManagement.Items;
 
 namespace Notrelix.Infrastructure.Data.Configurations.WorkManagement;
 
@@ -16,9 +18,10 @@ public class ChecklistConfiguration : IEntityTypeConfiguration<Checklist>
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.ItemId).HasColumnName("item_id").IsRequired();
         builder.Property(x => x.Title).HasColumnName("title").IsRequired().HasMaxLength(256);
-        builder.Property(x => x.Position).HasColumnName("position").HasColumnType("float8").IsRequired();
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Property(x => x.Position).HasColumnName("position").HasMaxLength(50).IsRequired();
+
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");

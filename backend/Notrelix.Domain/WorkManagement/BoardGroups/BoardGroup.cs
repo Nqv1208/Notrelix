@@ -34,7 +34,7 @@ public class BoardGroup : SoftDeletableEntity, IWorkspaceScoped
         };
 
         group.SetAuditOnCreate(createdBy, createdAt);
-        group.AddDomainEvent(new BoardGroupCreatedEvent(workspaceId, boardId, group.Id, group.Title, createdBy, createdAt));
+        group.AddDomainEvent(new BoardGroupCreatedDomainEvent(workspaceId, boardId, group.Id, group.Title, createdBy, createdAt));
         return group;
     }
 
@@ -49,7 +49,7 @@ public class BoardGroup : SoftDeletableEntity, IWorkspaceScoped
 
         Title = normalizedTitle;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new BoardGroupRenamedEvent(WorkspaceId, Id, BoardId, oldTitle, Title, updatedBy, updatedAt));
+        AddDomainEvent(new BoardGroupRenamedDomainEvent(WorkspaceId, Id, BoardId, oldTitle, Title, updatedBy, updatedAt));
     }
 
     public void UpdateColor(Color color, Guid updatedBy, DateTimeOffset updatedAt)
@@ -61,7 +61,7 @@ public class BoardGroup : SoftDeletableEntity, IWorkspaceScoped
         var oldColor = Color;
         Color = color;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new BoardGroupColorChangedEvent(WorkspaceId, BoardId, Id, oldColor, color, updatedBy, updatedAt));
+        AddDomainEvent(new BoardGroupColorChangedDomainEvent(WorkspaceId, BoardId, Id, oldColor, color, updatedBy, updatedAt));
     }
 
     public void UpdatePosition(FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
@@ -72,20 +72,20 @@ public class BoardGroup : SoftDeletableEntity, IWorkspaceScoped
 
         Position = newPosition;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new BoardGroupReorderedEvent(WorkspaceId, Id, BoardId, newPosition.Value, updatedBy, updatedAt));
+        AddDomainEvent(new BoardGroupReorderedDomainEvent(WorkspaceId, Id, BoardId, newPosition.Value, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new BoardGroupSoftDeletedEvent(WorkspaceId, BoardId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new BoardGroupSoftDeletedDomainEvent(WorkspaceId, BoardId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
         base.Restore(restoredBy, restoredAt);
-        AddDomainEvent(new BoardGroupRestoredEvent(WorkspaceId, BoardId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new BoardGroupRestoredDomainEvent(WorkspaceId, BoardId, Id, restoredBy, restoredAt));
     }
 }

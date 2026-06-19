@@ -1,6 +1,7 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.SharedKernel;
+using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Fields;
 
 namespace Notrelix.Domain.WorkManagement.Items;
@@ -62,7 +63,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         };
 
         item.SetAuditOnCreate(createdBy, createdAt);
-        item.AddDomainEvent(new BoardItemCreatedEvent(workspaceId, boardId, groupId, item.Id, item.Name, createdBy, createdAt));
+        item.AddDomainEvent(new BoardItemCreatedDomainEvent(workspaceId, boardId, groupId, item.Id, item.Name, createdBy, createdAt));
         
         return item;
     }
@@ -78,23 +79,30 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
 
         Name = normalizedName;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new BoardItemRenamedEvent(WorkspaceId, Id, BoardId, oldName, Name, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new BoardItemRenamedDomainEvent(WorkspaceId, Id, BoardId, oldName, Name, updatedBy, updatedAt));
     }
 
-    public void MoveToGroup(Guid newGroupId, FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
+    public void MoveToGroup(BoardGroupRef group, FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        Guard.NotEmpty(newGroupId);
+        Guard.NotNull(group);
         Guard.NotNull(newPosition);
 
-        var oldGroupId = GroupId;
-        if (GroupId == newGroupId && Position == newPosition) return;
+        if (group.WorkspaceId != WorkspaceId)
+            throw new WorkspaceMismatchException(WorkspaceId, group.WorkspaceId);
 
-        GroupId = newGroupId;
+        if (group.BoardId != BoardId)
+            throw new BoardMismatchException(BoardId, group.BoardId);
+
+        var oldGroupId = GroupId;
+        if (GroupId == group.GroupId && Position == newPosition) return;
+
+        GroupId = group.GroupId;
         Position = newPosition;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        
-        AddDomainEvent(new BoardItemMovedEvent(WorkspaceId, Id, BoardId, oldGroupId, newGroupId, newPosition.Value, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new BoardItemMovedDomainEvent(WorkspaceId, Id, BoardId, oldGroupId, group.GroupId, newPosition.Value, updatedBy, updatedAt));
     }
 
     public void UpdateFieldValue(BoardField field, FieldValue newValue, Guid updatedBy, DateTimeOffset updatedAt)
@@ -156,18 +164,20 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         }
 
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new BoardItemFieldValueChangedEvent(WorkspaceId, Id, BoardId, field.Id, oldValue, newValue, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new BoardItemFieldValueChangedDomainEvent(WorkspaceId, Id, BoardId, field.Id, oldValue, newValue, updatedBy, updatedAt));
     }
 
-    public void AssignParentItem(Guid? parentItemId, int itemLevel)
+    public void AssignParentItem(Guid? parentItemId, int itemLevel, Func<Guid, Guid?> getAncestorParentId, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        if (parentItemId == Id)
-            throw new BusinessRuleException("An item cannot be its own parent.");
+        BoardItemRules.EnsureNoCycle(Id, parentItemId, getAncestorParentId);
 
         ParentItemId = parentItemId;
         ItemLevel = itemLevel;
+        SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new BoardItemParentAssignedDomainEvent(WorkspaceId, BoardId, Id, parentItemId, itemLevel, updatedBy, updatedAt));
     }
 
     public void SetTimeline(DateTimeOffset? startedAt, DateTimeOffset? dueAt, Guid updatedBy, DateTimeOffset updatedAt)
@@ -176,31 +186,39 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         if (startedAt != null && dueAt != null && dueAt < startedAt)
             throw new BusinessRuleException("Due date must be after start date.");
 
+        if (StartedAt == startedAt && DueAt == dueAt) return;
         StartedAt = startedAt;
         DueAt = dueAt;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new BoardItemTimelineSetDomainEvent(WorkspaceId, BoardId, Id, startedAt, dueAt, updatedBy, updatedAt));
     }
 
     public void Complete(DateTimeOffset? completedAt, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (CompletedAt == completedAt) return;
         CompletedAt = completedAt;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new BoardItemCompletedDomainEvent(WorkspaceId, BoardId, Id, completedAt, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new BoardItemSoftDeletedEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new BoardItemSoftDeletedDomainEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
         base.Restore(restoredBy, restoredAt);
-        AddDomainEvent(new BoardItemRestoredEvent(WorkspaceId, Id, BoardId, restoredBy, restoredAt));
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new BoardItemRestoredDomainEvent(WorkspaceId, Id, BoardId, restoredBy, restoredAt));
     }
 }

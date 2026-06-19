@@ -14,12 +14,19 @@ public class WebhookSubscriptionConfiguration : IEntityTypeConfiguration<Webhook
         builder.Property(x => x.Id).HasColumnName("id");
 
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
-        builder.Property(x => x.Url).HasColumnName("url").IsRequired().HasMaxLength(2048);
-        builder.Property(x => x.Secret).HasColumnName("secret");
-        builder.Property(x => x.Events).HasColumnName("events").HasColumnType("jsonb").IsRequired();
         builder.Property(x => x.IsActive).HasColumnName("is_active");
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.OwnsOne(x => x.TargetUrl, url =>
+        {
+            url.Property(u => u.Value).HasColumnName("url").IsRequired().HasMaxLength(2048);
+        });
+
+        builder.OwnsOne(x => x.SecretHash, secret =>
+        {
+            secret.Property(s => s.Hash).HasColumnName("secret_hash");
+        });
+
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");

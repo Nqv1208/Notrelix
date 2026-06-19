@@ -9,7 +9,6 @@ public record ResourcePermissionDto(
     Guid SubjectId,
     string Level,
     Guid? GrantedBy,
-    DateTime? ExpiresAt,
     bool IsRevoked,
-    DateTime? RevokedAt
+    DateTimeOffset? RevokedAt
 );

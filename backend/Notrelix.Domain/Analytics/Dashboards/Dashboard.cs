@@ -1,7 +1,9 @@
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.Analytics.Widgets;
+using Notrelix.Domain.Analytics.Dashboards.Events;
 using Notrelix.Domain.Analytics.Rules;
+using Notrelix.Domain.Analytics.Widgets;
+using WidgetType = Notrelix.Domain.Analytics.Dashboards.WidgetType;
 
 namespace Notrelix.Domain.Analytics.Dashboards;
 
@@ -9,18 +11,22 @@ public class DashboardWidget : Entity
 {
     public Guid DashboardId { get; private set; }
     public string Title { get; private set; } = null!;
-    public string Type { get; private set; } = null!;
+    public WidgetType Type { get; private set; }
     public JsonValue Config { get; private set; } = null!;
     public WidgetPosition Position { get; private set; } = null!;
 
     private DashboardWidget() : base() { }
 
-    public static DashboardWidget Create(Guid dashboardId, string title, string type, JsonValue config, WidgetPosition position)
+    public static DashboardWidget Create(Guid dashboardId, string title, WidgetType type, JsonValue config, WidgetPosition position)
     {
         Guard.NotEmpty(dashboardId);
         Guard.NotNullOrWhiteSpace(title);
-        Guard.NotNullOrWhiteSpace(type);
         Guard.NotNull(config);
+
+        var (isValid, error) = WidgetConfigValidator.Validate(type, config);
+        if (!isValid)
+            throw new BusinessRuleException($"Invalid widget config: {error}");
+
         WidgetRules.ValidatePosition(position);
 
         return new DashboardWidget
@@ -40,7 +46,7 @@ public class DashboardWidget : Entity
     }
 }
 
-public class Dashboard : SoftDeletableEntity
+public class Dashboard : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public string Name { get; private set; } = null!;
@@ -66,7 +72,7 @@ public class Dashboard : SoftDeletableEntity
         };
 
         dashboard.SetAuditOnCreate(createdBy, createdAt);
-        dashboard.AddDomainEvent(new DashboardCreatedEvent(workspaceId, dashboard.Id, createdBy, createdAt));
+        dashboard.AddDomainEvent(new DashboardCreatedDomainEvent(workspaceId, dashboard.Id, createdBy, createdAt));
         return dashboard;
     }
 
@@ -75,30 +81,37 @@ public class Dashboard : SoftDeletableEntity
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(name);
 
-        Name = name.Trim();
+        var normalizedName = name.Trim();
+        if (Name == normalizedName) return;
+
+        Name = normalizedName;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new DashboardRenamedEvent(WorkspaceId, Id, Name, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new DashboardRenamedDomainEvent(WorkspaceId, Id, Name, updatedBy, updatedAt));
     }
 
     public void ChangeVisibility(DashboardVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (Visibility == visibility) return;
+
         Visibility = visibility;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new DashboardVisibilityChangedEvent(WorkspaceId, Id, Visibility, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new DashboardVisibilityChangedDomainEvent(WorkspaceId, Id, Visibility, updatedBy, updatedAt));
     }
 
-    public void AddWidget(string title, string type, JsonValue config, WidgetPosition position, Guid updatedBy, DateTimeOffset updatedAt)
+    public void AddWidget(string title, WidgetType type, JsonValue config, WidgetPosition position, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(title);
-        Guard.NotNullOrWhiteSpace(type);
         WidgetRules.ValidatePosition(position);
 
         var widget = DashboardWidget.Create(Id, title, type, config, position);
         _widgets.Add(widget);
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new DashboardWidgetAddedEvent(WorkspaceId, Id, widget.Id, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new DashboardWidgetAddedDomainEvent(WorkspaceId, Id, widget.Id, updatedBy, updatedAt));
     }
 
     public void RemoveWidget(Guid widgetId, Guid updatedBy, DateTimeOffset updatedAt)
@@ -109,7 +122,8 @@ public class Dashboard : SoftDeletableEntity
 
         _widgets.Remove(widget);
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new DashboardWidgetRemovedEvent(WorkspaceId, Id, widgetId, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new DashboardWidgetRemovedDomainEvent(WorkspaceId, Id, widgetId, updatedBy, updatedAt));
     }
 
     public void MoveWidget(Guid widgetId, WidgetPosition newPosition, Guid updatedBy, DateTimeOffset updatedAt)
@@ -123,7 +137,8 @@ public class Dashboard : SoftDeletableEntity
 
         widget.UpdatePosition(newPosition);
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new DashboardWidgetMovedEvent(WorkspaceId, Id, widgetId, newPosition, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new DashboardWidgetMovedDomainEvent(WorkspaceId, Id, widgetId, newPosition, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -131,6 +146,9 @@ public class Dashboard : SoftDeletableEntity
         if (IsDeleted) return;
         Status = DashboardStatus.Archived;
         base.SoftDelete(deletedBy, deletedAt, reason);
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new DashboardDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -138,5 +156,8 @@ public class Dashboard : SoftDeletableEntity
         if (!IsDeleted) return;
         Status = DashboardStatus.Active;
         base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new DashboardRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

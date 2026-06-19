@@ -3,12 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Workspaces.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
+using global::Notrelix.Domain.Workspaces.Workspaces;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetUserWorkspaces;
 
-public record GetUserWorkspacesQuery(Guid UserId) : IRequest<Result<List<WorkspaceDto>>>;
+public record GetUserWorkspacesQuery(Guid UserId) : IQuery<Result<List<WorkspaceDto>>>;
 
 public class GetUserWorkspacesQueryHandler : IRequestHandler<GetUserWorkspacesQuery, Result<List<WorkspaceDto>>>
 {
@@ -28,7 +27,7 @@ public class GetUserWorkspacesQueryHandler : IRequestHandler<GetUserWorkspacesQu
                 member => member.WorkspaceId,
                 workspace => workspace.Id,
                 (_, workspace) => workspace)
-            .Where(workspace => !workspace.IsArchived)
+            .Where(workspace => workspace.Status == WorkspaceStatus.Active && !workspace.IsDeleted)
             .OrderBy(workspace => workspace.Name)
             .ToListAsync(ct);
 
@@ -44,9 +43,9 @@ public class GetUserWorkspacesQueryHandler : IRequestHandler<GetUserWorkspacesQu
 
         var result = workspaces.Select(w => new WorkspaceDto(
             w.Id, w.Name, w.Slug, w.Description, w.IsPersonal,
-            w.Plan.ToString(), w.Icon.Type.ToString(), w.Icon.Value,
-            w.CoverUrl, w.IsArchived, memberCounts.GetValueOrDefault(w.Id), w.CreatedAt,
-            w.Settings
+            "free", null, null,
+            null, w.Status == WorkspaceStatus.Archived, memberCounts.GetValueOrDefault(w.Id), w.CreatedAt.DateTime,
+            null
         )).ToList();
 
         return Result<List<WorkspaceDto>>.Success(result);

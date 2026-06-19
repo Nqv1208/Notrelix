@@ -20,7 +20,7 @@ public class SpaceTests
         space.Name.Should().Be("Marketing");
         space.Visibility.Should().Be(SpaceVisibility.Workspace);
         space.Status.Should().Be(SpaceStatus.Active);
-        space.DomainEvents.Should().ContainSingle(e => e is SpaceCreatedEvent);
+        space.DomainEvents.Should().ContainSingle(e => e is SpaceCreatedDomainEvent);
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public class SpaceTests
 
         space.Status.Should().Be(SpaceStatus.SoftDeleted);
         space.IsDeleted.Should().BeTrue();
-        space.DomainEvents.Should().Contain(e => e is SpaceSoftDeletedEvent);
+        space.DomainEvents.Should().Contain(e => e is SpaceSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public class SpaceTests
 
         space.Status.Should().Be(SpaceStatus.Active);
         space.IsDeleted.Should().BeFalse();
-        space.DomainEvents.Should().Contain(e => e is SpaceRestoredEvent);
+        space.DomainEvents.Should().Contain(e => e is SpaceRestoredDomainEvent);
     }
 
     [Fact]

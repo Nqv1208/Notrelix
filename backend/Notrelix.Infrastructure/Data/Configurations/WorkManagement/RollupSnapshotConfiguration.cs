@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Notrelix.Domain.WorkManagement.Items;
+using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.WorkManagement.Rollups;
 
 namespace Notrelix.Infrastructure.Data.Configurations.WorkManagement;

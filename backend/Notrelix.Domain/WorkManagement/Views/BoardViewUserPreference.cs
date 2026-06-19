@@ -3,7 +3,7 @@ using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.WorkManagement.Views;
 
-public class BoardViewUserPreference : AggregateRoot
+public class BoardViewUserPreference : AggregateRoot, IWorkspaceScoped
 {
     private readonly List<FilterRule> _filterRules = new();
     private readonly List<SortRule> _sortRules = new();
@@ -41,7 +41,7 @@ public class BoardViewUserPreference : AggregateRoot
 
         pref.SetAuditOnCreate(userId, createdAt);
 
-        pref.AddDomainEvent(new BoardViewUserPreferenceCreatedEvent(
+        pref.AddDomainEvent(new BoardViewUserPreferenceCreatedDomainEvent(
             workspaceId,
             boardId,
             viewId,
@@ -68,7 +68,7 @@ public class BoardViewUserPreference : AggregateRoot
 
         SetAuditOnUpdate(UserId, updatedAt);
 
-        AddDomainEvent(new BoardViewUserPreferenceFilterChangedEvent(
+        AddDomainEvent(new BoardViewUserPreferenceFilterChangedDomainEvent(
             WorkspaceId,
             BoardId,
             ViewId,
@@ -93,7 +93,7 @@ public class BoardViewUserPreference : AggregateRoot
 
         SetAuditOnUpdate(UserId, updatedAt);
 
-        AddDomainEvent(new BoardViewUserPreferenceSortChangedEvent(
+        AddDomainEvent(new BoardViewUserPreferenceSortChangedDomainEvent(
             WorkspaceId,
             BoardId,
             ViewId,
@@ -115,7 +115,7 @@ public class BoardViewUserPreference : AggregateRoot
 
         SetAuditOnUpdate(UserId, updatedAt);
 
-        AddDomainEvent(new BoardViewUserPreferenceGroupChangedEvent(
+        AddDomainEvent(new BoardViewUserPreferenceGroupChangedDomainEvent(
             WorkspaceId,
             BoardId,
             ViewId,

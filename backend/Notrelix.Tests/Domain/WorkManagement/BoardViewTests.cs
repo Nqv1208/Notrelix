@@ -22,7 +22,7 @@ public class BoardViewTests
 
         view.Name.Should().Be("Table View");
         view.Type.Should().Be(ViewType.Table);
-        view.DomainEvents.Should().ContainSingle(e => e is BoardViewCreatedEvent);
+        view.DomainEvents.Should().ContainSingle(e => e is BoardViewCreatedDomainEvent);
     }
 
     [Fact]
@@ -41,7 +41,7 @@ public class BoardViewTests
         view.UpdateConfig(newConfig, updatedBy, DateTimeOffset.UtcNow);
 
         view.Config.Should().Be(newConfig);
-        view.DomainEvents.Should().ContainSingle(e => e is BoardViewConfigUpdatedEvent);
+        view.DomainEvents.Should().ContainSingle(e => e is BoardViewConfigUpdatedDomainEvent);
     }
 
     [Fact]

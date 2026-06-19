@@ -1,4 +1,4 @@
-namespace Notrelix.Application.Features.Shared.Comments.DTOs;
+namespace Notrelix.Application.Features.Collaboration.Comments.DTOs;
 
 public record CommentDto(
     Guid Id,

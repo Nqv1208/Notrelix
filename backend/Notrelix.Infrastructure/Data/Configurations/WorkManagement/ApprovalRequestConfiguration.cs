@@ -30,7 +30,7 @@ public class ApprovalRequestConfiguration : IEntityTypeConfiguration<ApprovalReq
             .HasForeignKey(x => x.ApprovalRequestId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");

@@ -5,7 +5,7 @@ public record AutomationRuleDto(
     Guid Id,
     Guid WorkspaceId,
     string Name,
-    string TriggerEvent,
+    string TriggerType,
     string ActionType,
     string Configuration,
     bool IsEnabled,
@@ -15,16 +15,9 @@ public record AutomationRuleDto(
 public record AutomationExecutionDto(
     Guid Id,
     Guid WorkspaceId,
-    Guid? AutomationRuleId,
-    Guid EventId,
-    string EventType,
-    ResourceType? ResourceType,
-    Guid? ResourceId,
+    Guid RuleId,
     AutomationExecutionStatus Status,
     int AttemptCount,
-    string Payload,
-    string? Response,
+    string? Payload,
     string? Error,
-    DateTime CreatedAt,
-    DateTime? DeliveredAt,
-    DateTime? FailedAt);
+    DateTime CreatedAt);

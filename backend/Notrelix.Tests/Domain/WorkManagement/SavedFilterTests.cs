@@ -22,7 +22,7 @@ public class SavedFilterTests
         filter.BoardId.Should().Be(boardId);
         filter.Name.Should().Be(name);
         filter.Rules.Should().HaveCount(1);
-        filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterCreatedEvent);
+        filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterCreatedDomainEvent);
     }
 
     [Fact]

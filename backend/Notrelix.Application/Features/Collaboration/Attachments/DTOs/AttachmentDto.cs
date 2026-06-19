@@ -1,4 +1,4 @@
-namespace Notrelix.Application.Features.Shared.Attachments.DTOs;
+namespace Notrelix.Application.Features.Collaboration.Attachments.DTOs;
 
 public record AttachmentDto(
     Guid Id,

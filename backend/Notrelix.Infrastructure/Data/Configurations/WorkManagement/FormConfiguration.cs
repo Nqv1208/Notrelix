@@ -27,7 +27,7 @@ public class FormConfiguration : IEntityTypeConfiguration<Form>
             .HasForeignKey(x => x.FormId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
@@ -40,6 +40,6 @@ public class FormConfiguration : IEntityTypeConfiguration<Form>
         builder.Property(x => x.Version).HasColumnName("version");
 
         builder.HasIndex(x => x.Slug).IsUnique().HasDatabaseName("idx_forms_slug");
-        builder.HasIndex(x => x.BoardId).HasFilter("is_deleted = false").HasDatabaseName("idx_forms_board_id");
+        builder.HasIndex(x => x.BoardId).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_forms_board_id");
     }
 }

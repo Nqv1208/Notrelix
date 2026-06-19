@@ -16,7 +16,7 @@ public class ShareLinkTests
         var tokenHash = ShareLinkTokenHash.Create("secret-token-123");
         var createdBy = Guid.NewGuid();
 
-        var link = ShareLink.Create(workspaceId, ResourceType.Page, resourceId, tokenHash, ShareLinkAccessMode.Public, createdBy, DateTimeOffset.UtcNow);
+        var link = ShareLink.Create(workspaceId, ResourceType.Page, resourceId, tokenHash, ShareLinkAccessMode.WorkspaceOnly, createdBy, DateTimeOffset.UtcNow);
 
         link.TokenHash.Hash.Should().NotBe("secret-token-123");
         link.Status.Should().Be(ShareLinkStatus.Active);
@@ -36,7 +36,7 @@ public class ShareLinkTests
     public void Disable_ShouldSetStatusToDisabled_AndRaiseEvent()
     {
         var workspaceId = Guid.NewGuid();
-        var link = ShareLink.Create(workspaceId, ResourceType.Board, Guid.NewGuid(), ShareLinkTokenHash.Create("token"), ShareLinkAccessMode.Public, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var link = ShareLink.Create(workspaceId, ResourceType.Board, Guid.NewGuid(), ShareLinkTokenHash.Create("token"), ShareLinkAccessMode.WorkspaceOnly, Guid.NewGuid(), DateTimeOffset.UtcNow);
         link.ClearDomainEvents();
 
         var disabledBy = Guid.NewGuid();
@@ -50,7 +50,7 @@ public class ShareLinkTests
     public void RotateTokenHash_ShouldUpdateHash_AndRaiseEvent()
     {
         var workspaceId = Guid.NewGuid();
-        var link = ShareLink.Create(workspaceId, ResourceType.Board, Guid.NewGuid(), ShareLinkTokenHash.Create("token1"), ShareLinkAccessMode.Public, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var link = ShareLink.Create(workspaceId, ResourceType.Board, Guid.NewGuid(), ShareLinkTokenHash.Create("token1"), ShareLinkAccessMode.WorkspaceOnly, Guid.NewGuid(), DateTimeOffset.UtcNow);
         link.ClearDomainEvents();
 
         var newHash = ShareLinkTokenHash.Create("token2");

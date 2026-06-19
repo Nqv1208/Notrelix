@@ -2,7 +2,9 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Domain.Workspaces;
+using global::Notrelix.Domain.SharedKernel;
+using global::Notrelix.Domain.Workspaces.Invitations;
+using global::Notrelix.Domain.Workspaces.Workspaces;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Queries.GetUserPendingInvitations;
 
@@ -17,17 +19,19 @@ public record UserPendingInvitationDto(
     DateTime ExpiresAt
 );
 
-public record GetUserPendingInvitationsQuery : IRequest<Result<List<UserPendingInvitationDto>>>;
+public record GetUserPendingInvitationsQuery : IQuery<Result<List<UserPendingInvitationDto>>>;
 
 public class GetUserPendingInvitationsQueryHandler : IRequestHandler<GetUserPendingInvitationsQuery, Result<List<UserPendingInvitationDto>>>
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public GetUserPendingInvitationsQueryHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public GetUserPendingInvitationsQueryHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<List<UserPendingInvitationDto>>> Handle(GetUserPendingInvitationsQuery request, CancellationToken ct)
@@ -38,11 +42,11 @@ public class GetUserPendingInvitationsQueryHandler : IRequestHandler<GetUserPend
         }
 
         var userEmail = _currentUser.Email.Trim().ToLowerInvariant();
+        var now = _dateTimeProvider.UtcNow;
 
         var invitations = await _context.WorkspaceInvitations
-            .Include(i => i.Workspace)
             .AsNoTracking()
-            .Where(i => i.Email == userEmail && i.AcceptedAt == null && i.ExpiresAt > DateTime.UtcNow)
+            .Where(i => i.Email == userEmail && i.Status == WorkspaceInvitationStatus.Pending && i.ExpiresAt > now)
             .OrderByDescending(i => i.CreatedAt)
             .ToListAsync(ct);
 
@@ -50,11 +54,14 @@ public class GetUserPendingInvitationsQueryHandler : IRequestHandler<GetUserPend
 
         foreach (var i in invitations)
         {
+            var workspace = await _context.Workspaces.AsNoTracking()
+                .FirstOrDefaultAsync(w => w.Id == i.WorkspaceId, ct);
+
             var inviter = await _context.Users
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Id == i.InvitedBy, ct);
             
-            var inviterName = inviter != null ? inviter.Name : "Ai đó";
+            var inviterName = inviter?.Name ?? "Ai đó";
             if (string.IsNullOrWhiteSpace(inviterName))
             {
                 inviterName = inviter?.Email?.Value ?? "Người dùng Workspace";
@@ -62,13 +69,13 @@ public class GetUserPendingInvitationsQueryHandler : IRequestHandler<GetUserPend
 
             result.Add(new UserPendingInvitationDto(
                 i.Id,
-                i.Workspace.Name,
-                i.Workspace.Slug,
+                workspace?.Name ?? "Unknown",
+                workspace?.Slug ?? "",
                 inviterName,
                 i.Email,
                 i.Role.ToString(),
-                i.Token,
-                i.ExpiresAt
+                i.Token.Value,
+                i.ExpiresAt.DateTime
             ));
         }
 

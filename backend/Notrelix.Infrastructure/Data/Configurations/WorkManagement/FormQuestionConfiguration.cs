@@ -18,10 +18,15 @@ public class FormQuestionConfiguration : IEntityTypeConfiguration<FormQuestion>
         builder.Property(x => x.BoardFieldId).HasColumnName("board_field_id");
         builder.Property(x => x.QuestionKey).HasColumnName("question_key").IsRequired().HasMaxLength(128);
         builder.Property(x => x.Label).HasColumnName("label").IsRequired().HasMaxLength(512);
-        builder.Property(x => x.QuestionType).HasColumnName("question_type").IsRequired().HasMaxLength(50);
+        builder.Property(x => x.QuestionType).HasColumnName("question_type").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.IsRequired).HasColumnName("is_required");
-        builder.Property(x => x.Position).HasColumnName("position").IsRequired();
-        builder.Property(x => x.ConfigJson).HasColumnName("config_json").IsRequired();
+
+        builder.Property(x => x.Position).HasColumnName("position").HasMaxLength(50).IsRequired();
+
+        builder.OwnsOne(x => x.Config, config =>
+        {
+            config.ToJson();
+        });
         builder.Property(x => x.Version).HasColumnName("version");
 
         builder.HasOne<Form>()

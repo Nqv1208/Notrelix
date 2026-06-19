@@ -2,9 +2,9 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.Workspaces.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
+using global::Notrelix.Domain.SharedKernel;
+using global::Notrelix.Domain.Workspaces.Invitations;
+using global::Notrelix.Domain.Workspaces.Members;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMemberBySlug;
 
@@ -12,17 +12,19 @@ public record InviteMemberBySlugCommand(
     string Slug,
     string Email,
     string Role
-) : IRequest<Result<Guid>>;
+) : ICommand<Result<Guid>>, ITransactionalRequest;
 
 public class InviteMemberBySlugCommandHandler : IRequestHandler<InviteMemberBySlugCommand, Result<Guid>>
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public InviteMemberBySlugCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public InviteMemberBySlugCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<Guid>> Handle(InviteMemberBySlugCommand request, CancellationToken ct)
@@ -33,12 +35,12 @@ public class InviteMemberBySlugCommandHandler : IRequestHandler<InviteMemberBySl
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.Slug);
 
+        var now = _dateTimeProvider.UtcNow;
         var role = Enum.Parse<WorkspaceRole>(request.Role, ignoreCase: true);
-        var invitation = WorkspaceInvitation.Create(workspace.Id, _currentUser.UserId, request.Email, role);
+        var token = InvitationTokenHash.Create(Guid.NewGuid().ToString("N"));
+        var invitation = WorkspaceInvitation.Create(workspace.Id, request.Email.Trim().ToLowerInvariant(), role, token, _currentUser.UserId, now);
 
         _context.WorkspaceInvitations.Add(invitation);
-        await _context.SaveChangesAsync(ct);
-
         return Result<Guid>.Success(invitation.Id);
     }
 }

@@ -8,6 +8,10 @@ public interface IPermissionService
         PermissionContext context,
         CancellationToken cancellationToken = default);
 
+    Task EnsureAllowedAsync(
+        PermissionContext context,
+        CancellationToken cancellationToken = default);
+
     Task<bool> AuthorizeAsync(
         Guid userId,
         Guid workspaceId,

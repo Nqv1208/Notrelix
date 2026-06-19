@@ -2,7 +2,7 @@ using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Governance.Audit;
 
-public class AuditRetentionPolicy : Entity
+public class AuditRetentionPolicy : Entity, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public int RetentionDays { get; private set; }

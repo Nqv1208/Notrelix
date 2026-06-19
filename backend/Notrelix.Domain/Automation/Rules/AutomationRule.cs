@@ -1,3 +1,4 @@
+using Notrelix.Domain.Automation.RulesEngine;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Common.Exceptions;
 
@@ -9,10 +10,7 @@ public class AutomationRule : AggregateRoot, IWorkspaceScoped
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
     public AutomationRuleStatus Status { get; private set; }
-    public string TriggerEvent { get; private set; } = null!;
-    public string ActionType { get; private set; } = null!;
-    public string? Configuration { get; private set; }
-    public DateTimeOffset? LastRunAt { get; private set; }
+    public AutomationConfiguration Configuration { get; private set; } = null!;
 
     public bool IsEnabled => Status == AutomationRuleStatus.Active;
 
@@ -21,30 +19,25 @@ public class AutomationRule : AggregateRoot, IWorkspaceScoped
     public static AutomationRule Create(
         Guid workspaceId,
         string name,
-        string triggerEvent,
-        string actionType,
+        AutomationConfiguration configuration,
         Guid createdBy,
-        DateTimeOffset createdAt,
-        string? configuration = null)
+        DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(createdBy);
         Guard.NotNullOrWhiteSpace(name);
-        Guard.NotNullOrWhiteSpace(triggerEvent);
-        Guard.NotNullOrWhiteSpace(actionType);
+        Guard.NotNull(configuration);
 
         var rule = new AutomationRule
         {
             WorkspaceId = workspaceId,
             Name = name.Trim(),
-            TriggerEvent = triggerEvent.Trim(),
-            ActionType = actionType.Trim(),
             Configuration = configuration,
             Status = AutomationRuleStatus.Draft
         };
 
         rule.SetAuditOnCreate(createdBy, createdAt);
-        rule.AddDomainEvent(new AutomationRuleCreatedEvent(workspaceId, rule.Id, rule.Name, createdBy, createdAt));
+        rule.AddDomainEvent(new AutomationRuleCreatedDomainEvent(workspaceId, rule.Id, rule.Name, createdBy, createdAt));
 
         return rule;
     }
@@ -54,12 +47,10 @@ public class AutomationRule : AggregateRoot, IWorkspaceScoped
         if (Status == AutomationRuleStatus.Active) return;
         EnsureNotDeleted();
 
-        if (string.IsNullOrWhiteSpace(TriggerEvent) || string.IsNullOrWhiteSpace(ActionType))
-            throw new BusinessRuleException("Cannot enable an automation rule without a trigger and at least one action.");
-
         Status = AutomationRuleStatus.Active;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new AutomationRuleEnabledEvent(WorkspaceId, Id, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new AutomationRuleEnabledDomainEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void Disable(Guid updatedBy, DateTimeOffset updatedAt)
@@ -69,18 +60,21 @@ public class AutomationRule : AggregateRoot, IWorkspaceScoped
 
         Status = AutomationRuleStatus.Disabled;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new AutomationRuleDisabledEvent(WorkspaceId, Id, updatedBy, updatedAt));
+        IncrementVersion();
+        AddDomainEvent(new AutomationRuleDisabledDomainEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
-    public void UpdateConfiguration(string config)
+    public void UpdateConfiguration(AutomationConfiguration config, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        Configuration = config;
-    }
+        Guard.NotNull(config);
 
-    public void RecordExecution(DateTimeOffset runAt)
-    {
-        LastRunAt = runAt;
+        if (Configuration == config) return;
+
+        Configuration = config;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+        AddDomainEvent(new AutomationConfigurationChangedDomainEvent(WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -88,7 +82,9 @@ public class AutomationRule : AggregateRoot, IWorkspaceScoped
         if (IsDeleted) return;
         Status = AutomationRuleStatus.Disabled;
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new AutomationRuleDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        AddDomainEvent(new AutomationRuleDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -96,5 +92,8 @@ public class AutomationRule : AggregateRoot, IWorkspaceScoped
         if (!IsDeleted) return;
         Status = AutomationRuleStatus.Draft;
         base.Restore(restoredBy, restoredAt);
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        AddDomainEvent(new AutomationRuleRestoredDomainEvent(WorkspaceId, Id, Name, restoredBy, restoredAt));
     }
 }

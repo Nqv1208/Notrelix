@@ -14,12 +14,12 @@ public class IntegrationConnectionConfiguration : IEntityTypeConfiguration<Integ
         builder.Property(x => x.Id).HasColumnName("id");
 
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
-        builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
-        builder.Property(x => x.Provider).HasColumnName("provider").IsRequired().HasMaxLength(100);
-        builder.Property(x => x.Config).HasColumnName("config").HasColumnType("jsonb");
-        builder.Property(x => x.IsEnabled).HasColumnName("is_enabled");
+        builder.Property(x => x.Provider).HasColumnName("provider").HasConversion<string>().IsRequired().HasMaxLength(100);
+        builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
+        builder.Property(x => x.ProviderAccountId).HasColumnName("provider_account_id").HasMaxLength(256);
+        builder.Property(x => x.ExpiresAt).HasColumnName("expires_at");
 
-        builder.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
@@ -29,6 +29,14 @@ public class IntegrationConnectionConfiguration : IEntityTypeConfiguration<Integ
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
+
+        builder.HasMany(x => x.Scopes)
+            .WithOne()
+            .HasForeignKey(x => x.ConnectionId);
+
+        builder.HasMany(x => x.SecretVersions)
+            .WithOne()
+            .HasForeignKey(x => x.ConnectionId);
 
         builder.HasIndex(x => x.WorkspaceId).HasDatabaseName("idx_integration_connections_workspace_id");
     }

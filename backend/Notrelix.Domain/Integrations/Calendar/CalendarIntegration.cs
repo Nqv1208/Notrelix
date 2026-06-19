@@ -32,7 +32,7 @@ public class CalendarEventLink : Entity
     }
 }
 
-public class CalendarIntegration : AggregateRoot
+public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }
     public Guid ConnectionId { get; private set; }
@@ -60,7 +60,7 @@ public class CalendarIntegration : AggregateRoot
         };
 
         integration.SetAuditOnCreate(createdBy, createdAt);
-        integration.AddDomainEvent(new CalendarIntegrationConnectedEvent(workspaceId, connectionId, createdAt));
+        integration.AddDomainEvent(new CalendarIntegrationConnectedDomainEvent(workspaceId, connectionId, createdAt));
 
         return integration;
     }
@@ -72,7 +72,7 @@ public class CalendarIntegration : AggregateRoot
 
         IsActive = true;
         SetAuditOnUpdate(updatedBy, occurredAt);
-        AddDomainEvent(new CalendarIntegrationActivatedEvent(WorkspaceId, Id, updatedBy, occurredAt));
+        AddDomainEvent(new CalendarIntegrationActivatedDomainEvent(WorkspaceId, Id, updatedBy, occurredAt));
     }
 
     public void Deactivate(Guid updatedBy, DateTimeOffset occurredAt)
@@ -82,7 +82,7 @@ public class CalendarIntegration : AggregateRoot
 
         IsActive = false;
         SetAuditOnUpdate(updatedBy, occurredAt);
-        AddDomainEvent(new CalendarIntegrationDeactivatedEvent(WorkspaceId, Id, updatedBy, occurredAt));
+        AddDomainEvent(new CalendarIntegrationDeactivatedDomainEvent(WorkspaceId, Id, updatedBy, occurredAt));
     }
 
     public void ChangeSyncDirection(CalendarSyncDirection newDirection, Guid updatedBy, DateTimeOffset occurredAt)
@@ -92,7 +92,7 @@ public class CalendarIntegration : AggregateRoot
 
         SyncDirection = newDirection;
         SetAuditOnUpdate(updatedBy, occurredAt);
-        AddDomainEvent(new CalendarIntegrationSyncDirectionChangedEvent(WorkspaceId, Id, newDirection, updatedBy, occurredAt));
+        AddDomainEvent(new CalendarIntegrationSyncDirectionChangedDomainEvent(WorkspaceId, Id, newDirection, updatedBy, occurredAt));
     }
 
     public void LinkEvent(Guid internalEventId, string externalEventId, string? eTag = null)
