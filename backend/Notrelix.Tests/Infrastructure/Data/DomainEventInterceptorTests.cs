@@ -1,7 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Domain.Entities.Workspaces;
-using Notrelix.Domain.Events.Workspace;
+using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Domain.Workspaces.Workspaces.Events;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Interceptors;
 
