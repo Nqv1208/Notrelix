@@ -142,8 +142,8 @@ internal sealed class OutboxDispatcher : BackgroundService
 
         if (domainEventType is null)
         {
-            _logger.LogWarning("Outbox message {Id}: message name {MessageName} not found", message.Id, message.MessageName);
-            message.MarkProcessed(dateTimeProvider.UtcNow);
+            _logger.LogWarning("Outbox message {Id}: domain event type {MessageName} not found in registry", message.Id, message.MessageName);
+            message.MarkFailed("EventType not found in registry: " + message.MessageName, dateTimeProvider.UtcNow);
             return;
         }
 
@@ -177,8 +177,8 @@ internal sealed class OutboxDispatcher : BackgroundService
 
         if (integrationEventType is null)
         {
-            _logger.LogWarning("Outbox message {Id}: integration event name {MessageName} not found", message.Id, message.MessageName);
-            message.MarkProcessed(dateTimeProvider.UtcNow);
+            _logger.LogWarning("Outbox message {Id}: integration event type {MessageName} not found in registry", message.Id, message.MessageName);
+            message.MarkFailed("EventType not found in registry: " + message.MessageName, dateTimeProvider.UtcNow);
             return;
         }
 

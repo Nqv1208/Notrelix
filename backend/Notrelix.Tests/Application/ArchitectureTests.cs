@@ -112,6 +112,75 @@ public class ArchitectureTests
         violations.Should().BeEmpty($"Application must not reference Infrastructure or Api projects: {string.Join(", ", violations)}");
     }
 
+    [Fact]
+    public void PipelineBehaviorOrder_ShouldHaveTransactionBehaviorAsInnermost()
+    {
+        var diFile = Path.Combine(GetApplicationPath(), "DependencyInjection.cs");
+        var content = RemoveComments(File.ReadAllText(diFile));
+
+        var lines = content.Split('\n')
+            .Select(l => l.Trim())
+            .Where(l => l.Contains("AddTransient(typeof(IPipelineBehavior<"))
+            .ToList();
+
+        lines.Should().HaveCount(11, "expected exactly 11 pipeline behaviors");
+
+        lines.Last().Should().Contain("TransactionBehavior");
+
+        var expectedOrder = new[]
+        {
+            "ExceptionMappingBehavior",
+            "LoggingBehavior",
+            "ValidationBehavior",
+            "WorkspaceContextBehavior",
+            "AuthorizationBehavior",
+            "CacheBehavior",
+            "IdempotencyBehavior",
+            "EntitlementBehavior",
+            "CacheInvalidationBehavior",
+            "RealtimeBehavior",
+            "TransactionBehavior",
+        };
+
+        for (var i = 0; i < expectedOrder.Length; i++)
+        {
+            lines[i].Should().Contain(expectedOrder[i], $"behavior at position {i} should be {expectedOrder[i]}");
+        }
+    }
+
+    [Fact]
+    public void CommandHandlers_ShouldNotCall_SaveChangesAsync()
+    {
+        var appPath = GetApplicationPath();
+        var files = Directory.GetFiles(Path.Combine(appPath, "Features"), "*.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                     && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .ToArray();
+        var violations = new List<string>();
+
+        var allowedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "MemberInvitedEventHandler.cs",
+            "N8nAutomationEventHandlers.cs",
+        };
+
+        foreach (var file in files)
+        {
+            var fileName = Path.GetFileName(file);
+            if (allowedFiles.Contains(fileName)) continue;
+
+            var content = RemoveComments(File.ReadAllText(file));
+            if (!content.Contains("IRequestHandler<")) continue;
+
+            if (content.Contains("SaveChangesAsync"))
+            {
+                violations.Add(fileName);
+            }
+        }
+
+        violations.Should().BeEmpty($"Command/query handlers must not call SaveChangesAsync directly. TransactionBehavior handles it. Violations: {string.Join(", ", violations)}");
+    }
+
     private static string RemoveComments(string input)
     {
         var blockComments = @"/\*(.*?)\*/";

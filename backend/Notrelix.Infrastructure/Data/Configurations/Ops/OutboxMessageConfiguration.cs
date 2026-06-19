@@ -33,6 +33,7 @@ public class OutboxMessageConfiguration : IEntityTypeConfiguration<OutboxMessage
         builder.Property(x => x.RetryCount).HasColumnName("retry_count").IsRequired().HasDefaultValue(0);
         builder.Property(x => x.MaxRetries).HasColumnName("max_retries").IsRequired().HasDefaultValue(OutboxDefaults.MaxRetries);
         builder.Property(x => x.NextAttemptAt).HasColumnName("next_attempt_at");
+        builder.Property(x => x.ProcessingStartedAt).HasColumnName("processing_started_at");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(x => x.ProcessedAt).HasColumnName("processed_at");
         builder.Property(x => x.Error).HasColumnName("error");

@@ -23,13 +23,24 @@ public class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         {
             _logger.LogTrace("Beginning transaction for {RequestType}", typeof(TRequest).Name);
 
-            var response = await next();
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                var response = await next();
 
-            await _context.SaveChangesAsync(cancellationToken);
+                await _context.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
 
-            _logger.LogTrace("Transaction completed for {RequestType}", typeof(TRequest).Name);
+                _logger.LogTrace("Transaction completed for {RequestType}", typeof(TRequest).Name);
 
-            return response;
+                return response;
+            }
+            catch
+            {
+                _logger.LogWarning("Transaction rolled back for {RequestType}", typeof(TRequest).Name);
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
         }
 
         return await next();

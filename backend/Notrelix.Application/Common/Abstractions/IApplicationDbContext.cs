@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Notrelix.Domain.Analytics.Dashboards;
 using Notrelix.Domain.Automation.Agents;
 using Notrelix.Domain.Automation.Executions;
@@ -66,6 +67,7 @@ namespace Notrelix.Application.Common.Abstractions;
 
 public interface IApplicationDbContext
 {
+    DatabaseFacade Database { get; }
     // Identity
     DbSet<User> Users { get; }
     DbSet<UserProfile> UserProfiles { get; }

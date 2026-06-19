@@ -1,3 +1,4 @@
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Notrelix.Application.Common.Abstractions;
@@ -12,23 +13,26 @@ public class DomainEventInterceptor : SaveChangesInterceptor
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IEventTypeRegistry _eventTypeRegistry;
     private readonly IIntegrationEventMapper _integrationEventMapper;
+    private readonly IMediator _mediator;
     private readonly AsyncLocal<List<IDomainEvent>?> _capturedEvents = new();
 
     public DomainEventInterceptor(
         IDateTimeProvider dateTimeProvider,
         IEventTypeRegistry eventTypeRegistry,
-        IIntegrationEventMapper integrationEventMapper)
+        IIntegrationEventMapper integrationEventMapper,
+        IMediator mediator)
     {
         _dateTimeProvider = dateTimeProvider;
         _eventTypeRegistry = eventTypeRegistry;
         _integrationEventMapper = integrationEventMapper;
+        _mediator = mediator;
     }
 
     public override InterceptionResult<int> SavingChanges(
         DbContextEventData eventData,
         InterceptionResult<int> result)
     {
-        CaptureEvents(eventData.Context);
+        CaptureAndPersist(eventData.Context);
         return result;
     }
 
@@ -37,7 +41,7 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
-        CaptureEvents(eventData.Context);
+        CaptureAndPersist(eventData.Context);
         return new ValueTask<InterceptionResult<int>>(result);
     }
 
@@ -49,7 +53,7 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         _capturedEvents.Value = null;
         if (events?.Count > 0)
         {
-            PersistIntegrationEventOutbox(eventData.Context, events);
+            PublishInline(events);
         }
         return result;
     }
@@ -63,12 +67,12 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         _capturedEvents.Value = null;
         if (events?.Count > 0)
         {
-            await PersistIntegrationEventOutboxAsync(eventData.Context, events, cancellationToken);
+            await PublishInlineAsync(events, cancellationToken);
         }
         return result;
     }
 
-    private void CaptureEvents(DbContext? context)
+    private void CaptureAndPersist(DbContext? context)
     {
         if (context is null) return;
 
@@ -84,9 +88,14 @@ public class DomainEventInterceptor : SaveChangesInterceptor
 
         foreach (var domainEvent in domainEvents)
         {
-            var messageName = _eventTypeRegistry.GetMessageName(domainEvent.GetType());
-            var message = OutboxMessage.From(domainEvent, now, messageName);
-            context.Set<OutboxMessage>().Add(message);
+            var mappings = _integrationEventMapper.Map(domainEvent);
+            foreach (var mapping in mappings)
+            {
+                var message = OutboxMessage.From(mapping.IntegrationEvent, now);
+                context.Set<OutboxMessage>().Add(message);
+            }
+
+
         }
 
         _capturedEvents.Value = domainEvents;
@@ -99,50 +108,23 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         }
     }
 
-    private void PersistIntegrationEventOutbox(DbContext? context, List<IDomainEvent> domainEvents)
+    private void PublishInline(List<IDomainEvent> domainEvents)
     {
-        if (context is null) return;
-        var now = _dateTimeProvider.UtcNow;
-
         foreach (var domainEvent in domainEvents)
         {
-            var mappings = _integrationEventMapper.Map(domainEvent);
-            foreach (var mapping in mappings)
-            {
-                var message = OutboxMessage.From(mapping.IntegrationEvent, now);
-                context.Set<OutboxMessage>().Add(message);
-            }
-        }
-
-        if (domainEvents.Any(e => _integrationEventMapper.Map(e).Count > 0))
-        {
-            context.SaveChanges();
+            var notificationType = typeof(DomainEventNotification<>).MakeGenericType(domainEvent.GetType());
+            var notification = Activator.CreateInstance(notificationType, domainEvent);
+            _mediator.Publish(notification!).GetAwaiter().GetResult();
         }
     }
 
-    private async Task PersistIntegrationEventOutboxAsync(
-        DbContext? context,
-        List<IDomainEvent> domainEvents,
-        CancellationToken cancellationToken)
+    private async Task PublishInlineAsync(List<IDomainEvent> domainEvents, CancellationToken cancellationToken)
     {
-        if (context is null) return;
-        var now = _dateTimeProvider.UtcNow;
-        var hasMappings = false;
-
         foreach (var domainEvent in domainEvents)
         {
-            var mappings = _integrationEventMapper.Map(domainEvent);
-            foreach (var mapping in mappings)
-            {
-                hasMappings = true;
-                var message = OutboxMessage.From(mapping.IntegrationEvent, now);
-                context.Set<OutboxMessage>().Add(message);
-            }
-        }
-
-        if (hasMappings)
-        {
-            await context.SaveChangesAsync(cancellationToken);
+            var notificationType = typeof(DomainEventNotification<>).MakeGenericType(domainEvent.GetType());
+            var notification = Activator.CreateInstance(notificationType, domainEvent);
+            await _mediator.Publish(notification!, cancellationToken);
         }
     }
 }

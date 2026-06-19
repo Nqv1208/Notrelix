@@ -11,10 +11,10 @@ public sealed class ProcessedEventStore : IProcessedEventStore
         _context = context;
     }
 
-    public async Task<bool> IsProcessedAsync(Guid eventId, CancellationToken cancellationToken = default)
+    public async Task<bool> IsProcessedAsync(Guid eventId, string consumerName, CancellationToken cancellationToken = default)
     {
         return await _context.Set<ProcessedEvent>()
-            .AnyAsync(e => e.EventId == eventId, cancellationToken);
+            .AnyAsync(e => e.EventId == eventId && e.ConsumerName == consumerName, cancellationToken);
     }
 
     public async Task MarkProcessedAsync(ProcessedEvent processedEvent, CancellationToken cancellationToken = default)

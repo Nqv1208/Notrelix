@@ -78,11 +78,11 @@ public class RegisterCommandHandlerTests
     [Fact]
     public async Task Handle_WhenValidAndDomainEventInterceptorEnabled_ShouldCreateUserWorkspaceMemberAndSession()
     {
-        var mediator = CreateMediatorRejectingNonNotifications();
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         var eventTypeRegistry = new Mock<IEventTypeRegistry>();
         var integrationEventMapper = new Mock<IIntegrationEventMapper>();
-        var interceptor = new DomainEventInterceptor(dateTimeProvider.Object, eventTypeRegistry.Object, integrationEventMapper.Object);
+        var mediator = CreateMediatorRejectingNonNotifications();
+        var interceptor = new DomainEventInterceptor(dateTimeProvider.Object, eventTypeRegistry.Object, integrationEventMapper.Object, mediator.Object);
         using var context = AuthTestDbContextFactory.CreateInMemoryContext(interceptor);
 
         var passwordHasher = new Mock<IPasswordHasher>();
