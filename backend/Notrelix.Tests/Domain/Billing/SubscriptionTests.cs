@@ -21,7 +21,7 @@ public class SubscriptionTests
         subscription.PlanId.Should().Be(planId);
         subscription.Status.Should().Be(SubscriptionStatus.Active);
         subscription.Tier.Should().Be(SubscriptionTier.Pro);
-        subscription.DomainEvents.Should().ContainSingle(e => e is SubscriptionStartedEvent);
+        subscription.DomainEvents.Should().ContainSingle(e => e is SubscriptionStartedDomainEvent);
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public class SubscriptionTests
         subscription.ChangePlan(newPlanId, actor, now);
 
         subscription.PlanId.Should().Be(newPlanId);
-        subscription.DomainEvents.Should().Contain(e => e is SubscriptionChangedEvent);
+        subscription.DomainEvents.Should().Contain(e => e is SubscriptionChangedDomainEvent);
     }
 
     [Fact]
@@ -59,7 +59,7 @@ public class SubscriptionTests
         subscription.CancelImmediately(actor, now);
 
         subscription.Status.Should().Be(SubscriptionStatus.Canceled);
-        subscription.DomainEvents.Should().Contain(e => e is SubscriptionCancelledEvent);
+        subscription.DomainEvents.Should().Contain(e => e is SubscriptionCanceledDomainEvent);
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public class SubscriptionTests
         subscription.CurrentPeriodEnd.Should().Be(nextEnd);
         subscription.Status.Should().Be(SubscriptionStatus.Active);
         subscription.CancelAtPeriodEnd.Should().BeFalse();
-        subscription.DomainEvents.Should().Contain(e => e is SubscriptionRenewedEvent);
+        subscription.DomainEvents.Should().Contain(e => e is SubscriptionRenewedDomainEvent);
     }
 
     [Fact]
@@ -90,7 +90,7 @@ public class SubscriptionTests
         subscription.Expire(actor, now);
 
         subscription.Status.Should().Be(SubscriptionStatus.Expired);
-        subscription.DomainEvents.Should().Contain(e => e is SubscriptionExpiredEvent);
+        subscription.DomainEvents.Should().Contain(e => e is SubscriptionExpiredDomainEvent);
     }
 
     [Fact]
@@ -103,7 +103,7 @@ public class SubscriptionTests
         subscription.MarkPastDue(actor, now);
 
         subscription.Status.Should().Be(SubscriptionStatus.PastDue);
-        subscription.DomainEvents.Should().Contain(e => e is SubscriptionPastDueEvent);
+        subscription.DomainEvents.Should().Contain(e => e is SubscriptionPastDueDomainEvent);
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public class SubscriptionTests
         subscription.ScheduleCancellation(actor, now);
 
         subscription.CancelAtPeriodEnd.Should().BeTrue();
-        subscription.DomainEvents.Should().Contain(e => e is SubscriptionCancellationScheduledEvent);
+        subscription.DomainEvents.Should().Contain(e => e is SubscriptionCancellationScheduledDomainEvent);
     }
 
     [Fact]
@@ -234,7 +234,7 @@ public class SubscriptionTests
         subscription.SoftDelete(actor, now);
 
         subscription.IsDeleted.Should().BeTrue();
-        subscription.DomainEvents.Should().Contain(e => e is SubscriptionSoftDeletedEvent);
+        subscription.DomainEvents.Should().Contain(e => e is SubscriptionSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -263,7 +263,7 @@ public class SubscriptionTests
         subscription.Restore(actor, now);
 
         subscription.IsDeleted.Should().BeFalse();
-        subscription.DomainEvents.Should().Contain(e => e is SubscriptionRestoredEvent);
+        subscription.DomainEvents.Should().Contain(e => e is SubscriptionRestoredDomainEvent);
     }
 
     [Fact]

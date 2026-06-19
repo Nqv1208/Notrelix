@@ -22,7 +22,7 @@ public class BoardViewUserPreferenceTests
         pref.BoardId.Should().Be(BoardId);
         pref.ViewId.Should().Be(viewId);
         pref.UserId.Should().Be(UserId);
-        pref.DomainEvents.Should().ContainSingle(e => e is BoardViewUserPreferenceCreatedEvent);
+        pref.DomainEvents.Should().ContainSingle(e => e is BoardViewUserPreferenceCreatedDomainEvent);
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public class BoardViewUserPreferenceTests
         pref.ApplyFilter(rules, DateTimeOffset.UtcNow);
 
         pref.FilterRules.Should().HaveCount(1);
-        pref.DomainEvents.Should().ContainSingle(e => e is BoardViewUserPreferenceFilterChangedEvent);
+        pref.DomainEvents.Should().ContainSingle(e => e is BoardViewUserPreferenceFilterChangedDomainEvent);
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public class BoardViewUserPreferenceTests
         pref.ApplySort(sorts, DateTimeOffset.UtcNow);
 
         pref.SortRules.Should().HaveCount(1);
-        pref.DomainEvents.Should().ContainSingle(e => e is BoardViewUserPreferenceSortChangedEvent);
+        pref.DomainEvents.Should().ContainSingle(e => e is BoardViewUserPreferenceSortChangedDomainEvent);
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public class BoardViewUserPreferenceTests
 
         pref.GroupRule.Should().NotBeNull();
         pref.GroupRule!.FieldId.Should().Be(group.FieldId);
-        pref.DomainEvents.Should().ContainSingle(e => e is BoardViewUserPreferenceGroupChangedEvent);
+        pref.DomainEvents.Should().ContainSingle(e => e is BoardViewUserPreferenceGroupChangedDomainEvent);
     }
 
     [Fact]

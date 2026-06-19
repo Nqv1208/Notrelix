@@ -55,7 +55,7 @@ public class NotificationTests
 
         notification.IsRead.Should().BeTrue();
         notification.ReadAt.Should().NotBeNull();
-        notification.DomainEvents.Should().ContainSingle(e => e is NotificationReadEvent);
+        notification.DomainEvents.Should().ContainSingle(e => e is NotificationReadDomainEvent);
     }
 
     [Fact]
@@ -89,7 +89,7 @@ public class NotificationTests
 
         notification.IsArchived.Should().BeTrue();
         notification.ArchivedAt.Should().NotBeNull();
-        notification.DomainEvents.Should().ContainSingle(e => e is NotificationArchivedEvent);
+        notification.DomainEvents.Should().ContainSingle(e => e is NotificationArchivedDomainEvent);
     }
 
     [Fact]

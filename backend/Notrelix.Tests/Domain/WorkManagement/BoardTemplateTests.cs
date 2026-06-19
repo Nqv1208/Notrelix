@@ -22,7 +22,7 @@ public class BoardTemplateTests
         template.WorkspaceId.Should().Be(workspaceId);
         template.Name.Should().Be("Sprint");
         template.Status.Should().Be(TemplateStatus.Published);
-        template.DomainEvents.Should().ContainSingle(e => e is BoardTemplateCreatedEvent);
+        template.DomainEvents.Should().ContainSingle(e => e is BoardTemplateCreatedDomainEvent);
     }
 
     [Fact]
@@ -34,7 +34,7 @@ public class BoardTemplateTests
         var template = BoardTemplate.Create("Sprint", structure, now);
 
         template.WorkspaceId.Should().BeNull();
-        template.DomainEvents.Should().ContainSingle(e => e is BoardTemplateCreatedEvent);
+        template.DomainEvents.Should().ContainSingle(e => e is BoardTemplateCreatedDomainEvent);
     }
 
     [Fact]

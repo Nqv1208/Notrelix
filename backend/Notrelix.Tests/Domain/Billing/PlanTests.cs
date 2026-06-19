@@ -86,7 +86,7 @@ public class PlanTests
         plan.Archive(DateTimeOffset.UtcNow);
 
         plan.Status.Should().Be(PlanStatus.Archived);
-        plan.DomainEvents.Should().ContainSingle(e => e is PlanArchivedEvent);
+        plan.DomainEvents.Should().ContainSingle(e => e is PlanArchivedDomainEvent);
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public class PlanTests
         plan.Deprecate(DateTimeOffset.UtcNow);
 
         plan.Status.Should().Be(PlanStatus.Deprecated);
-        plan.DomainEvents.Should().ContainSingle(e => e is PlanDeprecatedEvent);
+        plan.DomainEvents.Should().ContainSingle(e => e is PlanDeprecatedDomainEvent);
     }
 
     [Fact]

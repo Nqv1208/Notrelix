@@ -34,7 +34,7 @@ public class Phase3AuditTests
 
         item.GroupId.Should().Be(newGroup);
         item.Position.Should().Be(newPosition);
-        item.DomainEvents.Should().ContainSingle(e => e is BoardItemMovedEvent);
+        item.DomainEvents.Should().ContainSingle(e => e is BoardItemMovedDomainEvent);
         item.Version.Should().Be(2);
     }
 
@@ -127,7 +127,7 @@ public class Phase3AuditTests
 
         var (sequence, key) = board.GenerateNextItemIdentity(Actor, Now);
 
-        var ev = board.DomainEvents.Should().ContainSingle().Subject.Should().BeOfType<BoardItemIdentityGeneratedEvent>().Subject;
+        var ev = board.DomainEvents.Should().ContainSingle().Subject.Should().BeOfType<BoardItemIdentityGeneratedDomainEvent>().Subject;
         ev.BoardId.Should().Be(board.Id);
         ev.SequenceNumber.Should().Be(sequence);
         ev.ItemKey.Should().Be(key);

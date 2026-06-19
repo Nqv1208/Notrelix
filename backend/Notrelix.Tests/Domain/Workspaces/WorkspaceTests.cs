@@ -18,7 +18,7 @@ public class WorkspaceTests
 
         workspace.Name.Should().Be("My Workspace");
         workspace.Slug.Should().Be("my-workspace");
-        workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceCreatedEvent);
+        workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceCreatedDomainEvent);
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public class WorkspaceTests
         workspace.Rename("New Name", actor, now);
 
         workspace.Name.Should().Be("New Name");
-        workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceRenamedEvent);
+        workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceRenamedDomainEvent);
     }
 
     [Fact]
@@ -99,7 +99,7 @@ public class WorkspaceTests
 
         workspace.Status.Should().Be(WorkspaceStatus.SoftDeleted);
         workspace.IsDeleted.Should().BeTrue();
-        workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceSoftDeletedEvent);
+        workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -115,7 +115,7 @@ public class WorkspaceTests
 
         workspace.Status.Should().Be(WorkspaceStatus.Active);
         workspace.IsDeleted.Should().BeFalse();
-        workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceRestoredEvent);
+        workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceRestoredDomainEvent);
     }
 
     [Fact]
@@ -127,7 +127,7 @@ public class WorkspaceTests
         workspace.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         workspace.Status.Should().Be(WorkspaceStatus.Archived);
-        workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceArchivedEvent);
+        workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceArchivedDomainEvent);
     }
 
     [Fact]

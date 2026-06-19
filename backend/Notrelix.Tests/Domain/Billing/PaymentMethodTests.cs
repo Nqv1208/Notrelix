@@ -26,7 +26,7 @@ public class PaymentMethodTests
         method.Brand.Should().Be("Visa");
         method.IsDefault.Should().BeTrue();
         method.Status.Should().Be(PaymentMethodStatus.Active);
-        method.DomainEvents.Should().ContainSingle(e => e is PaymentMethodAddedEvent);
+        method.DomainEvents.Should().ContainSingle(e => e is PaymentMethodAddedDomainEvent);
     }
 
     [Fact]

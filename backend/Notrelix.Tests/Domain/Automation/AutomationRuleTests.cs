@@ -26,7 +26,7 @@ public class AutomationRuleTests
 
         rule.Name.Should().Be("Notify on high priority");
         rule.Status.Should().Be(AutomationRuleStatus.Draft);
-        rule.DomainEvents.Should().ContainSingle(e => e is AutomationRuleCreatedEvent);
+        rule.DomainEvents.Should().ContainSingle(e => e is AutomationRuleCreatedDomainEvent);
     }
 
     [Fact]
@@ -39,7 +39,7 @@ public class AutomationRuleTests
         rule.Enable(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         rule.Status.Should().Be(AutomationRuleStatus.Active);
-        rule.DomainEvents.Should().ContainSingle(e => e is AutomationRuleEnabledEvent);
+        rule.DomainEvents.Should().ContainSingle(e => e is AutomationRuleEnabledDomainEvent);
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public class AutomationRuleTests
         rule.Disable(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         rule.Status.Should().Be(AutomationRuleStatus.Disabled);
-        rule.DomainEvents.Should().ContainSingle(e => e is AutomationRuleDisabledEvent);
+        rule.DomainEvents.Should().ContainSingle(e => e is AutomationRuleDisabledDomainEvent);
     }
 
     [Fact]
@@ -143,7 +143,7 @@ public class AutomationRuleTests
 
         rule.UpdateConfiguration(CreateConfig("ItemUpdated", "SlackMessage"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        rule.DomainEvents.Should().ContainSingle(e => e is AutomationConfigurationChangedEvent);
+        rule.DomainEvents.Should().ContainSingle(e => e is AutomationConfigurationChangedDomainEvent);
     }
 
     [Fact]
@@ -156,7 +156,7 @@ public class AutomationRuleTests
 
         rule.IsDeleted.Should().BeTrue();
         rule.Status.Should().Be(AutomationRuleStatus.Disabled);
-        rule.DomainEvents.Should().ContainSingle(e => e is AutomationRuleDeletedEvent);
+        rule.DomainEvents.Should().ContainSingle(e => e is AutomationRuleDeletedDomainEvent);
     }
 
     [Fact]
@@ -182,7 +182,7 @@ public class AutomationRuleTests
 
         rule.IsDeleted.Should().BeFalse();
         rule.Status.Should().Be(AutomationRuleStatus.Draft);
-        rule.DomainEvents.Should().ContainSingle(e => e is AutomationRuleRestoredEvent);
+        rule.DomainEvents.Should().ContainSingle(e => e is AutomationRuleRestoredDomainEvent);
     }
 
     [Fact]

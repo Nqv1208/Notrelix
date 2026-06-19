@@ -24,7 +24,7 @@ public class ItemTemplateTests
         template.BoardId.Should().Be(boardId);
         template.Name.Should().Be("Task");
         template.Status.Should().Be(TemplateStatus.Published);
-        template.DomainEvents.Should().ContainSingle(e => e is ItemTemplateCreatedEvent);
+        template.DomainEvents.Should().ContainSingle(e => e is ItemTemplateCreatedDomainEvent);
     }
 
     [Fact]

@@ -204,8 +204,8 @@ public class Phase4AuditTests
 
         permission.IsDeleted.Should().BeTrue();
         permission.Version.Should().Be(version + 1);
-        permission.DomainEvents.Should().ContainSingle(e => e is ResourcePermissionSoftDeletedEvent);
-        var evt = (ResourcePermissionSoftDeletedEvent)permission.DomainEvents.Single(e => e is ResourcePermissionSoftDeletedEvent);
+        permission.DomainEvents.Should().ContainSingle(e => e is ResourcePermissionSoftDeletedDomainEvent);
+        var evt = (ResourcePermissionSoftDeletedDomainEvent)permission.DomainEvents.Single(e => e is ResourcePermissionSoftDeletedDomainEvent);
         evt.PermissionId.Should().Be(permission.Id);
         evt.DeletedBy.Should().Be(Actor);
     }
@@ -222,8 +222,8 @@ public class Phase4AuditTests
 
         permission.IsDeleted.Should().BeFalse();
         permission.Version.Should().Be(version + 1);
-        permission.DomainEvents.Should().ContainSingle(e => e is ResourcePermissionRestoredEvent);
-        var evt = (ResourcePermissionRestoredEvent)permission.DomainEvents.Single(e => e is ResourcePermissionRestoredEvent);
+        permission.DomainEvents.Should().ContainSingle(e => e is ResourcePermissionRestoredDomainEvent);
+        var evt = (ResourcePermissionRestoredDomainEvent)permission.DomainEvents.Single(e => e is ResourcePermissionRestoredDomainEvent);
         evt.PermissionId.Should().Be(permission.Id);
         evt.RestoredBy.Should().Be(Actor);
     }
@@ -239,7 +239,7 @@ public class Phase4AuditTests
         permission.SoftDelete(Actor, Now);
 
         permission.Version.Should().Be(version);
-        permission.DomainEvents.Should().NotContain(e => e is ResourcePermissionSoftDeletedEvent);
+        permission.DomainEvents.Should().NotContain(e => e is ResourcePermissionSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -252,7 +252,7 @@ public class Phase4AuditTests
         permission.Restore(Actor, Now);
 
         permission.Version.Should().Be(version);
-        permission.DomainEvents.Should().NotContain(e => e is ResourcePermissionRestoredEvent);
+        permission.DomainEvents.Should().NotContain(e => e is ResourcePermissionRestoredDomainEvent);
     }
 
     [Fact]
@@ -265,8 +265,8 @@ public class Phase4AuditTests
         permission.Revoke(Actor, Now);
 
         permission.IsDeleted.Should().BeTrue();
-        permission.DomainEvents.Should().Contain(e => e is ResourcePermissionSoftDeletedEvent);
-        permission.DomainEvents.Should().Contain(e => e is ResourcePermissionRevokedEvent);
+        permission.DomainEvents.Should().Contain(e => e is ResourcePermissionSoftDeletedDomainEvent);
+        permission.DomainEvents.Should().Contain(e => e is ResourcePermissionRevokedDomainEvent);
     }
 
     #endregion
@@ -354,8 +354,8 @@ public class Phase4AuditTests
 
         role.Status.Should().Be(CustomRoleStatus.Archived);
         role.Version.Should().Be(version + 1);
-        role.DomainEvents.Should().ContainSingle(e => e is CustomRoleArchivedEvent);
-        var evt = (CustomRoleArchivedEvent)role.DomainEvents.Single(e => e is CustomRoleArchivedEvent);
+        role.DomainEvents.Should().ContainSingle(e => e is CustomRoleArchivedDomainEvent);
+        var evt = (CustomRoleArchivedDomainEvent)role.DomainEvents.Single(e => e is CustomRoleArchivedDomainEvent);
         evt.RoleId.Should().Be(role.Id);
         evt.ArchivedBy.Should().Be(Actor);
     }
@@ -371,7 +371,7 @@ public class Phase4AuditTests
         role.Archive(Actor, Now);
 
         role.Version.Should().Be(version);
-        role.DomainEvents.Should().NotContain(e => e is CustomRoleArchivedEvent);
+        role.DomainEvents.Should().NotContain(e => e is CustomRoleArchivedDomainEvent);
     }
 
     [Fact]
@@ -386,8 +386,8 @@ public class Phase4AuditTests
 
         role.Status.Should().Be(CustomRoleStatus.Active);
         role.Version.Should().Be(version + 1);
-        role.DomainEvents.Should().ContainSingle(e => e is CustomRoleActivatedEvent);
-        var evt = (CustomRoleActivatedEvent)role.DomainEvents.Single(e => e is CustomRoleActivatedEvent);
+        role.DomainEvents.Should().ContainSingle(e => e is CustomRoleActivatedDomainEvent);
+        var evt = (CustomRoleActivatedDomainEvent)role.DomainEvents.Single(e => e is CustomRoleActivatedDomainEvent);
         evt.RoleId.Should().Be(role.Id);
         evt.ActivatedBy.Should().Be(Actor);
     }
@@ -402,7 +402,7 @@ public class Phase4AuditTests
         role.Activate(Actor, Now);
 
         role.Version.Should().Be(version);
-        role.DomainEvents.Should().NotContain(e => e is CustomRoleActivatedEvent);
+        role.DomainEvents.Should().NotContain(e => e is CustomRoleActivatedDomainEvent);
     }
 
     [Fact]
@@ -416,9 +416,9 @@ public class Phase4AuditTests
 
         role.IsDeleted.Should().BeTrue();
         role.Version.Should().Be(version + 1);
-        role.DomainEvents.Should().ContainSingle(e => e is CustomRoleSoftDeletedEvent);
-        role.DomainEvents.Should().NotContain(e => e is CustomRoleUpdatedEvent);
-        var evt = (CustomRoleSoftDeletedEvent)role.DomainEvents.Single(e => e is CustomRoleSoftDeletedEvent);
+        role.DomainEvents.Should().ContainSingle(e => e is CustomRoleSoftDeletedDomainEvent);
+        role.DomainEvents.Should().NotContain(e => e is CustomRoleUpdatedDomainEvent);
+        var evt = (CustomRoleSoftDeletedDomainEvent)role.DomainEvents.Single(e => e is CustomRoleSoftDeletedDomainEvent);
         evt.RoleId.Should().Be(role.Id);
         evt.DeletedBy.Should().Be(Actor);
     }
@@ -435,9 +435,9 @@ public class Phase4AuditTests
 
         role.IsDeleted.Should().BeFalse();
         role.Version.Should().Be(version + 1);
-        role.DomainEvents.Should().ContainSingle(e => e is CustomRoleRestoredEvent);
-        role.DomainEvents.Should().NotContain(e => e is CustomRoleUpdatedEvent);
-        var evt = (CustomRoleRestoredEvent)role.DomainEvents.Single(e => e is CustomRoleRestoredEvent);
+        role.DomainEvents.Should().ContainSingle(e => e is CustomRoleRestoredDomainEvent);
+        role.DomainEvents.Should().NotContain(e => e is CustomRoleUpdatedDomainEvent);
+        var evt = (CustomRoleRestoredDomainEvent)role.DomainEvents.Single(e => e is CustomRoleRestoredDomainEvent);
         evt.RoleId.Should().Be(role.Id);
         evt.RestoredBy.Should().Be(Actor);
     }
@@ -453,7 +453,7 @@ public class Phase4AuditTests
         role.SoftDelete(Actor, Now);
 
         role.Version.Should().Be(version);
-        role.DomainEvents.Should().NotContain(e => e is CustomRoleSoftDeletedEvent);
+        role.DomainEvents.Should().NotContain(e => e is CustomRoleSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -466,7 +466,7 @@ public class Phase4AuditTests
         role.Restore(Actor, Now);
 
         role.Version.Should().Be(version);
-        role.DomainEvents.Should().NotContain(e => e is CustomRoleRestoredEvent);
+        role.DomainEvents.Should().NotContain(e => e is CustomRoleRestoredDomainEvent);
     }
 
     #endregion

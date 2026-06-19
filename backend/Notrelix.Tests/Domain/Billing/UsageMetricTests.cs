@@ -33,7 +33,7 @@ public class UsageMetricTests
 
         metric.CurrentValue.Should().Be(3);
         metric.History.Should().ContainSingle(h => h.Increment == 3);
-        metric.DomainEvents.Should().ContainSingle(e => e is UsageMetricIncreasedEvent);
+        metric.DomainEvents.Should().ContainSingle(e => e is UsageMetricIncreasedDomainEvent);
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public class UsageMetricTests
         var act = () => metric.Increase(6, 5, isHardLimit: true, now);
 
         act.Should().Throw<BusinessRuleException>().WithMessage("*Usage limit exceeded*");
-        metric.DomainEvents.Should().ContainSingle(e => e is UsageLimitExceededEvent);
+        metric.DomainEvents.Should().ContainSingle(e => e is UsageLimitExceededDomainEvent);
     }
 
     [Fact]
@@ -57,8 +57,8 @@ public class UsageMetricTests
         metric.Increase(6, 5, isHardLimit: false, now);
 
         metric.CurrentValue.Should().Be(6);
-        metric.DomainEvents.Should().Contain(e => e is UsageLimitExceededEvent);
-        metric.DomainEvents.Should().Contain(e => e is UsageMetricIncreasedEvent);
+        metric.DomainEvents.Should().Contain(e => e is UsageLimitExceededDomainEvent);
+        metric.DomainEvents.Should().Contain(e => e is UsageMetricIncreasedDomainEvent);
     }
 
     [Fact]
@@ -136,7 +136,7 @@ public class UsageMetricTests
 
         metric.Decrease(2, now);
 
-        metric.DomainEvents.Should().Contain(e => e is UsageMetricDecreasedEvent);
+        metric.DomainEvents.Should().Contain(e => e is UsageMetricDecreasedDomainEvent);
     }
 
     [Fact]
@@ -149,7 +149,7 @@ public class UsageMetricTests
         metric.SoftDelete(Guid.NewGuid(), now);
 
         metric.IsDeleted.Should().BeTrue();
-        metric.DomainEvents.Should().Contain(e => e is UsageMetricSoftDeletedEvent);
+        metric.DomainEvents.Should().Contain(e => e is UsageMetricSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -176,7 +176,7 @@ public class UsageMetricTests
         metric.Restore(Guid.NewGuid(), now);
 
         metric.IsDeleted.Should().BeFalse();
-        metric.DomainEvents.Should().Contain(e => e is UsageMetricRestoredEvent);
+        metric.DomainEvents.Should().Contain(e => e is UsageMetricRestoredDomainEvent);
     }
 
     [Fact]

@@ -20,7 +20,7 @@ public class WorkspaceFeatureUsageTests
         usage.CurrentUsage.Should().Be(0);
         usage.HardLimit.Should().Be(100);
         usage.SoftLimit.Should().Be(80);
-        usage.DomainEvents.Should().ContainSingle(e => e is WorkspaceFeatureUsageInitializedEvent);
+        usage.DomainEvents.Should().ContainSingle(e => e is WorkspaceFeatureUsageInitializedDomainEvent);
     }
 
     [Fact]
@@ -124,7 +124,7 @@ public class WorkspaceFeatureUsageTests
         usage.Reset(DateTimeOffset.UtcNow, Guid.NewGuid());
 
         usage.CurrentUsage.Should().Be(0);
-        usage.DomainEvents.Should().ContainSingle(e => e is WorkspaceFeatureUsageResetEvent);
+        usage.DomainEvents.Should().ContainSingle(e => e is WorkspaceFeatureUsageResetDomainEvent);
     }
 
     [Fact]
@@ -146,7 +146,7 @@ public class WorkspaceFeatureUsageTests
         usage.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         usage.IsDeleted.Should().BeTrue();
-        usage.DomainEvents.Should().Contain(e => e is WorkspaceFeatureUsageSoftDeletedEvent);
+        usage.DomainEvents.Should().Contain(e => e is WorkspaceFeatureUsageSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -171,7 +171,7 @@ public class WorkspaceFeatureUsageTests
         usage.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         usage.IsDeleted.Should().BeFalse();
-        usage.DomainEvents.Should().Contain(e => e is WorkspaceFeatureUsageRestoredEvent);
+        usage.DomainEvents.Should().Contain(e => e is WorkspaceFeatureUsageRestoredDomainEvent);
     }
 
     [Fact]

@@ -17,7 +17,7 @@ public class WebhookDeliveryTests
         delivery.Status.Should().Be(WebhookDeliveryStatus.Pending);
         delivery.RetryCount.Should().Be(0);
         delivery.MaxRetries.Should().Be(3);
-        delivery.DomainEvents.Should().ContainSingle(e => e is WebhookDeliveryRecordedEvent);
+        delivery.DomainEvents.Should().ContainSingle(e => e is WebhookDeliveryRecordedDomainEvent);
     }
 
     [Fact]
@@ -31,7 +31,7 @@ public class WebhookDeliveryTests
         delivery.Status.Should().Be(WebhookDeliveryStatus.Sent);
         delivery.ResponseStatusCode.Should().Be(200);
         delivery.DeliveredAt.Should().NotBeNull();
-        delivery.DomainEvents.Should().ContainSingle(e => e is WebhookDeliveryRecordedEvent);
+        delivery.DomainEvents.Should().ContainSingle(e => e is WebhookDeliveryRecordedDomainEvent);
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public class WebhookDeliveryTests
 
         delivery.Status.Should().Be(WebhookDeliveryStatus.Failed);
         delivery.FailureReason.Should().Be("Server error");
-        delivery.DomainEvents.Should().ContainSingle(e => e is WebhookDeliveryRecordedEvent);
+        delivery.DomainEvents.Should().ContainSingle(e => e is WebhookDeliveryRecordedDomainEvent);
     }
 
     [Fact]

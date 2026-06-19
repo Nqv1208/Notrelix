@@ -22,7 +22,7 @@ public class WebhookSubscriptionTests
         sub.WorkspaceId.Should().Be(workspaceId);
         sub.TargetUrl.Should().Be(url);
         sub.IsActive.Should().BeTrue();
-        sub.DomainEvents.Should().ContainSingle(e => e is WebhookSubscriptionCreatedEvent);
+        sub.DomainEvents.Should().ContainSingle(e => e is WebhookSubscriptionCreatedDomainEvent);
     }
 
     [Fact]

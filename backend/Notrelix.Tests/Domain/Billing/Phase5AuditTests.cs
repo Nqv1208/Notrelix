@@ -121,6 +121,6 @@ public class Phase5AuditTests
         var newPlanId = Guid.NewGuid();
         sub.ChangePlan(newPlanId, Actor, Now);
         sub.PlanId.Should().Be(newPlanId);
-        sub.DomainEvents.Should().ContainSingle(e => e is SubscriptionChangedEvent);
+        sub.DomainEvents.Should().ContainSingle(e => e is SubscriptionChangedDomainEvent);
     }
 }

@@ -27,7 +27,7 @@ public class Phase6AuditTests
         dashboard.Rename("New", _actor, _now);
 
         dashboard.Version.Should().Be(versionBefore + 1);
-        dashboard.DomainEvents.Should().Contain(e => e is DashboardRenamedEvent);
+        dashboard.DomainEvents.Should().Contain(e => e is DashboardRenamedDomainEvent);
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public class Phase6AuditTests
         dashboard.ChangeVisibility(DashboardVisibility.Public, _actor, _now);
 
         dashboard.Version.Should().Be(versionBefore + 1);
-        dashboard.DomainEvents.Should().Contain(e => e is DashboardVisibilityChangedEvent);
+        dashboard.DomainEvents.Should().Contain(e => e is DashboardVisibilityChangedDomainEvent);
     }
 
     [Fact]
@@ -78,7 +78,7 @@ public class Phase6AuditTests
         dashboard.AddWidget("Stats", WidgetType.TextWidget, JsonValue.Create("{\"content\":\"stats\"}"), pos, _actor, _now);
 
         dashboard.Version.Should().Be(versionBefore + 1);
-        dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetAddedEvent);
+        dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetAddedDomainEvent);
     }
 
     [Fact]
@@ -94,7 +94,7 @@ public class Phase6AuditTests
         dashboard.RemoveWidget(widgetId, _actor, _now);
 
         dashboard.Version.Should().Be(versionBefore + 1);
-        dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetRemovedEvent);
+        dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetRemovedDomainEvent);
     }
 
     [Fact]
@@ -124,7 +124,7 @@ public class Phase6AuditTests
         dashboard.MoveWidget(widgetId, pos2, _actor, _now);
 
         dashboard.Version.Should().Be(versionBefore + 1);
-        dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetMovedEvent);
+        dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetMovedDomainEvent);
     }
 
     [Fact]
@@ -139,7 +139,7 @@ public class Phase6AuditTests
         dashboard.Version.Should().Be(versionBefore + 1);
         dashboard.IsDeleted.Should().BeTrue();
         dashboard.Status.Should().Be(DashboardStatus.Archived);
-        dashboard.DomainEvents.Should().Contain(e => e is DashboardDeletedEvent);
+        dashboard.DomainEvents.Should().Contain(e => e is DashboardDeletedDomainEvent);
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public class Phase6AuditTests
         dashboard.Version.Should().Be(versionBefore + 1);
         dashboard.IsDeleted.Should().BeFalse();
         dashboard.Status.Should().Be(DashboardStatus.Active);
-        dashboard.DomainEvents.Should().Contain(e => e is DashboardRestoredEvent);
+        dashboard.DomainEvents.Should().Contain(e => e is DashboardRestoredDomainEvent);
     }
 
     [Fact]
@@ -204,7 +204,7 @@ public class Phase6WebhookDeliveryTests
         delivery.WorkspaceId.Should().Be(_workspaceId);
         delivery.WebhookSubscriptionId.Should().Be(_subscriptionId);
         delivery.RetryCount.Should().Be(0);
-        delivery.DomainEvents.Should().ContainSingle(e => e is WebhookDeliveryRecordedEvent);
+        delivery.DomainEvents.Should().ContainSingle(e => e is WebhookDeliveryRecordedDomainEvent);
     }
 
     [Fact]
@@ -219,7 +219,7 @@ public class Phase6WebhookDeliveryTests
         delivery.ResponseBody.Should().Be("OK");
         delivery.DeliveredAt.Should().Be(_now);
         delivery.Version.Should().Be(2);
-        delivery.DomainEvents.Should().Contain(e => e is WebhookDeliveryRecordedEvent);
+        delivery.DomainEvents.Should().Contain(e => e is WebhookDeliveryRecordedDomainEvent);
     }
 
     [Fact]
@@ -234,7 +234,7 @@ public class Phase6WebhookDeliveryTests
         delivery.FailureReason.Should().Be("Timeout");
         delivery.FailedAt.Should().Be(_now);
         delivery.Version.Should().Be(2);
-        delivery.DomainEvents.Should().Contain(e => e is WebhookDeliveryRecordedEvent);
+        delivery.DomainEvents.Should().Contain(e => e is WebhookDeliveryRecordedDomainEvent);
     }
 
     [Fact]

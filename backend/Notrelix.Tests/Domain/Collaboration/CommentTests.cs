@@ -21,7 +21,7 @@ public class CommentTests
         comment.Target.Should().Be(target);
         comment.CreatedBy.Should().Be(createdBy);
         comment.CommentStatus.Should().Be(CommentStatus.Active);
-        comment.DomainEvents.Should().ContainSingle(e => e is CommentCreatedEvent);
+        comment.DomainEvents.Should().ContainSingle(e => e is CommentCreatedDomainEvent);
     }
 
     [Fact]
@@ -61,7 +61,7 @@ public class CommentTests
         comment.UpdateContent("Updated", Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         comment.Content.Should().Be("Updated");
-        comment.DomainEvents.Should().ContainSingle(e => e is CommentUpdatedEvent);
+        comment.DomainEvents.Should().ContainSingle(e => e is CommentUpdatedDomainEvent);
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public class CommentTests
 
         comment.CommentStatus.Should().Be(CommentStatus.Resolved);
         comment.UpdatedBy.Should().Be(resolvedBy);
-        comment.DomainEvents.Should().ContainSingle(e => e is CommentResolvedEvent);
+        comment.DomainEvents.Should().ContainSingle(e => e is CommentResolvedDomainEvent);
     }
 
     [Fact]
@@ -131,7 +131,7 @@ public class CommentTests
 
         comment.IsDeleted.Should().BeTrue();
         comment.CommentStatus.Should().Be(CommentStatus.SoftDeleted);
-        comment.DomainEvents.Should().ContainSingle(e => e is CommentSoftDeletedEvent);
+        comment.DomainEvents.Should().ContainSingle(e => e is CommentSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -157,7 +157,7 @@ public class CommentTests
 
         comment.IsDeleted.Should().BeFalse();
         comment.CommentStatus.Should().Be(CommentStatus.Active);
-        comment.DomainEvents.Should().ContainSingle(e => e is CommentRestoredEvent);
+        comment.DomainEvents.Should().ContainSingle(e => e is CommentRestoredDomainEvent);
     }
 
     [Fact]

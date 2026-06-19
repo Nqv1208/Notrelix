@@ -19,7 +19,7 @@ public class CustomRoleTests
         role.Name.Should().Be("Project Manager");
         role.WorkspaceId.Should().Be(workspaceId);
         role.Status.Should().Be(CustomRoleStatus.Active);
-        role.DomainEvents.Should().ContainSingle(e => e is CustomRoleCreatedEvent);
+        role.DomainEvents.Should().ContainSingle(e => e is CustomRoleCreatedDomainEvent);
     }
 
     [Fact]
@@ -33,7 +33,7 @@ public class CustomRoleTests
 
         role.Permissions.Should().HaveCount(1);
         role.Permissions.First().Action.Should().Be("CreateBoard");
-        role.DomainEvents.Should().ContainSingle(e => e is CustomRoleUpdatedEvent);
+        role.DomainEvents.Should().ContainSingle(e => e is CustomRoleUpdatedDomainEvent);
     }
 
     [Fact]
@@ -47,6 +47,6 @@ public class CustomRoleTests
         role.RemovePermission("CreateBoard", updatedBy, DateTimeOffset.UtcNow);
 
         role.Permissions.Should().BeEmpty();
-        role.DomainEvents.Should().ContainSingle(e => e is CustomRoleUpdatedEvent);
+        role.DomainEvents.Should().ContainSingle(e => e is CustomRoleUpdatedDomainEvent);
     }
 }

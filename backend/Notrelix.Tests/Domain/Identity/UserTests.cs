@@ -19,8 +19,8 @@ public class UserTests
         user.Email.Value.Should().Be("test@example.com");
         user.Name.Should().Be("Test User");
         user.Status.Should().Be(UserStatus.Active);
-        user.DomainEvents.Should().ContainSingle(e => e is UserRegisteredEvent);
-        var evt = (UserRegisteredEvent)user.DomainEvents.First(e => e is UserRegisteredEvent);
+        user.DomainEvents.Should().ContainSingle(e => e is UserRegisteredDomainEvent);
+        var evt = (UserRegisteredDomainEvent)user.DomainEvents.First(e => e is UserRegisteredDomainEvent);
         evt.UserId.Should().Be(user.Id);
         evt.Email.Value.Should().Be("test@example.com");
         user.CreatedBy.Should().BeNull();
@@ -47,8 +47,8 @@ public class UserTests
         user.RecordLogin(loginTime);
 
         user.LastLoginAt.Should().Be(loginTime);
-        user.DomainEvents.Should().ContainSingle(e => e is UserLoggedInEvent);
-        var evt = (UserLoggedInEvent)user.DomainEvents.First(e => e is UserLoggedInEvent);
+        user.DomainEvents.Should().ContainSingle(e => e is UserLoggedInDomainEvent);
+        var evt = (UserLoggedInDomainEvent)user.DomainEvents.First(e => e is UserLoggedInDomainEvent);
         evt.OccurredAt.Should().Be(loginTime);
     }
 

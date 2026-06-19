@@ -27,8 +27,8 @@ public class MfaMethodTests
         method.IsPrimary.Should().BeFalse();
         method.CreatedAt.Should().Be(now);
 
-        method.DomainEvents.Should().ContainSingle(e => e is UserMfaMethodAddedEvent);
-        var evt = (UserMfaMethodAddedEvent)method.DomainEvents.Single(e => e is UserMfaMethodAddedEvent);
+        method.DomainEvents.Should().ContainSingle(e => e is UserMfaMethodAddedDomainEvent);
+        var evt = (UserMfaMethodAddedDomainEvent)method.DomainEvents.Single(e => e is UserMfaMethodAddedDomainEvent);
         evt.MfaMethodId.Should().Be(method.Id);
         evt.UserId.Should().Be(userId);
         evt.Type.Should().Be(MfaMethodType.AuthenticatorApp);
@@ -70,8 +70,8 @@ public class MfaMethodTests
         method.IsVerified.Should().BeTrue();
         method.VerifiedAt.Should().Be(now.AddMinutes(5));
 
-        method.DomainEvents.Should().ContainSingle(e => e is UserMfaMethodVerifiedEvent);
-        var evt = (UserMfaMethodVerifiedEvent)method.DomainEvents.Single(e => e is UserMfaMethodVerifiedEvent);
+        method.DomainEvents.Should().ContainSingle(e => e is UserMfaMethodVerifiedDomainEvent);
+        var evt = (UserMfaMethodVerifiedDomainEvent)method.DomainEvents.Single(e => e is UserMfaMethodVerifiedDomainEvent);
         evt.MfaMethodId.Should().Be(method.Id);
         evt.UserId.Should().Be(method.UserId);
         evt.Type.Should().Be(MfaMethodType.Email);
@@ -101,8 +101,8 @@ public class MfaMethodTests
         method.SetAsPrimary(now.AddMinutes(2));
 
         method.IsPrimary.Should().BeTrue();
-        method.DomainEvents.Should().ContainSingle(e => e is UserMfaMethodSetAsPrimaryEvent);
-        var evt = (UserMfaMethodSetAsPrimaryEvent)method.DomainEvents.Single(e => e is UserMfaMethodSetAsPrimaryEvent);
+        method.DomainEvents.Should().ContainSingle(e => e is UserMfaMethodSetAsPrimaryDomainEvent);
+        var evt = (UserMfaMethodSetAsPrimaryDomainEvent)method.DomainEvents.Single(e => e is UserMfaMethodSetAsPrimaryDomainEvent);
         evt.MfaMethodId.Should().Be(method.Id);
         evt.UserId.Should().Be(method.UserId);
         evt.Type.Should().Be(method.Type);
@@ -121,8 +121,8 @@ public class MfaMethodTests
         method.UnsetAsPrimary(now.AddMinutes(3));
 
         method.IsPrimary.Should().BeFalse();
-        method.DomainEvents.Should().ContainSingle(e => e is UserMfaMethodUnsetAsPrimaryEvent);
-        var evt = (UserMfaMethodUnsetAsPrimaryEvent)method.DomainEvents.Single(e => e is UserMfaMethodUnsetAsPrimaryEvent);
+        method.DomainEvents.Should().ContainSingle(e => e is UserMfaMethodUnsetAsPrimaryDomainEvent);
+        var evt = (UserMfaMethodUnsetAsPrimaryDomainEvent)method.DomainEvents.Single(e => e is UserMfaMethodUnsetAsPrimaryDomainEvent);
         evt.MfaMethodId.Should().Be(method.Id);
         evt.UserId.Should().Be(method.UserId);
         evt.Type.Should().Be(method.Type);
@@ -155,8 +155,8 @@ public class MfaMethodTests
         method.IsPrimary.Should().BeFalse();
         method.DisabledAt.Should().Be(now.AddMinutes(3));
 
-        method.DomainEvents.Should().ContainSingle(e => e is UserMfaMethodDisabledEvent);
-        var evt = (UserMfaMethodDisabledEvent)method.DomainEvents.Single(e => e is UserMfaMethodDisabledEvent);
+        method.DomainEvents.Should().ContainSingle(e => e is UserMfaMethodDisabledDomainEvent);
+        var evt = (UserMfaMethodDisabledDomainEvent)method.DomainEvents.Single(e => e is UserMfaMethodDisabledDomainEvent);
         evt.MfaMethodId.Should().Be(method.Id);
         evt.UserId.Should().Be(method.UserId);
         evt.Type.Should().Be(MfaMethodType.AuthenticatorApp);

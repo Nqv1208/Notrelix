@@ -42,8 +42,8 @@ public class Phase4AuditTests
         board.UpdateDescription("New desc", Actor, Now);
 
         board.Version.Should().Be(version + 1);
-        board.DomainEvents.Should().ContainSingle(e => e is BoardDescriptionUpdatedEvent);
-        var evt = (BoardDescriptionUpdatedEvent)board.DomainEvents.Single(e => e is BoardDescriptionUpdatedEvent);
+        board.DomainEvents.Should().ContainSingle(e => e is BoardDescriptionUpdatedDomainEvent);
+        var evt = (BoardDescriptionUpdatedDomainEvent)board.DomainEvents.Single(e => e is BoardDescriptionUpdatedDomainEvent);
         evt.WorkspaceId.Should().Be(WsA);
         evt.BoardId.Should().Be(board.Id);
         evt.OldDescription.Should().BeNull();
@@ -60,7 +60,7 @@ public class Phase4AuditTests
         board.UpdateDescription("desc", Actor, Now);
 
         board.Version.Should().Be(version);
-        board.DomainEvents.Should().NotContain(e => e is BoardDescriptionUpdatedEvent);
+        board.DomainEvents.Should().NotContain(e => e is BoardDescriptionUpdatedDomainEvent);
     }
 
     [Fact]
@@ -73,8 +73,8 @@ public class Phase4AuditTests
         board.UpdateBackground("new-bg", Actor, Now);
 
         board.Version.Should().Be(version + 1);
-        board.DomainEvents.Should().ContainSingle(e => e is BoardBackgroundUpdatedEvent);
-        var evt = (BoardBackgroundUpdatedEvent)board.DomainEvents.Single(e => e is BoardBackgroundUpdatedEvent);
+        board.DomainEvents.Should().ContainSingle(e => e is BoardBackgroundUpdatedDomainEvent);
+        var evt = (BoardBackgroundUpdatedDomainEvent)board.DomainEvents.Single(e => e is BoardBackgroundUpdatedDomainEvent);
         evt.WorkspaceId.Should().Be(WsA);
         evt.BoardId.Should().Be(board.Id);
         evt.NewBackground.Should().Be("new-bg");
@@ -91,8 +91,8 @@ public class Phase4AuditTests
         board.SetDefaultGroup(groupId, Actor, Now);
 
         board.Version.Should().Be(version + 1);
-        board.DomainEvents.Should().ContainSingle(e => e is BoardDefaultGroupSetEvent);
-        var evt = (BoardDefaultGroupSetEvent)board.DomainEvents.Single(e => e is BoardDefaultGroupSetEvent);
+        board.DomainEvents.Should().ContainSingle(e => e is BoardDefaultGroupSetDomainEvent);
+        var evt = (BoardDefaultGroupSetDomainEvent)board.DomainEvents.Single(e => e is BoardDefaultGroupSetDomainEvent);
         evt.GroupId.Should().Be(groupId);
     }
 
@@ -111,8 +111,8 @@ public class Phase4AuditTests
         field.UpdateClassification(DataClassification.Confidential, true, Actor, Now);
 
         field.Version.Should().Be(version + 1);
-        field.DomainEvents.Should().ContainSingle(e => e is BoardFieldClassificationUpdatedEvent);
-        var evt = (BoardFieldClassificationUpdatedEvent)field.DomainEvents.Single(e => e is BoardFieldClassificationUpdatedEvent);
+        field.DomainEvents.Should().ContainSingle(e => e is BoardFieldClassificationUpdatedDomainEvent);
+        var evt = (BoardFieldClassificationUpdatedDomainEvent)field.DomainEvents.Single(e => e is BoardFieldClassificationUpdatedDomainEvent);
         evt.Classification.Should().Be(DataClassification.Confidential);
         evt.IsSensitive.Should().BeTrue();
     }
@@ -129,7 +129,7 @@ public class Phase4AuditTests
         field.UpdateClassification(DataClassification.Confidential, true, Actor, Now);
 
         field.Version.Should().Be(version);
-        field.DomainEvents.Should().NotContain(e => e is BoardFieldClassificationUpdatedEvent);
+        field.DomainEvents.Should().NotContain(e => e is BoardFieldClassificationUpdatedDomainEvent);
     }
 
     [Fact]
@@ -143,8 +143,8 @@ public class Phase4AuditTests
         field.UpdateFormula(true, "CONCAT(a, b)", Actor, Now);
 
         field.Version.Should().Be(version + 1);
-        field.DomainEvents.Should().ContainSingle(e => e is BoardFieldFormulaUpdatedEvent);
-        var evt = (BoardFieldFormulaUpdatedEvent)field.DomainEvents.Single(e => e is BoardFieldFormulaUpdatedEvent);
+        field.DomainEvents.Should().ContainSingle(e => e is BoardFieldFormulaUpdatedDomainEvent);
+        var evt = (BoardFieldFormulaUpdatedDomainEvent)field.DomainEvents.Single(e => e is BoardFieldFormulaUpdatedDomainEvent);
         evt.IsFormula.Should().BeTrue();
         evt.Expression.Should().Be("CONCAT(a, b)");
     }
@@ -162,7 +162,7 @@ public class Phase4AuditTests
 
         field.IsDeleted.Should().BeFalse();
         field.Version.Should().Be(version + 1);
-        field.DomainEvents.Should().ContainSingle(e => e is BoardFieldRestoredEvent);
+        field.DomainEvents.Should().ContainSingle(e => e is BoardFieldRestoredDomainEvent);
     }
 
     [Fact]
@@ -176,7 +176,7 @@ public class Phase4AuditTests
         field.Restore(Actor, Now);
 
         field.Version.Should().Be(version);
-        field.DomainEvents.Should().NotContain(e => e is BoardFieldRestoredEvent);
+        field.DomainEvents.Should().NotContain(e => e is BoardFieldRestoredDomainEvent);
     }
 
     #endregion
@@ -193,8 +193,8 @@ public class Phase4AuditTests
         item.Complete(Now, Actor, Now);
 
         item.Version.Should().Be(version + 1);
-        item.DomainEvents.Should().ContainSingle(e => e is BoardItemCompletedEvent);
-        var evt = (BoardItemCompletedEvent)item.DomainEvents.Single(e => e is BoardItemCompletedEvent);
+        item.DomainEvents.Should().ContainSingle(e => e is BoardItemCompletedDomainEvent);
+        var evt = (BoardItemCompletedDomainEvent)item.DomainEvents.Single(e => e is BoardItemCompletedDomainEvent);
         evt.CompletedAt.Should().Be(Now);
         evt.CompletedBy.Should().Be(Actor);
     }
@@ -210,7 +210,7 @@ public class Phase4AuditTests
         item.Complete(Now, Actor, Now);
 
         item.Version.Should().Be(version);
-        item.DomainEvents.Should().NotContain(e => e is BoardItemCompletedEvent);
+        item.DomainEvents.Should().NotContain(e => e is BoardItemCompletedDomainEvent);
     }
 
     [Fact]
@@ -223,8 +223,8 @@ public class Phase4AuditTests
         item.SetTimeline(Now, Now.AddDays(7), Actor, Now);
 
         item.Version.Should().Be(version + 1);
-        item.DomainEvents.Should().ContainSingle(e => e is BoardItemTimelineSetEvent);
-        var evt = (BoardItemTimelineSetEvent)item.DomainEvents.Single(e => e is BoardItemTimelineSetEvent);
+        item.DomainEvents.Should().ContainSingle(e => e is BoardItemTimelineSetDomainEvent);
+        var evt = (BoardItemTimelineSetDomainEvent)item.DomainEvents.Single(e => e is BoardItemTimelineSetDomainEvent);
         evt.StartedAt.Should().Be(Now);
         evt.DueAt.Should().Be(Now.AddDays(7));
     }
@@ -239,7 +239,7 @@ public class Phase4AuditTests
         item.SetTimeline(Now, Now.AddDays(7), Actor, Now);
 
         item.Version.Should().Be(version);
-        item.DomainEvents.Should().NotContain(e => e is BoardItemTimelineSetEvent);
+        item.DomainEvents.Should().NotContain(e => e is BoardItemTimelineSetDomainEvent);
     }
 
     [Fact]
@@ -255,8 +255,8 @@ public class Phase4AuditTests
         item.Version.Should().Be(version + 1);
         item.ParentItemId.Should().Be(parentId);
         item.ItemLevel.Should().Be(1);
-        item.DomainEvents.Should().ContainSingle(e => e is BoardItemParentAssignedEvent);
-        var evt = (BoardItemParentAssignedEvent)item.DomainEvents.Single(e => e is BoardItemParentAssignedEvent);
+        item.DomainEvents.Should().ContainSingle(e => e is BoardItemParentAssignedDomainEvent);
+        var evt = (BoardItemParentAssignedDomainEvent)item.DomainEvents.Single(e => e is BoardItemParentAssignedDomainEvent);
         evt.ParentItemId.Should().Be(parentId);
         evt.ItemLevel.Should().Be(1);
     }
@@ -301,7 +301,7 @@ public class Phase4AuditTests
         item.ParentItemId.Should().BeNull();
         item.ItemLevel.Should().Be(0);
         item.Version.Should().Be(version + 1);
-        item.DomainEvents.Should().ContainSingle(e => e is BoardItemParentAssignedEvent);
+        item.DomainEvents.Should().ContainSingle(e => e is BoardItemParentAssignedDomainEvent);
     }
 
     #endregion
@@ -319,7 +319,7 @@ public class Phase4AuditTests
 
         relation.Status.Should().Be(BoardRelationStatus.Paused);
         relation.Version.Should().Be(version + 1);
-        relation.DomainEvents.Should().ContainSingle(e => e is BoardRelationPausedEvent);
+        relation.DomainEvents.Should().ContainSingle(e => e is BoardRelationPausedDomainEvent);
     }
 
     [Fact]
@@ -333,7 +333,7 @@ public class Phase4AuditTests
         relation.Pause(Actor, Now);
 
         relation.Version.Should().Be(version);
-        relation.DomainEvents.Should().NotContain(e => e is BoardRelationPausedEvent);
+        relation.DomainEvents.Should().NotContain(e => e is BoardRelationPausedDomainEvent);
     }
 
     [Fact]
@@ -348,7 +348,7 @@ public class Phase4AuditTests
 
         relation.Status.Should().Be(BoardRelationStatus.Active);
         relation.Version.Should().Be(version + 1);
-        relation.DomainEvents.Should().ContainSingle(e => e is BoardRelationResumedEvent);
+        relation.DomainEvents.Should().ContainSingle(e => e is BoardRelationResumedDomainEvent);
     }
 
     [Fact]
@@ -361,7 +361,7 @@ public class Phase4AuditTests
         relation.Resume(Actor, Now);
 
         relation.Version.Should().Be(version);
-        relation.DomainEvents.Should().NotContain(e => e is BoardRelationResumedEvent);
+        relation.DomainEvents.Should().NotContain(e => e is BoardRelationResumedDomainEvent);
     }
 
     [Fact]
@@ -375,7 +375,7 @@ public class Phase4AuditTests
 
         relation.Status.Should().Be(BoardRelationStatus.Broken);
         relation.Version.Should().Be(version + 1);
-        relation.DomainEvents.Should().ContainSingle(e => e is BoardRelationMarkedBrokenEvent);
+        relation.DomainEvents.Should().ContainSingle(e => e is BoardRelationMarkedBrokenDomainEvent);
     }
 
     [Fact]
@@ -389,7 +389,7 @@ public class Phase4AuditTests
         relation.MarkBroken(Actor, Now);
 
         relation.Version.Should().Be(version);
-        relation.DomainEvents.Should().NotContain(e => e is BoardRelationMarkedBrokenEvent);
+        relation.DomainEvents.Should().NotContain(e => e is BoardRelationMarkedBrokenDomainEvent);
     }
 
     #endregion
@@ -409,7 +409,7 @@ public class Phase4AuditTests
 
         view.IsDeleted.Should().BeFalse();
         view.Version.Should().Be(version + 1);
-        view.DomainEvents.Should().ContainSingle(e => e is BoardViewRestoredEvent);
+        view.DomainEvents.Should().ContainSingle(e => e is BoardViewRestoredDomainEvent);
     }
 
     [Fact]
@@ -423,7 +423,7 @@ public class Phase4AuditTests
         view.Restore(Actor, Now);
 
         view.Version.Should().Be(version);
-        view.DomainEvents.Should().NotContain(e => e is BoardViewRestoredEvent);
+        view.DomainEvents.Should().NotContain(e => e is BoardViewRestoredDomainEvent);
     }
 
     #endregion
@@ -441,8 +441,8 @@ public class Phase4AuditTests
         filter.Rename("Renamed", Actor, Now);
 
         filter.Version.Should().Be(version + 1);
-        filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterRenamedEvent);
-        var evt = (SavedFilterRenamedEvent)filter.DomainEvents.Single(e => e is SavedFilterRenamedEvent);
+        filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterRenamedDomainEvent);
+        var evt = (SavedFilterRenamedDomainEvent)filter.DomainEvents.Single(e => e is SavedFilterRenamedDomainEvent);
         evt.Name.Should().Be("Renamed");
     }
 
@@ -457,7 +457,7 @@ public class Phase4AuditTests
         filter.UpdateVisibility(SavedFilterVisibility.Public, Actor, Now);
 
         filter.Version.Should().Be(version + 1);
-        filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterVisibilityUpdatedEvent);
+        filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterVisibilityUpdatedDomainEvent);
     }
 
     [Fact]
@@ -471,7 +471,7 @@ public class Phase4AuditTests
         filter.UpdateFilters(new[] { FilterRule.Create(Guid.NewGuid(), FilterOperator.NotEquals, "other") }, Actor, Now);
 
         filter.Version.Should().Be(version + 1);
-        filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterFiltersUpdatedEvent);
+        filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterFiltersUpdatedDomainEvent);
     }
 
     [Fact]
@@ -485,7 +485,7 @@ public class Phase4AuditTests
         filter.UpdateSorts(new[] { SortRule.Create(Guid.NewGuid(), SortDirection.Ascending) }, Actor, Now);
 
         filter.Version.Should().Be(version + 1);
-        filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterSortsUpdatedEvent);
+        filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterSortsUpdatedDomainEvent);
     }
 
     [Fact]
@@ -499,7 +499,7 @@ public class Phase4AuditTests
         filter.UpdateGroup(GroupRule.Create(Guid.NewGuid()), Actor, Now);
 
         filter.Version.Should().Be(version + 1);
-        filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterGroupUpdatedEvent);
+        filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterGroupUpdatedDomainEvent);
     }
 
     [Fact]
@@ -514,7 +514,7 @@ public class Phase4AuditTests
 
         filter.IsDeleted.Should().BeTrue();
         filter.Version.Should().Be(version + 1);
-        filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterSoftDeletedEvent);
+        filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -529,7 +529,7 @@ public class Phase4AuditTests
         filter.SoftDelete(Actor, Now);
 
         filter.Version.Should().Be(version);
-        filter.DomainEvents.Should().NotContain(e => e is SavedFilterSoftDeletedEvent);
+        filter.DomainEvents.Should().NotContain(e => e is SavedFilterSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -545,7 +545,7 @@ public class Phase4AuditTests
 
         filter.IsDeleted.Should().BeFalse();
         filter.Version.Should().Be(version + 1);
-        filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterRestoredEvent);
+        filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterRestoredDomainEvent);
     }
 
     [Fact]
@@ -559,7 +559,7 @@ public class Phase4AuditTests
         filter.Restore(Actor, Now);
 
         filter.Version.Should().Be(version);
-        filter.DomainEvents.Should().NotContain(e => e is SavedFilterRestoredEvent);
+        filter.DomainEvents.Should().NotContain(e => e is SavedFilterRestoredDomainEvent);
     }
 
     #endregion
@@ -578,7 +578,7 @@ public class Phase4AuditTests
 
         label.IsDeleted.Should().BeFalse();
         label.Version.Should().Be(version + 1);
-        label.DomainEvents.Should().ContainSingle(e => e is LabelRestoredEvent);
+        label.DomainEvents.Should().ContainSingle(e => e is LabelRestoredDomainEvent);
     }
 
     [Fact]
@@ -591,7 +591,7 @@ public class Phase4AuditTests
         label.Restore(Actor, Now);
 
         label.Version.Should().Be(version);
-        label.DomainEvents.Should().NotContain(e => e is LabelRestoredEvent);
+        label.DomainEvents.Should().NotContain(e => e is LabelRestoredDomainEvent);
     }
 
     [Fact]
@@ -605,7 +605,7 @@ public class Phase4AuditTests
 
         checklist.IsDeleted.Should().BeTrue();
         checklist.Version.Should().Be(version + 1);
-        checklist.DomainEvents.Should().ContainSingle(e => e is ChecklistSoftDeletedEvent);
+        checklist.DomainEvents.Should().ContainSingle(e => e is ChecklistSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -619,7 +619,7 @@ public class Phase4AuditTests
         checklist.SoftDelete(Actor, Now);
 
         checklist.Version.Should().Be(version);
-        checklist.DomainEvents.Should().NotContain(e => e is ChecklistSoftDeletedEvent);
+        checklist.DomainEvents.Should().NotContain(e => e is ChecklistSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -634,7 +634,7 @@ public class Phase4AuditTests
 
         checklist.IsDeleted.Should().BeFalse();
         checklist.Version.Should().Be(version + 1);
-        checklist.DomainEvents.Should().ContainSingle(e => e is ChecklistRestoredEvent);
+        checklist.DomainEvents.Should().ContainSingle(e => e is ChecklistRestoredDomainEvent);
     }
 
     [Fact]
@@ -647,7 +647,7 @@ public class Phase4AuditTests
         checklist.Restore(Actor, Now);
 
         checklist.Version.Should().Be(version);
-        checklist.DomainEvents.Should().NotContain(e => e is ChecklistRestoredEvent);
+        checklist.DomainEvents.Should().NotContain(e => e is ChecklistRestoredDomainEvent);
     }
 
     [Fact]
@@ -662,7 +662,7 @@ public class Phase4AuditTests
 
         request.IsDeleted.Should().BeTrue();
         request.Version.Should().Be(version + 1);
-        request.DomainEvents.Should().ContainSingle(e => e is ApprovalRequestSoftDeletedEvent);
+        request.DomainEvents.Should().ContainSingle(e => e is ApprovalRequestSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -677,7 +677,7 @@ public class Phase4AuditTests
         request.SoftDelete(Actor, Now);
 
         request.Version.Should().Be(version);
-        request.DomainEvents.Should().NotContain(e => e is ApprovalRequestSoftDeletedEvent);
+        request.DomainEvents.Should().NotContain(e => e is ApprovalRequestSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -693,7 +693,7 @@ public class Phase4AuditTests
 
         request.IsDeleted.Should().BeFalse();
         request.Version.Should().Be(version + 1);
-        request.DomainEvents.Should().ContainSingle(e => e is ApprovalRequestRestoredEvent);
+        request.DomainEvents.Should().ContainSingle(e => e is ApprovalRequestRestoredDomainEvent);
     }
 
     [Fact]
@@ -707,7 +707,7 @@ public class Phase4AuditTests
         request.Restore(Actor, Now);
 
         request.Version.Should().Be(version);
-        request.DomainEvents.Should().NotContain(e => e is ApprovalRequestRestoredEvent);
+        request.DomainEvents.Should().NotContain(e => e is ApprovalRequestRestoredDomainEvent);
     }
 
     #endregion
@@ -724,8 +724,8 @@ public class Phase4AuditTests
         form.UpdateDetails("Updated Form", BoardVisibility.Workspace, "{}", "{}", Actor, Now);
 
         form.Version.Should().Be(version + 1);
-        form.DomainEvents.Should().ContainSingle(e => e is FormDetailsUpdatedEvent);
-        var evt = (FormDetailsUpdatedEvent)form.DomainEvents.Single(e => e is FormDetailsUpdatedEvent);
+        form.DomainEvents.Should().ContainSingle(e => e is FormDetailsUpdatedDomainEvent);
+        var evt = (FormDetailsUpdatedDomainEvent)form.DomainEvents.Single(e => e is FormDetailsUpdatedDomainEvent);
         evt.Name.Should().Be("Updated Form");
     }
 
@@ -740,7 +740,7 @@ public class Phase4AuditTests
 
         form.IsDeleted.Should().BeTrue();
         form.Version.Should().Be(version + 1);
-        form.DomainEvents.Should().ContainSingle(e => e is FormSoftDeletedEvent);
+        form.DomainEvents.Should().ContainSingle(e => e is FormSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -754,7 +754,7 @@ public class Phase4AuditTests
         form.SoftDelete(Actor, Now);
 
         form.Version.Should().Be(version);
-        form.DomainEvents.Should().NotContain(e => e is FormSoftDeletedEvent);
+        form.DomainEvents.Should().NotContain(e => e is FormSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -769,7 +769,7 @@ public class Phase4AuditTests
 
         form.IsDeleted.Should().BeFalse();
         form.Version.Should().Be(version + 1);
-        form.DomainEvents.Should().ContainSingle(e => e is FormRestoredEvent);
+        form.DomainEvents.Should().ContainSingle(e => e is FormRestoredDomainEvent);
     }
 
     [Fact]
@@ -782,7 +782,7 @@ public class Phase4AuditTests
         form.Restore(Actor, Now);
 
         form.Version.Should().Be(version);
-        form.DomainEvents.Should().NotContain(e => e is FormRestoredEvent);
+        form.DomainEvents.Should().NotContain(e => e is FormRestoredDomainEvent);
     }
 
     #endregion

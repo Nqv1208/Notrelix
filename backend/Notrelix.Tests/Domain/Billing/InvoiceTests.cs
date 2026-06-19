@@ -20,7 +20,7 @@ public class InvoiceTests
 
         invoice.Status.Should().Be(InvoiceStatus.Draft);
         invoice.Number.Should().Be("INV-001");
-        invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceCreatedEvent);
+        invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceCreatedDomainEvent);
     }
 
     [Fact]
@@ -32,7 +32,7 @@ public class InvoiceTests
         invoice.Issue(DateTimeOffset.UtcNow);
 
         invoice.Status.Should().Be(InvoiceStatus.Open);
-        invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceIssuedEvent);
+        invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceIssuedDomainEvent);
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public class InvoiceTests
         invoice.MarkPaid(DateTimeOffset.UtcNow);
 
         invoice.Status.Should().Be(InvoiceStatus.Paid);
-        invoice.DomainEvents.Should().ContainSingle(e => e is InvoicePaidEvent);
+        invoice.DomainEvents.Should().ContainSingle(e => e is InvoicePaidDomainEvent);
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public class InvoiceTests
         invoice.MarkFailed("Payment declined", DateTimeOffset.UtcNow);
 
         invoice.Status.Should().Be(InvoiceStatus.Uncollectible);
-        invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceFailedEvent);
+        invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceFailedDomainEvent);
     }
 
     [Fact]
@@ -125,7 +125,7 @@ public class InvoiceTests
         invoice.Void(DateTimeOffset.UtcNow);
 
         invoice.Status.Should().Be(InvoiceStatus.Void);
-        invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceVoidedEvent);
+        invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceVoidedDomainEvent);
     }
 
     [Fact]
@@ -160,7 +160,7 @@ public class InvoiceTests
         invoice.MarkFailed("Cancelled by customer", DateTimeOffset.UtcNow);
 
         invoice.Status.Should().Be(InvoiceStatus.Uncollectible);
-        invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceFailedEvent);
+        invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceFailedDomainEvent);
     }
 
     [Fact]
@@ -196,7 +196,7 @@ public class InvoiceTests
         invoice.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         invoice.IsDeleted.Should().BeTrue();
-        invoice.DomainEvents.Should().Contain(e => e is InvoiceSoftDeletedEvent);
+        invoice.DomainEvents.Should().Contain(e => e is InvoiceSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -221,7 +221,7 @@ public class InvoiceTests
         invoice.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         invoice.IsDeleted.Should().BeFalse();
-        invoice.DomainEvents.Should().Contain(e => e is InvoiceRestoredEvent);
+        invoice.DomainEvents.Should().Contain(e => e is InvoiceRestoredDomainEvent);
     }
 
     [Fact]

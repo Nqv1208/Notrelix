@@ -24,7 +24,7 @@ public class FormSubmissionTests
         submission.BoardId.Should().Be(boardId);
         submission.Status.Should().Be(FormSubmissionStatus.Accepted);
         submission.SubmittedAt.Should().Be(now);
-        submission.DomainEvents.Should().ContainSingle(e => e is FormSubmissionCreatedEvent);
+        submission.DomainEvents.Should().ContainSingle(e => e is FormSubmissionCreatedDomainEvent);
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public class FormSubmissionTests
 
         submission.Status.Should().Be(FormSubmissionStatus.Rejected);
         submission.ProcessedAt.Should().Be(now);
-        submission.DomainEvents.Should().ContainSingle(e => e is FormSubmissionRejectedEvent);
+        submission.DomainEvents.Should().ContainSingle(e => e is FormSubmissionRejectedDomainEvent);
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public class FormSubmissionTests
 
         submission.Status.Should().Be(FormSubmissionStatus.Spam);
         submission.ProcessedAt.Should().Be(now);
-        submission.DomainEvents.Should().ContainSingle(e => e is FormSubmissionMarkedAsSpamEvent);
+        submission.DomainEvents.Should().ContainSingle(e => e is FormSubmissionMarkedAsSpamDomainEvent);
     }
 
     [Fact]
@@ -93,7 +93,7 @@ public class FormSubmissionTests
 
         submission.CreatedItemId.Should().Be(createdItemId);
         submission.ProcessedAt.Should().Be(now);
-        submission.DomainEvents.Should().ContainSingle(e => e is FormSubmissionProcessedEvent);
+        submission.DomainEvents.Should().ContainSingle(e => e is FormSubmissionProcessedDomainEvent);
     }
 
     [Fact]

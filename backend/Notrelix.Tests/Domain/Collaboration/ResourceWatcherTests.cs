@@ -20,7 +20,7 @@ public class ResourceWatcherTests
         watcher.WorkspaceId.Should().Be(workspaceId);
         watcher.Target.Should().Be(target);
         watcher.Level.Should().Be(WatchLevel.All);
-        watcher.DomainEvents.Should().ContainSingle(e => e is ResourceWatchedEvent);
+        watcher.DomainEvents.Should().ContainSingle(e => e is ResourceWatchedDomainEvent);
     }
 
     [Fact]
@@ -50,7 +50,7 @@ public class ResourceWatcherTests
         watcher.Unwatch(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         watcher.IsDeleted.Should().BeTrue();
-        watcher.DomainEvents.Should().ContainSingle(e => e is ResourceUnwatchedEvent);
+        watcher.DomainEvents.Should().ContainSingle(e => e is ResourceUnwatchedDomainEvent);
     }
 
     [Fact]

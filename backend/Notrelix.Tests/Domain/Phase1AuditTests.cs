@@ -29,7 +29,7 @@ public class Phase1AuditTests
         board.Rename("Same Title", _actorId, _now);
 
         board.Version.Should().Be(version);
-        board.DomainEvents.Should().NotContain(e => e is BoardRenamedEvent);
+        board.DomainEvents.Should().NotContain(e => e is BoardRenamedDomainEvent);
     }
 
     [Fact]
@@ -90,7 +90,7 @@ public class Phase1AuditTests
         item.Rename("Item", _actorId, _now);
 
         item.Version.Should().Be(version);
-        item.DomainEvents.Should().NotContain(e => e is BoardItemRenamedEvent);
+        item.DomainEvents.Should().NotContain(e => e is BoardItemRenamedDomainEvent);
     }
 
     [Fact]
@@ -169,7 +169,7 @@ public class Phase1AuditTests
 
         board.IsDeleted.Should().BeTrue();
         board.Version.Should().Be(version + 1);
-        board.DomainEvents.Should().ContainSingle(e => e is BoardSoftDeletedEvent);
+        board.DomainEvents.Should().ContainSingle(e => e is BoardSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -184,7 +184,7 @@ public class Phase1AuditTests
 
         board.IsDeleted.Should().BeFalse();
         board.Version.Should().Be(version + 1);
-        board.DomainEvents.Should().ContainSingle(e => e is BoardRestoredEvent);
+        board.DomainEvents.Should().ContainSingle(e => e is BoardRestoredDomainEvent);
     }
 
     [Fact]
@@ -198,7 +198,7 @@ public class Phase1AuditTests
         board.SoftDelete(_actorId, _now);
 
         board.Version.Should().Be(version);
-        board.DomainEvents.Should().NotContain(e => e is BoardSoftDeletedEvent);
+        board.DomainEvents.Should().NotContain(e => e is BoardSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -211,7 +211,7 @@ public class Phase1AuditTests
         board.Restore(_actorId, _now);
 
         board.Version.Should().Be(version);
-        board.DomainEvents.Should().NotContain(e => e is BoardRestoredEvent);
+        board.DomainEvents.Should().NotContain(e => e is BoardRestoredDomainEvent);
     }
 
     [Fact]
@@ -224,7 +224,7 @@ public class Phase1AuditTests
 
         item.IsDeleted.Should().BeTrue();
         item.Version.Should().Be(version + 1);
-        item.DomainEvents.Should().ContainSingle(e => e is BoardItemSoftDeletedEvent);
+        item.DomainEvents.Should().ContainSingle(e => e is BoardItemSoftDeletedDomainEvent);
     }
 
     #endregion
@@ -232,31 +232,31 @@ public class Phase1AuditTests
     #region Actor Metadata Propagation
 
     [Fact]
-    public void Event_ShouldCarryActorUserId_WhenAggregateMethodProvidesActor()
+    public void DomainEvent_ShouldCarryActorUserId_WhenAggregateMethodProvidesActor()
     {
         var board = Board.Create(_workspaceId, _actorId, "Board", null, _now);
         board.ClearDomainEvents();
 
         board.Rename("Renamed", _actorId, _now);
 
-        var evt = (IDomainEvent)board.DomainEvents.Single(e => e is BoardRenamedEvent);
+        var evt = (IDomainEvent)board.DomainEvents.Single(e => e is BoardRenamedDomainEvent);
         evt.ActorUserId.Should().Be(_actorId);
     }
 
     [Fact]
-    public void Event_ShouldCarryActorUserId_ForSoftDelete()
+    public void DomainEvent_ShouldCarryActorUserId_ForSoftDelete()
     {
         var board = Board.Create(_workspaceId, _actorId, "Board", null, _now);
         board.ClearDomainEvents();
 
         board.SoftDelete(_actorId, _now);
 
-        var evt = (IDomainEvent)board.DomainEvents.Single(e => e is BoardSoftDeletedEvent);
+        var evt = (IDomainEvent)board.DomainEvents.Single(e => e is BoardSoftDeletedDomainEvent);
         evt.ActorUserId.Should().Be(_actorId);
     }
 
     [Fact]
-    public void Event_ShouldCarryActorUserId_ForRestore()
+    public void DomainEvent_ShouldCarryActorUserId_ForRestore()
     {
         var board = Board.Create(_workspaceId, _actorId, "Board", null, _now);
         board.SoftDelete(_actorId, _now);
@@ -264,12 +264,12 @@ public class Phase1AuditTests
 
         board.Restore(_actorId, _now);
 
-        var evt = (IDomainEvent)board.DomainEvents.Single(e => e is BoardRestoredEvent);
+        var evt = (IDomainEvent)board.DomainEvents.Single(e => e is BoardRestoredDomainEvent);
         evt.ActorUserId.Should().Be(_actorId);
     }
 
     [Fact]
-    public void Event_ShouldCarryNullActor_WhenCreatedBySystem()
+    public void DomainEvent_ShouldCarryNullActor_WhenCreatedBySystem()
     {
         var subscription = Subscription.Create(
             _workspaceId,
@@ -280,7 +280,7 @@ public class Phase1AuditTests
             Guid.Empty,  // system-triggered (e.g., plan migration)
             _now);
 
-        var evt = (IDomainEvent)subscription.DomainEvents.Single(e => e is SubscriptionStartedEvent);
+        var evt = (IDomainEvent)subscription.DomainEvents.Single(e => e is SubscriptionStartedDomainEvent);
         evt.ActorUserId.Should().BeNull();
     }
 
@@ -289,23 +289,23 @@ public class Phase1AuditTests
     #region WorkspaceId Propagation
 
     [Fact]
-    public void Event_ShouldCarryCorrectWorkspaceId()
+    public void DomainEvent_ShouldCarryCorrectWorkspaceId()
     {
         var board = Board.Create(_workspaceId, _actorId, "Board", null, _now);
 
-        var evt = (IDomainEvent)board.DomainEvents.Single(e => e is BoardCreatedEvent);
+        var evt = (IDomainEvent)board.DomainEvents.Single(e => e is BoardCreatedDomainEvent);
         evt.WorkspaceId.Should().Be(_workspaceId);
     }
 
     [Fact]
-    public void Event_ShouldCarryCorrectWorkspaceId_AfterMutation()
+    public void DomainEvent_ShouldCarryCorrectWorkspaceId_AfterMutation()
     {
         var board = Board.Create(_workspaceId, _actorId, "Board", null, _now);
         board.ClearDomainEvents();
 
         board.Rename("Renamed", _actorId, _now);
 
-        var evt = (IDomainEvent)board.DomainEvents.Single(e => e is BoardRenamedEvent);
+        var evt = (IDomainEvent)board.DomainEvents.Single(e => e is BoardRenamedDomainEvent);
         evt.WorkspaceId.Should().Be(_workspaceId);
     }
 

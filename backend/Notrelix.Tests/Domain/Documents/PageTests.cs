@@ -20,7 +20,7 @@ public class PageTests
         page.Title.Should().Be("My Page");
         page.WorkspaceId.Should().Be(workspaceId);
         page.CreatedBy.Should().Be(createdBy);
-        page.DomainEvents.Should().ContainSingle(e => e is PageCreatedEvent);
+        page.DomainEvents.Should().ContainSingle(e => e is PageCreatedDomainEvent);
     }
 
     [Fact]
@@ -32,7 +32,7 @@ public class PageTests
         page.Rename("New Title", Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         page.Title.Should().Be("New Title");
-        page.DomainEvents.Should().ContainSingle(e => e is PageRenamedEvent);
+        page.DomainEvents.Should().ContainSingle(e => e is PageRenamedDomainEvent);
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public class PageTests
         page.Move(newParentId, Guid.NewGuid(), DateTimeOffset.UtcNow, _ => null);
 
         page.ParentId.Should().Be(newParentId);
-        page.DomainEvents.Should().ContainSingle(e => e is PageMovedEvent);
+        page.DomainEvents.Should().ContainSingle(e => e is PageMovedDomainEvent);
     }
 
     [Fact]
@@ -107,7 +107,7 @@ public class PageTests
         page.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         page.Status.Should().Be(PageStatus.Archived);
-        page.DomainEvents.Should().ContainSingle(e => e is PageArchivedEvent);
+        page.DomainEvents.Should().ContainSingle(e => e is PageArchivedDomainEvent);
     }
 
     [Fact]
@@ -132,7 +132,7 @@ public class PageTests
 
         page.IsDeleted.Should().BeTrue();
         page.Status.Should().Be(PageStatus.SoftDeleted);
-        page.DomainEvents.Should().ContainSingle(e => e is PageSoftDeletedEvent);
+        page.DomainEvents.Should().ContainSingle(e => e is PageSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -158,7 +158,7 @@ public class PageTests
 
         page.IsDeleted.Should().BeFalse();
         page.Status.Should().Be(PageStatus.Active);
-        page.DomainEvents.Should().ContainSingle(e => e is PageRestoredEvent);
+        page.DomainEvents.Should().ContainSingle(e => e is PageRestoredDomainEvent);
     }
 
     [Fact]

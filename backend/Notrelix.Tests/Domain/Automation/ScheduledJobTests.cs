@@ -16,7 +16,7 @@ public class ScheduledJobTests
 
         job.Status.Should().Be(ScheduledJobStatus.Active);
         job.Schedule.Should().Be(schedule);
-        job.DomainEvents.Should().ContainSingle(e => e is ScheduledJobCreatedEvent);
+        job.DomainEvents.Should().ContainSingle(e => e is ScheduledJobCreatedDomainEvent);
     }
 
     [Fact]
@@ -28,7 +28,7 @@ public class ScheduledJobTests
         job.Pause(DateTimeOffset.UtcNow);
 
         job.Status.Should().Be(ScheduledJobStatus.Paused);
-        job.DomainEvents.Should().ContainSingle(e => e is ScheduledJobPausedEvent);
+        job.DomainEvents.Should().ContainSingle(e => e is ScheduledJobPausedDomainEvent);
     }
 
     [Fact]

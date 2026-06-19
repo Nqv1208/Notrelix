@@ -48,8 +48,8 @@ public class Phase4AuditTests
         plan.UpdateDescription("New desc", Now);
 
         plan.Version.Should().Be(version + 1);
-        plan.DomainEvents.Should().ContainSingle(e => e is PlanDescriptionUpdatedEvent);
-        var evt = (PlanDescriptionUpdatedEvent)plan.DomainEvents.Single(e => e is PlanDescriptionUpdatedEvent);
+        plan.DomainEvents.Should().ContainSingle(e => e is PlanDescriptionUpdatedDomainEvent);
+        var evt = (PlanDescriptionUpdatedDomainEvent)plan.DomainEvents.Single(e => e is PlanDescriptionUpdatedDomainEvent);
         evt.PlanId.Should().Be(plan.Id);
         evt.Description.Should().Be("New desc");
     }
@@ -64,7 +64,7 @@ public class Phase4AuditTests
         plan.Archive(Now);
 
         plan.Version.Should().Be(version + 1);
-        plan.DomainEvents.Should().ContainSingle(e => e is PlanArchivedEvent);
+        plan.DomainEvents.Should().ContainSingle(e => e is PlanArchivedDomainEvent);
     }
 
     [Fact]
@@ -78,7 +78,7 @@ public class Phase4AuditTests
         plan.Archive(Now);
 
         plan.Version.Should().Be(version);
-        plan.DomainEvents.Should().NotContain(e => e is PlanArchivedEvent);
+        plan.DomainEvents.Should().NotContain(e => e is PlanArchivedDomainEvent);
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public class Phase4AuditTests
         plan.Deprecate(Now);
 
         plan.Version.Should().Be(version + 1);
-        plan.DomainEvents.Should().ContainSingle(e => e is PlanDeprecatedEvent);
+        plan.DomainEvents.Should().ContainSingle(e => e is PlanDeprecatedDomainEvent);
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public class Phase4AuditTests
         plan.Deprecate(Now);
 
         plan.Version.Should().Be(version);
-        plan.DomainEvents.Should().NotContain(e => e is PlanDeprecatedEvent);
+        plan.DomainEvents.Should().NotContain(e => e is PlanDeprecatedDomainEvent);
     }
 
     [Fact]
@@ -118,8 +118,8 @@ public class Phase4AuditTests
 
         plan.IsDeleted.Should().BeTrue();
         plan.Version.Should().Be(version + 1);
-        plan.DomainEvents.Should().ContainSingle(e => e is PlanSoftDeletedEvent);
-        var evt = (PlanSoftDeletedEvent)plan.DomainEvents.Single(e => e is PlanSoftDeletedEvent);
+        plan.DomainEvents.Should().ContainSingle(e => e is PlanSoftDeletedDomainEvent);
+        var evt = (PlanSoftDeletedDomainEvent)plan.DomainEvents.Single(e => e is PlanSoftDeletedDomainEvent);
         evt.PlanId.Should().Be(plan.Id);
         evt.DeletedBy.Should().Be(Actor);
     }
@@ -136,8 +136,8 @@ public class Phase4AuditTests
 
         plan.IsDeleted.Should().BeFalse();
         plan.Version.Should().Be(version + 1);
-        plan.DomainEvents.Should().ContainSingle(e => e is PlanRestoredEvent);
-        var evt = (PlanRestoredEvent)plan.DomainEvents.Single(e => e is PlanRestoredEvent);
+        plan.DomainEvents.Should().ContainSingle(e => e is PlanRestoredDomainEvent);
+        var evt = (PlanRestoredDomainEvent)plan.DomainEvents.Single(e => e is PlanRestoredDomainEvent);
         evt.PlanId.Should().Be(plan.Id);
         evt.RestoredBy.Should().Be(Actor);
     }
@@ -153,7 +153,7 @@ public class Phase4AuditTests
         plan.SoftDelete(Actor, Now);
 
         plan.Version.Should().Be(version);
-        plan.DomainEvents.Should().NotContain(e => e is PlanSoftDeletedEvent);
+        plan.DomainEvents.Should().NotContain(e => e is PlanSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -166,7 +166,7 @@ public class Phase4AuditTests
         plan.Restore(Actor, Now);
 
         plan.Version.Should().Be(version);
-        plan.DomainEvents.Should().NotContain(e => e is PlanRestoredEvent);
+        plan.DomainEvents.Should().NotContain(e => e is PlanRestoredDomainEvent);
     }
 
     #endregion
@@ -183,8 +183,8 @@ public class Phase4AuditTests
         sub.ScheduleCancellation(Actor, Now);
 
         sub.Version.Should().Be(version + 1);
-        sub.DomainEvents.Should().ContainSingle(e => e is SubscriptionCancellationScheduledEvent);
-        var evt = (SubscriptionCancellationScheduledEvent)sub.DomainEvents.Single(e => e is SubscriptionCancellationScheduledEvent);
+        sub.DomainEvents.Should().ContainSingle(e => e is SubscriptionCancellationScheduledDomainEvent);
+        var evt = (SubscriptionCancellationScheduledDomainEvent)sub.DomainEvents.Single(e => e is SubscriptionCancellationScheduledDomainEvent);
         evt.WorkspaceId.Should().Be(WsA);
         evt.SubscriptionId.Should().Be(sub.Id);
         evt.UpdatedBy.Should().Be(Actor);
@@ -201,7 +201,7 @@ public class Phase4AuditTests
         sub.ScheduleCancellation(Actor, Now);
 
         sub.Version.Should().Be(version);
-        sub.DomainEvents.Should().NotContain(e => e is SubscriptionCancellationScheduledEvent);
+        sub.DomainEvents.Should().NotContain(e => e is SubscriptionCancellationScheduledDomainEvent);
     }
 
     [Fact]
@@ -214,8 +214,8 @@ public class Phase4AuditTests
 
         sub.IsDeleted.Should().BeTrue();
         sub.Version.Should().Be(version + 1);
-        sub.DomainEvents.Should().ContainSingle(e => e is SubscriptionSoftDeletedEvent);
-        var evt = (SubscriptionSoftDeletedEvent)sub.DomainEvents.Single(e => e is SubscriptionSoftDeletedEvent);
+        sub.DomainEvents.Should().ContainSingle(e => e is SubscriptionSoftDeletedDomainEvent);
+        var evt = (SubscriptionSoftDeletedDomainEvent)sub.DomainEvents.Single(e => e is SubscriptionSoftDeletedDomainEvent);
         evt.WorkspaceId.Should().Be(WsA);
         evt.SubscriptionId.Should().Be(sub.Id);
         evt.DeletedBy.Should().Be(Actor);
@@ -233,8 +233,8 @@ public class Phase4AuditTests
 
         sub.IsDeleted.Should().BeFalse();
         sub.Version.Should().Be(version + 1);
-        sub.DomainEvents.Should().ContainSingle(e => e is SubscriptionRestoredEvent);
-        var evt = (SubscriptionRestoredEvent)sub.DomainEvents.Single(e => e is SubscriptionRestoredEvent);
+        sub.DomainEvents.Should().ContainSingle(e => e is SubscriptionRestoredDomainEvent);
+        var evt = (SubscriptionRestoredDomainEvent)sub.DomainEvents.Single(e => e is SubscriptionRestoredDomainEvent);
         evt.WorkspaceId.Should().Be(WsA);
         evt.RestoredBy.Should().Be(Actor);
     }
@@ -250,7 +250,7 @@ public class Phase4AuditTests
         sub.SoftDelete(Actor, Now);
 
         sub.Version.Should().Be(version);
-        sub.DomainEvents.Should().NotContain(e => e is SubscriptionSoftDeletedEvent);
+        sub.DomainEvents.Should().NotContain(e => e is SubscriptionSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -263,7 +263,7 @@ public class Phase4AuditTests
         sub.Restore(Actor, Now);
 
         sub.Version.Should().Be(version);
-        sub.DomainEvents.Should().NotContain(e => e is SubscriptionRestoredEvent);
+        sub.DomainEvents.Should().NotContain(e => e is SubscriptionRestoredDomainEvent);
     }
 
     #endregion
@@ -295,8 +295,8 @@ public class Phase4AuditTests
 
         entitlement.IsDeleted.Should().BeTrue();
         entitlement.Version.Should().Be(version + 1);
-        entitlement.DomainEvents.Should().ContainSingle(e => e is EntitlementSoftDeletedEvent);
-        var evt = (EntitlementSoftDeletedEvent)entitlement.DomainEvents.Single(e => e is EntitlementSoftDeletedEvent);
+        entitlement.DomainEvents.Should().ContainSingle(e => e is EntitlementSoftDeletedDomainEvent);
+        var evt = (EntitlementSoftDeletedDomainEvent)entitlement.DomainEvents.Single(e => e is EntitlementSoftDeletedDomainEvent);
         evt.WorkspaceId.Should().Be(WsA);
         evt.EntitlementId.Should().Be(entitlement.Id);
         evt.FeatureCode.Should().Be("BOARDS");
@@ -315,8 +315,8 @@ public class Phase4AuditTests
 
         entitlement.IsDeleted.Should().BeFalse();
         entitlement.Version.Should().Be(version + 1);
-        entitlement.DomainEvents.Should().ContainSingle(e => e is EntitlementRestoredEvent);
-        var evt = (EntitlementRestoredEvent)entitlement.DomainEvents.Single(e => e is EntitlementRestoredEvent);
+        entitlement.DomainEvents.Should().ContainSingle(e => e is EntitlementRestoredDomainEvent);
+        var evt = (EntitlementRestoredDomainEvent)entitlement.DomainEvents.Single(e => e is EntitlementRestoredDomainEvent);
         evt.WorkspaceId.Should().Be(WsA);
         evt.EntitlementId.Should().Be(entitlement.Id);
     }
@@ -333,7 +333,7 @@ public class Phase4AuditTests
         entitlement.SoftDelete(Actor, Now);
 
         entitlement.Version.Should().Be(version);
-        entitlement.DomainEvents.Should().NotContain(e => e is EntitlementSoftDeletedEvent);
+        entitlement.DomainEvents.Should().NotContain(e => e is EntitlementSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -347,7 +347,7 @@ public class Phase4AuditTests
         entitlement.Restore(Actor, Now);
 
         entitlement.Version.Should().Be(version);
-        entitlement.DomainEvents.Should().NotContain(e => e is EntitlementRestoredEvent);
+        entitlement.DomainEvents.Should().NotContain(e => e is EntitlementRestoredDomainEvent);
     }
 
     #endregion
@@ -360,8 +360,8 @@ public class Phase4AuditTests
         var feature = FeatureCode.Create("storage");
         var usage = WorkspaceFeatureUsage.Create(WsA, feature, 0, 100, null, Now);
 
-        usage.DomainEvents.Should().ContainSingle(e => e is WorkspaceFeatureUsageInitializedEvent);
-        var evt = (WorkspaceFeatureUsageInitializedEvent)usage.DomainEvents.Single(e => e is WorkspaceFeatureUsageInitializedEvent);
+        usage.DomainEvents.Should().ContainSingle(e => e is WorkspaceFeatureUsageInitializedDomainEvent);
+        var evt = (WorkspaceFeatureUsageInitializedDomainEvent)usage.DomainEvents.Single(e => e is WorkspaceFeatureUsageInitializedDomainEvent);
         evt.WorkspaceId.Should().Be(WsA);
         evt.CurrentUsage.Should().Be(0);
         evt.HardLimit.Should().Be(100);
@@ -378,8 +378,8 @@ public class Phase4AuditTests
         usage.Reset(Now, Actor);
 
         usage.Version.Should().Be(version + 1);
-        usage.DomainEvents.Should().ContainSingle(e => e is WorkspaceFeatureUsageResetEvent);
-        var evt = (WorkspaceFeatureUsageResetEvent)usage.DomainEvents.Single(e => e is WorkspaceFeatureUsageResetEvent);
+        usage.DomainEvents.Should().ContainSingle(e => e is WorkspaceFeatureUsageResetDomainEvent);
+        var evt = (WorkspaceFeatureUsageResetDomainEvent)usage.DomainEvents.Single(e => e is WorkspaceFeatureUsageResetDomainEvent);
         evt.WorkspaceId.Should().Be(WsA);
     }
 
@@ -395,8 +395,8 @@ public class Phase4AuditTests
 
         usage.IsDeleted.Should().BeTrue();
         usage.Version.Should().Be(version + 1);
-        usage.DomainEvents.Should().ContainSingle(e => e is WorkspaceFeatureUsageSoftDeletedEvent);
-        var evt = (WorkspaceFeatureUsageSoftDeletedEvent)usage.DomainEvents.Single(e => e is WorkspaceFeatureUsageSoftDeletedEvent);
+        usage.DomainEvents.Should().ContainSingle(e => e is WorkspaceFeatureUsageSoftDeletedDomainEvent);
+        var evt = (WorkspaceFeatureUsageSoftDeletedDomainEvent)usage.DomainEvents.Single(e => e is WorkspaceFeatureUsageSoftDeletedDomainEvent);
         evt.WorkspaceId.Should().Be(WsA);
         evt.DeletedBy.Should().Be(Actor);
     }
@@ -414,8 +414,8 @@ public class Phase4AuditTests
 
         usage.IsDeleted.Should().BeFalse();
         usage.Version.Should().Be(version + 1);
-        usage.DomainEvents.Should().ContainSingle(e => e is WorkspaceFeatureUsageRestoredEvent);
-        var evt = (WorkspaceFeatureUsageRestoredEvent)usage.DomainEvents.Single(e => e is WorkspaceFeatureUsageRestoredEvent);
+        usage.DomainEvents.Should().ContainSingle(e => e is WorkspaceFeatureUsageRestoredDomainEvent);
+        var evt = (WorkspaceFeatureUsageRestoredDomainEvent)usage.DomainEvents.Single(e => e is WorkspaceFeatureUsageRestoredDomainEvent);
         evt.WorkspaceId.Should().Be(WsA);
         evt.RestoredBy.Should().Be(Actor);
     }
@@ -432,7 +432,7 @@ public class Phase4AuditTests
         usage.SoftDelete(Actor, Now);
 
         usage.Version.Should().Be(version);
-        usage.DomainEvents.Should().NotContain(e => e is WorkspaceFeatureUsageSoftDeletedEvent);
+        usage.DomainEvents.Should().NotContain(e => e is WorkspaceFeatureUsageSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -446,7 +446,7 @@ public class Phase4AuditTests
         usage.Restore(Actor, Now);
 
         usage.Version.Should().Be(version);
-        usage.DomainEvents.Should().NotContain(e => e is WorkspaceFeatureUsageRestoredEvent);
+        usage.DomainEvents.Should().NotContain(e => e is WorkspaceFeatureUsageRestoredDomainEvent);
     }
 
     #endregion
@@ -458,8 +458,8 @@ public class Phase4AuditTests
     {
         var metric = UsageMetric.Create(WsA, UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(Now, Now.AddDays(30)), Now);
 
-        metric.DomainEvents.Should().ContainSingle(e => e is UsageMetricCreatedEvent);
-        var evt = (UsageMetricCreatedEvent)metric.DomainEvents.Single(e => e is UsageMetricCreatedEvent);
+        metric.DomainEvents.Should().ContainSingle(e => e is UsageMetricCreatedDomainEvent);
+        var evt = (UsageMetricCreatedDomainEvent)metric.DomainEvents.Single(e => e is UsageMetricCreatedDomainEvent);
         evt.WorkspaceId.Should().Be(WsA);
         evt.Key.Should().Be(metric.Key);
     }
@@ -476,8 +476,8 @@ public class Phase4AuditTests
         metric.Decrease(2, Now);
 
         metric.Version.Should().Be(version + 1);
-        metric.DomainEvents.Should().ContainSingle(e => e is UsageMetricDecreasedEvent);
-        var evt = (UsageMetricDecreasedEvent)metric.DomainEvents.Single(e => e is UsageMetricDecreasedEvent);
+        metric.DomainEvents.Should().ContainSingle(e => e is UsageMetricDecreasedDomainEvent);
+        var evt = (UsageMetricDecreasedDomainEvent)metric.DomainEvents.Single(e => e is UsageMetricDecreasedDomainEvent);
         evt.WorkspaceId.Should().Be(WsA);
         evt.Amount.Should().Be(2);
     }
@@ -493,8 +493,8 @@ public class Phase4AuditTests
         metric.Reset(UsagePeriod.Create(Now.AddDays(30), Now.AddDays(60)), Now);
 
         metric.Version.Should().Be(version + 1);
-        metric.DomainEvents.Should().ContainSingle(e => e is UsageMetricResetEvent);
-        var evt = (UsageMetricResetEvent)metric.DomainEvents.Single(e => e is UsageMetricResetEvent);
+        metric.DomainEvents.Should().ContainSingle(e => e is UsageMetricResetDomainEvent);
+        var evt = (UsageMetricResetDomainEvent)metric.DomainEvents.Single(e => e is UsageMetricResetDomainEvent);
         evt.WorkspaceId.Should().Be(WsA);
     }
 
@@ -509,8 +509,8 @@ public class Phase4AuditTests
 
         metric.IsDeleted.Should().BeTrue();
         metric.Version.Should().Be(version + 1);
-        metric.DomainEvents.Should().ContainSingle(e => e is UsageMetricSoftDeletedEvent);
-        var evt = (UsageMetricSoftDeletedEvent)metric.DomainEvents.Single(e => e is UsageMetricSoftDeletedEvent);
+        metric.DomainEvents.Should().ContainSingle(e => e is UsageMetricSoftDeletedDomainEvent);
+        var evt = (UsageMetricSoftDeletedDomainEvent)metric.DomainEvents.Single(e => e is UsageMetricSoftDeletedDomainEvent);
         evt.WorkspaceId.Should().Be(WsA);
         evt.DeletedBy.Should().Be(Actor);
     }
@@ -527,8 +527,8 @@ public class Phase4AuditTests
 
         metric.IsDeleted.Should().BeFalse();
         metric.Version.Should().Be(version + 1);
-        metric.DomainEvents.Should().ContainSingle(e => e is UsageMetricRestoredEvent);
-        var evt = (UsageMetricRestoredEvent)metric.DomainEvents.Single(e => e is UsageMetricRestoredEvent);
+        metric.DomainEvents.Should().ContainSingle(e => e is UsageMetricRestoredDomainEvent);
+        var evt = (UsageMetricRestoredDomainEvent)metric.DomainEvents.Single(e => e is UsageMetricRestoredDomainEvent);
         evt.WorkspaceId.Should().Be(WsA);
         evt.RestoredBy.Should().Be(Actor);
     }
@@ -544,7 +544,7 @@ public class Phase4AuditTests
         metric.SoftDelete(Actor, Now);
 
         metric.Version.Should().Be(version);
-        metric.DomainEvents.Should().NotContain(e => e is UsageMetricSoftDeletedEvent);
+        metric.DomainEvents.Should().NotContain(e => e is UsageMetricSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -557,7 +557,7 @@ public class Phase4AuditTests
         metric.Restore(Actor, Now);
 
         metric.Version.Should().Be(version);
-        metric.DomainEvents.Should().NotContain(e => e is UsageMetricRestoredEvent);
+        metric.DomainEvents.Should().NotContain(e => e is UsageMetricRestoredDomainEvent);
     }
 
     #endregion
@@ -569,8 +569,8 @@ public class Phase4AuditTests
     {
         var invoice = Invoice.Create(WsA, Guid.NewGuid(), "INV-001", Money.Create(100, "USD"), Now.AddDays(30), Now);
 
-        invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceCreatedEvent);
-        var evt = (InvoiceCreatedEvent)invoice.DomainEvents.Single(e => e is InvoiceCreatedEvent);
+        invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceCreatedDomainEvent);
+        var evt = (InvoiceCreatedDomainEvent)invoice.DomainEvents.Single(e => e is InvoiceCreatedDomainEvent);
         evt.InvoiceId.Should().Be(invoice.Id);
         evt.WorkspaceId.Should().Be(WsA);
         evt.Amount.Should().Be(Money.Create(100, "USD"));
@@ -586,8 +586,8 @@ public class Phase4AuditTests
         invoice.Void(Now);
 
         invoice.Version.Should().Be(version + 1);
-        invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceVoidedEvent);
-        var evt = (InvoiceVoidedEvent)invoice.DomainEvents.Single(e => e is InvoiceVoidedEvent);
+        invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceVoidedDomainEvent);
+        var evt = (InvoiceVoidedDomainEvent)invoice.DomainEvents.Single(e => e is InvoiceVoidedDomainEvent);
         evt.InvoiceId.Should().Be(invoice.Id);
         evt.WorkspaceId.Should().Be(WsA);
     }
@@ -603,7 +603,7 @@ public class Phase4AuditTests
         invoice.Void(Now);
 
         invoice.Version.Should().Be(version);
-        invoice.DomainEvents.Should().NotContain(e => e is InvoiceVoidedEvent);
+        invoice.DomainEvents.Should().NotContain(e => e is InvoiceVoidedDomainEvent);
     }
 
     [Fact]
@@ -617,8 +617,8 @@ public class Phase4AuditTests
 
         invoice.IsDeleted.Should().BeTrue();
         invoice.Version.Should().Be(version + 1);
-        invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceSoftDeletedEvent);
-        var evt = (InvoiceSoftDeletedEvent)invoice.DomainEvents.Single(e => e is InvoiceSoftDeletedEvent);
+        invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceSoftDeletedDomainEvent);
+        var evt = (InvoiceSoftDeletedDomainEvent)invoice.DomainEvents.Single(e => e is InvoiceSoftDeletedDomainEvent);
         evt.WorkspaceId.Should().Be(WsA);
         evt.InvoiceId.Should().Be(invoice.Id);
         evt.DeletedBy.Should().Be(Actor);
@@ -636,8 +636,8 @@ public class Phase4AuditTests
 
         invoice.IsDeleted.Should().BeFalse();
         invoice.Version.Should().Be(version + 1);
-        invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceRestoredEvent);
-        var evt = (InvoiceRestoredEvent)invoice.DomainEvents.Single(e => e is InvoiceRestoredEvent);
+        invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceRestoredDomainEvent);
+        var evt = (InvoiceRestoredDomainEvent)invoice.DomainEvents.Single(e => e is InvoiceRestoredDomainEvent);
         evt.WorkspaceId.Should().Be(WsA);
         evt.InvoiceId.Should().Be(invoice.Id);
         evt.RestoredBy.Should().Be(Actor);
@@ -654,7 +654,7 @@ public class Phase4AuditTests
         invoice.SoftDelete(Actor, Now);
 
         invoice.Version.Should().Be(version);
-        invoice.DomainEvents.Should().NotContain(e => e is InvoiceSoftDeletedEvent);
+        invoice.DomainEvents.Should().NotContain(e => e is InvoiceSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -667,7 +667,7 @@ public class Phase4AuditTests
         invoice.Restore(Actor, Now);
 
         invoice.Version.Should().Be(version);
-        invoice.DomainEvents.Should().NotContain(e => e is InvoiceRestoredEvent);
+        invoice.DomainEvents.Should().NotContain(e => e is InvoiceRestoredDomainEvent);
     }
 
     #endregion
@@ -679,8 +679,8 @@ public class Phase4AuditTests
     {
         var method = PaymentMethod.Create(WsA, PaymentProvider.Stripe, "pm_123", "4242", "Visa", Actor, Now);
 
-        method.DomainEvents.Should().ContainSingle(e => e is PaymentMethodAddedEvent);
-        var evt = (PaymentMethodAddedEvent)method.DomainEvents.Single(e => e is PaymentMethodAddedEvent);
+        method.DomainEvents.Should().ContainSingle(e => e is PaymentMethodAddedDomainEvent);
+        var evt = (PaymentMethodAddedDomainEvent)method.DomainEvents.Single(e => e is PaymentMethodAddedDomainEvent);
         evt.WorkspaceId.Should().Be(WsA);
         evt.PaymentMethodId.Should().Be(method.Id);
         evt.Provider.Should().Be(PaymentProvider.Stripe);

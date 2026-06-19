@@ -24,7 +24,7 @@ public class DocumentVersionTests
         version.PageId.Should().Be(pageId);
         version.VersionNumber.Should().Be(1);
         version.Snapshot.Should().Be(snapshot);
-        version.DomainEvents.Should().ContainSingle(e => e is DocumentVersionCreatedEvent);
+        version.DomainEvents.Should().ContainSingle(e => e is DocumentVersionCreatedDomainEvent);
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public class DocumentVersionTests
 
         version.ApplyRestore(Guid.NewGuid(), now);
 
-        version.DomainEvents.Should().ContainSingle(e => e is DocumentVersionRestoredEvent);
+        version.DomainEvents.Should().ContainSingle(e => e is DocumentVersionRestoredDomainEvent);
     }
 
     private static DocumentVersion CreateVersion()

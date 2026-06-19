@@ -86,7 +86,7 @@ public class ScimDirectorySyncTests
 
         sync.LastSyncAt.Should().Be(syncAt);
         sync.CursorJson.Should().Be("{\"next\":\"abc\"}");
-        sync.DomainEvents.Should().ContainSingle(e => e is ScimSyncCompletedDomainEvent);
+        sync.DomainEvents.Should().ContainSingle(e => e is ScimDirectorySyncCompletedDomainEvent);
     }
 
     [Fact]

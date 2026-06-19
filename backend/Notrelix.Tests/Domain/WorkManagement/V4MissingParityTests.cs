@@ -41,8 +41,8 @@ public class V4MissingParityTests
         agent.Status.Should().Be(AiAgentStatus.Draft);
         agent.Version.Should().Be(1);
 
-        agent.DomainEvents.Should().ContainSingle(e => e is AiAgentCreatedEvent);
-        var evt = (AiAgentCreatedEvent)agent.DomainEvents.First();
+        agent.DomainEvents.Should().ContainSingle(e => e is AiAgentCreatedDomainEvent);
+        var evt = (AiAgentCreatedDomainEvent)agent.DomainEvents.First();
         evt.WorkspaceId.Should().Be(_workspaceId);
         evt.AgentId.Should().Be(agent.Id);
         evt.Name.Should().Be("Translation Bot");
@@ -77,7 +77,7 @@ public class V4MissingParityTests
         agent.Description.Should().Be("New description");
         agent.Version.Should().Be(2);
 
-        agent.DomainEvents.Should().Contain(e => e is AiAgentUpdatedEvent);
+        agent.DomainEvents.Should().Contain(e => e is AiAgentUpdatedDomainEvent);
     }
 
     [Fact]
@@ -120,19 +120,19 @@ public class V4MissingParityTests
             _now);
 
         run.Status.Should().Be(AiAgentRunStatus.Queued);
-        run.DomainEvents.Should().ContainSingle(e => e is AiAgentRunQueuedEvent);
+        run.DomainEvents.Should().ContainSingle(e => e is AiAgentRunQueuedDomainEvent);
 
         // Transition: Queued -> Running
         run.Start(_now.AddSeconds(1));
         run.Status.Should().Be(AiAgentRunStatus.Running);
-        run.DomainEvents.Should().Contain(e => e is AiAgentRunStartedEvent);
+        run.DomainEvents.Should().Contain(e => e is AiAgentRunStartedDomainEvent);
 
         // Transition: Running -> Succeeded
         var output = JsonValue.Create("{\"result\":\"success\"}");
         run.Succeed(output, _now.AddSeconds(5));
         run.Status.Should().Be(AiAgentRunStatus.Succeeded);
         run.Output.Should().Be(output);
-        run.DomainEvents.Should().Contain(e => e is AiAgentRunSucceededEvent);
+        run.DomainEvents.Should().Contain(e => e is AiAgentRunSucceededDomainEvent);
     }
 
     [Fact]

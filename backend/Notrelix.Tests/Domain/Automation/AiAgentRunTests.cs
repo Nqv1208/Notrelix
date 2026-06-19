@@ -17,7 +17,7 @@ public class AiAgentRunTests
         var run = CreateRun();
 
         run.Status.Should().Be(AiAgentRunStatus.Queued);
-        run.DomainEvents.Should().ContainSingle(e => e is AiAgentRunQueuedEvent);
+        run.DomainEvents.Should().ContainSingle(e => e is AiAgentRunQueuedDomainEvent);
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public class AiAgentRunTests
         run.Start(DateTimeOffset.UtcNow);
 
         run.Status.Should().Be(AiAgentRunStatus.Running);
-        run.DomainEvents.Should().ContainSingle(e => e is AiAgentRunStartedEvent);
+        run.DomainEvents.Should().ContainSingle(e => e is AiAgentRunStartedDomainEvent);
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public class AiAgentRunTests
         run.Succeed(JsonValue.Create("{\"result\":\"ok\"}"), DateTimeOffset.UtcNow);
 
         run.Status.Should().Be(AiAgentRunStatus.Succeeded);
-        run.DomainEvents.Should().ContainSingle(e => e is AiAgentRunSucceededEvent);
+        run.DomainEvents.Should().ContainSingle(e => e is AiAgentRunSucceededDomainEvent);
     }
 
     [Fact]
@@ -94,7 +94,7 @@ public class AiAgentRunTests
         run.Fail(JsonValue.Create("{\"error\":\"timeout\"}"), DateTimeOffset.UtcNow);
 
         run.Status.Should().Be(AiAgentRunStatus.Failed);
-        run.DomainEvents.Should().ContainSingle(e => e is AiAgentRunFailedEvent);
+        run.DomainEvents.Should().ContainSingle(e => e is AiAgentRunFailedDomainEvent);
     }
 
     [Fact]
@@ -124,7 +124,7 @@ public class AiAgentRunTests
         run.Cancel(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         run.Status.Should().Be(AiAgentRunStatus.Cancelled);
-        run.DomainEvents.Should().ContainSingle(e => e is AiAgentRunCancelledEvent);
+        run.DomainEvents.Should().ContainSingle(e => e is AiAgentRunCancelledDomainEvent);
     }
 
     [Fact]

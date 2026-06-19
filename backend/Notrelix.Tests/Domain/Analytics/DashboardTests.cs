@@ -25,7 +25,7 @@ public class DashboardTests
         dashboard.Name.Should().Be("Sales Dashboard");
         dashboard.Visibility.Should().Be(DashboardVisibility.Private);
         dashboard.Status.Should().Be(DashboardStatus.Active);
-        dashboard.DomainEvents.Should().ContainSingle(e => e is DashboardCreatedEvent);
+        dashboard.DomainEvents.Should().ContainSingle(e => e is DashboardCreatedDomainEvent);
     }
 
     [Fact]
@@ -38,7 +38,7 @@ public class DashboardTests
         dashboard.Rename("New Name", actor, now);
 
         dashboard.Name.Should().Be("New Name");
-        dashboard.DomainEvents.Should().Contain(e => e is DashboardRenamedEvent);
+        dashboard.DomainEvents.Should().Contain(e => e is DashboardRenamedDomainEvent);
     }
 
     [Fact]
@@ -51,7 +51,7 @@ public class DashboardTests
         dashboard.ChangeVisibility(DashboardVisibility.Public, actor, now);
 
         dashboard.Visibility.Should().Be(DashboardVisibility.Public);
-        dashboard.DomainEvents.Should().Contain(e => e is DashboardVisibilityChangedEvent);
+        dashboard.DomainEvents.Should().Contain(e => e is DashboardVisibilityChangedDomainEvent);
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public class DashboardTests
         dashboard.Widgets.First().Title.Should().Be("Stats Widget");
         dashboard.Widgets.First().Type.Should().Be(WidgetType.TextWidget);
         dashboard.Widgets.First().Position.Should().Be(position);
-        dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetAddedEvent);
+        dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetAddedDomainEvent);
     }
 
     [Fact]
@@ -100,7 +100,7 @@ public class DashboardTests
         dashboard.MoveWidget(widgetId, position2, actor, now);
 
         dashboard.Widgets.First().Position.Should().Be(position2);
-        dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetMovedEvent);
+        dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetMovedDomainEvent);
     }
 
     [Fact]
@@ -117,7 +117,7 @@ public class DashboardTests
         dashboard.RemoveWidget(widgetId, actor, now);
 
         dashboard.Widgets.Should().BeEmpty();
-        dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetRemovedEvent);
+        dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetRemovedDomainEvent);
     }
 
     [Fact]

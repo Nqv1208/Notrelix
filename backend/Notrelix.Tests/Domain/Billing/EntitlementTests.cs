@@ -216,7 +216,7 @@ public class EntitlementTests
         entitlement.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         entitlement.IsDeleted.Should().BeTrue();
-        entitlement.DomainEvents.Should().Contain(e => e is EntitlementSoftDeletedEvent);
+        entitlement.DomainEvents.Should().Contain(e => e is EntitlementSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -241,7 +241,7 @@ public class EntitlementTests
         entitlement.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         entitlement.IsDeleted.Should().BeFalse();
-        entitlement.DomainEvents.Should().Contain(e => e is EntitlementRestoredEvent);
+        entitlement.DomainEvents.Should().Contain(e => e is EntitlementRestoredDomainEvent);
     }
 
     [Fact]

@@ -23,7 +23,7 @@ public class ResourceLinkTests
         link.Source.Should().Be(source);
         link.Target.Should().Be(target);
         link.Type.Should().Be(LinkType.Internal);
-        link.DomainEvents.Should().ContainSingle(e => e is ResourceLinkCreatedEvent);
+        link.DomainEvents.Should().ContainSingle(e => e is ResourceLinkCreatedDomainEvent);
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public class ResourceLinkTests
         link.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         link.IsDeleted.Should().BeTrue();
-        link.DomainEvents.Should().ContainSingle(e => e is ResourceLinkDeletedEvent);
+        link.DomainEvents.Should().ContainSingle(e => e is ResourceLinkDeletedDomainEvent);
     }
 
     [Fact]

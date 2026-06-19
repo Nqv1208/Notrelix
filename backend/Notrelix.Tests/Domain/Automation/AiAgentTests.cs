@@ -17,7 +17,7 @@ public class AiAgentTests
         agent.Name.Should().Be("Test Agent");
         agent.Status.Should().Be(AiAgentStatus.Draft);
         agent.ScopeType.Should().Be(AiAgentScopeType.Workspace);
-        agent.DomainEvents.Should().ContainSingle(e => e is AiAgentCreatedEvent);
+        agent.DomainEvents.Should().ContainSingle(e => e is AiAgentCreatedDomainEvent);
     }
 
     [Fact]
@@ -41,7 +41,7 @@ public class AiAgentTests
 
         agent.Name.Should().Be("Updated");
         agent.Description.Should().Be("Desc");
-        agent.DomainEvents.Should().ContainSingle(e => e is AiAgentUpdatedEvent);
+        agent.DomainEvents.Should().ContainSingle(e => e is AiAgentUpdatedDomainEvent);
     }
 
     [Fact]
@@ -63,7 +63,7 @@ public class AiAgentTests
         agent.ChangeStatus(AiAgentStatus.Enabled, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         agent.Status.Should().Be(AiAgentStatus.Enabled);
-        agent.DomainEvents.Should().ContainSingle(e => e is AiAgentStatusChangedEvent);
+        agent.DomainEvents.Should().ContainSingle(e => e is AiAgentStatusChangedDomainEvent);
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public class AiAgentTests
 
         agent.IsDeleted.Should().BeTrue();
         agent.Status.Should().Be(AiAgentStatus.Deleted);
-        agent.DomainEvents.Should().ContainSingle(e => e is AiAgentStatusChangedEvent);
+        agent.DomainEvents.Should().ContainSingle(e => e is AiAgentStatusChangedDomainEvent);
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public class AiAgentTests
 
         agent.IsDeleted.Should().BeTrue();
         agent.Status.Should().Be(AiAgentStatus.Deleted);
-        agent.DomainEvents.Should().ContainSingle(e => e is AiAgentStatusChangedEvent);
+        agent.DomainEvents.Should().ContainSingle(e => e is AiAgentStatusChangedDomainEvent);
     }
 
     [Fact]
@@ -136,7 +136,7 @@ public class AiAgentTests
 
         agent.IsDeleted.Should().BeFalse();
         agent.Status.Should().Be(AiAgentStatus.Draft);
-        agent.DomainEvents.Should().ContainSingle(e => e is AiAgentStatusChangedEvent);
+        agent.DomainEvents.Should().ContainSingle(e => e is AiAgentStatusChangedDomainEvent);
     }
 
     [Fact]

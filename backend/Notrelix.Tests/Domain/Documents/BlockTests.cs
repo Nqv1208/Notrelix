@@ -23,7 +23,7 @@ public class BlockTests
         block.PageId.Should().Be(pageId);
         block.Type.Should().Be(BlockType.Text);
         block.Content.Should().Be(content);
-        block.DomainEvents.Should().ContainSingle(e => e is BlockCreatedEvent);
+        block.DomainEvents.Should().ContainSingle(e => e is BlockCreatedDomainEvent);
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public class BlockTests
 
         block.Content.Should().Be(newContent);
         block.UpdatedBy.Should().Be(updatedBy);
-        block.DomainEvents.Should().ContainSingle(e => e is BlockContentUpdatedEvent);
+        block.DomainEvents.Should().ContainSingle(e => e is BlockContentUpdatedDomainEvent);
     }
 
     [Fact]
@@ -84,7 +84,7 @@ public class BlockTests
         block.UpdateProperties(newProps, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         block.Properties.Should().Be(newProps);
-        block.DomainEvents.Should().ContainSingle(e => e is BlockPropertiesUpdatedEvent);
+        block.DomainEvents.Should().ContainSingle(e => e is BlockPropertiesUpdatedDomainEvent);
     }
 
     [Fact]
@@ -120,7 +120,7 @@ public class BlockTests
         block.Move(null, newPosition, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         block.Position.Should().Be(newPosition);
-        block.DomainEvents.Should().ContainSingle(e => e is BlockMovedEvent);
+        block.DomainEvents.Should().ContainSingle(e => e is BlockMovedDomainEvent);
     }
 
     [Fact]
@@ -153,7 +153,7 @@ public class BlockTests
         block.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         block.IsDeleted.Should().BeTrue();
-        block.DomainEvents.Should().ContainSingle(e => e is BlockSoftDeletedEvent);
+        block.DomainEvents.Should().ContainSingle(e => e is BlockSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -178,7 +178,7 @@ public class BlockTests
         block.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         block.IsDeleted.Should().BeFalse();
-        block.DomainEvents.Should().ContainSingle(e => e is BlockRestoredEvent);
+        block.DomainEvents.Should().ContainSingle(e => e is BlockRestoredDomainEvent);
     }
 
     [Fact]

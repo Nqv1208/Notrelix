@@ -22,7 +22,7 @@ public class AttachmentTests
         attachment.Target.Should().Be(target);
         attachment.Type.Should().Be(AttachmentType.Document);
         attachment.Metadata.Should().Be(metadata);
-        attachment.DomainEvents.Should().ContainSingle(e => e is AttachmentCreatedEvent);
+        attachment.DomainEvents.Should().ContainSingle(e => e is AttachmentCreatedDomainEvent);
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public class AttachmentTests
         attachment.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         attachment.IsDeleted.Should().BeTrue();
-        attachment.DomainEvents.Should().ContainSingle(e => e is AttachmentDeletedEvent);
+        attachment.DomainEvents.Should().ContainSingle(e => e is AttachmentDeletedDomainEvent);
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public class AttachmentTests
         attachment.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         attachment.IsDeleted.Should().BeFalse();
-        attachment.DomainEvents.Should().ContainSingle(e => e is AttachmentRestoredEvent);
+        attachment.DomainEvents.Should().ContainSingle(e => e is AttachmentRestoredDomainEvent);
     }
 
     [Fact]

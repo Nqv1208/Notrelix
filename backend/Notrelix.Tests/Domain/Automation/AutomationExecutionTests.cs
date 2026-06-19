@@ -15,7 +15,7 @@ public class AutomationExecutionTests
 
         execution.Status.Should().Be(AutomationExecutionStatus.Queued);
         execution.AttemptCount.Should().Be(0);
-        execution.DomainEvents.Should().ContainSingle(e => e is AutomationExecutionQueuedEvent);
+        execution.DomainEvents.Should().ContainSingle(e => e is AutomationExecutionQueuedDomainEvent);
     }
 
     [Fact]
@@ -37,7 +37,7 @@ public class AutomationExecutionTests
         execution.Start(DateTimeOffset.UtcNow);
 
         execution.Status.Should().Be(AutomationExecutionStatus.Running);
-        execution.DomainEvents.Should().ContainSingle(e => e is AutomationExecutionStartedEvent);
+        execution.DomainEvents.Should().ContainSingle(e => e is AutomationExecutionStartedDomainEvent);
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public class AutomationExecutionTests
         execution.Succeed(DateTimeOffset.UtcNow);
 
         execution.Status.Should().Be(AutomationExecutionStatus.Succeeded);
-        execution.DomainEvents.Should().ContainSingle(e => e is AutomationExecutionSucceededEvent);
+        execution.DomainEvents.Should().ContainSingle(e => e is AutomationExecutionSucceededDomainEvent);
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public class AutomationExecutionTests
 
         execution.Status.Should().Be(AutomationExecutionStatus.Failed);
         execution.Error.Should().Be("Timeout");
-        execution.DomainEvents.Should().ContainSingle(e => e is AutomationExecutionFailedEvent);
+        execution.DomainEvents.Should().ContainSingle(e => e is AutomationExecutionFailedDomainEvent);
     }
 
     [Fact]
@@ -113,7 +113,7 @@ public class AutomationExecutionTests
         execution.Cancel(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         execution.Status.Should().Be(AutomationExecutionStatus.Cancelled);
-        execution.DomainEvents.Should().ContainSingle(e => e is AutomationExecutionCancelledEvent);
+        execution.DomainEvents.Should().ContainSingle(e => e is AutomationExecutionCancelledDomainEvent);
     }
 
     [Fact]

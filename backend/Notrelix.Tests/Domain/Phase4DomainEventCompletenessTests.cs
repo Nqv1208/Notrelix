@@ -50,7 +50,7 @@ public class Phase4DomainEventCompletenessTests
 
                     if (actorProp != null && actorProp.GetValue(evt) is Guid guid)
                     {
-                        guid.Should().NotBe(Guid.Empty, $"Event {evt.GetType().Name} should not have Guid.Empty actor");
+                        guid.Should().NotBe(Guid.Empty, $"DomainEvent {evt.GetType().Name} should not have Guid.Empty actor");
                     }
                 }
             }

@@ -17,7 +17,7 @@ public class AutomationTemplateTests
         template.Category.Should().Be("Notifications");
         template.Definition.Should().Be(definition);
         template.Status.Should().Be(AutomationTemplateStatus.Published);
-        template.DomainEvents.Should().ContainSingle(e => e is AutomationTemplateCreatedEvent);
+        template.DomainEvents.Should().ContainSingle(e => e is AutomationTemplateCreatedDomainEvent);
     }
 
     [Fact]

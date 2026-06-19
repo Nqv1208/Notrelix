@@ -23,7 +23,7 @@ public class ReactionTests
         reaction.Target.Should().Be(target);
         reaction.UserId.Should().Be(userId);
         reaction.Emoji.Should().Be(emoji);
-        reaction.DomainEvents.Should().ContainSingle(e => e is ReactionCreatedEvent);
+        reaction.DomainEvents.Should().ContainSingle(e => e is ReactionCreatedDomainEvent);
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public class ReactionTests
 
         reaction.Remove(DateTimeOffset.UtcNow);
 
-        reaction.DomainEvents.Should().ContainSingle(e => e is ReactionRemovedEvent);
+        reaction.DomainEvents.Should().ContainSingle(e => e is ReactionRemovedDomainEvent);
     }
 
     private static Reaction CreateReaction()

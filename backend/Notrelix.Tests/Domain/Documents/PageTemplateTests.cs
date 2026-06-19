@@ -21,7 +21,7 @@ public class PageTemplateTests
 
         template.Name.Should().Be("Meeting Notes");
         template.Status.Should().Be(PageTemplateStatus.Draft);
-        template.DomainEvents.Should().ContainSingle(e => e is PageTemplateCreatedEvent);
+        template.DomainEvents.Should().ContainSingle(e => e is PageTemplateCreatedDomainEvent);
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public class PageTemplateTests
         template.Publish(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         template.Status.Should().Be(PageTemplateStatus.Published);
-        template.DomainEvents.Should().ContainSingle(e => e is PageTemplatePublishedEvent);
+        template.DomainEvents.Should().ContainSingle(e => e is PageTemplatePublishedDomainEvent);
     }
 
     [Fact]
