@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Notrelix.Infrastructure;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Middleware;
-using Notrelix.API.Middleware;
+using Notrelix.API.ErrorHandling;
 using Notrelix.API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,6 +11,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.AddApplicationServices();
 builder.AddWebServices();
+
+// Error handling — ProblemDetails RFC 7807
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
@@ -39,7 +43,7 @@ if (app.Configuration.GetValue<bool>("SeedData:Enabled"))
 
 // Middleware pipeline
 app.UseForwardedHeaders();
-app.UseExceptionHandling();
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
