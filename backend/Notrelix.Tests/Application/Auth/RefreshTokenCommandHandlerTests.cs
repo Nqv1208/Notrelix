@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Features.Identity.Commands.RefreshToken;
-using Notrelix.Domain.Entities.Identity;
+using Notrelix.Application.Features.Identity.Auth.Commands.RefreshToken;
+using Notrelix.Domain.Identity.Users;
+using Notrelix.Domain.Identity.Sessions;
 
 namespace Notrelix.Application.Tests.Auth;
 
@@ -13,7 +14,9 @@ public class RefreshTokenCommandHandlerTests
         using var context = AuthTestDbContextFactory.CreateInMemoryContext();
 
         var jwtService = new Mock<IJwtService>();
-        var handler = new RefreshTokenCommandHandler(context, jwtService.Object);
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
+        var handler = new RefreshTokenCommandHandler(context, jwtService.Object, dateTimeProvider.Object);
 
         var result = await handler.Handle(new RefreshTokenCommand
         {
@@ -29,11 +32,11 @@ public class RefreshTokenCommandHandlerTests
     {
         using var context = AuthTestDbContextFactory.CreateInMemoryContext();
 
-        var user = User.Create("refresh@example.com", "Refresh User", "hashed");
+        var user = User.Create("refresh@example.com", "Refresh User", "hashed", DateTimeOffset.UtcNow);
         context.Users.Add(user);
 
         var oldRefreshToken = "old-refresh";
-        var session = Session.Create(user.Id, oldRefreshToken, DateTime.UtcNow.AddMinutes(10));
+        var session = UserSession.Create(user.Id, RefreshTokenHash.Create(oldRefreshToken), DateTimeOffset.UtcNow.AddMinutes(10), DateTimeOffset.UtcNow);
         context.Sessions.Add(session);
         await context.SaveChangesAsync();
 
@@ -41,7 +44,9 @@ public class RefreshTokenCommandHandlerTests
         jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>())).Returns("new-access-token");
         jwtService.Setup(x => x.GenerateRefreshToken()).Returns("new-refresh-token");
 
-        var handler = new RefreshTokenCommandHandler(context, jwtService.Object);
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
+        var handler = new RefreshTokenCommandHandler(context, jwtService.Object, dateTimeProvider.Object);
 
         var result = await handler.Handle(new RefreshTokenCommand
         {
@@ -53,11 +58,11 @@ public class RefreshTokenCommandHandlerTests
         result.Data!.RefreshToken.Should().Be("new-refresh-token");
 
         // Old session should be revoked
-        var old = await context.Sessions.FirstAsync(s => s.RefreshToken == oldRefreshToken);
-        old.IsRevoked.Should().BeTrue();
+        var old = await context.Sessions.FirstAsync(s => s.RefreshTokenHash == RefreshTokenHash.Create(oldRefreshToken));
+        old.Status.Should().Be(SessionStatus.Revoked);
 
         // New session should exist
         (await context.Sessions.ToListAsync()).Should().HaveCount(2);
-        (await context.Sessions.AnyAsync(s => s.RefreshToken == "new-refresh-token")).Should().BeTrue();
+        (await context.Sessions.AnyAsync(s => s.RefreshTokenHash == RefreshTokenHash.Create("new-refresh-token"))).Should().BeTrue();
     }
 }

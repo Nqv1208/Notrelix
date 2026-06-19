@@ -2,8 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using MediatR;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Features.Identity.Commands.Register;
-using Notrelix.Domain.Entities.Identity;
+using Notrelix.Application.Features.Identity.Auth.Commands.Register;
+using Notrelix.Domain.Identity.Users;
 using Notrelix.Infrastructure.Data.Interceptors;
 
 namespace Notrelix.Application.Tests.Auth;
@@ -15,14 +15,16 @@ public class RegisterCommandHandlerTests
     {
         using var context = AuthTestDbContextFactory.CreateInMemoryContext();
 
-        var existing = User.Create("test@example.com", "Old", "hash");
+        var existing = User.Create("test@example.com", "Old", "hash", DateTimeOffset.UtcNow);
         context.Users.Add(existing);
         await context.SaveChangesAsync();
 
         var passwordHasher = new Mock<IPasswordHasher>();
         var jwtService = new Mock<IJwtService>();
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
 
-        var handler = new RegisterCommandHandler(context, passwordHasher.Object, jwtService.Object);
+        var handler = new RegisterCommandHandler(context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object);
 
         var result = await handler.Handle(new RegisterCommand
         {
@@ -51,7 +53,9 @@ public class RegisterCommandHandlerTests
         jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>())).Returns("access-token");
         jwtService.Setup(x => x.GenerateRefreshToken()).Returns("refresh-token");
 
-        var handler = new RegisterCommandHandler(context, passwordHasher.Object, jwtService.Object);
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
+        var handler = new RegisterCommandHandler(context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object);
 
         var now = DateTime.UtcNow;
         var result = await handler.Handle(new RegisterCommand
@@ -75,7 +79,10 @@ public class RegisterCommandHandlerTests
     public async Task Handle_WhenValidAndDomainEventInterceptorEnabled_ShouldCreateUserWorkspaceMemberAndSession()
     {
         var mediator = CreateMediatorRejectingNonNotifications();
-        var interceptor = new DomainEventInterceptor(mediator.Object);
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        var eventTypeRegistry = new Mock<IEventTypeRegistry>();
+        var integrationEventMapper = new Mock<IIntegrationEventMapper>();
+        var interceptor = new DomainEventInterceptor(dateTimeProvider.Object, eventTypeRegistry.Object, integrationEventMapper.Object);
         using var context = AuthTestDbContextFactory.CreateInMemoryContext(interceptor);
 
         var passwordHasher = new Mock<IPasswordHasher>();
@@ -84,8 +91,8 @@ public class RegisterCommandHandlerTests
         var jwtService = new Mock<IJwtService>();
         jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>())).Returns("access-token");
         jwtService.Setup(x => x.GenerateRefreshToken()).Returns("refresh-token");
-
-        var handler = new RegisterCommandHandler(context, passwordHasher.Object, jwtService.Object);
+        dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
+        var handler = new RegisterCommandHandler(context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object);
 
         AuthResult? authResult = null;
         var act = async () =>

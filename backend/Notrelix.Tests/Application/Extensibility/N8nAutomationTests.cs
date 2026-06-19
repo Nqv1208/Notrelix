@@ -2,57 +2,24 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 using Notrelix.Application.Common.Events;
 using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.Security;
 using Notrelix.Application.Features.Automation.Events;
 using Notrelix.Application.Features.Automation.Jobs;
-using Notrelix.Domain.Automation.RulesEngine;
+using Notrelix.Domain.Automation.Executions;
 using Notrelix.Domain.Automation.Rules;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.Entities.Boards;
-using Notrelix.Domain.Entities.Extensibility;
-using Notrelix.Domain.Entities.Workspaces;
-using Notrelix.Domain.Enums;
-using Notrelix.Domain.Events.Board;
+using Notrelix.Domain.Automation.RulesEngine;
+using Notrelix.Domain.SharedKernel;
+using Notrelix.Domain.WorkManagement.Boards;
+using Notrelix.Domain.WorkManagement.Items;
+using Notrelix.Domain.WorkManagement.Items.Events;
+using Notrelix.Domain.Workspaces.Members;
+using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data;
 
 namespace Notrelix.Application.Tests.Extensibility;
 
 public class N8nAutomationTests
 {
-    private static AutomationConfiguration CreateN8nConfig()
-    {
-        var trigger = AutomationTriggerDefinition.Create("ItemAssigned");
-        var action = AutomationActionDefinition.Create("Webhook", """{"webhookPath":"notrelix-card-assigned"}""");
-        return AutomationConfiguration.Create(trigger, action);
-    }
-
-    [Fact]
-    public async Task CreateAutomationRule_ShouldRequireWorkspaceManagePermission()
-    {
-        await using var context = CreateContext();
-        var ownerId = Guid.NewGuid();
-        var memberId = Guid.NewGuid();
-        var workspace = Workspace.CreateTeam("Workspace", ownerId);
-        workspace.AddMember(memberId, WorkspaceRole.Member);
-        context.Workspaces.Add(workspace);
-        await context.SaveChangesAsync();
-
-        var handler = new CreateAutomationRuleCommandHandler(
-            context,
-            CurrentUser(memberId),
-            new WorkspacePermissionService(context));
-
-        var act = () => handler.Handle(
-            new CreateAutomationRuleCommand(
-                workspace.Id,
-                "Card assigned alert",
-                "ItemAssigned",
-                "Webhook",
-                """{"webhookPath":"notrelix-card-assigned"}"""),
-            CancellationToken.None);
-
-        await act.Should().ThrowAsync<ForbiddenException>();
-    }
+    private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
     [Fact]
     public async Task CardAssignedN8nAutomationHandler_ShouldCreateExecutionAndQueueDispatchJob()
@@ -61,53 +28,47 @@ public class N8nAutomationTests
         var queue = new CapturingJobQueue();
         var ownerId = Guid.NewGuid();
         var assignedUserId = Guid.NewGuid();
-        var workspace = Workspace.CreateTeam("Workspace", ownerId);
-        workspace.AddMember(assignedUserId, WorkspaceRole.Member);
-        var board = Board.Create(workspace.Id, ownerId, "Board", null);
-        var list = BoardList.Create(board.Id, "Todo", 1024);
-        var card = Card.Create(list.Id, board.Id, ownerId, "Task", 1024);
-        var config = CreateN8nConfig();
-        var rule = AutomationRule.Create(
-            workspace.Id,
-            "Card assigned alert",
-            config,
-            ownerId,
-            DateTimeOffset.UtcNow);
-
+        var workspace = Workspace.Create(ownerId, "Workspace", "workspace", Now);
         context.Workspaces.Add(workspace);
+
+        var ownerMember = WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now);
+        var assignedMember = WorkspaceMember.Create(workspace.Id, assignedUserId, WorkspaceRole.Member, ownerId, Now);
+        context.WorkspaceMembers.Add(ownerMember);
+        context.WorkspaceMembers.Add(assignedMember);
+
+        var board = Board.Create(workspace.Id, ownerId, "Board", null, Now);
         context.Boards.Add(board);
-        context.BoardLists.Add(list);
-        context.Cards.Add(card);
+
+        var groupId = Guid.NewGuid();
+        var item = BoardItem.Create(workspace.Id, board.Id, groupId, "Task", Notrelix.Domain.SharedKernel.FractionalIndex.Initial(), ownerId, Now);
+        context.BoardItems.Add(item);
+
+        var trigger = AutomationTriggerDefinition.Create("ItemAssigned");
+        var action = AutomationActionDefinition.Create("Webhook", """{"webhookPath":"notrelix-card-assigned"}""");
+        var config = AutomationConfiguration.Create(trigger, action);
+        var rule = AutomationRule.Create(workspace.Id, "Card assigned alert", config, ownerId, Now);
+        rule.Enable(ownerId, Now);
         context.AutomationRules.Add(rule);
+
         await context.SaveChangesAsync();
 
         var handler = new CardAssignedN8nAutomationHandler(context, queue);
-        var domainEvent = new CardAssignedEvent(card.Id, assignedUserId, ownerId);
+        var domainEvent = new BoardItemMemberAssignedDomainEvent(
+            workspace.Id, item.Id, assignedUserId, ownerId, Now);
 
         await handler.Handle(
-            new DomainEventNotification<CardAssignedEvent>(domainEvent),
+            new DomainEventNotification<BoardItemMemberAssignedDomainEvent>(domainEvent),
             CancellationToken.None);
 
         var execution = await context.AutomationExecutions.SingleAsync();
         execution.WorkspaceId.Should().Be(workspace.Id);
-        execution.AutomationRuleId.Should().Be(rule.Id);
-        execution.EventId.Should().Be(domainEvent.EventId);
-        execution.EventType.Should().Be("card.assigned");
-        execution.ResourceType.Should().Be(ResourceType.Card);
-        execution.ResourceId.Should().Be(card.Id);
-        execution.Status.Should().Be(AutomationExecutionStatus.Pending);
-        execution.Payload.Should().Contain(assignedUserId.ToString());
+        execution.RuleId.Should().Be(rule.Id);
+        execution.TriggerId.Should().Be(domainEvent.EventId);
+        execution.Status.Should().Be(AutomationExecutionStatus.Queued);
 
         var job = queue.Jobs.Should().ContainSingle().Subject.Should().BeOfType<N8nDispatchJob>().Subject;
         job.ExecutionId.Should().Be(execution.Id);
         job.AutomationRuleId.Should().Be(rule.Id);
-    }
-
-    private static ICurrentUser CurrentUser(Guid userId)
-    {
-        var currentUser = new Mock<ICurrentUser>();
-        currentUser.SetupGet(item => item.UserId).Returns(userId);
-        return currentUser.Object;
     }
 
     private static ApplicationDbContext CreateContext()

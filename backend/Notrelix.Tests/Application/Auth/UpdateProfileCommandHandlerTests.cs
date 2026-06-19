@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Features.Identity.Commands.UpdateProfile;
-using Notrelix.Domain.Entities.Identity;
+using Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile;
+using Notrelix.Application.Common.Abstractions;
+using Notrelix.Domain.Identity.Users;
 
 namespace Notrelix.Application.Tests.Auth;
 
@@ -11,11 +12,13 @@ public class UpdateProfileCommandHandlerTests
     {
         using var context = AuthTestDbContextFactory.CreateInMemoryContext();
 
-        var user = User.Create("avatar@example.com", "Old Name", "hashed");
+        var user = User.Create("avatar@example.com", "Old Name", "hashed", DateTimeOffset.UtcNow);
         context.Users.Add(user);
         await context.SaveChangesAsync();
 
-        var handler = new UpdateProfileCommandHandler(context);
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
+        var handler = new UpdateProfileCommandHandler(context, dateTimeProvider.Object);
 
         var result = await handler.Handle(new UpdateProfileCommand
         {
@@ -38,7 +41,8 @@ public class UpdateProfileCommandHandlerTests
     {
         using var context = AuthTestDbContextFactory.CreateInMemoryContext();
 
-        var handler = new UpdateProfileCommandHandler(context);
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        var handler = new UpdateProfileCommandHandler(context, dateTimeProvider.Object);
 
         var result = await handler.Handle(new UpdateProfileCommand
         {

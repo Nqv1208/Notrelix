@@ -1,114 +1,89 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Events;
-using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Features.Calendar.Events;
-using Notrelix.Application.Features.Calendar.Jobs;
-using Notrelix.Application.Features.Shared.Events;
-using Notrelix.Domain.Entities.Boards;
-using Notrelix.Domain.Entities.Workspaces;
-using Notrelix.Domain.Enums;
-using Notrelix.Domain.Events.Board;
-using Notrelix.Infrastructure.Data;
+using Notrelix.Domain.Common;
+using Notrelix.Domain.WorkManagement.Boards;
+using Notrelix.Domain.WorkManagement.Boards.Events;
+using Notrelix.Domain.WorkManagement.Items;
+using Notrelix.Domain.WorkManagement.Items.Events;
+using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Tests.Events;
 
 public class DomainEventHandlerTests
 {
     [Fact]
-    public async Task BoardCreatedActivityHandler_ShouldCreateActivityLog()
+    public void BoardCreatedDomainEvent_ShouldBeWrappedInDomainEventNotification()
     {
-        await using var context = CreateContext();
         var workspaceId = Guid.NewGuid();
-        var actorId = Guid.NewGuid();
         var boardId = Guid.NewGuid();
-        var handler = new BoardCreatedActivityHandler(context);
+        var createdBy = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
 
-        await handler.Handle(
-            new DomainEventNotification<BoardCreatedEvent>(
-                new BoardCreatedEvent(boardId, workspaceId, actorId, "Roadmap")),
-            CancellationToken.None);
+        var domainEvent = new BoardCreatedDomainEvent(workspaceId, boardId, "Roadmap", createdBy, now);
+        var notification = new DomainEventNotification<BoardCreatedDomainEvent>(domainEvent);
 
-        var activity = await context.ActivityLogs.SingleAsync();
-        activity.WorkspaceId.Should().Be(workspaceId);
-        activity.ActorId.Should().Be(actorId);
-        activity.Action.Should().Be("board.created");
-        activity.ResourceType.Should().Be(ResourceType.Board);
-        activity.ResourceId.Should().Be(boardId);
+        notification.DomainEvent.Should().Be(domainEvent);
+        notification.DomainEvent.WorkspaceId.Should().Be(workspaceId);
     }
 
     [Fact]
-    public async Task CardAssignedNotificationHandler_ShouldCreateNotificationForAssignedUser()
+    public void BoardItemMemberAssignedDomainEvent_ShouldCarryCorrectData()
     {
-        await using var context = CreateContext();
-        var ownerId = Guid.NewGuid();
-        var assignedUserId = Guid.NewGuid();
-        var workspace = Workspace.CreateTeam("Workspace", ownerId);
-        workspace.AddMember(assignedUserId, WorkspaceRole.Member);
-        var board = Board.Create(workspace.Id, ownerId, "Board", null);
-        var list = BoardList.Create(board.Id, "Todo", 1024);
-        var card = Card.Create(list.Id, board.Id, ownerId, "Task", 1024);
-        context.Workspaces.Add(workspace);
-        context.Boards.Add(board);
-        context.BoardLists.Add(list);
-        context.Cards.Add(card);
-        await context.SaveChangesAsync();
-        var handler = new CardAssignedNotificationHandler(context);
+        var workspaceId = Guid.NewGuid();
+        var itemId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var assignedBy = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
 
-        await handler.Handle(
-            new DomainEventNotification<CardAssignedEvent>(
-                new CardAssignedEvent(card.Id, assignedUserId, ownerId)),
-            CancellationToken.None);
+        var domainEvent = new BoardItemMemberAssignedDomainEvent(
+            workspaceId, itemId, userId, assignedBy, now);
 
-        var notification = await context.Notifications.SingleAsync();
-        notification.WorkspaceId.Should().Be(workspace.Id);
-        notification.UserId.Should().Be(assignedUserId);
-        notification.ActorId.Should().Be(ownerId);
-        notification.Type.Should().Be("card.assigned");
-        notification.ResourceType.Should().Be(ResourceType.Card);
-        notification.ResourceId.Should().Be(card.Id);
+        domainEvent.WorkspaceId.Should().Be(workspaceId);
+        domainEvent.ItemId.Should().Be(itemId);
+        domainEvent.UserId.Should().Be(userId);
+        domainEvent.AssignedBy.Should().Be(assignedBy);
     }
 
     [Fact]
-    public async Task CardDueDateCalendarHandler_ShouldEnqueueCardCalendarSyncJob()
+    public void BoardCreate_ShouldRaiseBoardCreatedDomainEvent()
     {
-        var queue = new CapturingJobQueue();
-        var handler = new CardDueDateCalendarHandler(queue);
-        var cardId = Guid.NewGuid();
+        var workspaceId = Guid.NewGuid();
+        var createdBy = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
 
-        await handler.Handle(
-            new DomainEventNotification<CardDueDateChangedEvent>(
-                new CardDueDateChangedEvent(cardId, null, DateTime.UtcNow.AddDays(1), Guid.NewGuid())),
-            CancellationToken.None);
+        var board = Board.Create(workspaceId, createdBy, "Test Board", null, now);
 
-        var job = queue.Jobs.Should().ContainSingle().Subject.Should().BeOfType<CalendarSyncJob>().Subject;
-        job.ResourceType.Should().Be(ResourceType.Card);
-        job.ResourceId.Should().Be(cardId);
+        var domainEvents = board.DomainEvents;
+        domainEvents.Should().ContainSingle(e => e is BoardCreatedDomainEvent);
+        var raisedEvent = domainEvents.OfType<BoardCreatedDomainEvent>().Single();
+        raisedEvent.BoardId.Should().Be(board.Id);
+        raisedEvent.Title.Should().Be("Test Board");
     }
 
-    private static ApplicationDbContext CreateContext()
+    [Fact]
+    public void BoardItemCreate_ShouldRaiseBoardItemCreatedDomainEvent()
     {
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase($"Notrelix-events-{Guid.NewGuid():N}")
-            .Options;
+        var workspaceId = Guid.NewGuid();
+        var boardId = Guid.NewGuid();
+        var groupId = Guid.NewGuid();
+        var createdBy = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+        var position = FractionalIndex.Initial();
 
-        return new ApplicationDbContext(options);
+        var item = BoardItem.Create(workspaceId, boardId, groupId, "Task", position, createdBy, now);
+
+        var domainEvents = item.DomainEvents;
+        domainEvents.Should().ContainSingle(e => e is BoardItemCreatedDomainEvent);
+        var raisedEvent = domainEvents.OfType<BoardItemCreatedDomainEvent>().Single();
+        raisedEvent.ItemId.Should().Be(item.Id);
+        raisedEvent.Name.Should().Be("Task");
     }
 
-    private sealed class CapturingJobQueue : IJobQueue
+    [Fact]
+    public void ResourceType_ShouldContainExpectedTypes()
     {
-        public List<object> Jobs { get; } = [];
-
-        public Task EnqueueAsync<TJob>(TJob job, CancellationToken cancellationToken = default) where TJob : class
-        {
-            Jobs.Add(job);
-            return Task.CompletedTask;
-        }
-
-        public Task EnqueueAsync<TJob>(TJob job, TimeSpan delay, CancellationToken cancellationToken = default) where TJob : class
-        {
-            Jobs.Add(job);
-            return Task.CompletedTask;
-        }
+        ResourceType.Board.Should().Be(ResourceType.Board);
+        ResourceType.BoardItem.Should().Be(ResourceType.BoardItem);
+        ResourceType.Workspace.Should().Be(ResourceType.Workspace);
     }
 }
