@@ -1,28 +1,50 @@
-using Microsoft.Extensions.Hosting;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.OpenApi.Models;
+using Notrelix.API.ErrorHandling;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
 public static class DependencyInjection
 {
-    public static void AddWebServices(this IHostApplicationBuilder builder)
+    public static IServiceCollection AddApiLayer(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
-        var services = builder.Services;
-        
-        services.AddCorsPolicy(builder.Configuration, "Frontend");
-        services.AddSwagger();
-        services.AddRouting(options =>
-        {
-            options.LowercaseUrls = true;
-            options.LowercaseQueryStrings = true;
-        });
+        services.AddApiProblemDetails();
+        services.AddApiCors(configuration);
+        services.AddApiSwagger();
+        services.AddApiRouting();
+        services.AddApiForwardedHeaders();
 
+        return services;
     }
 
-    public static IServiceCollection AddSwagger(this IServiceCollection services)
+    public static IServiceCollection AddApiProblemDetails(this IServiceCollection services)
     {
-        // Swagger với JWT support
+        services.AddProblemDetails(ProblemDetailsOptionsSetup.Customize);
+        services.AddExceptionHandler<GlobalExceptionHandler>();
+        return services;
+    }
+
+    public static IServiceCollection AddApiCors(this IServiceCollection services, IConfiguration configuration)
+    {
+        var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+        services.AddCors(options =>
+        {
+            options.AddPolicy("Frontend", builder =>
+            {
+                builder.WithOrigins(allowedOrigins)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+            });
+        });
+        return services;
+    }
+
+    public static IServiceCollection AddApiSwagger(this IServiceCollection services)
+    {
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
         {
@@ -30,7 +52,7 @@ public static class DependencyInjection
             {
                 Title = "Notrelix API",
                 Version = "v1",
-                Description = "API for workspace, docs (pages/blocks) and boards (lists/cards)"
+                Description = "Notrelix Enterprise Work Management API",
             });
 
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -40,7 +62,7 @@ public static class DependencyInjection
                 In = ParameterLocation.Header,
                 Type = SecuritySchemeType.Http,
                 Scheme = "bearer",
-                BearerFormat = "JWT"
+                BearerFormat = "JWT",
             });
 
             options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -51,30 +73,37 @@ public static class DependencyInjection
                         Reference = new OpenApiReference
                         {
                             Type = ReferenceType.SecurityScheme,
-                            Id = "Bearer"
-                        }
+                            Id = "Bearer",
+                        },
                     },
                     Array.Empty<string>()
-                }
+                },
             });
         });
-
         return services;
     }
 
-    public static IServiceCollection AddCorsPolicy(this IServiceCollection services, IConfiguration configuration, string policyName)
+    public static IServiceCollection AddApiRouting(this IServiceCollection services)
     {
-
-        var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
-        services.AddCors(options =>
+        services.AddRouting(options =>
         {
-            options.AddPolicy(policyName, builder =>
-            {
-                builder.WithOrigins(allowedOrigins)
-                    .AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .AllowCredentials();
-            });
+            options.LowercaseUrls = true;
+            options.LowercaseQueryStrings = true;
+        });
+        return services;
+    }
+
+    public static IServiceCollection AddApiForwardedHeaders(this IServiceCollection services)
+    {
+        services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders =
+                ForwardedHeaders.XForwardedFor |
+                ForwardedHeaders.XForwardedProto |
+                ForwardedHeaders.XForwardedHost;
+
+            options.KnownNetworks.Clear();
+            options.KnownProxies.Clear();
         });
         return services;
     }

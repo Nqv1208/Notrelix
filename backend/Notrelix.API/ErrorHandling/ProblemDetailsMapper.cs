@@ -16,14 +16,14 @@ public static class ProblemDetailsMapper
 {
     public static ProblemDetails Map(HttpContext context, Exception exception)
     {
-        var (statusCode, errorCode, title, detail, errors) = exception switch
+        (int StatusCode, string ErrorCode, string Title, string Detail, IReadOnlyDictionary<string, string[]>? Errors) mapped = exception switch
         {
             ValidationException ex => (
                 StatusCodes.Status400BadRequest,
                 ErrorCodes.ValidationFailed,
                 "Validation failed",
                 "One or more validation errors occurred.",
-                ex.Errors
+                (IReadOnlyDictionary<string, string[]>)ex.Errors
             ),
             DomainValidationException ex => (
                 StatusCodes.Status400BadRequest,
@@ -106,19 +106,19 @@ public static class ProblemDetailsMapper
 
         var problemDetails = new ProblemDetails
         {
-            Type = $"https://docs.notrelix.com/problems/{errorCode.Replace('.', '-')}",
-            Title = title,
-            Status = statusCode,
-            Detail = detail,
+            Type = $"https://docs.notrelix.com/problems/{mapped.ErrorCode.Replace('.', '-')}",
+            Title = mapped.Title,
+            Status = mapped.StatusCode,
+            Detail = mapped.Detail,
             Instance = context.Request.Path,
         };
 
-        problemDetails.Extensions["errorCode"] = errorCode;
+        problemDetails.Extensions["errorCode"] = mapped.ErrorCode;
         problemDetails.Extensions["traceId"] = context.TraceIdentifier;
 
-        if (errors is { Count: > 0 })
+        if (mapped.Errors is { Count: > 0 })
         {
-            problemDetails.Extensions["errors"] = errors;
+            problemDetails.Extensions["errors"] = mapped.Errors;
         }
 
         return problemDetails;
