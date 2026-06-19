@@ -12,10 +12,12 @@ namespace Notrelix.Application.Features.Governance.ShareLinks.Commands.DisableSh
 
 public record DisableShareLinkCommand(
     Guid WorkspaceId,
-    ResourceType ResourceType,
+    string ResourceTypeValue,
     Guid ResourceId,
     Guid ShareLinkId) : ICommand<Result>, IRequirePermission, ITransactionalRequest
 {
+    private ResourceType ResourceType => Enum.Parse<ResourceType>(ResourceTypeValue, true);
+
     PermissionAction IRequirePermission.Action => ResourceType switch
     {
         ResourceType.Board => PermissionAction.ShareBoardView,
