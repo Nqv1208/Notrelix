@@ -308,17 +308,74 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 columns: new[] { "workspace_id", "resource_type", "resource_id" },
                 unique: true);
 
-            migrationBuilder.CreateIndex(
-                name: "ix_search_index_jobs_locks",
-                schema: "search",
-                table: "search_index_jobs",
-                column: "locked_until");
+            // Enable pg_trgm extension for GIN trigram indexes
+            migrationBuilder.Sql("CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public");
 
-            migrationBuilder.CreateIndex(
-                name: "ix_search_index_jobs_pending",
-                schema: "search",
-                table: "search_index_jobs",
-                columns: new[] { "status", "priority", "available_at", "created_at" });
+            // GIN trigram indexes for full-text search (cannot express gin_trgm_ops in EF)
+            // search_vector column is text (not tsvector) so no GIN index on it
+            migrationBuilder.Sql("""
+                CREATE INDEX IF NOT EXISTS ix_search_documents_title_trgm
+                ON search.search_documents USING gin(title gin_trgm_ops);
+            """);
+
+            migrationBuilder.Sql("""
+                CREATE INDEX IF NOT EXISTS ix_search_documents_content_trgm
+                ON search.search_documents USING gin(content gin_trgm_ops);
+            """);
+
+            // Partial indexes (EF Core cannot express WHERE clause)
+            migrationBuilder.Sql("""
+                CREATE INDEX IF NOT EXISTS ix_search_index_jobs_locks
+                ON search.search_index_jobs(locked_until)
+                WHERE status = 'Running';
+            """);
+
+            migrationBuilder.Sql("""
+                CREATE INDEX IF NOT EXISTS ix_search_index_jobs_pending
+                ON search.search_index_jobs(status, priority, available_at, created_at)
+                WHERE status IN ('Pending', 'Failed');
+            """);
+
+            migrationBuilder.Sql("""
+                CREATE INDEX IF NOT EXISTS ix_ops_idempotency_keys_user_status
+                ON ops.idempotency_keys(workspace_id, status, created_at DESC)
+                WHERE user_id IS NOT NULL;
+            """);
+
+            migrationBuilder.Sql("""
+                CREATE INDEX IF NOT EXISTS ix_ops_import_jobs_expiry
+                ON ops.import_jobs(expires_at)
+                WHERE expires_at IS NOT NULL;
+            """);
+
+            migrationBuilder.Sql("""
+                CREATE INDEX IF NOT EXISTS ix_ops_export_jobs_expiry
+                ON ops.export_jobs(expires_at)
+                WHERE expires_at IS NOT NULL;
+            """);
+
+            migrationBuilder.Sql("""
+                CREATE INDEX IF NOT EXISTS ix_ops_export_jobs_source_resource
+                ON ops.export_jobs(workspace_id, source_resource_type, source_resource_id, created_at DESC)
+                WHERE source_resource_type IS NOT NULL AND source_resource_id IS NOT NULL;
+            """);
+
+            migrationBuilder.Sql("""
+                CREATE INDEX IF NOT EXISTS ix_governance_permission_inheritance_cache_subject_key
+                ON governance.resource_permission_inheritance_cache(workspace_id, subject_type, subject_key, resource_type, resource_id, action)
+                WHERE subject_key IS NOT NULL;
+            """);
+
+            migrationBuilder.Sql("""
+                CREATE INDEX IF NOT EXISTS ix_governance_permission_inheritance_cache_resource
+                ON governance.resource_permission_inheritance_cache(workspace_id, resource_type, resource_id, cache_version);
+            """);
+
+            migrationBuilder.Sql("""
+                CREATE INDEX IF NOT EXISTS ix_governance_permission_inheritance_cache_expiry
+                ON governance.resource_permission_inheritance_cache(expires_at)
+                WHERE expires_at IS NOT NULL;
+            """);
 
             migrationBuilder.CreateIndex(
                 name: "ix_search_index_jobs_resource",
@@ -361,6 +418,64 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 migrationBuilder.Sql($"DROP TRIGGER IF EXISTS {triggerName} ON {schema}.{table};");
                 migrationBuilder.Sql($"CREATE TRIGGER {triggerName} BEFORE UPDATE ON {schema}.{table} FOR EACH ROW EXECUTE FUNCTION ops.set_updated_at();");
             }
+
+            // tsvector auto-update function + trigger for search_documents
+            migrationBuilder.Sql("""
+                CREATE OR REPLACE FUNCTION search.update_search_vector()
+                RETURNS trigger AS $$
+                BEGIN
+                    NEW.search_vector :=
+                        setweight(to_tsvector('simple', coalesce(NEW.title, '')), 'A') ||
+                        setweight(to_tsvector('simple', coalesce(NEW.content, '')), 'B') ||
+                        setweight(to_tsvector('simple', array_to_string(coalesce(NEW.tags, ARRAY[]::text[]), ' ')), 'C');
+                    RETURN NEW;
+                END;
+                $$ LANGUAGE plpgsql;
+            """);
+
+            migrationBuilder.Sql("""
+                DROP TRIGGER IF EXISTS trg_search_documents_search_vector ON search.search_documents;
+                CREATE TRIGGER trg_search_documents_search_vector
+                BEFORE INSERT OR UPDATE ON search.search_documents
+                FOR EACH ROW EXECUTE FUNCTION search.update_search_vector();
+            """);
+
+            // Drop stale v3 public schema tables
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.\"__EFMigrationsHistory\" CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.activity_logs CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.attachments CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.automation_executions CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.automation_rules CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.blocks CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.board_columns CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.board_members CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.board_views CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.boards CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.calendar_events CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.calendar_integrations CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.card_labels CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.card_links CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.card_members CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.cards CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.checklist_items CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.checklists CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.comments CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.integration_connections CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.labels CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.lists CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.notifications CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.oauth_accounts CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.page_mentions CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.pages CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.permissions CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.reactions CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.sessions CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.user_profiles CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.users CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.webhook_subscriptions CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.workspace_invitations CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.workspace_members CASCADE");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.workspaces CASCADE");
         }
 
         /// <inheritdoc />
@@ -397,6 +512,23 @@ namespace Notrelix.Infrastructure.Data.Migrations
             migrationBuilder.DropTable(
                 name: "unread_counters",
                 schema: "collab");
+
+            // Drop partial/conditional indexes created via raw SQL
+            migrationBuilder.Sql("DROP INDEX IF EXISTS search.ix_search_documents_title_trgm");
+            migrationBuilder.Sql("DROP INDEX IF EXISTS search.ix_search_documents_content_trgm");
+            migrationBuilder.Sql("DROP INDEX IF EXISTS search.ix_search_index_jobs_locks");
+            migrationBuilder.Sql("DROP INDEX IF EXISTS search.ix_search_index_jobs_pending");
+            migrationBuilder.Sql("DROP INDEX IF EXISTS ops.ix_ops_idempotency_keys_user_status");
+            migrationBuilder.Sql("DROP INDEX IF EXISTS ops.ix_ops_import_jobs_expiry");
+            migrationBuilder.Sql("DROP INDEX IF EXISTS ops.ix_ops_export_jobs_expiry");
+            migrationBuilder.Sql("DROP INDEX IF EXISTS ops.ix_ops_export_jobs_source_resource");
+            migrationBuilder.Sql("DROP INDEX IF EXISTS governance.ix_governance_permission_inheritance_cache_subject_key");
+            migrationBuilder.Sql("DROP INDEX IF EXISTS governance.ix_governance_permission_inheritance_cache_resource");
+            migrationBuilder.Sql("DROP INDEX IF EXISTS governance.ix_governance_permission_inheritance_cache_expiry");
+
+            // Drop search_vector trigger + function
+            migrationBuilder.Sql("DROP TRIGGER IF EXISTS trg_search_documents_search_vector ON search.search_documents");
+            migrationBuilder.Sql("DROP FUNCTION IF EXISTS search.update_search_vector");
 
             // Drop triggers for new tables
             var dropTriggers = new[] { ("ops", "export_jobs"), ("ops", "import_jobs"), ("ops", "job_locks"), ("search", "search_documents"), ("search", "search_index_jobs") };

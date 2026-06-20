@@ -634,16 +634,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("ActionType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("action_type");
-
-                    b.Property<string>("Configuration")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("configuration");
-
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -689,12 +679,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("status");
 
-                    b.Property<string>("TriggerEvent")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("trigger_event");
-
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -715,9 +699,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnName("workspace_id");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("TriggerEvent")
-                        .HasDatabaseName("idx_automation_rules_trigger_event");
 
                     b.HasIndex("WorkspaceId")
                         .HasDatabaseName("idx_automation_rules_workspace_id");
@@ -898,6 +879,97 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("automation_templates", "automation");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Billing.BillingEvents.BillingEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DeleteReason")
+                        .HasColumnType("text")
+                        .HasColumnName("delete_reason");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("text")
+                        .HasColumnName("error");
+
+                    b.Property<string>("ProviderEventId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("provider_event_id");
+
+                    b.Property<string>("RawData")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("raw_data");
+
+                    b.Property<DateTimeOffset>("ReceivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("received_at");
+
+                    b.Property<DateTimeOffset?>("RestoredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("restored_at");
+
+                    b.Property<Guid?>("RestoredBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("restored_by");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("type");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProviderEventId")
+                        .HasDatabaseName("idx_billing_events_provider_event_id");
+
+                    b.HasIndex("Type")
+                        .HasDatabaseName("idx_billing_events_type");
+
+                    b.ToTable("billing_events", "billing");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Billing.Entitlements.Entitlement", b =>
                 {
                     b.Property<Guid>("Id")
@@ -991,97 +1063,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDatabaseName("idx_entitlements_workspace_id");
 
                     b.ToTable("entitlements", "billing");
-                });
-
-            modelBuilder.Entity("Notrelix.Domain.Billing.Events.BillingEvent", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<string>("DeleteReason")
-                        .HasColumnType("text")
-                        .HasColumnName("delete_reason");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("deleted_by");
-
-                    b.Property<string>("Error")
-                        .HasColumnType("text")
-                        .HasColumnName("error");
-
-                    b.Property<string>("ProviderEventId")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasColumnName("provider_event_id");
-
-                    b.Property<string>("RawData")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("raw_data");
-
-                    b.Property<DateTimeOffset>("ReceivedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("received_at");
-
-                    b.Property<DateTimeOffset?>("RestoredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("restored_at");
-
-                    b.Property<Guid?>("RestoredBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("restored_by");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("status");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("type");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
-                    b.Property<long>("Version")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasDefaultValue(1L)
-                        .HasColumnName("version");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProviderEventId")
-                        .HasDatabaseName("idx_billing_events_provider_event_id");
-
-                    b.HasIndex("Type")
-                        .HasDatabaseName("idx_billing_events_type");
-
-                    b.ToTable("billing_events", "billing");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Billing.Payments.Invoice", b =>
@@ -7883,6 +7864,523 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("workspaces", "workspace");
                 });
 
+            modelBuilder.Entity("Notrelix.Infrastructure.Data.Governance.Projections.ResourcePermissionInheritanceCacheEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("action");
+
+                    b.Property<long>("CacheVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("cache_version");
+
+                    b.Property<DateTimeOffset>("ComputedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("computed_at");
+
+                    b.Property<string>("ComputedPermissionsJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("computed_permissions_json");
+
+                    b.Property<string>("Effect")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Allow")
+                        .HasColumnName("effect");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<Guid?>("InheritedFromResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inherited_from_resource_id");
+
+                    b.Property<string>("InheritedFromResourceType")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("inherited_from_resource_type");
+
+                    b.Property<Guid?>("ParentResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("parent_resource_id");
+
+                    b.Property<string>("ParentResourceType")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("parent_resource_type");
+
+                    b.Property<string>("PermissionLevel")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("permission_level");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_id");
+
+                    b.Property<string>("ResourceType")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("resource_type");
+
+                    b.Property<Guid?>("SourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_id");
+
+                    b.Property<string>("SourceType")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("source_type");
+
+                    b.Property<Guid?>("SubjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subject_id");
+
+                    b.Property<string>("SubjectKey")
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("subject_key");
+
+                    b.Property<string>("SubjectType")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("subject_type");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkspaceId", "SubjectType", "SubjectId", "ResourceType", "ResourceId", "Action")
+                        .HasDatabaseName("ix_governance_permission_inheritance_cache_lookup");
+
+                    b.HasIndex("WorkspaceId", "ResourceType", "ResourceId", "SubjectType", "SubjectId", "SubjectKey", "Action")
+                        .IsUnique()
+                        .HasDatabaseName("ux_governance_permission_inheritance_cache");
+
+                    b.ToTable("resource_permission_inheritance_cache", "governance");
+                });
+
+            modelBuilder.Entity("Notrelix.Infrastructure.Data.Ops.Entities.ExportJobRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DownloadUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("download_url");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("text")
+                        .HasColumnName("error_message");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("FiltersJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("filters_json");
+
+                    b.Property<string>("Format")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasDefaultValue("Csv")
+                        .HasColumnName("format");
+
+                    b.Property<string>("JobType")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("job_type");
+
+                    b.Property<string>("OptionsJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("options_json");
+
+                    b.Property<Guid?>("RequestedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requested_by_user_id");
+
+                    b.Property<Guid?>("ResultAttachmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("result_attachment_id");
+
+                    b.Property<Guid?>("ResultFileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("result_file_id");
+
+                    b.Property<int?>("RowCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("row_count");
+
+                    b.Property<Guid?>("SourceResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_resource_id");
+
+                    b.Property<string>("SourceResourceType")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("source_resource_type");
+
+                    b.Property<DateTimeOffset?>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasDefaultValue("Pending")
+                        .HasColumnName("status");
+
+                    b.Property<string>("StorageKey")
+                        .HasColumnType("text")
+                        .HasColumnName("storage_key");
+
+                    b.Property<string>("StorageProvider")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("storage_provider");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkspaceId", "Status", "CreatedAt")
+                        .IsDescending(false, false, true)
+                        .HasDatabaseName("ix_ops_export_jobs_workspace_status");
+
+                    b.ToTable("export_jobs", "ops");
+                });
+
+            modelBuilder.Entity("Notrelix.Infrastructure.Data.Ops.Entities.IdempotencyKeyRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("text")
+                        .HasColumnName("error_message");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<DateTimeOffset?>("LockedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("locked_until");
+
+                    b.Property<string>("RequestHash")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("request_hash");
+
+                    b.Property<string>("RequestMethod")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("request_method");
+
+                    b.Property<string>("RequestPath")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("request_path");
+
+                    b.Property<string>("ResponseBodyJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("response_body_json");
+
+                    b.Property<int?>("ResponseStatusCode")
+                        .HasColumnType("integer")
+                        .HasColumnName("response_status_code");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(240)
+                        .HasColumnType("character varying(240)")
+                        .HasColumnName("scope");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasDefaultValue("Started")
+                        .HasColumnName("status");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid?>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("ix_ops_idempotency_keys_expires_at");
+
+                    b.HasIndex("Scope", "IdempotencyKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ops_idempotency_keys_scope_key");
+
+                    b.HasIndex("WorkspaceId", "Status", "CreatedAt")
+                        .IsDescending(false, false, true)
+                        .HasDatabaseName("ix_ops_idempotency_keys_workspace_status");
+
+                    b.ToTable("idempotency_keys", "ops");
+                });
+
+            modelBuilder.Entity("Notrelix.Infrastructure.Data.Ops.Entities.ImportJobRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CancelledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("ErrorFileAttachmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("error_file_attachment_id");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("text")
+                        .HasColumnName("error_message");
+
+                    b.Property<string>("ErrorSummary")
+                        .HasColumnType("text")
+                        .HasColumnName("error_summary");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<int>("FailedRecords")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("failed_records");
+
+                    b.Property<string>("JobType")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("job_type");
+
+                    b.Property<string>("OptionsJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("options_json");
+
+                    b.Property<int>("ProcessedRecords")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("processed_records");
+
+                    b.Property<Guid?>("RequestedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requested_by_user_id");
+
+                    b.Property<string>("ResultJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("result_json");
+
+                    b.Property<Guid?>("SourceFileAttachmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_file_attachment_id");
+
+                    b.Property<DateTimeOffset?>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasDefaultValue("Pending")
+                        .HasColumnName("status");
+
+                    b.Property<int>("SucceededRecords")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("succeeded_records");
+
+                    b.Property<Guid?>("TargetResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("target_resource_id");
+
+                    b.Property<string>("TargetResourceType")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("target_resource_type");
+
+                    b.Property<int>("TotalRecords")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("total_records");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkspaceId", "Status", "CreatedAt")
+                        .IsDescending(false, false, true)
+                        .HasDatabaseName("ix_ops_import_jobs_workspace_status");
+
+                    b.ToTable("import_jobs", "ops");
+                });
+
+            modelBuilder.Entity("Notrelix.Infrastructure.Data.Ops.Entities.JobLockRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("AcquiredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("acquired_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("FencingToken")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("fencing_token");
+
+                    b.Property<string>("LockKey")
+                        .IsRequired()
+                        .HasMaxLength(240)
+                        .HasColumnType("character varying(240)")
+                        .HasColumnName("lock_key");
+
+                    b.Property<string>("LockedBy")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("locked_by");
+
+                    b.Property<DateTimeOffset>("LockedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("locked_until");
+
+                    b.Property<string>("MetadataJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("metadata_json");
+
+                    b.Property<DateTimeOffset?>("RenewedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("renewed_at");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LockKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_ops_job_locks_lock_key");
+
+                    b.HasIndex("LockedUntil")
+                        .HasDatabaseName("ix_ops_job_locks_locked_until");
+
+                    b.HasIndex("LockedBy", "LockedUntil")
+                        .HasDatabaseName("ix_ops_job_locks_owner");
+
+                    b.ToTable("job_locks", "ops");
+                });
+
             modelBuilder.Entity("Notrelix.Infrastructure.Data.Outbox.OutboxMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -7916,12 +8414,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("event_id");
 
-                    b.Property<string>("EventType")
-                        .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)")
-                        .HasColumnName("event_type");
-
                     b.Property<int>("EventVersion")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -7933,6 +8425,20 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(5)
                         .HasColumnName("max_retries");
+
+                    b.Property<string>("MessageName")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("message_name");
+
+                    b.Property<string>("MessageType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("DomainEvent")
+                        .HasColumnName("message_type");
 
                     b.Property<DateTimeOffset?>("NextAttemptAt")
                         .HasColumnType("timestamp with time zone")
@@ -7947,11 +8453,25 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("processed_at");
 
+                    b.Property<DateTimeOffset?>("ProcessingStartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("processing_started_at");
+
                     b.Property<int>("RetryCount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(0)
                         .HasColumnName("retry_count");
+
+                    b.Property<int>("SchemaVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("schema_version");
+
+                    b.Property<Guid?>("SourceEventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_event_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -7970,10 +8490,292 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("CreatedAt")
                         .HasDatabaseName("idx_outbox_messages_created_at");
 
+                    b.HasIndex("MessageName")
+                        .HasDatabaseName("idx_outbox_messages_message_name");
+
+                    b.HasIndex("SourceEventId")
+                        .HasDatabaseName("idx_outbox_messages_source_event");
+
+                    b.HasIndex("MessageType", "Status")
+                        .HasDatabaseName("idx_outbox_messages_type_status");
+
                     b.HasIndex("Status", "NextAttemptAt")
                         .HasDatabaseName("idx_outbox_messages_pending");
 
                     b.ToTable("outbox_messages", "ops");
+                });
+
+            modelBuilder.Entity("Notrelix.Infrastructure.Data.Outbox.ProcessedEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ConsumerName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("consumer_name");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<string>("MessageName")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("message_name");
+
+                    b.Property<DateTimeOffset>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("processed_at");
+
+                    b.Property<int>("SchemaVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("schema_version");
+
+                    b.Property<Guid?>("SourceEventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_event_id");
+
+                    b.Property<Guid?>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProcessedAt")
+                        .HasDatabaseName("idx_processed_events_processed_at");
+
+                    b.HasIndex("EventId", "ConsumerName")
+                        .IsUnique()
+                        .HasDatabaseName("idx_processed_events_event_id_consumer");
+
+                    b.ToTable("processed_events", "ops");
+                });
+
+            modelBuilder.Entity("Notrelix.Infrastructure.Data.Projections.Collab.UnreadCounterRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CounterType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasDefaultValue("Notification")
+                        .HasColumnName("counter_type");
+
+                    b.Property<int>("CounterValue")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("counter_value");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkspaceId", "UserId", "CounterType")
+                        .IsUnique()
+                        .HasDatabaseName("ux_collab_unread_counters_user_type");
+
+                    b.ToTable("unread_counters", "collab");
+                });
+
+            modelBuilder.Entity("Notrelix.Infrastructure.Data.Projections.Search.SearchDocumentRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Content")
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("MetadataJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("metadata_json");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_id");
+
+                    b.Property<string>("ResourceType")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("resource_type");
+
+                    b.Property<string>("SearchVector")
+                        .HasColumnType("text")
+                        .HasColumnName("search_vector");
+
+                    b.PrimitiveCollection<string[]>("Tags")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("tags");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("title");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkspaceId", "ResourceType")
+                        .HasDatabaseName("ix_search_documents_workspace_type");
+
+                    b.HasIndex("WorkspaceId", "ResourceType", "ResourceId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_search_documents_resource");
+
+                    b.ToTable("search_documents", "search");
+                });
+
+            modelBuilder.Entity("Notrelix.Infrastructure.Data.Projections.Search.SearchIndexJobRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AttemptCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("attempt_count");
+
+                    b.Property<DateTimeOffset>("AvailableAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("available_at");
+
+                    b.Property<Guid?>("CausationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("causation_id");
+
+                    b.Property<Guid?>("CorrelationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("text")
+                        .HasColumnName("error_message");
+
+                    b.Property<string>("LockedBy")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("locked_by");
+
+                    b.Property<DateTimeOffset?>("LockedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("locked_until");
+
+                    b.Property<int>("MaxAttempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(5)
+                        .HasColumnName("max_attempts");
+
+                    b.Property<string>("MetadataJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("{}")
+                        .HasColumnName("metadata_json");
+
+                    b.Property<string>("Operation")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("operation");
+
+                    b.Property<int>("Priority")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(100)
+                        .HasColumnName("priority");
+
+                    b.Property<DateTimeOffset?>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("processed_at");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_id");
+
+                    b.Property<string>("ResourceType")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("resource_type");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasDefaultValue("Pending")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LockedUntil")
+                        .HasDatabaseName("ix_search_index_jobs_locks");
+
+                    b.HasIndex("Status", "Priority", "AvailableAt", "CreatedAt")
+                        .HasDatabaseName("ix_search_index_jobs_pending");
+
+                    b.HasIndex("WorkspaceId", "ResourceType", "ResourceId", "CreatedAt")
+                        .IsDescending(false, false, false, true)
+                        .HasDatabaseName("ix_search_index_jobs_resource");
+
+                    b.ToTable("search_index_jobs", "search");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Analytics.Dashboards.DashboardWidget", b =>
@@ -8032,6 +8834,92 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .WithMany("Steps")
                         .HasForeignKey("ExecutionId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Automation.Rules.AutomationRule", b =>
+                {
+                    b.OwnsOne("Notrelix.Domain.Automation.RulesEngine.AutomationConfiguration", "Configuration", b1 =>
+                        {
+                            b1.Property<Guid>("AutomationRuleId")
+                                .HasColumnType("uuid");
+
+                            b1.HasKey("AutomationRuleId");
+
+                            b1.ToTable("automation_rules", "automation");
+
+                            b1.ToJson("configuration");
+
+                            b1.WithOwner()
+                                .HasForeignKey("AutomationRuleId");
+
+                            b1.OwnsOne("Notrelix.Domain.Automation.RulesEngine.AutomationActionDefinition", "Action", b2 =>
+                                {
+                                    b2.Property<Guid>("AutomationConfigurationAutomationRuleId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<string>("Configuration")
+                                        .HasColumnType("text");
+
+                                    b2.Property<string>("Type")
+                                        .IsRequired()
+                                        .HasColumnType("text");
+
+                                    b2.HasKey("AutomationConfigurationAutomationRuleId");
+
+                                    b2.ToTable("automation_rules", "automation");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("AutomationConfigurationAutomationRuleId");
+                                });
+
+                            b1.OwnsOne("Notrelix.Domain.Automation.RulesEngine.AutomationConditionDefinition", "Condition", b2 =>
+                                {
+                                    b2.Property<Guid>("AutomationConfigurationAutomationRuleId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<string>("RawJson")
+                                        .IsRequired()
+                                        .HasColumnType("text");
+
+                                    b2.HasKey("AutomationConfigurationAutomationRuleId");
+
+                                    b2.ToTable("automation_rules", "automation");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("AutomationConfigurationAutomationRuleId");
+                                });
+
+                            b1.OwnsOne("Notrelix.Domain.Automation.RulesEngine.AutomationTriggerDefinition", "Trigger", b2 =>
+                                {
+                                    b2.Property<Guid>("AutomationConfigurationAutomationRuleId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<string>("Configuration")
+                                        .HasColumnType("text");
+
+                                    b2.Property<string>("Type")
+                                        .IsRequired()
+                                        .HasColumnType("text");
+
+                                    b2.HasKey("AutomationConfigurationAutomationRuleId");
+
+                                    b2.ToTable("automation_rules", "automation");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("AutomationConfigurationAutomationRuleId");
+                                });
+
+                            b1.Navigation("Action")
+                                .IsRequired();
+
+                            b1.Navigation("Condition");
+
+                            b1.Navigation("Trigger")
+                                .IsRequired();
+                        });
+
+                    b.Navigation("Configuration")
                         .IsRequired();
                 });
 
