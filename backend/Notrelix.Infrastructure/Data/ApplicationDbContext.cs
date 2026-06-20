@@ -69,6 +69,10 @@ using Notrelix.Domain.Workspaces.Spaces;
 using Notrelix.Domain.Workspaces.Teams;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data.Outbox;
+using Notrelix.Infrastructure.Data.Projections.Search;
+using Notrelix.Infrastructure.Data.Projections.Collab;
+using Notrelix.Infrastructure.Data.Ops.Entities;
+using Notrelix.Infrastructure.Data.Governance.Projections;
 using System.Linq.Expressions;
 
 namespace Notrelix.Infrastructure.Data;
@@ -210,6 +214,22 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<ProcessedEvent> ProcessedEvents => Set<ProcessedEvent>();
 
+    // Search projections
+    public DbSet<SearchDocumentRecord> SearchDocuments => Set<SearchDocumentRecord>();
+    public DbSet<SearchIndexJobRecord> SearchIndexJobs => Set<SearchIndexJobRecord>();
+
+    // Ops infrastructure records
+    public DbSet<IdempotencyKeyRecord> IdempotencyKeys => Set<IdempotencyKeyRecord>();
+    public DbSet<ImportJobRecord> ImportJobs => Set<ImportJobRecord>();
+    public DbSet<ExportJobRecord> ExportJobs => Set<ExportJobRecord>();
+    public DbSet<JobLockRecord> JobLocks => Set<JobLockRecord>();
+
+    // Governance permission cache
+    public DbSet<ResourcePermissionInheritanceCacheEntry> PermissionCache => Set<ResourcePermissionInheritanceCacheEntry>();
+
+    // Collab unread counters
+    public DbSet<UnreadCounterRecord> UnreadCounters => Set<UnreadCounterRecord>();
+
     // Analytics
     public DbSet<Dashboard> Dashboards => Set<Dashboard>();
     public DbSet<DashboardWidget> DashboardWidgets => Set<DashboardWidget>();
@@ -254,19 +274,24 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                     Expression.Constant(null, typeof(DateTimeOffset?)));
             }
 
-            if (isWorkspaceScoped && _currentWorkspace is not null)
+            if (isWorkspaceScoped && _currentWorkspace?.WorkspaceId is not null)
             {
                 var wsFilter = Expression.Equal(
                     Expression.PropertyOrField(param, "WorkspaceId"),
-                    Expression.Property(Expression.Constant(_currentWorkspace), "WorkspaceId"));
+                    Expression.Convert(
+                        Expression.Property(Expression.Constant(_currentWorkspace), "WorkspaceId"),
+                        typeof(Guid)));
 
                 filterBody = filterBody is not null
                     ? Expression.AndAlso(filterBody, wsFilter)
                     : wsFilter;
             }
 
-            var lambda = Expression.Lambda(filterBody!, param);
-            modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
+            if (filterBody is not null)
+            {
+                var lambda = Expression.Lambda(filterBody, param);
+                modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
+            }
         }
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
