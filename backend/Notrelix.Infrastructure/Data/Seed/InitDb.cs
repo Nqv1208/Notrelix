@@ -104,8 +104,9 @@ internal static class InitDb
 
             // Create session
             var tokenHash = RefreshTokenHash.Create($"seed-refresh-token-{i}");
+            var createdAt = Epoch.AddDays(i);
             var session = UserSession.Create(
-                user.Id, tokenHash, Epoch.AddDays(30), Epoch.AddDays(i),
+                user.Id, tokenHash, createdAt.AddDays(30), createdAt,
                 "127.0.0.1", "SeedAgent/1.0");
             context.Sessions.Add(session);
         }
@@ -121,7 +122,7 @@ internal static class InitDb
         ApplicationDbContext context, SeedTargets targets, List<User> users, CancellationToken ct)
     {
         var workspaces = new List<Workspace>(targets.WorkspaceCount);
-        var defaultUserIds = users.Take(3).Select(u => u.Id).ToList();
+        var defaultUserIds = users.Take(3).Select(u => u.Id).ToHashSet();
 
         for (int i = 0; i < targets.WorkspaceCount; i++)
         {
@@ -134,10 +135,12 @@ internal static class InitDb
                 isPersonal: i == 0);
             workspaces.Add(ws);
 
+            var addedUserIds = new HashSet<Guid> { owner.Id };
+
             // Add default users as members of all workspaces
             foreach (var uid in defaultUserIds)
             {
-                if (uid == owner.Id) continue;
+                if (!addedUserIds.Add(uid)) continue;
                 var member = WorkspaceMember.Create(
                     ws.Id, uid, WorkspaceRole.Member, owner.Id, Epoch.AddDays(i));
                 context.WorkspaceMembers.Add(member);
@@ -148,6 +151,7 @@ internal static class InitDb
             for (int m = 0; m < memberCount; m++)
             {
                 var mid = users[(i + m + 1) % users.Count].Id;
+                if (!addedUserIds.Add(mid)) continue;
                 var role = m == 0 ? WorkspaceRole.Admin
                     : m == 1 ? WorkspaceRole.Member
                     : WorkspaceRole.Guest;
@@ -456,18 +460,18 @@ internal static class InitDb
             .ToListAsync(ct);
 
         var commentTexts = new[] {
-            "Looks good to me!",
-            "Let me review this in detail.",
-            "Can we discuss this in the next standup?",
-            "I've updated the description with more details.",
-            "This needs more clarification.",
-            "Great progress on this task!",
-            "Blocked by the API changes.",
-            "Added some notes in the design doc.",
-            "Please review the latest changes.",
-            "Ready for QA.",
-            "Need input from the design team.",
-            "Let's prioritize this for the next sprint.",
+            "\"Looks good to me!\"",
+            "\"Let me review this in detail.\"",
+            "\"Can we discuss this in the next standup?\"",
+            "\"I've updated the description with more details.\"",
+            "\"This needs more clarification.\"",
+            "\"Great progress on this task!\"",
+            "\"Blocked by the API changes.\"",
+            "\"Added some notes in the design doc.\"",
+            "\"Please review the latest changes.\"",
+            "\"Ready for QA.\"",
+            "\"Need input from the design team.\"",
+            "\"Let's prioritize this for the next sprint.\"",
         };
 
         foreach (var item in items)
