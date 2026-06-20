@@ -21,6 +21,9 @@ public class AutomationRuleConfiguration : IEntityTypeConfiguration<AutomationRu
 
         builder.OwnsOne(x => x.Configuration, cfg =>
         {
+            cfg.OwnsOne(c => c.Trigger);
+            cfg.OwnsOne(c => c.Action);
+            cfg.OwnsOne(c => c.Condition);
             cfg.ToJson("configuration");
         });
 
