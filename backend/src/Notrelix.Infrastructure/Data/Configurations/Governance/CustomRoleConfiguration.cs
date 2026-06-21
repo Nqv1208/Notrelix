@@ -16,7 +16,15 @@ public class CustomRoleConfiguration : IEntityTypeConfiguration<CustomRole>
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(128);
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(512);
-        builder.Property(x => x.Permissions).HasColumnName("permissions").HasColumnType("jsonb").IsRequired();
+
+        builder.HasMany(x => x.Permissions)
+            .WithOne()
+            .HasForeignKey(x => x.CustomRoleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(x => x.Permissions)
+            .HasField("_permissions")
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
