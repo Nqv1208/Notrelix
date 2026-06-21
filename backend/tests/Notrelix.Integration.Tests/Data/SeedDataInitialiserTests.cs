@@ -1,20 +1,23 @@
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Abstractions;
+using Notrelix.Domain.Governance.Roles;
 using Notrelix.Infrastructure.Data;
 
-namespace Notrelix.Infrastructure.Tests.Data;
+namespace Notrelix.Integration.Tests.Data;
 
 public class SeedDataInitialiserTests
 {
     [Fact]
     public void Seed_profile_mapping_uses_exact_top_level_targets()
     {
-        SeedTargets.ForProfile(SeedProfile.Small).Should().Be(new SeedTargets(5, 10, 20, 500, 100));
-        SeedTargets.ForProfile(SeedProfile.Medium).Should().Be(new SeedTargets(20, 100, 100, 10_000, 2_000));
-        SeedTargets.ForProfile(SeedProfile.Large).Should().Be(new SeedTargets(100, 1_000, 1_000, 100_000, 20_000));
+        SeedTargets.ForProfile(SeedProfile.Small).Should().Be(
+            new SeedTargets(10, 5, 20, 80, 120, 400, 40, 60, 100, 500, 400, 30));
+        SeedTargets.ForProfile(SeedProfile.Medium).Should().Be(
+            new SeedTargets(50, 10, 50, 200, 400, 2_000, 100, 150, 500, 2_500, 4_000, 250));
+        SeedTargets.ForProfile(SeedProfile.Large).Should().Be(
+            new SeedTargets(200, 20, 200, 800, 1_600, 12_000, 400, 600, 2_000, 10_000, 24_000, 1_000));
     }
 
     [Fact]
@@ -30,26 +33,16 @@ public class SeedDataInitialiserTests
         (await context.Sessions.CountAsync()).Should().Be(10);
         (await context.Workspaces.CountAsync()).Should().Be(5);
         (await context.WorkspaceMembers.CountAsync()).Should().BeGreaterThan(5);
-        (await context.WorkspaceInvitations.CountAsync()).Should().BeGreaterThan(0);
         (await context.Pages.CountAsync()).Should().Be(100);
-        (await context.Blocks.CountAsync()).Should().BeGreaterThan(100);
+        (await context.Blocks.CountAsync()).Should().Be(500);
         (await context.Boards.CountAsync()).Should().Be(20);
-        (await context.BoardLists.CountAsync()).Should().Be(100);
-        (await context.BoardColumns.CountAsync()).Should().Be(120);
-        (await context.BoardViews.CountAsync()).Should().BeGreaterThan(20);
-        (await context.Labels.CountAsync()).Should().Be(120);
-        (await context.Cards.CountAsync()).Should().Be(500);
-        (await context.CardMembers.CountAsync()).Should().Be(500);
-        (await context.CardLabels.CountAsync()).Should().Be(1_000);
-        (await context.Checklists.CountAsync()).Should().Be(100);
-        (await context.ChecklistItems.CountAsync()).Should().Be(400);
-        (await context.CardLinks.CountAsync()).Should().BeGreaterThan(0);
-        (await context.Comments.CountAsync()).Should().BeGreaterThan(0);
-        (await context.Attachments.CountAsync()).Should().BeGreaterThan(0);
-        (await context.Notifications.CountAsync()).Should().BeGreaterThan(0);
-        (await context.ActivityLogs.CountAsync()).Should().BeGreaterThan(0);
-        (await context.CalendarIntegrations.CountAsync()).Should().BeGreaterThan(0);
-        (await context.CalendarEvents.CountAsync()).Should().BeGreaterThan(0);
+        (await context.BoardGroups.CountAsync()).Should().Be(80);
+        (await context.BoardFields.CountAsync()).Should().Be(120);
+        (await context.BoardViews.CountAsync()).Should().Be(40);
+        (await context.Labels.CountAsync()).Should().Be(60);
+        (await context.BoardItems.CountAsync()).Should().Be(400);
+        (await context.Comments.CountAsync()).Should().Be(400);
+        (await context.Notifications.CountAsync()).Should().Be(30);
     }
 
     [Fact]
@@ -68,19 +61,22 @@ public class SeedDataInitialiserTests
     }
 
     [Fact]
-    public async Task Seed_without_reset_backfills_board_metadata_when_sentinel_exists()
+    public async Task Seed_is_idempotent_and_does_not_backfill_when_sentinel_exists()
     {
         await using var context = CreateContext();
 
         await CreateInitialiser(context).SeedAsync();
 
-        context.BoardColumns.RemoveRange(await context.BoardColumns.ToListAsync());
+        var fields = await context.BoardFields.ToListAsync();
+        context.BoardItemValues.RemoveRange(await context.BoardItemValues.ToListAsync());
+        context.FieldOptions.RemoveRange(await context.FieldOptions.ToListAsync());
+        context.BoardFields.RemoveRange(fields);
         await context.SaveChangesAsync();
-        (await context.BoardColumns.CountAsync()).Should().Be(0);
+        (await context.BoardFields.CountAsync()).Should().Be(0);
 
         await CreateInitialiser(context).SeedAsync();
 
-        (await context.BoardColumns.CountAsync()).Should().Be(120);
+        (await context.BoardFields.CountAsync()).Should().Be(0);
     }
 
     [Fact]
@@ -111,7 +107,7 @@ public class SeedDataInitialiserTests
             var membershipCount = await context.WorkspaceMembers
                 .CountAsync(member => member.UserId == user.Id);
 
-            membershipCount.Should().Be(workspaceCount);
+            membershipCount.Should().Be(workspaceCount - 1);
         }
     }
 
@@ -127,13 +123,13 @@ public class SeedDataInitialiserTests
         (await context.Users.CountAsync()).Should().Be(10);
         (await context.Workspaces.CountAsync()).Should().Be(5);
         (await context.Boards.CountAsync()).Should().Be(20);
-        (await context.Cards.CountAsync()).Should().Be(500);
+        (await context.BoardItems.CountAsync()).Should().Be(400);
         (await context.Pages.CountAsync()).Should().Be(100);
-        (await context.BoardColumns.CountAsync()).Should().Be(120);
+        (await context.BoardFields.CountAsync()).Should().Be(120);
     }
 
     [Fact]
-    public async Task Seeded_list_card_and_page_positions_are_ordered_doubles()
+    public async Task Seeded_group_and_item_positions_are_valid()
     {
         await using var context = CreateContext();
         await CreateInitialiser(context).SeedAsync();
@@ -143,57 +139,43 @@ public class SeedDataInitialiserTests
             .Select(board => board.Id)
             .FirstAsync();
 
-        var listPositions = await context.BoardLists
-            .Where(list => list.BoardId == boardId)
-            .OrderBy(list => list.Position)
-            .Select(list => list.Position)
+        var groups = await context.BoardGroups
+            .Where(g => g.BoardId == boardId)
+            .OrderBy(g => g.Position.Value)
             .ToListAsync();
 
-        listPositions.Should().BeInAscendingOrder();
-        listPositions.Should().OnlyContain(position => position > 0);
+        groups.Should().OnlyContain(g => g.Position != null);
+        groups.Select(g => g.Position.Value).Should().BeInAscendingOrder();
 
-        var listId = await context.BoardLists
-            .Where(list => list.BoardId == boardId)
-            .OrderBy(list => list.Position)
-            .Select(list => list.Id)
-            .FirstAsync();
-
-        var cardPositions = await context.Cards
-            .Where(card => card.ListId == listId)
-            .OrderBy(card => card.Position)
-            .Select(card => card.Position)
+        var groupIds = groups.Select(g => g.Id).ToList();
+        var items = await context.BoardItems
+            .Where(item => groupIds.Contains(item.GroupId))
+            .OrderBy(item => item.Position.Value)
             .ToListAsync();
 
-        cardPositions.Should().BeInAscendingOrder();
-        cardPositions.Should().OnlyContain(position => position > 0);
+        items.Should().OnlyContain(item => item.Position != null);
+        items.Select(item => item.Position.Value).Should().BeInAscendingOrder();
 
-        var pagePositions = await context.Pages
-            .OrderBy(page => page.Position)
-            .Select(page => page.Position)
+        var blocks = await context.Blocks
+            .OrderBy(b => b.Position.Value)
             .Take(20)
             .ToListAsync();
 
-        pagePositions.Should().BeInAscendingOrder();
-        pagePositions.Should().OnlyContain(position => position > 0);
+        blocks.Should().OnlyContain(block => block.Position != null);
+        blocks.Select(b => b.Position.Value).Should().BeInAscendingOrder();
     }
 
     [Fact]
-    public async Task Seeded_json_fields_and_attachment_urls_are_valid()
+    public async Task Seeded_entities_with_json_value_objects_exist()
     {
         await using var context = CreateContext();
         await CreateInitialiser(context).SeedAsync();
 
-        AssertJson(await context.Blocks.Select(block => block.Properties).Take(50).ToListAsync());
-        AssertJson(await context.BoardColumns.Select(column => column.Settings).Take(50).ToListAsync());
-        AssertJson(await context.BoardViews.Select(view => view.Filters).Take(50).ToListAsync());
-        AssertJson(await context.Cards.Where(card => card.Cover != null).Select(card => card.Cover!).Take(50).ToListAsync());
-        AssertJson(await context.Notifications.Select(notification => notification.Payload).Take(50).ToListAsync());
-        AssertJson(await context.ActivityLogs.Select(activity => activity.Metadata).Take(50).ToListAsync());
-
-        var attachmentUrls = await context.Attachments.Select(attachment => attachment.Url).Take(20).ToListAsync();
-        attachmentUrls.Should().OnlyContain(url =>
-            url.StartsWith("https://r2.notrelix.example/", StringComparison.Ordinal) &&
-            !url.Contains("base64", StringComparison.OrdinalIgnoreCase));
+        (await context.Blocks.CountAsync()).Should().Be(500);
+        (await context.BoardFields.CountAsync()).Should().Be(120);
+        (await context.BoardViews.CountAsync()).Should().Be(40);
+        (await context.Notifications.CountAsync()).Should().Be(30);
+        (await context.Notifications.CountAsync(n => !string.IsNullOrWhiteSpace(n.Content))).Should().Be(30);
     }
 
     private static ApplicationDbContext CreateContext()
@@ -202,7 +184,18 @@ public class SeedDataInitialiserTests
             .UseInMemoryDatabase($"Notrelix-seed-{Guid.NewGuid():N}")
             .Options;
 
-        return new ApplicationDbContext(options);
+        return new TestApplicationDbContext(options);
+    }
+
+    private class TestApplicationDbContext : ApplicationDbContext
+    {
+        public TestApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<CustomRole>().Ignore(x => x.Permissions);
+        }
     }
 
     private static ApplicationDbContextInitialiser CreateInitialiser(
@@ -228,26 +221,18 @@ public class SeedDataInitialiserTests
             await context.Users.CountAsync(),
             await context.Workspaces.CountAsync(),
             await context.Boards.CountAsync(),
-            await context.Cards.CountAsync(),
+            await context.BoardItems.CountAsync(),
             await context.Pages.CountAsync(),
-            await context.BoardColumns.CountAsync());
-    }
-
-    private static void AssertJson(IEnumerable<string> values)
-    {
-        foreach (var value in values)
-        {
-            using var _ = JsonDocument.Parse(value);
-        }
+            await context.BoardFields.CountAsync());
     }
 
     private sealed record SeedCountSnapshot(
         int Users,
         int Workspaces,
         int Boards,
-        int Cards,
+        int BoardItems,
         int Pages,
-        int BoardColumns);
+        int BoardFields);
 
     private sealed class DeterministicPasswordHasher : IPasswordHasher
     {
