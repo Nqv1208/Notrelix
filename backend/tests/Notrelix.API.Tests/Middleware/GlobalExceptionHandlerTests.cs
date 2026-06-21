@@ -167,10 +167,10 @@ public class GlobalExceptionHandlerTests
         pd.Instance.Should().Be("/api/test");
     }
 
-    private static async Task<ProblemDetails> ReadProblemDetailsAsync(HttpContext context)
+    private static async Task<Microsoft.AspNetCore.Mvc.ProblemDetails> ReadProblemDetailsAsync(HttpContext context)
     {
         context.Response.Body.Position = 0;
-        var result = await JsonSerializer.DeserializeAsync<ProblemDetails>(
+        var result = await JsonSerializer.DeserializeAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>(
             context.Response.Body,
             new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
         return result!;

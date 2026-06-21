@@ -25,9 +25,9 @@
 
   <!-- PROJECT REFERENCES -->
   <ItemGroup>
-    <ProjectReference Include="..\..\Notrelix.Domain\Notrelix.Domain.csproj" />
-    <ProjectReference Include="..\..\Notrelix.Application\Notrelix.Application.csproj" />
-    <ProjectReference Include="..\..\Notrelix.Infrastructure\Notrelix.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Notrelix.Domain\Notrelix.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Notrelix.Application\Notrelix.Application.csproj" />
+    <ProjectReference Include="..\..\src\Notrelix.Infrastructure\Notrelix.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
