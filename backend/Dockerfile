@@ -3,16 +3,16 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Copy csproj files and restore dependencies
-COPY ["Notrelix.Domain/Notrelix.Domain.csproj", "Notrelix.Domain/"]
-COPY ["Notrelix.Application/Notrelix.Application.csproj", "Notrelix.Application/"]
-COPY ["Notrelix.Infrastructure/Notrelix.Infrastructure.csproj", "Notrelix.Infrastructure/"]
-COPY ["Notrelix.API/Notrelix.API.csproj", "Notrelix.API/"]
+COPY ["src/Notrelix.Domain/Notrelix.Domain.csproj", "src/Notrelix.Domain/"]
+COPY ["src/Notrelix.Application/Notrelix.Application.csproj", "src/Notrelix.Application/"]
+COPY ["src/Notrelix.Infrastructure/Notrelix.Infrastructure.csproj", "src/Notrelix.Infrastructure/"]
+COPY ["src/Notrelix.API/Notrelix.API.csproj", "src/Notrelix.API/"]
 
-RUN dotnet restore "Notrelix.API/Notrelix.API.csproj"
+RUN dotnet restore "src/Notrelix.API/Notrelix.API.csproj"
 
 # Copy source code and publish
 COPY . .
-WORKDIR "/src/Notrelix.API"
+WORKDIR "/src/src/Notrelix.API"
 
 RUN dotnet publish "Notrelix.API.csproj" \
   -c Release \

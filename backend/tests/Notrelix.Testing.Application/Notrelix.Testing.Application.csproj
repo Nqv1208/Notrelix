@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Notrelix.Testing.Application</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Notrelix.Application\Notrelix.Application.csproj" />
+    <ProjectReference Include="..\..\src\Notrelix.Domain\Notrelix.Domain.csproj" />
+    <ProjectReference Include="..\Notrelix.Testing.Core\Notrelix.Testing.Core.csproj" />
+    <ProjectReference Include="..\Notrelix.Testing.Domain\Notrelix.Testing.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

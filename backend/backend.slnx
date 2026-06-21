@@ -1,13 +1,21 @@
 <Solution>
-  <Project Path="Notrelix.Application/Notrelix.Application.csproj" />
-  <Project Path="Notrelix.Domain/Notrelix.Domain.csproj" />
-  <Project Path="Notrelix.Infrastructure/Notrelix.Infrastructure.csproj" />
-  <Project Path="Notrelix.Tests/Notrelix.Tests.csproj" />
+  <!-- Production -->
+  <Project Path="src/Notrelix.Domain/Notrelix.Domain.csproj" />
+  <Project Path="src/Notrelix.Application/Notrelix.Application.csproj" />
+  <Project Path="src/Notrelix.Infrastructure/Notrelix.Infrastructure.csproj" />
+  <Project Path="src/Notrelix.API/Notrelix.API.csproj" />
 
-  <Project Path="Notrelix.Tests/Application/Notrelix.Application.Tests.csproj" />
-  <Project Path="Notrelix.Tests/Infrastructure/Notrelix.Infrastructure.Tests.csproj" />
-  <Project Path="Notrelix.Tests/API/Notrelix.API.Tests.csproj" />
-  <Project Path="Notrelix.Tests/Domain/Notrelix.Domain.Tests.csproj" />
-  <Project Path="Notrelix.API/Notrelix.API.csproj" />
+  <!-- Test projects -->
+  <Project Path="tests/Notrelix.Architecture.Tests/Notrelix.Architecture.Tests.csproj" />
+  <Project Path="tests/Notrelix.Domain.Tests/Notrelix.Domain.Tests.csproj" />
+  <Project Path="tests/Notrelix.Application.Tests/Notrelix.Application.Tests.csproj" />
+  <Project Path="tests/Notrelix.Infrastructure.Tests/Notrelix.Infrastructure.Tests.csproj" />
+  <Project Path="tests/Notrelix.API.Tests/Notrelix.API.Tests.csproj" />
+  <Project Path="tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj" />
+
+  <!-- Testing support libraries -->
+  <Project Path="tests/Notrelix.Testing.Core/Notrelix.Testing.Core.csproj" />
+  <Project Path="tests/Notrelix.Testing.Domain/Notrelix.Testing.Domain.csproj" />
+  <Project Path="tests/Notrelix.Testing.Application/Notrelix.Testing.Application.csproj" />
+  <Project Path="tests/Notrelix.Testing.Integration/Notrelix.Testing.Integration.csproj" />
 </Solution>
-

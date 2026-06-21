@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>Notrelix.Infrastructure.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Moq" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Notrelix.Domain\Notrelix.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Notrelix.Application\Notrelix.Application.csproj" />
+    <ProjectReference Include="..\..\src\Notrelix.Infrastructure\Notrelix.Infrastructure.csproj" />
+    <ProjectReference Include="..\Notrelix.Testing.Core\Notrelix.Testing.Core.csproj" />
+    <ProjectReference Include="..\Notrelix.Testing.Domain\Notrelix.Testing.Domain.csproj" />
+    <ProjectReference Include="..\Notrelix.Testing.Application\Notrelix.Testing.Application.csproj" />
+  </ItemGroup>
+
+</Project>
