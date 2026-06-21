@@ -4,7 +4,7 @@ using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data;
 
-namespace Notrelix.Application.Tests.Workspaces;
+namespace Notrelix.Integration.Tests.Workspaces;
 
 public class GetUserWorkspacesQueryHandlerTests
 {

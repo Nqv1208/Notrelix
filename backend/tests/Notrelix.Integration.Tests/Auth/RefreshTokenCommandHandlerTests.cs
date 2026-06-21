@@ -3,15 +3,16 @@ using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Commands.RefreshToken;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.Identity.Sessions;
+using Notrelix.Testing.Integration.Factories;
 
-namespace Notrelix.Application.Tests.Auth;
+namespace Notrelix.Integration.Tests.Auth;
 
 public class RefreshTokenCommandHandlerTests
 {
     [Fact]
     public async Task Handle_WhenSessionNotFound_ShouldReturnFailure()
     {
-        using var context = AuthTestDbContextFactory.CreateInMemoryContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext();
 
         var jwtService = new Mock<IJwtService>();
         var dateTimeProvider = new Mock<IDateTimeProvider>();
@@ -30,7 +31,7 @@ public class RefreshTokenCommandHandlerTests
     [Fact]
     public async Task Handle_WhenValid_ShouldRevokeOldSessionAndIssueNewTokens()
     {
-        using var context = AuthTestDbContextFactory.CreateInMemoryContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext();
 
         var user = User.Create("refresh@example.com", "Refresh User", "hashed", DateTimeOffset.UtcNow);
         context.Users.Add(user);

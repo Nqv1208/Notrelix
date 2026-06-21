@@ -10,7 +10,7 @@ using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Infrastructure.Data;
 
-namespace Notrelix.Application.Tests.Boards;
+namespace Notrelix.Integration.Tests.Boards;
 
 public class BoardCommandPermissionTests
 {

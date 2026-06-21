@@ -3,15 +3,16 @@ using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Commands.Logout;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.Identity.Sessions;
+using Notrelix.Testing.Integration.Factories;
 
-namespace Notrelix.Application.Tests.Auth;
+namespace Notrelix.Integration.Tests.Auth;
 
 public class LogoutCommandHandlerTests
 {
     [Fact]
     public async Task Handle_WhenSessionExists_ShouldRevokeRefreshToken()
     {
-        using var context = AuthTestDbContextFactory.CreateInMemoryContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext();
 
         var user = User.Create("logout@example.com", "Logout User", "hashed", DateTimeOffset.UtcNow);
         context.Users.Add(user);
@@ -38,7 +39,7 @@ public class LogoutCommandHandlerTests
     [Fact]
     public async Task Handle_WhenSessionDoesNotExist_ShouldStillSucceed()
     {
-        using var context = AuthTestDbContextFactory.CreateInMemoryContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext();
 
         var jwtBlacklist = new Mock<IJwtBlacklistService>();
         var dateTimeProvider = new Mock<IDateTimeProvider>();

@@ -11,7 +11,7 @@ using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Infrastructure.Data;
 
-namespace Notrelix.Application.Tests.Governance;
+namespace Notrelix.Integration.Tests.Governance;
 
 public class PermissionServiceTests
 {

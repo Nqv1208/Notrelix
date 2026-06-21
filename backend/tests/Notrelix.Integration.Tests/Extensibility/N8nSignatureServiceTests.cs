@@ -1,6 +1,6 @@
 using Notrelix.Application.Common.Security;
 
-namespace Notrelix.Application.Tests.Extensibility;
+namespace Notrelix.Integration.Tests.Extensibility;
 
 public class N8nSignatureServiceTests
 {

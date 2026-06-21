@@ -5,15 +5,16 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Auth.Commands.Register;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Infrastructure.Data.Interceptors;
+using Notrelix.Testing.Integration.Factories;
 
-namespace Notrelix.Application.Tests.Auth;
+namespace Notrelix.Integration.Tests.Auth;
 
 public class RegisterCommandHandlerTests
 {
     [Fact]
     public async Task Handle_WhenEmailExists_ShouldReturnFailure()
     {
-        using var context = AuthTestDbContextFactory.CreateInMemoryContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext();
 
         var existing = User.Create("test@example.com", "Old", "hash", DateTimeOffset.UtcNow);
         context.Users.Add(existing);
@@ -44,7 +45,7 @@ public class RegisterCommandHandlerTests
     [Fact]
     public async Task Handle_WhenValid_ShouldCreateUserWorkspaceAndSession()
     {
-        using var context = AuthTestDbContextFactory.CreateInMemoryContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext();
 
         var passwordHasher = new Mock<IPasswordHasher>();
         passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");
@@ -83,7 +84,7 @@ public class RegisterCommandHandlerTests
         var integrationEventMapper = new Mock<IIntegrationEventMapper>();
         var mediator = CreateMediatorRejectingNonNotifications();
         var interceptor = new DomainEventInterceptor(dateTimeProvider.Object, eventTypeRegistry.Object, integrationEventMapper.Object, mediator.Object);
-        using var context = AuthTestDbContextFactory.CreateInMemoryContext(interceptor);
+        using var context = TestDbContextFactory.CreateInMemoryContext(interceptor);
 
         var passwordHasher = new Mock<IPasswordHasher>();
         passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");

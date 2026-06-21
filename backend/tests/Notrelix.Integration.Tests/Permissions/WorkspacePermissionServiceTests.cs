@@ -7,7 +7,7 @@ using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Infrastructure.Data;
 
-namespace Notrelix.Application.Tests.Permissions;
+namespace Notrelix.Integration.Tests.Permissions;
 
 public class WorkspacePermissionServiceTests
 {

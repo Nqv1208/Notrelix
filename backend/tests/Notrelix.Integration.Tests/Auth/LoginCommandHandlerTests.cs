@@ -2,15 +2,16 @@ using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Commands.Login;
 using Notrelix.Domain.Identity.Users;
+using Notrelix.Testing.Integration.Factories;
 
-namespace Notrelix.Application.Tests.Auth;
+namespace Notrelix.Integration.Tests.Auth;
 
 public class LoginCommandHandlerTests
 {
     [Fact]
     public async Task Handle_WhenUserNotFound_ShouldReturnFailure()
     {
-        using var context = AuthTestDbContextFactory.CreateInMemoryContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext();
 
         var passwordHasher = new Mock<IPasswordHasher>();
         var jwtService = new Mock<IJwtService>();
@@ -32,7 +33,7 @@ public class LoginCommandHandlerTests
     [Fact]
     public async Task Handle_WhenValid_ShouldGenerateTokensAndUpdateLastLogin()
     {
-        using var context = AuthTestDbContextFactory.CreateInMemoryContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext();
 
         var user = User.Create("login@example.com", "User", "hashed", DateTimeOffset.UtcNow);
         // Status default is Active

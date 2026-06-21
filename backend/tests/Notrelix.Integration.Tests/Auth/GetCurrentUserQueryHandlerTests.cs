@@ -1,15 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Features.Identity.Auth.Queries.GetCurrentUser;
 using Notrelix.Domain.Identity.Users;
+using Notrelix.Testing.Integration.Factories;
 
-namespace Notrelix.Application.Tests.Auth;
+namespace Notrelix.Integration.Tests.Auth;
 
 public class GetCurrentUserQueryHandlerTests
 {
     [Fact]
     public async Task Handle_WhenUserNotFound_ShouldReturnFailure()
     {
-        using var context = AuthTestDbContextFactory.CreateInMemoryContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext();
 
         var handler = new GetCurrentUserQueryHandler(context);
 
@@ -25,7 +26,7 @@ public class GetCurrentUserQueryHandlerTests
     [Fact]
     public async Task Handle_WhenUserExists_ShouldReturnUserDto()
     {
-        using var context = AuthTestDbContextFactory.CreateInMemoryContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext();
 
         var user = User.Create("me@example.com", "Me", "hashed", DateTimeOffset.UtcNow);
         context.Users.Add(user);

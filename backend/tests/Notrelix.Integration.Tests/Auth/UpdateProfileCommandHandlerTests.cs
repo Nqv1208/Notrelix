@@ -1,16 +1,17 @@
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile;
 using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile;
 using Notrelix.Domain.Identity.Users;
+using Notrelix.Testing.Integration.Factories;
 
-namespace Notrelix.Application.Tests.Auth;
+namespace Notrelix.Integration.Tests.Auth;
 
 public class UpdateProfileCommandHandlerTests
 {
     [Fact]
     public async Task Handle_WhenUserExists_ShouldUpdateNameAndAvatar()
     {
-        using var context = AuthTestDbContextFactory.CreateInMemoryContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext();
 
         var user = User.Create("avatar@example.com", "Old Name", "hashed", DateTimeOffset.UtcNow);
         context.Users.Add(user);
@@ -39,7 +40,7 @@ public class UpdateProfileCommandHandlerTests
     [Fact]
     public async Task Handle_WhenUserNotFound_ShouldReturnFailure()
     {
-        using var context = AuthTestDbContextFactory.CreateInMemoryContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext();
 
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         var handler = new UpdateProfileCommandHandler(context, dateTimeProvider.Object);

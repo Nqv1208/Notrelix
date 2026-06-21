@@ -6,6 +6,7 @@ using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoa
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Items;
+using Notrelix.Domain.WorkManagement.Items.Events;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.Workspaces.Workspaces;
@@ -13,7 +14,7 @@ using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Infrastructure.Data;
 
-namespace Notrelix.Application.Tests.Boards;
+namespace Notrelix.Integration.Tests.Boards;
 
 public class UpdateBoardItemFieldValuesCommandHandlerTests
 {

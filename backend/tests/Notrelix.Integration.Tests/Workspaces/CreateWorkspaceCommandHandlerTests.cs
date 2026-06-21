@@ -4,9 +4,9 @@ using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
-using Notrelix.Application.Tests.Auth;
+using Notrelix.Testing.Integration.Factories;
 
-namespace Notrelix.Application.Tests.Workspaces;
+namespace Notrelix.Integration.Tests.Workspaces;
 
 public class CreateWorkspaceCommandHandlerTests
 {
@@ -23,7 +23,7 @@ public class CreateWorkspaceCommandHandlerTests
     [Fact]
     public async Task Handle_WhenCreatingTeamWorkspace_ShouldSucceed()
     {
-        using var context = AuthTestDbContextFactory.CreateInMemoryContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext();
         var userId = Guid.NewGuid();
         _currentUserMock.Setup(u => u.UserId).Returns(userId);
 
@@ -48,7 +48,7 @@ public class CreateWorkspaceCommandHandlerTests
     [Fact]
     public async Task Handle_WhenCreatingPersonalWorkspace_ShouldSucceed()
     {
-        using var context = AuthTestDbContextFactory.CreateInMemoryContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext();
         var userId = Guid.NewGuid();
         _currentUserMock.Setup(u => u.UserId).Returns(userId);
 
@@ -71,7 +71,7 @@ public class CreateWorkspaceCommandHandlerTests
     [Fact]
     public async Task Handle_WhenSlugAlreadyExists_ShouldAppendUniqueSuffix()
     {
-        using var context = AuthTestDbContextFactory.CreateInMemoryContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext();
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
         _currentUserMock.Setup(u => u.UserId).Returns(userId);
