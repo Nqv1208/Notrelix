@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace;
-using Notrelix.Domain.Governance.Roles;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data;
@@ -107,11 +106,5 @@ public class WorkspaceLifecycleTests
     private sealed class TestApplicationDbContext : ApplicationDbContext
     {
         public TestApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
-            modelBuilder.Entity<CustomRole>().Ignore(x => x.Permissions);
-        }
     }
 }

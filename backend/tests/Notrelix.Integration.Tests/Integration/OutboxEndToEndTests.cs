@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Events;
 using Notrelix.Domain.Common;
-using Notrelix.Domain.Governance.Roles;
+
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Interceptors;
@@ -158,11 +158,5 @@ public class OutboxEndToEndTests
     private sealed class TestApplicationDbContext : ApplicationDbContext
     {
         public TestApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
-            modelBuilder.Entity<CustomRole>().Ignore(x => x.Permissions);
-        }
     }
 }

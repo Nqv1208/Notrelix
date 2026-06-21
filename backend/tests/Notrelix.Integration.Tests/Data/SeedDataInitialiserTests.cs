@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Abstractions;
-using Notrelix.Domain.Governance.Roles;
+
 using Notrelix.Infrastructure.Data;
 
 namespace Notrelix.Integration.Tests.Data;
@@ -190,12 +190,6 @@ public class SeedDataInitialiserTests
     private class TestApplicationDbContext : ApplicationDbContext
     {
         public TestApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
-            modelBuilder.Entity<CustomRole>().Ignore(x => x.Permissions);
-        }
     }
 
     private static ApplicationDbContextInitialiser CreateInitialiser(
