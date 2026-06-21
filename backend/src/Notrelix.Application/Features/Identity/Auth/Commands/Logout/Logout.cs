@@ -31,7 +31,7 @@ public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Result>
     {
         var tokenHash = RefreshTokenHash.Create(request.RefreshToken);
         var session = await _context.Sessions
-            .FirstOrDefaultAsync(s => s.RefreshTokenHash == tokenHash, cancellationToken);
+            .FirstOrDefaultAsync(s => s.RefreshTokenHash.Hash == tokenHash.Hash, cancellationToken);
 
         if (session is not null)
         {

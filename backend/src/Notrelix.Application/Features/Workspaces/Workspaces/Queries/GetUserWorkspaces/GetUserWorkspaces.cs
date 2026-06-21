@@ -27,7 +27,7 @@ public class GetUserWorkspacesQueryHandler : IRequestHandler<GetUserWorkspacesQu
                 member => member.WorkspaceId,
                 workspace => workspace.Id,
                 (_, workspace) => workspace)
-            .Where(workspace => workspace.Status == WorkspaceStatus.Active && !workspace.IsDeleted)
+            .Where(workspace => workspace.Status == WorkspaceStatus.Active && workspace.DeletedAt == null)
             .OrderBy(workspace => workspace.Name)
             .ToListAsync(ct);
 

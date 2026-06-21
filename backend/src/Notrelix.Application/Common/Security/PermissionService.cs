@@ -74,7 +74,7 @@ public class PermissionService : IPermissionService, IPermissionEvaluator
                                    p.ResourceId == board.Id &&
                                    p.SubjectType == PermissionSubjectType.User &&
                                    p.SubjectId == context.UserId &&
-                                   p.IsDeleted == false, cancellationToken);
+                                   p.DeletedAt == null, cancellationToken);
 
                 if (boardMember is null && !hasExplicitPermission)
                 {
@@ -140,7 +140,7 @@ public class PermissionService : IPermissionService, IPermissionEvaluator
         var rules = await _context.PermissionRules
             .Where(r => r.WorkspaceId == context.WorkspaceId
                 && r.Status == PermissionRuleStatus.Active
-                && r.IsDeleted == false
+                && r.DeletedAt == null
                 && (r.StartsAt == null || r.StartsAt <= now)
                 && (r.ExpiresAt == null || r.ExpiresAt > now))
             .OrderBy(r => r.Priority)

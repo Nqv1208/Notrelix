@@ -4,7 +4,7 @@ using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Security;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.AddBoardMember;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
-using Notrelix.Domain.Common.Exceptions;
+using Notrelix.Application.Common.Exceptions;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Domain.Workspaces.Members;
@@ -21,7 +21,7 @@ public class BoardCommandPermissionTests
         var ownerId = Guid.NewGuid();
         var memberId = Guid.NewGuid();
         var addedUserId = Guid.NewGuid();
-        var board = await SeedBoardAsync(context, ownerId, memberId, WorkspaceRole.Member);
+        var board = await SeedBoardAsync(context, ownerId, memberId, WorkspaceRole.Member, addedUserId);
         var timeProvider = new Mock<IDateTimeProvider>();
         timeProvider.Setup(t => t.UtcNow).Returns(DateTimeOffset.UtcNow);
         var evaluator = new PermissionService(context, timeProvider.Object);
@@ -63,7 +63,9 @@ public class BoardCommandPermissionTests
         ApplicationDbContext context,
         Guid ownerId,
         Guid userId,
-        WorkspaceRole userRole)
+        WorkspaceRole userRole,
+        Guid? addedUserId = null,
+        WorkspaceRole addedUserRole = WorkspaceRole.Member)
     {
         var now = DateTimeOffset.UtcNow;
         var workspace = Workspace.Create(ownerId, "Workspace", "workspace", now);
@@ -72,6 +74,10 @@ public class BoardCommandPermissionTests
 
         context.Workspaces.Add(workspace);
         context.WorkspaceMembers.Add(workspaceMember);
+        if (addedUserId.HasValue)
+        {
+            context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, addedUserId.Value, addedUserRole, ownerId, now));
+        }
         context.Boards.Add(board);
         await context.SaveChangesAsync();
 

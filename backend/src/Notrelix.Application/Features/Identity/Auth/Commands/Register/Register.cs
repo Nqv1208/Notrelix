@@ -59,6 +59,8 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<Au
         var session = UserSession.Create(user.Id, tokenHash, now.AddDays(30), now);
         _context.Sessions.Add(session);
 
+        await _context.SaveChangesAsync(cancellationToken);
+
         return Result<AuthResult>.Success(new AuthResult
         {
             AccessToken = accessToken,

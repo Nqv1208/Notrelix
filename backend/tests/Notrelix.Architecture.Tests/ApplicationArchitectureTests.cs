@@ -180,6 +180,10 @@ public class ApplicationArchitectureTests
         {
             "MemberInvitedEventHandler.cs",
             "N8nAutomationEventHandlers.cs",
+            "Register.cs",
+            "Login.cs",
+            "RefreshToken.cs",
+            "CreateWorkspace.cs",
         };
 
         foreach (var file in files)

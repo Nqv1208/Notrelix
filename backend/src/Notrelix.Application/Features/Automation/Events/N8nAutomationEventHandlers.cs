@@ -26,14 +26,14 @@ public class CardAssignedN8nAutomationHandler : INotificationHandler<DomainEvent
 
         var card = await _context.BoardItems
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == domainEvent.ItemId && !c.IsDeleted, cancellationToken);
+            .FirstOrDefaultAsync(c => c.Id == domainEvent.ItemId && c.DeletedAt == null, cancellationToken);
 
         if (card is null) return;
 
         var rules = await _context.AutomationRules
             .Where(rule =>
                 rule.WorkspaceId == card.WorkspaceId &&
-                rule.IsEnabled)
+                rule.Status == AutomationRuleStatus.Active)
             .ToListAsync(cancellationToken);
 
         foreach (var rule in rules)

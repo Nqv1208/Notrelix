@@ -19,6 +19,6 @@ public class WorkspaceBuilder
 
     public Workspace Build()
     {
-        return Workspace.Create(_ownerId, _name, _slug, _createdAt, _isPersonal);
+        return Workspace.Create(_ownerId, _name, _slug, _createdAt, isPersonal: _isPersonal);
     }
 }

@@ -3,7 +3,7 @@ using Moq;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Security;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValues;
-using Notrelix.Domain.Common.Exceptions;
+using Notrelix.Application.Common.Exceptions;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.WorkManagement.Items.Events;

@@ -32,7 +32,7 @@ public class LogoutCommandHandlerTests
             RefreshToken = refreshToken
         }, CancellationToken.None);
 
-        var updated = await context.Sessions.FirstAsync(s => s.RefreshTokenHash == RefreshTokenHash.Create(refreshToken));
+        var updated = await context.Sessions.FirstAsync(s => s.RefreshTokenHash.Hash == RefreshTokenHash.Create(refreshToken).Hash);
         updated.Status.Should().Be(SessionStatus.Revoked);
     }
 

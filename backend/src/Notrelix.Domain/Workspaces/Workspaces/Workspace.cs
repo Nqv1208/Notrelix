@@ -18,7 +18,7 @@ public class Workspace : AggregateRoot
 
     private Workspace() : base() { }
 
-    public static Workspace Create(Guid ownerId, string name, string slug, DateTimeOffset createdAt, bool isPersonal = false, Guid? accountId = null)
+    public static Workspace Create(Guid ownerId, string name, string slug, DateTimeOffset createdAt, string? description = null, bool isPersonal = false, Guid? accountId = null)
     {
         Guard.NotEmpty(ownerId);
         Guard.NotNullOrWhiteSpace(name);
@@ -28,6 +28,7 @@ public class Workspace : AggregateRoot
         {
             Name = name.Trim(),
             Slug = slug.Trim().ToLowerInvariant(),
+            Description = description?.Trim(),
             Status = WorkspaceStatus.Active,
             Settings = WorkspaceSettings.Create(),
             IsPersonal = isPersonal,

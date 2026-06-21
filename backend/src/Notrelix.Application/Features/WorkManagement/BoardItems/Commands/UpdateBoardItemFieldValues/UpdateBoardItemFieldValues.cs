@@ -29,7 +29,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
     public async Task<Result> Handle(UpdateBoardItemFieldValuesCommand request, CancellationToken ct)
     {
         var card = await _context.BoardItems
-            .FirstOrDefaultAsync(c => c.Id == request.BoardItemId && !c.IsDeleted, ct);
+            .FirstOrDefaultAsync(c => c.Id == request.BoardItemId && c.DeletedAt == null, ct);
         if (card is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
         await _permissions.EnsureCanEditBoardAsync(card.BoardId, _currentUser.UserId, ct);

@@ -59,11 +59,11 @@ public class RefreshTokenCommandHandlerTests
         result.Data!.RefreshToken.Should().Be("new-refresh-token");
 
         // Old session should be revoked
-        var old = await context.Sessions.FirstAsync(s => s.RefreshTokenHash == RefreshTokenHash.Create(oldRefreshToken));
+        var old = await context.Sessions.FirstAsync(s => s.RefreshTokenHash.Hash == RefreshTokenHash.Create(oldRefreshToken).Hash);
         old.Status.Should().Be(SessionStatus.Revoked);
 
         // New session should exist
         (await context.Sessions.ToListAsync()).Should().HaveCount(2);
-        (await context.Sessions.AnyAsync(s => s.RefreshTokenHash == RefreshTokenHash.Create("new-refresh-token"))).Should().BeTrue();
+        (await context.Sessions.AnyAsync(s => s.RefreshTokenHash.Hash == RefreshTokenHash.Create("new-refresh-token").Hash)).Should().BeTrue();
     }
 }

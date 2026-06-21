@@ -35,9 +35,10 @@ public class CreateWorkspaceCommandHandler : IRequestHandler<CreateWorkspaceComm
             ? slug.Value + "-" + Guid.NewGuid().ToString("N")[..6]
             : slug.Value;
 
-        var workspace = Workspace.Create(_currentUser.UserId, request.Name, finalSlug, _dateTimeProvider.UtcNow, isPersonal: request.IsPersonal);
+        var workspace = Workspace.Create(_currentUser.UserId, request.Name, finalSlug, _dateTimeProvider.UtcNow, description: request.Description, isPersonal: request.IsPersonal);
 
         _context.Workspaces.Add(workspace);
+        await _context.SaveChangesAsync(ct);
         return Result<Guid>.Success(workspace.Id);
     }
 }

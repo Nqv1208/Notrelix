@@ -35,7 +35,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
 
         var session = await _context.Sessions
             .FirstOrDefaultAsync(s => 
-                s.RefreshTokenHash == tokenHash && 
+                s.RefreshTokenHash.Hash == tokenHash.Hash && 
                 s.Status == SessionStatus.Active && 
                 s.ExpiresAt > now, 
                 cancellationToken);
@@ -61,6 +61,8 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
 
         var newSession = UserSession.Create(user.Id, newTokenHash, now.AddDays(30), now);
         _context.Sessions.Add(newSession);
+
+        await _context.SaveChangesAsync(cancellationToken);
 
         return Result<AuthResult>.Success(new AuthResult
         {

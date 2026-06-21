@@ -40,7 +40,7 @@ public class CreateWorkspaceCommandHandlerTests
 
         workspace.Should().NotBeNull();
         workspace!.Name.Should().Be("Awesome Project");
-        workspace.Slug.Should().StartWith("awesome-project-");
+        workspace.Slug.Should().Be("awesome-project");
         workspace.Description.Should().Be("A great software project");
         workspace.IsPersonal.Should().BeFalse();
     }

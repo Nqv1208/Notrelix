@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using MediatR;
 using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Common.Events;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Auth.Commands.Register;
+using Notrelix.Domain.Common;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Infrastructure.Data.Interceptors;
 using Notrelix.Testing.Integration.Factories;
@@ -82,6 +84,9 @@ public class RegisterCommandHandlerTests
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         var eventTypeRegistry = new Mock<IEventTypeRegistry>();
         var integrationEventMapper = new Mock<IIntegrationEventMapper>();
+        integrationEventMapper
+            .Setup(x => x.Map(It.IsAny<IDomainEvent>()))
+            .Returns(Array.Empty<IntegrationEventMapping>());
         var mediator = CreateMediatorRejectingNonNotifications();
         var interceptor = new DomainEventInterceptor(dateTimeProvider.Object, eventTypeRegistry.Object, integrationEventMapper.Object, mediator.Object);
         using var context = TestDbContextFactory.CreateInMemoryContext(interceptor);
@@ -117,7 +122,7 @@ public class RegisterCommandHandlerTests
         (await context.WorkspaceMembers.CountAsync()).Should().Be(1);
         (await context.Sessions.CountAsync()).Should().Be(1);
 
-        mediator.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Once);
+        mediator.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
     }
 
     private static Mock<IMediator> CreateMediatorRejectingNonNotifications()
