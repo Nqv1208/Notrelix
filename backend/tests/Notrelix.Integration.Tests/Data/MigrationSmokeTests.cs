@@ -3,6 +3,7 @@ using Notrelix.Integration.Tests.Containers;
 namespace Notrelix.Integration.Tests.Data;
 
 [Collection("Database")]
+[Trait("Category", "RequiresDocker")]
 public class MigrationSmokeTests
 {
     private readonly PostgresTestContainer _db;

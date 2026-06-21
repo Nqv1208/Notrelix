@@ -15,7 +15,11 @@ public sealed class PostgresTestContainer : IAsyncLifetime
         .WithCleanUp(true)
         .Build();
 
-    public string ConnectionString => _container.GetConnectionString();
+    public string ConnectionString =>
+        string.IsNullOrEmpty(Environment.GetEnvironmentVariable("NO_DOCKER"))
+            ? _container.GetConnectionString()
+            : throw new InvalidOperationException(
+                "Docker is not available (NO_DOCKER env var is set). Use --filter \"Category!=RequiresDocker\" to skip Docker-dependent tests.");
 
     public async Task InitializeAsync()
     {

@@ -4,6 +4,7 @@ using Notrelix.Infrastructure.Data.Ops.Stores;
 namespace Notrelix.Integration.Tests.Data.Ops;
 
 [Collection("Database")]
+[Trait("Category", "RequiresDocker")]
 public class IdempotencyStoreIntegrationTests
 {
     private readonly PostgresTestContainer _db;
