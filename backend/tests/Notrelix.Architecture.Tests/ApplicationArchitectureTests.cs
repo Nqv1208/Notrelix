@@ -64,14 +64,40 @@ public class ApplicationArchitectureTests
             var content = RemoveComments(File.ReadAllText(file));
 
             var lines = content.Split('\n');
-            foreach (var line in lines)
+            for (var i = 0; i < lines.Length; i++)
             {
-                var trimmed = line.Trim();
+                var trimmed = lines[i].Trim();
                 if (!trimmed.StartsWith("public record") && !trimmed.StartsWith("public sealed record"))
                     continue;
 
-                if (trimmed.Contains(": ICommand") || trimmed.Contains(": IQuery"))
+                // Collect full declaration — handles multi-line records
+                var declaration = trimmed;
+                var parenDepth = trimmed.Count(c => c == '(') - trimmed.Count(c => c == ')');
+
+                if (parenDepth != 0 || (!trimmed.Contains(';') && !trimmed.Contains('{') && !trimmed.Contains(':')))
+                {
+                    for (var j = i + 1; j < lines.Length && parenDepth >= 0; j++)
+                    {
+                        var nextLine = lines[j].Trim();
+                        declaration += " " + nextLine;
+                        parenDepth += nextLine.Count(c => c == '(') - nextLine.Count(c => c == ')');
+
+                        if (parenDepth <= 0 && (nextLine.Contains(';') || nextLine.Contains('{') || nextLine.Contains(':')))
+                            break;
+                    }
+                }
+
+                if (declaration.Contains(": ICommand") || declaration.Contains(": IQuery"))
                     continue;
+
+                // DTO / helper records aren't request records — skip them
+                var nameMatch = Regex.Match(declaration, @"public\s+(?:sealed\s+)?record\s+(\w+)");
+                if (nameMatch.Success)
+                {
+                    var name = nameMatch.Groups[1].Value;
+                    if (name.EndsWith("Dto") || name.EndsWith("Response") || name.EndsWith("Item"))
+                        continue;
+                }
 
                 violations.Add($"{Path.GetFileName(file)}: {trimmed}");
             }
