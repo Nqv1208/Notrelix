@@ -1,78 +1,45 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
-using Notrelix.Infrastructure;
-using Notrelix.Infrastructure.Data;
-using Notrelix.Infrastructure.Middleware;
+using Microsoft.AspNetCore.DataProtection;
 using Notrelix.API.Endpoints;
+using Notrelix.API.Extensions;
 using Notrelix.API.Middleware;
+using Notrelix.Infrastructure;
+using Notrelix.Infrastructure.Middleware;
+using Dpo = Notrelix.Infrastructure.Options.DataProtectionOptions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-if (args.Length > 0 && args[0] is "--seed" or "--migrate")
-{
-    var connectionString = builder.Configuration.GetConnectionString("NotrelixDb");
-    builder.Services
-        .Configure<SeedDataOptions>(builder.Configuration.GetSection("SeedData"))
-        .AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(connectionString, npgOptions =>
-            {
-                npgOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
-                npgOptions.EnableRetryOnFailure(3, TimeSpan.FromSeconds(30), null);
-            }));
-
-    if (args[0] == "--seed")
-    {
-        builder.Services.AddSingleton<Notrelix.Application.Common.Abstractions.IPasswordHasher,
-            Notrelix.Infrastructure.Auth.Passwords.PasswordHasher>();
-    }
-
-    var seedApp = builder.Build();
-
-    using var scope = seedApp.Services.CreateScope();
-    var sp = scope.ServiceProvider;
-
-    if (args[0] == "--migrate")
-    {
-        var ctx = sp.GetRequiredService<ApplicationDbContext>();
-        await ctx.Database.MigrateAsync();
-        Console.WriteLine("Migration completed successfully.");
-        return;
-    }
-
-    if (args[0] == "--seed")
-    {
-        var opts = sp.GetRequiredService<IOptions<SeedDataOptions>>();
-        if (!opts.Value.Enabled)
-        {
-            Console.WriteLine("SeedData is disabled in configuration. Skipping.");
-            return;
-        }
-
-        var ctx = sp.GetRequiredService<ApplicationDbContext>();
-        var hasher = sp.GetRequiredService<Notrelix.Application.Common.Abstractions.IPasswordHasher>();
-        var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
-        var logger = loggerFactory.CreateLogger<ApplicationDbContextInitialiser>();
-        var initialiser = new ApplicationDbContextInitialiser(logger, ctx, hasher, opts);
-        await initialiser.SeedAsync();
-        Console.WriteLine("Seed completed successfully.");
-        return;
-    }
-}
+builder.Services
+    .AddOptions<Dpo>()
+    .Bind(builder.Configuration.GetSection("DataProtection"))
+    .ValidateOnStart();
 
 builder.AddApplicationServices();
+
+var dataProtectionOptions = builder.Configuration
+    .GetSection("DataProtection")
+    .Get<Dpo>() ?? new Dpo();
+
+var dataProtection = builder.Services
+    .AddDataProtection()
+    .SetApplicationName(dataProtectionOptions.ApplicationName);
+
+if (dataProtectionOptions.PersistKeys)
+{
+    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(dataProtectionOptions.KeysPath));
+}
+
 builder.Services
     .AddInfrastructure(builder.Configuration)
     .AddApiLayer(builder.Configuration);
 
 var app = builder.Build();
 
-// Apply pending EF Core migrations on startup
-using (var scope = app.Services.CreateScope())
+if (await app.RunDatabaseCommandsAsync(args))
 {
-    var initialiser = scope.ServiceProvider
-        .GetRequiredService<ApplicationDbContextInitialiser>();
-    await initialiser.InitialiseAsync();
+    return;
 }
+
+await app.InitialiseDatabaseOnStartupAsync();
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseForwardedHeaders();

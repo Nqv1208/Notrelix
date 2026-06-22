@@ -53,7 +53,7 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
         }
 
         var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.Email.Value.ToLower() == email, cancellationToken);
+            .FirstOrDefaultAsync(u => u.NormalizedEmail == email.ToUpperInvariant(), cancellationToken);
 
         if (user is null)
         {

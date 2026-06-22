@@ -46,24 +46,44 @@ internal static class InitDb
         ("Improvement","#43A047"),
     ];
 
-    public static async Task SeedAsync(
+    public static async Task<SeedResult> SeedAsync(
         ApplicationDbContext context,
         SeedTargets targets,
         IPasswordHasher passwordHasher,
         CancellationToken ct = default)
     {
-        if (await context.Users.AnyAsync(ct))
-            return;
+        var result = new SeedResult();
 
         var passwordHash = passwordHasher.HashPassword(DefaultPassword);
 
         var users = await CreateUsersAsync(context, targets, passwordHash, ct);
+        result = result with { UsersCreated = users.Count };
+
+        if (users.Count == 0)
+        {
+            result = result with { Skipped = true };
+            return result;
+        }
+
         var workspaces = await CreateWorkspacesAsync(context, targets, users, ct);
+        result = result with { WorkspacesCreated = workspaces.Count };
+
         var boardData = await CreateBoardStructuresAsync(context, targets, workspaces, users, ct);
-        await CreateBoardItemsAsync(context, targets, boardData, users, ct);
-        await CreatePagesAsync(context, targets, workspaces, users, ct);
-        await CreateCommentsAsync(context, boardData, users, ct);
-        await CreateNotificationsAsync(context, targets, users, ct);
+        result = result with { BoardsCreated = boardData.Count };
+
+        var itemsCreated = await CreateBoardItemsAsync(context, targets, boardData, users, ct);
+        result = result with { BoardItemsCreated = itemsCreated };
+
+        var pagesCreated = await CreatePagesAsync(context, targets, workspaces, users, ct);
+        result = result with { PagesCreated = pagesCreated };
+
+        var commentsCreated = await CreateCommentsAsync(context, boardData, users, ct);
+        result = result with { CommentsCreated = commentsCreated };
+
+        var notificationsCreated = await CreateNotificationsAsync(context, targets, users, ct);
+        result = result with { NotificationsCreated = notificationsCreated };
+
+        return result;
     }
 
     private static async Task ClearAndSaveAsync(ApplicationDbContext context, CancellationToken ct)
@@ -78,11 +98,14 @@ internal static class InitDb
             entity.ClearDomainEvents();
     }
 
-    // ──────────────── Phase 1: Users ────────────────
-
     private static async Task<List<User>> CreateUsersAsync(
         ApplicationDbContext context, SeedTargets targets, string passwordHash, CancellationToken ct)
     {
+        if (await context.Users.AnyAsync(ct))
+        {
+            return [];
+        }
+
         var defaultEmails = new[] { "admin@notrelix.com", "demo@notrelix.com", "member@notrelix.com" };
         var users = new List<User>(targets.UserCount);
 
@@ -98,11 +121,9 @@ internal static class InitDb
             var user = User.Create(email, name, passwordHash, Epoch.AddDays(i));
             users.Add(user);
 
-            // Create profile
             var profile = UserProfile.Create(user.Id, Epoch.AddDays(i));
             context.UserProfiles.Add(profile);
 
-            // Create session
             var tokenHash = RefreshTokenHash.Create($"seed-refresh-token-{i}");
             var createdAt = Epoch.AddDays(i);
             var session = UserSession.Create(
@@ -116,11 +137,14 @@ internal static class InitDb
         return users;
     }
 
-    // ──────────────── Phase 2: Workspaces ────────────────
-
     private static async Task<List<Workspace>> CreateWorkspacesAsync(
         ApplicationDbContext context, SeedTargets targets, List<User> users, CancellationToken ct)
     {
+        if (await context.Workspaces.AnyAsync(ct))
+        {
+            return [];
+        }
+
         var workspaces = new List<Workspace>(targets.WorkspaceCount);
         var defaultUserIds = users.Take(3).Select(u => u.Id).ToHashSet();
 
@@ -137,7 +161,6 @@ internal static class InitDb
 
             var addedUserIds = new HashSet<Guid> { owner.Id };
 
-            // Add default users as members of all workspaces
             foreach (var uid in defaultUserIds)
             {
                 if (!addedUserIds.Add(uid)) continue;
@@ -146,7 +169,6 @@ internal static class InitDb
                 context.WorkspaceMembers.Add(member);
             }
 
-            // Add other workspace members
             var memberCount = Math.Min(3 + i % 3, users.Count / 2);
             for (int m = 0; m < memberCount; m++)
             {
@@ -166,8 +188,6 @@ internal static class InitDb
         return workspaces;
     }
 
-    // ──────────────── Phase 3: Board structure ────────────────
-
     private sealed record BoardStructure(
         Board Board,
         List<BoardField> Fields,
@@ -178,6 +198,11 @@ internal static class InitDb
     private static async Task<List<BoardStructure>> CreateBoardStructuresAsync(
         ApplicationDbContext context, SeedTargets targets, List<Workspace> workspaces, List<User> users, CancellationToken ct)
     {
+        if (await context.Boards.AnyAsync(ct))
+        {
+            return [];
+        }
+
         var structures = new List<BoardStructure>(targets.BoardCount);
         var statusSettings = FieldSettings.Create(JsonValue.Create("""{"transitions":[]}"""));
         var emptySettings = FieldSettings.Create(JsonValue.EmptyObject());
@@ -207,7 +232,6 @@ internal static class InitDb
                     Epoch.AddDays(boardIndex), BoardVisibility.Workspace);
                 context.Boards.Add(board);
 
-                // Fields
                 var fields = new List<BoardField>();
 
                 for (int f = 0; f < targets.BoardFieldCount / targets.BoardCount; f++)
@@ -229,7 +253,6 @@ internal static class InitDb
                     context.BoardFields.Add(field);
                     fields.Add(field);
 
-                    // FieldOptions for Status and Select fields
                     if (fOptions.Length > 0)
                     {
                         for (int o = 0; o < fOptions.Length; o++)
@@ -243,7 +266,6 @@ internal static class InitDb
                     }
                 }
 
-                // Groups
                 var groups = new List<BoardGroup>();
                 var groupNames = new[] { "Backlog", "To Do", "In Progress", "Done" };
                 for (int g = 0; g < groupNames.Length; g++)
@@ -255,7 +277,6 @@ internal static class InitDb
                     groups.Add(group);
                 }
 
-                // Labels
                 var labels = new List<Label>();
                 for (int l = 0; l < LabelTemplates.Length; l++)
                 {
@@ -267,7 +288,6 @@ internal static class InitDb
                     labels.Add(label);
                 }
 
-                // Views
                 var views = new List<BoardView>();
                 var tableView = BoardView.Create(
                     ws.Id, board.Id, "Table", ViewType.Table,
@@ -291,17 +311,19 @@ internal static class InitDb
         return structures;
     }
 
-    // ──────────────── Phase 4: Board Items ────────────────
-
-    private static async Task CreateBoardItemsAsync(
+    private static async Task<int> CreateBoardItemsAsync(
         ApplicationDbContext context, SeedTargets targets,
         List<BoardStructure> structures, List<User> users, CancellationToken ct)
     {
+        if (await context.BoardItems.AnyAsync(ct) || structures.Count == 0)
+        {
+            return 0;
+        }
+
         var itemsPerGroup = targets.BoardItemCount / Math.Max(1, targets.BoardGroupCount);
         var remainingItems = targets.BoardItemCount % Math.Max(1, targets.BoardGroupCount);
         int itemIndex = 0;
 
-        // Pre-build field option lookup per board
         var statusOptionsByBoard = new Dictionary<Guid, List<FieldOption>>();
         var priorityOptionsByBoard = new Dictionary<Guid, List<FieldOption>>();
         foreach (var bs in structures)
@@ -344,7 +366,6 @@ internal static class InitDb
 
                     context.BoardItems.Add(item);
 
-                    // Item Values for each field
                     foreach (var field in bs.Fields)
                     {
                         var value = field.Type switch
@@ -368,7 +389,6 @@ internal static class InitDb
                         context.BoardItemValues.Add(itemValue);
                     }
 
-                    // Assign some labels
                     if (i % 2 == 0 && bs.Labels.Count > 0)
                     {
                         var label = bs.Labels[i % bs.Labels.Count];
@@ -378,7 +398,6 @@ internal static class InitDb
                         context.BoardItemLabels.Add(itemLabel);
                     }
 
-                    // Assign some members
                     if (i % 3 == 0)
                     {
                         var assignee = boardUsers[(i + 1) % boardUsers.Count];
@@ -392,6 +411,7 @@ internal static class InitDb
         }
 
         await ClearAndSaveAsync(context, ct);
+        return itemIndex;
     }
 
     private static FieldValue CreateOptionFieldValue(
@@ -405,12 +425,15 @@ internal static class InitDb
         return FieldValue.Create(JsonValue.Null());
     }
 
-    // ──────────────── Phase 5: Pages ────────────────
-
-    private static async Task CreatePagesAsync(
+    private static async Task<int> CreatePagesAsync(
         ApplicationDbContext context, SeedTargets targets,
         List<Workspace> workspaces, List<User> users, CancellationToken ct)
     {
+        if (await context.Pages.AnyAsync(ct) || workspaces.Count == 0)
+        {
+            return 0;
+        }
+
         var pagesPerWorkspace = targets.PageCount / workspaces.Count;
         var remaining = targets.PageCount % workspaces.Count;
         int pageIndex = 0;
@@ -431,7 +454,6 @@ internal static class InitDb
                     Epoch.AddDays(pageIndex));
                 context.Pages.Add(page);
 
-                // Create blocks for each page
                 var blocksPerPage = targets.BlockCount / targets.PageCount;
                 for (int b = 0; b < blocksPerPage; b++)
                 {
@@ -446,14 +468,18 @@ internal static class InitDb
         }
 
         await ClearAndSaveAsync(context, ct);
+        return pageIndex;
     }
 
-    // ──────────────── Phase 6: Comments ────────────────
-
-    private static async Task CreateCommentsAsync(
+    private static async Task<int> CreateCommentsAsync(
         ApplicationDbContext context, List<BoardStructure> structures,
         List<User> users, CancellationToken ct)
     {
+        if (await context.Comments.AnyAsync(ct) || structures.Count == 0)
+        {
+            return 0;
+        }
+
         var items = await context.BoardItems
             .OrderBy(i => i.CreatedAt)
             .Take(400)
@@ -487,14 +513,18 @@ internal static class InitDb
         }
 
         await ClearAndSaveAsync(context, ct);
+        return items.Count;
     }
 
-    // ──────────────── Phase 7: Notifications ────────────────
-
-    private static async Task CreateNotificationsAsync(
+    private static async Task<int> CreateNotificationsAsync(
         ApplicationDbContext context, SeedTargets targets,
         List<User> users, CancellationToken ct)
     {
+        if (await context.Notifications.AnyAsync(ct) || users.Count == 0)
+        {
+            return 0;
+        }
+
         var notificationsPerUser = targets.NotificationCount / users.Count;
         var remaining = targets.NotificationCount % users.Count;
 
@@ -518,7 +548,6 @@ internal static class InitDb
                     createdAt);
                 context.Notifications.Add(notification);
 
-                // NotificationDelivery
                 var delivery = NotificationDelivery.Create(
                     notification.Id, wsId, user.Id,
                     NotificationChannel.InApp, createdAt);
@@ -527,5 +556,6 @@ internal static class InitDb
         }
 
         await ClearAndSaveAsync(context, ct);
+        return users.Count * notificationsPerUser;
     }
 }
