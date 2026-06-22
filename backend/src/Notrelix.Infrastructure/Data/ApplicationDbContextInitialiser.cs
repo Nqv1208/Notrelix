@@ -51,7 +51,13 @@ public class ApplicationDbContextInitialiser
 
         try
         {
-            await TrySeedAsync();
+            var result = await TrySeedAsync();
+            _logger.LogInformation(
+                "Seed completed. Users={Users}, Workspaces={Workspaces}, Boards={Boards}, " +
+                "Items={Items}, Pages={Pages}, Comments={Comments}, Notifications={Notifications}, Skipped={Skipped}",
+                result.UsersCreated, result.WorkspacesCreated, result.BoardsCreated,
+                result.BoardItemsCreated, result.PagesCreated, result.CommentsCreated,
+                result.NotificationsCreated, result.Skipped);
         }
         catch (Exception ex)
         {
@@ -60,7 +66,7 @@ public class ApplicationDbContextInitialiser
         }
     }
 
-    private async Task TrySeedAsync()
+    private async Task<SeedResult> TrySeedAsync()
     {
         var targets = _options.GetTargets();
 
@@ -70,7 +76,7 @@ public class ApplicationDbContextInitialiser
             await ResetSeedDataAsync();
         }
 
-        await InitDb.SeedAsync(_context, targets, _passwordHasher);
+        return await InitDb.SeedAsync(_context, targets, _passwordHasher);
     }
 
     private async Task ResetSeedDataAsync()

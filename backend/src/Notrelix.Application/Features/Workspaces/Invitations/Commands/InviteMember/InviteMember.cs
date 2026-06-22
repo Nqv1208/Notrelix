@@ -47,11 +47,12 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         await _permissions.EnsureCanManageWorkspaceAsync(request.WorkspaceId, _currentUser.UserId, ct);
 
         var cleanEmail = request.Email.Trim().ToLowerInvariant();
+        var normalizedEmail = cleanEmail.ToUpperInvariant();
         var now = _dateTimeProvider.UtcNow;
 
         var targetUser = await _context.Users
             .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Email.Value.ToLower() == cleanEmail, ct);
+            .FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail, ct);
 
         if (targetUser != null)
         {

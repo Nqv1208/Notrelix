@@ -1,6 +1,7 @@
-using Notrelix.Application.Common.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Notrelix.Application.Common.Abstractions;
+using Notrelix.Infrastructure.Options;
 using Resend;
 
 namespace Notrelix.Infrastructure.Email;
@@ -8,13 +9,13 @@ namespace Notrelix.Infrastructure.Email;
 public class ResendEmailService : IEmailService
 {
     private readonly IResend _resend;
-    private readonly EmailSettings _settings;
+    private readonly EmailOptions _options;
     private readonly ILogger<ResendEmailService> _logger;
 
-    public ResendEmailService(IResend resend, IOptions<EmailSettings> settings, ILogger<ResendEmailService> logger)
+    public ResendEmailService(IResend resend, IOptions<EmailOptions> options, ILogger<ResendEmailService> logger)
     {
         _resend = resend;
-        _settings = settings.Value;
+        _options = options.Value;
         _logger = logger;
     }
 
@@ -24,7 +25,7 @@ public class ResendEmailService : IEmailService
         {
             var message = new EmailMessage
             {
-                From = $"{_settings.FromName} <{_settings.FromEmail}>",
+                From = $"{_options.FromName} <{_options.FromEmail}>",
                 Subject = subject,
                 HtmlBody = htmlBody,
             };

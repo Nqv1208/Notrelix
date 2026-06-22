@@ -10,6 +10,7 @@ namespace Notrelix.Domain.Identity.Users;
 public class User : AggregateRoot
 {
     public Email Email { get; private set; } = null!;
+    public string NormalizedEmail { get; private set; } = string.Empty;
     public string Name { get; private set; } = null!;
     public string? Avatar { get; private set; }
 
@@ -23,6 +24,9 @@ public class User : AggregateRoot
     private readonly List<OAuthAccount> _oauthAccounts = new();
     public IReadOnlyCollection<OAuthAccount> OAuthAccounts => _oauthAccounts.AsReadOnly();
 
+    private static string NormalizeEmail(string email)
+        => email.Trim().ToUpperInvariant();
+
     private User() : base() { }
 
     public static User Create(
@@ -34,9 +38,12 @@ public class User : AggregateRoot
         Guard.NotNullOrWhiteSpace(name);
         Guard.NotNullOrWhiteSpace(passwordHash);
 
+        var emailValue = Email.Create(email);
+
         var user = new User
         {
-            Email = Email.Create(email),
+            Email = emailValue,
+            NormalizedEmail = NormalizeEmail(emailValue.Value),
             Name = name.Trim(),
             PasswordHash = passwordHash,
             Status = UserStatus.Active
@@ -70,8 +77,10 @@ public class User : AggregateRoot
         EnsureNotDeleted();
 
         var oldEmail = Email;
+        var emailValue = Email.Create(email);
 
-        Email = Email.Create(email);
+        Email = emailValue;
+        NormalizedEmail = NormalizeEmail(emailValue.Value);
         
         SetAuditOnUpdate(Id, updatedAt);
         IncrementVersion();

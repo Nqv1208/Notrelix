@@ -19,6 +19,12 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             email.HasIndex(e => e.Value).IsUnique().HasDatabaseName("idx_users_email");
         });
 
+        builder.Property(x => x.NormalizedEmail).HasColumnName("normalized_email").IsRequired().HasMaxLength(320);
+        builder.HasIndex(x => x.NormalizedEmail)
+            .IsUnique()
+            .HasDatabaseName("ux_users_normalized_email")
+            .HasFilter("deleted_at IS NULL");
+
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
         builder.Property(x => x.Avatar).HasColumnName("avatar");
         builder.Property(x => x.PasswordHash).HasColumnName("password_hash").IsRequired();

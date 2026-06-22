@@ -25,9 +25,9 @@ namespace Notrelix.Infrastructure.Email
                 EnableSsl = _options.EnableSsl
             };
 
-            if (!string.IsNullOrWhiteSpace(_options.UserName))
+            if (!string.IsNullOrWhiteSpace(_options.Username))
             {
-                client.Credentials = new NetworkCredential(_options.UserName, _options.Password);
+                client.Credentials = new NetworkCredential(_options.Username, _options.Password);
             }
 
             await client.SendMailAsync(message, cancellationToken);

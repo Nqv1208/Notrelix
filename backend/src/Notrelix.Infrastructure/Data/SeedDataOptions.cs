@@ -10,6 +10,7 @@ public enum SeedProfile
 public sealed class SeedDataOptions
 {
     public bool Enabled { get; set; }
+    public bool RunOnStartup { get; set; }
     public SeedProfile Profile { get; set; } = SeedProfile.Small;
     public bool ResetBeforeSeed { get; set; }
 

@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Auth.Cookies;
@@ -41,7 +42,21 @@ public static class AuthRegistration
             ?? throw new InvalidOperationException(
                 "JwtSettings section is missing in appsettings.json");
 
-        services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
+        services.AddOptions<JwtSettings>()
+            .Bind(configuration.GetSection("JwtSettings"))
+            .Validate(o => !string.IsNullOrWhiteSpace(o.SecretKey),
+                "JwtSettings:SecretKey is required.")
+            .Validate(o => o.SecretKey.Length >= 32,
+                "JwtSettings:SecretKey must be at least 32 characters.")
+            .Validate(o => !string.IsNullOrWhiteSpace(o.Issuer),
+                "JwtSettings:Issuer is required.")
+            .Validate(o => !string.IsNullOrWhiteSpace(o.Audience),
+                "JwtSettings:Audience is required.")
+            .Validate(o => o.ExpireMinutes > 0,
+                "JwtSettings:ExpireMinutes must be greater than zero.")
+            .Validate(o => o.RefreshTokenExpireDays > 0,
+                "JwtSettings:RefreshTokenExpireDays must be greater than zero.")
+            .ValidateOnStart();
 
         services.AddAuthorization();
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

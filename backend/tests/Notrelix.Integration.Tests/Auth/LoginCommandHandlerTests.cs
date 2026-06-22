@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Commands.Login;
 using Notrelix.Domain.Identity.Users;
@@ -18,7 +19,7 @@ public class LoginCommandHandlerTests
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
 
-        var handler = new LoginCommandHandler(context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object);
+        var handler = new LoginCommandHandler(context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object, NullLogger<LoginCommandHandler>.Instance);
 
         var result = await handler.Handle(new LoginCommand
         {
@@ -50,7 +51,7 @@ public class LoginCommandHandlerTests
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
 
-        var handler = new LoginCommandHandler(context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object);
+        var handler = new LoginCommandHandler(context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object, NullLogger<LoginCommandHandler>.Instance);
 
         var before = DateTimeOffset.UtcNow;
         var result = await handler.Handle(new LoginCommand

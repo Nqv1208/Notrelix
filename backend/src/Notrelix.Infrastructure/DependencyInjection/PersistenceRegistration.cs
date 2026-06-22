@@ -2,7 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Abstractions;
+using Notrelix.Infrastructure.Options;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Interceptors;
 using Notrelix.Infrastructure.Data.Outbox;
@@ -17,7 +19,15 @@ public static class PersistenceRegistration
     public static IServiceCollection AddPersistence(
         this IServiceCollection services, IConfiguration configuration)
     {
-        services.Configure<SeedDataOptions>(configuration.GetSection("SeedData"));
+        services.AddOptions<SeedDataOptions>()
+            .Bind(configuration.GetSection("SeedData"))
+            .Validate(o => o.Profile is SeedProfile.Small or SeedProfile.Medium or SeedProfile.Large,
+                "SeedData:Profile must be Small, Medium, or Large.")
+            .ValidateOnStart();
+
+        services.AddOptions<DatabaseOptions>()
+            .Bind(configuration.GetSection("Database"))
+            .ValidateOnStart();
 
         // Interceptors (resolved inside AddDbContext below).
         services.AddScoped<AuditableEntityInterceptor>();
