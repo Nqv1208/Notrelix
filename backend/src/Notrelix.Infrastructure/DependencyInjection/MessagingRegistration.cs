@@ -2,13 +2,11 @@ using MassTransit;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Common.Events;
 using Notrelix.Infrastructure.Messaging;
 
 namespace Notrelix.Infrastructure;
 
-/// <summary>
-/// Integration event bus (MassTransit), consumers and domain-to-integration mappers.
-/// </summary>
 public static class MessagingRegistration
 {
     public static IServiceCollection AddMessaging(
@@ -24,20 +22,38 @@ public static class MessagingRegistration
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Billing.SubscriptionEventMapper>();
         services.AddScoped<IIntegrationEventMapper, CompositeIntegrationEventMapper>();
 
-        // MassTransit in-memory transport; consumers auto-discovered from this assembly.
-        services.AddMassTransit(cfg =>
+        var mtLicense = configuration["MT_LICENSE"];
+
+        if (!string.IsNullOrEmpty(mtLicense))
         {
-            cfg.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("notrelix", false));
-            cfg.AddConsumers(typeof(MessagingRegistration).Assembly);
-
-            cfg.UsingInMemory((ctx, mem) =>
+            services.AddMassTransit(cfg =>
             {
-                mem.ConfigureEndpoints(ctx);
-            });
-        });
+                cfg.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("notrelix", false));
+                cfg.AddConsumers(typeof(MessagingRegistration).Assembly);
 
-        services.AddScoped<IIntegrationEventBus, IntegrationEventBus>();
+                cfg.UsingInMemory((ctx, mem) =>
+                {
+                    mem.ConfigureEndpoints(ctx);
+                });
+            });
+
+            services.AddScoped<IIntegrationEventBus, IntegrationEventBus>();
+        }
+        else
+        {
+            // Dev fallback: no-op bus when MT_LICENSE is not set.
+            services.AddScoped<IIntegrationEventBus>(_ => new DevNullIntegrationEventBus());
+        }
 
         return services;
     }
+}
+
+file sealed class DevNullIntegrationEventBus : IIntegrationEventBus
+{
+    public Task PublishAsync<T>(T integrationEvent, CancellationToken cancellationToken = default) where T : IIntegrationEvent
+        => Task.CompletedTask;
+
+    public Task PublishAsync(IIntegrationEvent integrationEvent, CancellationToken cancellationToken = default)
+        => Task.CompletedTask;
 }

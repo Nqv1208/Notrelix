@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Notrelix.API.Endpoints.Health;
@@ -27,7 +28,7 @@ public static class HealthEndpoints
         return app;
     }
 
-    private static async Task<IResult> GetHealth(HealthCheckService healthCheck, HttpContext context)
+    private static async Task<IResult> GetHealth([FromServices] HealthCheckService healthCheck, HttpContext context)
     {
         var report = await healthCheck.CheckHealthAsync();
         return Results.Ok(new
@@ -47,7 +48,7 @@ public static class HealthEndpoints
         return Results.Ok(new { status = "alive", timestamp = DateTime.UtcNow });
     }
 
-    private static async Task<IResult> Ready(HealthCheckService healthCheck)
+    private static async Task<IResult> Ready([FromServices] HealthCheckService healthCheck)
     {
         try
         {

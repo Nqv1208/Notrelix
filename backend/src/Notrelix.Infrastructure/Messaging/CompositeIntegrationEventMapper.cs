@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Events;
 using Notrelix.Domain.Common;
@@ -6,20 +7,25 @@ namespace Notrelix.Infrastructure.Messaging;
 
 public sealed class CompositeIntegrationEventMapper : IIntegrationEventMapper
 {
-    private readonly IEnumerable<IIntegrationEventMapper> _mappers;
+    private readonly IServiceProvider _serviceProvider;
+    private IEnumerable<IIntegrationEventMapper>? _mappers;
 
-    public CompositeIntegrationEventMapper(IEnumerable<IIntegrationEventMapper> mappers)
+    public CompositeIntegrationEventMapper(IServiceProvider serviceProvider)
     {
-        _mappers = mappers;
+        _serviceProvider = serviceProvider;
     }
 
     public IReadOnlyList<IntegrationEventMapping> Map(IDomainEvent domainEvent)
     {
+        _mappers ??= _serviceProvider
+            .GetServices<IIntegrationEventMapper>()
+            .Where(m => m is not CompositeIntegrationEventMapper)
+            .ToList();
+
         var results = new List<IntegrationEventMapping>();
         foreach (var mapper in _mappers)
         {
-            var mapped = mapper.Map(domainEvent);
-            results.AddRange(mapped);
+            results.AddRange(mapper.Map(domainEvent));
         }
         return results;
     }

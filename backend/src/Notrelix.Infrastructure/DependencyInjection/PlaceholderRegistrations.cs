@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Notrelix.Application.Common.Abstractions;
 
 namespace Notrelix.Infrastructure;
 
@@ -30,7 +31,11 @@ public static class StorageRegistration
 public static class BillingRegistration
 {
     public static IServiceCollection AddBilling(
-        this IServiceCollection services, IConfiguration configuration) => services;
+        this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddScoped<IEntitlementChecker, Billing.DevNullEntitlementChecker>();
+        return services;
+    }
 }
 
 public static class SearchRegistration
@@ -48,7 +53,12 @@ public static class ReportingRegistration
 public static class OperationsRegistration
 {
     public static IServiceCollection AddOperations(
-        this IServiceCollection services, IConfiguration configuration) => services;
+        this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddScoped<Notrelix.Application.Common.Abstractions.IIdempotencyStore,
+            Ops.DevNullIdempotencyStore>();
+        return services;
+    }
 }
 
 public static class ObservabilityRegistration

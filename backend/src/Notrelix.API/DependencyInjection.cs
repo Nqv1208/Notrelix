@@ -11,6 +11,7 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        services.AddHealthChecks();
         services.AddApiProblemDetails();
         services.AddApiCors(configuration);
         services.AddApiSwagger();

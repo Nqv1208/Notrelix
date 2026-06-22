@@ -32,10 +32,6 @@ public static class PersistenceRegistration
             options.UseNpgsql(connectionString, npgOptions =>
             {
                 npgOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
-                npgOptions.EnableRetryOnFailure(
-                    maxRetryCount: 3,
-                    maxRetryDelay: TimeSpan.FromSeconds(30),
-                    errorCodesToAdd: null);
             });
         });
 
