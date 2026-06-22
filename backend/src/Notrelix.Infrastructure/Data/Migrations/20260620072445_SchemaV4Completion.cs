@@ -441,7 +441,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
             """);
 
             // Drop stale v3 public schema tables
-            migrationBuilder.Sql("DROP TABLE IF EXISTS public.\"__EFMigrationsHistory\" CASCADE");
             migrationBuilder.Sql("DROP TABLE IF EXISTS public.activity_logs CASCADE");
             migrationBuilder.Sql("DROP TABLE IF EXISTS public.attachments CASCADE");
             migrationBuilder.Sql("DROP TABLE IF EXISTS public.automation_executions CASCADE");
