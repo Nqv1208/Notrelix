@@ -105,12 +105,14 @@ services:
       Email__ApiKey: ${RESEND_API_KEY:-}
       Email__FromEmail: ${EMAIL_FROM:-onboarding@resend.dev}
       Email__FromName: ${EMAIL_FROM_NAME:-Notrelix}
+      DOTNET_USE_POLLING_FILE_WATCHER: "true"
+      DOTNET_WATCH_RESTART_ON_RUDE_EDIT: "true"
     volumes:
       - ./backend:/src
       - backend_nuget:/root/.nuget/packages
     command: >
       dotnet watch run
-      --project Notrelix.API/Notrelix.API.csproj
+      --project src/Notrelix.API/Notrelix.API.csproj
       --no-launch-profile
     depends_on:
       postgres:

@@ -48,6 +48,7 @@ public static class DependencyInjection
 
         services.AddScoped<IWorkspacePermissionService, WorkspacePermissionService>();
         services.AddScoped<IPermissionService, PermissionService>();
+        services.AddScoped<IPermissionEvaluator, PermissionService>();
         services.AddSingleton<IN8nSignatureService, N8nSignatureService>();
 
         // AutoMapper

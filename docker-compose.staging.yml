@@ -1,31 +1,89 @@
 # =============================================================================
-# Staging — build production images, expose HTTP, biến Staging
-# Chạy: docker compose --env-file .env.staging -f docker-compose.yml -f docker-compose.staging.yml up -d --build
-# (docker-compose.yml = include infra + docker-compose.app.yml)
+# Staging overlay — pairs with docker-compose.yml (base infra).
+#
+# Usage:
+#   docker compose --env-file .env.staging \
+#     -f docker-compose.yml -f docker-compose.staging.yml \
+#     up -d --build
 # =============================================================================
 
 services:
-  postgres:
-    container_name: notrelix-postgres-staging
-
-  redis:
-    container_name: notrelix-redis-staging
 
   backend:
-    container_name: notrelix-backend-staging
+    build:
+      context: ./backend
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
     environment:
       ASPNETCORE_ENVIRONMENT: Staging
+      ASPNETCORE_URLS: http://+:8000
+      ConnectionStrings__NotrelixDb: >-
+        Host=postgres;Port=5432;Database=${POSTGRES_DB:-notrelix_staging};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD}
+      ConnectionStrings__Redis: redis:6379,password=${REDIS_PASSWORD}
+      SeedData__Enabled: "true"
+      SeedData__Profile: Small
+      SeedData__ResetBeforeSeed: "false"
+      JwtSettings__SecretKey: ${JWT_SECRET:?JWT_SECRET is required}
+      JwtSettings__Issuer: ${JWT_ISSUER:-http://localhost}
+      JwtSettings__Audience: ${JWT_AUDIENCE:-http://localhost}
+      Email__ApiKey: ${RESEND_API_KEY:-}
+      Email__FromEmail: ${EMAIL_FROM:-noreply@notrelix.app}
+      Email__FromName: ${EMAIL_FROM_NAME:-Notrelix}
+      Cors__AllowedOrigins__0: ${CORS_ORIGIN:-http://localhost}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - backend-network
+      - frontend-network
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
 
   frontend:
-    container_name: notrelix-frontend-staging
     build:
       context: ./frontend
-      dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
         NEXT_PUBLIC_APP_ENV: staging
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+    depends_on:
+      - backend
+    networks:
+      - frontend-network
 
   nginx:
-    container_name: notrelix-nginx-staging
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
     ports:
-      - "${STAGING_HTTP_PORT:-8080}:80"
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - backend-network
+      - frontend-network
+
+volumes:
+  frontend_node_modules:
+  frontend_next:

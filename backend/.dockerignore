@@ -1,40 +1,18 @@
-# Git
 .git
 .gitignore
-
-# IDE
 .vs
 .vscode
 .idea
-*.user
-*.suo
-
-# Build outputs
-**/bin
-**/obj
-**/out
-
-# Test results
-**/TestResults
-
-# NuGet
-*.nupkg
-
-# Logs
+**/bin/
+**/obj/
+**/TestResults/
+**/coverage/
+**/*.user
+**/*.suo
 *.log
 logs/
-
-# Docker
-**/Dockerfile*
-**/.dockerignore
-docker-compose*.yml
-
-# Documentation
-*.md
-!README.md
-
-# Misc
-*.swp
-*.bak
+.env
+.env.*
+secrets/
 .DS_Store
 Thumbs.db

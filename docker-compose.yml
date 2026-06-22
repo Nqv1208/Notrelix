@@ -1,99 +1,88 @@
 # =============================================================================
-# Stack đầy đủ (infra + app build) — staging/prod hoặc chạy release local.
-#
-# Dev (hot reload, không merge build): chỉ dùng infra + dev — xem docker-compose.dev.yml
+# Base Infrastructure — shared by staging & production overlays.
+# Do NOT use standalone; pair with an overlay:
 #
 #   Dev:     docker compose --env-file .env.dev -f docker-compose.dev.yml up -d
 #   Staging: docker compose --env-file .env.staging -f docker-compose.yml -f docker-compose.staging.yml up -d --build
 #   Prod:    docker compose --env-file .env.prod    -f docker-compose.yml -f docker-compose.prod.yml   up -d --build
 #
-# RabbitMQ: --profile messaging
+# RabbitMQ: add --profile messaging
 # =============================================================================
 
+name: notrelix
+
 services:
+
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-notrelix_dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-notrelix}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-notrelix_dev}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-notrelix}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 20s
     networks:
       - backend-network
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+    logging: &default-logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: redis-server --requirepass ${REDIS_PASSWORD:-redis123}
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory ${REDIS_MAX_MEMORY:-256mb}
+      --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - backend-network
+    logging: *default-logging
 
-  backend:
-    build:
-      context: ./backend
+  rabbitmq:
+    profiles: ["messaging"]
+    image: rabbitmq:3.13-management-alpine
     restart: unless-stopped
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_URLS: http://+:8000
-      INIT_DB: "true"
-      ConnectionStrings__NotrelixDb: Host=postgres;Port=5432;Database=${POSTGRES_DB:-notrelix_dev};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
-      ConnectionStrings__Redis: redis:6379,password=${REDIS_PASSWORD:-redis123}
-      SeedData__Enabled: "true"
-      SeedData__Profile: Small
-      SeedData__ResetBeforeSeed: "false"
-      Email__ApiKey: ${RESEND_API_KEY:-re_test_placeholder}
-      Cors__AllowedOrigins__0: http://localhost
-      Cors__AllowedOrigins__1: http://127.0.0.1
-      Cors__AllowedOrigins__2: http://localhost:3000
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-rabbitmq}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-rabbitmq}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     networks:
       - backend-network
-      - frontend-network
-
-  frontend:
-    build:
-      context: ./frontend
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
-    restart: unless-stopped
-    depends_on:
-      - backend
-    networks:
-      - frontend-network
-
-  nginx:
-    image: nginx:alpine
-    restart: unless-stopped
-    ports:
-      - "${HTTP_PORT:-80}:80"
-    volumes:
-      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - backend
-      - frontend
-    networks:
-      - frontend-network
+    logging: *default-logging
 
 volumes:
   postgres_data:
   redis_data:
-  frontend_node_modules:
-  frontend_next:
+  rabbitmq_data:
 
 networks:
   backend-network:
