@@ -66,6 +66,14 @@ builder.Services
 
 var app = builder.Build();
 
+// Apply pending EF Core migrations on startup
+using (var scope = app.Services.CreateScope())
+{
+    var initialiser = scope.ServiceProvider
+        .GetRequiredService<ApplicationDbContextInitialiser>();
+    await initialiser.InitialiseAsync();
+}
+
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseForwardedHeaders();
 app.UseExceptionHandler();
