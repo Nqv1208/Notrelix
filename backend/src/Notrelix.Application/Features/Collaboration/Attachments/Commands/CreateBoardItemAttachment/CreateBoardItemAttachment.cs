@@ -4,24 +4,24 @@ using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Collaboration.Attachments.DTOs;
 
-namespace Notrelix.Application.Features.Collaboration.Attachments.Commands.CreateCardAttachment;
+namespace Notrelix.Application.Features.Collaboration.Attachments.Commands.CreateBoardItemAttachment;
 
-public record CreateCardAttachmentCommand(Guid BoardItemId, string Filename, string Url, long? SizeBytes, string? ContentType, string? Source) : ICommand<Result<AttachmentDto>>, ITransactionalRequest;
+public record CreateBoardItemAttachmentCommand(Guid BoardItemId, string Filename, string Url, long? SizeBytes, string? ContentType, string? Source) : ICommand<Result<AttachmentDto>>, ITransactionalRequest;
 
-public class CreateCardAttachmentCommandHandler : IRequestHandler<CreateCardAttachmentCommand, Result<AttachmentDto>>
+public class CreateBoardItemAttachmentCommandHandler : IRequestHandler<CreateBoardItemAttachmentCommand, Result<AttachmentDto>>
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public CreateCardAttachmentCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public CreateBoardItemAttachmentCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
     }
 
-    public async Task<Result<AttachmentDto>> Handle(CreateCardAttachmentCommand request, CancellationToken ct)
+    public async Task<Result<AttachmentDto>> Handle(CreateBoardItemAttachmentCommand request, CancellationToken ct)
     {
         if (!Uri.TryCreate(request.Url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
             return Result<AttachmentDto>.Failure("Attachment URL must be an absolute HTTP(S) URL.");

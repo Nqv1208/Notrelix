@@ -4,16 +4,16 @@ using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Collaboration.Attachments.DTOs;
 
-namespace Notrelix.Application.Features.Collaboration.Attachments.Queries.GetCardAttachments;
+namespace Notrelix.Application.Features.Collaboration.Attachments.Queries.GetBoardItemAttachments;
 
-public record GetCardAttachmentsQuery(Guid BoardItemId) : IQuery<Result<List<AttachmentDto>>>;
+public record GetBoardItemAttachmentsQuery(Guid BoardItemId) : IQuery<Result<List<AttachmentDto>>>;
 
-public class GetCardAttachmentsQueryHandler : IRequestHandler<GetCardAttachmentsQuery, Result<List<AttachmentDto>>>
+public class GetBoardItemAttachmentsQueryHandler : IRequestHandler<GetBoardItemAttachmentsQuery, Result<List<AttachmentDto>>>
 {
     private readonly IApplicationDbContext _context;
-    public GetCardAttachmentsQueryHandler(IApplicationDbContext context) => _context = context;
+    public GetBoardItemAttachmentsQueryHandler(IApplicationDbContext context) => _context = context;
 
-    public async Task<Result<List<AttachmentDto>>> Handle(GetCardAttachmentsQuery request, CancellationToken ct)
+    public async Task<Result<List<AttachmentDto>>> Handle(GetBoardItemAttachmentsQuery request, CancellationToken ct)
     {
         var cardExists = await _context.BoardItems.AsNoTracking()
             .AnyAsync(card => card.Id == request.BoardItemId && !card.IsDeleted, ct);

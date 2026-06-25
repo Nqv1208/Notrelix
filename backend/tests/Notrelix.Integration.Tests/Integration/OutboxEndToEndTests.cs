@@ -36,16 +36,21 @@ public class OutboxEndToEndTests
     }
 
     [Fact]
-    public async Task DomainEventFlow_WhenAggregateSaved_CreatesOutboxAndPublishesNotification()
+    public async Task DomainEventFlow_WhenAggregateSaved_CreatesOutboxMessages()
     {
-        object? publishedNotification = null;
-        var mediator = CreateMediatorCapturingNotification(n => publishedNotification = n);
+        var mediator = new Mock<IMediator>();
+        mediator.Setup(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
         var clock = MockClock(DateTimeOffset.UtcNow);
         var registry = MockEventRegistry("workspace.created");
         var mapper = MockIntegrationMapper("workspace.created");
 
+        var dispatchPolicy = new Mock<IDomainEventDispatchPolicy>();
+        dispatchPolicy.Setup(x => x.GetMode(It.IsAny<Type>()))
+            .Returns(DomainEventDispatchMode.Outbox);
+
         var interceptor = new DomainEventInterceptor(
-            clock.Object, registry.Object, mapper.Object, mediator.Object);
+            clock.Object, registry.Object, mapper.Object, mediator.Object, dispatchPolicy.Object);
 
         await using var context = CreateContext(interceptor);
 
@@ -56,24 +61,26 @@ public class OutboxEndToEndTests
 
         await context.SaveChangesAsync();
 
-        publishedNotification.Should().NotBeNull("mediator should publish domain event notification");
-        publishedNotification.Should().BeAssignableTo<INotification>();
-
         var outboxCount = await context.Set<OutboxMessage>().CountAsync();
-        outboxCount.Should().Be(1, "one domain event should create one outbox message");
+        outboxCount.Should().Be(2, "one domain event + one integration event should create two outbox messages");
     }
 
     [Fact]
     public async Task DomainEventFlow_WhenMultipleAggregatesSaved_CreatesOneOutboxPerEvent()
     {
-        object? publishedNotification = null;
-        var mediator = CreateMediatorCapturingNotification(n => publishedNotification = n);
+        var mediator = new Mock<IMediator>();
+        mediator.Setup(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
         var clock = MockClock(DateTimeOffset.UtcNow);
         var registry = MockEventRegistry("workspace.created");
         var mapper = MockIntegrationMapper("workspace.created");
 
+        var dispatchPolicy = new Mock<IDomainEventDispatchPolicy>();
+        dispatchPolicy.Setup(x => x.GetMode(It.IsAny<Type>()))
+            .Returns(DomainEventDispatchMode.Outbox);
+
         var interceptor = new DomainEventInterceptor(
-            clock.Object, registry.Object, mapper.Object, mediator.Object);
+            clock.Object, registry.Object, mapper.Object, mediator.Object, dispatchPolicy.Object);
 
         await using var context = CreateContext(interceptor);
 
@@ -83,9 +90,8 @@ public class OutboxEndToEndTests
 
         await context.SaveChangesAsync();
 
-        publishedNotification.Should().NotBeNull();
         var outboxCount = await context.Set<OutboxMessage>().CountAsync();
-        outboxCount.Should().Be(2, "two aggregates with events should create two outbox messages");
+        outboxCount.Should().Be(4, "two aggregates with events should create 2 domain + 2 integration messages");
     }
 
     [Fact]
@@ -98,8 +104,12 @@ public class OutboxEndToEndTests
         var registry = MockEventRegistry("test.event");
         var mapper = MockIntegrationMapper("test.event");
 
+        var dispatchPolicy = new Mock<IDomainEventDispatchPolicy>();
+        dispatchPolicy.Setup(x => x.GetMode(It.IsAny<Type>()))
+            .Returns(DomainEventDispatchMode.Outbox);
+
         var interceptor = new DomainEventInterceptor(
-            clock.Object, registry.Object, mapper.Object, mediator.Object);
+            clock.Object, registry.Object, mapper.Object, mediator.Object, dispatchPolicy.Object);
 
         await using var context = CreateContext(interceptor);
 
@@ -107,21 +117,6 @@ public class OutboxEndToEndTests
 
         var outboxCount = await context.Set<OutboxMessage>().CountAsync();
         outboxCount.Should().Be(0, "no domain events should result in no outbox messages");
-    }
-
-    private static Mock<IMediator> CreateMediatorCapturingNotification(Action<object> onPublish)
-    {
-        var mediator = new Mock<IMediator>();
-        mediator
-            .Setup(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()))
-            .Callback<object, CancellationToken>((notification, _) =>
-            {
-                if (notification is not INotification)
-                    throw new ArgumentException("notification is not INotification", nameof(notification));
-                onPublish(notification);
-            })
-            .Returns(Task.CompletedTask);
-        return mediator;
     }
 
     private static Mock<IDateTimeProvider> MockClock(DateTimeOffset now)
