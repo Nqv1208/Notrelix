@@ -10,7 +10,7 @@ using global::Notrelix.Domain.Workspaces;
 
 namespace Notrelix.Application.Features.WorkManagement.ItemLinks.Commands.DeleteBoardItemLink;
 
-public record DeleteBoardItemLinkCommand(Guid CardLinkId) : ICommand<Result>;
+public record DeleteBoardItemLinkCommand(Guid BoardItemLinkId) : ICommand<Result>;
 
 public class DeleteBoardItemLinkCommandHandler : IRequestHandler<DeleteBoardItemLinkCommand, Result>
 {

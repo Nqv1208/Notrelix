@@ -10,7 +10,7 @@ using global::Notrelix.Domain.Workspaces;
 
 namespace Notrelix.Application.Features.WorkManagement.ItemLinks.Commands.CreateBoardItemLink;
 
-public record CreateBoardItemLinkCommand(Guid SourceCardId, Guid TargetCardId, string LinkType) : ICommand<Result<Guid>>;
+public record CreateBoardItemLinkCommand(Guid SourceBoardItemId, Guid TargetBoardItemId, string LinkType) : ICommand<Result<Guid>>;
 
 public class CreateBoardItemLinkCommandHandler : IRequestHandler<CreateBoardItemLinkCommand, Result<Guid>>
 {

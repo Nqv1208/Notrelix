@@ -1,5 +1,6 @@
 using MediatR;
 using Notrelix.API.Extensions;
+using Notrelix.API.RateLimiting;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Auth.Commands.Register;
 
@@ -13,7 +14,8 @@ public static class RegisterEndpoint
             .AllowAnonymous()
             .WithName("Identity.Auth.Register")
             .WithTags("Identity.Auth")
-            .WithSummary("Register a new account");
+            .WithSummary("Register a new account")
+            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
         return group;
     }
 

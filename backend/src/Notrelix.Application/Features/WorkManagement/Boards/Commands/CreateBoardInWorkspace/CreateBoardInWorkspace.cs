@@ -19,7 +19,7 @@ public record CreateBoardInWorkspaceCommand(
     string Title,
     string? Description,
     string? Background,
-    string? Visibility) : ICommand<Result<Guid>>, ITransactionalRequest, IRequirePermission, IWorkspaceRequest, IRealtimeRequest
+    BoardVisibility? Visibility) : ICommand<Result<Guid>>, ITransactionalRequest, IRequirePermission, IWorkspaceRequest, IRealtimeRequest
 {
     public PermissionAction Action => PermissionAction.CreateBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId);
@@ -51,9 +51,7 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
         if (!workspaceExists) throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
         var createdAt = _dateTimeProvider.UtcNow;
-        var visibility = request.Visibility is not null
-            ? Enum.Parse<BoardVisibility>(request.Visibility, ignoreCase: true)
-            : BoardVisibility.Workspace;
+        var visibility = request.Visibility ?? BoardVisibility.Workspace;
 
         var board = BoardEntity.Create(request.WorkspaceId, _currentUser.UserId, request.Title, request.Description, createdAt, visibility);
 

@@ -31,7 +31,7 @@ public class BoardCommandPermissionTests
             new WorkspacePermissionService(evaluator, context),
             timeProvider.Object);
 
-        var act = () => handler.Handle(new AddBoardMemberCommand(board.Id, addedUserId, "member"), CancellationToken.None);
+        var act = () => handler.Handle(new AddBoardMemberCommand(board.Id, addedUserId, BoardRole.Member), CancellationToken.None);
 
         await act.Should().ThrowAsync<ForbiddenException>();
     }

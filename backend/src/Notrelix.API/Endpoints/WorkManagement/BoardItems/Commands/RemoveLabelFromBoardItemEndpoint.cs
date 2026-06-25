@@ -21,7 +21,7 @@ public static class RemoveLabelFromBoardItemEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new RemoveLabelFromCardCommand(itemId, labelId), cancellationToken);
+        var result = await sender.Send(new RemoveLabelFromBoardItemCommand(itemId, labelId), cancellationToken);
         return result.ToNoContentResult();
     }
 }

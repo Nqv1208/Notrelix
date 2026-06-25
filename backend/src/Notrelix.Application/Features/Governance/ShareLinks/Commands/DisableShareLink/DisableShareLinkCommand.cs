@@ -5,23 +5,21 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Domain.Collaboration.Activity;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Governance;
-using Notrelix.Domain.SharedKernel;
+using SharedKernel = Notrelix.Domain.SharedKernel;
 using System.Text.Json;
 
 namespace Notrelix.Application.Features.Governance.ShareLinks.Commands.DisableShareLink;
 
 public record DisableShareLinkCommand(
     Guid WorkspaceId,
-    string ResourceTypeValue,
+    SharedKernel.ResourceType ResourceType,
     Guid ResourceId,
     Guid ShareLinkId) : ICommand<Result>, IRequirePermission, ITransactionalRequest
 {
-    private ResourceType ResourceType => Enum.Parse<ResourceType>(ResourceTypeValue, true);
-
     PermissionAction IRequirePermission.Action => ResourceType switch
     {
-        ResourceType.Board => PermissionAction.ShareBoardView,
-        ResourceType.Page => PermissionAction.SharePage,
+        SharedKernel.ResourceType.Board => PermissionAction.ShareBoardView,
+        SharedKernel.ResourceType.Page => PermissionAction.SharePage,
         _ => PermissionAction.ManageWorkspace
     };
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType, ResourceId, WorkspaceId);

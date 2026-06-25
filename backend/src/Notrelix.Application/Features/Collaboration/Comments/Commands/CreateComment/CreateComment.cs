@@ -5,7 +5,7 @@ using global::Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 
-public record CreateCommentCommand(string ResourceType, Guid ResourceId, string ContentMd, Guid? ParentCommentId) : ICommand<Result<Guid>>, ITransactionalRequest;
+public record CreateCommentCommand(ResourceType ResourceType, Guid ResourceId, string ContentMd, Guid? ParentCommentId) : ICommand<Result<Guid>>, ITransactionalRequest;
 
 public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand, Result<Guid>>
 {
@@ -22,10 +22,8 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
 
     public async Task<Result<Guid>> Handle(CreateCommentCommand request, CancellationToken ct)
     {
-        var resourceType = Enum.Parse<ResourceType>(request.ResourceType, ignoreCase: true);
-
         Guid workspaceId;
-        if (resourceType == ResourceType.BoardItem)
+        if (request.ResourceType == ResourceType.BoardItem)
         {
             var card = await _context.BoardItems.AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == request.ResourceId, ct);
@@ -44,7 +42,7 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
             workspaceId = page.WorkspaceId;
         }
 
-        var target = ResourceRef.Create(resourceType, request.ResourceId, workspaceId);
+        var target = ResourceRef.Create(request.ResourceType, request.ResourceId, workspaceId);
         var comment = Comment.Create(workspaceId, target, request.ContentMd, _currentUser.UserId, _dateTimeProvider.UtcNow, parentId: request.ParentCommentId);
 
         _context.Comments.Add(comment);

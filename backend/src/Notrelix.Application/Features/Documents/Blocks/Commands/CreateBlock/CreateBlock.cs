@@ -9,7 +9,7 @@ namespace Notrelix.Application.Features.Documents.Blocks.Commands.CreateBlock;
 
 public record CreateBlockCommand(
     Guid PageId,
-    string Type,
+    BlockType Type,
     string Properties,
     string Position,
     Guid? ParentBlockId
@@ -34,11 +34,10 @@ public class CreateBlockCommandHandler : IRequestHandler<CreateBlockCommand, Res
             .FirstOrDefaultAsync(p => p.Id == request.PageId && !p.IsDeleted, ct);
         if (page is null) throw new NotFoundException(nameof(Page), request.PageId);
 
-        var blockType = Enum.Parse<BlockType>(request.Type, ignoreCase: true);
         var content = BlockContent.Create(JsonValue.Create(request.Properties ?? "{}"));
         var position = FractionalIndex.Create(request.Position);
 
-        var block = Block.Create(page.WorkspaceId, request.PageId, blockType, content, position, _currentUser.UserId, _dateTimeProvider.UtcNow, parentId: request.ParentBlockId);
+        var block = Block.Create(page.WorkspaceId, request.PageId, request.Type, content, position, _currentUser.UserId, _dateTimeProvider.UtcNow, parentId: request.ParentBlockId);
         _context.Blocks.Add(block);
         return Result<Guid>.Success(block.Id);
     }

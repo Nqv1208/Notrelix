@@ -9,6 +9,7 @@ using Notrelix.Application.Features.WorkManagement.Boards.Commands.ArchiveBoard;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.UnarchiveBoard;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.RemoveBoardMember;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMembers;
+using Notrelix.Domain.WorkManagement.Boards;
 
 namespace Notrelix.API.Endpoints.WorkManagement.Boards;
 
@@ -94,7 +95,7 @@ public static class MapBoardEndpoints
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new AddBoardMemberCommand(boardId, body.UserId, body.Role), cancellationToken);
+        var result = await sender.Send(new AddBoardMemberCommand(boardId, body.UserId, body.Role is not null ? Enum.Parse<BoardRole>(body.Role, ignoreCase: true) : null), cancellationToken);
         return result.ToNoContentResult();
     }
 

@@ -1,3 +1,4 @@
+using Notrelix.API.Endpoints.Admin;
 using Notrelix.API.Endpoints.Automation.Executions;
 using Notrelix.API.Endpoints.Automation.Rules;
 using Notrelix.API.Endpoints.Collaboration.Activity;
@@ -78,6 +79,9 @@ public static class EndpointRouteBuilderExtensions
         // Automation
         app.MapRulesEndpoints();
         app.MapExecutionsEndpoints();
+
+        // Admin
+        app.MapOutboxDiagnosticsEndpoints();
 
         return app;
     }

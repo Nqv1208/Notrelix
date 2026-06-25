@@ -1,5 +1,6 @@
 using MediatR;
 using Notrelix.API.Extensions;
+using Notrelix.API.RateLimiting;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Auth.Commands.Login;
@@ -14,7 +15,8 @@ public static class LoginEndpoint
             .AllowAnonymous()
             .WithName("Identity.Auth.Login")
             .WithTags("Identity.Auth")
-            .WithSummary("Login with email and password");
+            .WithSummary("Login with email and password")
+            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
         return group;
     }
 

@@ -2,6 +2,7 @@ using MediatR;
 using Notrelix.API.Contracts.Documents.Blocks.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Documents.Blocks.Commands.CreateBlock;
+using Notrelix.Domain.Documents.Blocks;
 
 namespace Notrelix.API.Endpoints.Documents.Blocks.Commands;
 
@@ -18,7 +19,7 @@ public static class CreateBlockEndpoint
 
     private static async Task<IResult> HandleAsync(Guid pageId, CreateBlockRequest body, ISender sender)
     {
-        var result = await sender.Send(new CreateBlockCommand(pageId, body.Type, body.Properties ?? "{}", body.Position?.ToString() ?? "a0", body.ParentId));
+        var result = await sender.Send(new CreateBlockCommand(pageId, Enum.Parse<BlockType>(body.Type, ignoreCase: true), body.Properties ?? "{}", body.Position?.ToString() ?? "a0", body.ParentId));
         return result.ToCreatedResult();
     }
 }

@@ -1,5 +1,6 @@
 using MediatR;
 using Notrelix.API.Extensions;
+using Notrelix.API.RateLimiting;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Auth.Commands.ResetPassword;
 
@@ -13,7 +14,8 @@ public static class ResetPasswordEndpoint
             .AllowAnonymous()
             .WithName("Identity.Auth.ResetPassword")
             .WithTags("Identity.Auth")
-            .WithSummary("Reset password with token");
+            .WithSummary("Reset password with token")
+            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
         return group;
     }
 

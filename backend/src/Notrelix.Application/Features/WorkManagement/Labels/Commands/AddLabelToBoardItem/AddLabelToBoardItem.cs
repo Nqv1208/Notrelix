@@ -7,22 +7,22 @@ using global::Notrelix.Domain.WorkManagement.Items;
 
 namespace Notrelix.Application.Features.WorkManagement.Labels.Commands.AddLabelToBoardItem;
 
-public record AddLabelToCardCommand(Guid BoardItemId, Guid LabelId) : ICommand<Result>, ITransactionalRequest;
+public record AddLabelToBoardItemCommand(Guid BoardItemId, Guid LabelId) : ICommand<Result>, ITransactionalRequest;
 
-public class AddLabelToCardCommandHandler : IRequestHandler<AddLabelToCardCommand, Result>
+public class AddLabelToBoardItemCommandHandler : IRequestHandler<AddLabelToBoardItemCommand, Result>
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public AddLabelToCardCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public AddLabelToBoardItemCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
     }
 
-    public async Task<Result> Handle(AddLabelToCardCommand request, CancellationToken ct)
+    public async Task<Result> Handle(AddLabelToBoardItemCommand request, CancellationToken ct)
     {
         var card = await _context.BoardItems
             .FirstOrDefaultAsync(c => c.Id == request.BoardItemId, ct);

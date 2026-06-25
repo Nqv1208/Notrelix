@@ -12,17 +12,17 @@ namespace Notrelix.Application.Features.Governance.ResourcePermissions.Commands.
 
 public record RevokeResourcePermissionCommand(
     Guid WorkspaceId,
-    string ResourceType,
+    SharedKernel.ResourceType ResourceType,
     Guid ResourceId,
     Guid PermissionId) : ICommand<Result>, IRequirePermission, ITransactionalRequest
 {
-    PermissionAction IRequirePermission.Action => Enum.Parse<SharedKernel.ResourceType>(ResourceType, true) switch
+    PermissionAction IRequirePermission.Action => ResourceType switch
     {
         SharedKernel.ResourceType.Board => PermissionAction.ManageBoardPermission,
         SharedKernel.ResourceType.Page => PermissionAction.SharePage,
         _ => PermissionAction.ManageWorkspace
     };
-    ResourceRef IRequirePermission.Resource => ResourceRef.Create(Enum.Parse<SharedKernel.ResourceType>(ResourceType, true), ResourceId, WorkspaceId);
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType, ResourceId, WorkspaceId);
 }
 
     public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeResourcePermissionCommand, Result>
@@ -30,30 +30,28 @@ public record RevokeResourcePermissionCommand(
         private readonly IApplicationDbContext _context;
         private readonly ICurrentUser _currentUser;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly IAuditService _auditService;
 
         public RevokeResourcePermissionCommandHandler(
             IApplicationDbContext context,
             ICurrentUser currentUser,
-            IDateTimeProvider dateTimeProvider)
+            IDateTimeProvider dateTimeProvider,
+            IAuditService auditService)
         {
             _context = context;
             _currentUser = currentUser;
             _dateTimeProvider = dateTimeProvider;
+            _auditService = auditService;
         }
 
     public async Task<Result> Handle(
         RevokeResourcePermissionCommand request,
         CancellationToken cancellationToken)
     {
-        if (!Enum.TryParse<SharedKernel.ResourceType>(request.ResourceType, true, out var resourceType))
-        {
-            return Result.Failure("Invalid resource type format.");
-        }
-
         var permission = await _context.ResourcePermissions
             .FirstOrDefaultAsync(p => p.Id == request.PermissionId &&
                                       p.WorkspaceId == request.WorkspaceId &&
-                                      p.ResourceType == resourceType &&
+                                      p.ResourceType == request.ResourceType &&
                                       p.ResourceId == request.ResourceId, cancellationToken);
 
         if (permission == null)
@@ -66,19 +64,14 @@ public record RevokeResourcePermissionCommand(
         // We can completely delete it to prevent unique index conflicts on re-grants
         _context.ResourcePermissions.Remove(permission);
 
-        // Write Audit Log
-        var auditLog = AuditLog.Record(
+        await _auditService.RecordAsync(
             request.WorkspaceId,
             actorId,
             "RevokeResourcePermission",
-            SharedKernel.ResourceRef.Create(resourceType, request.ResourceId),
+            SharedKernel.ResourceRef.Create(request.ResourceType, request.ResourceId),
             AuditMetadata.Create(),
             AuditSeverity.Info,
-            "",
-            "",
-            DateTimeOffset.UtcNow
-        );
-        _context.AuditLogs.Add(auditLog);
+            cancellationToken: cancellationToken);
 
         // Keep ActivityLog for user feed
         var metadata = JsonSerializer.Serialize(new
@@ -92,7 +85,7 @@ public record RevokeResourcePermissionCommand(
             request.WorkspaceId,
             actorId,
             ActivityType.Deleted,
-            SharedKernel.ResourceRef.Create(resourceType, request.ResourceId),
+            SharedKernel.ResourceRef.Create(request.ResourceType, request.ResourceId),
             _dateTimeProvider.UtcNow,
             ActivityMetadata.Create(SharedKernel.JsonValue.Create(metadata))
         );

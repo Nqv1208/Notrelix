@@ -24,7 +24,7 @@ public static class AssignBoardItemMemberEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new AssignCardMemberCommand(workspaceId, itemId, body.UserId), cancellationToken);
+        var result = await sender.Send(new AssignBoardItemMemberCommand(workspaceId, itemId, body.UserId), cancellationToken);
         return result.ToNoContentResult();
     }
 }

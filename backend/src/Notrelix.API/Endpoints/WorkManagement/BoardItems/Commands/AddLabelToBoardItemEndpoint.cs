@@ -22,7 +22,7 @@ public static class AddLabelToBoardItemEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new AddLabelToCardCommand(itemId, body.LabelId), cancellationToken);
+        var result = await sender.Send(new AddLabelToBoardItemCommand(itemId, body.LabelId), cancellationToken);
         return result.ToNoContentResult();
     }
 }

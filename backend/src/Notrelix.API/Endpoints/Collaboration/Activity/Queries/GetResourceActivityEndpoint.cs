@@ -1,6 +1,7 @@
 using MediatR;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Collaboration.Activity.Queries.GetResourceActivity;
+using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.API.Endpoints.Collaboration.Activity.Queries;
 
@@ -17,7 +18,7 @@ public static class GetResourceActivityEndpoint
 
     private static async Task<IResult> HandleAsync(Guid cardId, ISender sender, int page = 1, int pageSize = 20)
     {
-        var result = await sender.Send(new GetResourceActivityQuery("Card", cardId, page, pageSize));
+        var result = await sender.Send(new GetResourceActivityQuery(Enum.Parse<ResourceType>("Card", ignoreCase: true), cardId, page, pageSize));
         return result.ToApiResult();
     }
 }

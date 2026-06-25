@@ -2,6 +2,7 @@ using MediatR;
 using Notrelix.API.Contracts.Workspaces.Members.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Workspaces.Members.Commands.UpdateMemberRole;
+using Notrelix.Domain.Workspaces.Members;
 
 namespace Notrelix.API.Endpoints.Workspaces.Members.Commands;
 
@@ -22,7 +23,7 @@ public static class UpdateMemberRoleEndpoint
         UpdateMemberRoleRequest body,
         ISender sender)
     {
-        var result = await sender.Send(new UpdateMemberRoleCommand(workspaceId, userId, body.Role));
+        var result = await sender.Send(new UpdateMemberRoleCommand(workspaceId, userId, Enum.Parse<WorkspaceRole>(body.Role, ignoreCase: true)));
         return result.ToApiResult();
     }
 }

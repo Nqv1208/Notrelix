@@ -8,7 +8,7 @@ namespace Notrelix.Application.Features.Workspaces.Members.Commands.UpdateMember
 public record UpdateMemberRoleCommand(
     Guid WorkspaceId,
     Guid UserId,
-    string Role
+    WorkspaceRole Role
 ) : ICommand<Result>, ITransactionalRequest;
 
 public class UpdateMemberRoleCommandHandler : IRequestHandler<UpdateMemberRoleCommand, Result>
@@ -49,8 +49,7 @@ public class UpdateMemberRoleCommandHandler : IRequestHandler<UpdateMemberRoleCo
         var activeOwnerCount = await _context.WorkspaceMembers
             .CountAsync(m => m.WorkspaceId == workspace.Id && m.Role == WorkspaceRole.Owner && m.Status == WorkspaceMemberStatus.Active, ct);
 
-        var newRole = Enum.Parse<WorkspaceRole>(request.Role, ignoreCase: true);
-        member.ChangeRole(newRole, _currentUser.UserId, activeOwnerCount, _dateTimeProvider.UtcNow);
+        member.ChangeRole(request.Role, _currentUser.UserId, activeOwnerCount, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }

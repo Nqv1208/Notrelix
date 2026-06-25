@@ -15,7 +15,7 @@ namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SaveB
 public record SaveBoardViewCommand(
     Guid WorkspaceId,
     Guid BoardId,
-    string ViewMode,
+    ViewMode ViewMode,
     string? Filters) : ICommand<Result>, ITransactionalRequest, IRequirePermission, IWorkspaceRequest, IRealtimeRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
@@ -55,8 +55,7 @@ public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand,
             .AnyAsync(board => board.Id == request.BoardId && !board.IsArchived, ct);
         if (!boardExists) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
 
-        var viewMode = Enum.Parse<ViewMode>(request.ViewMode, ignoreCase: true);
-        var viewType = MapViewModeToViewType(viewMode);
+        var viewType = MapViewModeToViewType(request.ViewMode);
         var now = _dateTimeProvider.UtcNow;
         var config = BoardViewConfig.Create(JsonValue.Create(request.Filters ?? "{}"));
 

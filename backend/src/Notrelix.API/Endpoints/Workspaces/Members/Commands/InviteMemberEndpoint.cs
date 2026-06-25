@@ -2,6 +2,7 @@ using MediatR;
 using Notrelix.API.Contracts.Workspaces.Members.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember;
+using Notrelix.Domain.Workspaces.Members;
 
 namespace Notrelix.API.Endpoints.Workspaces.Members.Commands;
 
@@ -21,7 +22,7 @@ public static class InviteMemberEndpoint
         InviteMemberRequest body,
         ISender sender)
     {
-        var result = await sender.Send(new InviteMemberCommand(workspaceId, body.Email, body.Role));
+        var result = await sender.Send(new InviteMemberCommand(workspaceId, body.Email, Enum.Parse<WorkspaceRole>(body.Role, ignoreCase: true)));
         return result.ToCreatedResult();
     }
 }

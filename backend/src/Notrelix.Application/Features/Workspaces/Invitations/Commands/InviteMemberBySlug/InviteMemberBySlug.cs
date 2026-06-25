@@ -11,7 +11,7 @@ namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMe
 public record InviteMemberBySlugCommand(
     string Slug,
     string Email,
-    string Role
+    WorkspaceRole Role
 ) : ICommand<Result<Guid>>, ITransactionalRequest;
 
 public class InviteMemberBySlugCommandHandler : IRequestHandler<InviteMemberBySlugCommand, Result<Guid>>
@@ -36,9 +36,8 @@ public class InviteMemberBySlugCommandHandler : IRequestHandler<InviteMemberBySl
             throw new NotFoundException(nameof(Workspace), request.Slug);
 
         var now = _dateTimeProvider.UtcNow;
-        var role = Enum.Parse<WorkspaceRole>(request.Role, ignoreCase: true);
         var token = InvitationTokenHash.Create(Guid.NewGuid().ToString("N"));
-        var invitation = WorkspaceInvitation.Create(workspace.Id, request.Email.Trim().ToLowerInvariant(), role, token, _currentUser.UserId, now);
+        var invitation = WorkspaceInvitation.Create(workspace.Id, request.Email.Trim().ToLowerInvariant(), request.Role, token, _currentUser.UserId, now);
 
         _context.WorkspaceInvitations.Add(invitation);
         return Result<Guid>.Success(invitation.Id);

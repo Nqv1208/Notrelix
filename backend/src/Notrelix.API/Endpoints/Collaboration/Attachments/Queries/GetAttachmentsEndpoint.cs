@@ -1,6 +1,6 @@
 using MediatR;
 using Notrelix.API.Extensions;
-using Notrelix.Application.Features.Collaboration.Attachments.Queries.GetCardAttachments;
+using Notrelix.Application.Features.Collaboration.Attachments.Queries.GetBoardItemAttachments;
 
 namespace Notrelix.API.Endpoints.Collaboration.Attachments.Queries;
 
@@ -17,7 +17,7 @@ public static class GetAttachmentsEndpoint
 
     private static async Task<IResult> HandleAsync(Guid cardId, ISender sender)
     {
-        var result = await sender.Send(new GetCardAttachmentsQuery(cardId));
+        var result = await sender.Send(new GetBoardItemAttachmentsQuery(cardId));
         return result.ToApiResult();
     }
 }
