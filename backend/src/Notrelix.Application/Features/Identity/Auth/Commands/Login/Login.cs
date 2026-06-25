@@ -81,6 +81,8 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
 
         await _context.SaveChangesAsync(cancellationToken);
 
+        _logger.LogInformation("Login succeeded for {UserId} ({NormalizedEmail})", user.Id, normalizedEmail);
+
         return Result<AuthResult>.Success(new AuthResult
         {
             AccessToken = accessToken,
