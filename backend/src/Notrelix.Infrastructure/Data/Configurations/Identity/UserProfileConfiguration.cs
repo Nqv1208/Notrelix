@@ -22,7 +22,7 @@ public class UserProfileConfiguration : IEntityTypeConfiguration<UserProfile>
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 
         builder.HasOne<User>()
-            .WithOne(x => x.Profile)
+            .WithOne()
             .HasForeignKey<UserProfile>(x => x.UserId);
 
         builder.HasIndex(x => x.UserId).IsUnique().HasDatabaseName("idx_user_profiles_user_id");
