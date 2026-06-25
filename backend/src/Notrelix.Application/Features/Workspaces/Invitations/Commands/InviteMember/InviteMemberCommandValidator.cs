@@ -6,5 +6,8 @@ public class InviteMemberCommandValidator : AbstractValidator<InviteMemberComman
 {
     public InviteMemberCommandValidator()
     {
+        RuleFor(x => x.WorkspaceId).NotEmpty();
+        RuleFor(x => x.Email).NotEmpty().MaximumLength(256).EmailAddress();
+        RuleFor(x => x.Role).IsInEnum();
     }
 }

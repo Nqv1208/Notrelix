@@ -6,5 +6,8 @@ public class UpdateWorkspaceCommandValidator : AbstractValidator<UpdateWorkspace
 {
     public UpdateWorkspaceCommandValidator()
     {
+        RuleFor(x => x.WorkspaceId).NotEmpty();
+        RuleFor(x => x.Name).MaximumLength(200);
+        RuleFor(x => x.Description).MaximumLength(500);
     }
 }

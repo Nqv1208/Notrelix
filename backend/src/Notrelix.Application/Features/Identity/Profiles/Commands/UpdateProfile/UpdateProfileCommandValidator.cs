@@ -6,7 +6,9 @@ public class UpdateProfileCommandValidator : AbstractValidator<UpdateProfileComm
 {
     public UpdateProfileCommandValidator()
     {
-        // Frontend validate form profile; backend chỉ kiểm tra nghiệp vụ không thể xác định ở client.
+        RuleFor(x => x.UserId).NotEmpty();
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.Avatar).MaximumLength(500);
     }
 }
 

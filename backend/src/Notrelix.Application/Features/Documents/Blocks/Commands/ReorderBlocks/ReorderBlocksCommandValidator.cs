@@ -6,5 +6,11 @@ public class ReorderBlocksCommandValidator : AbstractValidator<ReorderBlocksComm
 {
     public ReorderBlocksCommandValidator()
     {
+        RuleFor(x => x.PageId)
+            .NotEmpty();
+
+        RuleFor(x => x.Items)
+            .NotNull()
+            .Must(i => i.Count > 0);
     }
 }

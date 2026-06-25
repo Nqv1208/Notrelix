@@ -6,5 +6,7 @@ public class UpdateCommentCommandValidator : AbstractValidator<UpdateCommentComm
 {
     public UpdateCommentCommandValidator()
     {
+        RuleFor(x => x.CommentId).NotEmpty();
+        RuleFor(x => x.ContentMd).NotEmpty().MaximumLength(50000);
     }
 }

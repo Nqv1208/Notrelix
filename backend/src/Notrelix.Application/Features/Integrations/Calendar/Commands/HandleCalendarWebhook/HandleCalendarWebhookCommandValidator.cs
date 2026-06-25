@@ -6,5 +6,11 @@ public class HandleCalendarWebhookCommandValidator : AbstractValidator<HandleCal
 {
     public HandleCalendarWebhookCommandValidator()
     {
+        RuleFor(x => x.Provider)
+            .NotEmpty()
+            .MaximumLength(50);
+
+        RuleFor(x => x.Payload)
+            .NotEmpty();
     }
 }

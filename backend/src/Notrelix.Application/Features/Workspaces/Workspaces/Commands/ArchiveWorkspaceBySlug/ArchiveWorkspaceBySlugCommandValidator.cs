@@ -6,5 +6,8 @@ public class ArchiveWorkspaceBySlugCommandValidator : AbstractValidator<ArchiveW
 {
     public ArchiveWorkspaceBySlugCommandValidator()
     {
+        RuleFor(x => x.Slug)
+            .NotEmpty()
+            .MaximumLength(200);
     }
 }

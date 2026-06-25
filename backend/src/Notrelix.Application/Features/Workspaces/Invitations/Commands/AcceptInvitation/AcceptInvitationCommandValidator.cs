@@ -6,5 +6,6 @@ public class AcceptInvitationCommandValidator : AbstractValidator<AcceptInvitati
 {
     public AcceptInvitationCommandValidator()
     {
+        RuleFor(x => x.Token).NotEmpty();
     }
 }

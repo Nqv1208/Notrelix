@@ -6,5 +6,6 @@ public class SetPageDeadlineCommandValidator : AbstractValidator<SetPageDeadline
 {
     public SetPageDeadlineCommandValidator()
     {
+        RuleFor(x => x.PageId).NotEmpty();
     }
 }

@@ -6,5 +6,7 @@ public class DeleteBlockCommandValidator : AbstractValidator<DeleteBlockCommand>
 {
     public DeleteBlockCommandValidator()
     {
+        RuleFor(x => x.BlockId)
+            .NotEmpty();
     }
 }

@@ -6,5 +6,14 @@ public class UpdateMemberRoleBySlugCommandValidator : AbstractValidator<UpdateMe
 {
     public UpdateMemberRoleBySlugCommandValidator()
     {
+        RuleFor(x => x.Slug)
+            .NotEmpty()
+            .MaximumLength(200);
+
+        RuleFor(x => x.UserId)
+            .NotEmpty();
+
+        RuleFor(x => x.Role)
+            .IsInEnum();
     }
 }

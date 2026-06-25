@@ -6,5 +6,7 @@ public class RemoveMemberCommandValidator : AbstractValidator<RemoveMemberComman
 {
     public RemoveMemberCommandValidator()
     {
+        RuleFor(x => x.WorkspaceId).NotEmpty();
+        RuleFor(x => x.UserId).NotEmpty();
     }
 }

@@ -6,5 +6,14 @@ public class ConnectCalendarCommandValidator : AbstractValidator<ConnectCalendar
 {
     public ConnectCalendarCommandValidator()
     {
+        RuleFor(x => x.Provider)
+            .NotEmpty()
+            .MaximumLength(50);
+
+        RuleFor(x => x.AccessToken)
+            .NotEmpty();
+
+        RuleFor(x => x.SyncDirection)
+            .MaximumLength(50);
     }
 }

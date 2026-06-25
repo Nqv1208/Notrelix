@@ -6,5 +6,8 @@ public class UpdateMemberRoleCommandValidator : AbstractValidator<UpdateMemberRo
 {
     public UpdateMemberRoleCommandValidator()
     {
+        RuleFor(x => x.WorkspaceId).NotEmpty();
+        RuleFor(x => x.UserId).NotEmpty();
+        RuleFor(x => x.Role).IsInEnum();
     }
 }
