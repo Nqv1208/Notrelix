@@ -23,6 +23,7 @@ public static class DependencyInjection
         services.AddCaching(configuration);
         services.AddAuthInfrastructure(configuration);
         services.AddSecurityInfrastructure(configuration);
+        services.AddGovernanceInfrastructure(configuration);
         services.AddStorage(configuration);
         services.AddEmail(configuration);
         services.AddRealtime(configuration);
