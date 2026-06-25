@@ -1,6 +1,10 @@
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi.Models;
 using Notrelix.API.ErrorHandling;
+using Notrelix.API.Options;
+using Notrelix.API.RateLimiting;
+using Notrelix.Infrastructure.Observability.HealthChecks;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Microsoft.Extensions.DependencyInjection;
@@ -9,14 +13,29 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApiLayer(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IWebHostEnvironment environment)
     {
-        services.AddHealthChecks();
+        services.Configure<OutboxHealthCheckOptions>(
+            configuration.GetSection("HealthChecks:Outbox"));
+
+        services.AddHealthChecks()
+            .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"])
+            .AddCheck<RedisHealthCheck>("redis", tags: ["ready"])
+            .AddCheck<OutboxHealthCheck>("outbox", tags: ["ready"]);
+
         services.AddApiProblemDetails();
         services.AddApiCors(configuration);
         services.AddApiSwagger();
         services.AddApiRouting();
-        services.AddApiForwardedHeaders();
+        services.AddApiForwardedHeaders(configuration, environment);
+
+        services.Configure<RateLimitingOptions>(
+            configuration.GetSection("RateLimiting:Policies"));
+        services.AddSingleton<IRateLimitPolicyProvider, RateLimitPolicyProvider>();
+
+        services.Configure<SecurityHeaderOptions>(
+            configuration.GetSection(SecurityHeaderOptions.SectionName));
 
         return services;
     }
@@ -31,16 +50,33 @@ public static class DependencyInjection
     public static IServiceCollection AddApiCors(this IServiceCollection services, IConfiguration configuration)
     {
         var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+
         services.AddCors(options =>
         {
             options.AddPolicy("Frontend", builder =>
             {
-                builder.WithOrigins(allowedOrigins)
-                    .AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .AllowCredentials();
+                if (allowedOrigins.Length == 1 && allowedOrigins[0] == "*")
+                {
+                    builder.AllowAnyOrigin()
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+                }
+                else
+                {
+                    builder.WithOrigins(allowedOrigins)
+                        .WithHeaders(
+                            "Authorization",
+                            "Content-Type",
+                            "X-Correlation-Id",
+                            "X-Workspace-Id",
+                            "X-Requested-With")
+                        .WithMethods(
+                            "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+                        .AllowCredentials();
+                }
             });
         });
+
         return services;
     }
 
@@ -94,8 +130,15 @@ public static class DependencyInjection
         return services;
     }
 
-    public static IServiceCollection AddApiForwardedHeaders(this IServiceCollection services)
+    public static IServiceCollection AddApiForwardedHeaders(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IWebHostEnvironment environment)
     {
+        var settings = configuration
+            .GetSection("ForwardedHeaders")
+            .Get<ForwardedHeadersSettings>() ?? new ForwardedHeadersSettings();
+
         services.Configure<ForwardedHeadersOptions>(options =>
         {
             options.ForwardedHeaders =
@@ -103,9 +146,35 @@ public static class DependencyInjection
                 ForwardedHeaders.XForwardedProto |
                 ForwardedHeaders.XForwardedHost;
 
-            options.KnownNetworks.Clear();
-            options.KnownProxies.Clear();
+            if (environment.IsDevelopment() && settings.TrustAllInDevelopment)
+            {
+                options.KnownNetworks.Clear();
+                options.KnownProxies.Clear();
+            }
+            else
+            {
+                options.ForwardLimit = settings.ForwardLimit;
+
+                foreach (var proxy in settings.KnownProxies)
+                {
+                    if (System.Net.IPAddress.TryParse(proxy, out var address))
+                        options.KnownProxies.Add(address);
+                }
+
+                foreach (var network in settings.KnownNetworks)
+                {
+                    var parts = network.Split('/');
+                    if (parts.Length == 2
+                        && System.Net.IPAddress.TryParse(parts[0], out var prefix)
+                        && int.TryParse(parts[1], out var prefixLength))
+                    {
+                        options.KnownNetworks.Add(
+                            new AspNetCore.HttpOverrides.IPNetwork(prefix, prefixLength));
+                    }
+                }
+            }
         });
+
         return services;
     }
 }
