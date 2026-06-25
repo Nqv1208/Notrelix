@@ -1,0 +1,47 @@
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Ho_Chi_Minh
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - nuget
+    groups:
+      aspnetcore:
+        patterns:
+          - "Microsoft.AspNetCore.*"
+          - "Microsoft.Extensions.*"
+      efcore:
+        patterns:
+          - "Microsoft.EntityFrameworkCore*"
+      testing:
+        patterns:
+          - "xunit*"
+          - "FluentAssertions*"
+          - "NSubstitute*"
+          - "Testcontainers*"
+      mass transit:
+        patterns:
+          - "MassTransit*"
+
+  - package-ecosystem: docker
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+    labels:
+      - dependencies
+      - docker
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    labels:
+      - dependencies
+      - ci

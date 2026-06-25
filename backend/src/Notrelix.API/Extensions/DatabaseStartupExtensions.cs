@@ -9,7 +9,8 @@ public static class DatabaseStartupExtensions
         this WebApplication app,
         string[] args)
     {
-        var shouldMigrate = args.Contains("--migrate", StringComparer.OrdinalIgnoreCase);
+        var shouldMigrate = args.Contains("--migrate", StringComparer.OrdinalIgnoreCase)
+                            || args.Contains("--migrate-only", StringComparer.OrdinalIgnoreCase);
         var shouldSeed = args.Contains("--seed", StringComparer.OrdinalIgnoreCase);
 
         if (!shouldMigrate && !shouldSeed)
