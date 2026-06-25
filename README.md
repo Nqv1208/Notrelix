@@ -1,138 +1,170 @@
 <div align="center">
 
-# 🚀 Notrelix
+# Notrelix
 
-**The Ultimate Workspace for Modern Teams**
+**Enterprise Work Management Platform**
 
-[![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+[![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js)](https://nextjs.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)](https://www.docker.com/)
 
-*Where structured thought meets vibrant action — Notion's editorial depth + Trello's kinetic energy*
-
-[Features](#-features) • [Demo](#-demo) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [Contributing](#-contributing)
+[Architecture](#-architecture) • [Quick Start](#-quick-start) • [Development](#-development) • [Documentation](#-documentation)
 
 </div>
 
 ---
 
-## 📖 About
+## About
 
-**Notrelix** is a modern, full-stack SaaS workspace that seamlessly combines:
+Notrelix is a **workspace operating system for teams** — a unified platform that replaces separate tools for project management, documentation, and collaboration.
 
-- 📝 **Notion-like Documents** — Block-based editor with rich content types
-- 📋 **Trello-like Boards** — Kanban project management with cards and lists  
-- 📅 **Calendar Sync** — Two-way synchronization with Google Calendar
-- 🔗 **Bidirectional Linking** — Connect documents and tasks effortlessly
-- 👥 **Real-time Collaboration** — Work together with your team in real-time
+Kanban, Calendar, Timeline, Table, Dashboard, and Form are **views over the same work data**, not separate data models.
 
-Built with enterprise-grade architecture and modern technologies, Notrelix provides a unified workspace where teams can plan, document, and execute their work.
+---
 
-## ✨ Features
+## Features
 
-### 📝 Document Management (Notion-like)
+### Project Management
+- **Multiple Views** — Kanban, Calendar, Timeline, Table, Dashboard, Form
+- **Dynamic Schema** — Custom fields per board (select, text, date, people, etc.)
+- **Drag & Drop** — Reorder items, change status across views
+- **Saved Views** — Filtered, sorted, grouped view configurations
 
-- **Block-based Editor** — 20+ block types (paragraphs, headings, lists, code, embeds)
-- **Hierarchical Pages** — Nested page structure with drag-and-drop
-- **Rich Content** — Images, videos, files, embeds, and more
-- **Version History** — Track changes and restore previous versions
+### Documents
+- **Block-based Editor** — 20+ block types (paragraphs, headings, code, embeds)
+- **Hierarchical Pages** — Nested structure with drag-and-drop
 - **Templates** — Reusable page templates for common workflows
-- **Card References** — Embed board cards directly in documents
 
-### 📋 Project Management (Trello-like)
+### Collaboration
+- **Workspaces & Spaces** — Multi-tenant with folder organization
+- **Role-based Access** — Owner, Admin, Member, Guest
+- **Comments & Mentions** — Inline discussion on any item
+- **Real-time Activity** — Track all workspace changes
 
-- **Kanban Boards** — Visual workflow management
-- **Multiple Views** — Kanban, List, Calendar, Timeline
-- **Cards & Lists** — Organize tasks with drag-and-drop
-- **Labels & Members** — Color-coded tags and team assignments
-- **Checklists** — Break down tasks into subtasks
-- **Due Dates** — Set deadlines with calendar integration
-- **Page Linking** — Attach detailed documentation to any card
+### Platform
+- **JWT Authentication** — Secure token-based auth with refresh
+- **OAuth SSO** — Google, GitHub
+- **Audit Logging** — Full governance trail
+- **Automation Rules** — Trigger-based workflows
+- **Integrations** — Extensible provider system (Resend, N8n)
+- **API-first** — All operations available via REST API
 
-### 📅 Calendar Integration
+---
 
-- **Two-way Sync** — Sync with Google Calendar (Outlook coming soon)
-- **Automatic Updates** — Changes sync bidirectionally
-- **Conflict Detection** — Smart conflict resolution
-- **Unified View** — See all deadlines in one place
+## Architecture
 
-### 👥 Collaboration
+### Clean Architecture (4-layer)
 
-- **Workspaces** — Multi-tenant architecture
-- **Role-based Access** — Owner, Admin, Member, Guest roles
-- **Invitations** — Email-based team invitations
-- **Comments** — Discuss on cards and pages
-- **Activity Logs** — Track all workspace activity
-- **Notifications** — Real-time updates
+```
+┌──────────────────────────────────────────────────┐
+│                    API Layer                       │
+│         ASP.NET Core + Controllers/Minimal API    │
+│         Auth, Validation, Versioning, OpenAPI      │
+└──────────────────────┬───────────────────────────┘
+                       │
+┌──────────────────────▼───────────────────────────┐
+│                Application Layer                   │
+│    CQRS (MediatR) • Commands • Queries • DTOs     │
+│    Authorization • Orchestration • Caching         │
+└──────────────────────┬───────────────────────────┘
+                       │
+┌──────────────────────▼───────────────────────────┐
+│                 Domain Layer                       │
+│    Aggregate Roots • Entities • Value Objects     │
+│    Domain Events • Business Invariants            │
+└──────────────────────┬───────────────────────────┘
+                       │
+┌──────────────────────▼───────────────────────────┐
+│              Infrastructure Layer                  │
+│    EF Core / PostgreSQL • Redis • S3/R2 Storage   │
+│    Outbox • Email • Search Indexing • Providers   │
+└──────────────────────────────────────────────────┘
+```
 
-### 🔒 Security & Performance
+### Dependency Rule
+```
+API → Application → Domain
+Infrastructure → Application → Domain
+Domain → (nothing — no EF Core, HTTP, Redis)
+```
 
-- **JWT Authentication** — Secure token-based auth
-- **OAuth Support** — Google, GitHub SSO
-- **Row-level Security** — PostgreSQL RLS ready
-- **Redis Caching** — Fast data access
-- **S3/R2 Storage** — Scalable file storage
-- **Rate Limiting** — API protection
+### Bounded Contexts
 
-## 🎯 Tech Stack
+| Context | Key Aggregates |
+|---------|---------------|
+| **Identity** | User, Session |
+| **Workspaces** | Workspace, Space, Team, WorkspaceMember, WorkspaceInvitation |
+| **Governance** | ResourcePermission, AuditLog |
+| **Work Management** | Board, BoardField, BoardItem, BoardView |
+| **Documents** | Page, Block |
+| **Collaboration** | Comment, Notification |
+| **Automation** | AutomationRule, AutomationExecution |
+| **Integrations** | Connection |
+| **Billing** | Plan, Subscription |
+
+---
+
+## Tech Stack
 
 ### Backend
-
-- **Framework:** .NET 8 / ASP.NET Core
+- **Runtime:** .NET 9 / ASP.NET Core
 - **Architecture:** Clean Architecture + CQRS + MediatR
 - **Database:** PostgreSQL 16 with EF Core
 - **Cache:** Redis 7
-- **Storage:** S3/Cloudflare R2
-- **Testing:** xUnit + FluentAssertions
+- **Storage:** S3 / Cloudflare R2
+- **Email:** Resend (SMTP fallback)
+- **Testing:** xUnit + FluentAssertions + Testcontainers
 
 ### Frontend
-
 - **Framework:** Next.js 16 (App Router)
-- **Language:** TypeScript (strict mode)
-- **UI Library:** React 19
-- **Styling:** Tailwind CSS 4 + shadcn/ui
-- **State Management:** TanStack Query v5
+- **Language:** TypeScript (strict)
+- **UI:** React 19 + Tailwind CSS 4 + Base UI + shadcn/ui
+- **State:** TanStack Query v5 + Zustand
 - **Forms:** React Hook Form + Zod
-- **Icons:** Lucide React
+- **Charts:** Recharts
 
 ### Infrastructure
-
 - **Containerization:** Docker + Docker Compose
 - **Reverse Proxy:** Nginx
-- **CI/CD:** GitHub Actions (coming soon)
-- **Monitoring:** (coming soon)
+- **CI/CD:** GitHub Actions
 
-## 🚀 Quick Start
+### Toolchain
+
+| Tool | Purpose |
+|------|---------|
+| `make` | Development workflow orchestration |
+| `bun` | Frontend package manager & runner |
+| `dotnet` | Backend build, test, migrations |
+| `dotnet ef` | EF Core migrations CLI |
+| `pg_dump` / `pg_restore` | Database backup & restore |
+
+---
+
+## Quick Start
 
 ### Prerequisites
-
-- **Docker & Docker Compose** (recommended)
-- **OR** manually install:
-  - .NET 8 SDK
-  - Node.js 20+ (or Bun)
-  - PostgreSQL 16
-  - Redis 7
+- Docker & Docker Compose (recommended)
+- OR manually: .NET 9 SDK, Node.js 20+, PostgreSQL 16, Redis 7
 
 ### Option 1: Docker (Recommended)
 
 ```bash
-# Clone the repository
-git clone https://github.com/Nqv1208/todo-app.git
-cd todo-app
+git clone https://github.com/Nqv1208/Notrelix.git
+cd Notrelix
 
-# Start all services
+# Start full development stack
 make dev-up
 
 # View logs
 make dev-logs
 
-# Stop services
+# Stop
 make dev-down
 ```
 
-**Access the application:**
+**Access:**
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:5000
 - PostgreSQL: localhost:5432
@@ -144,227 +176,156 @@ make dev-down
 
 ```bash
 cd backend
-
-# Restore dependencies
 dotnet restore
-
-# Update database
-dotnet ef database update --project Notrelix.Infrastructure --startup-project Notrelix.API
-
-# Run the API
-dotnet run --project Notrelix.API
+dotnet run --project src/Notrelix.API
 ```
 
 #### Frontend
 
 ```bash
 cd frontend
-
-# Install dependencies
 bun install
-
-# Run dev server
 bun run dev
 ```
 
-### Environment Variables
+---
 
-#### Backend (`backend/Notrelix.API/appsettings.Development.json`)
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Database=notrelix;Username=notrelix;Password=your_password"
-  },
-  "Redis": {
-    "ConnectionString": "localhost:6379"
-  },
-  "Jwt": {
-    "Secret": "your-256-bit-secret-key-here",
-    "AccessTokenExpiry": "15m",
-    "RefreshTokenExpiry": "30d"
-  }
-}
-```
-
-#### Frontend (`frontend/.env.local`)
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:5000/api
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
-
-## 📚 Documentation
-
-### For Developers
-
-- **[CLAUDE.md](CLAUDE.md)** — Quick start guide for Claude Code
-- **[AGENTS.md](AGENTS.md)** — Comprehensive project rules and conventions
-- **[DESIGN.md](DESIGN.md)** — Design system and UI guidelines
-- **[Backend Structure](notrelix-backend-structure.md)** — Backend architecture details
-- **[Frontend Structure](notrelix-frontend-structure.md)** — Frontend architecture details
-
-### Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                         Frontend                             │
-│  Next.js 16 App Router + React 19 + TanStack Query         │
-└─────────────────────────────────────────────────────────────┘
-                            ↓ HTTP/REST
-┌─────────────────────────────────────────────────────────────┐
-│                      Backend API                             │
-│              ASP.NET Core + Minimal API                      │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│                    Application Layer                         │
-│         CQRS (MediatR) + Commands/Queries + DTOs            │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│                     Domain Layer                             │
-│        Entities + Value Objects + Domain Events             │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌──────────────────┬──────────────────┬──────────────────────┐
-│   PostgreSQL 16  │     Redis 7      │    S3/R2 Storage     │
-│   (Primary DB)   │   (Cache/Queue)  │   (File Storage)     │
-└──────────────────┴──────────────────┴──────────────────────┘
-```
-
-### Domain Architecture
-
-Notrelix is organized into **7 domains**:
-
-1. **Identity & Auth** — Users, sessions, OAuth
-2. **Workspace** — Multi-tenant workspaces and members
-3. **Document** — Notion-like pages and blocks
-4. **Board** — Trello-like boards, lists, and cards
-5. **Calendar** — Two-way calendar synchronization
-6. **Shared** — Comments, attachments, permissions, notifications
-7. **Extensibility** — Webhooks, automations, integrations
-
-## 🛠️ Development
-
-### Available Commands
-
-```bash
-# Docker commands
-make dev-up          # Start development stack
-make dev-down        # Stop development stack
-make dev-logs        # View logs
-make dev-tools       # Add pgAdmin
-make clean           # Remove all containers and volumes
-
-# Backend commands
-cd backend
-dotnet build         # Build solution
-dotnet test          # Run tests
-dotnet ef migrations add {Name}  # Create migration
-dotnet ef database update        # Apply migrations
-
-# Frontend commands
-cd frontend
-bun run dev          # Start dev server
-bun run build        # Build for production
-bun run lint         # Run ESLint
-bun run type-check   # TypeScript check
-```
-
-### Project Structure
-
-```
-todo-app/
-├── backend/                    # .NET 8 Backend
-│   ├── Notrelix.Domain/       # Domain entities and logic
-│   ├── Notrelix.Application/  # CQRS commands/queries
-│   ├── Notrelix.Infrastructure/ # EF Core, Redis, services
-│   ├── Notrelix.API/          # API endpoints
-│   └── Notrelix.Tests/        # Unit & integration tests
-│
-├── frontend/                   # Next.js 16 Frontend
-│   ├── app/                   # App Router (pages & layouts)
-│   ├── features/              # Business logic (hooks, API)
-│   ├── components/            # Shared UI components
-│   ├── lib/                   # Utilities and configs
-│   └── public/                # Static assets
-│
-├── infra/                      # Infrastructure configs
-│   ├── nginx/                 # Nginx configuration
-│   └── postgres/              # PostgreSQL init scripts
-│
-├── .claude/                    # Claude Code integration
-│   ├── skills/                # Development skills
-│   ├── docs/                  # Quick references
-│   └── templates/             # Code templates
-│
-├── docker-compose.yml          # Base Docker stack
-├── docker-compose.dev.yml      # Development overrides
-├── Makefile                    # Common commands
-└── README.md                   # This file
-```
-
-### Coding Standards
-
-- **Backend:** Follow Clean Architecture principles, CQRS pattern
-- **Frontend:** Feature-sliced design, Server Components first
-- **Database:** snake_case naming, soft deletes, fractional indexing
-- **Git:** Conventional commits with domain prefix
-- **Testing:** AAA pattern, FluentAssertions
-
-See [AGENTS.md](AGENTS.md) for comprehensive guidelines.
-
-## 🧪 Testing
-
-### Backend Tests
-
-```bash
-cd backend
-
-# Run all tests
-dotnet test
-
-# Run specific test class
-dotnet test --filter "FullyQualifiedName~CreateCardCommandHandlerTests"
-
-# Run with coverage
-dotnet test /p:CollectCoverage=true
-```
-
-### Frontend Tests
-
-```bash
-cd frontend
-
-# Run tests (when configured)
-bun test
-
-# Run with coverage
-bun test --coverage
-```
-
-## 📦 Deployment
-
-### Production Build
-
-```bash
-# Build and start production stack
-make prod-up
-
-# Or manually:
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-```
+## Development Workflow
 
 ### Environment Setup
 
-1. Set production environment variables
-2. Configure SSL certificates
-3. Set up database backups
-4. Configure monitoring and logging
-5. Set up CI/CD pipeline
+Copy environment template and fill in secrets:
 
-See deployment documentation for details.
+```bash
+cp .env.dev.example .env.dev
+# Edit .env.dev with your secrets (JWT, DB password, API keys)
+```
+
+### Makefile Commands
+
+```bash
+make dev-up          # Start dev stack
+make dev-down        # Stop dev stack
+make dev-logs        # Follow all logs
+make backend-logs    # Backend logs only
+make dev-restart     # Restart dev stack
+make dev-clean       # Stop + delete volumes
+make dev-reset       # Clean + migrate + seed + start
+make dev-tools       # Start pgAdmin
+
+make db-up           # Start postgres + redis only
+make db-migrate      # Run EF migrations
+make db-seed         # Run seed data
+make db-init         # Migrations + seed
+make db-psql         # Open psql shell
+```
+
+### Backend Commands
+
+```bash
+dotnet build              # Build solution
+dotnet test               # Run all tests
+dotnet format             # Code style check
+dotnet ef migrations add <Name>   # Create migration
+dotnet ef database update         # Apply migrations
+```
+
+### Frontend Commands
+
+```bash
+bun run dev          # Start dev server
+bun run build        # Build for production
+bun run lint         # ESLint check
+```
+
+### Database Workflow
+
+1. Make domain changes
+2. `dotnet ef migrations add <Name>` — generate migration
+3. `make db-migrate` — apply to dev DB
+4. Verify with `make db-psql`
+
+---
+
+## Project Structure
+
+```
+notrelix/
+├── backend/
+│   ├── src/
+│   │   ├── Notrelix.API           # HTTP boundary, controllers
+│   │   ├── Notrelix.Application   # CQRS handlers, DTOs, auth
+│   │   ├── Notrelix.Domain        # Aggregates, entities, value objects
+│   │   └── Notrelix.Infrastructure# EF Core, Redis, email, providers
+│   └── tests/
+│       ├── Notrelix.Domain.Tests
+│       ├── Notrelix.Application.Tests
+│       ├── Notrelix.Infrastructure.Tests
+│       ├── Notrelix.API.Tests
+│       ├── Notrelix.Integration.Tests
+│       └── Notrelix.Architecture.Tests
+│
+├── frontend/
+│   ├── app/              # Next.js App Router
+│   ├── features/         # Feature modules
+│   ├── components/       # Shared UI components
+│   └── lib/              # Utilities, configs
+│
+├── infra/
+│   ├── nginx/            # Nginx configuration
+│   └── postgres/         # Init scripts
+│
+├── config/
+│   └── docker/           # Docker config files
+│
+├── docs/
+│   ├── backend/          # Backend architecture docs
+│   └── CONFIGURATION.md  # Configuration reference
+│
+├── docker-compose.yml          # Base stack
+├── docker-compose.dev.yml      # Dev overrides
+├── docker-compose.staging.yml  # Staging overrides
+├── docker-compose.prod.yml     # Production overrides
+├── Makefile                     # Command orchestration
+└── README.md                   # This file
+```
+
+---
+
+## Configuration
+
+Notrelix uses a **3-layer configuration system**:
+
+| Layer | Role | Contains |
+|-------|------|----------|
+| `appsettings*.json` | Application behavior | Feature flags, logging, non-secret defaults |
+| `.env.*` files | Secrets | Passwords, API keys, tokens |
+| `docker-compose*.yml` | Topology | Service definitions, env mappings, volumes |
+
+**Key sections:** `Database`, `JwtSettings`, `Smtp`, `Email`, `N8n`, `Redis`, `DataProtection`, `SeedData`
+
+See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for full reference.
+
+---
+
+## Testing
+
+```bash
+# Run all backend tests
+dotnet test
+
+# Run specific project
+dotnet test tests/Notrelix.Domain.Tests
+
+# Run with filter
+dotnet test --filter "FullyQualifiedName~LoginCommandHandler"
+```
+
+Test projects are organized per layer: Domain, Application, Infrastructure, API, Integration, and Architecture tests.
+
+---
+
+## Contributing
 
 ### Commit Convention
 
@@ -372,43 +333,43 @@ See deployment documentation for details.
 {type}({domain}): {description}
 
 Types: feat, fix, refactor, chore, test, docs
-Domains: auth, workspace, board, docs, calendar, shared
+Domains: auth, workspace, board, docs, calendar, shared, infra
 
 Examples:
-feat(board): add card drag-and-drop
-fix(docs): prevent race condition in block reorder
-refactor(auth): extract token refresh logic
+  feat(board): add item drag-and-drop
+  fix(auth): normalize email lookup
+  refactor(infra): extract DataProtection options
 ```
 
-### Code Review Process
+### Code Review
+- All PRs require review
+- Tests must pass
+- Code must follow conventions in [AGENTS.md](AGENTS.md)
+- Documentation must be updated
 
-1. All PRs require review
-2. Tests must pass
-3. Code must follow conventions
-4. Documentation must be updated
+---
 
-## 📧 Contact
+## Documentation
 
-- **Author:** Nguyen Quang Vinh
-- **GitHub:** [@Nqv1208](https://github.com/Nqv1208)
-- **Repository:** [todo-app](https://github.com/Nqv1208/todo-app)
+- **[AGENTS.md](AGENTS.md)** — Project rules and conventions
+- **[docs/CONFIGURATION.md](docs/CONFIGURATION.md)** — Configuration reference
+- **[docs/backend/](docs/backend/)** — Backend architecture guides
+- **[PRODUCT.md](PRODUCT.md)** — Product design principles
+- **[DESIGN.md](DESIGN.md)** — Design system tokens and guidelines
 
-## 📊 Project Status
+---
 
-![GitHub last commit](https://img.shields.io/github/last-commit/Nqv1208/todo-app)
-![GitHub issues](https://img.shields.io/github/issues/Nqv1208/todo-app)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/Nqv1208/todo-app)
+## Project Status
 
-**Current Version:** 0.1.0 (Alpha)
+**Current Version:** 0.1.0 (Alpha) — Active Development
 
-**Status:** 🚧 Active Development
+![GitHub last commit](https://img.shields.io/github/last-commit/Nqv1208/Notrelix)
+![GitHub issues](https://img.shields.io/github/issues/Nqv1208/Notrelix)
 
 ---
 
 <div align="center">
 
-**[⬆ Back to Top](#-notrelix)**
-
-Made with ❤️ by [Nguyen Quang Vinh](https://github.com/Nqv1208)
+**[⬆ Back to Top](#notrelix)**
 
 </div>

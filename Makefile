@@ -1,41 +1,100 @@
 # Notrelix — Docker Compose
-# Dev: một file docker-compose.dev.yml (standalone, publish ports rõ ràng)
-# Stack: docker-compose.yml = include infra + app (release)
+
+.DEFAULT_GOAL := help
 
 COMPOSE_STACK := docker compose -f docker-compose.yml
 COMPOSE_DEV := docker compose -f docker-compose.dev.yml
+
 ENV_DEV ?= --env-file .env.dev
 ENV_STAGING ?= --env-file .env.staging
 ENV_PROD ?= --env-file .env.prod
 
-.PHONY: help dev dev-up dev-down dev-logs dev-tools staging staging-up staging-down prod prod-up prod-down build ps clean config-dev
+BACKEND_PROJECT := src/Notrelix.API/Notrelix.API.csproj
+
+.PHONY: help \
+	dev dev-up dev-down dev-restart dev-logs backend-logs dev-tools dev-clean dev-reset \
+	db-up db-restore db-migrate db-seed db-init db-psql \
+	staging staging-up staging-down staging-logs \
+	prod prod-up prod-down prod-logs \
+	build build-staging ps config-dev clean
 
 help:
 	@echo "Notrelix — Docker"
 	@echo ""
-	@echo "Development (infra + dotnet watch + bun dev, gateway :3080):"
-	@echo "  make dev-up       $(COMPOSE_DEV) $(ENV_DEV) up -d"
-	@echo "  make dev-tools    + pgAdmin (profile tools)"
+	@echo "Development:"
+	@echo "  make dev-up        Start dev stack"
+	@echo "  make dev-logs      Follow dev logs"
+	@echo "  make backend-logs  Follow backend logs"
+	@echo "  make dev-down      Stop dev stack"
+	@echo "  make dev-restart   Restart dev stack"
+	@echo "  make dev-clean     Stop dev stack and delete volumes"
+	@echo "  make dev-reset     Delete dev volumes, migrate, seed, start"
+	@echo "  make dev-tools     Start tools profile, including pgAdmin"
 	@echo ""
-	@echo "Staging / Prod (build images):"
-	@echo "  make staging-up   cần .env.staging — xem config/docker/env.staging.example"
-	@echo "  make prod-up      cần .env.prod"
+	@echo "Database:"
+	@echo "  make db-up         Start postgres/redis only"
+	@echo "  make db-restore    Restore backend dependencies"
+	@echo "  make db-migrate    Run EF migrations"
+	@echo "  make db-seed       Run seed data"
+	@echo "  make db-init       Run migrations + seed"
+	@echo "  make db-psql       Open psql"
 	@echo ""
-	@echo "  make config-dev   in ra compose đã merge (kiểm tra)"
+	@echo "Config:"
+	@echo "  make config-dev    Print resolved dev compose config"
 
 dev: dev-up
 
 dev-up:
 	$(COMPOSE_DEV) $(ENV_DEV) up -d
 
-dev-tools:
-	$(COMPOSE_DEV) $(ENV_DEV) --profile tools up -d
-
 dev-down:
 	$(COMPOSE_DEV) $(ENV_DEV) down
 
+dev-restart: dev-down dev-up
+
 dev-logs:
 	$(COMPOSE_DEV) $(ENV_DEV) logs -f
+
+backend-logs:
+	$(COMPOSE_DEV) $(ENV_DEV) logs -f backend
+
+dev-tools:
+	$(COMPOSE_DEV) $(ENV_DEV) --profile tools up -d
+
+dev-clean:
+	$(COMPOSE_DEV) $(ENV_DEV) down -v
+
+dev-reset:
+	$(COMPOSE_DEV) $(ENV_DEV) down -v
+	$(COMPOSE_DEV) $(ENV_DEV) up -d postgres redis
+	$(COMPOSE_DEV) $(ENV_DEV) run --rm --no-deps backend \
+		dotnet restore $(BACKEND_PROJECT) --disable-parallel --force
+	$(COMPOSE_DEV) $(ENV_DEV) run --rm --no-deps backend \
+		dotnet run --project $(BACKEND_PROJECT) --no-launch-profile --no-restore -- --migrate --seed
+	$(COMPOSE_DEV) $(ENV_DEV) up -d
+
+db-up:
+	$(COMPOSE_DEV) $(ENV_DEV) up -d postgres redis
+
+db-restore: db-up
+	$(COMPOSE_DEV) $(ENV_DEV) run --rm --no-deps backend \
+		dotnet restore $(BACKEND_PROJECT) --disable-parallel --force
+
+db-migrate: db-restore
+	$(COMPOSE_DEV) $(ENV_DEV) run --rm --no-deps backend \
+		dotnet run --project $(BACKEND_PROJECT) --no-launch-profile --no-restore -- --migrate
+
+db-seed: db-restore
+	$(COMPOSE_DEV) $(ENV_DEV) run --rm --no-deps backend \
+		dotnet run --project $(BACKEND_PROJECT) --no-launch-profile --no-restore -- --seed
+
+db-init: db-restore
+	$(COMPOSE_DEV) $(ENV_DEV) run --rm --no-deps backend \
+		dotnet run --project $(BACKEND_PROJECT) --no-launch-profile --no-restore -- --migrate --seed
+
+db-psql:
+	$(COMPOSE_DEV) $(ENV_DEV) exec postgres \
+		psql -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-notrelix_dev}
 
 staging: staging-up
 
@@ -66,10 +125,11 @@ build-staging:
 	$(COMPOSE_STACK) $(ENV_STAGING) -f docker-compose.staging.yml build
 
 ps:
-	docker compose -f docker-compose.yml ps -a 2>/dev/null; $(COMPOSE_DEV) ps -a 2>/dev/null || true
+	docker compose -f docker-compose.yml ps -a 2>/dev/null || true
+	$(COMPOSE_DEV) $(ENV_DEV) ps -a 2>/dev/null || true
 
 config-dev:
-	@JWT_SECRET=dev $(COMPOSE_DEV) $(ENV_DEV) config
+	@JWT_SECRET=dev-only-not-for-production-but-at-least-32-chars!! $(COMPOSE_DEV) $(ENV_DEV) config
 
 clean:
 	$(COMPOSE_DEV) $(ENV_DEV) down -v
