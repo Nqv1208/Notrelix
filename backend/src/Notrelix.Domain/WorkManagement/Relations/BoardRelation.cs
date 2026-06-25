@@ -1,8 +1,3 @@
-using Notrelix.Domain.WorkManagement.Relations.Events;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.WorkManagement.Relations.Events;
-
 namespace Notrelix.Domain.WorkManagement.Relations;
 
 public class BoardRelation : AggregateRoot, IWorkspaceScoped

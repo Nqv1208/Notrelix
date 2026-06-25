@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Billing.Subscriptions.Events;
 
 public record SubscriptionActivatedDomainEvent : DomainEvent
@@ -12,7 +10,7 @@ public record SubscriptionActivatedDomainEvent : DomainEvent
         Guid subscriptionId,
         Guid planId,
         Guid? actorUserId,
-        DateTimeOffset occurredAt) 
+        DateTimeOffset occurredAt)
         : base(occurredAt, workspaceId, actorUserId)
     {
         SubscriptionId = subscriptionId;

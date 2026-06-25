@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Identity.Tokens.Events;
 
 public record ApiTokenCreatedDomainEvent : DomainEvent
@@ -12,7 +10,7 @@ public record ApiTokenCreatedDomainEvent : DomainEvent
         Guid tokenId,
         string name,
         Guid? actorUserId,
-        DateTimeOffset occurredAt) 
+        DateTimeOffset occurredAt)
         : base(occurredAt, workspaceId, actorUserId)
     {
         TokenId = tokenId;

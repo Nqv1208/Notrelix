@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using MediatR;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Events;

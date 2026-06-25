@@ -1,7 +1,4 @@
 using Notrelix.Application.Events.WorkManagement;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.WorkManagement.Boards.Events;
-using Notrelix.Domain.WorkManagement.Items.Events;
 
 namespace Notrelix.Application.EventMappers.WorkManagement;
 

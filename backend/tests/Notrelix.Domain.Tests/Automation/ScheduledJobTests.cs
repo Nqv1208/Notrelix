@@ -1,8 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Automation.Scheduled;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Automation;
 

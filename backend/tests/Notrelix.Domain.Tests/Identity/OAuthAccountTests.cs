@@ -1,10 +1,5 @@
 using FluentAssertions;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Identity.OAuth;
-using Notrelix.Domain.Identity.OAuth.Events;
-using Notrelix.Domain.Identity.Users;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Identity;
 

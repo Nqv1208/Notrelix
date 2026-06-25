@@ -1,14 +1,8 @@
 using FluentAssertions;
 using Notrelix.Domain.Analytics.Dashboards;
-using Notrelix.Domain.Analytics.Dashboards.Events;
 using WidgetType = Notrelix.Domain.Analytics.Dashboards.WidgetType;
 using Notrelix.Domain.Analytics.Widgets;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Integrations.Webhooks;
-using Notrelix.Domain.Integrations.Webhooks.Events;
-using Notrelix.Domain.SharedKernel;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Analytics;
 

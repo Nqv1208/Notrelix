@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Identity.Security.Events;
 
 public record ScimDirectorySyncResumedDomainEvent : DomainEvent
@@ -10,7 +8,7 @@ public record ScimDirectorySyncResumedDomainEvent : DomainEvent
         Guid workspaceId,
         Guid syncId,
         Guid? actorUserId,
-        DateTimeOffset occurredAt) 
+        DateTimeOffset occurredAt)
         : base(occurredAt, workspaceId, actorUserId)
     {
         SyncId = syncId;

@@ -1,4 +1,3 @@
-using MediatR;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.Checklists.Queries.GetChecklists;
 

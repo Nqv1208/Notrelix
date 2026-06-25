@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Domain.Collaboration.Comments;

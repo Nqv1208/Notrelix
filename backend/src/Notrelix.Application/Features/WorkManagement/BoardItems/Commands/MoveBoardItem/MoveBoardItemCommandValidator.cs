@@ -1,4 +1,3 @@
-using global::Notrelix.Application.Common.Models;
 using FluentValidation;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem;

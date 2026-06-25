@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Identity.Security.Events;
 
 public record SsoProviderRestoredDomainEvent : DomainEvent
@@ -10,7 +8,7 @@ public record SsoProviderRestoredDomainEvent : DomainEvent
         Guid workspaceId,
         Guid providerId,
         Guid? actorUserId,
-        DateTimeOffset occurredAt) 
+        DateTimeOffset occurredAt)
         : base(occurredAt, workspaceId, actorUserId)
     {
         ProviderId = providerId;

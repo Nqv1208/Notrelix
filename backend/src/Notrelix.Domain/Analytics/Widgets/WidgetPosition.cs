@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Analytics.Widgets;
 
 public sealed class WidgetPosition : ValueObject
@@ -9,7 +7,8 @@ public sealed class WidgetPosition : ValueObject
     public int W { get; }
     public int H { get; }
 
-    private WidgetPosition() { }    private WidgetPosition(int x, int y, int w, int h)
+    private WidgetPosition() { }
+    private WidgetPosition(int x, int y, int w, int h)
     {
         X = x;
         Y = y;

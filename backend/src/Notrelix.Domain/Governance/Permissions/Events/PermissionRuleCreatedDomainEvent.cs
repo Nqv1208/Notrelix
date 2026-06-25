@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Governance.Permissions.Events;
 
 public record PermissionRuleCreatedDomainEvent : DomainEvent
@@ -12,7 +10,7 @@ public record PermissionRuleCreatedDomainEvent : DomainEvent
         Guid ruleId,
         string action,
         Guid? actorUserId,
-        DateTimeOffset occurredAt) 
+        DateTimeOffset occurredAt)
         : base(occurredAt, workspaceId, actorUserId)
     {
         RuleId = ruleId;

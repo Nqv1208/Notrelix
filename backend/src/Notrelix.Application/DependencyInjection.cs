@@ -3,7 +3,6 @@ using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Hosting;
 using Notrelix.Application.Common.Behaviors;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Security;
 
 namespace Microsoft.Extensions.DependencyInjection;
@@ -16,7 +15,7 @@ public static class DependencyInjection
         var assembly = Assembly.GetExecutingAssembly();
 
         // MediatR
-        services.AddMediatR(cfg => 
+        services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(assembly));
 
         // MediatR Pipeline Behaviors (outermost → innermost)

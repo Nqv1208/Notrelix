@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.WorkManagement.Views;
 
 public sealed class SortRule : ValueObject
@@ -7,7 +5,8 @@ public sealed class SortRule : ValueObject
     public Guid FieldId { get; }
     public SortDirection Direction { get; }
 
-    private SortRule() { }    private SortRule(Guid fieldId, SortDirection direction)
+    private SortRule() { }
+    private SortRule(Guid fieldId, SortDirection direction)
     {
         FieldId = fieldId;
         Direction = direction;

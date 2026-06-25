@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Billing.Payments;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Billing;
 

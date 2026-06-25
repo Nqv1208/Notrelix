@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common.Exceptions;
-
 namespace Notrelix.Domain.Workspaces.Rules;
 
 public static class WorkspaceMemberRules

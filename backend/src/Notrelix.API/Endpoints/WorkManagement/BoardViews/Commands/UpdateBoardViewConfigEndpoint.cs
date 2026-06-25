@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
 using Notrelix.API.Contracts.WorkManagement.BoardViews.Requests;
 using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.UpdateBoardViewConfig;
 

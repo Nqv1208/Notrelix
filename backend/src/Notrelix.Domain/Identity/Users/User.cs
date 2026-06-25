@@ -1,4 +1,3 @@
-using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Identity.Profiles.Events;
 using Notrelix.Domain.Identity.OAuth;
 using Notrelix.Domain.Identity.OAuth.Events;
@@ -61,7 +60,7 @@ public class User : AggregateRoot
 
         Name = name.Trim();
         Avatar = avatar?.Trim();
-        
+
         SetAuditOnUpdate(Id, updatedAt);
         IncrementVersion();
         AddDomainEvent(new UserProfileUpdatedDomainEvent(Id, updatedAt));
@@ -78,7 +77,7 @@ public class User : AggregateRoot
 
         Email = emailValue;
         NormalizedEmail = NormalizeEmail(emailValue.Value);
-        
+
         SetAuditOnUpdate(Id, updatedAt);
         IncrementVersion();
         AddDomainEvent(new UserEmailChangedDomainEvent(
@@ -117,7 +116,7 @@ public class User : AggregateRoot
     {
         EnsureNotDeleted();
         Guard.NotEmpty(activatedBy);
-        
+
         if (Status == UserStatus.Active) return;
 
         var previousStatus = Status;

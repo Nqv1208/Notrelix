@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.WorkManagement.Items.Events;
 
 public sealed record BoardItemCompletedDomainEvent(

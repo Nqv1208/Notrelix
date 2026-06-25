@@ -1,9 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
-using Notrelix.Domain.Identity.Sessions;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.RefreshToken;
 
@@ -34,10 +31,10 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         var tokenHash = RefreshTokenHash.Create(request.RefreshToken);
 
         var session = await _context.Sessions
-            .FirstOrDefaultAsync(s => 
-                s.RefreshTokenHash.Hash == tokenHash.Hash && 
-                s.Status == SessionStatus.Active && 
-                s.ExpiresAt > now, 
+            .FirstOrDefaultAsync(s =>
+                s.RefreshTokenHash.Hash == tokenHash.Hash &&
+                s.Status == SessionStatus.Active &&
+                s.ExpiresAt > now,
                 cancellationToken);
 
         if (session is null)

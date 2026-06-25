@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Governance.Permissions;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Governance;
 

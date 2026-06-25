@@ -1,6 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Common;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Common;
 
@@ -31,7 +29,7 @@ public class SoftDeletableEntityTests
         var entity = new TestEntity();
         var userId = Guid.NewGuid();
         var time = DateTimeOffset.UtcNow;
-        
+
         entity.SoftDelete(userId, time);
         entity.Restore(userId, time.AddMinutes(1));
 

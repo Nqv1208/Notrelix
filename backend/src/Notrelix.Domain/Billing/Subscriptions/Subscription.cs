@@ -1,7 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.Billing.Subscriptions.Events;
-
 namespace Notrelix.Domain.Billing.Subscriptions;
 
 public class Subscription : AggregateRoot, IWorkspaceScoped

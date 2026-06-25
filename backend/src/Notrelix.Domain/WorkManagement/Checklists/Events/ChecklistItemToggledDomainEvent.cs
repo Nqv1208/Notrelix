@@ -1,6 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.SharedKernel;
-
 namespace Notrelix.Domain.WorkManagement.Checklists.Events;
 
 public sealed record ChecklistItemToggledDomainEvent(

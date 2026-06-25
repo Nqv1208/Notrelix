@@ -1,9 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.DTOs;
-using Notrelix.Domain.Common;
 using SharedKernel = Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.Governance.ResourcePermissions.Queries.GetResourcePermissions;

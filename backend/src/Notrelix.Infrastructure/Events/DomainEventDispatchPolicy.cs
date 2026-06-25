@@ -1,5 +1,4 @@
 using Notrelix.Application.Common.Events;
-using Notrelix.Domain;
 using Notrelix.Domain.Analytics.Dashboards.Events;
 using Notrelix.Domain.Automation.Rules.Events;
 using Notrelix.Domain.Automation.Executions.Events;

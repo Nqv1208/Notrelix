@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Identity.Sessions.Events;
 
 namespace Notrelix.Domain.Identity.Sessions;
@@ -18,11 +16,11 @@ public class UserSession : AggregateRoot
     private UserSession() : base() { }
 
     public static UserSession Create(
-        Guid userId, 
-        RefreshTokenHash tokenHash, 
-        DateTimeOffset expiresAt, 
-        DateTimeOffset createdAt, 
-        string? ipAddress = null, 
+        Guid userId,
+        RefreshTokenHash tokenHash,
+        DateTimeOffset expiresAt,
+        DateTimeOffset createdAt,
+        string? ipAddress = null,
         string? userAgent = null)
     {
         Guard.NotEmpty(userId);
@@ -45,7 +43,7 @@ public class UserSession : AggregateRoot
 
         session.SetAuditOnCreate(userId, createdAt);
         session.AddDomainEvent(new UserSessionCreatedDomainEvent(session.Id, userId, createdAt));
-        
+
         return session;
     }
 

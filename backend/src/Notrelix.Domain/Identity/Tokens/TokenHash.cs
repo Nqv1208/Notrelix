@@ -1,12 +1,11 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Identity.Tokens;
 
 public sealed class TokenHash : ValueObject
 {
     public string Value { get; }
 
-    private TokenHash() { }    private TokenHash(string value)
+    private TokenHash() { }
+    private TokenHash(string value)
     {
         Value = value;
     }

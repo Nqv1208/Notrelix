@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.WorkManagement.Relations.Events;
 
 public record BoardRelationCreatedDomainEvent : DomainEvent
@@ -14,7 +12,7 @@ public record BoardRelationCreatedDomainEvent : DomainEvent
         Guid sourceBoardId,
         Guid targetBoardId,
         Guid? actorUserId,
-        DateTimeOffset occurredAt) 
+        DateTimeOffset occurredAt)
         : base(occurredAt, workspaceId, actorUserId)
     {
         RelationId = relationId;

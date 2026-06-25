@@ -1,12 +1,11 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.WorkManagement.Views;
 
 public sealed class GroupRule : ValueObject
 {
     public Guid FieldId { get; }
 
-    private GroupRule() { }    private GroupRule(Guid fieldId)
+    private GroupRule() { }
+    private GroupRule(Guid fieldId)
     {
         FieldId = fieldId;
     }

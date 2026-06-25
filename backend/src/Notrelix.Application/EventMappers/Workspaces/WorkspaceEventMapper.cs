@@ -1,7 +1,4 @@
 using Notrelix.Application.Events.Workspaces;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Workspaces.Members.Events;
-using Notrelix.Domain.Workspaces.Workspaces.Events;
 
 namespace Notrelix.Application.EventMappers.Workspaces;
 

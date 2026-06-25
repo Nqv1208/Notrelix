@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.SharedKernel;
 
@@ -11,7 +10,8 @@ public sealed class Color : ValueObject
 
     public string Value { get; }
 
-    private Color() { }    private Color(string value)
+    private Color() { }
+    private Color(string value)
     {
         Value = value;
     }
@@ -20,7 +20,7 @@ public sealed class Color : ValueObject
     {
         Guard.NotNullOrWhiteSpace(value);
         value = value.Trim().ToUpperInvariant();
-        
+
         Guard.Assert(HexColorRegex.IsMatch(value), $"'{value}' is not a valid hex color code.");
 
         return new Color(value);

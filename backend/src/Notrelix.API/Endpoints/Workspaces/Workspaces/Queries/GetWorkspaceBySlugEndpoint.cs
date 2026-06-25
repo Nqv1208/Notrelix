@@ -1,7 +1,4 @@
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
 using Notrelix.API.Extensions;
-using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspaceBySlug;
 
 namespace Notrelix.API.Endpoints.Workspaces.Workspaces.Queries;

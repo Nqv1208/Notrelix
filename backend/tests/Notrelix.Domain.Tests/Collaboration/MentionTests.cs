@@ -1,9 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Collaboration.Mentions;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.SharedKernel;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Collaboration;
 

@@ -1,7 +1,5 @@
 using FluentAssertions;
-using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.WorkManagement.Views;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 

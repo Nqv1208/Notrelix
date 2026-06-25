@@ -1,7 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.Governance.Permissions;
-
 namespace Notrelix.Domain.Governance.Roles;
 
 public class CustomRole : AggregateRoot, IWorkspaceScoped

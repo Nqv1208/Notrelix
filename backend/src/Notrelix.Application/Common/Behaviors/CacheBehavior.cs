@@ -1,8 +1,5 @@
-using System.Text.Json;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.CQRS;
 
 namespace Notrelix.Application.Common.Behaviors;
 

@@ -1,6 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.SharedKernel;
-
 namespace Notrelix.Domain.WorkManagement.Views.Events;
 
 public sealed record BoardViewDeletedDomainEvent(

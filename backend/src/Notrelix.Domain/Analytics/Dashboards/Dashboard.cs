@@ -1,9 +1,5 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.Analytics.Dashboards.Events;
 using Notrelix.Domain.Analytics.Rules;
 using Notrelix.Domain.Analytics.Widgets;
-using WidgetType = Notrelix.Domain.Analytics.Dashboards.WidgetType;
 
 namespace Notrelix.Domain.Analytics.Dashboards;
 

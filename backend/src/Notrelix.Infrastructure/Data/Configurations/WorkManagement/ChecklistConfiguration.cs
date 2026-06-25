@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.WorkManagement.Checklists;
 using Notrelix.Domain.WorkManagement.Items;
 

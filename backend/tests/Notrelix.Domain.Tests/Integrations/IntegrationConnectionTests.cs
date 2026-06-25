@@ -1,10 +1,7 @@
 using FluentAssertions;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Integrations;
 using Notrelix.Domain.Integrations.Calendar;
 using Notrelix.Domain.Integrations.Connections;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Integrations;
 
@@ -29,10 +26,10 @@ public class IntegrationConnectionTests
         var expiresAt = createdAt.AddMinutes(-5);
 
         var act = () => IntegrationConnection.Create(
-            workspaceId, 
-            IntegrationProvider.Slack, 
-            Guid.NewGuid(), 
-            createdAt, 
+            workspaceId,
+            IntegrationProvider.Slack,
+            Guid.NewGuid(),
+            createdAt,
             expiresAt: expiresAt);
 
         act.Should().Throw<DomainException>().WithMessage("Expiration time must be in the future.");

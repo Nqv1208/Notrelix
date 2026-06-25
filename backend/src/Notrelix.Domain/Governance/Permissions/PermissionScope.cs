@@ -1,12 +1,11 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Governance.Permissions;
 
 public sealed class PermissionScope : ValueObject
 {
     public string Value { get; }
 
-    private PermissionScope() { }    private PermissionScope(string value)
+    private PermissionScope() { }
+    private PermissionScope(string value)
     {
         Value = value;
     }

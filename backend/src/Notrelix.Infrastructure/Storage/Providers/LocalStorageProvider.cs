@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Abstractions;
-using Notrelix.Infrastructure.Storage;
 
 namespace Notrelix.Infrastructure.Storage.Providers;
 

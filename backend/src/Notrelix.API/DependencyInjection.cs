@@ -1,11 +1,9 @@
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi.Models;
 using Notrelix.API.ErrorHandling;
 using Notrelix.API.Options;
 using Notrelix.API.RateLimiting;
 using Notrelix.Infrastructure.Observability.HealthChecks;
-using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Microsoft.Extensions.DependencyInjection;
 

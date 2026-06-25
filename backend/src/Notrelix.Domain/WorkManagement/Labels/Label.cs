@@ -1,12 +1,11 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.WorkManagement.Labels;
 
 public sealed class LabelColor : ValueObject
 {
     public string Hex { get; }
 
-    private LabelColor() { }    private LabelColor(string hex)
+    private LabelColor() { }
+    private LabelColor(string hex)
     {
         Hex = hex;
     }

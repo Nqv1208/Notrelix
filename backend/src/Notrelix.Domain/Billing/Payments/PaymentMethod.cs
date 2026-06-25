@@ -1,6 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Billing.Payments.Events;
-
 namespace Notrelix.Domain.Billing.Payments;
 
 public class PaymentMethod : AggregateRoot, IWorkspaceScoped

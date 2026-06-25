@@ -1,6 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Abstractions;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Common.Security;
 

@@ -1,12 +1,11 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Integrations.Webhooks;
 
 public sealed class WebhookSecretHash : ValueObject
 {
     public string Hash { get; }
 
-    private WebhookSecretHash() { }    private WebhookSecretHash(string hash)
+    private WebhookSecretHash() { }
+    private WebhookSecretHash(string hash)
     {
         Hash = hash;
     }

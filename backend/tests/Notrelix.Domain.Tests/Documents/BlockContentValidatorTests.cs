@@ -1,9 +1,6 @@
 using FluentAssertions;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Documents.Blocks;
 using Notrelix.Domain.Documents.Rules;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Documents;
 

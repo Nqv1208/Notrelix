@@ -1,5 +1,4 @@
 using System.Data;
-using Moq;
 using Notrelix.Infrastructure.Data.Ops.Stores;
 
 namespace Notrelix.Infrastructure.Tests.Data.Ops;

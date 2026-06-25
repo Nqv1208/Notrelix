@@ -1,10 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.Documents.Common;
-using global::Notrelix.Application.Features.Documents.DTOs;
-using global::Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.Documents.Blocks.Commands.UpdateBlock;
 

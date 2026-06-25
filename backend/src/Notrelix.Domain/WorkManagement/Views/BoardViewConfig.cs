@@ -1,12 +1,11 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.WorkManagement.Views;
 
 public class BoardViewConfig : ValueObject
 {
     public JsonValue Data { get; }
 
-    private BoardViewConfig() { }    protected BoardViewConfig(JsonValue data)
+    private BoardViewConfig() { }
+    protected BoardViewConfig(JsonValue data)
     {
         Data = data;
     }

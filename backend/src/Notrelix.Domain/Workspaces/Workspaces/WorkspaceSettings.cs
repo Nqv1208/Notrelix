@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Workspaces.Workspaces;
 
 public sealed class WorkspaceSettings : ValueObject
@@ -7,7 +5,8 @@ public sealed class WorkspaceSettings : ValueObject
     public bool AllowPublicSharing { get; }
     public bool EnforceMfa { get; }
 
-    private WorkspaceSettings() { }    private WorkspaceSettings(bool allowPublicSharing, bool enforceMfa)
+    private WorkspaceSettings() { }
+    private WorkspaceSettings(bool allowPublicSharing, bool enforceMfa)
     {
         AllowPublicSharing = allowPublicSharing;
         EnforceMfa = enforceMfa;

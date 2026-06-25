@@ -20,7 +20,7 @@ public class Result
 // Generic Result với data
 public class Result<T> : Result
 {
-    internal Result(bool succeeded, T? data, IEnumerable<string> errors) 
+    internal Result(bool succeeded, T? data, IEnumerable<string> errors)
         : base(succeeded, errors)
     {
         Data = data;

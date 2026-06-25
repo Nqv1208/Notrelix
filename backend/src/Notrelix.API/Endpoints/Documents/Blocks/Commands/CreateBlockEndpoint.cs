@@ -1,4 +1,3 @@
-using MediatR;
 using Notrelix.API.Contracts.Documents.Blocks.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Documents.Blocks.Commands.CreateBlock;

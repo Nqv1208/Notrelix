@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Governance.Security.Events;
 
 public class SecurityEvent : AggregateRoot, IWorkspaceScoped
@@ -15,10 +13,10 @@ public class SecurityEvent : AggregateRoot, IWorkspaceScoped
     private SecurityEvent() : base() { }
 
     public static SecurityEvent Record(
-        Guid workspaceId, 
-        SecurityEventType type, 
-        SecuritySeverity severity, 
-        string title, 
+        Guid workspaceId,
+        SecurityEventType type,
+        SecuritySeverity severity,
+        string title,
         SecurityEventMetadata metadata,
         DateTimeOffset occurredAt)
     {

@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Billing.Usage.Events;
 
 public record FeatureUsageReleasedDomainEvent : DomainEvent
@@ -12,7 +10,7 @@ public record FeatureUsageReleasedDomainEvent : DomainEvent
         string featureCode,
         decimal amount,
         Guid? actorUserId,
-        DateTimeOffset occurredAt) 
+        DateTimeOffset occurredAt)
         : base(occurredAt, workspaceId, actorUserId)
     {
         FeatureCode = featureCode;

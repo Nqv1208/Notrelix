@@ -1,6 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.SharedKernel;
-
 namespace Notrelix.Domain.Governance.Roles.Events;
 
 public sealed record CustomRoleAssignedDomainEvent(

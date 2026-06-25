@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Governance.Permissions.Events;
 
 public record PermissionRuleRestoredDomainEvent : DomainEvent

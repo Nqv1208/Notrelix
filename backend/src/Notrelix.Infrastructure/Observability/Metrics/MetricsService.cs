@@ -1,5 +1,4 @@
 using System.Diagnostics.Metrics;
-using System.Threading;
 
 namespace Notrelix.Infrastructure.Observability.Metrics;
 

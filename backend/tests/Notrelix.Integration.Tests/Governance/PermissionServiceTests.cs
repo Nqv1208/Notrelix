@@ -1,6 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using FluentAssertions;
-using Moq;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Security;
 using Notrelix.Domain.Governance.Permissions;

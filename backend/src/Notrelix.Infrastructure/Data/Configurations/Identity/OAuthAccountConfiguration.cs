@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Identity.OAuth;
-using Notrelix.Domain.Identity.Users;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Identity;
 

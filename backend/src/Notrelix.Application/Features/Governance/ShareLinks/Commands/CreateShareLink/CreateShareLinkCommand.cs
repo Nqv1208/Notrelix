@@ -1,12 +1,6 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.DTOs;
-using Notrelix.Domain.Collaboration.Activity;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Governance;
-using Notrelix.Domain.Governance.ShareLinks;
 using SharedKernel = Notrelix.Domain.SharedKernel;
 using System.Text.Json;
 
@@ -33,21 +27,21 @@ public record CreateShareLinkCommand(
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType, ResourceId, WorkspaceId);
 }
 
-    public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkCommand, Result<CreateShareLinkResponse>>
-    {
-        private readonly IApplicationDbContext _context;
-        private readonly ICurrentUser _currentUser;
-        private readonly IDateTimeProvider _dateTimeProvider;
+public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkCommand, Result<CreateShareLinkResponse>>
+{
+    private readonly IApplicationDbContext _context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-        public CreateShareLinkCommandHandler(
-            IApplicationDbContext context,
-            ICurrentUser currentUser,
-            IDateTimeProvider dateTimeProvider)
-        {
-            _context = context;
-            _currentUser = currentUser;
-            _dateTimeProvider = dateTimeProvider;
-        }
+    public CreateShareLinkCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IDateTimeProvider dateTimeProvider)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
+    }
 
     public async Task<Result<CreateShareLinkResponse>> Handle(
         CreateShareLinkCommand request,

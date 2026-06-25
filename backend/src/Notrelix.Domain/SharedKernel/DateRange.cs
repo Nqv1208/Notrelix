@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.SharedKernel;
 
 public sealed class DateRange : ValueObject
@@ -7,7 +5,8 @@ public sealed class DateRange : ValueObject
     public DateTimeOffset Start { get; }
     public DateTimeOffset? End { get; }
 
-    private DateRange() { }    private DateRange(DateTimeOffset start, DateTimeOffset? end)
+    private DateRange() { }
+    private DateRange(DateTimeOffset start, DateTimeOffset? end)
     {
         Start = start;
         End = end;

@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Automation.RulesEngine;
 
 public sealed class AutomationConfiguration : ValueObject

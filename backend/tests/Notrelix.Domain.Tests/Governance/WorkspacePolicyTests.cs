@@ -1,9 +1,5 @@
 using FluentAssertions;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Governance.Policies;
-using Notrelix.Domain.Governance.Policies.Events;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Governance;
 

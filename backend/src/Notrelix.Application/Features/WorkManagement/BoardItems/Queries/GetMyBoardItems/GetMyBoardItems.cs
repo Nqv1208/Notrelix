@@ -1,11 +1,6 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
-using global::Notrelix.Application.Features.Documents.DTOs;
-using global::Notrelix.Application.Features.Workspaces.DTOs;
-using global::Notrelix.Domain.Workspaces;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyBoardItems;
 

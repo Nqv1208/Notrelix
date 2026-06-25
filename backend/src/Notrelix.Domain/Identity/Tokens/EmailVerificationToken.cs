@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Identity.Tokens.Events;
 
 namespace Notrelix.Domain.Identity.Tokens;
@@ -46,7 +44,7 @@ public class EmailVerificationToken : AggregateRoot
     public void MarkUsed(DateTimeOffset usedAt)
     {
         EnsureNotDeleted();
-        
+
         if (Status == UserTokenStatus.Used)
         {
             throw new BusinessRuleException("Token has already been used.");

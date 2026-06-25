@@ -1,9 +1,5 @@
 using FluentAssertions;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Documents.Pages;
-using Notrelix.Domain.Documents.Pages.Events;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Documents;
 
@@ -14,7 +10,7 @@ public class PageTests
     {
         var workspaceId = Guid.NewGuid();
         var createdBy = Guid.NewGuid();
-        
+
         var page = Page.Create(workspaceId, "My Page", createdBy, DateTimeOffset.UtcNow);
 
         page.Title.Should().Be("My Page");
@@ -86,13 +82,13 @@ public class PageTests
         var pageId = Guid.NewGuid();
         var page = Page.Create(Guid.NewGuid(), "Child", Guid.NewGuid(), DateTimeOffset.UtcNow);
         var parentId = Guid.NewGuid();
-        
-        Func<Guid, Guid?> getParentId = (id) => 
+
+        Func<Guid, Guid?> getParentId = (id) =>
         {
             if (id == parentId) return page.Id;
             return null;
         };
-        
+
         Action act = () => Notrelix.Domain.Documents.Rules.PageTreeRules.EnsureNoCycle(page.Id, parentId, getParentId);
 
         act.Should().Throw<BusinessRuleException>().WithMessage("Page move would create a cycle in the page tree.");

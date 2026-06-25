@@ -1,12 +1,11 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.WorkManagement.Fields;
 
 public sealed class FieldSettings : ValueObject
 {
     public JsonValue Data { get; }
 
-    private FieldSettings() { }    private FieldSettings(JsonValue data)
+    private FieldSettings() { }
+    private FieldSettings(JsonValue data)
     {
         Data = data;
     }

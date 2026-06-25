@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common.Exceptions;
-
 namespace Notrelix.Domain.WorkManagement.Views;
 
 public static class BoardViewPreferenceRules

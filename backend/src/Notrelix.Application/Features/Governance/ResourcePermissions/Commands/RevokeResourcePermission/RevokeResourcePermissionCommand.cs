@@ -1,10 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
-using Notrelix.Domain.Collaboration.Activity;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Governance;
 using SharedKernel = Notrelix.Domain.SharedKernel;
 using System.Text.Json;
 
@@ -25,24 +21,24 @@ public record RevokeResourcePermissionCommand(
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType, ResourceId, WorkspaceId);
 }
 
-    public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeResourcePermissionCommand, Result>
-    {
-        private readonly IApplicationDbContext _context;
-        private readonly ICurrentUser _currentUser;
-        private readonly IDateTimeProvider _dateTimeProvider;
-        private readonly IAuditService _auditService;
+public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeResourcePermissionCommand, Result>
+{
+    private readonly IApplicationDbContext _context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IAuditService _auditService;
 
-        public RevokeResourcePermissionCommandHandler(
-            IApplicationDbContext context,
-            ICurrentUser currentUser,
-            IDateTimeProvider dateTimeProvider,
-            IAuditService auditService)
-        {
-            _context = context;
-            _currentUser = currentUser;
-            _dateTimeProvider = dateTimeProvider;
-            _auditService = auditService;
-        }
+    public RevokeResourcePermissionCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IDateTimeProvider dateTimeProvider,
+        IAuditService auditService)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
+        _auditService = auditService;
+    }
 
     public async Task<Result> Handle(
         RevokeResourcePermissionCommand request,

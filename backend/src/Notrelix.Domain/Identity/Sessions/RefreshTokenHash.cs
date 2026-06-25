@@ -1,6 +1,5 @@
 using System.Security.Cryptography;
 using System.Text;
-using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Identity.Sessions;
 
@@ -8,7 +7,8 @@ public sealed class RefreshTokenHash : ValueObject
 {
     public string Hash { get; }
 
-    private RefreshTokenHash() { }    private RefreshTokenHash(string hash)
+    private RefreshTokenHash() { }
+    private RefreshTokenHash(string hash)
     {
         Hash = hash;
     }

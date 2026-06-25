@@ -1,7 +1,5 @@
-using MediatR;
 using Notrelix.API.Extensions;
 using Notrelix.API.RateLimiting;
-using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Auth.Commands.ForgotPassword;
 
 namespace Notrelix.API.Endpoints.Identity.Auth.Commands;

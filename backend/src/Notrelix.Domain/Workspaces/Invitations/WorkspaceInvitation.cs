@@ -1,8 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Workspaces.Members;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.Workspaces.Invitations.Events;
-
 namespace Notrelix.Domain.Workspaces.Invitations;
 
 public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
@@ -18,10 +13,10 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
     private WorkspaceInvitation() : base() { }
 
     public static WorkspaceInvitation Create(
-        Guid workspaceId, 
-        string email, 
-        WorkspaceRole role, 
-        InvitationTokenHash token, 
+        Guid workspaceId,
+        string email,
+        WorkspaceRole role,
+        InvitationTokenHash token,
         Guid invitedBy,
         DateTimeOffset createdAt,
         TimeSpan? expiry = null)
@@ -48,7 +43,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         invitation.SetAuditOnCreate(invitedBy, createdAt);
         invitation.AddDomainEvent(new WorkspaceInvitationCreatedDomainEvent(
             invitation.Id, workspaceId, invitation.Email, role, invitedBy, createdAt));
-    
+
         return invitation;
     }
 
@@ -95,7 +90,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
 
         Status = WorkspaceInvitationStatus.Revoked;
         SetAuditOnUpdate(revokedBy, revokedAt);
-        
+
         AddDomainEvent(new WorkspaceInvitationRevokedDomainEvent(
             Id, WorkspaceId, revokedBy, revokedAt));
     }

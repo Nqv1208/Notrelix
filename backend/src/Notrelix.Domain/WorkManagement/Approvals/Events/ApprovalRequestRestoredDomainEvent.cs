@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.WorkManagement.Approvals.Events;
 
 public sealed record ApprovalRequestRestoredDomainEvent(

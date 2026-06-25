@@ -1,4 +1,3 @@
-using MediatR;
 using Notrelix.API.Contracts.WorkManagement.BoardItems.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.Labels.Commands.AddLabelToBoardItem;

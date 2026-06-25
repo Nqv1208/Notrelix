@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Governance.Policies;
 
 public class WorkspacePolicy : AuditableEntity, IWorkspaceScoped
@@ -28,9 +26,9 @@ public class WorkspacePolicy : AuditableEntity, IWorkspaceScoped
     }
 
     public void UpdatePolicy(
-        GuestAccessPolicy? guestPolicy, 
-        ResourcePolicy? resourcePolicy, 
-        SharingPolicy? sharingPolicy, 
+        GuestAccessPolicy? guestPolicy,
+        ResourcePolicy? resourcePolicy,
+        SharingPolicy? sharingPolicy,
         Guid updatedBy,
         DateTimeOffset updatedAt)
     {

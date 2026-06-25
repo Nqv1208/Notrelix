@@ -1,4 +1,3 @@
-using MediatR;
 using Notrelix.API.Contracts.Collaboration.Attachments.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Collaboration.Attachments.Commands.CreateBoardItemAttachment;

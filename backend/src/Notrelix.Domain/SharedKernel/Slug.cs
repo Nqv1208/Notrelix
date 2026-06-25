@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.SharedKernel;
 
@@ -11,7 +10,8 @@ public sealed class Slug : ValueObject
 
     public string Value { get; }
 
-    private Slug() { }    private Slug(string value)
+    private Slug() { }
+    private Slug(string value)
     {
         Value = value;
     }
@@ -19,9 +19,9 @@ public sealed class Slug : ValueObject
     public static Slug Create(string value)
     {
         Guard.NotNullOrWhiteSpace(value);
-        
+
         value = value.Trim().ToLowerInvariant();
-        
+
         Guard.Assert(SlugRegex.IsMatch(value), $"'{value}' is not a valid slug. Only lowercase letters, numbers, and hyphens are allowed.");
 
         return new Slug(value);

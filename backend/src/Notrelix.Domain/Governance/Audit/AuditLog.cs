@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Governance.Audit;
 
 public class AuditLog : Entity, IWorkspaceScoped
@@ -48,7 +46,7 @@ public class AuditLog : Entity, IWorkspaceScoped
         };
 
         log.AddDomainEvent(new AuditLogRecordedDomainEvent(log.Id, workspaceId, log.Action, timestamp));
-        
+
         return log;
     }
 

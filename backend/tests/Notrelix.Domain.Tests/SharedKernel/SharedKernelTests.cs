@@ -1,7 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.SharedKernel;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.SharedKernel;
 
@@ -45,9 +42,9 @@ public class SharedKernelTests
     {
         var start = DateTimeOffset.UtcNow;
         var end = start.AddDays(1);
-        
+
         var range = DateRange.Create(start, end);
-        
+
         range.Start.Should().Be(start);
         range.End.Should().Be(end);
     }
@@ -57,9 +54,9 @@ public class SharedKernelTests
     {
         var start = DateTimeOffset.UtcNow;
         var end = start.AddDays(-1);
-        
+
         Action act = () => DateRange.Create(start, end);
-        
+
         act.Should().Throw<BusinessRuleException>();
     }
 
@@ -83,7 +80,7 @@ public class SharedKernelTests
     {
         var id = Guid.NewGuid();
         var resourceRef = ResourceRef.Create(ResourceType.Board, id);
-        
+
         resourceRef.ResourceType.Should().Be(ResourceType.Board);
         resourceRef.ResourceId.Should().Be(id);
     }

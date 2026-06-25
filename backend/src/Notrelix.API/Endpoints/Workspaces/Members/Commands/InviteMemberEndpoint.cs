@@ -1,4 +1,3 @@
-using MediatR;
 using Notrelix.API.Contracts.Workspaces.Members.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember;

@@ -1,6 +1,3 @@
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.SharedKernel;
-
 namespace Notrelix.Domain.Identity.Mfa;
 
 public static class MfaMethodRules

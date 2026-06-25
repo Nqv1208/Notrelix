@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Collaboration.Reactions.Events;
 
 public sealed record ReactionCreatedDomainEvent(

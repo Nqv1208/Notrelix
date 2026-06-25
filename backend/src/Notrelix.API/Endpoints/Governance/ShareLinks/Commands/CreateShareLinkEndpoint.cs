@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
 using Notrelix.API.Contracts.Governance.ShareLinks.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Governance.ShareLinks.Commands.CreateShareLink;

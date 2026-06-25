@@ -1,9 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.SharedKernel;
-using Notrelix.Domain.WorkManagement.BoardGroups;
-using Notrelix.Domain.WorkManagement.Fields;
-
 namespace Notrelix.Domain.WorkManagement.Items;
 
 public class BoardItem : AggregateRoot, IWorkspaceScoped
@@ -20,18 +14,18 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
     public DateTimeOffset? StartedAt { get; private set; }
     public DateTimeOffset? DueAt { get; private set; }
     public DateTimeOffset? CompletedAt { get; private set; }
-    
+
     private readonly List<BoardItemValue> _fieldValues = new();
     public IReadOnlyCollection<BoardItemValue> FieldValues => _fieldValues.AsReadOnly();
 
     private BoardItem() : base() { }
 
     public static BoardItem Create(
-        Guid workspaceId, 
-        Guid boardId, 
-        Guid groupId, 
-        string name, 
-        FractionalIndex position, 
+        Guid workspaceId,
+        Guid boardId,
+        Guid groupId,
+        string name,
+        FractionalIndex position,
         Guid createdBy,
         DateTimeOffset createdAt,
         Guid? parentItemId = null,
@@ -64,7 +58,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
 
         item.SetAuditOnCreate(createdBy, createdAt);
         item.AddDomainEvent(new BoardItemCreatedDomainEvent(workspaceId, boardId, groupId, item.Id, item.Name, createdBy, createdAt));
-        
+
         return item;
     }
 

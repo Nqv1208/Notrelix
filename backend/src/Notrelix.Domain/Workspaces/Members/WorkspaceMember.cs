@@ -1,7 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.Workspaces.Members.Events;
-
 namespace Notrelix.Domain.Workspaces.Members;
 
 public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
@@ -40,16 +36,16 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
-        
+
         if (Status != WorkspaceMemberStatus.Active)
         {
             throw new BusinessRuleException("Cannot change role of an inactive or suspended member.");
         }
 
         WorkspaceOwnerRules.EnsureCanDowngradeOwner(Role, newRole, activeOwnerCount);
-        
+
         if (Role == newRole) return;
-        
+
         var oldRole = Role;
         Role = newRole;
 
@@ -66,11 +62,11 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
-        
+
         WorkspaceOwnerRules.EnsureCanSuspendOwner(Role, activeOwnerCount);
 
         if (Status == WorkspaceMemberStatus.Suspended) return;
-        
+
         Status = WorkspaceMemberStatus.Suspended;
 
         SetAuditOnUpdate(updatedBy, updatedAt);
@@ -83,14 +79,14 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
-        
+
         if (Status == WorkspaceMemberStatus.Active) return;
-        
+
         if (Status == WorkspaceMemberStatus.Removed)
         {
             throw new BusinessRuleException("Cannot activate a removed member. Restore the member first.");
         }
-        
+
         Status = WorkspaceMemberStatus.Active;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
@@ -102,7 +98,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(deletedBy);
 
         if (IsDeleted) return;
-        
+
         Status = WorkspaceMemberStatus.Removed;
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);

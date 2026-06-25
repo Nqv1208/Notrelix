@@ -1,6 +1,4 @@
-using Notrelix.Domain.Common;
 using Notrelix.Domain.Billing.Rules;
-using Notrelix.Domain.Billing.Usage.Events;
 
 namespace Notrelix.Domain.Billing.Usage;
 

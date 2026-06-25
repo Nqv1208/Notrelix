@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Text.Json;
-using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,7 +7,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Events;
-using Notrelix.Domain.Common;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Outbox;
 using Notrelix.Infrastructure.Observability.Metrics;

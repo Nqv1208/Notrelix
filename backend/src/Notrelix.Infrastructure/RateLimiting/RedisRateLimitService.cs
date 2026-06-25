@@ -56,10 +56,11 @@ public sealed class RedisRateLimitService : IRateLimitService
 
         var swScore = now.ToUnixTimeMilliseconds();
         var swMinScore = swScore - windowSeconds * 1000;
+        var member = $"{swScore}:{Guid.NewGuid():N}";
 
         var tran = db.CreateTransaction();
         _ = tran.SortedSetRemoveRangeByScoreAsync(key, 0, swMinScore);
-        _ = tran.SortedSetAddAsync(key, partitionKey, swScore);
+        _ = tran.SortedSetAddAsync(key, member, swScore);
         var countTask = tran.SortedSetLengthAsync(key);
         _ = tran.KeyExpireAsync(key, window);
         await tran.ExecuteAsync();

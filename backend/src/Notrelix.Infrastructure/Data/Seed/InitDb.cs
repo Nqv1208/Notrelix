@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Domain.Collaboration.Comments;
 using Notrelix.Domain.Collaboration.Notifications;
-using Notrelix.Domain.Common;
 using Notrelix.Domain.Documents.Blocks;
 using Notrelix.Domain.Documents.Pages;
 using Notrelix.Domain.Identity.Profiles;
@@ -238,12 +237,12 @@ internal static class InitDb
                 {
                     var (fName, fType, fIsSystem, fSettings, fOptions) = f switch
                     {
-                        0 => ("Title",       FieldType.Text,    true,  emptySettings,      Array.Empty<(string, string)>()),
-                        1 => ("Status",      FieldType.Status,  true,  statusSettings,     StatusOptions),
-                        2 => ("Assignee",    FieldType.Person,  true,  emptySettings,      Array.Empty<(string, string)>()),
-                        3 => ("Due Date",    FieldType.Date,    false, emptySettings,      Array.Empty<(string, string)>()),
-                        4 => ("Description", FieldType.LongText, false, emptySettings,      Array.Empty<(string, string)>()),
-                        _ => ("Priority",    FieldType.Select,  false, emptySettings,      PriorityOptions),
+                        0 => ("Title", FieldType.Text, true, emptySettings, Array.Empty<(string, string)>()),
+                        1 => ("Status", FieldType.Status, true, statusSettings, StatusOptions),
+                        2 => ("Assignee", FieldType.Person, true, emptySettings, Array.Empty<(string, string)>()),
+                        3 => ("Due Date", FieldType.Date, false, emptySettings, Array.Empty<(string, string)>()),
+                        4 => ("Description", FieldType.LongText, false, emptySettings, Array.Empty<(string, string)>()),
+                        _ => ("Priority", FieldType.Select, false, emptySettings, PriorityOptions),
                     };
 
                     var field = BoardField.Create(

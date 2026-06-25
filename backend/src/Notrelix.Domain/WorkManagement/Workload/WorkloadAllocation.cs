@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.WorkManagement.Workload;
 
 public class WorkloadAllocation : Entity, IWorkspaceScoped

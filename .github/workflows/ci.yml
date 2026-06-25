@@ -97,6 +97,16 @@ jobs:
         ports:
           - 5432:5432
 
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
     steps:
       - uses: actions/checkout@v4
 
@@ -116,11 +126,14 @@ jobs:
       - name: Apply migrations
         run: |
           export ConnectionStrings__Default="Host=localhost;Port=5432;Database=notrelix_test;Username=notrelix;Password=notrelix"
+          export ConnectionStrings__Redis="localhost:6379,abortConnect=false"
+          export ASPNETCORE_ENVIRONMENT=CI
           dotnet run --project src/Notrelix.API --no-build -- --migrate-only
         working-directory: backend
 
       - name: Migration smoke tests
         run: |
           export ConnectionStrings__Default="Host=localhost;Port=5432;Database=notrelix_test;Username=notrelix;Password=notrelix"
+          export ConnectionStrings__Redis="localhost:6379,abortConnect=false"
           dotnet test tests/Notrelix.Integration.Tests --no-build --filter "FullyQualifiedName~MigrationSmoke"
         working-directory: backend

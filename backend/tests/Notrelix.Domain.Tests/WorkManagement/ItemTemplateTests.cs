@@ -1,10 +1,5 @@
 using FluentAssertions;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.WorkManagement.Templates;
-using Notrelix.Domain.WorkManagement.Templates.Events;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 

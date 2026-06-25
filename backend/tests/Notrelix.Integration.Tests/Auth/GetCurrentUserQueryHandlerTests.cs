@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Features.Identity.Auth.Queries.GetCurrentUser;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Testing.Integration.Factories;

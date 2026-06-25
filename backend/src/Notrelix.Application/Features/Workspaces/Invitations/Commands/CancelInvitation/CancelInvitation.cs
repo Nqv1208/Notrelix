@@ -1,8 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Domain.Workspaces;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.CancelInvitation;
 

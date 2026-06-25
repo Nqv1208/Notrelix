@@ -1,7 +1,5 @@
 using FluentAssertions;
-using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.WorkManagement.Checklists;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 

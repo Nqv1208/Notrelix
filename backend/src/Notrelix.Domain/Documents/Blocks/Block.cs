@@ -1,7 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.SharedKernel;
-
 namespace Notrelix.Domain.Documents.Blocks;
 
 public class Block : AggregateRoot, IWorkspaceScoped
@@ -18,10 +14,10 @@ public class Block : AggregateRoot, IWorkspaceScoped
 
     public static Block Create(
         Guid workspaceId,
-        Guid pageId, 
-        BlockType type, 
-        BlockContent content, 
-        FractionalIndex position, 
+        Guid pageId,
+        BlockType type,
+        BlockContent content,
+        FractionalIndex position,
         Guid createdBy,
         DateTimeOffset createdAt,
         Guid? parentId = null,

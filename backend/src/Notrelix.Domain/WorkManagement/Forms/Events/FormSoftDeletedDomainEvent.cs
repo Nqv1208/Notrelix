@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.WorkManagement.Forms.Events;
 
 public sealed record FormSoftDeletedDomainEvent(

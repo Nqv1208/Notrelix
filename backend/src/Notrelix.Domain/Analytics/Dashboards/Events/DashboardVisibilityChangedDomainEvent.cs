@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Analytics.Dashboards.Events;
 
 public sealed record DashboardVisibilityChangedDomainEvent(

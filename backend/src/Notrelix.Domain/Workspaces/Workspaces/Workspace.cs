@@ -1,9 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Workspaces.Members;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.SharedKernel;
-using Notrelix.Domain.Workspaces.Workspaces.Events;
-
 namespace Notrelix.Domain.Workspaces.Workspaces;
 
 public class Workspace : AggregateRoot

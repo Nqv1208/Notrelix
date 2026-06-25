@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetBoardItems;
 
 namespace Notrelix.API.Endpoints.WorkManagement.BoardItems.Queries;

@@ -1,22 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using FluentAssertions;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.SharedKernel;
-using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.BoardGroups;
-using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Items;
-using Notrelix.Domain.WorkManagement.Views;
-using Notrelix.Domain.WorkManagement.Relations;
 using Notrelix.Domain.WorkManagement.Forms;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Governance.ShareLinks;
 using Notrelix.Domain.Billing.Plans;
 using Notrelix.Domain.Billing.Usage;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 
@@ -32,16 +21,16 @@ public class V4DomainRulesTests
     {
         var otherWorkspaceId = Guid.NewGuid();
         var form = Form.Create(_workspaceId, _boardId, "Contact Form", "contact-form", _actorId, _now);
-        
+
         var question = FormQuestion.Create(
-            otherWorkspaceId, 
-            form.Id, 
-            boardFieldId: null, 
-            questionKey: "FullName", 
-            label: "Your Full Name", 
-            questionType: FormQuestionType.ShortText, 
-            isRequired: true, 
-            position: FractionalIndex.Initial(), 
+            otherWorkspaceId,
+            form.Id,
+            boardFieldId: null,
+            questionKey: "FullName",
+            label: "Your Full Name",
+            questionType: FormQuestionType.ShortText,
+            isRequired: true,
+            position: FractionalIndex.Initial(),
             config: null);
 
         Action act = () => form.AddQuestion(question, _actorId, _now);
@@ -82,7 +71,7 @@ public class V4DomainRulesTests
             { itemC, new List<Guid>() } // We want to add C -> A
         };
 
-        Func<Guid, IEnumerable<Guid>> getDependencies = id => 
+        Func<Guid, IEnumerable<Guid>> getDependencies = id =>
             dependencies.TryGetValue(id, out var list) ? list : Enumerable.Empty<Guid>();
 
         Action act = () => DependencyRules.EnsureNoCycle(itemC, itemA, getDependencies);
@@ -106,7 +95,7 @@ public class V4DomainRulesTests
     {
         var itemId = Guid.NewGuid();
         var entry = TimeTrackingEntry.Start(_workspaceId, _boardId, itemId, _actorId, _now);
-        
+
         entry.Stop(_now.AddMinutes(5), _actorId);
 
         // Stopping it again should fail
@@ -194,7 +183,7 @@ public class V4DomainRulesTests
         Action act = () => usage.Consume(3, _actorId, _now);
 
         act.Should().Throw<BusinessRuleException>().WithMessage("*feature usage limit exceeded*");
-        
+
         usage.DomainEvents.Should().ContainSingle(e => e is QuotaExceededDomainEvent);
         var evt = (QuotaExceededDomainEvent)usage.DomainEvents.Single(e => e is QuotaExceededDomainEvent);
         evt.FeatureCode.Should().Be(featureCode.Code);

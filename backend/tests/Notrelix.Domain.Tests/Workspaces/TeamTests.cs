@@ -1,9 +1,5 @@
 using FluentAssertions;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Workspaces.Teams;
-using Notrelix.Domain.Workspaces.Teams.Events;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 
@@ -117,10 +113,10 @@ public class TeamTests
         var team = Team.Create(Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
         var userId = Guid.NewGuid();
         var actor = Guid.NewGuid();
-        
+
         // Add member
         team.AddMember(userId, TeamMemberRole.Member, actor, DateTimeOffset.UtcNow);
-        
+
         // Remove member
         team.RemoveMember(userId, actor, DateTimeOffset.UtcNow);
         team.Members.First(m => m.UserId == userId).Status.Should().Be(TeamMemberStatus.Removed);

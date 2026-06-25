@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Workspaces.Teams;
 
 public class TeamMember : AuditableEntity, IWorkspaceScoped
@@ -15,11 +13,11 @@ public class TeamMember : AuditableEntity, IWorkspaceScoped
 
     public static TeamMember Create(
         Guid workspaceId,
-        Guid teamId, 
-        Guid userId, 
-        TeamMemberRole role, 
-        Guid addedBy, 
-        DateTimeOffset createdAt, 
+        Guid teamId,
+        Guid userId,
+        TeamMemberRole role,
+        Guid addedBy,
+        DateTimeOffset createdAt,
         Guid? workspaceMemberId = null)
     {
         Guard.NotEmpty(workspaceId);

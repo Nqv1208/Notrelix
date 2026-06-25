@@ -1,6 +1,3 @@
-using System;
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Automation.Agents.Events;
 
 public sealed record AiAgentRunStartedDomainEvent(

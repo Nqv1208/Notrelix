@@ -1,6 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-
 namespace Notrelix.Domain.Automation.Scheduled;
 
 public class ScheduledJob : AggregateRoot, IWorkspaceScoped

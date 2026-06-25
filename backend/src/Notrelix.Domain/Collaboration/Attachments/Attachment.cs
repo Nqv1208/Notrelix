@@ -1,6 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-
 namespace Notrelix.Domain.Collaboration.Attachments;
 
 public class Attachment : AggregateRoot, IWorkspaceScoped

@@ -1,5 +1,4 @@
 using Notrelix.Application.Common.Events;
-using Notrelix.Domain.Common;
 
 namespace Notrelix.Application.Common.Abstractions;
 

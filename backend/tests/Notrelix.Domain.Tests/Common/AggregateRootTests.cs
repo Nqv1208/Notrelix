@@ -1,6 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Common;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Common;
 
@@ -31,7 +29,7 @@ public class AggregateRootTests
     {
         var aggregate = new TestAggregate();
         aggregate.DoSomething();
-        
+
         aggregate.ClearDomainEvents();
 
         aggregate.DomainEvents.Should().BeEmpty();

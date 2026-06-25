@@ -1,12 +1,11 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Governance.Policies;
 
 public sealed class ResourcePolicy : ValueObject
 {
     public bool AllowPublicSharing { get; }
 
-    private ResourcePolicy() { }    private ResourcePolicy(bool allowPublicSharing)
+    private ResourcePolicy() { }
+    private ResourcePolicy(bool allowPublicSharing)
     {
         AllowPublicSharing = allowPublicSharing;
     }

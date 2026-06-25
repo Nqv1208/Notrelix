@@ -1,7 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.WorkManagement.Fields;
-
 namespace Notrelix.Domain.WorkManagement.Views;
 
 public sealed class KanbanViewConfig : BoardViewConfig
@@ -10,7 +6,7 @@ public sealed class KanbanViewConfig : BoardViewConfig
     public Guid? SwimlaneFieldId { get; }
     public IReadOnlyCollection<Guid> VisibleFieldIds { get; }
 
-    private KanbanViewConfig(Guid columnFieldId, Guid? swimlaneFieldId, Guid[] visibleFieldIds) 
+    private KanbanViewConfig(Guid columnFieldId, Guid? swimlaneFieldId, Guid[] visibleFieldIds)
         : base(JsonValue.EmptyObject())
     {
         ColumnFieldId = columnFieldId;

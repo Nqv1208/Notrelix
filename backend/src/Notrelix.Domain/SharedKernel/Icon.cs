@@ -1,4 +1,3 @@
-using Notrelix.Domain.Common;
 namespace Notrelix.Domain.SharedKernel;
 
 /// <summary>
@@ -9,7 +8,8 @@ public class Icon : ValueObject
     public string Value { get; }
     public IconType Type { get; }
 
-    private Icon() { }    private Icon(string value, IconType type)
+    private Icon() { }
+    private Icon(string value, IconType type)
     {
         Value = value;
         Type = type;

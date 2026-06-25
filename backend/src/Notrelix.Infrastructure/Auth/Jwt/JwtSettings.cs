@@ -1,4 +1,5 @@
 namespace Notrelix.Infrastructure.Auth.Jwt;
+
 public class JwtSettings
 {
     public string Audience { get; init; } = null!;

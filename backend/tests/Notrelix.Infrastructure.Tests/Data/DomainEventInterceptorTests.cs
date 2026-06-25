@@ -5,10 +5,8 @@ using Notrelix.Application.Common.Events;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Governance.Roles;
 using Notrelix.Domain.Workspaces.Workspaces;
-using Notrelix.Domain.Workspaces.Workspaces.Events;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Interceptors;
-using Notrelix.Infrastructure.Data.Outbox;
 
 namespace Notrelix.Infrastructure.Tests.Data;
 

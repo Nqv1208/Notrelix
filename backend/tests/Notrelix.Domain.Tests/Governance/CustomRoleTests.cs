@@ -1,8 +1,5 @@
 using FluentAssertions;
-using Notrelix.Domain.Governance;
-using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Governance.Roles;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Governance;
 
@@ -13,7 +10,7 @@ public class CustomRoleTests
     {
         var workspaceId = Guid.NewGuid();
         var createdBy = Guid.NewGuid();
-        
+
         var role = CustomRole.Create(workspaceId, "Project Manager", "Manages projects", createdBy, DateTimeOffset.UtcNow);
 
         role.Name.Should().Be("Project Manager");

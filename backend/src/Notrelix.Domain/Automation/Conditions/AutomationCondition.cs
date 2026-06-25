@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Automation.Conditions;
 
 public class AutomationCondition : Entity

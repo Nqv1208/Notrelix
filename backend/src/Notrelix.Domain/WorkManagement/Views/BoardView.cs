@@ -1,6 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-
 namespace Notrelix.Domain.WorkManagement.Views;
 
 public class BoardView : AggregateRoot, IWorkspaceScoped
@@ -15,11 +12,11 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
     private BoardView() : base() { }
 
     public static BoardView Create(
-        Guid workspaceId, 
-        Guid boardId, 
-        string name, 
-        ViewType type, 
-        BoardViewConfig config, 
+        Guid workspaceId,
+        Guid boardId,
+        string name,
+        ViewType type,
+        BoardViewConfig config,
         Guid createdBy,
         DateTimeOffset createdAt,
         bool isDefault = false)
@@ -42,7 +39,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
 
         view.SetAuditOnCreate(createdBy, createdAt);
         view.AddDomainEvent(new BoardViewCreatedDomainEvent(workspaceId, boardId, view.Id, view.Name, type, createdBy, createdAt));
-        
+
         return view;
     }
 
@@ -50,7 +47,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotNull(config);
-        
+
         // Ensure the config type matches the view type
         if (Type == ViewType.Kanban && config is not KanbanViewConfig)
             throw new BusinessRuleException("Kanban view must use KanbanViewConfig");

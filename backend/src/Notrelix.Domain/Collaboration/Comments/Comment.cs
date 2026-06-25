@@ -1,6 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-
 namespace Notrelix.Domain.Collaboration.Comments;
 
 public class Comment : AggregateRoot, IWorkspaceScoped
@@ -15,10 +12,10 @@ public class Comment : AggregateRoot, IWorkspaceScoped
     private Comment() : base() { }
 
     public static Comment Create(
-        Guid workspaceId, 
-        ResourceRef target, 
-        string content, 
-        Guid createdBy, 
+        Guid workspaceId,
+        ResourceRef target,
+        string content,
+        Guid createdBy,
         DateTimeOffset createdAt,
         Guid? parentId = null,
         CommentAnchor? anchor = null)

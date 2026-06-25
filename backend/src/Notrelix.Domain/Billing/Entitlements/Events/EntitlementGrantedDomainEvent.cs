@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Billing.Entitlements.Events;
 
 public record EntitlementGrantedDomainEvent : DomainEvent
@@ -14,7 +12,7 @@ public record EntitlementGrantedDomainEvent : DomainEvent
         string featureCode,
         decimal limit,
         Guid? actorUserId,
-        DateTimeOffset occurredAt) 
+        DateTimeOffset occurredAt)
         : base(occurredAt, workspaceId, actorUserId)
     {
         EntitlementId = entitlementId;

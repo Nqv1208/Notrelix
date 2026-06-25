@@ -1,7 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.Billing.Payments.Events;
-
 namespace Notrelix.Domain.Billing.Payments;
 
 public class Invoice : AggregateRoot, IWorkspaceScoped

@@ -1,7 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
 

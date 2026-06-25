@@ -1,4 +1,3 @@
-using System.Net;
 using System.Security.Claims;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.RateLimiting;

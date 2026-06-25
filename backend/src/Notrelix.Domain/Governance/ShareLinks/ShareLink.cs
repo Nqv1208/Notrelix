@@ -1,7 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.Governance.Permissions;
-
 namespace Notrelix.Domain.Governance.ShareLinks;
 
 public class ShareLink : AggregateRoot, IWorkspaceScoped
@@ -70,12 +66,12 @@ public class ShareLink : AggregateRoot, IWorkspaceScoped
     public void RotateTokenHash(ShareLinkTokenHash newHash, Guid rotatedBy, DateTimeOffset rotatedAt)
     {
         Guard.NotNull(newHash);
-        
+
         TokenHash = newHash;
         Status = ShareLinkStatus.Active;
         SetAuditOnUpdate(rotatedBy, rotatedAt);
         IncrementVersion();
-        
+
         AddDomainEvent(new ShareLinkRotatedEvent(WorkspaceId, Id, rotatedBy, rotatedAt));
     }
 

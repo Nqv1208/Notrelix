@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Collaboration.Comments;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Collaboration;
 

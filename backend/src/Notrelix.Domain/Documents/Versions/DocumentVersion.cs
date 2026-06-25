@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Documents.Versions;
 
 public class DocumentVersion : AggregateRoot, IWorkspaceScoped

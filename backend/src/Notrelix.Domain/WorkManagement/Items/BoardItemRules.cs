@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common.Exceptions;
-
 namespace Notrelix.Domain.WorkManagement.Items;
 
 public static class BoardItemRules

@@ -1,12 +1,11 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Analytics.Widgets;
 
 public sealed class WidgetConfig : ValueObject
 {
     public JsonValue Data { get; }
 
-    private WidgetConfig() { }    private WidgetConfig(JsonValue data)
+    private WidgetConfig() { }
+    private WidgetConfig(JsonValue data)
     {
         Data = data;
     }

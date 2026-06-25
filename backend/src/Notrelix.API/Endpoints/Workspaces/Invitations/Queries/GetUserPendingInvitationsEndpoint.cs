@@ -1,6 +1,4 @@
-using MediatR;
 using Notrelix.API.Extensions;
-using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Invitations.Queries.GetUserPendingInvitations;
 
 namespace Notrelix.API.Endpoints.Workspaces.Invitations.Queries;

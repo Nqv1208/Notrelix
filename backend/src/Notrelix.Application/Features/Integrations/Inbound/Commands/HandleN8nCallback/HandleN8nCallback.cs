@@ -1,6 +1,5 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.Integrations.Inbound.Commands.HandleN8nCallback;

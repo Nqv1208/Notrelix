@@ -1,7 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.SharedKernel;
-
 namespace Notrelix.Domain.WorkManagement.Fields;
 
 public class BoardField : AggregateRoot, IWorkspaceScoped
@@ -26,15 +22,15 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
     private BoardField() : base() { }
 
     public static BoardField Create(
-        Guid workspaceId, 
-        Guid boardId, 
-        string name, 
-        FieldType type, 
-        FieldSettings settings, 
-        FractionalIndex position, 
+        Guid workspaceId,
+        Guid boardId,
+        string name,
+        FieldType type,
+        FieldSettings settings,
+        FractionalIndex position,
         Guid createdBy,
         DateTimeOffset createdAt,
-        string? defaultValue = null, 
+        string? defaultValue = null,
         bool isSystem = false,
         DataClassification dataClassification = DataClassification.Internal,
         bool isSensitive = false,
@@ -69,7 +65,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
 
         field.SetAuditOnCreate(createdBy, createdAt);
         field.AddDomainEvent(new BoardFieldCreatedDomainEvent(workspaceId, boardId, field.Id, field.Name, type, createdBy, createdAt));
-        
+
         return field;
     }
 
@@ -104,7 +100,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        
+
         if (IsSystem)
             throw new BusinessRuleException("Cannot delete a system field.");
 
