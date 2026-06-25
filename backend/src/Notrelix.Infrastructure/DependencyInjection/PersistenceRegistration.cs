@@ -4,11 +4,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Events;
-using Notrelix.Infrastructure.Options;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Interceptors;
 using Notrelix.Infrastructure.Data.Outbox;
 using Notrelix.Infrastructure.Events;
+using Notrelix.Infrastructure.Options;
 
 namespace Notrelix.Infrastructure;
 
@@ -45,6 +45,7 @@ public static class PersistenceRegistration
             options.UseNpgsql(connectionString, npgOptions =>
             {
                 npgOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                npgOptions.MigrationsHistoryTable("__EFMigrationsHistory", DbSchemas.Ops);
             });
         });
 

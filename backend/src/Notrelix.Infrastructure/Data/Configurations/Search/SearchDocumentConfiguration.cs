@@ -24,5 +24,10 @@ public class SearchDocumentConfiguration : IEntityTypeConfiguration<SearchDocume
 
         builder.HasIndex(x => new { x.WorkspaceId, x.ResourceType }).HasDatabaseName("ix_search_documents_workspace_type");
         builder.HasIndex(x => new { x.WorkspaceId, x.ResourceType, x.ResourceId }).IsUnique().HasDatabaseName("ux_search_documents_resource");
+
+        builder.HasIndex(x => x.SearchVector)
+            .HasMethod("gin")
+            .HasDatabaseName("ix_search_documents_search_vector")
+            .HasOperators("gin_trgm_ops");
     }
 }
