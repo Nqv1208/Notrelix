@@ -23,11 +23,19 @@ public class CacheInvalidationBehavior<TRequest, TResponse> : IPipelineBehavior<
         {
             var response = await next();
 
-            var keys = cacheInvalidationRequest.GetInvalidationKeys();
-            foreach (var key in keys)
+            try
             {
-                _logger.LogTrace("Invalidating cache key pattern: {Pattern}", key.Pattern);
-                await _cacheService.RemoveAsync(key.Pattern);
+                var keys = cacheInvalidationRequest.GetInvalidationKeys();
+                foreach (var key in keys)
+                {
+                    _logger.LogTrace("Invalidating cache key pattern: {Pattern}", key.Pattern);
+                    await _cacheService.RemoveAsync(key.Pattern);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Cache invalidation failed after {RequestType}; data already committed",
+                    typeof(TRequest).Name);
             }
 
             return response;

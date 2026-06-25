@@ -2,9 +2,9 @@ using System.Diagnostics;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
+
 namespace Notrelix.Application.Common.Behaviors;
 
-// MediatR pipeline behavior log request/response
 public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
@@ -21,7 +21,14 @@ public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
         CancellationToken cancellationToken)
     {
         var requestName = typeof(TRequest).Name;
-        
+        var workspaceId = (request as IWorkspaceRequest)?.WorkspaceId.ToString();
+
+        using var _ = _logger.BeginScope(new Dictionary<string, object>
+        {
+            ["CommandName"] = requestName,
+            ["WorkspaceId"] = workspaceId ?? "",
+        });
+
         _logger.LogInformation("Handling {RequestName}", requestName);
 
         var stopwatch = Stopwatch.StartNew();
@@ -29,10 +36,10 @@ public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
         try
         {
             var response = await next();
-            
+
             stopwatch.Stop();
             _logger.LogInformation(
-                "Handled {RequestName} in {ElapsedMilliseconds}ms",
+                "Handled {RequestName} in {ElapsedMs}ms",
                 requestName,
                 stopwatch.ElapsedMilliseconds);
 
@@ -43,7 +50,7 @@ public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
             stopwatch.Stop();
             _logger.LogError(
                 ex,
-                "Error handling {RequestName} after {ElapsedMilliseconds}ms",
+                "Error handling {RequestName} after {ElapsedMs}ms",
                 requestName,
                 stopwatch.ElapsedMilliseconds);
             throw;

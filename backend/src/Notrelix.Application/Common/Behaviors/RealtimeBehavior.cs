@@ -23,10 +23,18 @@ public class RealtimeBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest,
         {
             var response = await next();
 
-            await _realtimePublisher.PublishAsync(
-                realtimeRequest.Topic,
-                new { Request = request, Response = response },
-                cancellationToken);
+            try
+            {
+                await _realtimePublisher.PublishAsync(
+                    realtimeRequest.Topic,
+                    new { Request = request, Response = response },
+                    cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Realtime publish failed after {RequestType}; data already committed",
+                    typeof(TRequest).Name);
+            }
 
             return response;
         }
