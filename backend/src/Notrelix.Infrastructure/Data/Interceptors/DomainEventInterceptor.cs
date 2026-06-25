@@ -14,25 +14,28 @@ public class DomainEventInterceptor : SaveChangesInterceptor
     private readonly IEventTypeRegistry _eventTypeRegistry;
     private readonly IIntegrationEventMapper _integrationEventMapper;
     private readonly IMediator _mediator;
-    private readonly AsyncLocal<List<IDomainEvent>?> _capturedEvents = new();
+    private readonly IDomainEventDispatchPolicy _dispatchPolicy;
+    private readonly AsyncLocal<List<IDomainEvent>?> _inlineEvents = new();
 
     public DomainEventInterceptor(
         IDateTimeProvider dateTimeProvider,
         IEventTypeRegistry eventTypeRegistry,
         IIntegrationEventMapper integrationEventMapper,
-        IMediator mediator)
+        IMediator mediator,
+        IDomainEventDispatchPolicy dispatchPolicy)
     {
         _dateTimeProvider = dateTimeProvider;
         _eventTypeRegistry = eventTypeRegistry;
         _integrationEventMapper = integrationEventMapper;
         _mediator = mediator;
+        _dispatchPolicy = dispatchPolicy;
     }
 
     public override InterceptionResult<int> SavingChanges(
         DbContextEventData eventData,
         InterceptionResult<int> result)
     {
-        CaptureAndPersist(eventData.Context);
+        CaptureAndHandle(eventData.Context);
         return result;
     }
 
@@ -41,7 +44,7 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
-        CaptureAndPersist(eventData.Context);
+        CaptureAndHandle(eventData.Context);
         return new ValueTask<InterceptionResult<int>>(result);
     }
 
@@ -49,8 +52,8 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         SaveChangesCompletedEventData eventData,
         int result)
     {
-        var events = _capturedEvents.Value;
-        _capturedEvents.Value = null;
+        var events = _inlineEvents.Value;
+        _inlineEvents.Value = null;
         if (events?.Count > 0)
         {
             PublishInline(events);
@@ -63,8 +66,8 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         int result,
         CancellationToken cancellationToken = default)
     {
-        var events = _capturedEvents.Value;
-        _capturedEvents.Value = null;
+        var events = _inlineEvents.Value;
+        _inlineEvents.Value = null;
         if (events?.Count > 0)
         {
             await PublishInlineAsync(events, cancellationToken);
@@ -72,7 +75,7 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         return result;
     }
 
-    private void CaptureAndPersist(DbContext? context)
+    private void CaptureAndHandle(DbContext? context)
     {
         if (context is null) return;
 
@@ -86,19 +89,39 @@ public class DomainEventInterceptor : SaveChangesInterceptor
 
         if (domainEvents.Count == 0) return;
 
+        var inlineEvents = new List<IDomainEvent>();
+
         foreach (var domainEvent in domainEvents)
         {
-            var mappings = _integrationEventMapper.Map(domainEvent);
-            foreach (var mapping in mappings)
+            var mode = _dispatchPolicy.GetMode(domainEvent.GetType());
+
+            switch (mode)
             {
-                var message = OutboxMessage.From(mapping.IntegrationEvent, now);
-                context.Set<OutboxMessage>().Add(message);
+                case DomainEventDispatchMode.Inline:
+                    inlineEvents.Add(domainEvent);
+                    break;
+
+                case DomainEventDispatchMode.Outbox:
+                {
+                    var messageName = _eventTypeRegistry.GetMessageName(domainEvent.GetType());
+                    var outboxMessage = OutboxMessage.From(domainEvent, now, messageName);
+                    context.Set<OutboxMessage>().Add(outboxMessage);
+
+                    var mappings = _integrationEventMapper.Map(domainEvent);
+                    foreach (var mapping in mappings)
+                    {
+                        var integrationMessage = OutboxMessage.From(mapping.IntegrationEvent, now);
+                        context.Set<OutboxMessage>().Add(integrationMessage);
+                    }
+                    break;
+                }
+
+                case DomainEventDispatchMode.Ignore:
+                    break;
             }
-
-
         }
 
-        _capturedEvents.Value = domainEvents;
+        _inlineEvents.Value = inlineEvents;
 
         foreach (var entry in context.ChangeTracker
             .Entries<Entity>()

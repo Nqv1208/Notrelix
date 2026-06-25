@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Common.Abstractions;
+using Notrelix.Infrastructure.Observability;
+using Notrelix.Infrastructure.Observability.Metrics;
 
 namespace Notrelix.Infrastructure;
 
@@ -64,5 +66,10 @@ public static class OperationsRegistration
 public static class ObservabilityRegistration
 {
     public static IServiceCollection AddObservability(
-        this IServiceCollection services, IConfiguration configuration) => services;
+        this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddSingleton<MetricsService>();
+        services.AddScoped<IOutboxDiagnosticsService, OutboxDiagnosticsService>();
+        return services;
+    }
 }
