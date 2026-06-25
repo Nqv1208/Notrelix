@@ -21,7 +21,14 @@ namespace Notrelix.Infrastructure.Data
         {
             public Guid? WorkspaceId => null;
             public bool IsSet => false;
+            public bool IsSystemContext => true;
             public void SetWorkspace(Guid workspaceId) { }
+            public IDisposable EnterSystemContext() => new NoopDisposable();
+        }
+
+        private sealed class NoopDisposable : IDisposable
+        {
+            public void Dispose() { }
         }
     }
 }

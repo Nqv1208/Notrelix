@@ -4,10 +4,12 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Common.Events;
 using Notrelix.Infrastructure.Options;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Interceptors;
 using Notrelix.Infrastructure.Data.Outbox;
+using Notrelix.Infrastructure.Events;
 
 namespace Notrelix.Infrastructure;
 
@@ -55,6 +57,7 @@ public static class PersistenceRegistration
 
         // Outbox persistence infrastructure.
         services.AddSingleton<IEventTypeRegistry, EventTypeRegistry>();
+        services.AddSingleton<IDomainEventDispatchPolicy, DomainEventDispatchPolicy>();
         services.AddScoped<IProcessedEventStore, ProcessedEventStore>();
 
         return services;
