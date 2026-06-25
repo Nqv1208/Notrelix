@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Events;
 using Notrelix.Domain.Common;
+using Notrelix.Domain.Workspaces.Workspaces.Events;
 using Notrelix.Domain.Governance.Roles;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data;
@@ -35,6 +36,13 @@ public class OutboxMessageCreationTests
         });
     }
 
+    private static Mock<IDomainEventDispatchPolicy> CreateOutboxDispatchPolicy()
+    {
+        var policy = new Mock<IDomainEventDispatchPolicy>();
+        policy.Setup(x => x.GetMode(It.IsAny<Type>())).Returns(DomainEventDispatchMode.Outbox);
+        return policy;
+    }
+
     [Fact]
     public async Task SaveChanges_WhenEntityHasDomainEvent_CreatesOutboxMessage()
     {
@@ -46,8 +54,9 @@ public class OutboxMessageCreationTests
         var clock = new Mock<IDateTimeProvider>();
         clock.Setup(x => x.UtcNow).Returns(DateTimeOffset.UtcNow);
 
+        var dispatchPolicy = CreateOutboxDispatchPolicy();
         var interceptor = new DomainEventInterceptor(
-            clock.Object, registry.Object, mapper.Object, Mock.Of<IMediator>());
+            clock.Object, registry.Object, mapper.Object, Mock.Of<IMediator>(), dispatchPolicy.Object);
         var options = BuildOptions(interceptor);
         await using var ctx = new TestApplicationDbContext(options);
 
@@ -58,7 +67,7 @@ public class OutboxMessageCreationTests
         await ctx.SaveChangesAsync();
 
         var outboxCount = await ctx.Set<OutboxMessage>().CountAsync();
-        outboxCount.Should().Be(1);
+        outboxCount.Should().Be(2); // 1 domain event + 1 integration event
     }
 
     [Fact]
@@ -72,8 +81,9 @@ public class OutboxMessageCreationTests
         var clock = new Mock<IDateTimeProvider>();
         clock.Setup(x => x.UtcNow).Returns(DateTimeOffset.UtcNow);
 
+        var dispatchPolicy = CreateOutboxDispatchPolicy();
         var interceptor = new DomainEventInterceptor(
-            clock.Object, registry.Object, mapper.Object, Mock.Of<IMediator>());
+            clock.Object, registry.Object, mapper.Object, Mock.Of<IMediator>(), dispatchPolicy.Object);
         var options = BuildOptions(interceptor);
         await using var ctx = new TestApplicationDbContext(options);
 
@@ -84,7 +94,7 @@ public class OutboxMessageCreationTests
         await ctx.SaveChangesAsync();
 
         var outboxCount = await ctx.Set<OutboxMessage>().CountAsync();
-        outboxCount.Should().Be(2);
+        outboxCount.Should().Be(4); // 2 domain events + 2 integration events
     }
 
     [Fact]
@@ -97,8 +107,9 @@ public class OutboxMessageCreationTests
         var clock = new Mock<IDateTimeProvider>();
         clock.Setup(x => x.UtcNow).Returns(DateTimeOffset.UtcNow);
 
+        var dispatchPolicy = CreateOutboxDispatchPolicy();
         var interceptor = new DomainEventInterceptor(
-            clock.Object, registry.Object, mapper.Object, Mock.Of<IMediator>());
+            clock.Object, registry.Object, mapper.Object, Mock.Of<IMediator>(), dispatchPolicy.Object);
         var options = BuildOptions(interceptor);
         await using var ctx = new TestApplicationDbContext(options);
 
@@ -119,8 +130,9 @@ public class OutboxMessageCreationTests
         var clock = new Mock<IDateTimeProvider>();
         clock.Setup(x => x.UtcNow).Returns(DateTimeOffset.UtcNow);
 
+        var dispatchPolicy = CreateOutboxDispatchPolicy();
         var interceptor = new DomainEventInterceptor(
-            clock.Object, registry.Object, mapper.Object, Mock.Of<IMediator>());
+            clock.Object, registry.Object, mapper.Object, Mock.Of<IMediator>(), dispatchPolicy.Object);
         var options = BuildOptions(interceptor);
         await using var ctx = new TestApplicationDbContext(options);
 
@@ -130,7 +142,8 @@ public class OutboxMessageCreationTests
 
         await ctx.SaveChangesAsync();
 
-        var message = await ctx.Set<OutboxMessage>().FirstAsync();
+        var message = await ctx.Set<OutboxMessage>()
+            .FirstAsync(m => m.MessageType == OutboxMessageType.IntegrationEvent);
         message.MessageName.Should().Be("workspace.created.v1");
     }
 
