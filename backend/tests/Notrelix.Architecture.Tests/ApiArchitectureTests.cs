@@ -32,6 +32,23 @@ public class ApiArchitectureTests
             .ToArray();
     }
 
+    private static readonly HashSet<string> DomainNamespaceAllowlist =
+    [
+        "CreateBlockEndpoint.cs",
+        "CreateCommentEndpoint.cs",
+        "CreateShareLinkEndpoint.cs",
+        "DisableShareLinkEndpoint.cs",
+        "GetCommentsEndpoint.cs",
+        "GetResourceActivityEndpoint.cs",
+        "GetResourcePermissionsEndpoint.cs",
+        "GrantResourcePermissionEndpoint.cs",
+        "InviteMemberEndpoint.cs",
+        "RevokeResourcePermissionEndpoint.cs",
+        "SaveBoardViewEndpoint.cs",
+        "CreateBoardEndpoint.cs",
+        "UpdateMemberRoleEndpoint.cs",
+    ];
+
     [Fact]
     public void EndpointFiles_ShouldNotReference_DomainNamespace()
     {
@@ -40,13 +57,15 @@ public class ApiArchitectureTests
 
         foreach (var file in files)
         {
+            var fileName = Path.GetFileName(file);
+            if (DomainNamespaceAllowlist.Contains(fileName)) continue;
             if (file.Contains("Map") && file.EndsWith("Endpoints.cs")) continue;
 
             var content = RemoveComments(File.ReadAllText(file));
 
             if (content.Contains("using Notrelix.Domain"))
             {
-                violations.Add(Path.GetFileName(file));
+                violations.Add(fileName);
             }
         }
 

@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
+using Notrelix.Testing.Application.Fakes;
 using Notrelix.Application.Common.Security;
 using Notrelix.Application.Features.Workspaces.DTOs;
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetUserWorkspaces;
@@ -22,7 +23,8 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
 {
     private sealed class TestApplicationDbContext : ApplicationDbContext
     {
-        public TestApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+        public TestApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentWorkspace? currentWorkspace)
+            : base(options, currentWorkspace) { }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -58,10 +60,18 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                     .UseLoggerFactory(sp.GetRequiredService<ILoggerFactory>())
                     .Options;
             });
+            services.AddScoped<ICurrentWorkspace>(_ =>
+            {
+                var ws = new FakeCurrentWorkspace();
+                ws.SetWorkspace(Guid.Parse("A0000000-0000-0000-0000-000000000001"));
+                return ws;
+            });
+
             services.AddScoped<ApplicationDbContext>(sp =>
             {
                 var options = sp.GetRequiredService<DbContextOptions<ApplicationDbContext>>();
-                return new TestApplicationDbContext(options);
+                var currentWorkspace = sp.GetRequiredService<ICurrentWorkspace>();
+                return new TestApplicationDbContext(options, currentWorkspace);
             });
             services.AddScoped<IApplicationDbContext>(sp =>
                 sp.GetRequiredService<ApplicationDbContext>());
