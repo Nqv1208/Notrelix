@@ -6,5 +6,11 @@ public class CreateChecklistCommandValidator : AbstractValidator<CreateChecklist
 {
     public CreateChecklistCommandValidator()
     {
+        RuleFor(x => x.BoardItemId)
+            .NotEmpty();
+
+        RuleFor(x => x.Title)
+            .NotEmpty()
+            .MaximumLength(200);
     }
 }

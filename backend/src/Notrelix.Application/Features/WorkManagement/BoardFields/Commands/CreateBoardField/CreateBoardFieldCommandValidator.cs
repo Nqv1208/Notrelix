@@ -2,9 +2,12 @@ using FluentValidation;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
 
-public class CreateBoardColumnCommandValidator : AbstractValidator<CreateBoardFieldCommand>
+public class CreateBoardFieldCommandValidator : AbstractValidator<CreateBoardFieldCommand>
 {
-    public CreateBoardColumnCommandValidator()
+    public CreateBoardFieldCommandValidator()
     {
+        RuleFor(x => x.BoardId).NotEmpty();
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.FieldType).NotEmpty().MaximumLength(50);
     }
 }

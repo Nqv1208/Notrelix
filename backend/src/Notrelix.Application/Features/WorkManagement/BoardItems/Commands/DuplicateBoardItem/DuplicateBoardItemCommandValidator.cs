@@ -2,9 +2,11 @@ using FluentValidation;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.DuplicateBoardItem;
 
-public class DuplicateCardCommandValidator : AbstractValidator<DuplicateBoardItemCommand>
+public class DuplicateBoardItemCommandValidator : AbstractValidator<DuplicateBoardItemCommand>
 {
-    public DuplicateCardCommandValidator()
+    public DuplicateBoardItemCommandValidator()
     {
+        RuleFor(x => x.BoardItemId)
+            .NotEmpty();
     }
 }

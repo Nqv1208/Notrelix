@@ -2,9 +2,11 @@ using FluentValidation;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemStatus;
 
-public class UpdateCardStatusCommandValidator : AbstractValidator<UpdateBoardItemStatusCommand>
+public class UpdateBoardItemStatusCommandValidator : AbstractValidator<UpdateBoardItemStatusCommand>
 {
-    public UpdateCardStatusCommandValidator()
+    public UpdateBoardItemStatusCommandValidator()
     {
+        RuleFor(x => x.BoardItemId).NotEmpty();
+        RuleFor(x => x.Status).NotEmpty().MaximumLength(200);
     }
 }

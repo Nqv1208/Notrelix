@@ -2,9 +2,14 @@ using FluentValidation;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UnassignBoardItemMember;
 
-public class UnassignCardMemberCommandValidator : AbstractValidator<UnassignCardMemberCommand>
+public class UnassignBoardItemMemberCommandValidator : AbstractValidator<UnassignBoardItemMemberCommand>
 {
-    public UnassignCardMemberCommandValidator()
+    public UnassignBoardItemMemberCommandValidator()
     {
+        RuleFor(x => x.BoardItemId)
+            .NotEmpty();
+
+        RuleFor(x => x.UserId)
+            .NotEmpty();
     }
 }

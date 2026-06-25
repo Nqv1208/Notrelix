@@ -6,5 +6,8 @@ public class AddBoardMemberCommandValidator : AbstractValidator<AddBoardMemberCo
 {
     public AddBoardMemberCommandValidator()
     {
+        RuleFor(x => x.BoardId).NotEmpty();
+        RuleFor(x => x.UserId).NotEmpty();
+        RuleFor(x => x.Role).IsInEnum();
     }
 }

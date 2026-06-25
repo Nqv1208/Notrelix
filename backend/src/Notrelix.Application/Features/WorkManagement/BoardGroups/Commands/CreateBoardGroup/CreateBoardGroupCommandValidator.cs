@@ -2,9 +2,11 @@ using FluentValidation;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.CreateBoardGroup;
 
-public class CreateListCommandValidator : AbstractValidator<CreateBoardGroupCommand>
+public class CreateBoardGroupCommandValidator : AbstractValidator<CreateBoardGroupCommand>
 {
-    public CreateListCommandValidator()
+    public CreateBoardGroupCommandValidator()
     {
+        RuleFor(x => x.BoardId).NotEmpty();
+        RuleFor(x => x.Title).NotEmpty().MaximumLength(200);
     }
 }

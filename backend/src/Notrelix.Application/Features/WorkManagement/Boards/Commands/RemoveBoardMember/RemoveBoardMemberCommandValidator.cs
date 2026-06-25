@@ -6,5 +6,7 @@ public class RemoveBoardMemberCommandValidator : AbstractValidator<RemoveBoardMe
 {
     public RemoveBoardMemberCommandValidator()
     {
+        RuleFor(x => x.BoardId).NotEmpty();
+        RuleFor(x => x.UserId).NotEmpty();
     }
 }
