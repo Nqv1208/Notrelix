@@ -13,6 +13,18 @@ using Notrelix.Infrastructure.Observability.Metrics;
 
 namespace Notrelix.Infrastructure.BackgroundJobs;
 
+/// <summary>
+/// Outbox background dispatcher providing at-least-once delivery guarantees.
+///
+/// Domain and integration events are dispatched after the DB transaction commits.
+/// Handlers consuming these events must be idempotent — the same event may be
+/// delivered more than once if the process crashes between dispatch and persisting
+/// the ProcessedEvent record.
+///
+/// For multi-handler scenarios, each handler should use its own ConsumerName
+/// when checking ProcessedEventStore to avoid partial-failure retries re-executing
+/// already-completed handlers.
+/// </summary>
 internal sealed class OutboxDispatcher : BackgroundService
 {
     private const string OutboxDispatcherConsumerName = "OutboxDispatcher";

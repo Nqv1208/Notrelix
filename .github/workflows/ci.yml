@@ -55,7 +55,6 @@ jobs:
       - name: API tests
         run: dotnet test tests/Notrelix.API.Tests --no-build
         working-directory: backend
-        continue-on-error: true
 
   docker-build:
     runs-on: ubuntu-latest
