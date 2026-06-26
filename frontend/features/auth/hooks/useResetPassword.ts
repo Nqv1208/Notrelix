@@ -1,3 +1,5 @@
+"use client"
+
 import { useMutation } from "@tanstack/react-query"
 import { authService } from "@/features/auth/api/auth.service"
 import type { ResetPasswordRequest } from "@/features/auth/types/auth.types"
