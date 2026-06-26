@@ -4,14 +4,17 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { AlertCircle } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useActiveWorkspaceView, useWorkspaceSnapshot } from "@/features/workspace/hooks"
-import { useResolvedWorkspaceBoard } from "@/features/boards/hooks"
-import { getWorkspaceBoardHref } from "@/features/workspace/utils/workspace-routes"
+import {
+  useActiveWorkspaceView,
+  useWorkspaceSnapshot,
+  getWorkspaceBoardHref,
+  WorkspaceManagementPanel,
+} from "@/features/workspace"
+import { useResolvedWorkspaceBoard } from "@/features/work-management"
 import { WorkspaceCompactHeader } from "../shell/workspace-compact-header"
 import { WorkspaceContextualToolbar } from "./workspace-contextual-toolbar"
 import { WorkspaceViewContent } from "../dashboard/workspace-view-content"
 import { WorkspaceViewTabs } from "./workspace-view-tabs"
-import { WorkspaceManagementPanel } from "../shell/workspace-management-panel"
 
 export function WorkspaceBoardShell({
   workspaceId,

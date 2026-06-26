@@ -15,7 +15,7 @@ import {
 import { workspaceViewTemplates } from "@/features/workspace/mock/mock-data"
 import { useCreateWorkspaceView } from "@/features/workspace/hooks"
 import type { WorkspaceViewType } from "@/features/workspace/types"
-import { useWorkspaceBoards } from "@/features/boards/hooks"
+import { useWorkspaceBoards } from "@/features/work-management"
 import { usePageList } from "@/features/docs/hooks/use-page-tree"
 
 export function WorkspaceAddViewMenu({ workspaceId }: { workspaceId: string }) {

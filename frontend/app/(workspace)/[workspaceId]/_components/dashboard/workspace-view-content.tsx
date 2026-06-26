@@ -3,19 +3,23 @@
 import Link from "next/link"
 import { useMemo } from "react"
 import { AlertCircle, Clock3, FileText, Gauge, MessageSquareText, SquareKanban, Users } from "lucide-react"
-import { BoardCalendarView } from "@/app/(workspace)/[workspaceId]/boards/[boardId]/_components/views/board-calendar-view"
-import { KanbanView } from "../kanban/kanban-view"
-import { BoardTimelineView } from "@/app/(workspace)/[workspaceId]/boards/[boardId]/_components/views/board-timeline-view"
+import {
+  useFullBoard,
+  useResolvedWorkspaceBoard,
+  useWorkspaceBoards,
+  type Board,
+  BoardCalendarView,
+  KanbanView,
+  BoardTimelineView,
+  MainTableView
+} from "@/features/work-management"
 import { MondayDocEditor } from "@/app/(workspace)/[workspaceId]/docs/[pageId]/_components/editor/monday-doc-editor"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useFullBoard, useResolvedWorkspaceBoard, useWorkspaceBoards } from "@/features/boards/hooks"
-import type { Board } from "@/features/boards/types"
 import { usePageList } from "@/features/docs/hooks/use-page-tree"
 import type { WorkspaceSnapshot, WorkspaceView } from "@/features/workspace/types"
 import { getWorkspaceBoardHref, getWorkspaceBoardsHref } from "@/features/workspace/utils/workspace-routes"
-import { MainTableView } from "@/app/(workspace)/[workspaceId]/boards/[boardId]/_components/table/main-table-view"
 
 export function WorkspaceViewContent({
   workspaceId: routeWorkspaceId,

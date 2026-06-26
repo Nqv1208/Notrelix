@@ -1,5 +1,5 @@
-import { BoardWorkspaceRouteContent } from "./_components/board-workspace-view-content"
+import { BoardScreen } from "@/features/work-management"
 
 export default function BoardPage() {
-  return <BoardWorkspaceRouteContent />
+  return <BoardScreen />
 }
