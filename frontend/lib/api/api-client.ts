@@ -6,10 +6,6 @@ const BASE_URL = configuredBaseUrl.endsWith("/api")
   ? `${configuredBaseUrl}/v1`
   : configuredBaseUrl;
 
-type RefreshResponse = {
-  accessToken: string;
-  refreshToken: string;
-};
 
 export async function apiFetch<T>(
   url: string,
@@ -43,23 +39,35 @@ export async function apiFetch<T>(
   return data as T;
 }
 
+let refreshPromise: Promise<void> | null = null;
+
+async function refreshOnce(): Promise<void> {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      const refreshResponse = await fetch(`${BASE_URL}${endpoints.auth.refresh}`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const refreshData = await parseJsonResponse(refreshResponse);
+      if (!refreshResponse.ok) {
+        throw new ApiError(refreshResponse.status, extractErrorMessage(refreshData), refreshData);
+      }
+    })().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+}
+
 async function handleRefreshToken<T>(
   url: string,
   options: RequestInit
 ): Promise<T> {
-  const refreshResponse = await fetch(`${BASE_URL}${endpoints.auth.refresh}`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  const refreshData = (await parseJsonResponse(refreshResponse)) as RefreshResponse;
-  if (!refreshResponse.ok) {
-    throw new ApiError(refreshResponse.status, extractErrorMessage(refreshData), refreshData);
-  }
-
+  await refreshOnce();
   return apiFetch<T>(url, options, false);
 }
 
