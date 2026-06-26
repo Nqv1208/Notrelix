@@ -147,6 +147,18 @@ public static class DependencyInjection
             .GetSection("ForwardedHeaders")
             .Get<ForwardedHeadersSettings>() ?? new ForwardedHeadersSettings();
 
+        if (!environment.IsDevelopment()
+            && settings.RequireKnownProxyInProduction
+            && settings.KnownProxies.Count == 0
+            && settings.KnownNetworks.Count == 0)
+        {
+            throw new InvalidOperationException(
+                "ForwardedHeaders: either KnownProxies or KnownNetworks must be configured " +
+                "in non-Development environments when RequireKnownProxyInProduction is true. " +
+                "Set KnownProxies/KnownNetworks to the proxy IPs/networks or set " +
+                "ForwardedHeaders:RequireKnownProxyInProduction to false if not behind a proxy.");
+        }
+
         services.Configure<ForwardedHeadersOptions>(options =>
         {
             options.ForwardedHeaders =
