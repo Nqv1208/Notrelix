@@ -23,7 +23,7 @@ public static class DependencyInjection
             .AddCheck<OutboxHealthCheck>("outbox", tags: ["ready"]);
 
         services.AddApiProblemDetails();
-        services.AddApiCors(configuration);
+        services.AddApiCors(configuration, environment);
         services.AddApiSwagger();
         services.AddApiRouting();
         services.AddApiForwardedHeaders(configuration, environment);
@@ -45,9 +45,19 @@ public static class DependencyInjection
         return services;
     }
 
-    public static IServiceCollection AddApiCors(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddApiCors(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
     {
         var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+
+        if (!environment.IsDevelopment())
+        {
+            if (allowedOrigins.Length == 0)
+                throw new InvalidOperationException(
+                    "Cors:AllowedOrigins must be configured in non-Development environments.");
+            if (allowedOrigins.Contains("*"))
+                throw new InvalidOperationException(
+                    "Cors:AllowedOrigins wildcard '*' is not allowed in non-Development environments.");
+        }
 
         services.AddCors(options =>
         {
