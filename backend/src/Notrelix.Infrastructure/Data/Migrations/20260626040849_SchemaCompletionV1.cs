@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -10,6 +11,8 @@ namespace Notrelix.Infrastructure.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql("CREATE EXTENSION IF NOT EXISTS pg_trgm;");
+
             migrationBuilder.EnsureSchema(
                 name: "collab");
 
@@ -4596,6 +4599,14 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 schema: "identity",
                 table: "scim_directory_syncs",
                 column: "workspace_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_search_documents_search_vector",
+                schema: "search",
+                table: "search_documents",
+                column: "search_vector")
+                .Annotation("Npgsql:IndexMethod", "gin")
+                .Annotation("Npgsql:IndexOperators", new[] { "gin_trgm_ops" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_search_documents_workspace_type",
