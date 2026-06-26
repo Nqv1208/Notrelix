@@ -185,6 +185,7 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
         Add<FeatureUsageConsumedDomainEvent>(d);
         Add<FeatureUsageReleasedDomainEvent>(d);
         Add<QuotaExceededDomainEvent>(d);
+        Add<UsageLimitExceededDomainEvent>(d);
         Add<UsageMetricCreatedDomainEvent>(d);
         Add<UsageMetricDecreasedDomainEvent>(d);
         Add<UsageMetricIncreasedDomainEvent>(d);
