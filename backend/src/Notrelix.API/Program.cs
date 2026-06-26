@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Extensions.Options;
 using Notrelix.API.Endpoints;
 using Notrelix.API.Extensions;
 using Notrelix.API.Middleware;
 using Notrelix.Infrastructure;
 using Notrelix.Infrastructure.Middleware;
+using Notrelix.Infrastructure.Options;
 using Dpo = Notrelix.Infrastructure.Options.DataProtectionOptions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,7 +16,9 @@ builder.Services.Configure<HostOptions>(options =>
 builder.Services
     .AddOptions<Dpo>()
     .Bind(builder.Configuration.GetSection("DataProtection"))
+    .ValidateDataAnnotations()
     .ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<Dpo>, DataProtectionOptionsValidator>();
 
 builder.AddApplicationServices();
 
@@ -28,6 +32,7 @@ var dataProtection = builder.Services
 
 if (dataProtectionOptions.PersistKeys)
 {
+    Directory.CreateDirectory(dataProtectionOptions.KeysPath);
     dataProtection.PersistKeysToFileSystem(new DirectoryInfo(dataProtectionOptions.KeysPath));
 }
 
@@ -44,9 +49,9 @@ if (await app.RunDatabaseCommandsAsync(args))
 
 await app.InitialiseDatabaseOnStartupAsync();
 
-app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseForwardedHeaders();
 app.UseExceptionHandler();
+app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<SecurityHeadersMiddleware>();
 
 if (!app.Environment.IsDevelopment())
