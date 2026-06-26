@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/app/(dashboard)/_components/app-sidebar"
 import { AppHeader } from "@/app/(dashboard)/_components/app-header"
-import { useAuthUser } from "@/features/auth/hooks/useAuthUser"
+import { useAuthUser } from "@/features/auth"
 import { routes } from "@/lib/routes"
 
 export default function DashboardLayout({

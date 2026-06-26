@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { queryKeys } from "@/lib/query/query-keys"
 import { notificationsService } from "../api/notifications.service"
-import { useAuthUser } from "@/features/auth/hooks/useAuthUser"
+import { useAuthUser } from "@/features/auth"
 import { toast } from "sonner"
 
 export function useNotifications() {
@@ -39,8 +39,8 @@ export function useMarkAllNotificationsRead() {
       queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all })
       toast.success("Đã đánh dấu đọc tất cả thông báo.")
     },
-    onError: (err: any) => {
-      toast.error(err?.message || "Không thể đánh dấu đọc tất cả.")
+    onError: (err: unknown) => {
+      toast.error((err as { message?: string })?.message || "Không thể đánh dấu đọc tất cả.")
     },
   })
 }

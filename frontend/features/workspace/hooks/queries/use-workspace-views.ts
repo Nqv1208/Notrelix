@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
-import { useWorkspaceBoards } from "@/features/boards/hooks"
+import { useWorkspaceBoards } from "@/features/work-management"
 import { usePageList } from "@/features/docs/hooks"
 import { resolveWorkspaceViews } from "../../utils/workspace-views"
 import { useWorkspace } from "./use-workspace"

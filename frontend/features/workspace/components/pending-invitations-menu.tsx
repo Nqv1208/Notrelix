@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { UserPlus, Loader2, Check, X, Calendar, User, Briefcase } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { usePendingInvitations, useAcceptInvitation } from "@/features/workspace/hooks"
+import { usePendingInvitations, useAcceptInvitation, type WorkspaceInvitation } from "@/features/workspace"
 import { cn } from "@/lib/utils"
 
 export function PendingInvitationsMenu() {
@@ -82,7 +82,7 @@ export function PendingInvitationsMenu() {
               </p>
             </div>
           ) : (
-            invitations.map((invite: any) => {
+            invitations.map((invite: WorkspaceInvitation) => {
               const isAccepting = acceptingToken === invite.token
               return (
                 <div key={invite.id} className="p-4 hover:bg-muted/10 transition-colors space-y-3">
@@ -109,8 +109,8 @@ export function PendingInvitationsMenu() {
                   <div className="flex items-center gap-2 pt-1">
                     <Button
                       size="sm"
-                      onClick={() => handleAccept(invite.token)}
-                      disabled={isAccepting || acceptMutation.isPending}
+                      onClick={() => invite.token && handleAccept(invite.token)}
+                      disabled={isAccepting || acceptMutation.isPending || !invite.token}
                       className="flex-1 h-8 rounded-lg text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm"
                     >
                       {isAccepting ? (

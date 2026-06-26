@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { useAuthUser } from "@/features/auth/hooks/useAuthUser"
+import { useAuthUser } from "@/features/auth"
 import { queryKeys } from "@/lib/query/query-keys"
 import { invitationsApi } from "../../api/invitations.api"
 
