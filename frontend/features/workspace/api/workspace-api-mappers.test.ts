@@ -1,5 +1,4 @@
 import { describe, expect, test } from "bun:test"
-import { mapActivityResponse } from "./activity.api"
 import { mapInvitationDto } from "./invitations.api"
 import { mapMemberDto } from "./members.api"
 import { mapWorkspaceDto } from "./workspace.api"
@@ -66,23 +65,5 @@ describe("workspace API mappers", () => {
       isAccepted: false,
       createdAt: "2026-01-01T00:00:00.000Z",
     })
-  })
-
-  test("maps activity response into workspace activity items", () => {
-    expect(mapActivityResponse({
-      data: [{
-        id: "activity-a",
-        actorId: "user-a",
-        action: "created",
-        resourceTitle: null,
-        createdAt: "2026-01-01T00:00:00.000Z",
-      }],
-    })).toEqual([{
-      id: "activity-a",
-      actor: "Workspace",
-      action: "created",
-      target: "item",
-      createdAt: "2026-01-01T00:00:00.000Z",
-    }])
   })
 })

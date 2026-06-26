@@ -1,7 +1,6 @@
 import { api } from "@/lib/api/api-client"
 import { endpoints } from "@/lib/api/endpoints"
-import type { WorkspaceActivityResponseApi } from "../types/dto"
-import type { WorkspaceActivityItem } from "../types"
+import type { WorkspaceActivityResponseApi, WorkspaceActivityItem } from "../types"
 
 export function mapActivityResponse(response: WorkspaceActivityResponseApi): WorkspaceActivityItem[] {
   return response.data.map((item) => ({
