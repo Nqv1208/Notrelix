@@ -1,7 +1,5 @@
 using FluentAssertions;
-using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Integrations.Webhooks;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Integrations;
 

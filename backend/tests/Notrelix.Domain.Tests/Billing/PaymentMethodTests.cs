@@ -1,8 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Billing.Payments;
-using Notrelix.Domain.Billing.Payments.Events;
-using Notrelix.Domain.Common.Exceptions;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Billing;
 

@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.WorkManagement.Boards;
 
 public class BoardMember : Entity

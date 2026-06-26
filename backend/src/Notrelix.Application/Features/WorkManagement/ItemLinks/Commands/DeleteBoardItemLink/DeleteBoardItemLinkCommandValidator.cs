@@ -2,9 +2,11 @@ using FluentValidation;
 
 namespace Notrelix.Application.Features.WorkManagement.ItemLinks.Commands.DeleteBoardItemLink;
 
-public class DeleteCardLinkCommandValidator : AbstractValidator<DeleteBoardItemLinkCommand>
+public class DeleteBoardItemLinkCommandValidator : AbstractValidator<DeleteBoardItemLinkCommand>
 {
-    public DeleteCardLinkCommandValidator()
+    public DeleteBoardItemLinkCommandValidator()
     {
+        RuleFor(x => x.BoardItemLinkId)
+            .NotEmpty();
     }
 }

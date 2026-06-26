@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Identity.Mfa.Events;
 
 public sealed record UserMfaMethodRestoredDomainEvent(

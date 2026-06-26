@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.WorkManagement.Forms.Events;
 
 public record FormCreatedDomainEvent : DomainEvent
@@ -14,7 +12,7 @@ public record FormCreatedDomainEvent : DomainEvent
         Guid boardId,
         string name,
         Guid? actorUserId,
-        DateTimeOffset occurredAt) 
+        DateTimeOffset occurredAt)
         : base(occurredAt, workspaceId, actorUserId)
     {
         FormId = formId;

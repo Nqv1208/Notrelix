@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Governance.Audit;
 
 public sealed class AuditMetadata : ValueObject
@@ -8,7 +6,8 @@ public sealed class AuditMetadata : ValueObject
     public string? UserAgent { get; }
     public string? TraceId { get; }
 
-    private AuditMetadata() { }    private AuditMetadata(string? ip, string? ua, string? traceId)
+    private AuditMetadata() { }
+    private AuditMetadata(string? ip, string? ua, string? traceId)
     {
         IpAddress = ip;
         UserAgent = ua;

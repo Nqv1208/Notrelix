@@ -6,5 +6,6 @@ public class PublishPageCommandValidator : AbstractValidator<PublishPageCommand>
 {
     public PublishPageCommandValidator()
     {
+        RuleFor(x => x.PageId).NotEmpty();
     }
 }

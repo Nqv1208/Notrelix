@@ -1,8 +1,7 @@
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
 using Notrelix.API.Contracts.Governance.ShareLinks.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Governance.ShareLinks.Commands.CreateShareLink;
+using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.API.Endpoints.Governance.ShareLinks.Commands;
 
@@ -26,7 +25,7 @@ public static class CreateShareLinkEndpoint
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new CreateShareLinkCommand(workspaceId, resourceType, resourceId, body.Level, body.ExpiresAt),
+            new CreateShareLinkCommand(workspaceId, Enum.Parse<ResourceType>(resourceType, ignoreCase: true), resourceId, body.Level, body.ExpiresAt),
             cancellationToken);
         return result.ToCreatedResult();
     }

@@ -1,7 +1,4 @@
 using MediatR;
-using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.CQRS;
-using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Common.Security;
 
 namespace Notrelix.Application.Common.Behaviors;

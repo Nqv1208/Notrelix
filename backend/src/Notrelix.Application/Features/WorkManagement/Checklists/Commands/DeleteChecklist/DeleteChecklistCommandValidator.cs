@@ -6,5 +6,7 @@ public class DeleteChecklistCommandValidator : AbstractValidator<DeleteChecklist
 {
     public DeleteChecklistCommandValidator()
     {
+        RuleFor(x => x.ChecklistId)
+            .NotEmpty();
     }
 }

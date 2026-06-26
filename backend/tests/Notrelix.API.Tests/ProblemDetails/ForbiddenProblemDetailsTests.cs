@@ -2,7 +2,6 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Notrelix.API.ErrorHandling;
-using Notrelix.Application.Common.Exceptions;
 
 namespace Notrelix.API.Tests.ProblemDetails;
 

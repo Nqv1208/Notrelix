@@ -1,10 +1,6 @@
-using MediatR;
 using Notrelix.Application.Common.Events;
-using Notrelix.Domain.Common;
 using Notrelix.Domain.WorkManagement.Boards;
-using Notrelix.Domain.WorkManagement.Boards.Events;
 using Notrelix.Domain.WorkManagement.Items;
-using Notrelix.Domain.WorkManagement.Items.Events;
 using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Tests.Events;

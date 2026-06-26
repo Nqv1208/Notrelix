@@ -1,6 +1,3 @@
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.WorkManagement.Boards.Events;
-
 namespace Notrelix.Domain.WorkManagement.Boards;
 
 public class Board : AggregateRoot, IWorkspaceScoped
@@ -21,11 +18,11 @@ public class Board : AggregateRoot, IWorkspaceScoped
     private Board() : base() { }
 
     public static Board Create(
-        Guid workspaceId, 
-        Guid createdBy, 
-        string title, 
-        string? description, 
-        DateTimeOffset createdAt, 
+        Guid workspaceId,
+        Guid createdBy,
+        string title,
+        string? description,
+        DateTimeOffset createdAt,
         BoardVisibility visibility = BoardVisibility.Workspace,
         BoardType type = BoardType.WorkManagement,
         BoardFamily family = BoardFamily.Core,

@@ -1,13 +1,8 @@
 using FluentAssertions;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Items;
-using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.Billing.Subscriptions;
-using Xunit;
 
 namespace Notrelix.Domain.Tests;
 

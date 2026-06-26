@@ -1,12 +1,11 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Billing.Usage;
 
 public sealed class UsageMetricKey : ValueObject
 {
     public string Value { get; }
 
-    private UsageMetricKey() { }    private UsageMetricKey(string value)
+    private UsageMetricKey() { }
+    private UsageMetricKey(string value)
     {
         Value = value;
     }

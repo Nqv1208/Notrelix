@@ -1,12 +1,11 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Collaboration.Comments.DTOs;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments;
 
-public record GetCommentsQuery(string ResourceType, Guid ResourceId) : IQuery<Result<List<CommentDto>>>;
+public record GetCommentsQuery(ResourceType ResourceType, Guid ResourceId) : IQuery<Result<List<CommentDto>>>;
 
 public class GetCommentsQueryHandler : IRequestHandler<GetCommentsQuery, Result<List<CommentDto>>>
 {
@@ -15,10 +14,8 @@ public class GetCommentsQueryHandler : IRequestHandler<GetCommentsQuery, Result<
 
     public async Task<Result<List<CommentDto>>> Handle(GetCommentsQuery request, CancellationToken ct)
     {
-        var resourceType = Enum.Parse<ResourceType>(request.ResourceType, ignoreCase: true);
-
         var comments = await _context.Comments.AsNoTracking()
-            .Where(c => c.Target.ResourceType == resourceType && c.Target.ResourceId == request.ResourceId && !c.IsDeleted)
+            .Where(c => c.Target.ResourceType == request.ResourceType && c.Target.ResourceId == request.ResourceId && !c.IsDeleted)
             .OrderBy(c => c.CreatedAt)
             .ToListAsync(ct);
 

@@ -1,6 +1,4 @@
 using Notrelix.Application.Events.Documents;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Documents.Pages.Events;
 
 namespace Notrelix.Application.EventMappers.Documents;
 

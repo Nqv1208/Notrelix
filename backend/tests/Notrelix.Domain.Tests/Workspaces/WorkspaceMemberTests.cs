@@ -1,10 +1,5 @@
 using FluentAssertions;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.Workspaces;
 using Notrelix.Domain.Workspaces.Members;
-using Notrelix.Domain.Workspaces.Members.Events;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 
@@ -17,7 +12,7 @@ public class WorkspaceMemberTests
         var userId = Guid.NewGuid();
         var addedBy = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
-        
+
         var member = WorkspaceMember.Create(workspaceId, userId, WorkspaceRole.Member, addedBy, now);
 
         member.WorkspaceId.Should().Be(workspaceId);
@@ -25,7 +20,7 @@ public class WorkspaceMemberTests
         member.Role.Should().Be(WorkspaceRole.Member);
         member.Status.Should().Be(WorkspaceMemberStatus.Active);
         member.DomainEvents.Should().ContainSingle(e => e is WorkspaceMemberAddedDomainEvent);
-        
+
         var evt = (WorkspaceMemberAddedDomainEvent)member.DomainEvents.First();
         evt.WorkspaceId.Should().Be(workspaceId);
         evt.UserId.Should().Be(userId);
@@ -56,9 +51,9 @@ public class WorkspaceMemberTests
     public void ChangeMemberRole_OnLastOwner_ShouldThrow()
     {
         var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Owner, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        
+
         var act = () => member.ChangeRole(WorkspaceRole.Admin, Guid.NewGuid(), 1, DateTimeOffset.UtcNow);
-        
+
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot downgrade the last owner of the workspace.");
     }
 
@@ -83,9 +78,9 @@ public class WorkspaceMemberTests
     public void Suspend_OnLastOwner_ShouldThrow()
     {
         var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Owner, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        
+
         var act = () => member.Suspend(Guid.NewGuid(), DateTimeOffset.UtcNow, 1);
-        
+
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot suspend the last owner of the workspace.");
     }
 
@@ -133,9 +128,9 @@ public class WorkspaceMemberTests
     public void RemoveMember_OnLastOwner_ShouldThrow()
     {
         var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Owner, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        
+
         var act = () => member.Remove(1, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        
+
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot remove the last owner of the workspace.");
     }
 

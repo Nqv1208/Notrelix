@@ -1,6 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-
 namespace Notrelix.Domain.Governance.Permissions;
 
 public class ResourcePermission : AggregateRoot, IWorkspaceScoped
@@ -19,10 +16,10 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
 
     public static ResourcePermission Grant(
         Guid workspaceId,
-        ResourceType resourceType, 
-        Guid resourceId, 
-        PermissionSubjectType subjectType, 
-        Guid subjectId, 
+        ResourceType resourceType,
+        Guid resourceId,
+        PermissionSubjectType subjectType,
+        Guid subjectId,
         PermissionLevel level,
         Guid grantedBy,
         DateTimeOffset grantedAt,

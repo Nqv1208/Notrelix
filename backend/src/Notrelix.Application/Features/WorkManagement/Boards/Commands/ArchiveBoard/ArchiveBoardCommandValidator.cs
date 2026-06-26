@@ -6,5 +6,6 @@ public class ArchiveBoardCommandValidator : AbstractValidator<ArchiveBoardComman
 {
     public ArchiveBoardCommandValidator()
     {
+        RuleFor(x => x.BoardId).NotEmpty();
     }
 }

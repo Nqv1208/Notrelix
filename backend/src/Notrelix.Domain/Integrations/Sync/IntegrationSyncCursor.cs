@@ -1,12 +1,11 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Integrations.Sync;
 
 public sealed class SyncCursorValue : ValueObject
 {
     public string Value { get; }
 
-    private SyncCursorValue() { }    private SyncCursorValue(string value)
+    private SyncCursorValue() { }
+    private SyncCursorValue(string value)
     {
         Value = value;
     }

@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Billing.Entitlements.Events;
 
 public record EntitlementLimitChangedDomainEvent : DomainEvent

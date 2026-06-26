@@ -6,5 +6,7 @@ public class CreatePageCommandValidator : AbstractValidator<CreatePageCommand>
 {
     public CreatePageCommandValidator()
     {
+        RuleFor(x => x.WorkspaceId).NotEmpty();
+        RuleFor(x => x.Title).NotEmpty().MaximumLength(200);
     }
 }

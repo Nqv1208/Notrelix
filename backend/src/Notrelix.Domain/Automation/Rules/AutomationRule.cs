@@ -1,7 +1,3 @@
-using Notrelix.Domain.Automation.RulesEngine;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-
 namespace Notrelix.Domain.Automation.Rules;
 
 public class AutomationRule : AggregateRoot, IWorkspaceScoped

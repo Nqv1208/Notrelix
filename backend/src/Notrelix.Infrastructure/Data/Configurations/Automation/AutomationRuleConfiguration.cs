@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Automation.Rules;
-using Notrelix.Domain.Automation.RulesEngine;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Automation;
 

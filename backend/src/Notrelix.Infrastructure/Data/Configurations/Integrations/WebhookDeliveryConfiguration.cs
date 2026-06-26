@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Integrations.Webhooks;
-using Notrelix.Domain.Integrations.Webhooks.Events;
 using Notrelix.Infrastructure.Data.Converters;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Integrations;

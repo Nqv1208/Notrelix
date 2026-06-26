@@ -1,7 +1,7 @@
-using MediatR;
 using Notrelix.API.Contracts.WorkManagement.Boards.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace;
+using Notrelix.Domain.WorkManagement.Boards;
 
 namespace Notrelix.API.Endpoints.WorkManagement.Boards.Commands;
 
@@ -22,7 +22,7 @@ public static class CreateBoardEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new CreateBoardInWorkspaceCommand(workspaceId, body.Title, body.Description, body.Background, body.Visibility), cancellationToken);
+        var result = await sender.Send(new CreateBoardInWorkspaceCommand(workspaceId, body.Title, body.Description, body.Background, body.Visibility is not null ? Enum.Parse<BoardVisibility>(body.Visibility, ignoreCase: true) : null), cancellationToken);
         return result.ToCreatedResult();
     }
 }

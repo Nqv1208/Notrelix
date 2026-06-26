@@ -1,4 +1,3 @@
-using MediatR;
 using Notrelix.API.Contracts.WorkManagement.BoardItems.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.Labels.Commands.AddLabelToBoardItem;
@@ -22,7 +21,7 @@ public static class AddLabelToBoardItemEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new AddLabelToCardCommand(itemId, body.LabelId), cancellationToken);
+        var result = await sender.Send(new AddLabelToBoardItemCommand(itemId, body.LabelId), cancellationToken);
         return result.ToNoContentResult();
     }
 }

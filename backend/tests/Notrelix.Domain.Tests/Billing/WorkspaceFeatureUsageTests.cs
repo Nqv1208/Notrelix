@@ -1,10 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Billing.Plans;
 using Notrelix.Domain.Billing.Usage;
-using Notrelix.Domain.Billing.Usage.Events;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Billing;
 

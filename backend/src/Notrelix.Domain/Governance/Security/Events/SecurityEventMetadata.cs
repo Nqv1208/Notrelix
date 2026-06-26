@@ -1,12 +1,11 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Governance.Security.Events;
 
 public sealed class SecurityEventMetadata : ValueObject
 {
     public JsonValue Data { get; }
 
-    private SecurityEventMetadata() { }    private SecurityEventMetadata(JsonValue data)
+    private SecurityEventMetadata() { }
+    private SecurityEventMetadata(JsonValue data)
     {
         Data = data;
     }

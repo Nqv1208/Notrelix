@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Moq;
 using Notrelix.Application.Common.Events;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Automation.Events;
@@ -7,7 +5,6 @@ using Notrelix.Application.Features.Automation.Jobs;
 using Notrelix.Domain.Automation.Executions;
 using Notrelix.Domain.Automation.Rules;
 using Notrelix.Domain.Automation.RulesEngine;
-using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.WorkManagement.Items.Events;

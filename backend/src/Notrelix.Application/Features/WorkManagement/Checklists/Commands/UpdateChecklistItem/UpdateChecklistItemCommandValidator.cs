@@ -6,5 +6,7 @@ public class UpdateChecklistItemCommandValidator : AbstractValidator<UpdateCheck
 {
     public UpdateChecklistItemCommandValidator()
     {
+        RuleFor(x => x.ItemId)
+            .NotEmpty();
     }
 }

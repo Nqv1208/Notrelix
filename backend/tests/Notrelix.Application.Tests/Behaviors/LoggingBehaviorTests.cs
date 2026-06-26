@@ -1,4 +1,3 @@
-using MediatR;
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Common.Behaviors;
 

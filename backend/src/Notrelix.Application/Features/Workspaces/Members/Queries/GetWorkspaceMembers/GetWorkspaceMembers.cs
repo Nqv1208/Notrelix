@@ -1,9 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Workspaces.DTOs;
-using global::Notrelix.Domain.Workspaces.Workspaces;
 
 namespace Notrelix.Application.Features.Workspaces.Members.Queries.GetWorkspaceMembers;
 

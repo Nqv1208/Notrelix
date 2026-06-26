@@ -1,7 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.Workspaces.Teams.Events;
-
 namespace Notrelix.Domain.Workspaces.Teams;
 
 public class Team : AggregateRoot, IWorkspaceScoped
@@ -87,7 +83,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
             var member = TeamMember.Create(WorkspaceId, Id, userId, role, addedBy, addedAt, workspaceMemberId);
             _members.Add(member);
         }
-        
+
         SetAuditOnUpdate(addedBy, addedAt);
         IncrementVersion();
         AddDomainEvent(new TeamMemberAddedDomainEvent(WorkspaceId, Id, userId, role, addedBy, addedAt));

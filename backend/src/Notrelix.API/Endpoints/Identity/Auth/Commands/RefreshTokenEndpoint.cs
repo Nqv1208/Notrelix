@@ -1,7 +1,6 @@
-using MediatR;
 using Notrelix.API.Extensions;
+using Notrelix.API.RateLimiting;
 using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Auth.Commands.RefreshToken;
 
 namespace Notrelix.API.Endpoints.Identity.Auth.Commands;
@@ -14,7 +13,8 @@ public static class RefreshTokenEndpoint
             .AllowAnonymous()
             .WithName("Identity.Auth.RefreshToken")
             .WithTags("Identity.Auth")
-            .WithSummary("Refresh the access token");
+            .WithSummary("Refresh the access token")
+            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
         return group;
     }
 

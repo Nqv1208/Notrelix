@@ -6,5 +6,7 @@ public class ToggleChecklistItemCommandValidator : AbstractValidator<ToggleCheck
 {
     public ToggleChecklistItemCommandValidator()
     {
+        RuleFor(x => x.ChecklistItemId)
+            .NotEmpty();
     }
 }

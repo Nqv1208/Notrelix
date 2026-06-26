@@ -1,4 +1,3 @@
-using Notrelix.Domain.Common;
 using Notrelix.Application.Common.Events;
 
 namespace Notrelix.Application.Events.Collaboration;

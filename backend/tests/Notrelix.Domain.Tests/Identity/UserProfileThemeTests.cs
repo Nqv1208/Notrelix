@@ -1,6 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Identity.Profiles;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Identity;
 

@@ -6,5 +6,11 @@ public class RemoveMemberBySlugCommandValidator : AbstractValidator<RemoveMember
 {
     public RemoveMemberBySlugCommandValidator()
     {
+        RuleFor(x => x.Slug)
+            .NotEmpty()
+            .MaximumLength(200);
+
+        RuleFor(x => x.UserId)
+            .NotEmpty();
     }
 }

@@ -1,12 +1,11 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Billing.Plans;
 
 public sealed class FeatureCode : ValueObject
 {
     public string Code { get; }
 
-    private FeatureCode() { }    private FeatureCode(string code)
+    private FeatureCode() { }
+    private FeatureCode(string code)
     {
         Code = code;
     }

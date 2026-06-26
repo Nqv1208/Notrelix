@@ -2,16 +2,11 @@ using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using BoardMemberEntity = global::Notrelix.Domain.WorkManagement.Boards.BoardMember;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
-using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.Workspaces;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.AddBoardMember;
 
-public record AddBoardMemberCommand(Guid BoardId, Guid UserId, string? Role) : ICommand<Result>, ITransactionalRequest;
+public record AddBoardMemberCommand(Guid BoardId, Guid UserId, BoardRole? Role) : ICommand<Result>, ITransactionalRequest;
 
 public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberCommand, Result>
 {
@@ -55,9 +50,7 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
             .AnyAsync(m => m.BoardId == board.Id && m.UserId == request.UserId, ct);
         if (alreadyMember) return Result.Success();
 
-        var role = request.Role is not null
-            ? Enum.Parse<BoardRole>(request.Role, ignoreCase: true)
-            : BoardRole.Member;
+        var role = request.Role ?? BoardRole.Member;
 
         var member = BoardMemberEntity.Create(board.Id, request.UserId, role, _dateTimeProvider.UtcNow);
         _context.BoardMembers.Add(member);

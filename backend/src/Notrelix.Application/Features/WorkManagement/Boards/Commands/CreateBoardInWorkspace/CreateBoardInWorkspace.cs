@@ -2,15 +2,7 @@ using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using BoardFieldEntity = global::Notrelix.Domain.WorkManagement.Fields.BoardField;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
-using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.SharedKernel;
-using global::Notrelix.Domain.WorkManagement.Fields;
-using global::Notrelix.Domain.Workspaces;
-using global::Notrelix.Domain.Workspaces.Workspaces;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace;
 
@@ -19,7 +11,7 @@ public record CreateBoardInWorkspaceCommand(
     string Title,
     string? Description,
     string? Background,
-    string? Visibility) : ICommand<Result<Guid>>, ITransactionalRequest, IRequirePermission, IWorkspaceRequest, IRealtimeRequest
+    BoardVisibility? Visibility) : ICommand<Result<Guid>>, ITransactionalRequest, IRequirePermission, IWorkspaceRequest, IRealtimeRequest
 {
     public PermissionAction Action => PermissionAction.CreateBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId);
@@ -51,9 +43,7 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
         if (!workspaceExists) throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
         var createdAt = _dateTimeProvider.UtcNow;
-        var visibility = request.Visibility is not null
-            ? Enum.Parse<BoardVisibility>(request.Visibility, ignoreCase: true)
-            : BoardVisibility.Workspace;
+        var visibility = request.Visibility ?? BoardVisibility.Workspace;
 
         var board = BoardEntity.Create(request.WorkspaceId, _currentUser.UserId, request.Title, request.Description, createdAt, visibility);
 

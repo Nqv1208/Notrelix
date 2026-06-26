@@ -1,25 +1,6 @@
 using System.Reflection;
 using FluentAssertions;
-using Notrelix.Domain.Common;
 using Notrelix.Domain.WorkManagement.Boards;
-using Notrelix.Domain.WorkManagement.Fields;
-using Notrelix.Domain.WorkManagement.Items;
-using Notrelix.Domain.WorkManagement.BoardGroups;
-using Notrelix.Domain.WorkManagement.Views;
-using Notrelix.Domain.WorkManagement.Labels;
-using Notrelix.Domain.WorkManagement.Checklists;
-using Notrelix.Domain.WorkManagement.Approvals;
-using Notrelix.Domain.Identity.Users;
-using Notrelix.Domain.Identity.Sessions;
-using Notrelix.Domain.Identity.Mfa;
-using Notrelix.Domain.Identity.Tokens;
-using Notrelix.Domain.Identity.Profiles;
-using Notrelix.Domain.Identity.Security;
-using Notrelix.Domain.Governance.Permissions;
-using Notrelix.Domain.Governance.ShareLinks;
-using Notrelix.Domain.Governance.Roles;
-using Notrelix.Domain.WorkManagement.Forms;
-using Xunit;
 
 namespace Notrelix.Domain.Tests;
 

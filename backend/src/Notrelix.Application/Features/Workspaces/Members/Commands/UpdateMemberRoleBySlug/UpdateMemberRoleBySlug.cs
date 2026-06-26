@@ -1,6 +1,5 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.Workspaces.Members.Commands.UpdateMemberRoleBySlug;
@@ -8,7 +7,7 @@ namespace Notrelix.Application.Features.Workspaces.Members.Commands.UpdateMember
 public record UpdateMemberRoleBySlugCommand(
     string Slug,
     Guid UserId,
-    string Role
+    WorkspaceRole Role
 ) : ICommand<Result>, ITransactionalRequest;
 
 public class UpdateMemberRoleBySlugCommandHandler : IRequestHandler<UpdateMemberRoleBySlugCommand, Result>
@@ -41,8 +40,7 @@ public class UpdateMemberRoleBySlugCommandHandler : IRequestHandler<UpdateMember
         var activeOwnerCount = await _context.WorkspaceMembers
             .CountAsync(m => m.WorkspaceId == workspace.Id && m.Role == WorkspaceRole.Owner && m.Status == WorkspaceMemberStatus.Active, ct);
 
-        var newRole = Enum.Parse<WorkspaceRole>(request.Role, ignoreCase: true);
-        member.ChangeRole(newRole, _currentUser.UserId, activeOwnerCount, _dateTimeProvider.UtcNow);
+        member.ChangeRole(request.Role, _currentUser.UserId, activeOwnerCount, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }

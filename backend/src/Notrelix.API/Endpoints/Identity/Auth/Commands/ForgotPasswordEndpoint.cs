@@ -1,6 +1,5 @@
-using MediatR;
 using Notrelix.API.Extensions;
-using Notrelix.Application.Common.Models;
+using Notrelix.API.RateLimiting;
 using Notrelix.Application.Features.Identity.Auth.Commands.ForgotPassword;
 
 namespace Notrelix.API.Endpoints.Identity.Auth.Commands;
@@ -13,7 +12,8 @@ public static class ForgotPasswordEndpoint
             .AllowAnonymous()
             .WithName("Identity.Auth.ForgotPassword")
             .WithTags("Identity.Auth")
-            .WithSummary("Request a password reset email");
+            .WithSummary("Request a password reset email")
+            .WithMetadata(new RateLimitPolicyAttribute("AuthStrictByIp"));
         return group;
     }
 

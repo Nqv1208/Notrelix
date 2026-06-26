@@ -1,8 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.Identity.Sessions;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Identity;
 

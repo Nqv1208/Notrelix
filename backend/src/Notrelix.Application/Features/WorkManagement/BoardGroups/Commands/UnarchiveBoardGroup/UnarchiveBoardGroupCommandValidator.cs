@@ -2,9 +2,10 @@ using FluentValidation;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UnarchiveBoardGroup;
 
-public class UnarchiveListCommandValidator : AbstractValidator<UnarchiveBoardGroupCommand>
+public class UnarchiveBoardGroupCommandValidator : AbstractValidator<UnarchiveBoardGroupCommand>
 {
-    public UnarchiveListCommandValidator()
+    public UnarchiveBoardGroupCommandValidator()
     {
+        RuleFor(x => x.GroupId).NotEmpty();
     }
 }

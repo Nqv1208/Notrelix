@@ -6,5 +6,6 @@ public class MovePageCommandValidator : AbstractValidator<MovePageCommand>
 {
     public MovePageCommandValidator()
     {
+        RuleFor(x => x.PageId).NotEmpty();
     }
 }

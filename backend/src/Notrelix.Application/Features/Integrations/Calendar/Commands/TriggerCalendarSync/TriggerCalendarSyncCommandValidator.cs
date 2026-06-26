@@ -6,5 +6,7 @@ public class TriggerCalendarSyncCommandValidator : AbstractValidator<TriggerCale
 {
     public TriggerCalendarSyncCommandValidator()
     {
+        RuleFor(x => x.IntegrationId)
+            .NotEmpty();
     }
 }

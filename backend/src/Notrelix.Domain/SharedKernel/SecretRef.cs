@@ -1,12 +1,11 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.SharedKernel;
 
 public sealed class SecretRef : ValueObject
 {
     public string Value { get; }
 
-    private SecretRef() { }    private SecretRef(string value)
+    private SecretRef() { }
+    private SecretRef(string value)
     {
         Value = value;
     }

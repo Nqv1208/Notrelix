@@ -1,5 +1,3 @@
-using Notrelix.Infrastructure.Data;
-
 namespace Notrelix.Integration.Tests.Containers;
 
 [CollectionDefinition("Database")]

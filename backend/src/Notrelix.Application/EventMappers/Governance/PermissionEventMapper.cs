@@ -1,7 +1,4 @@
 using Notrelix.Application.Events.Governance;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Governance.Permissions.Events;
-using Notrelix.Domain.Governance.Roles.Events;
 
 namespace Notrelix.Application.EventMappers.Governance;
 

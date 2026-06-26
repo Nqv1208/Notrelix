@@ -2,9 +2,14 @@ using FluentValidation;
 
 namespace Notrelix.Application.Features.WorkManagement.Labels.Commands.RemoveLabelFromBoardItem;
 
-public class RemoveLabelFromCardCommandValidator : AbstractValidator<RemoveLabelFromCardCommand>
+public class RemoveLabelFromBoardItemCommandValidator : AbstractValidator<RemoveLabelFromBoardItemCommand>
 {
-    public RemoveLabelFromCardCommandValidator()
+    public RemoveLabelFromBoardItemCommandValidator()
     {
+        RuleFor(x => x.BoardItemId)
+            .NotEmpty();
+
+        RuleFor(x => x.LabelId)
+            .NotEmpty();
     }
 }

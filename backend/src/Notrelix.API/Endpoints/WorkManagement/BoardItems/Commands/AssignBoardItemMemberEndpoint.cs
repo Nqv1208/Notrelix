@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
 using Notrelix.API.Contracts.WorkManagement.BoardItems.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.AssignBoardItemMember;
@@ -24,7 +22,7 @@ public static class AssignBoardItemMemberEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new AssignCardMemberCommand(workspaceId, itemId, body.UserId), cancellationToken);
+        var result = await sender.Send(new AssignBoardItemMemberCommand(workspaceId, itemId, body.UserId), cancellationToken);
         return result.ToNoContentResult();
     }
 }

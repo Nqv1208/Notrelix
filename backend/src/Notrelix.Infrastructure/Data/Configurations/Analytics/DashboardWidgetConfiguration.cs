@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Analytics.Dashboards;
-using Notrelix.Domain.Analytics.Widgets;
 using Notrelix.Infrastructure.Data.Converters;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Analytics;

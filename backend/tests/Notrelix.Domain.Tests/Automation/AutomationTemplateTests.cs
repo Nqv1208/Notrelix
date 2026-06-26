@@ -1,7 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Automation.Templates;
-using Notrelix.Domain.Common;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Automation;
 

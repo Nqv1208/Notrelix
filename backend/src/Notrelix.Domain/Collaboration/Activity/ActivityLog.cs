@@ -1,6 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-
 namespace Notrelix.Domain.Collaboration.Activity;
 
 public class ActivityLog : Entity, IWorkspaceScoped
@@ -15,10 +12,10 @@ public class ActivityLog : Entity, IWorkspaceScoped
     private ActivityLog() : base() { }
 
     public static ActivityLog Record(
-        Guid workspaceId, 
-        Guid actorId, 
-        ActivityType type, 
-        ResourceRef target, 
+        Guid workspaceId,
+        Guid actorId,
+        ActivityType type,
+        ResourceRef target,
         DateTimeOffset timestamp,
         ActivityMetadata? metadata = null)
     {

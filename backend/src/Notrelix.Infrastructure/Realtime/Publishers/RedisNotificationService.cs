@@ -2,7 +2,6 @@ using StackExchange.Redis;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
-using Notrelix.Domain.Collaboration.Notifications;
 
 namespace Notrelix.Infrastructure.Realtime.Publishers;
 
@@ -20,7 +19,7 @@ public class RedisNotificationService : INotificationService
     public async Task SendAsync(Guid userId, string type, string payload, CancellationToken cancellationToken = default)
     {
         var subscriber = _redis.GetSubscriber();
-        
+
         var message = new
         {
             userId,
@@ -28,16 +27,16 @@ public class RedisNotificationService : INotificationService
             payload,
             createdAt = DateTime.UtcNow
         };
-        
+
         var json = JsonSerializer.Serialize(message);
-        
+
         await subscriber.PublishAsync(new RedisChannel($"notifications:{userId}", RedisChannel.PatternMode.Literal), json);
     }
 
     public async Task SendToWorkspaceAsync(Guid workspaceId, string type, string payload, CancellationToken cancellationToken = default)
     {
         var subscriber = _redis.GetSubscriber();
-        
+
         var message = new
         {
             workspaceId,
@@ -45,9 +44,9 @@ public class RedisNotificationService : INotificationService
             payload,
             createdAt = DateTime.UtcNow
         };
-        
+
         var json = JsonSerializer.Serialize(message);
-        
+
         await subscriber.PublishAsync(new RedisChannel($"notifications:workspace:{workspaceId}", RedisChannel.PatternMode.Literal), json);
     }
 
@@ -55,7 +54,7 @@ public class RedisNotificationService : INotificationService
     {
         var notification = await _context.Notifications
             .FirstOrDefaultAsync(n => n.Id == notificationId, cancellationToken);
-            
+
         if (notification != null)
         {
             notification.MarkAsRead(DateTimeOffset.UtcNow);

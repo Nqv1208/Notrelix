@@ -8,6 +8,9 @@ using Dpo = Notrelix.Infrastructure.Options.DataProtectionOptions;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.Configure<HostOptions>(options =>
+    options.ShutdownTimeout = TimeSpan.FromSeconds(30));
+
 builder.Services
     .AddOptions<Dpo>()
     .Bind(builder.Configuration.GetSection("DataProtection"))
@@ -30,7 +33,7 @@ if (dataProtectionOptions.PersistKeys)
 
 builder.Services
     .AddInfrastructure(builder.Configuration)
-    .AddApiLayer(builder.Configuration);
+    .AddApiLayer(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 
@@ -44,6 +47,12 @@ await app.InitialiseDatabaseOnStartupAsync();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseForwardedHeaders();
 app.UseExceptionHandler();
+app.UseMiddleware<SecurityHeadersMiddleware>();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
 
 if (app.Environment.IsDevelopment())
 {
@@ -59,6 +68,7 @@ if (app.Configuration.GetValue<bool>("HttpsRedirection:Enabled"))
 }
 
 app.UseAuthentication();
+app.UseMiddleware<NotrelixRateLimitingMiddleware>();
 app.UseWorkspaceResolution();
 app.UseAuthorization();
 

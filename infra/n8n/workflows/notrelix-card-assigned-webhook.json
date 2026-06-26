@@ -1,0 +1,55 @@
+{
+  "name": "Notrelix - Card assigned webhook",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "notrelix-card-assigned",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "6f998c54-581c-46fc-8d9b-b03a8f3f3a35",
+      "name": "Card assigned",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "notrelix-card-assigned"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"received\":true,\"eventId\":\"{{$json.eventId}}\",\"cardId\":\"{{$json.data.cardId}}\"}",
+        "options": {}
+      },
+      "id": "5d9569bc-0d08-4376-b9b3-9d7c6926a6f2",
+      "name": "Acknowledge",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        280,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Card assigned": {
+      "main": [
+        [
+          {
+            "node": "Acknowledge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}

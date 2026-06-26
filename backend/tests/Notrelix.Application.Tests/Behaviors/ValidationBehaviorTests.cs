@@ -1,5 +1,4 @@
 using FluentValidation;
-using MediatR;
 using Notrelix.Application.Common.Behaviors;
 using ValidationException = Notrelix.Application.Common.Exceptions.ValidationException;
 

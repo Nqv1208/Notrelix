@@ -1,7 +1,6 @@
-using MediatR;
 using Notrelix.API.Contracts.Collaboration.Attachments.Requests;
 using Notrelix.API.Extensions;
-using Notrelix.Application.Features.Collaboration.Attachments.Commands.CreateCardAttachment;
+using Notrelix.Application.Features.Collaboration.Attachments.Commands.CreateBoardItemAttachment;
 
 namespace Notrelix.API.Endpoints.Collaboration.Attachments.Commands;
 
@@ -16,9 +15,9 @@ public static class CreateAttachmentEndpoint
         return group;
     }
 
-    private static async Task<IResult> HandleAsync(Guid cardId, CreateCardAttachmentRequest body, ISender sender)
+    private static async Task<IResult> HandleAsync(Guid cardId, CreateBoardItemAttachmentRequest body, ISender sender)
     {
-        var result = await sender.Send(new CreateCardAttachmentCommand(cardId, body.Filename, body.Url, body.SizeBytes, body.ContentType, body.Source));
+        var result = await sender.Send(new CreateBoardItemAttachmentCommand(cardId, body.Filename, body.Url, body.SizeBytes, body.ContentType, body.Source));
         return result.ToCreatedResult();
     }
 }

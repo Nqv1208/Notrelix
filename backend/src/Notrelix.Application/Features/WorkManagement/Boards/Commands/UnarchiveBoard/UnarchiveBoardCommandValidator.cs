@@ -6,5 +6,6 @@ public class UnarchiveBoardCommandValidator : AbstractValidator<UnarchiveBoardCo
 {
     public UnarchiveBoardCommandValidator()
     {
+        RuleFor(x => x.BoardId).NotEmpty();
     }
 }

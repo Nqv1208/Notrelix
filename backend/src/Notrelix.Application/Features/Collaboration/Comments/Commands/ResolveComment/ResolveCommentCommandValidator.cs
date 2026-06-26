@@ -6,5 +6,6 @@ public class ResolveCommentCommandValidator : AbstractValidator<ResolveCommentCo
 {
     public ResolveCommentCommandValidator()
     {
+        RuleFor(x => x.CommentId).NotEmpty();
     }
 }

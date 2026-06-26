@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Integrations.Calendar;
 
 public class CalendarEventLink : Entity

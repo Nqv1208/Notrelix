@@ -1,9 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.Identity.Mfa;
-using Notrelix.Domain.Identity.Mfa.Events;
-using Notrelix.Domain.SharedKernel;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Identity;
 

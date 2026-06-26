@@ -1,8 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
-using Notrelix.Domain.SharedKernel;
-using Notrelix.Domain.WorkManagement.BoardGroups;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem;
 

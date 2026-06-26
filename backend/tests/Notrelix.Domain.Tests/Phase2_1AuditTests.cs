@@ -1,25 +1,13 @@
 using FluentAssertions;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.Identity.Profiles.Events;
-using Notrelix.Domain.Identity.Users;
-using Notrelix.Domain.Identity.Users.Events;
 using Notrelix.Domain.Identity.OAuth;
-using Notrelix.Domain.Identity.OAuth.Events;
 using Notrelix.Domain.Workspaces.Members;
-using Notrelix.Domain.Workspaces.Members.Events;
 using Notrelix.Domain.Workspaces.Teams;
-using Notrelix.Domain.Workspaces.Teams.Events;
 using Notrelix.Domain.Workspaces.Spaces;
-using Notrelix.Domain.Workspaces.Spaces.Events;
 using Notrelix.Domain.Automation.Executions;
-using Notrelix.Domain.Automation.Executions.Events;
 using Notrelix.Domain.Automation.Agents;
 using Notrelix.Domain.Automation.Agents.Events;
 using Notrelix.Domain.Billing.Plans;
 using Notrelix.Domain.Collaboration.Notifications;
-using Notrelix.Domain.Collaboration.Notifications.Events;
-using Notrelix.Domain.SharedKernel;
-using Xunit;
 
 namespace Notrelix.Domain.Tests;
 

@@ -1,6 +1,4 @@
-using MediatR;
 using Notrelix.API.Extensions;
-using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Members.Commands.RemoveMember;
 
 namespace Notrelix.API.Endpoints.Workspaces.Members.Commands;

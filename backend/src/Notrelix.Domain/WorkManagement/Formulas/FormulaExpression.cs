@@ -1,12 +1,11 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.WorkManagement.Formulas;
 
 public sealed class FormulaExpression : ValueObject
 {
     public string Expression { get; }
 
-    private FormulaExpression() { }    private FormulaExpression(string expression)
+    private FormulaExpression() { }
+    private FormulaExpression(string expression)
     {
         Expression = expression;
     }

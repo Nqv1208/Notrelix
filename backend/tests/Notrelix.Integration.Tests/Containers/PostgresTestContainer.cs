@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Testcontainers.PostgreSql;
 using Notrelix.Infrastructure.Data;
@@ -41,7 +40,11 @@ public sealed class PostgresTestContainer : IAsyncLifetime
     public ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseNpgsql(ConnectionString)
+            .UseNpgsql(ConnectionString, npgOptions =>
+            {
+                npgOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                npgOptions.MigrationsHistoryTable("__EFMigrationsHistory", "ops");
+            })
             .Options;
         return new ApplicationDbContext(options);
     }

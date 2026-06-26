@@ -1,12 +1,8 @@
 using FluentAssertions;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.Automation.Agents;
 using Notrelix.Domain.Automation.Agents.Events;
 using Notrelix.Domain.Collaboration.Notifications;
 using Notrelix.Domain.Analytics.Dashboards;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 
@@ -140,7 +136,7 @@ public class V4MissingParityTests
     {
         var notificationId = Guid.NewGuid();
         var recipientUserId = Guid.NewGuid();
-        
+
         var delivery = NotificationDelivery.Create(
             notificationId,
             _workspaceId,
@@ -164,7 +160,7 @@ public class V4MissingParityTests
         var counter = UnreadCounter.Create(_workspaceId, userId, UnreadCounterType.Mention, _now);
 
         counter.CounterValue.Should().Be(0);
-        
+
         counter.Increment(_now.AddSeconds(1));
         counter.CounterValue.Should().Be(1);
 

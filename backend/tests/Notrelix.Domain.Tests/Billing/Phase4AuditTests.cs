@@ -1,16 +1,9 @@
 using FluentAssertions;
 using Notrelix.Domain.Billing.Entitlements;
-using Notrelix.Domain.Billing.Entitlements.Events;
 using Notrelix.Domain.Billing.Payments;
-using Notrelix.Domain.Billing.Payments.Events;
 using Notrelix.Domain.Billing.Plans;
-using Notrelix.Domain.Billing.Plans.Events;
 using Notrelix.Domain.Billing.Subscriptions;
-using Notrelix.Domain.Billing.Subscriptions.Events;
 using Notrelix.Domain.Billing.Usage;
-using Notrelix.Domain.Billing.Usage.Events;
-using Notrelix.Domain.SharedKernel;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Billing;
 

@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.Text.Json;
-using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Identity.Tokens;
 

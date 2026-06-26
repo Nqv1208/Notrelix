@@ -8660,6 +8660,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("SearchVector")
+                        .HasDatabaseName("ix_search_documents_search_vector");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchVector"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("SearchVector"), new[] { "gin_trgm_ops" });
+
                     b.HasIndex("WorkspaceId", "ResourceType")
                         .HasDatabaseName("ix_search_documents_workspace_type");
 
@@ -9781,7 +9787,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
             modelBuilder.Entity("Notrelix.Domain.Identity.Profiles.UserProfile", b =>
                 {
                     b.HasOne("Notrelix.Domain.Identity.Users.User", null)
-                        .WithOne("Profile")
+                        .WithOne()
                         .HasForeignKey("Notrelix.Domain.Identity.Profiles.UserProfile", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -10736,8 +10742,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
             modelBuilder.Entity("Notrelix.Domain.Identity.Users.User", b =>
                 {
                     b.Navigation("OAuthAccounts");
-
-                    b.Navigation("Profile");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Integrations.Calendar.CalendarIntegration", b =>

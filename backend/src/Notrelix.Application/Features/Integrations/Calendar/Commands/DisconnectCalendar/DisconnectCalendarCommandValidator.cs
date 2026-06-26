@@ -6,5 +6,7 @@ public class DisconnectCalendarCommandValidator : AbstractValidator<DisconnectCa
 {
     public DisconnectCalendarCommandValidator()
     {
+        RuleFor(x => x.IntegrationId)
+            .NotEmpty();
     }
 }

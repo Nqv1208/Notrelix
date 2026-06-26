@@ -1,6 +1,4 @@
 using System.Text.Json;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Domain.Analytics.Dashboards;
 

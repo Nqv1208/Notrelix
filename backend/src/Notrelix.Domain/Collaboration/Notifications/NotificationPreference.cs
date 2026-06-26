@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Collaboration.Notifications;
 
 public enum NotificationChannel

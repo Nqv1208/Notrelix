@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Automation.Actions;
 
 public class AutomationAction : Entity

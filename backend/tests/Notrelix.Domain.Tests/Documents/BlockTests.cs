@@ -1,8 +1,5 @@
 using FluentAssertions;
-using Notrelix.Domain.Common;
 using Notrelix.Domain.Documents.Blocks;
-using Notrelix.Domain.SharedKernel;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Documents;
 
@@ -43,7 +40,7 @@ public class BlockTests
 
         var newContent = BlockContent.Create(JsonValue.Create("{\"text\":\"New\"}"));
         var updatedBy = Guid.NewGuid();
-        
+
         block.UpdateContent(newContent, updatedBy, DateTimeOffset.UtcNow);
 
         block.Content.Should().Be(newContent);

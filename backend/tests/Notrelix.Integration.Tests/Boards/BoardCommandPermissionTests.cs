@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Moq;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Security;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.AddBoardMember;
@@ -31,7 +29,7 @@ public class BoardCommandPermissionTests
             new WorkspacePermissionService(evaluator, context),
             timeProvider.Object);
 
-        var act = () => handler.Handle(new AddBoardMemberCommand(board.Id, addedUserId, "member"), CancellationToken.None);
+        var act = () => handler.Handle(new AddBoardMemberCommand(board.Id, addedUserId, BoardRole.Member), CancellationToken.None);
 
         await act.Should().ThrowAsync<ForbiddenException>();
     }

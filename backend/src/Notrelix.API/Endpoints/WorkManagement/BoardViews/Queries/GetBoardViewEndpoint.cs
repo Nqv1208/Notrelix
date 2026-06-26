@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.BoardViews.Queries.GetBoardView;
 

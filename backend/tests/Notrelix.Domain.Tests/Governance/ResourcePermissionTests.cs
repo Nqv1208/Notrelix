@@ -1,8 +1,5 @@
 using FluentAssertions;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.Governance;
 using Notrelix.Domain.Governance.Permissions;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Governance;
 
@@ -18,11 +15,11 @@ public class ResourcePermissionTests
 
         var permission = ResourcePermission.Grant(
             workspaceId,
-            ResourceType.Board, 
-            resourceId, 
-            PermissionSubjectType.User, 
-            subjectId, 
-            PermissionLevel.Editor, 
+            ResourceType.Board,
+            resourceId,
+            PermissionSubjectType.User,
+            subjectId,
+            PermissionLevel.Editor,
             grantedBy,
             DateTimeOffset.UtcNow);
 
@@ -38,9 +35,9 @@ public class ResourcePermissionTests
         var workspaceId = Guid.NewGuid();
         var permission = ResourcePermission.Grant(
             workspaceId, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Guid.NewGuid(), PermissionLevel.Viewer, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        
+
         permission.ClearDomainEvents();
-        
+
         var updatedBy = Guid.NewGuid();
         permission.ChangeLevel(PermissionLevel.Editor, updatedBy, DateTimeOffset.UtcNow);
 
@@ -55,9 +52,9 @@ public class ResourcePermissionTests
         var workspaceId = Guid.NewGuid();
         var permission = ResourcePermission.Grant(
             workspaceId, ResourceType.Workspace, Guid.NewGuid(), PermissionSubjectType.Team, Guid.NewGuid(), PermissionLevel.Viewer, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        
+
         permission.ClearDomainEvents();
-        
+
         var revokedBy = Guid.NewGuid();
         permission.Revoke(revokedBy, DateTimeOffset.UtcNow);
 

@@ -1,25 +1,13 @@
 using FluentAssertions;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.WorkManagement.Approvals;
-using Notrelix.Domain.WorkManagement.Approvals.Events;
 using Notrelix.Domain.WorkManagement.Boards;
-using Notrelix.Domain.WorkManagement.Boards.Events;
 using Notrelix.Domain.WorkManagement.Checklists;
-using Notrelix.Domain.WorkManagement.Checklists.Events;
 using Notrelix.Domain.WorkManagement.Fields;
-using Notrelix.Domain.WorkManagement.Fields.Events;
 using Notrelix.Domain.WorkManagement.Forms;
-using Notrelix.Domain.WorkManagement.Forms.Events;
 using Notrelix.Domain.WorkManagement.Items;
-using Notrelix.Domain.WorkManagement.Items.Events;
 using Notrelix.Domain.WorkManagement.Labels;
-using Notrelix.Domain.WorkManagement.Labels.Events;
 using Notrelix.Domain.WorkManagement.Relations;
-using Notrelix.Domain.WorkManagement.Relations.Events;
 using Notrelix.Domain.WorkManagement.Views;
-using Notrelix.Domain.WorkManagement.Views.Events;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 

@@ -1,5 +1,3 @@
-using Notrelix.Domain.Identity;
-
 namespace Notrelix.Application.Common.Abstractions
 {
     public interface IJwtService

@@ -1,8 +1,5 @@
 using FluentAssertions;
-using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Integrations.Calendar;
-using Notrelix.Domain.SharedKernel;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Integrations;
 

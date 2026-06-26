@@ -2,12 +2,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Abstractions;
-using Notrelix.Infrastructure.Options;
+using Notrelix.Application.Common.Events;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Interceptors;
 using Notrelix.Infrastructure.Data.Outbox;
+using Notrelix.Infrastructure.Events;
+using Notrelix.Infrastructure.Options;
 
 namespace Notrelix.Infrastructure;
 
@@ -44,6 +45,7 @@ public static class PersistenceRegistration
             options.UseNpgsql(connectionString, npgOptions =>
             {
                 npgOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                npgOptions.MigrationsHistoryTable("__EFMigrationsHistory", DbSchemas.Ops);
             });
         });
 
@@ -55,6 +57,7 @@ public static class PersistenceRegistration
 
         // Outbox persistence infrastructure.
         services.AddSingleton<IEventTypeRegistry, EventTypeRegistry>();
+        services.AddSingleton<IDomainEventDispatchPolicy, DomainEventDispatchPolicy>();
         services.AddScoped<IProcessedEventStore, ProcessedEventStore>();
 
         return services;

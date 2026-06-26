@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.WorkManagement.Checklists.Events;
 
 public sealed record ChecklistSoftDeletedDomainEvent(

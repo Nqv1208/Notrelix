@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.Identity.Profiles;
 using Notrelix.Domain.Identity.Profiles.Events;
 using Notrelix.Domain.Identity.OAuth;
 using Notrelix.Domain.Identity.OAuth.Events;
@@ -18,8 +16,6 @@ public class User : AggregateRoot
     public string PasswordHash { get; private set; } = null!;
     public UserStatus Status { get; private set; }
     public DateTimeOffset? LastLoginAt { get; private set; }
-
-    public UserProfile? Profile { get; private set; }
 
     private readonly List<OAuthAccount> _oauthAccounts = new();
     public IReadOnlyCollection<OAuthAccount> OAuthAccounts => _oauthAccounts.AsReadOnly();
@@ -64,7 +60,7 @@ public class User : AggregateRoot
 
         Name = name.Trim();
         Avatar = avatar?.Trim();
-        
+
         SetAuditOnUpdate(Id, updatedAt);
         IncrementVersion();
         AddDomainEvent(new UserProfileUpdatedDomainEvent(Id, updatedAt));
@@ -81,7 +77,7 @@ public class User : AggregateRoot
 
         Email = emailValue;
         NormalizedEmail = NormalizeEmail(emailValue.Value);
-        
+
         SetAuditOnUpdate(Id, updatedAt);
         IncrementVersion();
         AddDomainEvent(new UserEmailChangedDomainEvent(
@@ -120,7 +116,7 @@ public class User : AggregateRoot
     {
         EnsureNotDeleted();
         Guard.NotEmpty(activatedBy);
-        
+
         if (Status == UserStatus.Active) return;
 
         var previousStatus = Status;

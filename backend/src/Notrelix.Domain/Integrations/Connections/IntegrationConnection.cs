@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Integrations.Connections;
 
 public class IntegrationScope : Entity
@@ -64,8 +62,8 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
     private IntegrationConnection() : base() { }
 
     public static IntegrationConnection Create(
-        Guid workspaceId, 
-        IntegrationProvider provider, 
+        Guid workspaceId,
+        IntegrationProvider provider,
         Guid createdBy,
         DateTimeOffset createdAt,
         string? providerAccountId = null,

@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Workspaces.Rules;
 
 public static class SpaceRules

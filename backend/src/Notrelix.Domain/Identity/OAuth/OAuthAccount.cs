@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Identity.OAuth;
 
 public class OAuthAccount : Entity

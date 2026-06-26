@@ -2,9 +2,11 @@ using FluentValidation;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ReorderBoardGroups;
 
-public class ReorderListsCommandValidator : AbstractValidator<ReorderBoardGroupsCommand>
+public class ReorderBoardGroupsCommandValidator : AbstractValidator<ReorderBoardGroupsCommand>
 {
-    public ReorderListsCommandValidator()
+    public ReorderBoardGroupsCommandValidator()
     {
+        RuleFor(x => x.BoardId).NotEmpty();
+        RuleFor(x => x.Items).NotNull().Must(items => items.Count > 0);
     }
 }

@@ -5,17 +5,15 @@ using Notrelix.Application.Common.Events;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Governance.Roles;
 using Notrelix.Domain.Workspaces.Workspaces;
-using Notrelix.Domain.Workspaces.Workspaces.Events;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Interceptors;
-using Notrelix.Infrastructure.Data.Outbox;
 
 namespace Notrelix.Infrastructure.Tests.Data;
 
 public class DomainEventInterceptorTests
 {
     [Fact]
-    public async Task SaveChangesAsync_WhenEntityHasDomainEvent_ShouldPublishMediatRNotificationWrapper()
+    public async Task SaveChangesAsync_WhenEntityHasInlineDomainEvent_ShouldPublishMediatRNotification()
     {
         object? publishedNotification = null;
         var dateTimeProvider = new Mock<IDateTimeProvider>();
@@ -25,8 +23,11 @@ public class DomainEventInterceptorTests
         var integrationEventMapper = new Mock<IIntegrationEventMapper>();
         integrationEventMapper.Setup(x => x.Map(It.IsAny<IDomainEvent>())).Returns([]);
         var mediator = CreateMediatorRejectingNonNotifications(notification => publishedNotification = notification);
+        var dispatchPolicy = new Mock<IDomainEventDispatchPolicy>();
+        dispatchPolicy.Setup(x => x.GetMode(typeof(WorkspaceCreatedDomainEvent)))
+            .Returns(DomainEventDispatchMode.Inline);
         var interceptor = new DomainEventInterceptor(
-            dateTimeProvider.Object, eventTypeRegistry.Object, integrationEventMapper.Object, mediator.Object);
+            dateTimeProvider.Object, eventTypeRegistry.Object, integrationEventMapper.Object, mediator.Object, dispatchPolicy.Object);
         await using var context = CreateContext(interceptor);
 
         var workspace = Workspace.Create(

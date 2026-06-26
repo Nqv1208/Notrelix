@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using MediatR;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Events;
@@ -88,7 +87,10 @@ public class RegisterCommandHandlerTests
             .Setup(x => x.Map(It.IsAny<IDomainEvent>()))
             .Returns(Array.Empty<IntegrationEventMapping>());
         var mediator = CreateMediatorRejectingNonNotifications();
-        var interceptor = new DomainEventInterceptor(dateTimeProvider.Object, eventTypeRegistry.Object, integrationEventMapper.Object, mediator.Object);
+        var dispatchPolicy = new Mock<IDomainEventDispatchPolicy>();
+        dispatchPolicy.Setup(x => x.GetMode(It.IsAny<Type>()))
+            .Returns(DomainEventDispatchMode.Inline);
+        var interceptor = new DomainEventInterceptor(dateTimeProvider.Object, eventTypeRegistry.Object, integrationEventMapper.Object, mediator.Object, dispatchPolicy.Object);
         using var context = TestDbContextFactory.CreateInMemoryContext(interceptor);
 
         var passwordHasher = new Mock<IPasswordHasher>();

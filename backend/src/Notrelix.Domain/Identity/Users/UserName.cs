@@ -1,12 +1,11 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Identity.Users;
 
 public sealed class UserName : ValueObject
 {
     public string Value { get; }
 
-    private UserName() { }    private UserName(string value)
+    private UserName() { }
+    private UserName(string value)
     {
         Value = value;
     }

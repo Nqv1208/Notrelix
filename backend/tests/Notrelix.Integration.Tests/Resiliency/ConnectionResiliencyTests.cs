@@ -1,5 +1,4 @@
 using System.Reflection;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Infrastructure.Data;
 
 namespace Notrelix.Integration.Tests.Resiliency;

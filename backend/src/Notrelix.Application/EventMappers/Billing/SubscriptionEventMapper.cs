@@ -1,6 +1,4 @@
 using Notrelix.Application.Events.Billing;
-using Notrelix.Domain.Billing.Subscriptions.Events;
-using Notrelix.Domain.Common;
 
 namespace Notrelix.Application.EventMappers.Billing;
 

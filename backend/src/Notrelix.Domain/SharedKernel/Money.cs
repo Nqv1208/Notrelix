@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.SharedKernel;
 
 public sealed class Money : ValueObject
@@ -7,7 +5,8 @@ public sealed class Money : ValueObject
     public decimal Amount { get; }
     public string Currency { get; }
 
-    private Money() { }    private Money(decimal amount, string currency)
+    private Money() { }
+    private Money(decimal amount, string currency)
     {
         Amount = amount;
         Currency = currency;
@@ -17,7 +16,7 @@ public sealed class Money : ValueObject
     {
         Guard.NotNullOrWhiteSpace(currency);
         Guard.Assert(currency.Length == 3, "Currency must be a 3-letter ISO code.");
-        
+
         return new Money(amount, currency.ToUpperInvariant());
     }
 

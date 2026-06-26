@@ -2,9 +2,10 @@ using FluentValidation;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ArchiveBoardGroup;
 
-public class ArchiveListCommandValidator : AbstractValidator<ArchiveBoardGroupCommand>
+public class ArchiveBoardGroupCommandValidator : AbstractValidator<ArchiveBoardGroupCommand>
 {
-    public ArchiveListCommandValidator()
+    public ArchiveBoardGroupCommandValidator()
     {
+        RuleFor(x => x.GroupId).NotEmpty();
     }
 }

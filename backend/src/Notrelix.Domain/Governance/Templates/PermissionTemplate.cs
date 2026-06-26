@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Governance.Templates;
 
 public class PermissionTemplate : AggregateRoot

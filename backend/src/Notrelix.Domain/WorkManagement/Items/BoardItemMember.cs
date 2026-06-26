@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.WorkManagement.Items;
 
 public class BoardItemMember : Entity, IWorkspaceScoped

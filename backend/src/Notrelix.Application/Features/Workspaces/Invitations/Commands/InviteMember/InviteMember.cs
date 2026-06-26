@@ -1,19 +1,13 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Domain.Workspaces.Invitations;
-using global::Notrelix.Domain.SharedKernel;
-using global::Notrelix.Domain.Workspaces.Invitations;
-using global::Notrelix.Domain.Workspaces.Members;
-using global::Notrelix.Domain.Workspaces.Workspaces;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember;
 
 public record InviteMemberCommand(
     Guid WorkspaceId,
     string Email,
-    string Role
+    WorkspaceRole Role
 ) : ICommand<Result<Guid>>, ITransactionalRequest;
 
 public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, Result<Guid>>
@@ -64,7 +58,7 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         }
 
         var hasActiveInvitation = await _context.WorkspaceInvitations
-            .AnyAsync(i => i.WorkspaceId == request.WorkspaceId 
+            .AnyAsync(i => i.WorkspaceId == request.WorkspaceId
                            && i.Email == cleanEmail
                            && i.Status == WorkspaceInvitationStatus.Pending
                            && i.ExpiresAt > now, ct);
@@ -72,9 +66,8 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         if (hasActiveInvitation)
             return Result<Guid>.Failure("Đã có một lời mời đang chờ xử lý dành cho email này.");
 
-        var role = Enum.Parse<WorkspaceRole>(request.Role, ignoreCase: true);
         var token = InvitationTokenHash.Create(Guid.NewGuid().ToString("N"));
-        var invitation = WorkspaceInvitation.Create(request.WorkspaceId, cleanEmail, role, token, _currentUser.UserId, now);
+        var invitation = WorkspaceInvitation.Create(request.WorkspaceId, cleanEmail, request.Role, token, _currentUser.UserId, now);
 
         _context.WorkspaceInvitations.Add(invitation);
         return Result<Guid>.Success(invitation.Id);

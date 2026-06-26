@@ -1,21 +1,14 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
-using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
-using global::Notrelix.Domain.SharedKernel;
-using global::Notrelix.Domain.Identity;
-using global::Notrelix.Domain.WorkManagement.Views;
-using global::Notrelix.Domain.Workspaces;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SaveBoardView;
 
 public record SaveBoardViewCommand(
     Guid WorkspaceId,
     Guid BoardId,
-    string ViewMode,
+    ViewMode ViewMode,
     string? Filters) : ICommand<Result>, ITransactionalRequest, IRequirePermission, IWorkspaceRequest, IRealtimeRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
@@ -55,8 +48,7 @@ public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand,
             .AnyAsync(board => board.Id == request.BoardId && !board.IsArchived, ct);
         if (!boardExists) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
 
-        var viewMode = Enum.Parse<ViewMode>(request.ViewMode, ignoreCase: true);
-        var viewType = MapViewModeToViewType(viewMode);
+        var viewType = MapViewModeToViewType(request.ViewMode);
         var now = _dateTimeProvider.UtcNow;
         var config = BoardViewConfig.Create(JsonValue.Create(request.Filters ?? "{}"));
 

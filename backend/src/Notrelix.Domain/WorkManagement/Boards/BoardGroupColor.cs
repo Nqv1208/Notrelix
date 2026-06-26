@@ -1,12 +1,11 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.WorkManagement.Boards;
 
 public sealed class BoardGroupColor : ValueObject
 {
     public string Hex { get; }
 
-    private BoardGroupColor() { }    private BoardGroupColor(string hex)
+    private BoardGroupColor() { }
+    private BoardGroupColor(string hex)
     {
         Hex = hex;
     }

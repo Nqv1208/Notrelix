@@ -1,5 +1,4 @@
 using Notrelix.Application.Events.Identity;
-using Notrelix.Domain.Common;
 using Notrelix.Domain.Identity.Users.Events;
 
 namespace Notrelix.Application.EventMappers.Identity;

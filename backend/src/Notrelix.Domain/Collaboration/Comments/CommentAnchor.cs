@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Collaboration.Comments;
 
 public sealed class CommentAnchor : ValueObject
@@ -7,7 +5,8 @@ public sealed class CommentAnchor : ValueObject
     public string? Selector { get; }
     public int? Offset { get; }
 
-    private CommentAnchor() { }    private CommentAnchor(string? selector, int? offset)
+    private CommentAnchor() { }
+    private CommentAnchor(string? selector, int? offset)
     {
         Selector = selector;
         Offset = offset;

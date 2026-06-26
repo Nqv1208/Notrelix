@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Governance.Roles;
 
 public class MemberRoleAssignment : Entity, IWorkspaceScoped

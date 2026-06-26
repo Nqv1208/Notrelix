@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common.Exceptions;
-
 namespace Notrelix.Domain.Common;
 
 public abstract class SoftDeletableEntity : AuditableEntity
@@ -10,10 +8,10 @@ public abstract class SoftDeletableEntity : AuditableEntity
     public string? DeleteReason { get; private set; }
     public DateTimeOffset? RestoredAt { get; private set; }
     public Guid? RestoredBy { get; private set; }
-    
+
     protected SoftDeletableEntity() : base() { }
     protected SoftDeletableEntity(Guid id) : base(id) { }
-    
+
     public virtual void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
@@ -21,7 +19,7 @@ public abstract class SoftDeletableEntity : AuditableEntity
         DeletedBy = deletedBy;
         DeleteReason = reason;
     }
-    
+
     public virtual void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
@@ -33,7 +31,7 @@ public abstract class SoftDeletableEntity : AuditableEntity
         UpdatedBy = restoredBy;
         UpdatedAt = restoredAt;
     }
-    
+
     protected void EnsureNotDeleted()
     {
         if (IsDeleted)

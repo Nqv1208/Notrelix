@@ -1,7 +1,3 @@
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.Workspaces.Spaces.Events;
-
 namespace Notrelix.Domain.Workspaces.Spaces;
 
 public class Space : AggregateRoot, IWorkspaceScoped
@@ -16,10 +12,10 @@ public class Space : AggregateRoot, IWorkspaceScoped
     private Space() : base() { }
 
     public static Space Create(
-        Guid workspaceId, 
-        string name, 
-        SpaceVisibility visibility, 
-        Guid createdBy, 
+        Guid workspaceId,
+        string name,
+        SpaceVisibility visibility,
+        Guid createdBy,
         DateTimeOffset createdAt,
         SpaceType spaceType = SpaceType.Folder,
         string? description = null)

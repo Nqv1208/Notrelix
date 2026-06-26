@@ -6,5 +6,11 @@ public class BatchUpdateBlocksCommandValidator : AbstractValidator<BatchUpdateBl
 {
     public BatchUpdateBlocksCommandValidator()
     {
+        RuleFor(x => x.PageId)
+            .NotEmpty();
+
+        RuleFor(x => x.Blocks)
+            .NotNull()
+            .Must(b => b.Count > 0);
     }
 }

@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.CQRS;
-
 namespace Notrelix.Application.Common.Abstractions;
 
 public interface IRealtimePublisher

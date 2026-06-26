@@ -1,6 +1,6 @@
-using MediatR;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments;
+using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.API.Endpoints.Collaboration.Comments.Queries;
 
@@ -26,13 +26,13 @@ public static class GetCommentsEndpoint
 
     private static async Task<IResult> GetCardCommentsAsync(Guid cardId, ISender sender)
     {
-        var result = await sender.Send(new GetCommentsQuery("Card", cardId));
+        var result = await sender.Send(new GetCommentsQuery(Enum.Parse<ResourceType>("Card", ignoreCase: true), cardId));
         return result.ToApiResult();
     }
 
     private static async Task<IResult> GetPageCommentsAsync(Guid pageId, ISender sender)
     {
-        var result = await sender.Send(new GetCommentsQuery("Page", pageId));
+        var result = await sender.Send(new GetCommentsQuery(Enum.Parse<ResourceType>("Page", ignoreCase: true), pageId));
         return result.ToApiResult();
     }
 }

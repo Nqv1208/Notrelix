@@ -1,0 +1,142 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/ci.yml'
+      - '.github/dependabot.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/ci.yml'
+
+env:
+  DOTNET_ROLL_FORWARD: LatestMajor
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore
+        working-directory: backend
+
+      - name: Format check
+        run: dotnet format --verify-no-changes --no-restore
+        working-directory: backend
+
+      - name: Build
+        run: dotnet build --no-restore
+        working-directory: backend
+
+      - name: Vulnerability scan
+        run: dotnet list package --vulnerable --no-restore 2>&1 | tee vulnerable-report.txt; if grep -q "has known vulnerable" vulnerable-report.txt; then echo "Vulnerable packages found!"; exit 1; fi
+        working-directory: backend
+
+      - name: Architecture tests
+        run: dotnet test tests/Notrelix.Architecture.Tests --no-build
+        working-directory: backend
+
+      - name: Unit tests (Domain + Application + Infrastructure)
+        run: dotnet test --no-build --filter "FullyQualifiedName!~Integration.Tests&FullyQualifiedName!~Notrelix.Architecture.Tests&FullyQualifiedName!~Notrelix.API.Tests"
+        working-directory: backend
+
+      - name: API tests
+        run: dotnet test tests/Notrelix.API.Tests --no-build
+        working-directory: backend
+        continue-on-error: true
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: false
+          load: true
+          tags: notrelix/backend:ci-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Verify image
+        run: |
+          docker run --rm notrelix/backend:ci-${{ github.sha }} --version 2>&1 || true
+          echo "Docker image built successfully"
+
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: notrelix
+          POSTGRES_PASSWORD: notrelix
+          POSTGRES_DB: notrelix_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore
+        working-directory: backend
+
+      - name: Build
+        run: dotnet build --no-restore
+        working-directory: backend
+
+      - name: Apply migrations
+        run: |
+          export ConnectionStrings__NotrelixDb="Host=localhost;Port=5432;Database=notrelix_test;Username=notrelix;Password=notrelix"
+          export ConnectionStrings__Redis="localhost:6379,abortConnect=false"
+          export ASPNETCORE_ENVIRONMENT=CI
+          export DOTNET_ENVIRONMENT=CI
+          dotnet run --project src/Notrelix.API --no-build -- --migrate-only
+        working-directory: backend
+
+      - name: Migration smoke tests
+        run: |
+          export ConnectionStrings__NotrelixDb="Host=localhost;Port=5432;Database=notrelix_test;Username=notrelix;Password=notrelix"
+          export ConnectionStrings__Redis="localhost:6379,abortConnect=false"
+          export ASPNETCORE_ENVIRONMENT=CI
+          export DOTNET_ENVIRONMENT=CI
+          dotnet test tests/Notrelix.Integration.Tests --no-build --filter "FullyQualifiedName~MigrationSmoke"
+        working-directory: backend

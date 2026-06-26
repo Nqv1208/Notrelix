@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Notrelix.API.Endpoints.Health;
@@ -52,7 +51,8 @@ public static class HealthEndpoints
     {
         try
         {
-            var report = await healthCheck.CheckHealthAsync();
+            var report = await healthCheck.CheckHealthAsync(
+                pred => pred.Tags.Contains("ready"));
             return Results.Ok(new { status = report.Status.ToString(), timestamp = DateTime.UtcNow });
         }
         catch

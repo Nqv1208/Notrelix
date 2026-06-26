@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.SharedKernel;
 
 public sealed class ResourceRef : ValueObject

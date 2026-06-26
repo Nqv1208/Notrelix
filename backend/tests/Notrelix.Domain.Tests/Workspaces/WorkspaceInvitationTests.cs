@@ -1,11 +1,6 @@
 using FluentAssertions;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.Workspaces;
 using Notrelix.Domain.Workspaces.Invitations;
-using Notrelix.Domain.Workspaces.Invitations.Events;
 using Notrelix.Domain.Workspaces.Members;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 
@@ -29,7 +24,7 @@ public class WorkspaceInvitationTests
     {
         var now = DateTimeOffset.UtcNow;
         var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("token"), Guid.NewGuid(), now, TimeSpan.FromDays(1));
-        
+
         Action act = () => invitation.Accept(Guid.NewGuid(), now.AddDays(2));
 
         act.Should().Throw<BusinessRuleException>().WithMessage("Invitation has expired.");

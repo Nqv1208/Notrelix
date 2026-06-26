@@ -1,10 +1,6 @@
 using FluentAssertions;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Workspaces.Workspaces;
-using Notrelix.Domain.Workspaces.Workspaces.Events;
 using Notrelix.Domain.Workspaces.Members;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 

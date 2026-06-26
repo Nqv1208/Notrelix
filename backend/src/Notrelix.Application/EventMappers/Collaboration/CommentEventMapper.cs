@@ -1,7 +1,4 @@
 using Notrelix.Application.Events.Collaboration;
-using Notrelix.Domain.Collaboration.Comments.Events;
-using Notrelix.Domain.Collaboration.Mentions.Events;
-using Notrelix.Domain.Common;
 
 namespace Notrelix.Application.EventMappers.Collaboration;
 

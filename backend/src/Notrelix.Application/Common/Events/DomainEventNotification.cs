@@ -1,5 +1,4 @@
 using MediatR;
-using Notrelix.Domain.Common;
 
 namespace Notrelix.Application.Common.Events;
 

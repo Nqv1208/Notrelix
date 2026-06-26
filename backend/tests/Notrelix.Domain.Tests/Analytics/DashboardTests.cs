@@ -1,10 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Analytics.Dashboards;
 using Notrelix.Domain.Analytics.Widgets;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.SharedKernel;
-using Xunit;
 
 using WidgetType = Notrelix.Domain.Analytics.Dashboards.WidgetType;
 

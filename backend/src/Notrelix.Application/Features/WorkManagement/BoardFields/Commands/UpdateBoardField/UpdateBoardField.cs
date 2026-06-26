@@ -1,9 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Domain.SharedKernel;
-using global::Notrelix.Domain.WorkManagement.Fields;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
 

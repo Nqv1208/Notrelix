@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.SharedKernel;
 
@@ -7,7 +6,8 @@ public sealed class JsonValue : ValueObject
 {
     public string Value { get; }
 
-    private JsonValue() { }    private JsonValue(string value)
+    private JsonValue() { }
+    private JsonValue(string value)
     {
         Value = value;
     }

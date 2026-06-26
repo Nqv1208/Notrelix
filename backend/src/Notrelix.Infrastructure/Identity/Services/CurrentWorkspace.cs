@@ -6,9 +6,11 @@ namespace Notrelix.Infrastructure.Identity.Services;
 public class CurrentWorkspace : ICurrentWorkspace
 {
     private const string ItemsKey = "CurrentWorkspaceId";
+    private const string SystemContextKey = "SystemContext";
 
     private readonly IHttpContextAccessor _httpContextAccessor;
     private Guid? _explicitWorkspaceId;
+    private bool _explicitSystemContext;
 
     public CurrentWorkspace(IHttpContextAccessor httpContextAccessor)
     {
@@ -33,8 +35,24 @@ public class CurrentWorkspace : ICurrentWorkspace
     public bool IsSet => _explicitWorkspaceId.HasValue
         || _httpContextAccessor.HttpContext?.Items.ContainsKey(ItemsKey) == true;
 
+    public bool IsSystemContext => _explicitSystemContext
+        || _httpContextAccessor.HttpContext?.Items.ContainsKey(SystemContextKey) == true;
+
     public void SetWorkspace(Guid workspaceId)
     {
         _explicitWorkspaceId = workspaceId;
+    }
+
+    public IDisposable EnterSystemContext()
+    {
+        _explicitSystemContext = true;
+        return new SystemContextScope(this);
+    }
+
+    private sealed class SystemContextScope : IDisposable
+    {
+        private readonly CurrentWorkspace _owner;
+        public SystemContextScope(CurrentWorkspace owner) => _owner = owner;
+        public void Dispose() => _owner._explicitSystemContext = false;
     }
 }

@@ -1,12 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.DTOs;
-using Notrelix.Domain.Collaboration.Activity;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Governance;
-using Notrelix.Domain.Governance.Permissions;
 using SharedKernel = Notrelix.Domain.SharedKernel;
 using System.Text.Json;
 
@@ -14,44 +9,46 @@ namespace Notrelix.Application.Features.Governance.ResourcePermissions.Commands.
 
 public record GrantResourcePermissionCommand(
     Guid WorkspaceId,
-    string ResourceType,
+    SharedKernel.ResourceType ResourceType,
     Guid ResourceId,
     string SubjectType,
     Guid SubjectId,
     string Level,
     DateTime? ExpiresAt = null) : ICommand<Result<ResourcePermissionDto>>, IRequirePermission, ITransactionalRequest
 {
-    PermissionAction IRequirePermission.Action => Enum.Parse<SharedKernel.ResourceType>(ResourceType, true) switch
+    PermissionAction IRequirePermission.Action => ResourceType switch
     {
         SharedKernel.ResourceType.Board => PermissionAction.ManageBoardPermission,
         SharedKernel.ResourceType.Page => PermissionAction.SharePage,
         _ => PermissionAction.ManageWorkspace
     };
-    ResourceRef IRequirePermission.Resource => ResourceRef.Create(Enum.Parse<SharedKernel.ResourceType>(ResourceType, true), ResourceId, WorkspaceId);
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType, ResourceId, WorkspaceId);
 }
 
-    public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResourcePermissionCommand, Result<ResourcePermissionDto>>
-    {
-        private readonly IApplicationDbContext _context;
-        private readonly ICurrentUser _currentUser;
-        private readonly IDateTimeProvider _dateTimeProvider;
+public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResourcePermissionCommand, Result<ResourcePermissionDto>>
+{
+    private readonly IApplicationDbContext _context;
+    private readonly ICurrentUser _currentUser;
+    private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IAuditService _auditService;
 
-        public GrantResourcePermissionCommandHandler(
-            IApplicationDbContext context,
-            ICurrentUser currentUser,
-            IDateTimeProvider dateTimeProvider)
-        {
-            _context = context;
-            _currentUser = currentUser;
-            _dateTimeProvider = dateTimeProvider;
-        }
+    public GrantResourcePermissionCommandHandler(
+        IApplicationDbContext context,
+        ICurrentUser currentUser,
+        IDateTimeProvider dateTimeProvider,
+        IAuditService auditService)
+    {
+        _context = context;
+        _currentUser = currentUser;
+        _dateTimeProvider = dateTimeProvider;
+        _auditService = auditService;
+    }
 
     public async Task<Result<ResourcePermissionDto>> Handle(
         GrantResourcePermissionCommand request,
         CancellationToken cancellationToken)
     {
-        if (!Enum.TryParse<SharedKernel.ResourceType>(request.ResourceType, true, out var resourceType) ||
-            !Enum.TryParse<PermissionSubjectType>(request.SubjectType, true, out var subjectType) ||
+        if (!Enum.TryParse<PermissionSubjectType>(request.SubjectType, true, out var subjectType) ||
             !Enum.TryParse<PermissionLevel>(request.Level, true, out var level))
         {
             return Result<ResourcePermissionDto>.Failure("Invalid format for enum parameters.");
@@ -59,7 +56,7 @@ public record GrantResourcePermissionCommand(
 
         var existingPermission = await _context.ResourcePermissions
             .FirstOrDefaultAsync(p => p.WorkspaceId == request.WorkspaceId &&
-                                      p.ResourceType == resourceType &&
+                                      p.ResourceType == request.ResourceType &&
                                       p.ResourceId == request.ResourceId &&
                                       p.SubjectType == subjectType &&
                                       p.SubjectId == request.SubjectId, cancellationToken);
@@ -73,7 +70,7 @@ public record GrantResourcePermissionCommand(
 
         var permission = ResourcePermission.Grant(
             request.WorkspaceId,
-            resourceType,
+            request.ResourceType,
             request.ResourceId,
             subjectType,
             request.SubjectId,
@@ -83,19 +80,14 @@ public record GrantResourcePermissionCommand(
 
         _context.ResourcePermissions.Add(permission);
 
-        // Write Audit Log
-        var auditLog = AuditLog.Record(
+        await _auditService.RecordAsync(
             request.WorkspaceId,
             actorId,
             "GrantResourcePermission",
-            SharedKernel.ResourceRef.Create(resourceType, request.ResourceId),
+            SharedKernel.ResourceRef.Create(request.ResourceType, request.ResourceId),
             AuditMetadata.Create(),
             AuditSeverity.Info,
-            "",
-            "",
-            DateTimeOffset.UtcNow
-        );
-        _context.AuditLogs.Add(auditLog);
+            cancellationToken: cancellationToken);
 
         // Keep ActivityLog for user feed
         var metadata = JsonSerializer.Serialize(new
@@ -110,7 +102,7 @@ public record GrantResourcePermissionCommand(
             request.WorkspaceId,
             actorId,
             ActivityType.Created,
-            SharedKernel.ResourceRef.Create(resourceType, request.ResourceId),
+            SharedKernel.ResourceRef.Create(request.ResourceType, request.ResourceId),
             _dateTimeProvider.UtcNow,
             ActivityMetadata.Create(SharedKernel.JsonValue.Create(metadata))
         );

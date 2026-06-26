@@ -1,7 +1,5 @@
 using MediatR;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
-using Notrelix.Domain.Automation.Rules;
 using Notrelix.Domain.Automation.RulesEngine;
 
 namespace Notrelix.Application.Features.Automation.Rules.Commands.CreateAutomationRule;

@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Commands.RefreshToken;
 using Notrelix.Domain.Identity.Users;

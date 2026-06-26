@@ -1,9 +1,6 @@
 using FluentAssertions;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.BoardGroups;
-using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Forms;
 using Notrelix.Domain.WorkManagement.Items;
 

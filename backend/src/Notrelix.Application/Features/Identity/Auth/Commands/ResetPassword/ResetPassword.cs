@@ -1,7 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Email;
 

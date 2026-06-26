@@ -1,8 +1,5 @@
 using FluentAssertions;
-using Notrelix.Domain.Governance;
-using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Governance.ShareLinks;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Governance;
 
@@ -28,7 +25,7 @@ public class ShareLinkTests
     {
         var workspaceId = Guid.NewGuid();
         var link = ShareLink.Create(workspaceId, ResourceType.Board, Guid.NewGuid(), ShareLinkTokenHash.Create("token"), ShareLinkAccessMode.Public, Guid.NewGuid(), DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddMinutes(-10));
-        
+
         link.IsExpired(DateTimeOffset.UtcNow).Should().BeTrue();
     }
 

@@ -3,8 +3,6 @@ using Notrelix.Domain.Billing.Entitlements;
 using Notrelix.Domain.Billing.Plans;
 using Notrelix.Domain.Billing.Subscriptions;
 using Notrelix.Domain.Billing.Usage;
-using Notrelix.Domain.Common.Exceptions;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Domain.Tests.Billing;
 

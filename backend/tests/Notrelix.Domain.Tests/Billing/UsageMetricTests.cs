@@ -1,8 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Billing.Usage;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Common.Exceptions;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Billing;
 
@@ -84,7 +81,7 @@ public class UsageMetricTests
         var metric = UsageMetric.Create(Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
 
         metric.Increase(4, 10, isHardLimit: true, now);
-        
+
         var nextPeriod = UsagePeriod.Create(now.AddDays(30), now.AddDays(60));
         metric.Reset(nextPeriod, now);
 

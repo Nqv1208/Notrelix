@@ -7,7 +7,12 @@ public class LoginCommandValidator : AbstractValidator<LoginCommand>
 {
     public LoginCommandValidator()
     {
-        // Frontend xử lý validation input (email/password bắt buộc, format).
-        // Backend chỉ xác thực thông tin đăng nhập thực tế với dữ liệu hệ thống.
+        RuleFor(x => x.Email)
+            .NotEmpty()
+            .MaximumLength(256)
+            .EmailAddress();
+
+        RuleFor(x => x.Password)
+            .NotEmpty();
     }
 }

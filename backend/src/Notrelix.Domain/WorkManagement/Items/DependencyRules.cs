@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common.Exceptions;
-
 namespace Notrelix.Domain.WorkManagement.Items;
 
 public static class DependencyRules
@@ -9,8 +7,8 @@ public static class DependencyRules
     /// does not introduce a cyclic dependency.
     /// </summary>
     public static void EnsureNoCycle(
-        Guid itemId, 
-        Guid targetDependencyId, 
+        Guid itemId,
+        Guid targetDependencyId,
         Func<Guid, IEnumerable<Guid>> getDependencies)
     {
         Guard.NotEmpty(itemId);

@@ -6,5 +6,6 @@ public class DeletePageCommandValidator : AbstractValidator<DeletePageCommand>
 {
     public DeletePageCommandValidator()
     {
+        RuleFor(x => x.PageId).NotEmpty();
     }
 }

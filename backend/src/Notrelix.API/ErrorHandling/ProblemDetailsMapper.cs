@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Mvc;
 using Notrelix.Application.Common.Exceptions;
 using AppForbiddenException = Notrelix.Application.Common.Exceptions.ForbiddenException;
 using AppBusinessRuleException = Notrelix.Application.Common.Exceptions.BusinessRuleException;

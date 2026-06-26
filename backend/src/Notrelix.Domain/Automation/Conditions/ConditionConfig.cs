@@ -1,12 +1,11 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Automation.Conditions;
 
 public sealed class ConditionConfig : ValueObject
 {
     public JsonValue Data { get; }
 
-    private ConditionConfig() { }    private ConditionConfig(JsonValue data)
+    private ConditionConfig() { }
+    private ConditionConfig(JsonValue data)
     {
         Data = data;
     }

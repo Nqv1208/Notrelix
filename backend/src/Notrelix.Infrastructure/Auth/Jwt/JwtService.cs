@@ -76,8 +76,8 @@ public class JwtService : IJwtService
             };
 
             var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
-            
-            var userIdClaim = principal.FindFirst(JwtRegisteredClaimNames.Sub) 
+
+            var userIdClaim = principal.FindFirst(JwtRegisteredClaimNames.Sub)
                            ?? principal.FindFirst(ClaimTypes.NameIdentifier);
 
             if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId))

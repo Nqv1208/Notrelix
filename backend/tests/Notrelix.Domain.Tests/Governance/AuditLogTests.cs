@@ -1,8 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Governance.Audit;
-using Notrelix.Domain.Governance;
-using Notrelix.Domain.SharedKernel;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Governance;
 
@@ -37,10 +34,10 @@ public class AuditLogTests
     public void AuditLog_ShouldBeAppendOnly_AndNotExposeMutationMethods()
     {
         var type = typeof(AuditLog);
-        
+
         // Assert that no Set, Update, or Delete methods exist in the type
         var publicMethods = type.GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly);
-        
+
         // AuditLog inherits from Entity, but we shouldn't have business methods that modify it.
         // E.g., no Rename, UpdateMetadata, etc.
         publicMethods.Select(m => m.Name).Should().NotContainMatch("Update*");

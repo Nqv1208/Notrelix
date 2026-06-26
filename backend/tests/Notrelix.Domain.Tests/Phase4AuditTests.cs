@@ -1,17 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Common;
-using Notrelix.Domain.Identity.Mfa;
-using Notrelix.Domain.Identity.Mfa.Events;
-using Notrelix.Domain.Identity.Profiles;
-using Notrelix.Domain.Identity.Profiles.Events;
-using Notrelix.Domain.Identity.Security;
-using Notrelix.Domain.Identity.Security.Events;
-using Notrelix.Domain.Identity.Sessions;
-using Notrelix.Domain.Identity.Sessions.Events;
-using Notrelix.Domain.Identity.Tokens;
-using Notrelix.Domain.Identity.Users;
-using Notrelix.Domain.Identity.Users.Events;
-using Xunit;
 
 namespace Notrelix.Domain.Tests;
 

@@ -1,9 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Abstractions;
 using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
-using Notrelix.Domain.Governance.Permissions;
-using Notrelix.Domain.Workspaces.Workspaces;
-using Notrelix.Domain.WorkManagement.Boards;
 
 namespace Notrelix.Application.Common.Security;
 

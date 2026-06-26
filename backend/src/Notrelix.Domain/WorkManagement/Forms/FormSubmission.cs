@@ -1,4 +1,3 @@
-using Notrelix.Domain.Common;
 using Notrelix.Domain.WorkManagement.Forms.Events;
 
 namespace Notrelix.Domain.WorkManagement.Forms;

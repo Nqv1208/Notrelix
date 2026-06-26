@@ -1,4 +1,3 @@
-using Notrelix.Domain.Common;
 using Notrelix.Domain.Analytics.Widgets;
 
 namespace Notrelix.Domain.Analytics.Dashboards.Events;

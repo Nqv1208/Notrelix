@@ -6,5 +6,16 @@ public class InviteMemberBySlugCommandValidator : AbstractValidator<InviteMember
 {
     public InviteMemberBySlugCommandValidator()
     {
+        RuleFor(x => x.Slug)
+            .NotEmpty()
+            .MaximumLength(200);
+
+        RuleFor(x => x.Email)
+            .NotEmpty()
+            .MaximumLength(256)
+            .EmailAddress();
+
+        RuleFor(x => x.Role)
+            .IsInEnum();
     }
 }

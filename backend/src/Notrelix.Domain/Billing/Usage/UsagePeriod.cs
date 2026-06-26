@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Billing.Usage;
 
 public sealed class UsagePeriod : ValueObject
@@ -7,7 +5,8 @@ public sealed class UsagePeriod : ValueObject
     public DateTimeOffset Start { get; }
     public DateTimeOffset End { get; }
 
-    private UsagePeriod() { }    private UsagePeriod(DateTimeOffset start, DateTimeOffset end)
+    private UsagePeriod() { }
+    private UsagePeriod(DateTimeOffset start, DateTimeOffset end)
     {
         Start = start;
         End = end;

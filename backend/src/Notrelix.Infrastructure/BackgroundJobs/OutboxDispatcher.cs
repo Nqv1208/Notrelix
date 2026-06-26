@@ -1,5 +1,5 @@
+using System.Diagnostics;
 using System.Text.Json;
-using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,16 +7,19 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Events;
-using Notrelix.Domain.Common;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Outbox;
+using Notrelix.Infrastructure.Observability.Metrics;
 
 namespace Notrelix.Infrastructure.BackgroundJobs;
 
 internal sealed class OutboxDispatcher : BackgroundService
 {
+    private const string OutboxDispatcherConsumerName = "OutboxDispatcher";
+
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<OutboxDispatcher> _logger;
+    private readonly MetricsService _metrics;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -26,10 +29,12 @@ internal sealed class OutboxDispatcher : BackgroundService
 
     public OutboxDispatcher(
         IServiceScopeFactory scopeFactory,
-        ILogger<OutboxDispatcher> logger)
+        ILogger<OutboxDispatcher> logger,
+        MetricsService metrics)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
+        _metrics = metrics;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -63,6 +68,7 @@ internal sealed class OutboxDispatcher : BackgroundService
         var integrationEventBus = scope.ServiceProvider.GetRequiredService<IIntegrationEventBus>();
         var eventTypeRegistry = scope.ServiceProvider.GetRequiredService<IEventTypeRegistry>();
         var dateTimeProvider = scope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
+        var processedEventStore = scope.ServiceProvider.GetRequiredService<IProcessedEventStore>();
 
         var now = dateTimeProvider.UtcNow;
         var processingCutoff = now.AddSeconds(-OutboxDefaults.ProcessingTimeoutSeconds);
@@ -90,10 +96,20 @@ internal sealed class OutboxDispatcher : BackgroundService
 
         foreach (var message in messages)
         {
-            await ProcessMessageAsync(message, eventTypeRegistry, mediator, integrationEventBus, dateTimeProvider, context, cancellationToken);
+            await ProcessMessageAsync(message, eventTypeRegistry, mediator, integrationEventBus, dateTimeProvider, processedEventStore, context, cancellationToken);
         }
 
         await context.SaveChangesAsync(cancellationToken);
+
+        var counts = await context.Set<OutboxMessage>()
+            .GroupBy(m => m.Status)
+            .Select(g => new { g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+
+        var pending = counts.FirstOrDefault(c => c.Key == OutboxStatus.Pending)?.Count ?? 0;
+        var failed = counts.FirstOrDefault(c => c.Key == OutboxStatus.Failed)?.Count ?? 0;
+        var deadLetter = counts.FirstOrDefault(c => c.Key == OutboxStatus.DeadLetter)?.Count ?? 0;
+        _metrics.UpdateOutboxCounts(pending, failed, deadLetter);
     }
 
     private async Task ProcessMessageAsync(
@@ -102,10 +118,21 @@ internal sealed class OutboxDispatcher : BackgroundService
         IMediator mediator,
         IIntegrationEventBus integrationEventBus,
         IDateTimeProvider dateTimeProvider,
+        IProcessedEventStore processedEventStore,
         ApplicationDbContext context,
         CancellationToken cancellationToken)
     {
         message.MarkProcessing(dateTimeProvider.UtcNow);
+
+        if (await processedEventStore.IsProcessedAsync(message.EventId, OutboxDispatcherConsumerName, cancellationToken))
+        {
+            message.MarkProcessed(dateTimeProvider.UtcNow);
+            _logger.LogDebug("Outbox message {Id}: {MessageName} already processed, skipping",
+                message.Id, message.MessageName);
+            return;
+        }
+
+        var sw = Stopwatch.StartNew();
 
         try
         {
@@ -122,13 +149,28 @@ internal sealed class OutboxDispatcher : BackgroundService
                     message.MarkProcessed(dateTimeProvider.UtcNow);
                     break;
             }
+
+            var processedEvent = ProcessedEvent.Create(
+                message.EventId,
+                OutboxDispatcherConsumerName,
+                message.MessageName,
+                message.SchemaVersion,
+                message.SourceEventId ?? message.EventId,
+                message.WorkspaceId,
+                dateTimeProvider.UtcNow);
+            context.Set<ProcessedEvent>().Add(processedEvent);
+
+            _metrics.OutboxDispatchedCount.Add(1);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Outbox message {Id}: {MessageName} failed (attempt {Retry})",
                 message.Id, message.MessageName, message.RetryCount + 1);
             message.MarkFailed(ex.ToString(), dateTimeProvider.UtcNow);
+            _metrics.OutboxFailedDispatchCount.Add(1);
         }
+
+        _metrics.OutboxDispatchDuration.Record(sw.Elapsed.TotalMilliseconds);
     }
 
     private async Task DispatchDomainEventAsync(
@@ -159,7 +201,7 @@ internal sealed class OutboxDispatcher : BackgroundService
         var notificationType = typeof(DomainEventNotification<>).MakeGenericType(domainEventType);
         var notification = Activator.CreateInstance(notificationType, domainEvent);
 
-        await mediator.Publish(notification, cancellationToken);
+        await mediator.Publish(notification!, cancellationToken);
 
         message.MarkProcessed(dateTimeProvider.UtcNow);
         _logger.LogDebug("Outbox message {Id}: {MessageName} domain event processed (attempt {Retry})",

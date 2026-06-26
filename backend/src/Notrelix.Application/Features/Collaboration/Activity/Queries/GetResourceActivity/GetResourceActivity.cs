@@ -1,12 +1,11 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using global::Notrelix.Application.Common.Abstractions;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Collaboration.Activity.DTOs;
 
 namespace Notrelix.Application.Features.Collaboration.Activity.Queries.GetResourceActivity;
 
-public record GetResourceActivityQuery(string ResourceType, Guid ResourceId, int Page = 1, int PageSize = 20)
+public record GetResourceActivityQuery(ResourceType ResourceType, Guid ResourceId, int Page = 1, int PageSize = 20)
     : IQuery<Result<object>>;
 
 public class GetResourceActivityQueryHandler : IRequestHandler<GetResourceActivityQuery, Result<object>>
@@ -16,13 +15,11 @@ public class GetResourceActivityQueryHandler : IRequestHandler<GetResourceActivi
 
     public async Task<Result<object>> Handle(GetResourceActivityQuery request, CancellationToken ct)
     {
-        var resourceType = Enum.Parse<ResourceType>(request.ResourceType, ignoreCase: true);
-
         var total = await _context.ActivityLogs
-            .CountAsync(a => a.Target.ResourceType == resourceType && a.Target.ResourceId == request.ResourceId, ct);
+            .CountAsync(a => a.Target.ResourceType == request.ResourceType && a.Target.ResourceId == request.ResourceId, ct);
 
         var logs = await _context.ActivityLogs.AsNoTracking()
-            .Where(a => a.Target.ResourceType == resourceType && a.Target.ResourceId == request.ResourceId)
+            .Where(a => a.Target.ResourceType == request.ResourceType && a.Target.ResourceId == request.ResourceId)
             .OrderByDescending(a => a.Timestamp)
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)

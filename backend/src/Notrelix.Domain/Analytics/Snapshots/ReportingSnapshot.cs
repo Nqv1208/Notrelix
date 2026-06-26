@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Analytics.Snapshots;
 
 public class ReportingSnapshot : Entity, IWorkspaceScoped

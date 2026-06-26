@@ -1,7 +1,6 @@
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Governance.ShareLinks.Commands.DisableShareLink;
+using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.API.Endpoints.Governance.ShareLinks.Commands;
 
@@ -25,7 +24,7 @@ public static class DisableShareLinkEndpoint
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new DisableShareLinkCommand(workspaceId, resourceType, resourceId, shareLinkId),
+            new DisableShareLinkCommand(workspaceId, Enum.Parse<ResourceType>(resourceType, ignoreCase: true), resourceId, shareLinkId),
             cancellationToken);
         return result.ToNoContentResult();
     }

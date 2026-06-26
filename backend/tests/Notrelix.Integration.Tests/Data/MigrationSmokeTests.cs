@@ -23,7 +23,9 @@ public class MigrationSmokeTests
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
             SELECT COUNT(*) FROM information_schema.tables
-            WHERE table_schema NOT IN ('pg_catalog', 'information_schema')";
+            WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
+              AND table_type = 'BASE TABLE'
+              AND table_name <> '__EFMigrationsHistory'";
 
         var count = (long)(await cmd.ExecuteScalarAsync())!;
         count.Should().Be(125);
@@ -55,8 +57,9 @@ public class MigrationSmokeTests
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
             SELECT COUNT(*) FROM pg_catalog.pg_indexes
-            WHERE indexname = 'ix_search_documents_search_vector'
-            AND indexdef LIKE '%gin%'";
+            WHERE schemaname = 'search'
+              AND indexdef ILIKE '%USING gin%'
+              AND indexdef ILIKE '%search_vector%'";
 
         var count = (long)(await cmd.ExecuteScalarAsync())!;
         count.Should().Be(1, "GIN trigram index on search.documents.search_vector");
@@ -81,9 +84,24 @@ public class MigrationSmokeTests
             columns.Add((reader.GetString(0), reader.GetString(1)));
 
         columns.Should().Contain(c => c.Name == "id" && c.Type == "uuid");
-        columns.Should().Contain(c => c.Name == "type" && c.Type == "character varying");
+        columns.Should().Contain(c => c.Name == "event_id" && c.Type == "uuid");
+        columns.Should().Contain(c => c.Name == "source_event_id" && c.Type == "uuid");
+        columns.Should().Contain(c => c.Name == "message_name" && c.Type == "character varying");
+        columns.Should().Contain(c => c.Name == "message_type" && c.Type == "character varying");
+        columns.Should().Contain(c => c.Name == "schema_version" && c.Type == "integer");
+        columns.Should().Contain(c => c.Name == "event_version" && c.Type == "integer");
+        columns.Should().Contain(c => c.Name == "workspace_id" && c.Type == "uuid");
+        columns.Should().Contain(c => c.Name == "actor_user_id" && c.Type == "uuid");
+        columns.Should().Contain(c => c.Name == "correlation_id" && c.Type == "character varying");
+        columns.Should().Contain(c => c.Name == "causation_id" && c.Type == "character varying");
         columns.Should().Contain(c => c.Name == "payload" && c.Type == "jsonb");
+        columns.Should().Contain(c => c.Name == "status" && c.Type == "character varying");
         columns.Should().Contain(c => c.Name == "retry_count" && c.Type == "integer");
+        columns.Should().Contain(c => c.Name == "max_retries" && c.Type == "integer");
+        columns.Should().Contain(c => c.Name == "next_attempt_at" && c.Type == "timestamp with time zone");
+        columns.Should().Contain(c => c.Name == "processing_started_at" && c.Type == "timestamp with time zone");
         columns.Should().Contain(c => c.Name == "created_at" && c.Type == "timestamp with time zone");
+        columns.Should().Contain(c => c.Name == "processed_at" && c.Type == "timestamp with time zone");
+        columns.Should().Contain(c => c.Name == "error" && c.Type == "text");
     }
 }

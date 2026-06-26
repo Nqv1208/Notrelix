@@ -6,5 +6,7 @@ public class UpdateBlockCommandValidator : AbstractValidator<UpdateBlockCommand>
 {
     public UpdateBlockCommandValidator()
     {
+        RuleFor(x => x.BlockId)
+            .NotEmpty();
     }
 }

@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common;
-
 namespace Notrelix.Domain.Governance.Policies;
 
 public sealed class SharingPolicy : ValueObject
@@ -7,7 +5,8 @@ public sealed class SharingPolicy : ValueObject
     public bool AllowPublicSharing { get; }
     public bool AllowExternalInvite { get; }
 
-    private SharingPolicy() { }    private SharingPolicy(bool allowPublicSharing, bool allowExternalInvite)
+    private SharingPolicy() { }
+    private SharingPolicy(bool allowPublicSharing, bool allowExternalInvite)
     {
         AllowPublicSharing = allowPublicSharing;
         AllowExternalInvite = allowExternalInvite;

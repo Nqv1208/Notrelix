@@ -1,7 +1,6 @@
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Governance.ResourcePermissions.Queries.GetResourcePermissions;
+using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.API.Endpoints.Governance.ResourcePermissions.Queries;
 
@@ -23,7 +22,7 @@ public static class GetResourcePermissionsEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new GetResourcePermissionsQuery(workspaceId, resourceType, resourceId), cancellationToken);
+        var result = await sender.Send(new GetResourcePermissionsQuery(workspaceId, Enum.Parse<ResourceType>(resourceType, ignoreCase: true), resourceId), cancellationToken);
         return result.ToApiResult();
     }
 }

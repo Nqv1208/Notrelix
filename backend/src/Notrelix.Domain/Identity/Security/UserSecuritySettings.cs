@@ -1,4 +1,3 @@
-using Notrelix.Domain.Common;
 using Notrelix.Domain.Identity.Mfa;
 using Notrelix.Domain.Identity.Security.Events;
 
@@ -55,7 +54,7 @@ public class UserSecuritySettings : AggregateRoot
         IsMfaEnabled = false;
         PreferredMfaMethod = null;
         LastSecurityReviewAt = updatedAt;
-        
+
         SetAuditOnUpdate(UserId, updatedAt);
         AddDomainEvent(new UserMfaRequirementDisabledDomainEvent(UserId, previousMethod, updatedAt));
     }
@@ -66,7 +65,7 @@ public class UserSecuritySettings : AggregateRoot
 
         RequirePasswordChange = true;
         LastSecurityReviewAt = updatedAt;
-        
+
         SetAuditOnUpdate(UserId, updatedAt);
         AddDomainEvent(new PasswordChangeRequiredDomainEvent(UserId, updatedAt));
     }
@@ -74,11 +73,11 @@ public class UserSecuritySettings : AggregateRoot
     public void MarkPasswordChanged(DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        
+
         RequirePasswordChange = false;
         PasswordChangedAt = updatedAt;
         LastSecurityReviewAt = updatedAt;
-        
+
         SetAuditOnUpdate(UserId, updatedAt);
         AddDomainEvent(new UserSecurityPasswordChangedDomainEvent(UserId, updatedAt));
     }
@@ -87,10 +86,10 @@ public class UserSecuritySettings : AggregateRoot
     {
         EnsureNotDeleted();
         Guard.NotNull(settings);
-        
+
         SettingsJson = settings;
         LastSecurityReviewAt = updatedAt;
-        
+
         SetAuditOnUpdate(UserId, updatedAt);
         AddDomainEvent(new UserSecuritySettingsUpdatedDomainEvent(UserId, updatedAt));
     }

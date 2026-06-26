@@ -7,7 +7,8 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
 {
     public RegisterCommandValidator()
     {
-        // Frontend chịu trách nhiệm validate format/register form.
-        // Backend chỉ xử lý các validation cần dữ liệu hệ thống (ví dụ: email đã tồn tại) trong handler/domain.
+        RuleFor(x => x.Email).NotEmpty().MaximumLength(256).EmailAddress();
+        RuleFor(x => x.Password).NotEmpty();
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
     }
 }

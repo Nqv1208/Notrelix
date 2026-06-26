@@ -1,4 +1,3 @@
-using MediatR;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UnassignBoardItemMember;
 
@@ -21,7 +20,7 @@ public static class UnassignBoardItemMemberEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new UnassignCardMemberCommand(itemId, userId), cancellationToken);
+        var result = await sender.Send(new UnassignBoardItemMemberCommand(itemId, userId), cancellationToken);
         return result.ToNoContentResult();
     }
 }

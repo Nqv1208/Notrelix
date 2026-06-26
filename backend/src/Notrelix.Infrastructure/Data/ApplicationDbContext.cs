@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Notrelix.Application.Common.Abstractions;
@@ -24,7 +25,6 @@ using Notrelix.Domain.Collaboration.Notifications;
 using Notrelix.Domain.Collaboration.Presence;
 using Notrelix.Domain.Collaboration.Reactions;
 using Notrelix.Domain.Collaboration.Watchers;
-using Notrelix.Domain.Common;
 using Notrelix.Domain.Documents.Blocks;
 using Notrelix.Domain.Documents.Pages;
 using Notrelix.Domain.Documents.ResourceLinks;
@@ -42,7 +42,6 @@ using Notrelix.Domain.Identity.OAuth;
 using Notrelix.Domain.Identity.Profiles;
 using Notrelix.Domain.Identity.Security;
 using Notrelix.Domain.Identity.Sessions;
-using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.Integrations.Calendar;
 using Notrelix.Domain.Integrations.Connections;
@@ -80,6 +79,9 @@ namespace Notrelix.Infrastructure.Data;
 public class ApplicationDbContext : DbContext, IApplicationDbContext
 {
     private readonly ICurrentWorkspace? _currentWorkspace;
+
+    private static readonly FieldInfo CurrentWorkspaceField = typeof(ApplicationDbContext)
+        .GetField("_currentWorkspace", BindingFlags.NonPublic | BindingFlags.Instance)!;
 
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentWorkspace? currentWorkspace = null) : base(options)
     {
@@ -274,17 +276,32 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                     Expression.Constant(null, typeof(DateTimeOffset?)));
             }
 
-            if (isWorkspaceScoped && _currentWorkspace?.WorkspaceId is not null)
+            if (isWorkspaceScoped)
             {
-                var wsFilter = Expression.Equal(
-                    Expression.PropertyOrField(param, "WorkspaceId"),
-                    Expression.Convert(
-                        Expression.Property(Expression.Constant(_currentWorkspace), "WorkspaceId"),
-                        typeof(Guid)));
+                if (_currentWorkspace?.IsSystemContext == true)
+                {
+                }
+                else if (_currentWorkspace?.HasWorkspace == true)
+                {
+                    var wsFilter = Expression.Equal(
+                        Expression.PropertyOrField(param, "WorkspaceId"),
+                        Expression.Convert(
+                            Expression.Property(
+                                Expression.Field(Expression.Constant(this), CurrentWorkspaceField),
+                                "WorkspaceId"),
+                            typeof(Guid)));
 
-                filterBody = filterBody is not null
-                    ? Expression.AndAlso(filterBody, wsFilter)
-                    : wsFilter;
+                    filterBody = filterBody is not null
+                        ? Expression.AndAlso(filterBody, wsFilter)
+                        : wsFilter;
+                }
+                else
+                {
+                    var noAccess = Expression.Constant(false);
+                    filterBody = filterBody is not null
+                        ? Expression.AndAlso(filterBody, noAccess)
+                        : noAccess;
+                }
             }
 
             if (filterBody is not null)

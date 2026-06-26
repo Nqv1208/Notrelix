@@ -1,15 +1,19 @@
-using StackExchange.Redis;
 using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Common.RateLimiting;
+using Notrelix.Infrastructure.RateLimiting;
+using StackExchange.Redis;
 
 namespace Notrelix.Infrastructure.Security.RateLimiting;
 
 public class RateLimitService : IRateLimitService
 {
     private readonly IConnectionMultiplexer _redis;
+    private readonly RedisRateLimitService _delegate;
 
     public RateLimitService(IConnectionMultiplexer redis)
     {
         _redis = redis;
+        _delegate = new RedisRateLimitService(redis);
     }
 
     public async Task<bool> IsRateLimitedAsync(string action, string identifier, int maxAttempts, TimeSpan window)
@@ -34,6 +38,24 @@ public class RateLimitService : IRateLimitService
 
         var used = (int)value;
         return Math.Max(0, maxAttempts - used);
+    }
+
+    public Task<RateLimitDecision> CheckAsync(
+        RateLimitRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return _delegate.CheckAsync(request, cancellationToken);
+    }
+
+    public Task<RateLimitDecision> CheckAsync(
+        string policyName,
+        string partitionKey,
+        int permitLimit,
+        TimeSpan window,
+        RateLimitAlgorithm algorithm = RateLimitAlgorithm.SlidingWindow,
+        CancellationToken cancellationToken = default)
+    {
+        return _delegate.CheckAsync(policyName, partitionKey, permitLimit, window, algorithm, cancellationToken);
     }
 
     private static string BuildKey(string action, string identifier)

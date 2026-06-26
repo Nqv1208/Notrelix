@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Notrelix.Application.Common.Abstractions;
-using Notrelix.Domain.Common;
 
 namespace Notrelix.Infrastructure.Data.Interceptors;
 

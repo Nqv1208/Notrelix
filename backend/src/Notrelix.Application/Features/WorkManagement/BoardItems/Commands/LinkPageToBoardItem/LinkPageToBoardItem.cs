@@ -1,8 +1,6 @@
-using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
-using Notrelix.Domain.WorkManagement.Items;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.LinkPageToBoardItem;
 

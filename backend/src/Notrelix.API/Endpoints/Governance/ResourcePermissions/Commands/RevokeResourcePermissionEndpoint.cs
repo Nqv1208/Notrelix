@@ -1,7 +1,6 @@
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Governance.ResourcePermissions.Commands.RevokeResourcePermission;
+using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.API.Endpoints.Governance.ResourcePermissions.Commands;
 
@@ -25,7 +24,7 @@ public static class RevokeResourcePermissionEndpoint
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new RevokeResourcePermissionCommand(workspaceId, resourceType, resourceId, permissionId),
+            new RevokeResourcePermissionCommand(workspaceId, Enum.Parse<ResourceType>(resourceType, ignoreCase: true), resourceId, permissionId),
             cancellationToken);
         return result.ToNoContentResult();
     }

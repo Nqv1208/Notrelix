@@ -6,5 +6,6 @@ public class DeleteCommentCommandValidator : AbstractValidator<DeleteCommentComm
 {
     public DeleteCommentCommandValidator()
     {
+        RuleFor(x => x.CommentId).NotEmpty();
     }
 }

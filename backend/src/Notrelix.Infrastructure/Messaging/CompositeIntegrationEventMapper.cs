@@ -1,7 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.Events;
-using Notrelix.Domain.Common;
 
 namespace Notrelix.Infrastructure.Messaging;
 
