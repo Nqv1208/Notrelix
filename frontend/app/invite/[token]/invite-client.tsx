@@ -15,9 +15,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
-import { useAuthUser } from "@/features/auth/hooks/useAuthUser"
-import { useLogout } from "@/features/auth/hooks/useLogout"
-import { useInvitationByToken, useAcceptInvitation } from "@/features/workspace/hooks"
+import { useAuthUser, useLogout } from "@/features/auth"
+import { useInvitationByToken, useAcceptInvitation } from "@/features/workspace"
 
 interface InviteClientPageProps {
   token: string

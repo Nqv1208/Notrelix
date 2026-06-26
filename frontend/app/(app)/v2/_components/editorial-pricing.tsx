@@ -13,7 +13,7 @@ type Tier = {
   blurb: string
   features: string[]
   cta: string
-  href: string
+  href: any
   featured?: boolean
 }
 

@@ -7,8 +7,7 @@ import { Menu, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/app/(app)/_components/theme-toggle"
-import { useAuthUser } from "@/features/auth/hooks/useAuthUser"
-import { useLogout } from "@/features/auth/hooks/useLogout"
+import { useAuthUser, useLogout } from "@/features/auth"
 import { routes } from "@/lib/routes"
 import { cn } from "@/lib/utils"
 

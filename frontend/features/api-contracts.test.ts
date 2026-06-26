@@ -15,8 +15,8 @@ function sourceFiles(root: string): string[] {
 
 describe("frontend API contracts", () => {
   test("board runtime services and hooks do not reference mock board mode", () => {
-    const files = sourceFiles(join(frontendRoot, "features", "boards"))
-      .filter((file) => !file.includes(`${join("features", "boards", "mock")}${"/"}`))
+    const files = sourceFiles(join(frontendRoot, "features", "work-management"))
+      .filter((file) => !file.includes(`${join("features", "work-management", "mock")}${"/"}`))
 
     const offenders = files
       .map((file) => ({
@@ -35,7 +35,7 @@ describe("frontend API contracts", () => {
 
   test("feature hooks import auth-style service modules rather than legacy api files", () => {
     const files = [
-      ...sourceFiles(join(frontendRoot, "features", "boards", "hooks")),
+      ...sourceFiles(join(frontendRoot, "features", "work-management", "hooks")),
       ...sourceFiles(join(frontendRoot, "features", "workspace", "hooks")),
       ...sourceFiles(join(frontendRoot, "features", "docs", "hooks")),
     ]
@@ -67,7 +67,7 @@ describe("frontend API contracts", () => {
         source: readFileSync(file, "utf8"),
       }))
       .filter(({ source }) =>
-        source.includes("@/features/boards") ||
+        source.includes("@/features/work-management") ||
         source.includes("@/features/docs")
       )
       .map(({ file }) => file.replace(frontendRoot, "frontend/"))
@@ -95,20 +95,22 @@ describe("frontend API contracts", () => {
 
   test("board table runtime uses split api modules and workspaceId route naming", () => {
     const requiredApiFiles = [
-      "board.api.ts",
-      "group.api.ts",
-      "card.api.ts",
-      "column.api.ts",
-      "comment.api.ts",
+      join("boards", "api", "board.api.ts"),
+      join("groups", "api", "group.api.ts"),
+      join("items", "api", "item.api.ts"),
+      join("fields", "api", "field.api.ts"),
+      join("items", "api", "item-comments.api.ts"),
     ]
 
-    for (const file of requiredApiFiles) {
-      expect(() => statSync(join(frontendRoot, "features", "boards", "api", file))).not.toThrow()
+    for (const relPath of requiredApiFiles) {
+      expect(() => statSync(join(frontendRoot, "features", "work-management", relPath))).not.toThrow()
     }
 
     const boardFeatureFiles = [
-      ...sourceFiles(join(frontendRoot, "features", "boards", "hooks")),
-      ...sourceFiles(join(frontendRoot, "features", "boards", "api")),
+      ...sourceFiles(join(frontendRoot, "features", "work-management", "boards")),
+      ...sourceFiles(join(frontendRoot, "features", "work-management", "items")),
+      ...sourceFiles(join(frontendRoot, "features", "work-management", "fields")),
+      ...sourceFiles(join(frontendRoot, "features", "work-management", "groups")),
     ]
 
     const legacyBoardImports = boardFeatureFiles

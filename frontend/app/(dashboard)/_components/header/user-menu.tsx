@@ -15,8 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useAuthUser } from "@/features/auth/hooks/useAuthUser"
-import { useLogout } from "@/features/auth/hooks/useLogout"
+import { useAuthUser, useLogout } from "@/features/auth"
 import { routes } from "@/lib/routes"
 import { 
   User, 
