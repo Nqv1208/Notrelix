@@ -18,7 +18,8 @@ builder.Services
     .Bind(builder.Configuration.GetSection("DataProtection"))
     .ValidateDataAnnotations()
     .ValidateOnStart();
-builder.Services.AddSingleton<IValidateOptions<Dpo>, DataProtectionOptionsValidator>();
+builder.Services.AddSingleton<IValidateOptions<Dpo>>(
+    _ => new DataProtectionOptionsValidator(builder.Environment.EnvironmentName));
 
 builder.AddApplicationServices();
 
@@ -30,7 +31,7 @@ var dataProtection = builder.Services
     .AddDataProtection()
     .SetApplicationName(dataProtectionOptions.ApplicationName);
 
-if (dataProtectionOptions.PersistKeys)
+if (dataProtectionOptions.PersistKeys && !string.IsNullOrWhiteSpace(dataProtectionOptions.KeysPath))
 {
     Directory.CreateDirectory(dataProtectionOptions.KeysPath);
     dataProtection.PersistKeysToFileSystem(new DirectoryInfo(dataProtectionOptions.KeysPath));

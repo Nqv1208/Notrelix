@@ -19,6 +19,16 @@ env:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
 
     steps:
       - uses: actions/checkout@v4
@@ -55,6 +65,8 @@ jobs:
       - name: API tests
         run: dotnet test tests/Notrelix.API.Tests --no-build
         working-directory: backend
+        env:
+          ConnectionStrings__Redis: localhost:6379,abortConnect=false
 
   docker-build:
     runs-on: ubuntu-latest
