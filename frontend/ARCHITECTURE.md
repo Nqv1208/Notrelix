@@ -333,3 +333,65 @@ To prevent architectural drift, the following automated gates are set up:
 1.  **ESLint Boundaries**: Using `eslint-plugin-import` to block cross-feature deep imports.
 2.  **TypeScript Compilation**: `tsc --noEmit` must be run in pre-commit hooks.
 3.  **CI Pipeline Gate**: Any PR that references forbidden imports, has circular dependencies, or skips DTO mappers will fail the build and be blocked from merging.
+
+---
+
+## 10. Enterprise Product Readiness & Policy
+
+### 10.1. Production Readiness Definition
+To be classified as **Production-Ready**, a feature slice must satisfy all the following rules:
+*   **Backend Integrated**: Uses real Axios API clients to query PostgreSQL/Redis. No mock stubs in production critical paths.
+*   **Permission-Aware**: UI access is governed strictly by capability checks via `useCan()` or `hasPermission()`. Zero raw role string checks.
+*   **Entitlement-Aware**: High-tier features verify subscription boundaries prior to rendering actions.
+*   **Error/Loading Resilient**: Implements standard loading skeletons, error fallbacks, and empty visual cards.
+*   **Centralized Query Cache**: Leverages centralized `queryKeys` factories with strict invalidations scoped per mutation.
+*   **Zero Quality Debt**: Compiles without warnings, has passing Vitest unit tests, and complies with architecture gates.
+
+### 10.2. Feature Readiness Matrix
+
+| Feature | Architecture Status | Backend Integration | UI Completeness | Test Coverage | Production Readiness | Notes |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **auth** | Aligned (Public API) | Real API (JWT/Cookie) | Completed | High | **Production-Ready** | Handles refresh token mutex. |
+| **account** | Aligned (Public API) | Real API | Completed | Medium | **Production-Ready** | User preferences and settings. |
+| **workspace** | Aligned (Public API) | Real API | Completed | High | **Production-Ready** | Members, switchers, and invites. |
+| **work-management** | Aligned (Public API) | Real API | Completed | High | **Production-Ready** | Table, Kanban, Calendar, Timeline views. |
+| **notifications** | Aligned (Public API) | Real API | Completed | Medium | **Integration-Ready** | Actionable activity updates feed. |
+| **activity** | Aligned (Public API) | Real API | Completed | Medium | **Integration-Ready** | Audit logs feed integrated. |
+| **docs** | Partial Barrel | Real API | Completed | Medium | **Quality-Debt** | Contains legacy deep imports in app layer. |
+| **collaboration** | Aligned (Public API) | Stubbed | Completed | Low | **Architecture-Ready** | Mentions/comments structure defined. |
+| **billing** | Aligned (Public API) | Stubbed | Completed | Low | **Contract-Ready** | Plan stubs defined in billingApi contract. |
+| **search** | Aligned (Public API) | Stubbed | Completed | Low | **Contract-Ready** | Simulated search queries. |
+| **governance** | Aligned (Public API) | None (UI-only) | Static Tabs | None | **Mock-Only** | Static tab in Workspace Settings. |
+| **automation** | Aligned (Public API) | None (UI-only) | Static Tabs | None | **Mock-Only** | Switch-only rules stubs. |
+| **integrations** | Aligned (Public API) | None (UI-only) | Static Tabs | None | **Mock-Only** | Static connections panel stubs. |
+
+### 10.3. Composition Boundary Policy
+*   **Settings Presentation Composition**: `WorkspaceManagementPanel` acts as a composite page rendering tabs from governance, automation, integrations, and activity. It must import them as isolated black-box UI components through their public barrels.
+*   **Hook Decoupling**: Sibling features must not import each other's internal query hooks. For example, `useWorkspaceSnapshot` cannot import `useWorkspaceActivity` directly. The composition of multiple sibling states must happen at the `app/` page layer.
+
+### 10.4. Mock/Stub Policy
+*   **Allowed Contract Stubs**: Permitted when a backend endpoint does not exist yet. Must reside in a `mock/` subdirectory, match types defined in `types/`, and be excluded from production build paths.
+*   **Forbidden Mocking**: Call mock hooks on critical paths that have active endpoints. Fake permission guards or fake feature entitlements without fallback guards.
+
+### 10.5. Permission/Entitlement Policy
+*   **No Raw Checks**: Do not write `member.role === 'admin'` or `subscription.plan === 'free'` in UI components.
+*   **Centralized Guards**: Call `const { can } = useCan()` for actions, and `const { hasFeature } = useEntitlements()` for pricing limits.
+
+### 10.6. Route Ownership Matrix
+
+| Route | Owner Feature | Composition Dependencies |
+| :--- | :--- | :--- |
+| `/` | `marketing/app` | `auth` |
+| `/sign-in` | `auth` | None |
+| `/sign-up` | `auth` | None |
+| `/home` | `dashboard` (composition) | `workspace`, `activity`, `work-management` |
+| `/[workspaceId]` | `workspace` (composition) | `activity`, `work-management`, `docs` |
+| `/[workspaceId]/boards/[boardId]` | `work-management` | `workspace` (via route-tabbed layout) |
+| `/[workspaceId]/docs/[pageId]` | `docs` | `workspace` (via route-tabbed layout) |
+| `/account/profile` | `account` | None |
+
+### 10.7. Quality Debt Register
+1.  **Tabbed Shell Coupling**: `work-management` views rely on `WorkspaceTabbedRouteFrame` layout. Will be resolved by moving the tabbed shell structure into `features/workspace` in the next phase.
+2.  **Docs Deep Imports**: `app/` imports internal hooks and types from `features/docs/hooks/...` and `features/docs/types/...`. Resolving this requires implementing a complete public barrel for `docs` feature.
+3.  **Color Theme Hydration Hack**: `useColorTheme` defers local storage state sync via `setTimeout` to bypass linter. Can be refactored via `next-themes` standard context.
+
