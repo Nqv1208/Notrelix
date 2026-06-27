@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace;
 
@@ -12,11 +13,11 @@ public record CreateWorkspaceCommand(
 
 public class CreateWorkspaceCommandHandler : IRequestHandler<CreateWorkspaceCommand, Result<Guid>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkspaceDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public CreateWorkspaceCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public CreateWorkspaceCommandHandler(IWorkspaceDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
@@ -33,12 +34,16 @@ public class CreateWorkspaceCommandHandler : IRequestHandler<CreateWorkspaceComm
             ? slug.Value + "-" + Guid.NewGuid().ToString("N")[..6]
             : slug.Value;
 
-        var workspace = Workspace.Create(_currentUser.UserId, request.Name, finalSlug, _dateTimeProvider.UtcNow, description: request.Description, isPersonal: request.IsPersonal);
+        var creationResult = WorkspaceFactory.CreateWithOwner(
+            _currentUser.UserId, request.Name, finalSlug,
+            _dateTimeProvider.UtcNow, request.IsPersonal,
+            request.Description);
 
-        _context.Workspaces.Add(workspace);
+        _context.Workspaces.Add(creationResult.Workspace);
+        _context.WorkspaceMembers.Add(creationResult.OwnerMember);
 
         await _context.SaveChangesAsync(ct);
 
-        return Result<Guid>.Success(workspace.Id);
+        return Result<Guid>.Success(creationResult.Workspace.Id);
     }
 }

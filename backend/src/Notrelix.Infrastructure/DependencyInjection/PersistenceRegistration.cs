@@ -4,6 +4,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Events;
+using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Infrastructure.Services;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Interceptors;
 using Notrelix.Infrastructure.Data.Outbox;
@@ -51,6 +54,11 @@ public static class PersistenceRegistration
 
         services.AddScoped<IApplicationDbContext>(provider =>
             provider.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IWorkspaceDbContext>(provider =>
+            provider.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IWorkManagementDbContext>(provider =>
+            provider.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IWorkspaceAccessChecker, WorkspaceAccessChecker>();
         services.AddScoped<ApplicationDbContextInitialiser>();
 
         services.AddScoped<IDateTimeProvider, DateTimeProvider>();
