@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoard;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Testing.Application.Fakes;
 using Notrelix.Testing.Integration.Factories;
 
 namespace Notrelix.Integration.Tests.Handlers;
@@ -11,7 +12,9 @@ public class GetBoardQueryHandlerTests
     [Fact]
     public async Task Handle_ShouldReturnBoardDto()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -37,7 +40,9 @@ public class GetBoardQueryHandlerTests
     [Fact]
     public async Task Handle_WhenBoardNotFound_ShouldThrowNotFoundException()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
 
         var handler = new GetBoardQueryHandler(context);
 

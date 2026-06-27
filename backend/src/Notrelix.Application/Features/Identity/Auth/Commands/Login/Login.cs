@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.Login;
 
@@ -13,14 +14,14 @@ public record LoginCommand : ICommand<Result<AuthResult>>, ITransactionalRequest
 
 public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResult>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IIdentityDbContext _context;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtService _jwtService;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<LoginCommandHandler> _logger;
 
     public LoginCommandHandler(
-        IApplicationDbContext context,
+        IIdentityDbContext context,
         IPasswordHasher passwordHasher,
         IJwtService jwtService,
         IDateTimeProvider dateTimeProvider,
@@ -73,10 +74,6 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
         _context.Sessions.Add(session);
 
         user.RecordLogin(now);
-
-        _logger.LogInformation("Login succeeded for {UserId} ({NormalizedEmail})", user.Id, normalizedEmail);
-
-        await _context.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Login succeeded for {UserId} ({NormalizedEmail})", user.Id, normalizedEmail);
 

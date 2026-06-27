@@ -25,6 +25,7 @@ public class RestoreWorkspaceCommandHandlerTests
         var result = await handler.Handle(new RestoreWorkspaceCommand(workspace.Id), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
+        await context.SaveChangesAsync();
         context.Workspaces.First(w => w.Id == workspace.Id).Status.Should().Be(WorkspaceStatus.Active);
     }
 
@@ -56,6 +57,7 @@ public class RestoreWorkspaceCommandHandlerTests
         var result = await handler.Handle(new RestoreWorkspaceCommand(workspace.Id), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
+        await context.SaveChangesAsync();
         context.Workspaces.First(w => w.Id == workspace.Id).Status.Should().Be(WorkspaceStatus.Active);
     }
 }

@@ -36,8 +36,6 @@ public class RestoreWorkspaceCommandHandler : IRequestHandler<RestoreWorkspaceCo
 
         workspace.Restore(_currentUser.UserId, _dateTimeProvider.UtcNow);
 
-        await _context.SaveChangesAsync(ct);
-
         return Result.Success();
     }
 }

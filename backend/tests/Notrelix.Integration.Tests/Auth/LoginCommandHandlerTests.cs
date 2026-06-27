@@ -58,6 +58,7 @@ public class LoginCommandHandlerTests
             Email = "login@example.com",
             Password = "Password1!"
         }, CancellationToken.None);
+        await context.SaveChangesAsync();
 
         result.Succeeded.Should().BeTrue();
         result.Data!.AccessToken.Should().Be("access-token");

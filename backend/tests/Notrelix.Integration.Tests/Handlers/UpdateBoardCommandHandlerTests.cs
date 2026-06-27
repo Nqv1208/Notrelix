@@ -12,7 +12,9 @@ public class UpdateBoardCommandHandlerTests
     [Fact]
     public async Task Handle_ShouldUpdateTitle()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -30,6 +32,7 @@ public class UpdateBoardCommandHandlerTests
         var result = await handler.Handle(
             new UpdateBoardCommand(workspace.Id, board.Id, "New Title", null, null, null, null),
             CancellationToken.None);
+        await context.SaveChangesAsync();
 
         result.Succeeded.Should().BeTrue();
         context.Boards.First(b => b.Id == board.Id).Title.Should().Be("New Title");
@@ -38,7 +41,9 @@ public class UpdateBoardCommandHandlerTests
     [Fact]
     public async Task Handle_WhenBoardNotFound_ShouldThrowNotFoundException()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
 
         var handler = new UpdateBoardCommandHandler(
             context, new FakeCurrentUser(),
@@ -52,7 +57,9 @@ public class UpdateBoardCommandHandlerTests
     [Fact]
     public async Task Handle_ShouldUpdateDescriptionAndVisibility()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -70,6 +77,7 @@ public class UpdateBoardCommandHandlerTests
         var result = await handler.Handle(
             new UpdateBoardCommand(workspace.Id, board.Id, null, "new desc", "blue", BoardVisibility.Workspace, null),
             CancellationToken.None);
+        await context.SaveChangesAsync();
 
         result.Succeeded.Should().BeTrue();
         var updated = context.Boards.First(b => b.Id == board.Id);

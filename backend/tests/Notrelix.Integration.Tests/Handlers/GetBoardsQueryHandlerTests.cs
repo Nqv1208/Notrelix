@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoards;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Testing.Application.Fakes;
 using Notrelix.Testing.Integration.Factories;
 
 namespace Notrelix.Integration.Tests.Handlers;
@@ -11,7 +12,9 @@ public class GetBoardsQueryHandlerTests
     [Fact]
     public async Task Handle_ShouldReturnActiveBoards()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -34,7 +37,9 @@ public class GetBoardsQueryHandlerTests
     [Fact]
     public async Task Handle_ShouldExcludeArchivedBoards()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -58,7 +63,9 @@ public class GetBoardsQueryHandlerTests
     [Fact]
     public async Task Handle_WhenWorkspaceNotFound_ShouldThrowNotFoundException()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
 
         var handler = new GetBoardsQueryHandler(context, new TestWorkspaceAccessCheckerStub(false));
 

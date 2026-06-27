@@ -3,6 +3,7 @@ using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspa
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Integration;
 
@@ -99,11 +100,14 @@ public class WorkspaceLifecycleTests
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase($"Notrelix-workspace-lifecycle-{Guid.NewGuid():N}")
             .Options;
-        return new TestApplicationDbContext(options);
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        return new TestApplicationDbContext(options, currentWorkspace);
     }
 
     private sealed class TestApplicationDbContext : ApplicationDbContext
     {
-        public TestApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+        public TestApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentWorkspace currentWorkspace)
+            : base(options, currentWorkspace) { }
     }
 }

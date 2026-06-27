@@ -16,10 +16,4 @@ public interface IWorkspaceDbContext
     DbSet<Space> Spaces { get; }
     DbSet<Team> Teams { get; }
     DbSet<TeamMember> TeamMembers { get; }
-
-    /// <summary>
-    /// Prefer TransactionBehavior for command handlers to ensure atomic saves.
-    /// Use directly only in query handlers or non-transactional operations.
-    /// </summary>
-    Task<int> SaveChangesAsync(CancellationToken ct);
 }

@@ -13,7 +13,9 @@ public class UnarchiveBoardCommandHandlerTests
     [Fact]
     public async Task Handle_ShouldUnarchiveBoard()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -34,6 +36,7 @@ public class UnarchiveBoardCommandHandlerTests
             permissionMock.Object, FakeDateTimeProvider.WithFixedTime(now));
 
         var result = await handler.Handle(new UnarchiveBoardCommand(board.Id), CancellationToken.None);
+        await context.SaveChangesAsync();
 
         result.Succeeded.Should().BeTrue();
         context.Boards.First(b => b.Id == board.Id).IsArchived.Should().BeFalse();
@@ -42,7 +45,9 @@ public class UnarchiveBoardCommandHandlerTests
     [Fact]
     public async Task Handle_WhenBoardNotFound_ShouldThrowNotFoundException()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
         var permissionMock = new Mock<IWorkspacePermissionService>();
 
         var handler = new UnarchiveBoardCommandHandler(

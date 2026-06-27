@@ -42,8 +42,6 @@ public class CreateWorkspaceCommandHandler : IRequestHandler<CreateWorkspaceComm
         _context.Workspaces.Add(creationResult.Workspace);
         _context.WorkspaceMembers.Add(creationResult.OwnerMember);
 
-        await _context.SaveChangesAsync(ct);
-
         return Result<Guid>.Success(creationResult.Workspace.Id);
     }
 }

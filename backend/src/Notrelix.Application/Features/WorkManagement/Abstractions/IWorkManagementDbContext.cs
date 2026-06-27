@@ -19,10 +19,4 @@ public interface IWorkManagementDbContext
     DbSet<BoardItemValue> BoardItemValues { get; }
     DbSet<BoardMember> BoardMembers { get; }
     DbSet<Label> Labels { get; }
-
-    /// <summary>
-    /// Prefer TransactionBehavior for command handlers to ensure atomic saves.
-    /// Use directly only in query handlers or non-transactional operations.
-    /// </summary>
-    Task<int> SaveChangesAsync(CancellationToken ct);
 }

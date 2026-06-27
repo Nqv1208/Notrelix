@@ -12,7 +12,9 @@ public class CreateBoardInWorkspaceCommandHandlerTests
     [Fact]
     public async Task Handle_ShouldCreateBoard_WithDefaultFields()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -28,6 +30,7 @@ public class CreateBoardInWorkspaceCommandHandlerTests
         var result = await handler.Handle(
             new CreateBoardInWorkspaceCommand(workspace.Id, "My Board", null, null, null),
             CancellationToken.None);
+        await context.SaveChangesAsync();
 
         result.Succeeded.Should().BeTrue();
         result.Data.Should().NotBeEmpty();
@@ -44,7 +47,9 @@ public class CreateBoardInWorkspaceCommandHandlerTests
     [Fact]
     public async Task Handle_WhenWorkspaceNotFound_ShouldThrowNotFoundException()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
         var accessChecker = new TestWorkspaceAccessCheckerStub(false);
 
         var handler = new CreateBoardInWorkspaceCommandHandler(
@@ -58,7 +63,9 @@ public class CreateBoardInWorkspaceCommandHandlerTests
     [Fact]
     public async Task Handle_ShouldCreateBoard_WithCustomVisibility()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -74,6 +81,7 @@ public class CreateBoardInWorkspaceCommandHandlerTests
         var result = await handler.Handle(
             new CreateBoardInWorkspaceCommand(workspace.Id, "Private Board", null, null, BoardVisibility.Private),
             CancellationToken.None);
+        await context.SaveChangesAsync();
 
         result.Succeeded.Should().BeTrue();
         var board = await context.Boards.FirstOrDefaultAsync(b => b.Id == result.Data);
