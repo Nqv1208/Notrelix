@@ -2,7 +2,9 @@ using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using BoardFieldEntity = global::Notrelix.Domain.WorkManagement.Fields.BoardField;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace;
 
@@ -20,27 +22,28 @@ public record CreateBoardInWorkspaceCommand(
 
 public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardInWorkspaceCommand, Result<Guid>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IWorkspaceAccessChecker _workspaceAccessChecker;
 
     public CreateBoardInWorkspaceCommandHandler(
-        IApplicationDbContext context,
+        IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IWorkspaceAccessChecker workspaceAccessChecker)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
+        _workspaceAccessChecker = workspaceAccessChecker;
     }
 
     public async Task<Result<Guid>> Handle(CreateBoardInWorkspaceCommand request, CancellationToken ct)
     {
-        var workspaceExists = await _context.Workspaces
-            .AsNoTracking()
-            .AnyAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && !w.IsDeleted, ct);
-
-        if (!workspaceExists) throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
+        var workspaceCheck = await _workspaceAccessChecker.EnsureWorkspaceIsActiveAsync(request.WorkspaceId, ct);
+        if (!workspaceCheck.Succeeded)
+            throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
         var createdAt = _dateTimeProvider.UtcNow;
         var visibility = request.Visibility ?? BoardVisibility.Workspace;
