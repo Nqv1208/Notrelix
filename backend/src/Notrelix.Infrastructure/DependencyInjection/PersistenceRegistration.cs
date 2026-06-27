@@ -5,12 +5,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Events;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Infrastructure.Services;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Interceptors;
 using Notrelix.Infrastructure.Data.Outbox;
 using Notrelix.Infrastructure.Events;
+using Notrelix.Infrastructure.Messaging.Consumers.Identity;
 using Notrelix.Infrastructure.Options;
 
 namespace Notrelix.Infrastructure;
@@ -58,6 +60,8 @@ public static class PersistenceRegistration
             provider.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IWorkManagementDbContext>(provider =>
             provider.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IIdentityDbContext>(provider =>
+            provider.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IWorkspaceAccessChecker, WorkspaceAccessChecker>();
         services.AddScoped<ApplicationDbContextInitialiser>();
 
@@ -67,6 +71,7 @@ public static class PersistenceRegistration
         services.AddSingleton<IEventTypeRegistry, EventTypeRegistry>();
         services.AddSingleton<IDomainEventDispatchPolicy, DomainEventDispatchPolicy>();
         services.AddScoped<IProcessedEventStore, ProcessedEventStore>();
+        services.AddScoped<WorkspaceProvisioningService>();
 
         return services;
     }

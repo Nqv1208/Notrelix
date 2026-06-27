@@ -2,6 +2,7 @@ using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Domain.SharedKernel;
@@ -78,7 +79,7 @@ using System.Linq.Expressions;
 
 namespace Notrelix.Infrastructure.Data;
 
-public class ApplicationDbContext : DbContext, IApplicationDbContext, IWorkspaceDbContext, IWorkManagementDbContext
+public class ApplicationDbContext : DbContext, IApplicationDbContext, IWorkspaceDbContext, IWorkManagementDbContext, IIdentityDbContext
 {
     private readonly ICurrentWorkspace? _currentWorkspace;
 
