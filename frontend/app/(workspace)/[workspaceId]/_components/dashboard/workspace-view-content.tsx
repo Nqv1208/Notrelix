@@ -4,22 +4,18 @@ import Link from "next/link"
 import { useMemo } from "react"
 import { AlertCircle, Clock3, FileText, Gauge, MessageSquareText, SquareKanban, Users } from "lucide-react"
 import {
-  useFullBoard,
   useResolvedWorkspaceBoard,
   useWorkspaceBoards,
   type Board,
-  BoardCalendarView,
-  KanbanView,
-  BoardTimelineView,
-  MainTableView
+  BoardWorkspaceViewContent
 } from "@/features/work-management"
 import { MondayDocEditor } from "@/app/(workspace)/[workspaceId]/docs/[pageId]/_components/editor/monday-doc-editor"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { usePageList } from "@/features/docs/hooks/use-page-tree"
-import type { WorkspaceSnapshot, WorkspaceView } from "@/features/workspace/types"
-import { getWorkspaceBoardHref, getWorkspaceBoardsHref } from "@/features/workspace/utils/workspace-routes"
+import type { WorkspaceSnapshot, WorkspaceView } from "@/features/workspace"
+import { getWorkspaceBoardHref, getWorkspaceBoardsHref } from "@/features/workspace"
 
 export function WorkspaceViewContent({
   workspaceId: routeWorkspaceId,
@@ -32,32 +28,29 @@ export function WorkspaceViewContent({
 }) {
   const workspaceId = snapshot.workspace.id
 
-  if (view.type === "kanban") return <WorkspaceBoardView mode="kanban" view={view} workspaceId={workspaceId} />
+  if (view.type === "kanban") return <WorkspaceBoardView view={view} workspaceId={workspaceId} />
   if (view.type === "doc") return <WorkspaceDocView pageId={view.target.pageId ?? "docs-mvp-spec"} workspaceId={routeWorkspaceId} />
   if (view.type === "calendar") return <WorkspaceCalendarView view={view} workspaceId={workspaceId} />
   if (view.type === "timeline") return <WorkspaceTimelineView view={view} workspaceId={workspaceId} />
   if (view.type === "dashboard") return <WorkspaceDashboardView workspaceId={routeWorkspaceId} snapshot={snapshot} />
-  if (view.type === "table") return <WorkspaceBoardView mode="table" view={view} workspaceId={workspaceId} />
+  if (view.type === "table") return <WorkspaceBoardView view={view} workspaceId={workspaceId} />
   return <UnsupportedView view={view} />
 }
 
 function WorkspaceBoardView({
-  mode,
   view,
   workspaceId,
 }: {
-  mode: "table" | "kanban"
   view: WorkspaceView
   workspaceId: string
 }) {
   const resolvedBoard = useResolvedWorkspaceBoard({ workspaceId, requestedBoardId: view.target.boardId })
 
-  if (resolvedBoard.isLoading) return <ViewSkeleton rows={mode === "table" ? 8 : 4} />
+  if (resolvedBoard.isLoading) return <ViewSkeleton rows={view.type === "table" ? 8 : 4} />
   if (resolvedBoard.error) return <ViewError title="Boards unavailable" />
   if (resolvedBoard.isEmpty || !resolvedBoard.boardId) return <ViewEmptyBoard />
-  if (mode === "table") return <MainTableView boardId={resolvedBoard.boardId} workspaceId={workspaceId} />
 
-  return <KanbanView boardId={resolvedBoard.boardId} workspaceId={workspaceId} />
+  return <BoardWorkspaceViewContent workspaceId={workspaceId} boardId={resolvedBoard.boardId} view={view} />
 }
 
 function WorkspaceDocView({ pageId, workspaceId }: { pageId: string; workspaceId: string }) {
@@ -76,17 +69,12 @@ function WorkspaceCalendarView({
   workspaceId: string
 }) {
   const resolvedBoard = useResolvedWorkspaceBoard({ workspaceId, requestedBoardId: view.target.boardId })
-  const { groups, isLoading: isBoardLoading, error: boardError } = useFullBoard(resolvedBoard.boardId, workspaceId)
 
-  if (resolvedBoard.isLoading || isBoardLoading) return <ViewSkeleton rows={6} />
-  if (resolvedBoard.error || boardError) return <ViewError title="Calendar unavailable" />
+  if (resolvedBoard.isLoading) return <ViewSkeleton rows={6} />
+  if (resolvedBoard.error) return <ViewError title="Calendar unavailable" />
   if (resolvedBoard.isEmpty || !resolvedBoard.boardId) return <ViewEmptyBoard />
 
-  return (
-    <div className="p-4 sm:p-6">
-      <BoardCalendarView groups={groups} />
-    </div>
-  )
+  return <BoardWorkspaceViewContent workspaceId={workspaceId} boardId={resolvedBoard.boardId} view={view} />
 }
 
 function WorkspaceTimelineView({
@@ -97,17 +85,12 @@ function WorkspaceTimelineView({
   workspaceId: string
 }) {
   const resolvedBoard = useResolvedWorkspaceBoard({ workspaceId, requestedBoardId: view.target.boardId })
-  const { groups, isLoading: isBoardLoading, error: boardError } = useFullBoard(resolvedBoard.boardId, workspaceId)
 
-  if (resolvedBoard.isLoading || isBoardLoading) return <ViewSkeleton rows={7} />
-  if (resolvedBoard.error || boardError) return <ViewError title="Timeline unavailable" />
+  if (resolvedBoard.isLoading) return <ViewSkeleton rows={7} />
+  if (resolvedBoard.error) return <ViewError title="Timeline unavailable" />
   if (resolvedBoard.isEmpty || !resolvedBoard.boardId) return <ViewEmptyBoard />
 
-  return (
-    <div className="p-4 sm:p-6">
-      <BoardTimelineView groups={groups} />
-    </div>
-  )
+  return <BoardWorkspaceViewContent workspaceId={workspaceId} boardId={resolvedBoard.boardId} view={view} />
 }
 
 function WorkspaceDashboardView({ workspaceId, snapshot }: { workspaceId: string; snapshot: WorkspaceSnapshot }) {

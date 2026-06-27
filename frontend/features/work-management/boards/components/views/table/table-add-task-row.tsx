@@ -4,9 +4,9 @@ import { useState } from "react"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useCreateCard } from "@/features/work-management"
-import type { BoardGroup, BoardTableColumn } from "@/features/work-management"
-import { generatePosition } from "@/features/work-management"
+import { useCreateCard } from "@/features/work-management/hooks"
+import type { BoardGroup, BoardTableColumn } from "@/features/work-management/types"
+import { generatePosition } from "@/features/work-management/shared/utils/fractional-index"
 
 export function TableAddTaskRow({
   boardId,

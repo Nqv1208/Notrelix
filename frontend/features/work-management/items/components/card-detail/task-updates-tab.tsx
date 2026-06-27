@@ -12,8 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Textarea } from "@/components/ui/textarea"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useCardComments, useDeleteCardUpdate, useUpdateCardUpdate } from "@/features/work-management"
-import type { CardDetail, CardUpdate } from "@/features/work-management"
+import { useCardComments, useDeleteCardUpdate, useUpdateCardUpdate } from "@/features/work-management/hooks"
+import type { CardDetail, CardUpdate } from "@/features/work-management/types"
 import { TaskDetailEmptyState } from "@/features/work-management/items/components/card-detail/task-detail-empty-state"
 import { UpdateComposer } from "@/features/work-management/items/components/card-detail/update-composer"
 

@@ -4,14 +4,16 @@ import { createContext, useContext, useMemo, type ReactNode } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 import { AlertCircle } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useWorkspaceSnapshot, useWorkspaceViews } from "@/features/workspace/hooks"
-import type { WorkspaceSnapshot, WorkspaceView } from "@/features/workspace/types"
 import {
+  useWorkspaceSnapshot,
+  useWorkspaceViews,
   getWorkspaceTabbedViews,
   resolveWorkspaceTabbedActiveView,
   resolveWorkspaceTabbedRoute,
   type WorkspaceTabbedRoute,
-} from "@/features/workspace/utils/workspace-routes"
+  type WorkspaceSnapshot,
+  type WorkspaceView,
+} from "@/features/workspace"
 import { cn } from "@/lib/utils"
 import { WorkspaceContextualToolbar } from "../board-layout/workspace-contextual-toolbar"
 import { WorkspaceViewTabs } from "../board-layout/workspace-view-tabs"

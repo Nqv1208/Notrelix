@@ -14,8 +14,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useCardActivity } from "@/features/work-management"
-import type { CardDetail, CardActivity } from "@/features/work-management"
+import { useCardActivity } from "@/features/work-management/hooks"
+import type { CardDetail, CardActivity } from "@/features/work-management/types"
 import { TaskDetailEmptyState } from "@/features/work-management/items/components/card-detail/task-detail-empty-state"
 
 export function TaskActivityTab({ card }: { card: CardDetail }) {

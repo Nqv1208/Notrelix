@@ -3,7 +3,7 @@
 import { Activity, Files, FileText, ListChecks, MessageSquareText } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import type { CardDetail } from "@/features/work-management"
+import type { CardDetail } from "@/features/work-management/types"
 import { TaskActivityTab } from "@/features/work-management/items/components/card-detail/task-activity-tab"
 import { TaskDetailEmptyState } from "@/features/work-management/items/components/card-detail/task-detail-empty-state"
 import { TaskFilesTab } from "@/features/work-management/items/components/card-detail/task-files-tab"

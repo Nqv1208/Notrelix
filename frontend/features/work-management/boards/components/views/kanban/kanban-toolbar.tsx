@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { KanbanFilterMenu } from "@/features/work-management/boards/components/views/kanban/kanban-filter-menu"
 import { KanbanSortMenu, type KanbanSortOption } from "@/features/work-management/boards/components/views/kanban/kanban-sort-menu"
-import type { KanbanFiltersState } from "@/features/work-management"
+import type { KanbanFiltersState } from "@/features/work-management/types"
 
 export function KanbanToolbar({
   searchQuery,

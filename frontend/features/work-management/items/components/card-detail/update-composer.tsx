@@ -15,8 +15,8 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { useCreateCardUpdate } from "@/features/work-management"
-import type { CardMember } from "@/features/work-management"
+import { useCreateCardUpdate } from "@/features/work-management/hooks"
+import type { CardMember } from "@/features/work-management/types"
 
 export function UpdateComposer({ cardId, members }: { cardId: string; members: CardMember[] }) {
   const [body, setBody] = useState("")

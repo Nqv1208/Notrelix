@@ -28,7 +28,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { useWorkspaceSnapshot } from "@/features/workspace/hooks"
+import { useWorkspaceSnapshot } from "@/features/workspace"
 import { GlobalSearchDialog } from "@/app/(dashboard)/_components/header/global-search-dialog"
 import { cn } from "@/lib/utils"
 

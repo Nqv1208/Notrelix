@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { useCardFiles } from "@/features/work-management"
-import type { CardDetail, CardFile } from "@/features/work-management"
+import { useCardFiles } from "@/features/work-management/hooks"
+import type { CardDetail, CardFile } from "@/features/work-management/types"
 import { TaskDetailEmptyState } from "@/features/work-management/items/components/card-detail/task-detail-empty-state"
 
 export function TaskFilesTab({ card }: { card: CardDetail }) {

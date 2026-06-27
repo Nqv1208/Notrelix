@@ -22,7 +22,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from "@/features/notifications"
-import { useAcceptInvitation } from "@/features/workspace/hooks"
+import { useAcceptInvitation } from "@/features/workspace"
 import { cn } from "@/lib/utils"
 
 // Helper format thời gian tương đối như Monday.com

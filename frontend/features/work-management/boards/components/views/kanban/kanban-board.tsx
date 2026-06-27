@@ -10,8 +10,8 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core"
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable"
-import type { Board, BoardGroup } from "@/features/work-management"
-import { generatePosition } from "@/features/work-management"
+import type { Board, BoardGroup } from "@/features/work-management/types"
+import { generatePosition } from "@/features/work-management/shared/utils/fractional-index"
 import { KanbanColumn } from "@/features/work-management/boards/components/views/kanban/kanban-column"
 import { KanbanAddColumn } from "@/features/work-management/boards/components/views/kanban/kanban-add-column"
 import { KanbanEmptyState } from "@/features/work-management/boards/components/views/kanban/kanban-empty-state"

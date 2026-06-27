@@ -2,7 +2,7 @@ import Link from "next/link"
 import { Activity, Clock3, FileText, Search, SquareKanban } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { getWorkspaceBoardHref, getWorkspaceDocHref } from "@/features/workspace/utils/workspace-routes"
+import { getWorkspaceBoardHref, getWorkspaceDocHref } from "@/features/workspace"
 import { recentBoards, recentDocs, homeActivity } from "../_components/home-data"
 import { HomeWorkspacesSection } from "./_components/home-workspaces-section"
 

@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { DocEditorToolbar } from "@/app/(workspace)/[workspaceId]/docs/[pageId]/_components/editor/doc-editor-toolbar"
 import { usePageBlocks } from "@/features/docs/hooks"
-import type { WorkspaceView, WorkspaceViewType } from "@/features/workspace/types"
+import type { WorkspaceView, WorkspaceViewType } from "@/features/workspace"
 
 export function WorkspaceContextualToolbar({ activeType, activeView }: { activeType: WorkspaceViewType; activeView?: WorkspaceView }) {
   if (activeType === "table") return null

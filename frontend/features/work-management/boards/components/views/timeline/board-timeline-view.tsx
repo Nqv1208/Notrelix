@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useMemo } from "react"
-import type { BoardGroup, Card } from "@/features/work-management"
+import type { BoardGroup, Card } from "@/features/work-management/types"
 
 type TimelineCard = Card & { groupTitle: string }
 

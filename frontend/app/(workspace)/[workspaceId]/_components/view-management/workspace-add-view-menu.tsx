@@ -13,8 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { workspaceViewTemplates } from "@/features/workspace/mock/mock-data"
-import { useCreateWorkspaceView } from "@/features/workspace/hooks"
-import type { WorkspaceViewType } from "@/features/workspace/types"
+import { useCreateWorkspaceView, type WorkspaceViewType } from "@/features/workspace"
 import { useWorkspaceBoards } from "@/features/work-management"
 import { usePageList } from "@/features/docs/hooks/use-page-tree"
 

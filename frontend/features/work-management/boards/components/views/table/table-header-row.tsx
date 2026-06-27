@@ -9,8 +9,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useDeleteColumn, useUpdateColumn } from "@/features/work-management"
-import type { BoardTableColumn } from "@/features/work-management"
+import { useDeleteColumn, useUpdateColumn } from "@/features/work-management/hooks"
+import type { BoardTableColumn } from "@/features/work-management/types"
 
 export function TableHeaderRow({
   boardId,

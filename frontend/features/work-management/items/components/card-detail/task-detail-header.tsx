@@ -14,8 +14,8 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
-import { useDeleteCard, useDuplicateCard, useUpdateCard, useUpdateFieldValue } from "@/features/work-management"
-import type { Board, CardDetail } from "@/features/work-management"
+import { useDeleteCard, useDuplicateCard, useUpdateCard, useUpdateFieldValue } from "@/features/work-management/hooks"
+import type { Board, CardDetail } from "@/features/work-management/types"
 import { cn } from "@/lib/utils"
 import { formatDate, getOptionToneClass } from "@/features/work-management/boards/components/views/table/table-utils"
 
@@ -28,6 +28,7 @@ export function TaskDetailHeader({
   card: CardDetail
   onClose: () => void
 }) {
+  const [prevTitle, setPrevTitle] = useState(card.title)
   const [title, setTitle] = useState(card.title)
   const [isWatched, setIsWatched] = useState(card.isWatched)
   const titleRef = useRef<HTMLDivElement>(null)
@@ -35,6 +36,11 @@ export function TaskDetailHeader({
   const deleteCard = useDeleteCard(card.boardId, card.workspaceId)
   const duplicateCard = useDuplicateCard(card.boardId, card.workspaceId)
   const updateFieldValue = useUpdateFieldValue(card.boardId, card.workspaceId)
+
+  if (card.title !== prevTitle) {
+    setPrevTitle(card.title)
+    setTitle(card.title)
+  }
 
   const personField = board.fieldDefinitions.find((f) => f.fieldType === "person" || f.id.endsWith("field-person"))
   const statusField = board.fieldDefinitions.find((f) => f.id.endsWith("field-status"))
@@ -47,7 +53,6 @@ export function TaskDetailHeader({
 
   // Sync contentEditable text when card.title changes externally
   useEffect(() => {
-    setTitle(card.title)
     if (titleRef.current && titleRef.current.textContent !== card.title) {
       titleRef.current.textContent = card.title
     }

@@ -11,8 +11,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useDeleteCard, useDuplicateCard } from "@/features/work-management"
-import type { Board, BoardGroup, BoardTableColumn, Card } from "@/features/work-management"
+import { useDeleteCard, useDuplicateCard } from "@/features/work-management/hooks"
+import type { Board, BoardGroup, BoardTableColumn, Card } from "@/features/work-management/types"
 import { cn } from "@/lib/utils"
 import { TableCell } from "./table-cell"
 

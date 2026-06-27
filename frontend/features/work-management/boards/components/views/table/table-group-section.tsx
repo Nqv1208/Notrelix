@@ -7,8 +7,8 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useDeleteGroup, useDuplicateGroup, useUpdateGroup } from "@/features/work-management"
-import type { Board, BoardGroup, BoardTableColumn } from "@/features/work-management"
+import { useDeleteGroup, useDuplicateGroup, useUpdateGroup } from "@/features/work-management/hooks"
+import type { Board, BoardGroup, BoardTableColumn } from "@/features/work-management/types"
 import { cn } from "@/lib/utils"
 import { TableAddTaskRow } from "./table-add-task-row"
 import { TableRow } from "./table-row"
@@ -96,21 +96,25 @@ function GroupHeader({
   onToggleGroup: (groupId: string) => void
 }) {
   const [editing, setEditing] = useState(false)
+  const [prevTitle, setPrevTitle] = useState(group.title)
   const [title, setTitle] = useState(group.title)
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [prevColor, setPrevColor] = useState(group.color || "")
   const [customColor, setCustomColor] = useState(group.color || "")
   const updateGroup = useUpdateGroup(board.id, board.workspaceId)
   const deleteGroup = useDeleteGroup(board.id, board.workspaceId)
   const duplicateGroup = useDuplicateGroup(board.id, board.workspaceId)
 
-  useEffect(() => {
+  if (group.title !== prevTitle) {
+    setPrevTitle(group.title)
     setTitle(group.title)
-  }, [group.title])
+  }
 
-  useEffect(() => {
+  if ((group.color || "") !== prevColor) {
+    setPrevColor(group.color || "")
     setCustomColor(group.color || "")
-  }, [group.color])
+  }
 
   function commitTitle() {
     const next = title.trim()

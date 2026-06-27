@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
-import type { KanbanFiltersState } from "@/features/work-management"
+import type { KanbanFiltersState } from "@/features/work-management/types"
 
 const STATUS_OPTIONS = [
   { id: "status-not-started", label: "Not Started" },

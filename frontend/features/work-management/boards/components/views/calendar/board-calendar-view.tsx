@@ -3,7 +3,7 @@
 import { useMemo } from "react"
 import { CalendarDays } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import type { BoardGroup, Card } from "@/features/work-management"
+import type { BoardGroup, Card } from "@/features/work-management/types"
 
 type CalendarCard = Card & { groupTitle: string }
 

@@ -4,11 +4,9 @@ import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { MoreHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import type { WorkspaceView } from "@/features/workspace/types"
-import { getViewHref } from "@/features/workspace/utils"
+import { useReorderWorkspaceViews, getViewHref, type WorkspaceView } from "@/features/workspace"
 import { cn } from "@/lib/utils"
 import { WorkspaceAddViewMenu } from "../view-management/workspace-add-view-menu"
-import { useReorderWorkspaceViews } from "@/features/workspace/hooks"
 
 // Dnd-kit imports
 import {

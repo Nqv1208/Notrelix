@@ -1,9 +1,9 @@
 "use client"
 
 import { useCallback } from "react"
-import { useBoardKanban, useSelectedCardPanel } from "@/features/work-management"
-import { useDuplicateCard, useDeleteCard } from "@/features/work-management"
-import { generatePosition } from "@/features/work-management"
+import { useBoardKanban, useSelectedCardPanel } from "@/features/work-management/hooks"
+import { useDuplicateCard, useDeleteCard } from "@/features/work-management/hooks"
+import { generatePosition } from "@/features/work-management/shared/utils/fractional-index"
 import { KanbanToolbar } from "@/features/work-management/boards/components/views/kanban/kanban-toolbar"
 import { KanbanBoard } from "@/features/work-management/boards/components/views/kanban/kanban-board"
 import { KanbanCardDetailPanel } from "@/features/work-management/boards/components/views/kanban/kanban-card-detail-panel"

@@ -27,7 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
-import type { WorkspaceMember, WorkspaceSummary } from "@/features/workspace/types"
+import type { WorkspaceMember, WorkspaceSummary } from "@/features/workspace"
 import { toast } from "sonner"
 
 export function WorkspaceCompactHeader({

@@ -29,10 +29,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { defaultTableViewConfig } from "@/features/work-management"
-import { useBoardTable, useCreateColumn, useCreateGroup, useDeleteCard, useMoveRow, useSelectedCardPanel } from "@/features/work-management"
-import type { Card } from "@/features/work-management"
-import { generatePosition } from "@/features/work-management"
+import { defaultTableViewConfig } from "@/features/work-management/boards/api/board.api"
+import { useBoardTable, useCreateColumn, useCreateGroup, useDeleteCard, useMoveRow, useSelectedCardPanel } from "@/features/work-management/hooks"
+import type { Card } from "@/features/work-management/types"
+import { generatePosition } from "@/features/work-management/shared/utils/fractional-index"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { getMainTableGridTemplate } from "@/features/work-management/boards/components/views/table/table-utils"
 import { TableGroupSection } from "./table-group-section"

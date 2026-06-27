@@ -1,4 +1,4 @@
-import type { BoardTableColumn, Card } from "@/features/work-management"
+import type { BoardTableColumn, Card } from "@/features/work-management/types"
 
 export function getMainTableGridTemplate(columns: BoardTableColumn[]) {
   return `64px ${columns.map((column) => `${column.width}px`).join(" ")} 48px`

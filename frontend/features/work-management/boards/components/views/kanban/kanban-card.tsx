@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import type { Board, Card } from "@/features/work-management"
+import type { Board, Card } from "@/features/work-management/types"
 import { KanbanCardMenu } from "@/features/work-management/boards/components/views/kanban/kanban-card-menu"
 
 const priorityColors: Record<string, { bg: string; text: string; border: string }> = {

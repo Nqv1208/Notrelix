@@ -10,8 +10,8 @@ import {
   SheetContent,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { useCard } from "@/features/work-management"
-import type { Board, CardDetail } from "@/features/work-management"
+import { useCard } from "@/features/work-management/hooks"
+import type { Board, CardDetail } from "@/features/work-management/types"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { TaskDetailHeader } from "@/features/work-management/items/components/card-detail/task-detail-header"
 import { TaskDetailTabs } from "@/features/work-management/items/components/card-detail/task-detail-tabs"

@@ -11,7 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { getWorkspaceBoardHref, getWorkspaceDocHref } from "@/features/workspace/utils/workspace-routes"
+import { getWorkspaceBoardHref, getWorkspaceDocHref } from "@/features/workspace"
 
 const favorites = [
   { title: "Docs MVP specification", type: "Doc", href: getWorkspaceDocHref("workspace-notrelix-os", "docs-mvp-spec"), icon: FileText },
