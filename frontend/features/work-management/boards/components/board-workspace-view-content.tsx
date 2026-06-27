@@ -2,27 +2,12 @@
 
 import { AlertCircle, SquareKanban } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useFullBoard } from "@/features/work-management"
-import type { WorkspaceView } from "@/features/workspace/types"
-import { useWorkspaceTabbedRoute } from "@/app/(workspace)/[workspaceId]/_components/shell/workspace-tabbed-shell"
+import { useFullBoard } from "@/features/work-management/hooks"
+import type { WorkspaceView } from "@/features/workspace"
 import { MainTableView } from "@/features/work-management/boards/components/views/table/main-table-view"
 import { BoardCalendarView } from "@/features/work-management/boards/components/views/calendar/board-calendar-view"
 import { KanbanView } from "@/features/work-management/boards/components/views/kanban/kanban-view"
 import { BoardTimelineView } from "@/features/work-management/boards/components/views/timeline/board-timeline-view"
-
-export function BoardWorkspaceRouteContent() {
-  const route = useWorkspaceTabbedRoute()
-
-  if (route.kind !== "board") return <ViewError title="Board route unavailable" />
-
-  return (
-    <BoardWorkspaceViewContent
-      workspaceId={route.workspaceId}
-      boardId={route.boardId}
-      view={route.activeView}
-    />
-  )
-}
 
 export function BoardWorkspaceViewContent({
   workspaceId,
