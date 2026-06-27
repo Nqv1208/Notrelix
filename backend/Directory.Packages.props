@@ -39,6 +39,7 @@
     <!-- Test: integration/infra -->
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.0" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0" />
     <PackageVersion Include="Testcontainers.PostgreSQL" Version="4.3.0" />
     <!-- Optional mocking framework (available but not forced) -->
     <PackageVersion Include="NSubstitute" Version="5.1.0" />
