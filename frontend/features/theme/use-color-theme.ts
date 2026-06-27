@@ -68,7 +68,9 @@ export function useColorTheme() {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (isValidTheme(stored)) {
-        setColorThemeState(stored);
+        setTimeout(() => {
+          setColorThemeState(stored);
+        }, 0);
       }
     } catch {
       // localStorage unavailable (SSR / privacy mode)
