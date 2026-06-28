@@ -130,6 +130,16 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
         AddDomainEvent(new IntegrationConnectionExpiredDomainEvent(WorkspaceId, Id, updatedBy, occurredAt));
     }
 
+    public void MarkError(string error, Guid updatedBy, DateTimeOffset occurredAt)
+    {
+        EnsureNotDeleted();
+        if (Status == IntegrationConnectionStatus.Error) return;
+
+        Status = IntegrationConnectionStatus.Error;
+        SetAuditOnUpdate(updatedBy, occurredAt);
+        IncrementVersion();
+    }
+
     public void RotateSecret(string version, SecretRef secretRef, Guid updatedBy, DateTimeOffset occurredAt)
     {
         EnsureNotDeleted();

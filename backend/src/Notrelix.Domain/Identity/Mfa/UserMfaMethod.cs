@@ -56,6 +56,7 @@ public class UserMfaMethod : AggregateRoot
         Status = MfaMethodStatus.Active;
         VerifiedAt = verifiedAt;
         SetAuditOnUpdate(UserId, verifiedAt);
+        IncrementVersion();
 
         AddDomainEvent(new UserMfaMethodVerifiedDomainEvent(Id, UserId, Type, verifiedAt));
     }
@@ -72,6 +73,7 @@ public class UserMfaMethod : AggregateRoot
 
         IsPrimary = true;
         SetAuditOnUpdate(UserId, updatedAt);
+        IncrementVersion();
 
         AddDomainEvent(new UserMfaMethodSetAsPrimaryDomainEvent(Id, UserId, Type, updatedAt));
     }
@@ -83,6 +85,7 @@ public class UserMfaMethod : AggregateRoot
 
         IsPrimary = false;
         SetAuditOnUpdate(UserId, updatedAt);
+        IncrementVersion();
 
         AddDomainEvent(new UserMfaMethodUnsetAsPrimaryDomainEvent(Id, UserId, Type, updatedAt));
     }
@@ -96,6 +99,7 @@ public class UserMfaMethod : AggregateRoot
         IsPrimary = false;
         DisabledAt = disabledAt;
         SetAuditOnUpdate(UserId, disabledAt);
+        IncrementVersion();
 
         AddDomainEvent(new UserMfaMethodDisabledDomainEvent(Id, UserId, Type, disabledAt));
     }

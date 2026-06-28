@@ -77,6 +77,7 @@ public class UserSession : AggregateRoot
         RevokedAt = revokedAt;
 
         SetAuditOnUpdate(UserId, revokedAt);
+        IncrementVersion();
         AddDomainEvent(new UserSessionRevokedDomainEvent(Id, UserId, revokedAt, reason));
     }
 
@@ -94,6 +95,7 @@ public class UserSession : AggregateRoot
         ExpiredAt = expiredAt;
 
         SetAuditOnUpdate(UserId, expiredAt);
+        IncrementVersion();
         AddDomainEvent(new UserSessionExpiredDomainEvent(Id, UserId, expiredAt));
     }
 

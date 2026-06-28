@@ -37,6 +37,7 @@ public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
         IsActive = true;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new WebhookSubscriptionEnabledDomainEvent(Id, WorkspaceId, updatedAt));
     }
 
     public void Disable(Guid updatedBy, DateTimeOffset updatedAt)
@@ -47,6 +48,7 @@ public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
         IsActive = false;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new WebhookSubscriptionDisabledDomainEvent(Id, WorkspaceId, updatedAt));
     }
 
     public void RotateSecret(WebhookSecretHash newHash, Guid updatedBy, DateTimeOffset updatedAt)
@@ -57,6 +59,7 @@ public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
         SecretHash = newHash;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new WebhookSubscriptionSecretRotatedDomainEvent(Id, WorkspaceId, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)

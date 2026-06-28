@@ -55,6 +55,7 @@ public class ShareLink : AggregateRoot, IWorkspaceScoped
 
     public void Disable(Guid disabledBy, DateTimeOffset disabledAt)
     {
+        EnsureNotDeleted();
         if (Status == ShareLinkStatus.Disabled) return;
 
         Status = ShareLinkStatus.Disabled;

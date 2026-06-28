@@ -130,6 +130,7 @@ public class Entitlement : AggregateRoot, IWorkspaceScoped
     {
         if (!IsDeleted) return;
         base.Restore(restoredBy, restoredAt);
+        Status = EntitlementStatus.Active;
         IncrementVersion();
         AddDomainEvent(new EntitlementRestoredDomainEvent(WorkspaceId, Id, Feature.Code, restoredBy, restoredAt));
     }

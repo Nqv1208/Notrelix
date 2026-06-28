@@ -111,6 +111,18 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
             return;
         }
 
+        var validTransitions = Status switch
+        {
+            AiAgentStatus.Draft => new[] { AiAgentStatus.Enabled },
+            AiAgentStatus.Enabled => new[] { AiAgentStatus.Paused, AiAgentStatus.Disabled },
+            AiAgentStatus.Paused => new[] { AiAgentStatus.Enabled, AiAgentStatus.Disabled },
+            AiAgentStatus.Disabled => new[] { AiAgentStatus.Enabled },
+            _ => Array.Empty<AiAgentStatus>()
+        };
+
+        if (!validTransitions.Contains(newStatus))
+            throw new BusinessRuleException($"Cannot transition from {Status} to {newStatus}.");
+
         Status = newStatus;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();

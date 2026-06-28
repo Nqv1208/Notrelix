@@ -9,7 +9,7 @@ public class Reaction : AggregateRoot, IWorkspaceScoped
 
     private Reaction() : base() { }
 
-    public static Reaction Create(Guid workspaceId, ResourceRef target, Guid userId, Emoji emoji, DateTimeOffset createdAt)
+    public static Reaction Create(Guid workspaceId, ResourceRef target, Guid userId, Emoji emoji, DateTimeOffset createdAt, Func<Guid, bool>? checkDuplicate = null)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(target);
@@ -18,6 +18,9 @@ public class Reaction : AggregateRoot, IWorkspaceScoped
 
         if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
             throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
+
+        if (checkDuplicate != null && checkDuplicate(userId))
+            throw new BusinessRuleException("User has already reacted with this emoji to this target.");
 
         var reaction = new Reaction
         {

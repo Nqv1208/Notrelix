@@ -25,4 +25,35 @@ public class BillingEvent : AggregateRoot
             ReceivedAt = receivedAt
         };
     }
+
+    public void MarkProcessed(Guid updatedBy, DateTimeOffset processedAt)
+    {
+        EnsureNotDeleted();
+        if (Status != BillingEventStatus.Received) return;
+
+        Status = BillingEventStatus.Processed;
+        SetAuditOnUpdate(updatedBy, processedAt);
+        IncrementVersion();
+    }
+
+    public void MarkFailed(string error, Guid updatedBy, DateTimeOffset failedAt)
+    {
+        EnsureNotDeleted();
+        if (Status == BillingEventStatus.Failed) return;
+
+        Status = BillingEventStatus.Failed;
+        Error = error;
+        SetAuditOnUpdate(updatedBy, failedAt);
+        IncrementVersion();
+    }
+
+    public void MarkIgnored(Guid updatedBy, DateTimeOffset ignoredAt)
+    {
+        EnsureNotDeleted();
+        if (Status != BillingEventStatus.Received) return;
+
+        Status = BillingEventStatus.Ignored;
+        SetAuditOnUpdate(updatedBy, ignoredAt);
+        IncrementVersion();
+    }
 }
