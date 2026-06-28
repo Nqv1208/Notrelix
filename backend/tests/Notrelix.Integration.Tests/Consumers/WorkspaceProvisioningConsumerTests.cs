@@ -10,17 +10,18 @@ namespace Notrelix.Integration.Tests.Consumers;
 
 public class WorkspaceProvisioningConsumerTests
 {
-    private readonly Mock<IProcessedEventStore> _processedEventsMock;
+    private readonly Mock<IDateTimeProvider> _dateTimeProviderMock;
     private readonly DateTimeOffset _occurredAt;
 
     public WorkspaceProvisioningConsumerTests()
     {
-        _processedEventsMock = new Mock<IProcessedEventStore>();
+        _dateTimeProviderMock = new Mock<IDateTimeProvider>();
         _occurredAt = DateTimeOffset.UtcNow;
+        _dateTimeProviderMock.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
     }
 
     [Fact]
-    public async Task ProvisionPersonalWorkspace_WhenNewUser_ShouldCreateWorkspaceAndOwnerMember()
+    public async Task ProvisionPersonalWorkspace_WhenNewUser_ShouldCreateWorkspaceAndOwnerMemberAndProcessedEvent()
     {
         var currentWorkspace = new FakeCurrentWorkspace();
         using var _ = currentWorkspace.EnterSystemContext();
@@ -29,28 +30,25 @@ public class WorkspaceProvisioningConsumerTests
         var eventId = Guid.NewGuid();
         var email = "newuser@example.com";
 
-        _processedEventsMock
-            .Setup(e => e.IsProcessedAsync(eventId, nameof(WorkspaceProvisioningConsumer), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
-
-        var service = new WorkspaceProvisioningService(context, context, _processedEventsMock.Object);
+        var service = new WorkspaceProvisioningService(context, context, _dateTimeProviderMock.Object);
 
         await service.ProvisionPersonalWorkspace(userId, email, eventId, _occurredAt, CancellationToken.None);
 
+        // Assert workspace created
         var workspace = await context.Workspaces.FirstOrDefaultAsync(w => w.CreatedBy == userId);
         workspace.Should().NotBeNull();
         workspace!.Name.Should().Be($"{email}'s Workspace");
 
+        // Assert owner member created
         var member = await context.WorkspaceMembers.FirstOrDefaultAsync(m => m.WorkspaceId == workspace.Id && m.UserId == userId);
         member.Should().NotBeNull();
         member!.Role.Should().Be(WorkspaceRole.Owner);
 
-        _processedEventsMock.Verify(e =>
-            e.MarkProcessedAsync(It.Is<ProcessedEvent>(pe =>
-                pe.EventId == eventId &&
-                pe.ConsumerName == nameof(WorkspaceProvisioningConsumer)),
-                It.IsAny<CancellationToken>()),
-            Times.Once);
+        // Assert processed event recorded IN SAME TRANSACTION
+        var processedEvent = await context.ProcessedEvents
+            .FirstOrDefaultAsync(pe => pe.EventId == eventId && pe.ConsumerName == nameof(WorkspaceProvisioningConsumer));
+        processedEvent.Should().NotBeNull();
+        processedEvent!.MessageName.Should().Be("user.registered");
     }
 
     [Fact]
@@ -60,19 +58,21 @@ public class WorkspaceProvisioningConsumerTests
         var userId = Guid.NewGuid();
         var eventId = Guid.NewGuid();
 
-        _processedEventsMock
-            .Setup(e => e.IsProcessedAsync(eventId, nameof(WorkspaceProvisioningConsumer), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+        // Seed a processed event to simulate previous successful provisioning
+        context.ProcessedEvents.Add(ProcessedEvent.Create(eventId, nameof(WorkspaceProvisioningConsumer),
+            "user.registered", 1, null, null, _occurredAt));
+        await context.SaveChangesAsync();
 
-        var service = new WorkspaceProvisioningService(context, context, _processedEventsMock.Object);
+        var service = new WorkspaceProvisioningService(context, context, _dateTimeProviderMock.Object);
 
         await service.ProvisionPersonalWorkspace(userId, "skip@example.com", eventId, _occurredAt, CancellationToken.None);
 
+        // Assert no workspace/member created since event already processed
         context.Workspaces.Should().BeEmpty();
         context.WorkspaceMembers.Should().BeEmpty();
-        _processedEventsMock.Verify(e =>
-            e.MarkProcessedAsync(It.IsAny<ProcessedEvent>(), It.IsAny<CancellationToken>()),
-            Times.Never);
+
+        // Assert exactly one processed event still (no duplicate)
+        (await context.ProcessedEvents.CountAsync()).Should().Be(1);
     }
 
     [Fact]
@@ -84,23 +84,21 @@ public class WorkspaceProvisioningConsumerTests
         var userId = Guid.NewGuid();
         var eventId = Guid.NewGuid();
 
+        // Create existing personal workspace
         var existingWorkspace = Domain.Workspaces.Workspaces.Workspace.Create(
             userId, "Existing Workspace", "existing-workspace", _occurredAt, isPersonal: true);
         context.Workspaces.Add(existingWorkspace);
         await context.SaveChangesAsync();
 
-        _processedEventsMock
-            .Setup(e => e.IsProcessedAsync(eventId, nameof(WorkspaceProvisioningConsumer), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
-
-        var service = new WorkspaceProvisioningService(context, context, _processedEventsMock.Object);
+        var service = new WorkspaceProvisioningService(context, context, _dateTimeProviderMock.Object);
 
         await service.ProvisionPersonalWorkspace(userId, "dup@example.com", eventId, _occurredAt, CancellationToken.None);
 
+        // Assert no new workspace created
         (await context.Workspaces.CountAsync(w => w.IsPersonal)).Should().Be(1);
         context.WorkspaceMembers.Should().BeEmpty();
-        _processedEventsMock.Verify(e =>
-            e.MarkProcessedAsync(It.IsAny<ProcessedEvent>(), It.IsAny<CancellationToken>()),
-            Times.Never);
+
+        // Assert no processed event recorded (since we short-circuited on existing workspace)
+        (await context.ProcessedEvents.CountAsync()).Should().Be(0);
     }
 }
