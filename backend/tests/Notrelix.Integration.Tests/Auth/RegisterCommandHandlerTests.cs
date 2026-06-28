@@ -2,7 +2,6 @@ using MediatR;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Events;
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Commands.Register;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Identity.Users;

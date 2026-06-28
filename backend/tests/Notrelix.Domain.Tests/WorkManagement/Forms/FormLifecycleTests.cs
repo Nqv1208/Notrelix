@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.WorkManagement.Forms;
-using Notrelix.Domain.WorkManagement.Items;
 
 namespace Notrelix.Domain.Tests.WorkManagement.Forms;
 

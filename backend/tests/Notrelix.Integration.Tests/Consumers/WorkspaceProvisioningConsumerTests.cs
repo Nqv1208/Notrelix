@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Infrastructure.Data.Outbox;

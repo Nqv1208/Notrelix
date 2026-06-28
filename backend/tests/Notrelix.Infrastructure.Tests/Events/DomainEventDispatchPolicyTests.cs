@@ -1,6 +1,5 @@
 using Notrelix.Application.Common.Events;
 using Notrelix.Domain.Common;
-using Notrelix.Domain.Workspaces.Workspaces.Events;
 using Notrelix.Infrastructure.Events;
 
 namespace Notrelix.Infrastructure.Tests.Events;

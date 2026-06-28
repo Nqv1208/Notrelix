@@ -1,10 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Notrelix.Domain.WorkManagement.Boards;
-using Notrelix.Domain.WorkManagement.BoardGroups;
-using Notrelix.Domain.WorkManagement.Fields;
-using Notrelix.Domain.WorkManagement.Items;
-using Notrelix.Domain.WorkManagement.Labels;
-using Notrelix.Domain.WorkManagement.Views;
 
 namespace Notrelix.Application.Features.WorkManagement.Abstractions;
 

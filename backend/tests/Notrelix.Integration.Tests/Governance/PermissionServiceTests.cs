@@ -114,9 +114,9 @@ public class PermissionServiceTests
         var expirationDateTime = DateTimeOffset.UtcNow;
         var workspaceId = Guid.NewGuid();
 
-        var activePerm = ResourcePermission.Grant(workspaceId, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Guid.NewGuid(), PermissionLevel.Viewer, Guid.NewGuid(), expirationDateTime);
+        var activePerm = ResourcePermission.Grant(workspaceId, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Guid.NewGuid(), PermissionLevel.Viewer, PermissionLevel.Owner, Guid.NewGuid(), expirationDateTime);
 
-        var expiredPerm = ResourcePermission.Grant(workspaceId, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Guid.NewGuid(), PermissionLevel.Viewer, Guid.NewGuid(), expirationDateTime.AddHours(-2), effect: PermissionEffect.Allow, conditionJson: null, priority: 100);
+        var expiredPerm = ResourcePermission.Grant(workspaceId, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Guid.NewGuid(), PermissionLevel.Viewer, PermissionLevel.Owner, Guid.NewGuid(), expirationDateTime.AddHours(-2), effect: PermissionEffect.Allow, conditionJson: null, priority: 100);
 
         activePerm.IsDeleted.Should().BeFalse();
         expiredPerm.IsDeleted.Should().BeFalse();
@@ -206,7 +206,7 @@ public class PermissionServiceTests
         var board = Board.Create(workspace.Id, ownerId, "Private Board", null, Now, BoardVisibility.Private);
         context.Boards.Add(board);
 
-        var permission = ResourcePermission.Grant(workspace.Id, ResourceType.Board, board.Id, PermissionSubjectType.User, memberId, PermissionLevel.Editor, ownerId, Now);
+        var permission = ResourcePermission.Grant(workspace.Id, ResourceType.Board, board.Id, PermissionSubjectType.User, memberId, PermissionLevel.Editor, PermissionLevel.Owner, ownerId, Now);
         permission.Revoke(ownerId, Now);
 
         context.ResourcePermissions.Add(permission);

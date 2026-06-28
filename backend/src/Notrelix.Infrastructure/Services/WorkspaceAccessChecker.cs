@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Domain.Workspaces.Workspaces;
-using Notrelix.Infrastructure.Data;
 
 namespace Notrelix.Infrastructure.Services;
 

@@ -1,5 +1,3 @@
-using System.Reflection;
-
 namespace Notrelix.Architecture.Tests;
 
 public class DbContextBoundaryArchitectureTests

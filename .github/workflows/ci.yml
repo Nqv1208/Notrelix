@@ -19,6 +19,7 @@ env:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+
     services:
       redis:
         image: redis:7
@@ -29,6 +30,16 @@ jobs:
           --health-retries 5
         ports:
           - 6379:6379
+
+    env:
+      ASPNETCORE_ENVIRONMENT: CI
+      DOTNET_ENVIRONMENT: CI
+      ConnectionStrings__Redis: localhost:6379,abortConnect=false
+      Cors__AllowedOrigins__0: http://localhost:5173
+      Cors__AllowedOrigins__1: http://localhost:3000
+      Jwt__Issuer: Notrelix.CI
+      Jwt__Audience: Notrelix.CI
+      Jwt__Secret: ci-test-secret-key-must-be-at-least-32-characters
 
     steps:
       - uses: actions/checkout@v4
@@ -51,25 +62,30 @@ jobs:
         working-directory: backend
 
       - name: Vulnerability scan
-        run: dotnet list package --vulnerable --no-restore 2>&1 | tee vulnerable-report.txt; if grep -q "has known vulnerable" vulnerable-report.txt; then echo "Vulnerable packages found!"; exit 1; fi
+        run: |
+          dotnet list package --vulnerable --include-transitive --no-restore 2>&1 | tee vulnerable-report.txt
+          if grep -q "has the following vulnerable packages" vulnerable-report.txt; then
+            echo "Vulnerable packages found!"
+            exit 1
+          fi
         working-directory: backend
 
       - name: Architecture tests
         run: dotnet test tests/Notrelix.Architecture.Tests --no-build
         working-directory: backend
 
-      - name: Unit tests (Domain + Application + Infrastructure)
+      - name: Unit tests Domain + Application + Infrastructure
         run: dotnet test --no-build --filter "FullyQualifiedName!~Integration.Tests&FullyQualifiedName!~Notrelix.Architecture.Tests&FullyQualifiedName!~Notrelix.API.Tests"
         working-directory: backend
 
       - name: API tests
         run: dotnet test tests/Notrelix.API.Tests --no-build
         working-directory: backend
-        env:
-          ConnectionStrings__Redis: localhost:6379,abortConnect=false
 
   docker-build:
     runs-on: ubuntu-latest
+    needs: build-and-test
+
     steps:
       - uses: actions/checkout@v4
 
@@ -93,6 +109,8 @@ jobs:
 
   integration:
     runs-on: ubuntu-latest
+    needs: build-and-test
+
     services:
       postgres:
         image: postgres:16
@@ -101,7 +119,7 @@ jobs:
           POSTGRES_PASSWORD: notrelix
           POSTGRES_DB: notrelix_test
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U notrelix -d notrelix_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -117,6 +135,17 @@ jobs:
           --health-retries 5
         ports:
           - 6379:6379
+
+    env:
+      ASPNETCORE_ENVIRONMENT: CI
+      DOTNET_ENVIRONMENT: CI
+      ConnectionStrings__NotrelixDb: Host=localhost;Port=5432;Database=notrelix_test;Username=notrelix;Password=notrelix
+      ConnectionStrings__Redis: localhost:6379,abortConnect=false
+      Cors__AllowedOrigins__0: http://localhost:5173
+      Cors__AllowedOrigins__1: http://localhost:3000
+      Jwt__Issuer: Notrelix.CI
+      Jwt__Audience: Notrelix.CI
+      Jwt__Secret: ci-test-secret-key-must-be-at-least-32-characters
 
     steps:
       - uses: actions/checkout@v4
@@ -135,19 +164,10 @@ jobs:
         working-directory: backend
 
       - name: Apply migrations
-        run: |
-          export ConnectionStrings__NotrelixDb="Host=localhost;Port=5432;Database=notrelix_test;Username=notrelix;Password=notrelix"
-          export ConnectionStrings__Redis="localhost:6379,abortConnect=false"
-          export ASPNETCORE_ENVIRONMENT=CI
-          export DOTNET_ENVIRONMENT=CI
-          dotnet run --project src/Notrelix.API --no-build -- --migrate-only
+        run: dotnet run --project src/Notrelix.API --no-build --no-launch-profile -- --migrate-only
         working-directory: backend
 
       - name: Migration smoke tests
-        run: |
-          export ConnectionStrings__NotrelixDb="Host=localhost;Port=5432;Database=notrelix_test;Username=notrelix;Password=notrelix"
-          export ConnectionStrings__Redis="localhost:6379,abortConnect=false"
-          export ASPNETCORE_ENVIRONMENT=CI
-          export DOTNET_ENVIRONMENT=CI
-          dotnet test tests/Notrelix.Integration.Tests --no-build --filter "FullyQualifiedName~MigrationSmoke"
+        run: dotnet test tests/Notrelix.Integration.Tests --no-build --filter "FullyQualifiedName~MigrationSmoke"
         working-directory: backend
+        
