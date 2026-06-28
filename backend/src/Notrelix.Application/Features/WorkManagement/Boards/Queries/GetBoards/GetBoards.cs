@@ -1,7 +1,9 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
+using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoards;
 
@@ -13,18 +15,20 @@ public record GetBoardsQuery(Guid WorkspaceId) : IQuery<Result<List<BoardDto>>>,
 
 public class GetBoardsQueryHandler : IRequestHandler<GetBoardsQuery, Result<List<BoardDto>>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
+    private readonly IWorkspaceAccessChecker _workspaceAccessChecker;
 
-    public GetBoardsQueryHandler(IApplicationDbContext context)
+    public GetBoardsQueryHandler(IWorkManagementDbContext context, IWorkspaceAccessChecker workspaceAccessChecker)
     {
         _context = context;
+        _workspaceAccessChecker = workspaceAccessChecker;
     }
 
     public async Task<Result<List<BoardDto>>> Handle(GetBoardsQuery request, CancellationToken ct)
     {
-        var workspaceExists = await _context.Workspaces.AsNoTracking()
-            .AnyAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && !w.IsDeleted, ct);
-        if (!workspaceExists) throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
+        var workspaceCheck = await _workspaceAccessChecker.EnsureWorkspaceIsActiveAsync(request.WorkspaceId, ct);
+        if (!workspaceCheck.Succeeded)
+            throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
         var boards = await _context.Boards.AsNoTracking()
             .Where(b => b.WorkspaceId == request.WorkspaceId && !b.IsArchived)
@@ -34,7 +38,7 @@ public class GetBoardsQueryHandler : IRequestHandler<GetBoardsQuery, Result<List
             b.Id, b.WorkspaceId, b.Title, b.Description,
             b.Background, b.Visibility.ToString(), b.IsArchived,
             _context.BoardMembers.Count(m => m.BoardId == b.Id),
-            _context.BoardGroups.Count(l => l.BoardId == b.Id && !l.IsDeleted),
+            _context.BoardGroups.Count(l => l.BoardId == b.Id && l.DeletedAt == null),
             b.CreatedAt.DateTime
         )).ToList();
 

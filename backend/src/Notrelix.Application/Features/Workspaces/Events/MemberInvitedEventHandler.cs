@@ -1,3 +1,7 @@
+// DEPRECATED: This handler is dead code — WorkspaceInvitationCreatedDomainEvent is dispatched
+// via Outbox mode, so this in-process handler NEVER fires.
+// TODO: Implement email/notification delivery through an outbox consumer.
+
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -5,6 +9,7 @@ using global::Notrelix.Application.Common.Events;
 
 namespace Notrelix.Application.Features.Workspaces.Events;
 
+[Obsolete("This handler is dead code because WorkspaceInvitationCreatedDomainEvent is dispatched via Outbox mode. Email/notification delivery should be implemented through an outbox consumer.")]
 public class MemberInvitedEventHandler : INotificationHandler<DomainEventNotification<WorkspaceInvitationCreatedDomainEvent>>
 {
     private readonly IApplicationDbContext _context;
@@ -41,7 +46,7 @@ public class MemberInvitedEventHandler : INotificationHandler<DomainEventNotific
             .FirstOrDefaultAsync(w => w.Id == domainEvent.WorkspaceId, cancellationToken);
 
         var workspaceName = workspace?.Name ?? "Workspace";
-        var frontendUrl = _configuration["JwtSettings:Audience"] ?? "http://localhost:3000";
+        var frontendUrl = _configuration["Frontend:BaseUrl"] ?? "http://localhost:3000";
         var inviteLink = $"{frontendUrl.TrimEnd('/')}/invite/{invitation.Token.Value}";
         var subject = $"Invitation to join workspace '{workspaceName}'";
 

@@ -26,6 +26,7 @@ public static class MapAuthEndpoints
 
         authGroup.MapLogout();
         authGroup.MapGetCurrentUser();
+        authGroup.MapGetBootstrap();
 
         return app;
     }

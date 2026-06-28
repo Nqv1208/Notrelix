@@ -32,6 +32,8 @@ public class CreateWorkspaceCommandHandlerTests
         result.Succeeded.Should().BeTrue();
         result.Data.Should().NotBeEmpty();
 
+        await context.SaveChangesAsync();
+
         var workspace = await context.Workspaces
             .FirstOrDefaultAsync(w => w.Id == result.Data);
 
@@ -56,6 +58,8 @@ public class CreateWorkspaceCommandHandlerTests
 
         result.Succeeded.Should().BeTrue();
         result.Data.Should().NotBeEmpty();
+
+        await context.SaveChangesAsync();
 
         var workspace = await context.Workspaces
             .FirstOrDefaultAsync(w => w.Id == result.Data);
@@ -86,6 +90,8 @@ public class CreateWorkspaceCommandHandlerTests
         result.Succeeded.Should().BeTrue();
         result.Data.Should().NotBeEmpty();
         result.Data.Should().NotBe(existingWorkspace.Id);
+
+        await context.SaveChangesAsync();
 
         var duplicateWorkspace = await context.Workspaces
             .FirstOrDefaultAsync(w => w.Id == result.Data);

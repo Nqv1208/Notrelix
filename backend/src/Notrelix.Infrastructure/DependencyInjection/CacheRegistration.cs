@@ -17,8 +17,12 @@ public static class CacheRegistration
         var redisConnectionString = configuration.GetConnectionString("Redis")
             ?? throw new InvalidOperationException("Redis connection string is missing");
 
-        services.AddSingleton<IConnectionMultiplexer>(
-            ConnectionMultiplexer.Connect(redisConnectionString));
+        services.AddSingleton<IConnectionMultiplexer>(sp =>
+        {
+            var configuration = ConfigurationOptions.Parse(redisConnectionString);
+            configuration.AbortOnConnectFail = false;
+            return ConnectionMultiplexer.Connect(configuration);
+        });
 
         services.AddStackExchangeRedisCache(options =>
         {

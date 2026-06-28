@@ -23,7 +23,7 @@ public static class DependencyInjection
             .AddCheck<OutboxHealthCheck>("outbox", tags: ["ready"]);
 
         services.AddApiProblemDetails();
-        services.AddApiCors(configuration);
+        services.AddApiCors(configuration, environment);
         services.AddApiSwagger();
         services.AddApiRouting();
         services.AddApiForwardedHeaders(configuration, environment);
@@ -45,9 +45,19 @@ public static class DependencyInjection
         return services;
     }
 
-    public static IServiceCollection AddApiCors(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddApiCors(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
     {
         var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+
+        if (!environment.IsDevelopment())
+        {
+            if (allowedOrigins.Length == 0)
+                throw new InvalidOperationException(
+                    "Cors:AllowedOrigins must be configured in non-Development environments.");
+            if (allowedOrigins.Contains("*"))
+                throw new InvalidOperationException(
+                    "Cors:AllowedOrigins wildcard '*' is not allowed in non-Development environments.");
+        }
 
         services.AddCors(options =>
         {
@@ -136,6 +146,18 @@ public static class DependencyInjection
         var settings = configuration
             .GetSection("ForwardedHeaders")
             .Get<ForwardedHeadersSettings>() ?? new ForwardedHeadersSettings();
+
+        if (!environment.IsDevelopment()
+            && settings.RequireKnownProxyInProduction
+            && settings.KnownProxies.Count == 0
+            && settings.KnownNetworks.Count == 0)
+        {
+            throw new InvalidOperationException(
+                "ForwardedHeaders: either KnownProxies or KnownNetworks must be configured " +
+                "in non-Development environments when RequireKnownProxyInProduction is true. " +
+                "Set KnownProxies/KnownNetworks to the proxy IPs/networks or set " +
+                "ForwardedHeaders:RequireKnownProxyInProduction to false if not behind a proxy.");
+        }
 
         services.Configure<ForwardedHeadersOptions>(options =>
         {

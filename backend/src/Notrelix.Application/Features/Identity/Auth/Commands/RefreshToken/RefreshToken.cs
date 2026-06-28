@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.RefreshToken;
 
@@ -11,12 +12,12 @@ public record RefreshTokenCommand : ICommand<Result<AuthResult>>, ITransactional
 
 public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, Result<AuthResult>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IIdentityDbContext _context;
     private readonly IJwtService _jwtService;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public RefreshTokenCommandHandler(
-        IApplicationDbContext context,
+        IIdentityDbContext context,
         IJwtService jwtService,
         IDateTimeProvider dateTimeProvider)
     {
@@ -58,8 +59,6 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
 
         var newSession = UserSession.Create(user.Id, newTokenHash, now.AddDays(30), now);
         _context.Sessions.Add(newSession);
-
-        await _context.SaveChangesAsync(cancellationToken);
 
         return Result<AuthResult>.Success(new AuthResult
         {

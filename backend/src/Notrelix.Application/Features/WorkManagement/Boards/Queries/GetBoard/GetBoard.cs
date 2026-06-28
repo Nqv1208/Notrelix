@@ -1,8 +1,9 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using global::Notrelix.Application.Common.Models;
-using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
+using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoard;
 
@@ -16,9 +17,9 @@ public record GetBoardQuery(Guid WorkspaceId, Guid BoardId) : IQuery<Result<Boar
 
 public class GetBoardQueryHandler : IRequestHandler<GetBoardQuery, Result<BoardDto>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
 
-    public GetBoardQueryHandler(IApplicationDbContext context)
+    public GetBoardQueryHandler(IWorkManagementDbContext context)
     {
         _context = context;
     }

@@ -57,7 +57,14 @@ public static class AuthRegistration
                 "JwtSettings:RefreshTokenExpireDays must be greater than zero.")
             .ValidateOnStart();
 
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy("SystemAdmin", policy =>
+                policy.RequireRole("SystemAdmin"));
+
+            options.AddPolicy("InternalService", policy =>
+                policy.RequireRole("InternalService"));
+        });
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {

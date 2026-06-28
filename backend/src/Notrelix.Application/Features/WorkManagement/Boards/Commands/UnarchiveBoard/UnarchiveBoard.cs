@@ -1,7 +1,8 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.UnarchiveBoard;
 
@@ -9,13 +10,13 @@ public record UnarchiveBoardCommand(Guid BoardId) : ICommand<Result>, ITransacti
 
 public class UnarchiveBoardCommandHandler : IRequestHandler<UnarchiveBoardCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public UnarchiveBoardCommandHandler(
-        IApplicationDbContext context,
+        IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IWorkspacePermissionService permissions,
         IDateTimeProvider dateTimeProvider)

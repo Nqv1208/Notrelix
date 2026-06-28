@@ -7,6 +7,7 @@ using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Boards;
 
@@ -17,15 +18,15 @@ public class BoardCommandPermissionTests
     {
         await using var context = CreateContext();
         var ownerId = Guid.NewGuid();
-        var memberId = Guid.NewGuid();
+        var guestId = Guid.NewGuid();
         var addedUserId = Guid.NewGuid();
-        var board = await SeedBoardAsync(context, ownerId, memberId, WorkspaceRole.Member, addedUserId);
+        var board = await SeedBoardAsync(context, ownerId, guestId, WorkspaceRole.Guest, addedUserId);
         var timeProvider = new Mock<IDateTimeProvider>();
         timeProvider.Setup(t => t.UtcNow).Returns(DateTimeOffset.UtcNow);
         var evaluator = new PermissionService(context, timeProvider.Object);
         var handler = new AddBoardMemberCommandHandler(
             context,
-            CurrentUser(memberId),
+            CurrentUser(guestId),
             new WorkspacePermissionService(evaluator, context),
             timeProvider.Object);
 
@@ -95,6 +96,9 @@ public class BoardCommandPermissionTests
             .UseInMemoryDatabase($"Notrelix-board-permissions-{Guid.NewGuid():N}")
             .Options;
 
-        return new ApplicationDbContext(options);
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+
+        return new ApplicationDbContext(options, currentWorkspace);
     }
 }

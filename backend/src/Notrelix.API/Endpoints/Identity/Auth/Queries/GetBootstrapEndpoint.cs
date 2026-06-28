@@ -1,0 +1,25 @@
+using MediatR;
+using Notrelix.API.Extensions;
+using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Features.Identity.Auth.Queries.GetBootstrap;
+
+namespace Notrelix.API.Endpoints.Identity.Auth.Queries;
+
+public static class GetBootstrapEndpoint
+{
+    public static IEndpointRouteBuilder MapGetBootstrap(this IEndpointRouteBuilder group)
+    {
+        group.MapGet("/bootstrap", HandleAsync)
+            .RequireAuthorization()
+            .WithName("Identity.Auth.GetBootstrap")
+            .WithTags("Identity.Auth")
+            .WithSummary("Get current user bootstrap state");
+        return group;
+    }
+
+    private static async Task<IResult> HandleAsync(ISender sender, ICurrentUser currentUser)
+    {
+        var result = await sender.Send(new GetBootstrapQuery(currentUser.UserId));
+        return result.ToApiResult();
+    }
+}

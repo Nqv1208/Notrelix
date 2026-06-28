@@ -1,15 +1,14 @@
 namespace Notrelix.Application.Common.Models;
 
-// Response trả về sau khi login/register
 public record AuthResult
 {
     public required string AccessToken { get; init; }
     public required string RefreshToken { get; init; }
     public required DateTime ExpiresAt { get; init; }
     public required UserDto User { get; init; }
+    public string WorkspaceProvisioning { get; init; } = "pending";
 }
 
-// User DTO
 public record UserDto
 {
     public required Guid Id { get; init; }

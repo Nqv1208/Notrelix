@@ -2,10 +2,12 @@ using MediatR;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Events;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Commands.Register;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Infrastructure.Data.Interceptors;
+using Notrelix.Testing.Application.Fakes;
 using Notrelix.Testing.Integration.Factories;
 
 namespace Notrelix.Integration.Tests.Auth;
@@ -44,7 +46,7 @@ public class RegisterCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenValid_ShouldCreateUserWorkspaceAndSession()
+    public async Task Handle_WhenValid_ShouldCreateUserAndSession()
     {
         using var context = TestDbContextFactory.CreateInMemoryContext();
 
@@ -66,19 +68,20 @@ public class RegisterCommandHandlerTests
             Password = "Password1!",
             Name = "New Name"
         }, CancellationToken.None);
+        await context.SaveChangesAsync();
 
         result.Succeeded.Should().BeTrue();
         result.Data!.AccessToken.Should().Be("access-token");
         result.Data!.RefreshToken.Should().Be("refresh-token");
         result.Data!.ExpiresAt.Should().BeAfter(now);
+        result.Data!.WorkspaceProvisioning.Should().Be("pending");
 
         (await context.Users.ToListAsync()).Should().HaveCount(1);
-        (await context.Workspaces.ToListAsync()).Should().HaveCount(1);
         (await context.Sessions.ToListAsync()).Should().HaveCount(1);
     }
 
     [Fact]
-    public async Task Handle_WhenValidAndDomainEventInterceptorEnabled_ShouldCreateUserWorkspaceMemberAndSession()
+    public async Task Handle_WhenValidAndDomainEventInterceptorEnabled_ShouldCreateUserAndSession()
     {
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         var eventTypeRegistry = new Mock<IEventTypeRegistry>();
@@ -91,7 +94,9 @@ public class RegisterCommandHandlerTests
         dispatchPolicy.Setup(x => x.GetMode(It.IsAny<Type>()))
             .Returns(DomainEventDispatchMode.Inline);
         var interceptor = new DomainEventInterceptor(dateTimeProvider.Object, eventTypeRegistry.Object, integrationEventMapper.Object, mediator.Object, dispatchPolicy.Object);
-        using var context = TestDbContextFactory.CreateInMemoryContext(interceptor);
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace, interceptor);
 
         var passwordHasher = new Mock<IPasswordHasher>();
         passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");
@@ -111,6 +116,7 @@ public class RegisterCommandHandlerTests
                 Password = "Password1!",
                 Name = "New Name"
             }, CancellationToken.None);
+            await context.SaveChangesAsync();
 
             result.Succeeded.Should().BeTrue();
             authResult = result.Data;
@@ -119,12 +125,40 @@ public class RegisterCommandHandlerTests
         await act.Should().NotThrowAsync<ArgumentException>();
 
         authResult.Should().NotBeNull();
+        authResult!.WorkspaceProvisioning.Should().Be("pending");
         (await context.Users.CountAsync()).Should().Be(1);
-        (await context.Workspaces.CountAsync()).Should().Be(1);
-        (await context.WorkspaceMembers.CountAsync()).Should().Be(1);
         (await context.Sessions.CountAsync()).Should().Be(1);
 
-        mediator.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
+        mediator.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task Handle_WhenValid_ShouldNotCreateWorkspaceSynchronously()
+    {
+        using var context = TestDbContextFactory.CreateInMemoryContext();
+
+        var passwordHasher = new Mock<IPasswordHasher>();
+        passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");
+
+        var jwtService = new Mock<IJwtService>();
+        jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>())).Returns("access-token");
+        jwtService.Setup(x => x.GenerateRefreshToken()).Returns("refresh-token");
+
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
+        var handler = new RegisterCommandHandler(context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object);
+
+        var result = await handler.Handle(new RegisterCommand
+        {
+            Email = "noworkspace@example.com",
+            Password = "Password1!",
+            Name = "No Workspace"
+        }, CancellationToken.None);
+        await context.SaveChangesAsync();
+
+        result.Succeeded.Should().BeTrue();
+
+        (await context.Workspaces.ToListAsync()).Should().BeEmpty();
     }
 
     private static Mock<IMediator> CreateMediatorRejectingNonNotifications()

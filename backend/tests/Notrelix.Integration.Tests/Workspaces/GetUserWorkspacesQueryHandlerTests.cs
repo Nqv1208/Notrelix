@@ -2,6 +2,7 @@ using Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetUserWorkspa
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Workspaces;
 
@@ -79,6 +80,8 @@ public class GetUserWorkspacesQueryHandlerTests
             .UseInMemoryDatabase($"Notrelix-workspaces-{Guid.NewGuid():N}")
             .Options;
 
-        return new ApplicationDbContext(options);
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        return new ApplicationDbContext(options, currentWorkspace);
     }
 }

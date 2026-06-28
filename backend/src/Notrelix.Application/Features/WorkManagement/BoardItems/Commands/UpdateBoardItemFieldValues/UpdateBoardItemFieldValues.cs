@@ -37,6 +37,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
         var now = _timeProvider.UtcNow;
 
         var columns = await _context.BoardFields.AsNoTracking()
+            .Include(f => f.Options)
             .Where(column => column.BoardId == card.BoardId && request.Values.Keys.Contains(column.Id))
             .ToDictionaryAsync(column => column.Id, ct);
 

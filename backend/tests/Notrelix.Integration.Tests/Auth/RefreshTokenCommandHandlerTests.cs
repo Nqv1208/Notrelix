@@ -52,6 +52,7 @@ public class RefreshTokenCommandHandlerTests
         {
             RefreshToken = oldRefreshToken
         }, CancellationToken.None);
+        await context.SaveChangesAsync();
 
         result.Succeeded.Should().BeTrue();
         result.Data!.AccessToken.Should().Be("new-access-token");

@@ -11,6 +11,7 @@ using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Boards;
 
@@ -22,11 +23,11 @@ public class UpdateBoardItemFieldValuesCommandHandlerTests
         await using var context = CreateContext();
         var ownerId = Guid.NewGuid();
         var guestId = Guid.NewGuid();
-        var (boardItem, statusField) = await SeedBoardAsync(context, ownerId, guestId, WorkspaceRole.Guest);
+        var (boardItem, statusField, doneOption) = await SeedBoardAsync(context, ownerId, guestId, WorkspaceRole.Guest);
         var handler = CreateHandler(context, guestId);
 
         var act = () => handler.Handle(
-            new UpdateBoardItemFieldValuesCommand(boardItem.Id, new Dictionary<Guid, object?> { [statusField.Id] = "done" }),
+            new UpdateBoardItemFieldValuesCommand(boardItem.Id, new Dictionary<Guid, object?> { [statusField.Id] = doneOption.Id.ToString() }),
             CancellationToken.None);
 
         await act.Should().ThrowAsync<ForbiddenException>();
@@ -38,18 +39,18 @@ public class UpdateBoardItemFieldValuesCommandHandlerTests
         await using var context = CreateContext();
         var ownerId = Guid.NewGuid();
         var memberId = Guid.NewGuid();
-        var (boardItem, statusField) = await SeedBoardAsync(context, ownerId, memberId, WorkspaceRole.Member);
+        var (boardItem, statusField, doneOption) = await SeedBoardAsync(context, ownerId, memberId, WorkspaceRole.Member);
         var handler = CreateHandler(context, memberId);
 
         var result = await handler.Handle(
-            new UpdateBoardItemFieldValuesCommand(boardItem.Id, new Dictionary<Guid, object?> { [statusField.Id] = "done" }),
+            new UpdateBoardItemFieldValuesCommand(boardItem.Id, new Dictionary<Guid, object?> { [statusField.Id] = doneOption.Id.ToString() }),
             CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         boardItem.DomainEvents.Should().ContainSingle(item => item is BoardItemFieldValueChangedDomainEvent);
     }
 
-    private static async Task<(BoardItem BoardItem, BoardField StatusField)> SeedBoardAsync(
+    private static async Task<(BoardItem BoardItem, BoardField StatusField, FieldOption DoneOption)> SeedBoardAsync(
         ApplicationDbContext context,
         Guid ownerId,
         Guid userId,
@@ -70,9 +71,14 @@ public class UpdateBoardItemFieldValuesCommandHandlerTests
         context.BoardItems.Add(boardItem);
         context.BoardFields.Add(statusField);
         await context.SaveChangesAsync();
+
+        var doneOption = FieldOption.Create(statusField.Id, "Done", Color.Create("#00FF00"), FractionalIndex.Create("a1"));
+        context.FieldOptions.Add(doneOption);
+        await context.SaveChangesAsync();
+
         boardItem.ClearDomainEvents();
 
-        return (boardItem, statusField);
+        return (boardItem, statusField, doneOption);
     }
 
     private static UpdateBoardItemFieldValuesCommandHandler CreateHandler(ApplicationDbContext context, Guid userId)
@@ -89,10 +95,12 @@ public class UpdateBoardItemFieldValuesCommandHandlerTests
 
     private static ApplicationDbContext CreateContext()
     {
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase($"Notrelix-card-fields-{Guid.NewGuid():N}")
             .Options;
 
-        return new ApplicationDbContext(options);
+        return new ApplicationDbContext(options, currentWorkspace);
     }
 }

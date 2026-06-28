@@ -7,6 +7,7 @@ using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Governance;
 
@@ -19,7 +20,9 @@ public class PermissionServiceTests
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase($"Notrelix-perm-tests-{Guid.NewGuid():N}")
             .Options;
-        var context = new ApplicationDbContext(options);
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        var context = new ApplicationDbContext(options, currentWorkspace);
         var clockMock = new Mock<IDateTimeProvider>();
         clockMock.Setup(c => c.UtcNow).Returns(DateTimeOffset.UtcNow);
         var service = new PermissionService(context, clockMock.Object);

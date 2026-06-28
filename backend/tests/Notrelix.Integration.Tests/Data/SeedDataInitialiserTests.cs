@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Abstractions;
-
 using Notrelix.Infrastructure.Data;
+using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Data;
 
@@ -183,12 +183,15 @@ public class SeedDataInitialiserTests
             .UseInMemoryDatabase($"Notrelix-seed-{Guid.NewGuid():N}")
             .Options;
 
-        return new TestApplicationDbContext(options);
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        return new TestApplicationDbContext(options, currentWorkspace);
     }
 
     private class TestApplicationDbContext : ApplicationDbContext
     {
-        public TestApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+        public TestApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentWorkspace currentWorkspace)
+            : base(options, currentWorkspace) { }
     }
 
     private static ApplicationDbContextInitialiser CreateInitialiser(

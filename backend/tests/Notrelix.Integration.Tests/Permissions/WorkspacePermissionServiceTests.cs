@@ -4,6 +4,7 @@ using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Permissions;
 
@@ -12,7 +13,7 @@ public class WorkspacePermissionServiceTests
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
     [Fact]
-    public async Task CanManageWorkspaceAsync_ShouldAllowOnlyOwnerOrAdmin()
+    public async Task CanManageWorkspaceAsync_ShouldAllowOnlyOwner()
     {
         await using var context = CreateContext();
         var now = DateTimeOffset.UtcNow;
@@ -31,13 +32,13 @@ public class WorkspacePermissionServiceTests
         var service = CreateService(context);
 
         (await service.CanManageWorkspaceAsync(workspace.Id, ownerId)).Should().BeTrue();
-        (await service.CanManageWorkspaceAsync(workspace.Id, adminId)).Should().BeTrue();
+        (await service.CanManageWorkspaceAsync(workspace.Id, adminId)).Should().BeFalse();
         (await service.CanManageWorkspaceAsync(workspace.Id, memberId)).Should().BeFalse();
         (await service.CanManageWorkspaceAsync(workspace.Id, Guid.NewGuid())).Should().BeFalse();
     }
 
     [Fact]
-    public async Task CanManageBoardAsync_ShouldAllowWorkspaceAdminsOrBoardAdmins()
+    public async Task CanManageBoardAsync_ShouldAllowWorkspaceMembersAndBoardAdmins()
     {
         await using var context = CreateContext();
         var now = DateTimeOffset.UtcNow;
@@ -62,7 +63,8 @@ public class WorkspacePermissionServiceTests
 
         (await service.CanManageBoardAsync(board.Id, ownerId)).Should().BeTrue();
         (await service.CanManageBoardAsync(board.Id, boardAdminId)).Should().BeTrue();
-        (await service.CanManageBoardAsync(board.Id, workspaceMemberId)).Should().BeFalse();
+        (await service.CanManageBoardAsync(board.Id, workspaceMemberId)).Should().BeTrue();
+        (await service.CanManageBoardAsync(board.Id, Guid.NewGuid())).Should().BeFalse();
     }
 
     [Fact]
@@ -107,6 +109,9 @@ public class WorkspacePermissionServiceTests
             .UseInMemoryDatabase($"Notrelix-permissions-{Guid.NewGuid():N}")
             .Options;
 
-        return new ApplicationDbContext(options);
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+
+        return new ApplicationDbContext(options, currentWorkspace);
     }
 }

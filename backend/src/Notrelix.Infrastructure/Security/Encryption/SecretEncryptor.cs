@@ -1,12 +1,32 @@
+using System.Text;
+using Microsoft.AspNetCore.DataProtection;
+
 namespace Notrelix.Infrastructure.Security.Encryption;
 
-/// <summary>
-/// Skeleton symmetric secret encryptor (v4 §8.3). Real implementation encrypts
-/// integration credentials at rest (stored as SecretRef/encrypted reference,
-/// never plaintext) using a managed key. Not yet wired.
-/// </summary>
-public sealed class SecretEncryptor
+public interface ISecretEncryptor
 {
-    // TODO(v4 §8.3): Encrypt(plaintext)/Decrypt(ciphertext) using DataProtection
-    // or an envelope-encryption KMS. Integration credentials must never be plaintext.
+    string Encrypt(string plaintext);
+    string Decrypt(string ciphertext);
+}
+
+public sealed class SecretEncryptor : ISecretEncryptor
+{
+    private readonly IDataProtector _protector;
+
+    public SecretEncryptor(IDataProtectionProvider dataProtection)
+    {
+        _protector = dataProtection.CreateProtector("Notrelix.Integrations.Credentials.v1");
+    }
+
+    public string Encrypt(string plaintext)
+    {
+        ArgumentNullException.ThrowIfNull(plaintext);
+        return Convert.ToBase64String(_protector.Protect(Encoding.UTF8.GetBytes(plaintext)));
+    }
+
+    public string Decrypt(string ciphertext)
+    {
+        ArgumentNullException.ThrowIfNull(ciphertext);
+        return Encoding.UTF8.GetString(_protector.Unprotect(Convert.FromBase64String(ciphertext)));
+    }
 }
