@@ -2,5 +2,9 @@ namespace Notrelix.Domain.Workspaces.Rules;
 
 public static class WorkspaceInvitationRules
 {
-    // Placeholder for future invitation validation rules
+    public static void EnsureNotDuplicate(string email, IEnumerable<string> existingPendingEmails)
+    {
+        if (existingPendingEmails.Contains(email, StringComparer.OrdinalIgnoreCase))
+            throw new BusinessRuleException("A pending invitation already exists for this email address.");
+    }
 }
