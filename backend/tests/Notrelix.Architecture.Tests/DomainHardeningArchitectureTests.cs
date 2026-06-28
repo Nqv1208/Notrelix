@@ -147,6 +147,9 @@ public class DomainHardeningArchitectureTests
             if (typeof(IWorkspaceScoped).IsAssignableFrom(type))
                 continue;
 
+            if (typeof(WorkspaceRootDomainEvent).IsAssignableFrom(type))
+                continue;
+
             if (WorkspaceScopeAllowlist.ContainsKey(type.Name))
                 continue;
 
@@ -154,7 +157,33 @@ public class DomainHardeningArchitectureTests
         }
 
         violations.Should().BeEmpty(
-            "Domain types with required WorkspaceId must implement IWorkspaceScoped or be classified. " +
+            "Domain types with required WorkspaceId must implement IWorkspaceScoped, " +
+            "inherit WorkspaceRootDomainEvent, or be classified. " +
+            $"Violations: {string.Join(", ", violations)}");
+    }
+
+    [Fact]
+    public void DomainEvents_ShouldInherit_CorrectBaseClass()
+    {
+        var violations = new List<string>();
+
+        foreach (var type in GetDomainTypes().Where(t => t is { IsClass: true, IsAbstract: false }
+                                                   && typeof(IDomainEvent).IsAssignableFrom(t)
+                                                   && typeof(DomainEvent).IsAssignableFrom(t)))
+        {
+            var inheritsScoped = typeof(WorkspaceScopedDomainEvent).IsAssignableFrom(type);
+            var inheritsRoot = typeof(WorkspaceRootDomainEvent).IsAssignableFrom(type);
+            var inheritsGlobal = typeof(GlobalDomainEvent).IsAssignableFrom(type);
+
+            if (!inheritsScoped && !inheritsRoot && !inheritsGlobal)
+            {
+                violations.Add($"{type.FullName} inherits DomainEvent directly — should use scoped base");
+            }
+        }
+
+        violations.Should().BeEmpty(
+            "All concrete DomainEvents must inherit from GlobalDomainEvent, WorkspaceRootDomainEvent, " +
+            "or WorkspaceScopedDomainEvent — not directly from DomainEvent. " +
             $"Violations: {string.Join(", ", violations)}");
     }
 
