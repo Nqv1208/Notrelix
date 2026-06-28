@@ -1,7 +1,7 @@
-using Microsoft.Data.Sqlite;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 using Notrelix.Testing.Core;
 using Notrelix.Testing.Domain.Builders;
@@ -9,44 +9,29 @@ using Notrelix.Testing.Domain.Builders;
 namespace Notrelix.Integration.Tests.Integration;
 
 /// <summary>
-/// Runtime cross-tenant isolation tests using SQLite InMemory.
+/// Runtime cross-tenant isolation tests using PostgreSQL.
 ///
-/// SQLite enforces EF Core global query filters at query time (unlike the EF Core InMemory provider),
-/// so these tests prove workspace isolation works at the database query level, not just at the
-/// model configuration level.
-///
-/// EF Core replaces the context-instance reference in query filter expressions at query time,
-/// so switching FakeCurrentWorkspace.WorkspaceId on the same instance produces correct filter behavior.
+/// These tests verify that EF Core global query filters enforce workspace isolation
+/// at the database query level, not just at the model configuration level.
+/// Running on PostgreSQL ensures test behavior matches production.
 /// </summary>
-public class CrossTenantIsolationTests : IDisposable
+[Collection("Database")]
+[Trait("Category", "Integration")]
+public class CrossTenantIsolationTests
 {
     private static readonly Guid OwnerId = Guid.Parse("00000000-0000-0000-0000-000000000099");
     private static readonly DateTimeOffset FixedTime = new(2026, 6, 28, 0, 0, 0, TimeSpan.Zero);
 
-    private readonly List<SqliteConnection> _connections = new();
+    private readonly PostgresTestContainer _fixture;
 
-    public void Dispose()
+    public CrossTenantIsolationTests(PostgresTestContainer fixture)
     {
-        foreach (var conn in _connections)
-        {
-            conn.Close();
-            conn.Dispose();
-        }
+        _fixture = fixture;
     }
 
-    private (ApplicationDbContext context, SqliteConnection connection) CreateContext(ICurrentWorkspace workspace)
+    private ApplicationDbContext CreateContext(ICurrentWorkspace workspace)
     {
-        var connection = new SqliteConnection("DataSource=:memory:");
-        connection.Open();
-        _connections.Add(connection);
-
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseSqlite(connection)
-            .Options;
-
-        var context = new ApplicationDbContext(options, workspace);
-        context.Database.EnsureCreated();
-        return (context, connection);
+        return _fixture.CreateContext(workspace);
     }
 
     // ============================================================
@@ -61,7 +46,7 @@ public class CrossTenantIsolationTests : IDisposable
 
         var workspace = new FakeCurrentWorkspace();
         workspace.EnterSystemContext();
-        var (context, _) = CreateContext(workspace);
+        await using var context = CreateContext(workspace);
 
         var workspaceA = Workspace.Create(OwnerId, "Workspace A", "ws-a", FixedTime);
         var workspaceB = Workspace.Create(OwnerId, "Workspace B", "ws-b", FixedTime);
@@ -89,7 +74,7 @@ public class CrossTenantIsolationTests : IDisposable
 
         var workspace = new FakeCurrentWorkspace();
         workspace.EnterSystemContext();
-        var (context, _) = CreateContext(workspace);
+        await using var context = CreateContext(workspace);
 
         var workspaceA = Workspace.Create(OwnerId, "Workspace A", "ws-a", FixedTime);
         var workspaceB = Workspace.Create(OwnerId, "Workspace B", "ws-b", FixedTime);
@@ -117,7 +102,7 @@ public class CrossTenantIsolationTests : IDisposable
 
         var workspace = new FakeCurrentWorkspace();
         workspace.EnterSystemContext();
-        var (context, _) = CreateContext(workspace);
+        await using var context = CreateContext(workspace);
 
         var workspaceA = Workspace.Create(OwnerId, "Workspace A", "ws-a", FixedTime);
         var workspaceB = Workspace.Create(OwnerId, "Workspace B", "ws-b", FixedTime);
@@ -149,7 +134,7 @@ public class CrossTenantIsolationTests : IDisposable
 
         var workspace = new FakeCurrentWorkspace();
         workspace.EnterSystemContext();
-        var (context, _) = CreateContext(workspace);
+        await using var context = CreateContext(workspace);
 
         var boardA = new BoardBuilder()
             .WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build();
@@ -180,7 +165,7 @@ public class CrossTenantIsolationTests : IDisposable
 
         var workspace = new FakeCurrentWorkspace();
         workspace.EnterSystemContext();
-        var (context, _) = CreateContext(workspace);
+        await using var context = CreateContext(workspace);
 
         context.Boards.Add(new BoardBuilder()
             .WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board").WithCreatedAt(FixedTime).Build());
@@ -200,7 +185,7 @@ public class CrossTenantIsolationTests : IDisposable
 
         var workspace = new FakeCurrentWorkspace();
         workspace.EnterSystemContext();
-        var (context, _) = CreateContext(workspace);
+        await using var context = CreateContext(workspace);
 
         context.Boards.AddRange(
             new BoardBuilder().WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build(),
@@ -226,7 +211,7 @@ public class CrossTenantIsolationTests : IDisposable
 
         var workspace = new FakeCurrentWorkspace();
         workspace.EnterSystemContext();
-        var (context, _) = CreateContext(workspace);
+        await using var context = CreateContext(workspace);
 
         context.Boards.AddRange(
             new BoardBuilder().WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build(),
@@ -243,7 +228,7 @@ public class CrossTenantIsolationTests : IDisposable
     {
         var workspace = new FakeCurrentWorkspace();
         workspace.EnterSystemContext();
-        var (context, _) = CreateContext(workspace);
+        await using var context = CreateContext(workspace);
 
         var board = new BoardBuilder()
             .WithWorkspaceId(TestIds.NewWorkspaceId()).WithCreatedBy(OwnerId).WithTitle("To Delete").WithCreatedAt(FixedTime).Build();
@@ -265,7 +250,7 @@ public class CrossTenantIsolationTests : IDisposable
 
         var workspace = new FakeCurrentWorkspace();
         workspace.EnterSystemContext();
-        var (context, _) = CreateContext(workspace);
+        await using var context = CreateContext(workspace);
 
         var boardA = new BoardBuilder()
             .WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A Active").WithCreatedAt(FixedTime).Build();
@@ -296,7 +281,7 @@ public class CrossTenantIsolationTests : IDisposable
 
         var workspace = new FakeCurrentWorkspace();
         workspace.EnterSystemContext();
-        var (context, _) = CreateContext(workspace);
+        await using var context = CreateContext(workspace);
 
         var workspaceA = Workspace.Create(OwnerId, "WS A", "ws-a", FixedTime);
         var workspaceB = Workspace.Create(OwnerId, "WS B", "ws-b", FixedTime);
@@ -324,7 +309,7 @@ public class CrossTenantIsolationTests : IDisposable
     {
         var workspace = new FakeCurrentWorkspace();
         workspace.EnterSystemContext();
-        var (context, _) = CreateContext(workspace);
+        await using var context = CreateContext(workspace);
 
         var wsA = Workspace.Create(OwnerId, "WS A", "ws-a", FixedTime);
         context.Workspaces.Add(wsA);
@@ -344,7 +329,7 @@ public class CrossTenantIsolationTests : IDisposable
 
         var workspace = new FakeCurrentWorkspace();
         workspace.EnterSystemContext();
-        var (context, _) = CreateContext(workspace);
+        await using var context = CreateContext(workspace);
 
         context.Boards.AddRange(
             new BoardBuilder().WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build(),

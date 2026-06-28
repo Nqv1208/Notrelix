@@ -7,17 +7,27 @@ on:
       - 'backend/**'
       - '.github/workflows/ci.yml'
       - '.github/dependabot.yml'
+
   pull_request:
     branches: [main, develop]
     paths:
       - 'backend/**'
       - '.github/workflows/ci.yml'
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   DOTNET_ROLL_FORWARD: LatestMajor
+  DOTNET_CONFIGURATION: Release
 
 jobs:
   build-and-test:
+    name: Build, security, unit tests
     runs-on: ubuntu-latest
 
     services:
@@ -42,7 +52,8 @@ jobs:
       Jwt__Secret: ci-test-secret-key-must-be-at-least-32-characters
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -58,36 +69,83 @@ jobs:
         working-directory: backend
 
       - name: Build
-        run: dotnet build --no-restore
+        run: dotnet build --no-restore --configuration $DOTNET_CONFIGURATION
         working-directory: backend
 
       - name: Vulnerability scan
         run: |
+          set -euo pipefail
+
           dotnet list package --vulnerable --include-transitive --no-restore 2>&1 | tee vulnerable-report.txt
+
           if grep -q "has the following vulnerable packages" vulnerable-report.txt; then
             echo "Vulnerable packages found!"
             exit 1
           fi
+
+          echo "No vulnerable packages found"
+        working-directory: backend
+
+      - name: Guard dependency graph against SQLite
+        run: |
+          set -euo pipefail
+
+          dotnet list package --include-transitive --no-restore 2>&1 | tee dependency-report.txt
+
+          if grep -iE "SQLite|Sqlite|SQLitePCLRaw|Microsoft\.Data\.Sqlite|Microsoft\.EntityFrameworkCore\.Sqlite" dependency-report.txt; then
+            echo "SQLite dependency detected in Notrelix backend dependency graph."
+            echo "Use PostgreSQL/Testcontainers instead of SQLite."
+            exit 1
+          fi
+
+          echo "No SQLite dependencies found"
+        working-directory: backend
+
+      - name: Guard source against SQLite usage
+        run: |
+          set -euo pipefail
+
+          matches=$(grep -RInE "UseSqlite|SqliteConnection|Microsoft\.EntityFrameworkCore\.Sqlite|Microsoft\.Data\.Sqlite|SQLitePCLRaw|DataSource=:memory:" \
+            src tests Directory.Packages.props \
+            --include="*.cs" \
+            --include="*.csproj" \
+            --include="*.props" \
+            --exclude="DatabaseProviderArchitectureTests.cs" || true)
+
+          if [ -n "$matches" ]; then
+            echo "$matches"
+            echo "SQLite usage detected in Notrelix backend source."
+            echo "Use PostgreSQL/Testcontainers instead."
+            exit 1
+          fi
+
+          echo "No SQLite source references found"
         working-directory: backend
 
       - name: Architecture tests
-        run: dotnet test tests/Notrelix.Architecture.Tests --no-build
+        run: dotnet test tests/Notrelix.Architecture.Tests --no-build --configuration $DOTNET_CONFIGURATION
         working-directory: backend
 
       - name: Unit tests Domain + Application + Infrastructure
-        run: dotnet test --no-build --filter "FullyQualifiedName!~Integration.Tests&FullyQualifiedName!~Notrelix.Architecture.Tests&FullyQualifiedName!~Notrelix.API.Tests"
+        run: >
+          dotnet test
+          --no-build
+          --configuration $DOTNET_CONFIGURATION
+          --filter "FullyQualifiedName!~Integration.Tests&FullyQualifiedName!~Notrelix.Architecture.Tests&FullyQualifiedName!~Notrelix.API.Tests&Category!=Integration&Category!=Database&Category!=Security"
         working-directory: backend
 
       - name: API tests
-        run: dotnet test tests/Notrelix.API.Tests --no-build
+        run: dotnet test tests/Notrelix.API.Tests --no-build --configuration $DOTNET_CONFIGURATION
         working-directory: backend
 
   docker-build:
+    name: Docker build
     runs-on: ubuntu-latest
     needs: build-and-test
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -108,6 +166,7 @@ jobs:
           echo "Docker image built successfully"
 
   integration:
+    name: Integration tests
     runs-on: ubuntu-latest
     needs: build-and-test
 
@@ -148,7 +207,8 @@ jobs:
       Jwt__Secret: ci-test-secret-key-must-be-at-least-32-characters
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -160,14 +220,20 @@ jobs:
         working-directory: backend
 
       - name: Build
-        run: dotnet build --no-restore
+        run: dotnet build --no-restore --configuration $DOTNET_CONFIGURATION
         working-directory: backend
 
       - name: Apply migrations
-        run: dotnet run --project src/Notrelix.API --no-build --no-launch-profile -- --migrate-only
+        run: >
+          dotnet run
+          --project src/Notrelix.API
+          --no-build
+          --no-launch-profile
+          --configuration $DOTNET_CONFIGURATION
+          --
+          --migrate-only
         working-directory: backend
 
-      - name: Migration smoke tests
-        run: dotnet test tests/Notrelix.Integration.Tests --no-build --filter "FullyQualifiedName~MigrationSmoke"
+      - name: Integration tests
+        run: dotnet test tests/Notrelix.Integration.Tests --no-build --configuration $DOTNET_CONFIGURATION
         working-directory: backend
-        

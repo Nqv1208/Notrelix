@@ -1,5 +1,6 @@
 using Npgsql;
 using Testcontainers.PostgreSql;
+using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Data;
 
 namespace Notrelix.Integration.Tests.Containers;
@@ -37,7 +38,7 @@ public sealed class PostgresTestContainer : IAsyncLifetime
         await _container.DisposeAsync();
     }
 
-    public ApplicationDbContext CreateContext()
+    public ApplicationDbContext CreateContext(ICurrentWorkspace? currentWorkspace = null)
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseNpgsql(ConnectionString, npgOptions =>
@@ -46,7 +47,9 @@ public sealed class PostgresTestContainer : IAsyncLifetime
                 npgOptions.MigrationsHistoryTable("__EFMigrationsHistory", "ops");
             })
             .Options;
-        return new ApplicationDbContext(options);
+        return currentWorkspace is not null
+            ? new ApplicationDbContext(options, currentWorkspace)
+            : new ApplicationDbContext(options);
     }
 
     public NpgsqlConnection CreateConnection()
