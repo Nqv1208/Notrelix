@@ -5,4 +5,4 @@ public sealed record UserSessionRevokedDomainEvent(
     Guid UserId,
     DateTimeOffset RevokedAt,
     string? Reason
-) : DomainEvent(RevokedAt, null, null);
+) : GlobalDomainEvent(RevokedAt);

@@ -5,4 +5,4 @@ public sealed record ChecklistRestoredDomainEvent(
     Guid ChecklistId,
     Guid RestoredBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, RestoredBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, RestoredBy);

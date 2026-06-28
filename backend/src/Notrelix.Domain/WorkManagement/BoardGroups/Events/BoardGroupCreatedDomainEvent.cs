@@ -7,4 +7,4 @@ public sealed record BoardGroupCreatedDomainEvent(
     string Title,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, CreatedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, CreatedBy);

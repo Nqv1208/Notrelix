@@ -6,4 +6,4 @@ public sealed record BoardItemMemberAssignedDomainEvent(
     Guid UserId,
     Guid AssignedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, AssignedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, AssignedBy);

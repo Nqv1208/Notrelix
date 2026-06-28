@@ -1,6 +1,6 @@
 namespace Notrelix.Domain.Billing.Subscriptions.Events;
 
-public record SubscriptionCanceledDomainEvent : DomainEvent
+public record SubscriptionCanceledDomainEvent : WorkspaceScopedDomainEvent
 {
     public Guid SubscriptionId { get; }
 
@@ -9,7 +9,7 @@ public record SubscriptionCanceledDomainEvent : DomainEvent
         Guid subscriptionId,
         Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(occurredAt, workspaceId, actorUserId)
+        : base(workspaceId, occurredAt, actorUserId)
     {
         SubscriptionId = subscriptionId;
     }

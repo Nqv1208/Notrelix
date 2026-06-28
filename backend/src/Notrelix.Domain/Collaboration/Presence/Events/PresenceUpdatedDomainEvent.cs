@@ -5,4 +5,4 @@ public sealed record PresenceUpdatedDomainEvent(
     Guid UserId,
     PresenceStatus Status,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

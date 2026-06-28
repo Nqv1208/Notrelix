@@ -1,6 +1,6 @@
 namespace Notrelix.Domain.Billing.Usage.Events;
 
-public record FeatureUsageConsumedDomainEvent : DomainEvent
+public record FeatureUsageConsumedDomainEvent : WorkspaceScopedDomainEvent
 {
     public string FeatureCode { get; }
     public decimal Amount { get; }
@@ -11,7 +11,7 @@ public record FeatureUsageConsumedDomainEvent : DomainEvent
         decimal amount,
         Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(occurredAt, workspaceId, actorUserId)
+        : base(workspaceId, occurredAt, actorUserId)
     {
         FeatureCode = featureCode;
         Amount = amount;

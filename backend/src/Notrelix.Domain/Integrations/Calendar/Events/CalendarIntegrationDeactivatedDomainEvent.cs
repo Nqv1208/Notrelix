@@ -5,4 +5,4 @@ public sealed record CalendarIntegrationDeactivatedDomainEvent(
     Guid IntegrationId,
     Guid DeactivatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, DeactivatedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, DeactivatedBy);

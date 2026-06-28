@@ -6,4 +6,4 @@ public sealed record BlockSoftDeletedDomainEvent(
     Guid PageId,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, DeletedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, DeletedBy);

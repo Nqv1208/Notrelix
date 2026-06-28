@@ -4,4 +4,4 @@ public sealed record UsageMetricResetDomainEvent(
     Guid WorkspaceId,
     UsageMetricKey Key,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

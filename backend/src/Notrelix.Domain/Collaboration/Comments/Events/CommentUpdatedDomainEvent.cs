@@ -5,4 +5,4 @@ public sealed record CommentUpdatedDomainEvent(
     Guid CommentId,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, UpdatedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, UpdatedBy);

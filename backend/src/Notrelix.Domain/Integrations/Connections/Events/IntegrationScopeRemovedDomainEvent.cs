@@ -6,4 +6,4 @@ public sealed record IntegrationScopeRemovedDomainEvent(
     string Scope,
     Guid RemovedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, RemovedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, RemovedBy);

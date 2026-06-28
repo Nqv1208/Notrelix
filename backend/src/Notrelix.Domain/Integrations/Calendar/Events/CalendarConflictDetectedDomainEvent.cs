@@ -4,4 +4,4 @@ public sealed record CalendarConflictDetectedDomainEvent(
     Guid WorkspaceId,
     Guid IntegrationId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

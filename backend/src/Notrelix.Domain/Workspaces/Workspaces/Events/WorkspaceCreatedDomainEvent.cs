@@ -6,4 +6,4 @@ public sealed record WorkspaceCreatedDomainEvent(
     string Slug,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, CreatedBy);
+) : WorkspaceRootDomainEvent(WorkspaceId, OccurredAt, CreatedBy);

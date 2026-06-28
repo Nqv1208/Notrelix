@@ -1,6 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Forms.Events;
 
-public record FormClosedDomainEvent : DomainEvent
+public record FormClosedDomainEvent : WorkspaceScopedDomainEvent
 {
     public Guid FormId { get; }
 
@@ -9,7 +9,7 @@ public record FormClosedDomainEvent : DomainEvent
         Guid formId,
         Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(occurredAt, workspaceId, actorUserId)
+        : base(workspaceId, occurredAt, actorUserId)
     {
         FormId = formId;
     }

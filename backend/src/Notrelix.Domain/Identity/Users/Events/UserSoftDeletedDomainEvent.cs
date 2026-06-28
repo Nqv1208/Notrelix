@@ -5,4 +5,4 @@ public sealed record UserSoftDeletedDomainEvent(
     Guid DeletedBy,
     DateTimeOffset OccurredAt,
     string? Reason
-) : DomainEvent(OccurredAt, workspaceId: null, DeletedBy);
+) : GlobalDomainEvent(OccurredAt, DeletedBy);

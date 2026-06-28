@@ -6,4 +6,4 @@ public sealed record ChecklistCreatedDomainEvent(
     Guid ChecklistId,
     string Title,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

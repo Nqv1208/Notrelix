@@ -6,4 +6,4 @@ public sealed record WorkspaceRenamedDomainEvent(
     string NewName,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, UpdatedBy);
+) : WorkspaceRootDomainEvent(WorkspaceId, OccurredAt, UpdatedBy);

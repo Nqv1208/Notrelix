@@ -5,4 +5,4 @@ public sealed record DocumentVersionRestoredDomainEvent(
     Guid PageId,
     int VersionNumber,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

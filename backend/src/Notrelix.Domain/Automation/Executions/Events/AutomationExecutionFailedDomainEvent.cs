@@ -6,4 +6,4 @@ public sealed record AutomationExecutionFailedDomainEvent(
     Guid RuleId,
     string Error,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

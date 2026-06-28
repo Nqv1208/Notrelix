@@ -5,4 +5,4 @@ public sealed record FormSubmissionRejectedDomainEvent(
     Guid SubmissionId,
     Guid FormId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

@@ -6,4 +6,4 @@ public sealed record BillingEventReceivedDomainEvent(
     string ProviderEventId,
     BillingEventType Type,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt);

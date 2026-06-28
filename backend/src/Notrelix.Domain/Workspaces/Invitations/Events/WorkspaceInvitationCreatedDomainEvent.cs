@@ -7,4 +7,4 @@ public sealed record WorkspaceInvitationCreatedDomainEvent(
     WorkspaceRole Role,
     Guid InvitedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, InvitedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, InvitedBy);

@@ -4,4 +4,4 @@ public sealed record WorkspaceRestoredDomainEvent(
     Guid WorkspaceId,
     Guid RestoredBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, RestoredBy);
+) : WorkspaceRootDomainEvent(WorkspaceId, OccurredAt, RestoredBy);

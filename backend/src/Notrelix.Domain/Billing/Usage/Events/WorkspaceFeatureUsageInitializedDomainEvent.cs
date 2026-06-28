@@ -7,4 +7,4 @@ public sealed record WorkspaceFeatureUsageInitializedDomainEvent(
     decimal? HardLimit,
     decimal? SoftLimit,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

@@ -4,4 +4,4 @@ public sealed record OAuthTokenReferenceRotatedDomainEvent(
     Guid UserId,
     OAuthProvider Provider,
     DateTimeOffset RotatedAt
-) : DomainEvent(RotatedAt, null, null);
+) : GlobalDomainEvent(RotatedAt);

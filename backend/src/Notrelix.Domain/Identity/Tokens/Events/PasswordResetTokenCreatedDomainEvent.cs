@@ -4,4 +4,4 @@ public sealed record PasswordResetTokenCreatedDomainEvent(
     Guid TokenId,
     Guid UserId,
     DateTimeOffset CreatedAt
-) : DomainEvent(CreatedAt, null, null);
+) : GlobalDomainEvent(CreatedAt);

@@ -6,4 +6,4 @@ public sealed record EntitlementRestoredDomainEvent(
     string FeatureCode,
     Guid RestoredBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, RestoredBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, RestoredBy);

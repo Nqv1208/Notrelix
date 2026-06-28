@@ -5,4 +5,4 @@ public sealed record OAuthAccountUnlinkedDomainEvent(
     OAuthProvider Provider,
     string ProviderId,
     DateTimeOffset UnlinkedAt
-) : DomainEvent(UnlinkedAt, null, null);
+) : GlobalDomainEvent(UnlinkedAt);

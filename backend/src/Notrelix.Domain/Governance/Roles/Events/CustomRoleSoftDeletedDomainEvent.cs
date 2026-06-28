@@ -5,4 +5,4 @@ public sealed record CustomRoleSoftDeletedDomainEvent(
     Guid RoleId,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, DeletedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, DeletedBy);

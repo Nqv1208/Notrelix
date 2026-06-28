@@ -7,4 +7,4 @@ public sealed record PageMovedDomainEvent(
     Guid? NewParentId,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, UpdatedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, UpdatedBy);

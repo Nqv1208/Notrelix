@@ -5,4 +5,4 @@ public sealed record ScheduledJobFailedDomainEvent(
     Guid JobId,
     string Reason,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

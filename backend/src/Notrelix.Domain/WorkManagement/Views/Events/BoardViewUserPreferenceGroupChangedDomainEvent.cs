@@ -7,4 +7,4 @@ public sealed record BoardViewUserPreferenceGroupChangedDomainEvent(
     Guid UserId,
     Guid PreferenceId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

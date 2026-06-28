@@ -8,4 +8,4 @@ public sealed record BoardFieldCreatedDomainEvent(
     FieldType Type,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, CreatedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, CreatedBy);

@@ -5,4 +5,4 @@ public sealed record ActivityLoggedDomainEvent(
     Guid WorkspaceId,
     ActivityType Type,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

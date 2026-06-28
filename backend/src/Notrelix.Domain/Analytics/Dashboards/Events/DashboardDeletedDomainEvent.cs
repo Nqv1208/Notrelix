@@ -5,4 +5,4 @@ public sealed record DashboardDeletedDomainEvent(
     Guid DashboardId,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, DeletedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, DeletedBy);

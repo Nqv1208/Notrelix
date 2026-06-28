@@ -7,4 +7,4 @@ public sealed record BoardItemIdentityGeneratedDomainEvent(
     string ItemKey,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, UpdatedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, UpdatedBy);

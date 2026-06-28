@@ -5,4 +5,4 @@ public sealed record ScheduledJobRunCompletedDomainEvent(
     Guid JobId,
     DateTimeOffset OccurredAt,
     DateTimeOffset NextRunAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

@@ -6,4 +6,4 @@ public sealed record SavedFilterGroupUpdatedDomainEvent(
     Guid BoardId,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, UpdatedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, UpdatedBy);

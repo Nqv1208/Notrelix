@@ -5,4 +5,4 @@ public sealed record SpaceArchivedDomainEvent(
     Guid SpaceId,
     Guid ArchivedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, ArchivedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, ArchivedBy);

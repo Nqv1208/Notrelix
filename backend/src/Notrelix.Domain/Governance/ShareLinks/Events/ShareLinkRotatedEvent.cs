@@ -5,4 +5,4 @@ public sealed record ShareLinkRotatedEvent(
     Guid LinkId,
     Guid RotatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, RotatedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, RotatedBy);

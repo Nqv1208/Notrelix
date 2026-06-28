@@ -7,4 +7,4 @@ public sealed record BoardItemCompletedDomainEvent(
     DateTimeOffset? CompletedAt,
     Guid CompletedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, CompletedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, CompletedBy);

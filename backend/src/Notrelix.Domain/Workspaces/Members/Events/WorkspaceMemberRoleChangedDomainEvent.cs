@@ -8,4 +8,4 @@ public sealed record WorkspaceMemberRoleChangedDomainEvent(
     WorkspaceRole NewRole,
     Guid ActorId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, ActorId);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, ActorId);

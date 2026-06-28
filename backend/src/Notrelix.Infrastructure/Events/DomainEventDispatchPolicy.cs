@@ -357,6 +357,9 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
         Add<IntegrationSyncFailedDomainEvent>(d);
         Add<WebhookDeliveryRecordedDomainEvent>(d);
         Add<WebhookSubscriptionCreatedDomainEvent>(d);
+        Add<WebhookSubscriptionEnabledDomainEvent>(d);
+        Add<WebhookSubscriptionDisabledDomainEvent>(d);
+        Add<WebhookSubscriptionSecretRotatedDomainEvent>(d);
     }
 
     private static void RegisterWorkManagement(Dictionary<Type, DomainEventDispatchMode> d)

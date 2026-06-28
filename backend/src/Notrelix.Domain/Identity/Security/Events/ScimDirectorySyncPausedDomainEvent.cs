@@ -1,6 +1,6 @@
 namespace Notrelix.Domain.Identity.Security.Events;
 
-public record ScimDirectorySyncPausedDomainEvent : DomainEvent
+public record ScimDirectorySyncPausedDomainEvent : WorkspaceScopedDomainEvent
 {
     public Guid SyncId { get; }
 
@@ -9,7 +9,7 @@ public record ScimDirectorySyncPausedDomainEvent : DomainEvent
         Guid syncId,
         Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(occurredAt, workspaceId, actorUserId)
+        : base(workspaceId, occurredAt, actorUserId)
     {
         SyncId = syncId;
     }

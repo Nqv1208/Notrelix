@@ -6,4 +6,4 @@ public sealed record CustomRoleRevokedDomainEvent(
     Guid MemberId,
     Guid RevokedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, RevokedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, RevokedBy);
