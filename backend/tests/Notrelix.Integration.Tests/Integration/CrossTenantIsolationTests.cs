@@ -45,7 +45,7 @@ public class CrossTenantIsolationTests
         var wsB = TestIds.NewWorkspaceId();
 
         var workspace = new FakeCurrentWorkspace();
-        workspace.EnterSystemContext();
+        using var _ = workspace.EnterSystemContext();
         await using var context = CreateContext(workspace);
 
         var workspaceA = Workspace.Create(OwnerId, "Workspace A", "ws-a", FixedTime);
@@ -73,7 +73,7 @@ public class CrossTenantIsolationTests
         var wsB = TestIds.NewWorkspaceId();
 
         var workspace = new FakeCurrentWorkspace();
-        workspace.EnterSystemContext();
+        using var _ = workspace.EnterSystemContext();
         await using var context = CreateContext(workspace);
 
         var workspaceA = Workspace.Create(OwnerId, "Workspace A", "ws-a", FixedTime);
@@ -101,7 +101,7 @@ public class CrossTenantIsolationTests
         var wsB = TestIds.NewWorkspaceId();
 
         var workspace = new FakeCurrentWorkspace();
-        workspace.EnterSystemContext();
+        using var _ = workspace.EnterSystemContext();
         await using var context = CreateContext(workspace);
 
         var workspaceA = Workspace.Create(OwnerId, "Workspace A", "ws-a", FixedTime);
@@ -133,7 +133,7 @@ public class CrossTenantIsolationTests
         var wsB = TestIds.NewWorkspaceId();
 
         var workspace = new FakeCurrentWorkspace();
-        workspace.EnterSystemContext();
+        using var _ = workspace.EnterSystemContext();
         await using var context = CreateContext(workspace);
 
         var boardA = new BoardBuilder()
@@ -164,7 +164,7 @@ public class CrossTenantIsolationTests
         var wsA = TestIds.NewWorkspaceId();
 
         var workspace = new FakeCurrentWorkspace();
-        workspace.EnterSystemContext();
+        using var _ = workspace.EnterSystemContext();
         await using var context = CreateContext(workspace);
 
         context.Boards.Add(new BoardBuilder()
@@ -184,7 +184,7 @@ public class CrossTenantIsolationTests
         var wsB = TestIds.NewWorkspaceId();
 
         var workspace = new FakeCurrentWorkspace();
-        workspace.EnterSystemContext();
+        using var _ = workspace.EnterSystemContext();
         await using var context = CreateContext(workspace);
 
         context.Boards.AddRange(
@@ -210,7 +210,7 @@ public class CrossTenantIsolationTests
         var wsB = TestIds.NewWorkspaceId();
 
         var workspace = new FakeCurrentWorkspace();
-        workspace.EnterSystemContext();
+        using var _ = workspace.EnterSystemContext();
         await using var context = CreateContext(workspace);
 
         context.Boards.AddRange(
@@ -227,7 +227,7 @@ public class CrossTenantIsolationTests
     public async Task SystemContext_StillAppliesSoftDeleteFilter()
     {
         var workspace = new FakeCurrentWorkspace();
-        workspace.EnterSystemContext();
+        using var _ = workspace.EnterSystemContext();
         await using var context = CreateContext(workspace);
 
         var board = new BoardBuilder()
@@ -249,7 +249,7 @@ public class CrossTenantIsolationTests
         var wsB = TestIds.NewWorkspaceId();
 
         var workspace = new FakeCurrentWorkspace();
-        workspace.EnterSystemContext();
+        using var _ = workspace.EnterSystemContext();
         await using var context = CreateContext(workspace);
 
         var boardA = new BoardBuilder()
@@ -280,7 +280,7 @@ public class CrossTenantIsolationTests
         var wsB = TestIds.NewWorkspaceId();
 
         var workspace = new FakeCurrentWorkspace();
-        workspace.EnterSystemContext();
+        using var _ = workspace.EnterSystemContext();
         await using var context = CreateContext(workspace);
 
         var workspaceA = Workspace.Create(OwnerId, "WS A", "ws-a", FixedTime);
@@ -308,7 +308,7 @@ public class CrossTenantIsolationTests
     public async Task NonWorkspaceScopedEntities_AreNotAffectedByWorkspaceFilter()
     {
         var workspace = new FakeCurrentWorkspace();
-        workspace.EnterSystemContext();
+        using var _ = workspace.EnterSystemContext();
         await using var context = CreateContext(workspace);
 
         var wsA = Workspace.Create(OwnerId, "WS A", "ws-a", FixedTime);
@@ -328,7 +328,7 @@ public class CrossTenantIsolationTests
         var wsB = TestIds.NewWorkspaceId();
 
         var workspace = new FakeCurrentWorkspace();
-        workspace.EnterSystemContext();
+        using var _ = workspace.EnterSystemContext();
         await using var context = CreateContext(workspace);
 
         context.Boards.AddRange(

@@ -23,6 +23,7 @@ public class RegisterCommandHandlerTests
         await context.SaveChangesAsync();
 
         var passwordHasher = new Mock<IPasswordHasher>();
+        passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");
         var jwtService = new Mock<IJwtService>();
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);

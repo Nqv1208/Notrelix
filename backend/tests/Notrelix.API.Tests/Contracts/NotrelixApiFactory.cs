@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -15,6 +17,7 @@ using Notrelix.Application.Features.Workspaces.DTOs;
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetUserWorkspaces;
 using Notrelix.Domain.Governance.Roles;
 using Notrelix.Infrastructure.Data;
+using StackExchange.Redis;
 
 namespace Notrelix.API.Tests.Contracts;
 
@@ -42,6 +45,15 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             options.ValidateScopes = false;
         });
 
+        // Inject required configuration BEFORE the app's ConfigureServices runs.
+        builder.UseSetting("ConnectionStrings:Redis", "localhost:6379,abortConnect=false");
+        builder.UseSetting("JwtSettings:SecretKey", "ci-test-secret-key-must-be-at-least-32-characters");
+        builder.UseSetting("JwtSettings:Issuer", "Notrelix.CI");
+        builder.UseSetting("JwtSettings:Audience", "Notrelix.CI");
+        builder.UseSetting("JwtSettings:ExpireMinutes", "60");
+        builder.UseSetting("JwtSettings:RefreshTokenExpireDays", "7");
+
+        // Also replace Redis with in-memory cache AFTER app services are registered.
         builder.ConfigureTestServices(services =>
         {
             // Fully replace EF Core persistence: AddPersistence registers Npgsql
@@ -74,6 +86,13 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             });
             services.AddScoped<IApplicationDbContext>(sp =>
                 sp.GetRequiredService<ApplicationDbContext>());
+
+            // Replace Redis cache with in-memory distributed cache for testing.
+            // CacheRegistration.AddCaching throws when ConnectionStrings__Redis is missing.
+            services.RemoveAll<IConnectionMultiplexer>();
+            services.RemoveAll<IDistributedCache>();
+            services.RemoveAll<IRedisCacheService>();
+            services.AddDistributedMemoryCache();
 
             // IPermissionEvaluator is not registered in the real DI (pre-existing gap).
             // WorkspaceResolutionMiddleware requires it for every request.
