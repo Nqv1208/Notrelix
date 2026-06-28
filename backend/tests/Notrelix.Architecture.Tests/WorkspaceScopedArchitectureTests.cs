@@ -14,18 +14,6 @@ public class WorkspaceScopedArchitectureTests
         return Path.Combine(current, "src", "Notrelix.Application");
     }
 
-    private static string GetInfrastructurePath()
-    {
-        var current = AppContext.BaseDirectory;
-        while (current != null && !File.Exists(Path.Combine(current, "backend.slnx")))
-        {
-            current = Path.GetDirectoryName(current);
-        }
-        if (current == null)
-            throw new DirectoryNotFoundException("Could not find backend.slnx root.");
-        return Path.Combine(current, "src", "Notrelix.Infrastructure");
-    }
-
     private static string[] GetQueryFiles()
     {
         var appPath = GetApplicationPath();
@@ -39,15 +27,35 @@ public class WorkspaceScopedArchitectureTests
             .ToArray();
     }
 
-    private static readonly HashSet<string> KnownMissingWorkspaceQueryRequest =
-    [
-        "GetMyBoardItemsQuery", "GetWorkspaceQuery", "GetWorkspaceBySlugQuery",
-        "GetWorkspaceMembersBySlugQuery", "GetWorkspaceMembersQuery",
-        "GetWorkspaceActivityBySlugQuery", "GetWorkspaceActivityQuery",
-        "GetWorkspaceInvitationsQuery", "GetResourcePermissionsQuery",
-        "GetWorkspaceAutomationsQuery", "GetWorkspacePagesQuery",
-        "SearchPagesQuery", "GetPageTreeQuery",
-    ];
+    private static readonly Dictionary<string, AllowlistEntry> KnownMissingWorkspaceQueryRequest = new()
+    {
+        ["GetMyBoardItemsQuery"] = new("GetMyBoardItemsQuery", AllowlistClassification.LegacyGap,
+            "WorkManagement query missing workspace marker", "Add IWorkspaceRequest"),
+        ["GetWorkspaceQuery"] = new("GetWorkspaceQuery", AllowlistClassification.LegacyGap,
+            "Workspace query missing workspace marker", "Add IWorkspaceRequest"),
+        ["GetWorkspaceBySlugQuery"] = new("GetWorkspaceBySlugQuery", AllowlistClassification.LegacyGap,
+            "Workspace query missing workspace marker", "Add IWorkspaceRequest"),
+        ["GetWorkspaceMembersBySlugQuery"] = new("GetWorkspaceMembersBySlugQuery", AllowlistClassification.LegacyGap,
+            "Workspace query missing workspace marker", "Add IWorkspaceRequest"),
+        ["GetWorkspaceMembersQuery"] = new("GetWorkspaceMembersQuery", AllowlistClassification.LegacyGap,
+            "Workspace query missing workspace marker", "Add IWorkspaceRequest"),
+        ["GetWorkspaceActivityBySlugQuery"] = new("GetWorkspaceActivityBySlugQuery", AllowlistClassification.LegacyGap,
+            "Workspace query missing workspace marker", "Add IWorkspaceRequest"),
+        ["GetWorkspaceActivityQuery"] = new("GetWorkspaceActivityQuery", AllowlistClassification.LegacyGap,
+            "Workspace query missing workspace marker", "Add IWorkspaceRequest"),
+        ["GetWorkspaceInvitationsQuery"] = new("GetWorkspaceInvitationsQuery", AllowlistClassification.LegacyGap,
+            "Workspace query missing workspace marker", "Add IWorkspaceRequest"),
+        ["GetResourcePermissionsQuery"] = new("GetResourcePermissionsQuery", AllowlistClassification.LegacyGap,
+            "Governance query missing workspace marker", "Add IWorkspaceRequest"),
+        ["GetWorkspaceAutomationsQuery"] = new("GetWorkspaceAutomationsQuery", AllowlistClassification.LegacyGap,
+            "Automation query missing workspace marker", "Add IWorkspaceRequest"),
+        ["GetWorkspacePagesQuery"] = new("GetWorkspacePagesQuery", AllowlistClassification.LegacyGap,
+            "Documents query missing workspace marker", "Add IWorkspaceRequest"),
+        ["SearchPagesQuery"] = new("SearchPagesQuery", AllowlistClassification.LegacyGap,
+            "Documents query missing workspace marker", "Add IWorkspaceRequest"),
+        ["GetPageTreeQuery"] = new("GetPageTreeQuery", AllowlistClassification.LegacyGap,
+            "Documents query missing workspace marker", "Add IWorkspaceRequest"),
+    };
 
     [Fact]
     public void QueryRecords_WithWorkspaceId_ShouldImplement_IWorkspaceRequest()
@@ -69,12 +77,15 @@ public class WorkspaceScopedArchitectureTests
 
             if (!declaration.Contains("IWorkspaceRequest"))
             {
-                if (!KnownMissingWorkspaceQueryRequest.Contains(name))
+                if (!KnownMissingWorkspaceQueryRequest.ContainsKey(name))
                     violations.Add($"{name}: {Path.GetFileName(file)}");
             }
         }
 
-        violations.Should().BeEmpty($"Query records with WorkspaceId must implement IWorkspaceRequest. Fix known violations by removing from KnownMissingWorkspaceQueryRequest: {string.Join(", ", violations)}");
+        violations.Should().BeEmpty(
+            $"Query records with WorkspaceId must implement IWorkspaceRequest. " +
+            $"Fix by adding to KnownMissingWorkspaceQueryRequest with classification, or add IWorkspaceRequest. " +
+            $"Violations: {string.Join(", ", violations)}");
     }
 
     [Fact]
@@ -98,7 +109,9 @@ public class WorkspaceScopedArchitectureTests
                 violations.Add($"{name}: {Path.GetFileName(file)} has IWorkspaceRequest but no WorkspaceId property");
         }
 
-        violations.Should().BeEmpty($"Records implementing IWorkspaceRequest must have a WorkspaceId property: {string.Join(", ", violations)}");
+        violations.Should().BeEmpty(
+            $"Records implementing IWorkspaceRequest must have a WorkspaceId property. " +
+            $"Violations: {string.Join(", ", violations)}");
     }
 
     [Fact]
@@ -120,7 +133,9 @@ public class WorkspaceScopedArchitectureTests
             violations.Add($"{name}: {Path.GetFileName(file)} implements IWorkspaceRequest but not IQuery/ICommand");
         }
 
-        violations.Should().BeEmpty($"Records with IWorkspaceRequest must also implement IQuery or ICommand: {string.Join(", ", violations)}");
+        violations.Should().BeEmpty(
+            $"Records with IWorkspaceRequest must also implement IQuery or ICommand. " +
+            $"Violations: {string.Join(", ", violations)}");
     }
 
     private static string ReadDeclaration(string content)
