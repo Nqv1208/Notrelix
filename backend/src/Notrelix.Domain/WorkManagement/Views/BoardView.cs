@@ -25,6 +25,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(boardId);
         Guard.NotEmpty(createdBy);
         Guard.NotNullOrWhiteSpace(name);
+        Guard.MaxLength(name, 255);
         Guard.NotNull(config);
 
         var view = new BoardView
@@ -70,6 +71,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(name);
+        Guard.MaxLength(name, 255);
 
         var oldName = Name;
         var normalizedName = name.Trim();

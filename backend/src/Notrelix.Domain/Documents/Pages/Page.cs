@@ -17,6 +17,7 @@ public class Page : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(createdBy);
         Guard.NotNullOrWhiteSpace(title);
+        Guard.MaxLength(title, 500);
 
         var page = new Page
         {
@@ -39,6 +40,7 @@ public class Page : AggregateRoot, IWorkspaceScoped
         if (Status == PageStatus.Archived)
             throw new BusinessRuleException("Cannot rename an archived page.");
         Guard.NotNullOrWhiteSpace(newTitle);
+        Guard.MaxLength(newTitle, 500);
 
         var oldTitle = Title;
         if (Title == newTitle.Trim()) return;

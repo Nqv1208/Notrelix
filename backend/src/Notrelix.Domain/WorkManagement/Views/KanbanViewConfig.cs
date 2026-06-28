@@ -26,6 +26,8 @@ public sealed class KanbanViewConfig : BoardViewConfig
             throw new BusinessRuleException("Invalid Kanban column field.");
 
         var ids = visibleFieldIds.ToArray();
+        if (ids.Length == 0)
+            throw new BusinessRuleException("Kanban view must have at least one visible field.");
         if (ids.Any(id => id == Guid.Empty))
             throw new BusinessRuleException("Visible field IDs cannot be empty.");
 

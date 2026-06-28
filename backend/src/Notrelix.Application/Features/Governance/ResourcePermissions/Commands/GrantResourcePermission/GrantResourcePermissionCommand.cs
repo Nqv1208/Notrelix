@@ -63,6 +63,18 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
 
         var actorId = _currentUser.UserId;
 
+        var granterPermission = await _context.ResourcePermissions
+            .Where(p => p.WorkspaceId == request.WorkspaceId &&
+                        p.ResourceType == request.ResourceType &&
+                        p.ResourceId == request.ResourceId &&
+                        p.SubjectType == PermissionSubjectType.User &&
+                        p.SubjectId == actorId &&
+                        !p.IsDeleted)
+            .OrderByDescending(p => p.Level)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var granterLevel = granterPermission?.Level ?? PermissionLevel.None;
+
         if (existingPermission != null)
         {
             _context.ResourcePermissions.Remove(existingPermission);
@@ -75,6 +87,7 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
             subjectType,
             request.SubjectId,
             level,
+            granterLevel,
             actorId,
             _dateTimeProvider.UtcNow);
 

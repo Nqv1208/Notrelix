@@ -17,11 +17,14 @@ public class Workspace : AggregateRoot
         Guard.NotEmpty(ownerId);
         Guard.NotNullOrWhiteSpace(name);
         Guard.NotNullOrWhiteSpace(slug);
+        Guard.MaxLength(name, 160);
+
+        var slugValue = SharedKernel.Slug.Create(slug);
 
         var workspace = new Workspace
         {
             Name = name.Trim(),
-            Slug = slug.Trim().ToLowerInvariant(),
+            Slug = slugValue.Value,
             Description = description?.Trim(),
             Status = WorkspaceStatus.Active,
             Settings = WorkspaceSettings.Create(),
@@ -51,6 +54,7 @@ public class Workspace : AggregateRoot
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(newName);
+        Guard.MaxLength(newName, 160);
 
         if (Status == WorkspaceStatus.Archived)
             throw new BusinessRuleException("Cannot rename an archived workspace.");

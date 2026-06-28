@@ -22,6 +22,7 @@ public class SecurityEvent : AggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(title);
+        Guard.MaxLength(title, 255);
 
         var @event = new SecurityEvent
         {

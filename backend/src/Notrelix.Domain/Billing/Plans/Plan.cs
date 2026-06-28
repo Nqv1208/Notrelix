@@ -48,6 +48,7 @@ public class Plan : AggregateRoot
     public static Plan Create(string name, Money price, BillingPeriod period, DateTimeOffset createdAt)
     {
         Guard.NotNullOrWhiteSpace(name);
+        Guard.MaxLength(name, 100);
         Guard.NotNull(price);
 
         var plan = new Plan

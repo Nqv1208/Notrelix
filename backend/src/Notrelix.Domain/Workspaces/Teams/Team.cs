@@ -16,6 +16,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(name);
+        Guard.MaxLength(name, 160);
         Guard.NotEmpty(createdBy);
 
         var team = new Team
@@ -35,6 +36,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(name);
+        Guard.MaxLength(name, 160);
         Guard.NotEmpty(updatedBy);
 
         if (Status == TeamStatus.Archived)

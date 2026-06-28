@@ -17,6 +17,7 @@ public class BoardGroup : SoftDeletableEntity, IWorkspaceScoped
         Guard.NotEmpty(boardId);
         Guard.NotEmpty(createdBy);
         Guard.NotNullOrWhiteSpace(title);
+        Guard.MaxLength(title, 255);
         Guard.NotNull(color);
         Guard.NotNull(position);
 
@@ -39,6 +40,7 @@ public class BoardGroup : SoftDeletableEntity, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(title);
+        Guard.MaxLength(title, 255);
 
         var oldTitle = Title;
         var normalizedTitle = title.Trim();
@@ -77,6 +79,12 @@ public class BoardGroup : SoftDeletableEntity, IWorkspaceScoped
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
         AddDomainEvent(new BoardGroupSoftDeletedDomainEvent(WorkspaceId, BoardId, Id, deletedBy, deletedAt));
+    }
+
+    public void ValidateNotDefaultGroup(Guid? defaultGroupId)
+    {
+        if (defaultGroupId.HasValue && Id == defaultGroupId.Value)
+            throw new BusinessRuleException("Cannot delete the board's default group.");
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)

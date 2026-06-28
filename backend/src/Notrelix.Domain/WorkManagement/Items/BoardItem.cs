@@ -39,6 +39,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(boardId);
         Guard.NotEmpty(groupId);
         Guard.NotNullOrWhiteSpace(name);
+        Guard.MaxLength(name, 500);
         Guard.NotNull(position);
 
         var item = new BoardItem
@@ -66,6 +67,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(name);
+        Guard.MaxLength(name, 500);
 
         var oldName = Name;
         var normalizedName = name.Trim();
@@ -162,10 +164,18 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         AddDomainEvent(new BoardItemFieldValueChangedDomainEvent(WorkspaceId, Id, BoardId, field.Id, oldValue, newValue, updatedBy, updatedAt));
     }
 
-    public void AssignParentItem(Guid? parentItemId, int itemLevel, Func<Guid, Guid?> getAncestorParentId, Guid updatedBy, DateTimeOffset updatedAt)
+    public void AssignParentItem(Guid? parentItemId, int itemLevel, Func<Guid, (Guid BoardId, Guid?)> getParentInfo, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        BoardItemRules.EnsureNoCycle(Id, parentItemId, getAncestorParentId);
+
+        if (parentItemId.HasValue)
+        {
+            var parentInfo = getParentInfo(parentItemId.Value);
+            if (parentInfo.BoardId != BoardId)
+                throw new BusinessRuleException("Parent item must belong to the same board.");
+        }
+
+        BoardItemRules.EnsureNoCycle(Id, parentItemId, id => getParentInfo(id).Item2);
 
         ParentItemId = parentItemId;
         ItemLevel = itemLevel;

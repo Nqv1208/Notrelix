@@ -18,15 +18,22 @@ public class Comment : AggregateRoot, IWorkspaceScoped
         Guid createdBy,
         DateTimeOffset createdAt,
         Guid? parentId = null,
-        CommentAnchor? anchor = null)
+        CommentAnchor? anchor = null,
+        Func<Guid, ResourceRef?>? getParentTarget = null)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(target);
         Guard.NotNullOrWhiteSpace(content);
+        Guard.MaxLength(content, 10000);
         Guard.NotEmpty(createdBy);
 
         if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
             throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
+
+        if (parentId.HasValue && getParentTarget != null)
+        {
+            Rules.CommentRules.EnsureParentSameTarget(target, parentId, getParentTarget);
+        }
 
         var comment = new Comment
         {
@@ -48,6 +55,7 @@ public class Comment : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(newContent);
+        Guard.MaxLength(newContent, 10000);
 
         if (Content == newContent.Trim()) return;
 

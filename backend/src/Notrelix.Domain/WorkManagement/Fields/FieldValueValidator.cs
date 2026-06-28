@@ -16,6 +16,14 @@ public static class FieldValueValidator
         if (data.Value == "null")
             return;
 
+        JsonDocument? settingsDoc = null;
+        try
+        {
+            if (settings?.Data?.Value != null && settings.Data.Value != "{}")
+                settingsDoc = JsonDocument.Parse(settings.Data.Value);
+        }
+        catch { /* ignore invalid settings JSON */ }
+
         try
         {
             using var doc = JsonDocument.Parse(data.Value);
@@ -32,11 +40,31 @@ public static class FieldValueValidator
                 case FieldType.Link:
                     if (kind != JsonValueKind.String)
                         throw new BusinessRuleException($"Value for field type {type} must be a string.");
+                    if (settingsDoc != null && settingsDoc.RootElement.TryGetProperty("maxLength", out var maxLenToken) && maxLenToken.TryGetInt32(out var maxLen))
+                    {
+                        var strVal = element.GetString() ?? string.Empty;
+                        if (strVal.Length > maxLen)
+                            throw new BusinessRuleException($"Text value exceeds maximum length of {maxLen} characters.");
+                    }
                     break;
 
                 case FieldType.Number:
                     if (kind != JsonValueKind.Number)
                         throw new BusinessRuleException("Value for field type Number must be a number.");
+                    var numVal = element.GetDouble();
+                    if (settingsDoc != null)
+                    {
+                        if (settingsDoc.RootElement.TryGetProperty("min", out var minToken) && minToken.TryGetDouble(out var minVal))
+                        {
+                            if (numVal < minVal)
+                                throw new BusinessRuleException($"Number value must be at least {minVal}.");
+                        }
+                        if (settingsDoc.RootElement.TryGetProperty("max", out var maxToken) && maxToken.TryGetDouble(out var maxVal))
+                        {
+                            if (numVal > maxVal)
+                                throw new BusinessRuleException($"Number value must be at most {maxVal}.");
+                        }
+                    }
                     break;
 
                 case FieldType.Checkbox:
