@@ -1,5 +1,5 @@
 import { QueryClient } from "@tanstack/react-query"
-import { ApiError } from "@/lib/api/api-error"
+import { AppError } from "@/lib/errors/app-error"
 
 export function createQueryClient() {
   return new QueryClient({
@@ -10,9 +10,9 @@ export function createQueryClient() {
         refetchOnWindowFocus: false,
         retry: (failureCount, error) => {
           // Do not retry on non-retryable API errors
-          if (error instanceof ApiError) {
-            const nonRetryableStatuses = [400, 401, 403, 404, 409, 422]
-            if (nonRetryableStatuses.includes(error.status)) {
+          if (error instanceof AppError) {
+            const nonRetryableKinds = ["auth", "forbidden", "not_found", "conflict", "validation"]
+            if (nonRetryableKinds.includes(error.kind)) {
               return false
             }
           }
