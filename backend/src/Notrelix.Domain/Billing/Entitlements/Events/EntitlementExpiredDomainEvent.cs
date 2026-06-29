@@ -1,6 +1,6 @@
 namespace Notrelix.Domain.Billing.Entitlements.Events;
 
-public record EntitlementExpiredDomainEvent : DomainEvent
+public record EntitlementExpiredDomainEvent : WorkspaceScopedDomainEvent
 {
     public Guid EntitlementId { get; }
     public string FeatureCode { get; }
@@ -10,7 +10,7 @@ public record EntitlementExpiredDomainEvent : DomainEvent
         Guid entitlementId,
         string featureCode,
         DateTimeOffset occurredAt)
-        : base(occurredAt, workspaceId, null)
+        : base(workspaceId, occurredAt, null)
     {
         EntitlementId = entitlementId;
         FeatureCode = featureCode;

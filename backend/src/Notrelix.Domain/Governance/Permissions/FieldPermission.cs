@@ -47,4 +47,24 @@ public class FieldPermission : Entity, IWorkspaceScoped
             ConditionJson = conditionJson ?? "{}"
         };
     }
+
+    public void UpdatePermissions(bool canView, bool canEdit, bool canMask, PermissionEffect effect, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        Guard.NotEmpty(updatedBy);
+
+        CanView = canView;
+        CanEdit = canEdit;
+        CanMask = canMask;
+        Effect = effect;
+        Version++;
+    }
+
+    public void Revoke(Guid revokedBy, DateTimeOffset revokedAt)
+    {
+        CanView = false;
+        CanEdit = false;
+        CanMask = false;
+        Effect = PermissionEffect.Deny;
+        Version++;
+    }
 }

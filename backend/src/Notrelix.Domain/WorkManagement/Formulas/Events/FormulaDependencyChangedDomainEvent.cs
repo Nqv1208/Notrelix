@@ -5,4 +5,4 @@ public sealed record FormulaDependencyChangedDomainEvent(
     Guid FormulaFieldId,
     Guid DependsOnFieldId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

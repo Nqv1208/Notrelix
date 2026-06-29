@@ -5,4 +5,4 @@ public sealed record WorkspaceFeatureUsageSoftDeletedDomainEvent(
     FeatureCode Feature,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, DeletedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, DeletedBy);

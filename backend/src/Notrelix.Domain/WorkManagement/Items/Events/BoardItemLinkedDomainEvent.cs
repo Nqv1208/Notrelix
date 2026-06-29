@@ -6,4 +6,4 @@ public sealed record BoardItemLinkedDomainEvent(
     ResourceRef Target,
     BoardItemLinkType LinkType,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

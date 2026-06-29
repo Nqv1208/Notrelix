@@ -6,4 +6,4 @@ public sealed record UserSuspendedDomainEvent(
     Guid SuspendedBy,
     DateTimeOffset SuspendedAt,
     string? Reason
-) : DomainEvent(SuspendedAt, null, null);
+) : GlobalDomainEvent(SuspendedAt);

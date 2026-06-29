@@ -1,6 +1,6 @@
 namespace Notrelix.Domain.Identity.Tokens.Events;
 
-public record ApiTokenCreatedDomainEvent : DomainEvent
+public record ApiTokenCreatedDomainEvent : WorkspaceScopedDomainEvent
 {
     public Guid TokenId { get; }
     public string Name { get; }
@@ -11,7 +11,7 @@ public record ApiTokenCreatedDomainEvent : DomainEvent
         string name,
         Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(occurredAt, workspaceId, actorUserId)
+        : base(workspaceId, occurredAt, actorUserId)
     {
         TokenId = tokenId;
         Name = name;

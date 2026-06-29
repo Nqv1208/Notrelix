@@ -46,7 +46,7 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
         }
 
         var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.NormalizedEmail == email.ToUpperInvariant(), cancellationToken);
+            .FirstOrDefaultAsync(u => u.NormalizedEmail == email.ToLowerInvariant(), cancellationToken);
 
         // Always return success to prevent email enumeration
         if (user is null)

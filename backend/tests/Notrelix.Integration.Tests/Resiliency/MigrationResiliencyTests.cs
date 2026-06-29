@@ -1,7 +1,9 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Testing.Integration;
 
 namespace Notrelix.Integration.Tests.Resiliency;
 
@@ -26,6 +28,7 @@ public class MigrationResiliencyTests
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase($"Notrelix-migration-{Guid.NewGuid():N}")
+            .ReplaceService<IModelCacheKeyFactory, WorkspaceAwareModelCacheKeyFactory>()
             .Options;
         return new TestApplicationDbContext(options);
     }

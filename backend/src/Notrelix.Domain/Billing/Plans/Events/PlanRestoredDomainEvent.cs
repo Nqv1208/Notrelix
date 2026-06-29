@@ -4,4 +4,4 @@ public sealed record PlanRestoredDomainEvent(
     Guid PlanId,
     Guid RestoredBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, null, null);
+) : GlobalDomainEvent(OccurredAt);

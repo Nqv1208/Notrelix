@@ -5,4 +5,4 @@ public sealed record UsageMetricDecreasedDomainEvent(
     UsageMetricKey Key,
     int Amount,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

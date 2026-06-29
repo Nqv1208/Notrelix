@@ -4,4 +4,4 @@ public sealed record WorkspaceSoftDeletedDomainEvent(
     Guid WorkspaceId,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, DeletedBy);
+) : WorkspaceRootDomainEvent(WorkspaceId, OccurredAt, DeletedBy);

@@ -6,4 +6,4 @@ public sealed record SubscriptionRenewedDomainEvent(
     DateTimeOffset NewPeriodStart,
     DateTimeOffset NewPeriodEnd,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

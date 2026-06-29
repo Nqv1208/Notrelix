@@ -86,6 +86,8 @@ public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
     public void ChangeSyncDirection(CalendarSyncDirection newDirection, Guid updatedBy, DateTimeOffset occurredAt)
     {
         EnsureNotDeleted();
+        if (!IsActive)
+            throw new DomainException("Cannot change sync direction on a deactivated calendar integration.");
         if (SyncDirection == newDirection) return;
 
         SyncDirection = newDirection;
@@ -96,6 +98,8 @@ public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
     public void LinkEvent(Guid internalEventId, string externalEventId, string? eTag = null)
     {
         EnsureNotDeleted();
+        if (!IsActive)
+            throw new DomainException("Cannot link events on a deactivated calendar integration.");
         Guard.NotEmpty(internalEventId);
         Guard.NotNullOrWhiteSpace(externalEventId);
 

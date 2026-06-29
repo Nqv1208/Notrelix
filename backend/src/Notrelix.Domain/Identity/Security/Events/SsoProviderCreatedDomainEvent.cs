@@ -1,6 +1,6 @@
 namespace Notrelix.Domain.Identity.Security.Events;
 
-public record SsoProviderCreatedDomainEvent : DomainEvent
+public record SsoProviderCreatedDomainEvent : WorkspaceScopedDomainEvent
 {
     public Guid ProviderId { get; }
     public string Name { get; }
@@ -11,7 +11,7 @@ public record SsoProviderCreatedDomainEvent : DomainEvent
         string name,
         Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(occurredAt, workspaceId, actorUserId)
+        : base(workspaceId, occurredAt, actorUserId)
     {
         ProviderId = providerId;
         Name = name;

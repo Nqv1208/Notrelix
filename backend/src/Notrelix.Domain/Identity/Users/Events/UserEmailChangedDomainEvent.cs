@@ -5,4 +5,4 @@ public sealed record UserEmailChangedDomainEvent(
     Email OldEmail,
     Email NewEmail,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, null, null);
+) : GlobalDomainEvent(OccurredAt);

@@ -6,4 +6,4 @@ public sealed record WorkspaceMemberActivatedDomainEvent(
     Guid UserId,
     Guid ActorId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, ActorId);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, ActorId);

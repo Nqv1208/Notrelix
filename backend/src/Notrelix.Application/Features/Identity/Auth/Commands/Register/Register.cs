@@ -33,7 +33,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<Au
 
     public async Task<Result<AuthResult>> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
-        var normalizedEmail = request.Email.Trim().ToUpperInvariant();
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
 
         var emailExists = await _context.Users
             .AnyAsync(u => u.NormalizedEmail == normalizedEmail, cancellationToken);

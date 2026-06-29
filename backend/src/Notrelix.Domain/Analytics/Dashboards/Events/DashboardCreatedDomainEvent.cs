@@ -5,4 +5,4 @@ public sealed record DashboardCreatedDomainEvent(
     Guid DashboardId,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, CreatedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, CreatedBy);

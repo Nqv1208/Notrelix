@@ -9,4 +9,4 @@ public sealed record FormDetailsUpdatedDomainEvent(
     string SubmitterPolicyJson,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, UpdatedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, UpdatedBy);

@@ -27,7 +27,7 @@ public class PageTemplate : AggregateRoot
         };
 
         template.SetAuditOnCreate(null, createdAt);
-        template.AddDomainEvent(new PageTemplateCreatedDomainEvent(template.WorkspaceId, template.Id, template.Name, createdAt));
+        template.AddDomainEvent(new PageTemplateCreatedDomainEvent(template.Id, template.Name, createdAt));
         return template;
     }
 
@@ -38,7 +38,7 @@ public class PageTemplate : AggregateRoot
 
         Status = PageTemplateStatus.Published;
         SetAuditOnUpdate(publishedBy, publishedAt);
-        AddDomainEvent(new PageTemplatePublishedDomainEvent(WorkspaceId, Id, publishedAt));
+        AddDomainEvent(new PageTemplatePublishedDomainEvent(Id, publishedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)

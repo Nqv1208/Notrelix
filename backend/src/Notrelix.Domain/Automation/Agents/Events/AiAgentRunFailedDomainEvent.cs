@@ -6,4 +6,4 @@ public sealed record AiAgentRunFailedDomainEvent(
     Guid AgentId,
     string ErrorMessage,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt);

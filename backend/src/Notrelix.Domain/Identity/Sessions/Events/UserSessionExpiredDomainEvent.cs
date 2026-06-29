@@ -4,4 +4,4 @@ public sealed record UserSessionExpiredDomainEvent(
     Guid SessionId,
     Guid UserId,
     DateTimeOffset ExpiredAt
-) : DomainEvent(ExpiredAt, null, null);
+) : GlobalDomainEvent(ExpiredAt);

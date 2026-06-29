@@ -5,4 +5,4 @@ public sealed record IntegrationConnectionRevokedDomainEvent(
     Guid ConnectionId,
     Guid RevokedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, RevokedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, RevokedBy);

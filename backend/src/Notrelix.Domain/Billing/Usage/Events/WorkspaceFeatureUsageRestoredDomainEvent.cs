@@ -5,4 +5,4 @@ public sealed record WorkspaceFeatureUsageRestoredDomainEvent(
     FeatureCode Feature,
     Guid RestoredBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, RestoredBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, RestoredBy);

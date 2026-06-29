@@ -26,13 +26,15 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         Guard.NotNull(token);
         Guard.NotEmpty(invitedBy);
 
+        var emailValue = SharedKernel.Email.Create(email);
+
         if (expiry is not null && expiry <= TimeSpan.Zero)
             throw new BusinessRuleException("Invitation expiry must be greater than zero.");
 
         var invitation = new WorkspaceInvitation
         {
             WorkspaceId = workspaceId,
-            Email = email.Trim().ToLowerInvariant(),
+            Email = emailValue.Value,
             Role = role,
             Token = token,
             Status = WorkspaceInvitationStatus.Pending,

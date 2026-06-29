@@ -5,4 +5,4 @@ public sealed record UserMfaMethodDisabledDomainEvent(
     Guid UserId,
     MfaMethodType Type,
     DateTimeOffset DisabledAt
-) : DomainEvent(DisabledAt, null, null);
+) : GlobalDomainEvent(DisabledAt);

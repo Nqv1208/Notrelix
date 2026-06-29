@@ -8,4 +8,4 @@ public sealed record BoardItemParentAssignedDomainEvent(
     int ItemLevel,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, UpdatedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, UpdatedBy);

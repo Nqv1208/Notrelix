@@ -22,6 +22,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(name);
+        Guard.MaxLength(name, 160);
         Guard.NotEmpty(createdBy);
 
         var space = new Space
@@ -46,6 +47,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
         if (Status == SpaceStatus.Archived)
             throw new BusinessRuleException("Cannot rename an archived space.");
         Guard.NotNullOrWhiteSpace(newName);
+        Guard.MaxLength(newName, 160);
         Guard.NotEmpty(updatedBy);
 
         var oldName = Name;
@@ -67,9 +69,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(movedBy);
 
         if (WorkspaceId != newWorkspaceId)
-        {
-            throw new BusinessRuleException("Moving a space across workspaces is not allowed to maintain workspace isolation boundaries.");
-        }
+            throw new BusinessRuleException("Moving a space across workspaces is not allowed.");
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)

@@ -28,6 +28,7 @@ public class AuditLog : Entity, IWorkspaceScoped
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(actorId);
         Guard.NotNullOrWhiteSpace(action);
+        Guard.MaxLength(action, 255);
         Guard.NotNull(target);
 
         target.EnsureSameWorkspace(workspaceId);

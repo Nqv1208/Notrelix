@@ -5,4 +5,4 @@ public sealed record AuditLogRecordedDomainEvent(
     Guid WorkspaceId,
     string Action,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

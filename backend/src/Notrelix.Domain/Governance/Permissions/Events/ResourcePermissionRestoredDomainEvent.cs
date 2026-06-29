@@ -7,4 +7,4 @@ public sealed record ResourcePermissionRestoredDomainEvent(
     Guid ResourceId,
     Guid RestoredBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, RestoredBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, RestoredBy);

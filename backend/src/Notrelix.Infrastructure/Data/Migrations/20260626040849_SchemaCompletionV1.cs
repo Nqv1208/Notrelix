@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -495,7 +495,8 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     delete_reason = table.Column<string>(type: "text", nullable: true),
                     restored_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     restored_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L)
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
+                    is_system = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false)
                 },
                 constraints: table =>
                 {

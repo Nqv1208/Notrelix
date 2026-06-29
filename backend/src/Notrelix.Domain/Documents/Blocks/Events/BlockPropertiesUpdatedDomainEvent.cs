@@ -6,4 +6,4 @@ public sealed record BlockPropertiesUpdatedDomainEvent(
     Guid PageId,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, UpdatedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, UpdatedBy);

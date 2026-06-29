@@ -23,7 +23,7 @@ public class BoardTemplate : AggregateRoot
             Status = TemplateStatus.Published
         };
 
-        template.AddDomainEvent(new BoardTemplateCreatedDomainEvent(template.WorkspaceId, template.Id, template.Name, createdAt));
+        template.AddDomainEvent(new BoardTemplateCreatedDomainEvent(template.Id, template.Name, createdAt));
         return template;
     }
 }

@@ -5,4 +5,4 @@ public sealed record CustomRoleRestoredDomainEvent(
     Guid RoleId,
     Guid RestoredBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, RestoredBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, RestoredBy);

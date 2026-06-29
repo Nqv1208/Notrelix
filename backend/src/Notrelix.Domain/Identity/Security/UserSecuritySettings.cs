@@ -40,6 +40,7 @@ public class UserSecuritySettings : AggregateRoot
         LastSecurityReviewAt = updatedAt;
 
         SetAuditOnUpdate(UserId, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new UserMfaRequirementEnabledDomainEvent(UserId, method, updatedAt));
     }
 
@@ -56,6 +57,7 @@ public class UserSecuritySettings : AggregateRoot
         LastSecurityReviewAt = updatedAt;
 
         SetAuditOnUpdate(UserId, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new UserMfaRequirementDisabledDomainEvent(UserId, previousMethod, updatedAt));
     }
 
@@ -67,6 +69,7 @@ public class UserSecuritySettings : AggregateRoot
         LastSecurityReviewAt = updatedAt;
 
         SetAuditOnUpdate(UserId, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new PasswordChangeRequiredDomainEvent(UserId, updatedAt));
     }
 
@@ -79,6 +82,7 @@ public class UserSecuritySettings : AggregateRoot
         LastSecurityReviewAt = updatedAt;
 
         SetAuditOnUpdate(UserId, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new UserSecurityPasswordChangedDomainEvent(UserId, updatedAt));
     }
 
@@ -91,6 +95,7 @@ public class UserSecuritySettings : AggregateRoot
         LastSecurityReviewAt = updatedAt;
 
         SetAuditOnUpdate(UserId, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new UserSecuritySettingsUpdatedDomainEvent(UserId, updatedAt));
     }
 

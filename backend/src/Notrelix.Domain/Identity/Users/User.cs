@@ -21,7 +21,7 @@ public class User : AggregateRoot
     public IReadOnlyCollection<OAuthAccount> OAuthAccounts => _oauthAccounts.AsReadOnly();
 
     private static string NormalizeEmail(string email)
-        => email.Trim().ToUpperInvariant();
+        => email.Trim().ToLowerInvariant();
 
     private User() : base() { }
 
@@ -32,6 +32,7 @@ public class User : AggregateRoot
         DateTimeOffset createdAt)
     {
         Guard.NotNullOrWhiteSpace(name);
+        Guard.MaxLength(name, 100);
         Guard.NotNullOrWhiteSpace(passwordHash);
 
         var emailValue = Email.Create(email);
@@ -57,6 +58,7 @@ public class User : AggregateRoot
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(name);
+        Guard.MaxLength(name, 100);
 
         Name = name.Trim();
         Avatar = avatar?.Trim();
@@ -72,8 +74,11 @@ public class User : AggregateRoot
     {
         EnsureNotDeleted();
 
-        var oldEmail = Email;
         var emailValue = Email.Create(email);
+
+        if (Email == emailValue) return;
+
+        var oldEmail = Email;
 
         Email = emailValue;
         NormalizedEmail = NormalizeEmail(emailValue.Value);

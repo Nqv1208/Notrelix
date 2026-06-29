@@ -6,4 +6,4 @@ public sealed record WorkspaceMemberRestoredDomainEvent(
     Guid UserId,
     Guid RestoredBy,
     DateTimeOffset RestoredAt
-) : DomainEvent(RestoredAt, WorkspaceId, RestoredBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, RestoredAt, RestoredBy);

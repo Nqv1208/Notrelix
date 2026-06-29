@@ -85,7 +85,7 @@ services:
     logging: *default-logging
 
   backend:
-    image: mcr.microsoft.com/dotnet/sdk:10.0
+    image: mcr.microsoft.com/dotnet/sdk:9.0
     container_name: notrelix-backend-dev
     working_dir: /src
     ports:

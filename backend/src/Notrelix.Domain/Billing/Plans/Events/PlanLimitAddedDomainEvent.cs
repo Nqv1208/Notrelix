@@ -5,4 +5,4 @@ public sealed record PlanLimitAddedDomainEvent(
     FeatureCode Feature,
     int Limit,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, null, null);
+) : GlobalDomainEvent(OccurredAt);

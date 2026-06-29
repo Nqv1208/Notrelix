@@ -6,4 +6,4 @@ public sealed record IntegrationSecretRotatedDomainEvent(
     string Version,
     Guid RotatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, RotatedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, RotatedBy);

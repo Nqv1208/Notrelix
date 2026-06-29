@@ -29,6 +29,7 @@ public class UserProfile : AggregateRoot
         EnsureNotDeleted();
         Timezone = string.IsNullOrWhiteSpace(timezone) ? "UTC" : timezone.Trim();
         SetAuditOnUpdate(UserId, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new UserProfileUpdatedDomainEvent(UserId, updatedAt));
     }
 
@@ -37,6 +38,7 @@ public class UserProfile : AggregateRoot
         EnsureNotDeleted();
         Locale = string.IsNullOrWhiteSpace(locale) ? "vi" : locale.Trim();
         SetAuditOnUpdate(UserId, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new UserProfileUpdatedDomainEvent(UserId, updatedAt));
     }
 
@@ -56,6 +58,7 @@ public class UserProfile : AggregateRoot
             Theme = theme.Trim().ToLowerInvariant();
         }
         SetAuditOnUpdate(UserId, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new UserProfileUpdatedDomainEvent(UserId, updatedAt));
     }
 
@@ -73,6 +76,7 @@ public class UserProfile : AggregateRoot
         }
         Preferences = json;
         SetAuditOnUpdate(UserId, updatedAt);
+        IncrementVersion();
         AddDomainEvent(new UserProfileUpdatedDomainEvent(UserId, updatedAt));
     }
 }

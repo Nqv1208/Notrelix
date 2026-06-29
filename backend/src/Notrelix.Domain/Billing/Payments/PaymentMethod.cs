@@ -33,6 +33,46 @@ public class PaymentMethod : AggregateRoot, IWorkspaceScoped
         return method;
     }
 
+    public void SetAsDefault(Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        if (IsDefault) return;
+
+        IsDefault = true;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+    }
+
+    public void UnsetAsDefault(Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        if (!IsDefault) return;
+
+        IsDefault = false;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+    }
+
+    public void Deactivate(Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        if (Status == PaymentMethodStatus.Expired) return;
+
+        Status = PaymentMethodStatus.Expired;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+    }
+
+    public void Reactivate(Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        if (Status == PaymentMethodStatus.Active) return;
+
+        Status = PaymentMethodStatus.Active;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+    }
+
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;

@@ -5,4 +5,4 @@ public sealed record BoardRelationRestoredDomainEvent(
     Guid RelationId,
     Guid RestoredBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, RestoredBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, RestoredBy);

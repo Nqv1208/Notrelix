@@ -1,0 +1,992 @@
+# Notrelix API — Complete Route Structure
+# Backend: .NET 8 / ASP.NET Core / Clean Architecture + CQRS
+# Version strategy: URL versioning /api/v1/
+# Multi-tenant: workspace slug trong path + JWT claims
+
+# ══════════════════════════════════════════════════════════════════
+# BASE URL
+# ══════════════════════════════════════════════════════════════════
+# Production:  https://api.notrelix.com/api/v1
+# Staging:     https://api-staging.notrelix.com/api/v1
+# Local:       http://localhost:5000/api/v1
+
+# ══════════════════════════════════════════════════════════════════
+# MIDDLEWARE PIPELINE (áp dụng theo thứ tự cho mọi request)
+# ══════════════════════════════════════════════════════════════════
+# 1. RateLimitMiddleware       — sliding window per IP + per user
+# 2. RequestLoggingMiddleware  — correlation-id, duration, status
+# 3. ExceptionHandlingMiddleware — RFC 7807 Problem Details
+# 4. AuthenticationMiddleware  — JWT Bearer verify
+# 5. CurrentUserMiddleware     — extract userId/role → ICurrentUser
+# 6. WorkspaceTenantMiddleware — resolve workspaceSlug → workspaceId (khi có)
+
+# ══════════════════════════════════════════════════════════════════
+# RESPONSE ENVELOPE
+# ══════════════════════════════════════════════════════════════════
+# Success:
+# {
+#   "success": true,
+#   "data": { ... } | [...],
+#   "meta": { "page": 1, "pageSize": 20, "total": 150, "hasMore": true }
+# }
+#
+# Error (RFC 7807):
+# {
+#   "type": "https://api.notrelix.com/errors/not-found",
+#   "title": "Resource not found",
+#   "status": 404,
+#   "detail": "Page with id 'xxx' was not found",
+#   "traceId": "00-abc123-def456-00",
+#   "errors": { "email": ["Email is already taken"] }
+# }
+
+# ══════════════════════════════════════════════════════════════════
+# MODULE 1: AUTH — /api/v1/auth
+# Middleware: RateLimit(strict) trên tất cả, không cần JWT
+# ══════════════════════════════════════════════════════════════════
+
+POST   /api/v1/auth/register
+# Body: { name, email, password }
+# 201: { user, accessToken } + Set-Cookie: refresh_token (httpOnly)
+# 409: Email already exists
+
+POST   /api/v1/auth/login
+# Body: { email, password }
+# 200: { user, accessToken } + Set-Cookie: refresh_token (httpOnly)
+# 401: Invalid credentials
+
+POST   /api/v1/auth/logout
+# [AUTH REQUIRED] Cookie: refresh_token
+# 204: revoke refresh token
+
+POST   /api/v1/auth/refresh
+# Cookie: refresh_token (httpOnly, tự động gửi)
+# 200: { accessToken } — access token mới
+# 401: Token expired / revoked
+
+POST   /api/v1/auth/forgot-password
+# Body: { email }
+# 204: Luôn trả 204 (tránh email enumeration)
+
+POST   /api/v1/auth/reset-password
+# Body: { token, newPassword }
+# 204: Password updated
+# 400: Token invalid / expired
+
+POST   /api/v1/auth/verify-email
+# Body: { token }
+# 204: Email verified
+
+POST   /api/v1/auth/resend-verification
+# [AUTH REQUIRED]
+# 204: Resent
+
+POST   /api/v1/auth/change-password
+# [AUTH REQUIRED] Body: { currentPassword, newPassword }
+# 204: Changed
+
+# ── OAuth SSO ──────────────────────────────────────────────────
+GET    /api/v1/auth/oauth/{provider}
+# provider: google | github | microsoft
+# 302: Redirect to provider OAuth URL
+
+GET    /api/v1/auth/oauth/{provider}/callback
+# Query: { code, state }
+# 302: Redirect to frontend với accessToken hoặc error
+
+POST   /api/v1/auth/oauth/{provider}/disconnect
+# [AUTH REQUIRED]
+# 204: OAuth account disconnected
+
+# ── Sessions ──────────────────────────────────────────────────
+GET    /api/v1/auth/sessions
+# [AUTH REQUIRED]
+# 200: [{ id, deviceInfo, ipAddress, createdAt, isCurrent }]
+
+DELETE /api/v1/auth/sessions/{sessionId}
+# [AUTH REQUIRED] — revoke session cụ thể
+# 204
+
+DELETE /api/v1/auth/sessions
+# [AUTH REQUIRED] — revoke tất cả sessions trừ current
+# 204
+
+# ── 2FA (Phase 2) ─────────────────────────────────────────────
+POST   /api/v1/auth/2fa/enable
+POST   /api/v1/auth/2fa/verify
+POST   /api/v1/auth/2fa/disable
+GET    /api/v1/auth/2fa/backup-codes
+
+
+# ══════════════════════════════════════════════════════════════════
+# MODULE 2: USERS (current user) — /api/v1/users/me
+# [AUTH REQUIRED] trên tất cả
+# ══════════════════════════════════════════════════════════════════
+
+GET    /api/v1/users/me
+# 200: { id, email, name, avatar, status, profile: { timezone, locale, theme, preferences } }
+
+PATCH  /api/v1/users/me
+# Body: { name?, avatar? }
+# 200: Updated user
+
+PATCH  /api/v1/users/me/profile
+# Body: { timezone?, locale?, theme?, preferences? }
+# 200: Updated profile
+
+DELETE /api/v1/users/me
+# Body: { password } — xác nhận trước khi xóa
+# 204: Account deleted (soft delete)
+
+GET    /api/v1/users/me/workspaces
+# 200: [{ id, name, slug, iconValue, iconType, role, plan }]
+# Tất cả workspaces user đang tham gia
+
+GET    /api/v1/users/me/cards
+# Query: { status?, priority?, dueDate?, page?, pageSize? }
+# 200: [Card] — tất cả cards được assign cho user (cross-workspace)
+
+GET    /api/v1/users/me/notifications
+# Query: { unreadOnly?, page?, pageSize? }
+# 200: PagedResult<Notification>
+
+GET    /api/v1/users/me/notifications/unread-count
+# 200: { count: 12 }
+
+PATCH  /api/v1/users/me/notifications/{notificationId}/read
+# 204
+
+PATCH  /api/v1/users/me/notifications/read-all
+# 204
+
+# ── Avatar upload ─────────────────────────────────────────────
+POST   /api/v1/users/me/avatar
+# Body: multipart/form-data { file }
+# 200: { url } — presigned S3 URL hoặc direct upload
+
+DELETE /api/v1/users/me/avatar
+# 204
+
+
+# ══════════════════════════════════════════════════════════════════
+# MODULE 3: WORKSPACES — /api/v1/workspaces
+# [AUTH REQUIRED] trên tất cả
+# Multi-tenant: mỗi workspace isolated bởi workspaceSlug
+# ══════════════════════════════════════════════════════════════════
+
+POST   /api/v1/workspaces
+# Body: { name, slug, type?, isPersonal? }
+# 201: Workspace created
+
+GET    /api/v1/workspaces/{slug}
+# [MEMBER] WorkspaceTenantMiddleware resolve slug → id
+# 200: { id, name, slug, plan, isPersonal, iconValue, settings, ... }
+
+PATCH  /api/v1/workspaces/{slug}
+# [ADMIN] Body: { name?, slug?, iconValue?, iconType?, description?, settings? }
+# 200: Updated workspace
+
+DELETE /api/v1/workspaces/{slug}
+# [OWNER] — soft delete workspace
+# 204
+
+# ── Members ───────────────────────────────────────────────────
+GET    /api/v1/workspaces/{slug}/members
+# [MEMBER] Query: { page?, pageSize?, search? }
+# 200: [{ userId, name, email, avatar, role, joinedAt }]
+
+PATCH  /api/v1/workspaces/{slug}/members/{userId}
+# [ADMIN] Body: { role }
+# 200: Updated member
+
+DELETE /api/v1/workspaces/{slug}/members/{userId}
+# [ADMIN] hoặc chính user đó (leave workspace)
+# 204
+
+# ── Invitations ───────────────────────────────────────────────
+GET    /api/v1/workspaces/{slug}/invitations
+# [ADMIN] — pending invitations
+# 200: [{ id, email, role, expiresAt, createdAt }]
+
+POST   /api/v1/workspaces/{slug}/invitations
+# [ADMIN] Body: { email, role }
+# 201: { token, email, role, expiresAt }
+
+DELETE /api/v1/workspaces/{slug}/invitations/{invitationId}
+# [ADMIN] — revoke invitation
+# 204
+
+POST   /api/v1/invitations/{token}/accept
+# [AUTH REQUIRED] — không cần workspace context
+# 200: { workspace } — joined workspace
+
+GET    /api/v1/invitations/{token}
+# PUBLIC — validate token (dùng cho invite page preview)
+# 200: { workspaceName, inviterName, role, expiresAt }
+# 404/410: Invalid / expired
+
+# ── Settings & Permissions ────────────────────────────────────
+GET    /api/v1/workspaces/{slug}/permissions
+# [ADMIN]
+# 200: [Permission]
+
+POST   /api/v1/workspaces/{slug}/permissions
+# [ADMIN] Body: { resourceType, resourceId, subjectType, subjectId, level, expiresAt? }
+# 201: Permission granted
+
+DELETE /api/v1/workspaces/{slug}/permissions/{permissionId}
+# [ADMIN]
+# 204
+
+# ── Activity Logs ─────────────────────────────────────────────
+GET    /api/v1/workspaces/{slug}/activity
+# [MEMBER] Query: { page?, pageSize?, resourceType?, actorId?, from?, to? }
+# 200: PagedResult<ActivityLog>
+
+# ── Search ────────────────────────────────────────────────────
+GET    /api/v1/workspaces/{slug}/search
+# [MEMBER] Query: { q, type?(page|card|all), page?, pageSize? }
+# 200: { pages: [...], cards: [...] }
+
+
+# ══════════════════════════════════════════════════════════════════
+# MODULE 4: PAGES (Notion-like) — /api/v1
+# [AUTH + MEMBER] trên tất cả
+# ══════════════════════════════════════════════════════════════════
+
+GET    /api/v1/workspaces/{slug}/pages
+# Query: { parentId?, archived?, page?, pageSize? }
+# 200: [PageTreeItem] — root pages với children nested
+
+GET    /api/v1/workspaces/{slug}/pages/tree
+# 200: PageTree — full tree (dùng cho sidebar)
+# Cache: Redis 30s, invalidate khi có page create/move/delete
+
+POST   /api/v1/workspaces/{slug}/pages
+# Body: { title?, parentId?, position?, iconValue?, iconType? }
+# 201: Page
+
+GET    /api/v1/pages/{pageId}
+# 200: Page với full metadata
+# 404: Not found | 403: No permission
+
+PATCH  /api/v1/pages/{pageId}
+# Body: { title?, iconValue?, iconType?, coverUrl?, deadline? }
+# 200: Updated page
+
+DELETE /api/v1/pages/{pageId}
+# 204: Soft delete (is_deleted = true)
+
+POST   /api/v1/pages/{pageId}/restore
+# 204: Restore từ trash
+
+POST   /api/v1/pages/{pageId}/move
+# Body: { parentId?, position }
+# 200: Moved page
+
+POST   /api/v1/pages/{pageId}/publish
+# Body: { isPublic? }
+# 200: { publishedAt, publicUrl? }
+
+POST   /api/v1/pages/{pageId}/archive
+# 204
+
+POST   /api/v1/pages/{pageId}/unarchive
+# 204
+
+POST   /api/v1/pages/{pageId}/duplicate
+# 201: Duplicated page (deep copy blocks)
+
+GET    /api/v1/pages/{pageId}/breadcrumb
+# 200: [{ id, title, iconValue }] — từ root đến page hiện tại
+
+GET    /api/v1/pages/{pageId}/history
+# Query: { page?, pageSize? }
+# 200: PagedResult<PageVersion>
+
+POST   /api/v1/pages/{pageId}/restore/{versionId}
+# 204: Restore to version
+
+# ── Blocks ────────────────────────────────────────────────────
+GET    /api/v1/pages/{pageId}/blocks
+# 200: Block[] — ordered by position, nested structure
+# Cache: Redis 10s
+
+POST   /api/v1/pages/{pageId}/blocks
+# Body: { type, properties, position, parentBlockId? }
+# 201: Block
+
+PATCH  /api/v1/blocks/{blockId}
+# Body: { properties?, position? }
+# Optimistic concurrency: Header If-Match: "{version}"
+# 200: Updated block
+# 409: Version conflict → client phải fetch lại
+
+DELETE /api/v1/blocks/{blockId}
+# 204: Soft delete
+
+POST   /api/v1/pages/{pageId}/blocks/reorder
+# Body: [{ blockId, position }] — batch reorder
+# 204
+
+POST   /api/v1/pages/{pageId}/blocks/batch
+# Body: { create?: [...], update?: [...], delete?: [...] }
+# 200: { created, updated, deleted } — atomic batch operation
+
+# ── Comments & Mentions ───────────────────────────────────────
+GET    /api/v1/pages/{pageId}/comments
+# Query: { resolved?, page?, pageSize? }
+# 200: PagedResult<Comment>
+
+POST   /api/v1/pages/{pageId}/comments
+# Body: { contentMd, parentCommentId? }
+# 201: Comment
+
+GET    /api/v1/pages/{pageId}/mentions
+# 200: [PageMention] — ai đã @mention trong page này
+
+# ── Attachments ───────────────────────────────────────────────
+GET    /api/v1/pages/{pageId}/attachments
+# 200: [Attachment]
+
+POST   /api/v1/pages/{pageId}/attachments
+# Body: multipart/form-data { file }
+# 201: { id, url, filename, size, mimeType }
+# File upload → S3, lưu URL vào DB
+
+DELETE /api/v1/pages/{pageId}/attachments/{attachmentId}
+# 204
+
+
+# ══════════════════════════════════════════════════════════════════
+# MODULE 5: BOARDS (Trello-like) — /api/v1
+# [AUTH + MEMBER] trên tất cả
+# ══════════════════════════════════════════════════════════════════
+
+GET    /api/v1/workspaces/{slug}/boards
+# Query: { archived?, page?, pageSize? }
+# 200: [BoardSummary]
+
+POST   /api/v1/workspaces/{slug}/boards
+# Body: { title, visibility?, background? }
+# 201: Board
+
+GET    /api/v1/boards/{boardId}
+# 200: Board với members + labels
+
+GET    /api/v1/boards/{boardId}/full
+# 200: { board, lists: [{ ...list, cards: [...] }] }
+# Board view data — cache Redis 10s
+
+PATCH  /api/v1/boards/{boardId}
+# Body: { title?, description?, background?, visibility? }
+# 200: Updated board
+
+DELETE /api/v1/boards/{boardId}
+# 204: Soft delete
+
+POST   /api/v1/boards/{boardId}/archive
+# 204
+
+POST   /api/v1/boards/{boardId}/unarchive
+# 204
+
+POST   /api/v1/boards/{boardId}/duplicate
+# 201: Duplicated board (structure only, không copy cards)
+
+# ── Board Members ─────────────────────────────────────────────
+GET    /api/v1/boards/{boardId}/members
+# 200: [BoardMember]
+
+POST   /api/v1/boards/{boardId}/members
+# [BOARD_ADMIN] Body: { userId, role }
+# 201: BoardMember
+
+PATCH  /api/v1/boards/{boardId}/members/{userId}
+# [BOARD_ADMIN] Body: { role }
+# 200
+
+DELETE /api/v1/boards/{boardId}/members/{userId}
+# [BOARD_ADMIN] 204
+
+# ── Board Views (preference per user) ─────────────────────────
+GET    /api/v1/boards/{boardId}/view
+# [AUTH] — lấy view preference của current user
+# 200: { viewMode, filters } | 204 nếu chưa có
+
+PUT    /api/v1/boards/{boardId}/view
+# Body: { viewMode, filters }
+# 200: Saved view preference
+
+# ── Labels ────────────────────────────────────────────────────
+GET    /api/v1/boards/{boardId}/labels
+# 200: [Label]
+
+POST   /api/v1/boards/{boardId}/labels
+# Body: { name?, color }
+# 201: Label
+
+PATCH  /api/v1/boards/{boardId}/labels/{labelId}
+# Body: { name?, color? }
+# 200
+
+DELETE /api/v1/boards/{boardId}/labels/{labelId}
+# 204
+
+# ── Lists ─────────────────────────────────────────────────────
+POST   /api/v1/boards/{boardId}/lists
+# Body: { title, position? }
+# 201: List
+
+PATCH  /api/v1/lists/{listId}
+# Body: { title?, position? }
+# 200
+
+DELETE /api/v1/lists/{listId}
+# 204: Soft delete
+
+POST   /api/v1/lists/{listId}/archive
+# 204
+
+POST   /api/v1/lists/{listId}/unarchive
+# 204
+
+POST   /api/v1/boards/{boardId}/lists/reorder
+# Body: [{ listId, position }]
+# 204
+
+# ── Cards ─────────────────────────────────────────────────────
+GET    /api/v1/lists/{listId}/cards
+# Query: { archived?, page?, pageSize? }
+# 200: [Card]
+
+POST   /api/v1/lists/{listId}/cards
+# Body: { title, position?, description? }
+# 201: Card
+
+GET    /api/v1/cards/{cardId}
+# 200: Card với members + labels + checklists + linkedPage preview
+
+PATCH  /api/v1/cards/{cardId}
+# Body: { title?, descriptionMd?, priority?, status?, dueDate?, startDate?, cover? }
+# 200: Updated card
+
+DELETE /api/v1/cards/{cardId}
+# 204: Soft delete
+
+POST   /api/v1/cards/{cardId}/move
+# Body: { listId, position }
+# 200: Moved card
+# Emit DomainEvent → ActivityLog
+
+POST   /api/v1/cards/{cardId}/archive
+# 204
+
+POST   /api/v1/cards/{cardId}/duplicate
+# 201: Duplicated card
+
+# ── Card → Page Link (Notion integration) ────────────────────
+POST   /api/v1/cards/{cardId}/link-page
+# Body: { pageId }
+# 200: { card, page } — linked
+# Emit CardLinkedToPageEvent
+
+DELETE /api/v1/cards/{cardId}/link-page
+# 204: Unlink (set linked_page_id = null)
+
+# ── Card Members ──────────────────────────────────────────────
+POST   /api/v1/cards/{cardId}/members
+# Body: { userId }
+# 201: CardMember
+# Emit CardAssignedEvent → notification
+
+DELETE /api/v1/cards/{cardId}/members/{userId}
+# 204
+
+# ── Card Labels ───────────────────────────────────────────────
+POST   /api/v1/cards/{cardId}/labels
+# Body: { labelId }
+# 201
+
+DELETE /api/v1/cards/{cardId}/labels/{labelId}
+# 204
+
+# ── Card Links (blocks/relates_to) ────────────────────────────
+GET    /api/v1/cards/{cardId}/links
+# 200: [{ id, linkType, targetCard: CardSummary }]
+
+POST   /api/v1/cards/{cardId}/links
+# Body: { targetCardId, linkType }
+# 201: CardLink
+
+DELETE /api/v1/cards/{cardId}/links/{linkId}
+# 204
+
+# ── Checklists ────────────────────────────────────────────────
+GET    /api/v1/cards/{cardId}/checklists
+# 200: [{ id, title, position, items: [ChecklistItem] }]
+
+POST   /api/v1/cards/{cardId}/checklists
+# Body: { title, position? }
+# 201: Checklist
+
+PATCH  /api/v1/checklists/{checklistId}
+# Body: { title?, position? }
+# 200
+
+DELETE /api/v1/checklists/{checklistId}
+# 204
+
+POST   /api/v1/checklists/{checklistId}/items
+# Body: { title, position?, dueDate?, assigneeId? }
+# 201: ChecklistItem
+
+PATCH  /api/v1/checklist-items/{itemId}
+# Body: { title?, isChecked?, dueDate?, assigneeId?, position? }
+# 200
+
+DELETE /api/v1/checklist-items/{itemId}
+# 204
+
+# ── Card Comments & Attachments ───────────────────────────────
+GET    /api/v1/cards/{cardId}/comments
+# 200: PagedResult<Comment>
+
+POST   /api/v1/cards/{cardId}/comments
+# Body: { contentMd, parentCommentId? }
+# 201
+
+GET    /api/v1/cards/{cardId}/attachments
+# 200: [Attachment]
+
+POST   /api/v1/cards/{cardId}/attachments
+# Body: multipart/form-data { file }
+# 201: Attachment → S3
+
+DELETE /api/v1/cards/{cardId}/attachments/{attachmentId}
+# 204
+
+
+# ══════════════════════════════════════════════════════════════════
+# MODULE 6: COMMENTS (shared, polymorphic) — /api/v1/comments
+# [AUTH REQUIRED]
+# ══════════════════════════════════════════════════════════════════
+# Ngoài route theo resource (pages/{id}/comments, cards/{id}/comments),
+# còn có route trực tiếp cho comment actions
+
+PATCH  /api/v1/comments/{commentId}
+# [OWNER] Body: { contentMd }
+# 200: Updated comment
+
+DELETE /api/v1/comments/{commentId}
+# [OWNER | ADMIN] 204: Soft delete
+
+POST   /api/v1/comments/{commentId}/resolve
+# [MEMBER] 204
+
+POST   /api/v1/comments/{commentId}/unresolve
+# [MEMBER] 204
+
+POST   /api/v1/comments/{commentId}/reactions
+# Body: { emoji }
+# 201 | 204 (toggle — nếu đã có thì xóa)
+
+DELETE /api/v1/comments/{commentId}/reactions/{emoji}
+# 204
+
+
+# ══════════════════════════════════════════════════════════════════
+# MODULE 7: CALENDAR — /api/v1
+# [AUTH REQUIRED]
+# Two-way sync: Google Calendar ↔ Notrelix (cards + pages)
+# ══════════════════════════════════════════════════════════════════
+
+GET    /api/v1/workspaces/{slug}/calendar
+# Query: { from, to, type?(card|page|all) }
+# 200: [CalendarEvent{ id, title, date, type, resourceId, resourceType, url }]
+# Unified view: card.due_date + page.deadline
+
+# ── Integrations ──────────────────────────────────────────────
+GET    /api/v1/calendar/integrations
+# [AUTH] — current user's integrations
+# 200: [CalendarIntegration]
+
+GET    /api/v1/calendar/oauth/{provider}
+# provider: google | outlook | apple
+# 302: Redirect to OAuth consent screen
+
+GET    /api/v1/calendar/oauth/{provider}/callback
+# Query: { code, state }
+# 302: Redirect to frontend
+
+DELETE /api/v1/calendar/integrations/{integrationId}
+# 204: Disconnect
+
+PATCH  /api/v1/calendar/integrations/{integrationId}
+# Body: { syncDirection?, calendarId? }
+# 200: Updated integration
+
+POST   /api/v1/calendar/integrations/{integrationId}/sync
+# Trigger manual sync → enqueue CalendarSyncJob (async)
+# 202: { jobId } — accepted, processing in background
+
+GET    /api/v1/calendar/sync/status/{jobId}
+# 200: { status: 'pending'|'running'|'done'|'failed', result? }
+
+# ── iCal Export ───────────────────────────────────────────────
+GET    /api/v1/calendar/export/{workspaceSlug}.ics
+# Query: { token } — personal token (không dùng JWT)
+# 200: text/calendar — iCal format
+
+# ── Webhook từ Google Calendar ────────────────────────────────
+POST   /api/v1/webhooks/calendar/{provider}
+# [NO AUTH — verify bằng HMAC signature trong header]
+# Body: Google Calendar push notification
+# 200: Acknowledged → enqueue CalendarWebhookJob
+
+GET    /api/v1/calendar/ical-token
+# [AUTH] — generate personal iCal token
+# 200: { token, url }
+
+
+# ══════════════════════════════════════════════════════════════════
+# MODULE 8: ATTACHMENTS — /api/v1/attachments
+# [AUTH REQUIRED]
+# S3/R2: không lưu file vào DB
+# ══════════════════════════════════════════════════════════════════
+
+POST   /api/v1/attachments/presign
+# Body: { filename, mimeType, size, resourceType, resourceId }
+# 200: { uploadUrl, fileKey, expiresIn }
+# Client upload trực tiếp lên S3 với presigned URL
+
+POST   /api/v1/attachments/confirm
+# Body: { fileKey, resourceType, resourceId }
+# 201: Attachment record saved to DB
+
+DELETE /api/v1/attachments/{attachmentId}
+# 204: Delete from S3 + DB
+
+
+# ══════════════════════════════════════════════════════════════════
+# MODULE 9: SEARCH — /api/v1/workspaces/{slug}/search
+# [AUTH + MEMBER]
+# ══════════════════════════════════════════════════════════════════
+
+GET    /api/v1/workspaces/{slug}/search
+# Query: { q(required, min 2 chars), type?(page|card|all), page?, pageSize?(max 20) }
+# 200: {
+#   pages: [{ id, title, iconValue, breadcrumb, updatedAt }],
+#   cards: [{ id, title, boardId, boardTitle, listTitle, status }],
+#   total: 42
+# }
+
+GET    /api/v1/workspaces/{slug}/search/recent
+# 200: [RecentItem] — recently viewed pages + cards
+
+
+# ══════════════════════════════════════════════════════════════════
+# MODULE 10: NOTIFICATIONS — /api/v1/users/me/notifications
+# [AUTH REQUIRED] — đã define ở Users module, chi tiết hơn:
+# ══════════════════════════════════════════════════════════════════
+
+GET    /api/v1/users/me/notifications
+# Query: {
+#   unreadOnly?: bool,
+#   workspaceSlug?: string,  — filter theo workspace
+#   type?: string,           — 'card.assigned'|'page.mentioned'|...
+#   page?: int,
+#   pageSize?: int (max 50)
+# }
+# 200: PagedResult<NotificationDto>
+
+GET    /api/v1/users/me/notifications/unread-count
+# 200: { count: 5 }
+# Cache-Control: no-store (luôn fresh)
+
+PATCH  /api/v1/users/me/notifications/{notificationId}/read
+# 204
+
+PATCH  /api/v1/users/me/notifications/read-all
+# Body: { workspaceSlug? } — read all hoặc read all trong workspace
+# 204
+
+DELETE /api/v1/users/me/notifications/{notificationId}
+# 204
+
+
+# ══════════════════════════════════════════════════════════════════
+# MODULE 11: WEBHOOKS (outbound) — /api/v1/workspaces/{slug}/webhooks
+# [AUTH + ADMIN]
+# ══════════════════════════════════════════════════════════════════
+
+GET    /api/v1/workspaces/{slug}/webhooks
+# 200: [Webhook]
+
+POST   /api/v1/workspaces/{slug}/webhooks
+# Body: { url, events[], secret? }
+# 201: Webhook
+
+PATCH  /api/v1/workspaces/{slug}/webhooks/{webhookId}
+# Body: { url?, events?[], isActive? }
+# 200
+
+DELETE /api/v1/workspaces/{slug}/webhooks/{webhookId}
+# 204
+
+POST   /api/v1/workspaces/{slug}/webhooks/{webhookId}/test
+# 200: { status, response, duration }
+
+GET    /api/v1/workspaces/{slug}/webhooks/{webhookId}/deliveries
+# Query: { page?, pageSize? }
+# 200: [{ id, event, status, attemptedAt, responseStatus }]
+
+
+# ══════════════════════════════════════════════════════════════════
+# MODULE 12: BILLING / SUBSCRIPTION — /api/v1/billing
+# [AUTH + OWNER]
+# ══════════════════════════════════════════════════════════════════
+
+GET    /api/v1/billing/workspaces/{slug}/subscription
+# 200: { plan, status, currentPeriodEnd, cancelAtPeriodEnd, seats, usage }
+
+POST   /api/v1/billing/workspaces/{slug}/subscription/upgrade
+# Body: { plan, seats? }
+# 200: { checkoutUrl } — redirect to Stripe Checkout
+
+POST   /api/v1/billing/workspaces/{slug}/subscription/cancel
+# 204: Cancel at period end
+
+POST   /api/v1/billing/workspaces/{slug}/subscription/resume
+# 204: Resume cancelled subscription
+
+GET    /api/v1/billing/workspaces/{slug}/invoices
+# Query: { page?, pageSize? }
+# 200: PagedResult<Invoice>
+
+GET    /api/v1/billing/workspaces/{slug}/invoices/{invoiceId}/download
+# 200: application/pdf
+
+GET    /api/v1/billing/workspaces/{slug}/portal
+# 200: { url } — Stripe Customer Portal URL
+
+POST   /api/v1/webhooks/billing
+# [NO AUTH — verify Stripe-Signature header]
+# Handle: checkout.completed, subscription.updated, invoice.paid, ...
+# 200: Acknowledged
+
+
+# ══════════════════════════════════════════════════════════════════
+# MODULE 13: ADMIN PANEL — /api/v1/admin
+# [AUTH + ROLE: admin] — kiểm tra trong AuthorizationBehavior
+# ══════════════════════════════════════════════════════════════════
+
+# ── Dashboard metrics ─────────────────────────────────────────
+GET    /api/v1/admin/metrics
+# 200: { totalUsers, activeUsers30d, totalWorkspaces, totalPages, totalCards, mrr }
+
+GET    /api/v1/admin/metrics/growth
+# Query: { from, to, granularity?(day|week|month) }
+# 200: [{ date, newUsers, newWorkspaces }]
+
+# ── User management ───────────────────────────────────────────
+GET    /api/v1/admin/users
+# Query: { search?, status?, page?, pageSize?, sortBy?, sortDir? }
+# 200: PagedResult<AdminUserDto>
+
+GET    /api/v1/admin/users/{userId}
+# 200: AdminUserDto với workspaces + sessions + oauthAccounts
+
+PATCH  /api/v1/admin/users/{userId}
+# Body: { status?, role? }
+# 200
+
+POST   /api/v1/admin/users/{userId}/suspend
+# Body: { reason }
+# 204
+
+POST   /api/v1/admin/users/{userId}/unsuspend
+# 204
+
+DELETE /api/v1/admin/users/{userId}
+# 204: Hard delete (GDPR)
+
+POST   /api/v1/admin/users/{userId}/impersonate
+# 200: { accessToken } — impersonate user (audit logged)
+
+# ── Workspace management ──────────────────────────────────────
+GET    /api/v1/admin/workspaces
+# Query: { search?, plan?, page?, pageSize? }
+# 200: PagedResult<AdminWorkspaceDto>
+
+GET    /api/v1/admin/workspaces/{workspaceId}
+# 200: AdminWorkspaceDto với members + usage + billing
+
+PATCH  /api/v1/admin/workspaces/{workspaceId}
+# Body: { plan?, isArchived? }
+# 200
+
+DELETE /api/v1/admin/workspaces/{workspaceId}
+# 204: Hard delete
+
+# ── Billing management ────────────────────────────────────────
+GET    /api/v1/admin/billing/overview
+# 200: { mrr, arr, churnRate, activeSubscriptions }
+
+GET    /api/v1/admin/billing/subscriptions
+# Query: { plan?, status?, page?, pageSize? }
+# 200: PagedResult<SubscriptionDto>
+
+# ── Audit Logs ────────────────────────────────────────────────
+GET    /api/v1/admin/audit-logs
+# Query: { actorId?, resourceType?, action?, workspaceId?, from?, to?, page?, pageSize? }
+# 200: PagedResult<ActivityLog>
+
+# ── System Settings ───────────────────────────────────────────
+GET    /api/v1/admin/settings
+# 200: { maintenance, allowRegistration, defaultPlan, ... }
+
+PATCH  /api/v1/admin/settings
+# Body: SystemSettings
+# 200
+
+# ── Feature Flags ─────────────────────────────────────────────
+GET    /api/v1/admin/feature-flags
+# 200: [{ key, enabled, description }]
+
+PATCH  /api/v1/admin/feature-flags/{key}
+# Body: { enabled }
+# 200
+
+
+# ══════════════════════════════════════════════════════════════════
+# VERSIONING STRATEGY
+# ══════════════════════════════════════════════════════════════════
+# URL versioning: /api/v1/ → /api/v2/ (breaking changes)
+# Header versioning: Api-Version: 2024-01-01 (non-breaking evolution)
+#
+# v1 → v2 migration:
+#   - Maintain v1 for 12 months sau khi v2 release
+#   - Deprecation header: Deprecation: true, Sunset: Sat, 01 Jan 2026 00:00:00 GMT
+#   - v1 docs vẫn accessible nhưng marked deprecated
+
+# ══════════════════════════════════════════════════════════════════
+# CONTROLLER STRUCTURE (.NET)
+# ══════════════════════════════════════════════════════════════════
+# Notrelix.API/
+# ├── Controllers/
+# │   ├── v1/
+# │   │   ├── AuthController.cs
+# │   │   ├── UsersController.cs
+# │   │   ├── WorkspacesController.cs
+# │   │   ├── PagesController.cs
+# │   │   ├── BlocksController.cs
+# │   │   ├── BoardsController.cs
+# │   │   ├── ListsController.cs
+# │   │   ├── CardsController.cs
+# │   │   ├── ChecklistsController.cs
+# │   │   ├── CommentsController.cs
+# │   │   ├── CalendarController.cs
+# │   │   ├── AttachmentsController.cs
+# │   │   ├── NotificationsController.cs
+# │   │   ├── SearchController.cs
+# │   │   ├── WebhooksController.cs
+# │   │   ├── BillingController.cs
+# │   │   └── AdminController.cs
+# │   └── v2/                              ← future
+# └── Filters/
+#     ├── WorkspaceAccessFilter.cs         ← [WorkspaceAccess(Role.Member)]
+#     └── ApiKeyAuthFilter.cs              ← public webhooks
+
+# ══════════════════════════════════════════════════════════════════
+# AUTHORIZATION ATTRIBUTES
+# ══════════════════════════════════════════════════════════════════
+# [Authorize]                              — JWT required
+# [Authorize(Roles = "admin")]             — admin only
+# [WorkspaceAccess(WorkspaceRole.Member)]  — workspace member
+# [WorkspaceAccess(WorkspaceRole.Admin)]   — workspace admin
+# [WorkspaceAccess(WorkspaceRole.Owner)]   — workspace owner
+# [ResourcePermission(PermissionLevel.Editor)] — resource-level ACL
+
+# ══════════════════════════════════════════════════════════════════
+# HTTP STATUS CODE CONVENTIONS
+# ══════════════════════════════════════════════════════════════════
+# 200 OK          — GET, PATCH thành công
+# 201 Created     — POST tạo resource mới, body = resource + Location header
+# 202 Accepted    — async job queued (calendar sync, email...)
+# 204 No Content  — DELETE, POST action (archive/restore) thành công
+# 400 Bad Request — validation failed (kèm errors field)
+# 401 Unauthorized — không có token hoặc token invalid
+# 403 Forbidden   — có token nhưng không đủ quyền
+# 404 Not Found   — resource không tồn tại
+# 409 Conflict    — duplicate (email, slug) hoặc version conflict (block)
+# 410 Gone        — resource đã bị xóa vĩnh viễn (invitation expired)
+# 422 Unprocessable — business rule violation (không phải validation)
+# 429 Too Many Requests — rate limit exceeded + Retry-After header
+# 500 Internal Server Error — unexpected error (không expose stack trace)
+
+# ══════════════════════════════════════════════════════════════════
+# RATE LIMIT TIERS
+# ══════════════════════════════════════════════════════════════════
+# Auth endpoints:       10 req/min per IP (strict)
+# API v1 (free):       100 req/min per user
+# API v1 (pro):        500 req/min per user
+# API v1 (enterprise): unlimited (fair use)
+# Search:              30 req/min per user
+# File upload:         20 req/min per user
+# Calendar sync:       10 req/hour per integration
+# Headers returned: X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset
+
+# ══════════════════════════════════════════════════════════════════
+# SECURITY HEADERS (áp dụng cho tất cả responses)
+# ══════════════════════════════════════════════════════════════════
+# X-Content-Type-Options: nosniff
+# X-Frame-Options: DENY
+# X-XSS-Protection: 1; mode=block
+# Strict-Transport-Security: max-age=31536000; includeSubDomains
+# Content-Security-Policy: default-src 'self'
+# Referrer-Policy: strict-origin-when-cross-origin
+
+# ══════════════════════════════════════════════════════════════════
+# PAGINATION CONVENTIONS
+# ══════════════════════════════════════════════════════════════════
+# Cursor-based (realtime data — notifications, activity):
+#   GET /api/v1/users/me/notifications?cursor=xxx&pageSize=20
+#   Response: { data: [...], nextCursor: "yyy", hasMore: true }
+#
+# Offset-based (stable data — boards, pages, users):
+#   GET /api/v1/admin/users?page=1&pageSize=20
+#   Response: { data: [...], meta: { page, pageSize, total, hasMore } }
+#
+# Max pageSize: 100 (hard limit)
+
+# ══════════════════════════════════════════════════════════════════
+# CACHING STRATEGY
+# ══════════════════════════════════════════════════════════════════
+# Redis cache keys:
+#   workspace:{slug}:detail           TTL 5m
+#   workspace:{id}:members            TTL 5m
+#   workspace:{id}:pages:tree         TTL 30s   — invalidate on page create/move/delete
+#   board:{id}:full                   TTL 10s   — invalidate on card create/move
+#   page:{id}:blocks                  TTL 10s   — invalidate on block update
+#   page:{id}:breadcrumb              TTL 60s
+#   user:{id}:unread-count            TTL 0     — invalidate on notification
+#   perm:{userId}:{type}:{resourceId} TTL 60s   — permission cache
+
+# ══════════════════════════════════════════════════════════════════
+# FUTURE MICROSERVICES BOUNDARIES (Phase 3 — 500k+ users)
+# ══════════════════════════════════════════════════════════════════
+# Hiện tại: monolith với module separation
+# Tách khi có bottleneck thực tế:
+#
+# notrelix-auth-service     → /api/v1/auth/*
+# notrelix-doc-service      → /api/v1/pages/*, /api/v1/blocks/*
+# notrelix-board-service    → /api/v1/boards/*, /api/v1/cards/*
+# notrelix-calendar-service → /api/v1/calendar/*
+# notrelix-notif-service    → /api/v1/notifications/* (WebSocket)
+# notrelix-search-service   → /api/v1/search/* (Elasticsearch)
+# notrelix-billing-service  → /api/v1/billing/*
+#
+# API Gateway (Kong / AWS API Gateway) đứng trước tất cả
+# Route theo path prefix → đúng service
+# Không thay đổi URL từ client perspective

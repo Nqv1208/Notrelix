@@ -41,6 +41,11 @@ public class TeamMember : AuditableEntity, IWorkspaceScoped
 
     public void Reactivate(TeamMemberRole role, Guid? workspaceMemberId, Guid activatedBy, DateTimeOffset activatedAt)
     {
+        Guard.NotEmpty(activatedBy);
+
+        if (Status == TeamMemberStatus.Active)
+            throw new BusinessRuleException("Team member is already active.");
+
         Status = TeamMemberStatus.Active;
         Role = role;
         WorkspaceMemberId = workspaceMemberId;

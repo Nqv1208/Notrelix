@@ -5,4 +5,4 @@ public sealed record ItemTemplateCreatedDomainEvent(
     Guid TemplateId,
     string Name,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

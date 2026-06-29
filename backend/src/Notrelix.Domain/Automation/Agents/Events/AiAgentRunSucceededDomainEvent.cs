@@ -5,4 +5,4 @@ public sealed record AiAgentRunSucceededDomainEvent(
     Guid RunId,
     Guid AgentId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt);

@@ -7,18 +7,200 @@ on:
       - 'backend/**'
       - '.github/workflows/ci.yml'
       - '.github/dependabot.yml'
+
   pull_request:
     branches: [main, develop]
     paths:
       - 'backend/**'
       - '.github/workflows/ci.yml'
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
-  DOTNET_ROLL_FORWARD: LatestMajor
+  DOTNET_CONFIGURATION: Release
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_NOLOGO: true
 
 jobs:
-  build-and-test:
+  quality:
+    name: Restore, format, build, security guards
     runs-on: ubuntu-latest
+
+    env:
+      ASPNETCORE_ENVIRONMENT: CI
+      DOTNET_ENVIRONMENT: CI
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: backend/global.json
+
+      - name: Show .NET info
+        working-directory: backend
+        run: |
+          dotnet --version
+          dotnet --info
+
+      - name: Restore
+        working-directory: backend
+        run: dotnet restore
+
+      - name: Format check
+        working-directory: backend
+        run: dotnet format --verify-no-changes --no-restore
+
+      - name: Build
+        working-directory: backend
+        run: dotnet build --no-restore --configuration $DOTNET_CONFIGURATION
+
+      - name: Vulnerability scan
+        working-directory: backend
+        run: |
+          set -euo pipefail
+
+          dotnet list package --vulnerable --include-transitive 2>&1 | tee vulnerable-report.txt
+
+          if grep -q "has the following vulnerable packages" vulnerable-report.txt; then
+            echo "Vulnerable packages found!"
+            exit 1
+          fi
+
+          echo "No vulnerable packages found"
+
+      - name: Guard dependency graph against SQLite
+        working-directory: backend
+        run: |
+          set -euo pipefail
+
+          dotnet list package --include-transitive 2>&1 | tee dependency-report.txt
+
+          if grep -iE "SQLite|Sqlite|SQLitePCLRaw|Microsoft\.Data\.Sqlite|Microsoft\.EntityFrameworkCore\.Sqlite" dependency-report.txt; then
+            echo "SQLite dependency detected in Notrelix backend dependency graph."
+            echo "Use PostgreSQL/Testcontainers instead of SQLite."
+            exit 1
+          fi
+
+          echo "No SQLite dependencies found"
+
+      - name: Guard source against SQLite usage
+        working-directory: backend
+        run: |
+          set -euo pipefail
+
+          matches=$(grep -RInE "UseSqlite|SqliteConnection|Microsoft\.EntityFrameworkCore\.Sqlite|Microsoft\.Data\.Sqlite|SQLitePCLRaw|DataSource=:memory:" \
+            src tests Directory.Packages.props \
+            --include="*.cs" \
+            --include="*.csproj" \
+            --include="*.props" \
+            --exclude="DatabaseProviderArchitectureTests.cs" || true)
+
+          if [ -n "$matches" ]; then
+            echo "$matches"
+            echo "SQLite usage detected in Notrelix backend source."
+            echo "Use PostgreSQL/Testcontainers instead."
+            exit 1
+          fi
+
+          echo "No SQLite source references found"
+
+  architecture-tests:
+    name: Architecture tests
+    runs-on: ubuntu-latest
+    needs: quality
+
+    env:
+      ASPNETCORE_ENVIRONMENT: CI
+      DOTNET_ENVIRONMENT: CI
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: backend/global.json
+
+      - name: Restore
+        working-directory: backend
+        run: dotnet restore
+
+      - name: Build
+        working-directory: backend
+        run: dotnet build --no-restore --configuration $DOTNET_CONFIGURATION
+
+      - name: Architecture tests
+        working-directory: backend
+        run: >
+          dotnet test
+          tests/Notrelix.Architecture.Tests/Notrelix.Architecture.Tests.csproj
+          --no-build
+          --configuration $DOTNET_CONFIGURATION
+
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    needs: quality
+
+    env:
+      ASPNETCORE_ENVIRONMENT: CI
+      DOTNET_ENVIRONMENT: CI
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: backend/global.json
+
+      - name: Restore
+        working-directory: backend
+        run: dotnet restore
+
+      - name: Build
+        working-directory: backend
+        run: dotnet build --no-restore --configuration $DOTNET_CONFIGURATION
+
+      - name: Domain tests
+        working-directory: backend
+        run: >
+          dotnet test
+          tests/Notrelix.Domain.Tests/Notrelix.Domain.Tests.csproj
+          --no-build
+          --configuration $DOTNET_CONFIGURATION
+
+      - name: Application tests
+        working-directory: backend
+        run: >
+          dotnet test
+          tests/Notrelix.Application.Tests/Notrelix.Application.Tests.csproj
+          --no-build
+          --configuration $DOTNET_CONFIGURATION
+
+      - name: Infrastructure tests
+        working-directory: backend
+        run: >
+          dotnet test
+          tests/Notrelix.Infrastructure.Tests/Notrelix.Infrastructure.Tests.csproj
+          --no-build
+          --configuration $DOTNET_CONFIGURATION
+
+  api-tests:
+    name: API contract tests
+    runs-on: ubuntu-latest
+    needs: quality
+
     services:
       redis:
         image: redis:7
@@ -30,48 +212,116 @@ jobs:
         ports:
           - 6379:6379
 
-    steps:
-      - uses: actions/checkout@v4
+    env:
+      ASPNETCORE_ENVIRONMENT: CI
+      DOTNET_ENVIRONMENT: CI
+      ConnectionStrings__Redis: localhost:6379,abortConnect=false
 
-      - name: Setup .NET
+      Cors__AllowedOrigins__0: http://localhost:5173
+      Cors__AllowedOrigins__1: http://localhost:3000
+
+      ForwardedHeaders__RequireKnownProxyInProduction: false
+
+      JwtSettings__SecretKey: ci-test-secret-key-must-be-at-least-32-characters
+      JwtSettings__Issuer: Notrelix.CI
+      JwtSettings__Audience: Notrelix.CI
+      JwtSettings__ExpireMinutes: 60
+      JwtSettings__RefreshTokenExpireDays: 7
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 10.0.x
+          global-json-file: backend/global.json
 
       - name: Restore
+        working-directory: backend
         run: dotnet restore
-        working-directory: backend
-
-      - name: Format check
-        run: dotnet format --verify-no-changes --no-restore
-        working-directory: backend
 
       - name: Build
-        run: dotnet build --no-restore
         working-directory: backend
-
-      - name: Vulnerability scan
-        run: dotnet list package --vulnerable --no-restore 2>&1 | tee vulnerable-report.txt; if grep -q "has known vulnerable" vulnerable-report.txt; then echo "Vulnerable packages found!"; exit 1; fi
-        working-directory: backend
-
-      - name: Architecture tests
-        run: dotnet test tests/Notrelix.Architecture.Tests --no-build
-        working-directory: backend
-
-      - name: Unit tests (Domain + Application + Infrastructure)
-        run: dotnet test --no-build --filter "FullyQualifiedName!~Integration.Tests&FullyQualifiedName!~Notrelix.Architecture.Tests&FullyQualifiedName!~Notrelix.API.Tests"
-        working-directory: backend
+        run: dotnet build --no-restore --configuration $DOTNET_CONFIGURATION
 
       - name: API tests
-        run: dotnet test tests/Notrelix.API.Tests --no-build
         working-directory: backend
-        env:
-          ConnectionStrings__Redis: localhost:6379,abortConnect=false
+        run: >
+          dotnet test
+          tests/Notrelix.API.Tests/Notrelix.API.Tests.csproj
+          --no-build
+          --configuration $DOTNET_CONFIGURATION
+
+  integration-tests:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    needs: quality
+
+    services:
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    env:
+      ASPNETCORE_ENVIRONMENT: CI
+      DOTNET_ENVIRONMENT: CI
+      ConnectionStrings__Redis: localhost:6379,abortConnect=false
+
+      Cors__AllowedOrigins__0: http://localhost:5173
+      Cors__AllowedOrigins__1: http://localhost:3000
+
+      ForwardedHeaders__RequireKnownProxyInProduction: false
+
+      JwtSettings__SecretKey: ci-test-secret-key-must-be-at-least-32-characters
+      JwtSettings__Issuer: Notrelix.CI
+      JwtSettings__Audience: Notrelix.CI
+      JwtSettings__ExpireMinutes: 60
+      JwtSettings__RefreshTokenExpireDays: 7
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: backend/global.json
+
+      - name: Restore
+        working-directory: backend
+        run: dotnet restore
+
+      - name: Build
+        working-directory: backend
+        run: dotnet build --no-restore --configuration $DOTNET_CONFIGURATION
+
+      - name: Integration tests
+        working-directory: backend
+        run: >
+          dotnet test
+          tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj
+          --no-build
+          --configuration $DOTNET_CONFIGURATION
 
   docker-build:
+    name: Docker build
     runs-on: ubuntu-latest
+    needs:
+      - architecture-tests
+      - unit-tests
+      - api-tests
+      - integration-tests
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -86,68 +336,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Verify image
+      - name: Verify image exists
         run: |
-          docker run --rm notrelix/backend:ci-${{ github.sha }} --version 2>&1 || true
+          docker image inspect notrelix/backend:ci-${{ github.sha }} > /dev/null
           echo "Docker image built successfully"
-
-  integration:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: notrelix
-          POSTGRES_PASSWORD: notrelix
-          POSTGRES_DB: notrelix_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-      redis:
-        image: redis:7
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 10.0.x
-
-      - name: Restore
-        run: dotnet restore
-        working-directory: backend
-
-      - name: Build
-        run: dotnet build --no-restore
-        working-directory: backend
-
-      - name: Apply migrations
-        run: |
-          export ConnectionStrings__NotrelixDb="Host=localhost;Port=5432;Database=notrelix_test;Username=notrelix;Password=notrelix"
-          export ConnectionStrings__Redis="localhost:6379,abortConnect=false"
-          export ASPNETCORE_ENVIRONMENT=CI
-          export DOTNET_ENVIRONMENT=CI
-          dotnet run --project src/Notrelix.API --no-build -- --migrate-only
-        working-directory: backend
-
-      - name: Migration smoke tests
-        run: |
-          export ConnectionStrings__NotrelixDb="Host=localhost;Port=5432;Database=notrelix_test;Username=notrelix;Password=notrelix"
-          export ConnectionStrings__Redis="localhost:6379,abortConnect=false"
-          export ASPNETCORE_ENVIRONMENT=CI
-          export DOTNET_ENVIRONMENT=CI
-          dotnet test tests/Notrelix.Integration.Tests --no-build --filter "FullyQualifiedName~MigrationSmoke"
-        working-directory: backend

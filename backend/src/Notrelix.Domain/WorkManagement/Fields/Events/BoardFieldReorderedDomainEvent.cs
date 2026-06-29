@@ -7,4 +7,4 @@ public sealed record BoardFieldReorderedDomainEvent(
     double NewPosition,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, UpdatedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, UpdatedBy);

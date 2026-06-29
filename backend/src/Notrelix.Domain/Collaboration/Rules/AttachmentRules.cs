@@ -2,5 +2,18 @@ namespace Notrelix.Domain.Collaboration.Rules;
 
 public static class AttachmentRules
 {
-    // Rules for Attachment validation
+    public static void EnsureMaxAttachments(int currentCount, int maxAllowed)
+    {
+        if (currentCount >= maxAllowed)
+            throw new BusinessRuleException($"Cannot exceed maximum of {maxAllowed} attachments per resource.");
+    }
+
+    public static void EnsureValidFileSize(long fileSizeBytes, long maxFileSizeBytes)
+    {
+        if (fileSizeBytes <= 0)
+            throw new BusinessRuleException("File size must be greater than zero.");
+
+        if (fileSizeBytes > maxFileSizeBytes)
+            throw new BusinessRuleException($"File size exceeds maximum allowed size of {maxFileSizeBytes} bytes.");
+    }
 }

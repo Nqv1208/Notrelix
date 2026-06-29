@@ -41,6 +41,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(boardId);
         Guard.NotNullOrWhiteSpace(name);
+        Guard.MaxLength(name, 100);
         Guard.NotNull(settings);
         Guard.NotNull(position);
 

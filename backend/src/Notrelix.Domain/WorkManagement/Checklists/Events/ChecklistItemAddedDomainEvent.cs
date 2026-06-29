@@ -6,4 +6,4 @@ public sealed record ChecklistItemAddedDomainEvent(
     Guid ItemId,
     string Title,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

@@ -1,6 +1,6 @@
 namespace Notrelix.Domain.Governance.Permissions.Events;
 
-public record PermissionRuleCreatedDomainEvent : DomainEvent
+public record PermissionRuleCreatedDomainEvent : WorkspaceScopedDomainEvent
 {
     public Guid RuleId { get; }
     public string Action { get; }
@@ -11,7 +11,7 @@ public record PermissionRuleCreatedDomainEvent : DomainEvent
         string action,
         Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(occurredAt, workspaceId, actorUserId)
+        : base(workspaceId, occurredAt, actorUserId)
     {
         RuleId = ruleId;
         Action = action;

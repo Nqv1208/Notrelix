@@ -32,6 +32,9 @@ public class Board : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(createdBy);
         Guard.NotNullOrWhiteSpace(title);
+        Guard.MaxLength(title, 255);
+        Guard.MaxLength(description, 5000);
+        Guard.MaxLength(itemKeyPrefix, 10);
 
         var board = new Board
         {
@@ -56,6 +59,10 @@ public class Board : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(title);
+        Guard.MaxLength(title, 255);
+
+        if (IsArchived)
+            throw new BusinessRuleException("Cannot rename an archived board.");
 
         var oldTitle = Title;
         var normalizedTitle = title.Trim();
@@ -70,6 +77,10 @@ public class Board : AggregateRoot, IWorkspaceScoped
     public void UpdateDescription(string? description, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.MaxLength(description, 5000);
+
+        if (IsArchived)
+            throw new BusinessRuleException("Cannot update description of an archived board.");
         var normalized = description?.Trim();
         if (Description == normalized) return;
         var oldDescription = Description;
@@ -93,6 +104,9 @@ public class Board : AggregateRoot, IWorkspaceScoped
     public void ChangeVisibility(BoardVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+
+        if (IsArchived)
+            throw new BusinessRuleException("Cannot change visibility of an archived board.");
         var oldVisibility = Visibility;
         if (Visibility == visibility) return;
 

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Data;
 
@@ -10,7 +11,8 @@ public static class TestDbContextFactory
     public static ApplicationDbContext CreateInMemoryContext(params IInterceptor[] interceptors)
     {
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase(databaseName: $"Notrelix-test-{Guid.NewGuid():N}");
+            .UseInMemoryDatabase(databaseName: $"Notrelix-test-{Guid.NewGuid():N}")
+            .ReplaceService<IModelCacheKeyFactory, WorkspaceAwareModelCacheKeyFactory>();
 
         if (interceptors.Length > 0)
         {
@@ -23,7 +25,8 @@ public static class TestDbContextFactory
     public static ApplicationDbContext CreateInMemoryContext(ICurrentWorkspace currentWorkspace, params IInterceptor[] interceptors)
     {
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase(databaseName: $"Notrelix-test-{Guid.NewGuid():N}");
+            .UseInMemoryDatabase(databaseName: $"Notrelix-test-{Guid.NewGuid():N}")
+            .ReplaceService<IModelCacheKeyFactory, WorkspaceAwareModelCacheKeyFactory>();
 
         if (interceptors.Length > 0)
         {

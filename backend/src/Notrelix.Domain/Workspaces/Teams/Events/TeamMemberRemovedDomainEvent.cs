@@ -6,4 +6,4 @@ public sealed record TeamMemberRemovedDomainEvent(
     Guid UserId,
     Guid RemovedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, RemovedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, RemovedBy);

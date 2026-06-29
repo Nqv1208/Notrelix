@@ -7,4 +7,4 @@ public sealed record FieldPermissionRevokedDomainEvent(
     Guid SubjectId,
     Guid RevokedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, RevokedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, RevokedBy);

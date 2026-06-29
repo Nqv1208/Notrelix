@@ -11,6 +11,10 @@ public class ReportingSnapshot : Entity, IWorkspaceScoped
 
     public static ReportingSnapshot Capture(Guid workspaceId, string reportType, JsonValue data, DateTimeOffset capturedAt)
     {
+        Guard.NotEmpty(workspaceId);
+        Guard.NotNullOrWhiteSpace(reportType);
+        Guard.NotNull(data);
+
         return new ReportingSnapshot
         {
             WorkspaceId = workspaceId,

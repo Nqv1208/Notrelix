@@ -7,4 +7,4 @@ public sealed record BoardVisibilityChangedDomainEvent(
     BoardVisibility NewVisibility,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, UpdatedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, UpdatedBy);

@@ -7,4 +7,4 @@ public sealed record LoginAttemptRecordedDomainEvent(
     bool Succeeded,
     string? FailureReason,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, null, null);
+) : GlobalDomainEvent(OccurredAt);

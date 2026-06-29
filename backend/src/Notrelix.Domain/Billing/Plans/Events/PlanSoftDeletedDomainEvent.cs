@@ -4,4 +4,4 @@ public sealed record PlanSoftDeletedDomainEvent(
     Guid PlanId,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, null, null);
+) : GlobalDomainEvent(OccurredAt);

@@ -45,7 +45,7 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
         var cleanEmail = request.Email.Trim().ToLowerInvariant();
-        var normalizedEmail = cleanEmail.ToUpperInvariant();
+        var normalizedEmail = cleanEmail;
         var now = _dateTimeProvider.UtcNow;
 
         var targetUser = await _identityContext.Users

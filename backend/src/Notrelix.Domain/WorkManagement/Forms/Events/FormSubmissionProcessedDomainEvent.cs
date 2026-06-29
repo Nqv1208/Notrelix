@@ -6,4 +6,4 @@ public sealed record FormSubmissionProcessedDomainEvent(
     Guid FormId,
     Guid CreatedItemId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

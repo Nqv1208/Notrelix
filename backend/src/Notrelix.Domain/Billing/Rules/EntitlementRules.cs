@@ -1,6 +1,21 @@
+using Notrelix.Domain.Billing.Entitlements;
+
 namespace Notrelix.Domain.Billing.Rules;
 
 public static class EntitlementRules
 {
-    // Rules for Entitlement validation
+    public static void EnsureCanEnable(EntitlementStatus currentStatus)
+    {
+        if (currentStatus == EntitlementStatus.Active)
+            return;
+
+        if (currentStatus is EntitlementStatus.Revoked or EntitlementStatus.Disabled)
+            throw new BusinessRuleException("Entitlement must be restored before it can be enabled.");
+    }
+
+    public static void EnsureCanRevoke(EntitlementStatus currentStatus)
+    {
+        if (currentStatus == EntitlementStatus.Revoked)
+            throw new BusinessRuleException("Entitlement is already revoked.");
+    }
 }

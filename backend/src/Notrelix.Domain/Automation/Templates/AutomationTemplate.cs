@@ -26,7 +26,7 @@ public class AutomationTemplate : AggregateRoot
 
         template.SetAuditOnCreate(createdBy, createdAt);
         template.AddDomainEvent(new Events.AutomationTemplateCreatedDomainEvent(
-            Guid.Empty, template.Id, template.Name, createdAt));
+            template.Id, template.Name, createdAt));
 
         return template;
     }
@@ -55,7 +55,7 @@ public class AutomationTemplate : AggregateRoot
         if (Status == AutomationTemplateStatus.Published) return;
         Status = AutomationTemplateStatus.Published;
         SetAuditOnUpdate(null, publishedAt);
-        AddDomainEvent(new Events.AutomationTemplatePublishedDomainEvent(Guid.Empty, Id, publishedAt));
+        AddDomainEvent(new Events.AutomationTemplatePublishedDomainEvent(Id, publishedAt));
     }
 
     public void Archive(DateTimeOffset archivedAt)

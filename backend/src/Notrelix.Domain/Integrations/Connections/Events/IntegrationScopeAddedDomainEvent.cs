@@ -6,4 +6,4 @@ public sealed record IntegrationScopeAddedDomainEvent(
     string Scope,
     Guid AddedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, AddedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, AddedBy);

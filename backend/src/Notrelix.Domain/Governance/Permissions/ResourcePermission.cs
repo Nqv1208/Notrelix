@@ -2,6 +2,8 @@ namespace Notrelix.Domain.Governance.Permissions;
 
 public class ResourcePermission : AggregateRoot, IWorkspaceScoped
 {
+    private bool _suppressSoftDeleteEvent;
+
     public Guid WorkspaceId { get; private set; }
     public ResourceType ResourceType { get; private set; }
     public Guid ResourceId { get; private set; }
@@ -21,6 +23,7 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         PermissionSubjectType subjectType,
         Guid subjectId,
         PermissionLevel level,
+        PermissionLevel granterLevel,
         Guid grantedBy,
         DateTimeOffset grantedAt,
         PermissionEffect effect = PermissionEffect.Allow,
@@ -30,6 +33,9 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(resourceId);
         Guard.NotEmpty(subjectId);
+
+        if (!PermissionRules.CanGrant(granterLevel, level))
+            throw new BusinessRuleException("Cannot grant a permission level higher than the granter's own level.");
 
         var permission = new ResourcePermission
         {
@@ -69,7 +75,18 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new ResourcePermissionSoftDeletedDomainEvent(WorkspaceId, Id, ResourceType, ResourceId, deletedBy, deletedAt));
+        if (!_suppressSoftDeleteEvent)
+            AddDomainEvent(new ResourcePermissionSoftDeletedDomainEvent(WorkspaceId, Id, ResourceType, ResourceId, deletedBy, deletedAt));
+    }
+
+    public void Revoke(Guid revokedBy, DateTimeOffset revokedAt)
+    {
+        EnsureNotDeleted();
+
+        _suppressSoftDeleteEvent = true;
+        SoftDelete(revokedBy, revokedAt);
+        _suppressSoftDeleteEvent = false;
+        AddDomainEvent(new ResourcePermissionRevokedDomainEvent(WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, revokedBy, revokedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -79,13 +96,5 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
         AddDomainEvent(new ResourcePermissionRestoredDomainEvent(WorkspaceId, Id, ResourceType, ResourceId, restoredBy, restoredAt));
-    }
-
-    public void Revoke(Guid revokedBy, DateTimeOffset revokedAt)
-    {
-        EnsureNotDeleted();
-        SoftDelete(revokedBy, revokedAt);
-        IncrementVersion();
-        AddDomainEvent(new ResourcePermissionRevokedDomainEvent(WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, revokedBy, revokedAt));
     }
 }

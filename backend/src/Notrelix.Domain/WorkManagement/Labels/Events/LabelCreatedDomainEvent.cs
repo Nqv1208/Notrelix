@@ -6,4 +6,4 @@ public sealed record LabelCreatedDomainEvent(
     Guid LabelId,
     string Name,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

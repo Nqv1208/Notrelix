@@ -6,4 +6,4 @@ public sealed record SubscriptionChangedDomainEvent(
     Guid OldPlanId,
     Guid NewPlanId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

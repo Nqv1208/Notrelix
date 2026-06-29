@@ -8,4 +8,4 @@ public sealed record SavedFilterCreatedDomainEvent(
     Guid CreatedBy,
     DateTimeOffset OccurredAt,
     Guid? ViewId = null
-) : DomainEvent(OccurredAt, WorkspaceId, CreatedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, CreatedBy);

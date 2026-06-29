@@ -40,6 +40,12 @@ public class DashboardWidget : Entity
         WidgetRules.ValidatePosition(newPosition);
         Position = newPosition;
     }
+
+    public void UpdateTitle(string title, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        Guard.NotNullOrWhiteSpace(title);
+        Title = title.Trim();
+    }
 }
 
 public class Dashboard : AggregateRoot, IWorkspaceScoped
@@ -51,6 +57,8 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
 
     private readonly List<DashboardWidget> _widgets = new();
     public IReadOnlyCollection<DashboardWidget> Widgets => _widgets.AsReadOnly();
+
+    private const int MaxWidgets = 50;
 
     private Dashboard() : base() { }
 
@@ -102,6 +110,9 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(title);
         WidgetRules.ValidatePosition(position);
+
+        if (_widgets.Count >= MaxWidgets)
+            throw new BusinessRuleException($"Cannot add more than {MaxWidgets} widgets to a dashboard.");
 
         var widget = DashboardWidget.Create(Id, title, type, config, position);
         _widgets.Add(widget);

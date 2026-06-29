@@ -6,4 +6,4 @@ public sealed record UserActivatedDomainEvent(
     Guid ActivatedBy,
     DateTimeOffset ActivatedAt,
     string? Reason
-) : DomainEvent(ActivatedAt, null, null);
+) : GlobalDomainEvent(ActivatedAt);

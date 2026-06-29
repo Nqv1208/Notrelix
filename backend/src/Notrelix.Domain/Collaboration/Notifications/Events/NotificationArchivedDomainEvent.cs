@@ -4,4 +4,4 @@ public sealed record NotificationArchivedDomainEvent(
     Guid WorkspaceId,
     Guid NotificationId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

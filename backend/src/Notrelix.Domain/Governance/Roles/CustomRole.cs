@@ -6,6 +6,7 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
     public CustomRoleStatus Status { get; private set; }
+    public bool IsSystem { get; private set; }
 
     private readonly List<CustomRolePermission> _permissions = new();
     public IReadOnlyCollection<CustomRolePermission> Permissions => _permissions.AsReadOnly();
@@ -16,6 +17,8 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(name);
+        Guard.MaxLength(name, 100);
+        Guard.MaxLength(description, 500);
 
         var role = new CustomRole
         {
@@ -34,7 +37,10 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
     public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (IsSystem)
+            throw new BusinessRuleException("Cannot rename a system role.");
         Guard.NotNullOrWhiteSpace(name);
+        Guard.MaxLength(name, 100);
 
         var newName = name.Trim();
         if (Name == newName) return;
@@ -111,6 +117,8 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
+        if (IsSystem)
+            throw new BusinessRuleException("Cannot delete a system role.");
         Status = CustomRoleStatus.Archived;
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);

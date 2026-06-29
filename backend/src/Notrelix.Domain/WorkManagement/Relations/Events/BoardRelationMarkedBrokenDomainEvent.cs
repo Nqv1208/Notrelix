@@ -5,4 +5,4 @@ public sealed record BoardRelationMarkedBrokenDomainEvent(
     Guid RelationId,
     Guid MarkedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, MarkedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, MarkedBy);

@@ -5,4 +5,4 @@ public sealed record SubscriptionStartedDomainEvent(
     Guid SubscriptionId,
     Guid PlanId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

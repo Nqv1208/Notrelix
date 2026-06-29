@@ -1,6 +1,6 @@
 namespace Notrelix.Domain.Billing.Usage.Events;
 
-public record QuotaExceededDomainEvent : DomainEvent
+public record QuotaExceededDomainEvent : WorkspaceScopedDomainEvent
 {
     public string FeatureCode { get; }
     public decimal Limit { get; }
@@ -10,7 +10,7 @@ public record QuotaExceededDomainEvent : DomainEvent
         string featureCode,
         decimal limit,
         DateTimeOffset occurredAt)
-        : base(occurredAt, workspaceId, null)
+        : base(workspaceId, occurredAt, null)
     {
         FeatureCode = featureCode;
         Limit = limit;

@@ -5,4 +5,4 @@ public sealed record BoardItemLabelAddedDomainEvent(
     Guid ItemId,
     Guid LabelId,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, null);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);

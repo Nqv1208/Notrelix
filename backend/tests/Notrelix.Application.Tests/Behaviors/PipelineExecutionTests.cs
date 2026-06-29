@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
-using Moq;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Behaviors;
 using Notrelix.Application.Common.CQRS;

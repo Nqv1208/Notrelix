@@ -2,7 +2,6 @@ using MediatR;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Events;
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Commands.Register;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Identity.Users;
@@ -24,6 +23,7 @@ public class RegisterCommandHandlerTests
         await context.SaveChangesAsync();
 
         var passwordHasher = new Mock<IPasswordHasher>();
+        passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");
         var jwtService = new Mock<IJwtService>();
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);

@@ -6,4 +6,4 @@ public sealed record WorkspaceInvitationAcceptedDomainEvent(
     Guid UserId,
     Guid AcceptedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt, WorkspaceId, AcceptedBy);
+) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, AcceptedBy);
