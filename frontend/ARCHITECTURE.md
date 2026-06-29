@@ -351,13 +351,17 @@ To be classified as **Production-Ready**, a feature slice must satisfy all the f
 
 | Feature | Architecture Status | Backend Integration | UI Completeness | Test Coverage | Production Readiness | Notes |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+### 10.2. Feature Readiness Matrix
+
+| Feature | Architecture Status | Backend Integration | UI Completeness | Test Coverage | Production Readiness | Notes |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **auth** | Aligned (Public API) | Real API (JWT/Cookie) | Completed | High | **Production-Ready** | Handles refresh token mutex. |
 | **account** | Aligned (Public API) | Real API | Completed | Medium | **Production-Ready** | User preferences and settings. |
 | **workspace** | Aligned (Public API) | Real API | Completed | High | **Production-Ready** | Members, switchers, and invites. |
 | **work-management** | Aligned (Public API) | Real API | Completed | High | **Production-Ready** | Table, Kanban, Calendar, Timeline views. |
+| **docs** | Aligned (Public API) | Real API | Completed | Medium | **Production-Ready** | Notion-like document editor & page trees. |
 | **notifications** | Aligned (Public API) | Real API | Completed | Medium | **Integration-Ready** | Actionable activity updates feed. |
 | **activity** | Aligned (Public API) | Real API | Completed | Medium | **Integration-Ready** | Audit logs feed integrated. |
-| **docs** | Partial Barrel | Real API | Completed | Medium | **Quality-Debt** | Contains legacy deep imports in app layer. |
 | **collaboration** | Aligned (Public API) | Stubbed | Completed | Low | **Architecture-Ready** | Mentions/comments structure defined. |
 | **billing** | Aligned (Public API) | Stubbed | Completed | Low | **Contract-Ready** | Plan stubs defined in billingApi contract. |
 | **search** | Aligned (Public API) | Stubbed | Completed | Low | **Contract-Ready** | Simulated search queries. |
@@ -392,6 +396,49 @@ To be classified as **Production-Ready**, a feature slice must satisfy all the f
 
 ### 10.7. Quality Debt Register
 1.  **Tabbed Shell Coupling**: `work-management` views rely on `WorkspaceTabbedRouteFrame` layout. Will be resolved by moving the tabbed shell structure into `features/workspace` in the next phase.
-2.  **Docs Deep Imports**: `app/` imports internal hooks and types from `features/docs/hooks/...` and `features/docs/types/...`. Resolving this requires implementing a complete public barrel for `docs` feature.
-3.  **Color Theme Hydration Hack**: `useColorTheme` defers local storage state sync via `setTimeout` to bypass linter. Can be refactored via `next-themes` standard context.
+
+---
+
+## 11. Frontend Foundation Lock (Phase 11 Update)
+
+### 11.1. Legacy Compatibility Policy
+*   The legacy compatibility folder `features/boards/` has been **deleted**. All active board views and card editors now reside in `@/features/work-management/`.
+*   Legacy query key aliases (e.g., `queryKeys.boards`, `queryKeys.cards`, `queryKeys.pages`) in [query-keys.ts](file:///Users/nqvinh/Documents/projects/notrelix/frontend/lib/query/query-keys.ts) are preserved solely for backwards compatibility during this transition and will be progressively refactored to use `queryKeys.workManagement` and `queryKeys.docs`.
+
+### 11.2. Theme Infrastructure Policy
+*   Color theme management has been moved entirely out of the `features/` directory and into [lib/theme](file:///Users/nqvinh/Documents/projects/notrelix/frontend/lib/theme).
+*   Theme configuration is considered **technical UI infrastructure**, not a business capability. Settings pages can consume the hook but must not own the files.
+*   The previous `setTimeout` hydration workaround in `useColorTheme` has been removed. Local storage sync is handled safely inside standard React lifecycle effects.
+
+### 11.3. UX State Component Contract
+A set of business-blind, premium feedback components has been standardized in [components/feedback](file:///Users/nqvinh/Documents/projects/notrelix/frontend/components/feedback):
+*   `LoadingState`: Spinning loader with custom title/description.
+*   `EmptyState`: Dash-bordered card with icon, title, description, and action button.
+*   `ErrorState`: Red-alert card accepting raw errors, displaying `AppError` messages automatically.
+*   `AccessDeniedState`: Amber-alert card for permission gate failures.
+*   `NotFoundState`: Generic resource-not-found state.
+*   `MockDisabledState`: Gated feature warning when mock mode is turned off.
+
+These components are business-blind: they do not reference board, docs, or workspace terms directly. Feature screens must pass descriptive strings and action buttons as props.
+
+### 11.4. App Shell and Layout Contract
+Layout ownership is split into three clean layers:
+1.  **Route-Specific Shells** (`app/(workspace)/[workspaceId]/_components/shell`): Owns Next.js route-specific tabbed frame wrappers and sidebar viewport layouts.
+2.  **Generic Visual Layouts** (`components/layout`): Business-blind visual grids, flex frames, and responsive page container classes.
+3.  **Workspace-Aware Shells** (`features/workspace/components`): Reusable, workspace-contextual components (e.g. member switcher dropdown, invitation menus) that do not depend on specific route parameters.
+
+### 11.5. Form and Mutation UX Contract
+All forms and mutations must adhere to the following contract:
+1.  **Validation**: Use `react-hook-form` + `zod` for all complex inputs.
+2.  **Server Mapping**: HTTP 400/422 validation errors must be passed through `applyServerValidationErrors(form, error)` to bind error messages directly to input fields.
+3.  **Pending States**: Form submit buttons must show a loading spinner and disable interactions when `mutation.isPending` is true.
+4.  **Error Propagation**: Form-level errors must display using `AppError.message` (extracted via `getFormErrorMessage(error)`).
+5.  **Optimistic Updates**: Any hook utilizing optimistic updates must explicitly implement and document a `onError` rollback function that restores the previous query cache state.
+6.  **Silent Mutation Errors**: If a form UI already displays the error message, the mutation hook must suppress global error toasts (using `skipGlobalErrorToast: true` in the API options) to prevent double-toasting.
+
+### 11.6. E2E Smoke Readiness
+*   An E2E smoke testing plan has been drafted in [E2E_SMOKE_PLAN.md](file:///Users/nqvinh/Documents/projects/notrelix/frontend/E2E_SMOKE_PLAN.md).
+*   Minimum smoke flows cover: Sign-in, Auth Refresh Failure Redirect, Workspace Switcher, Board Tab Switching, Docs Editor Interaction, Mock Disabled State, and Access Denied State.
+*   Playwright is the designated E2E framework. Tests will run against the local development server in the CI pipeline.
+
 
