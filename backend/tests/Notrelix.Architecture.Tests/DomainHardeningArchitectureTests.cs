@@ -261,7 +261,7 @@ public class DomainHardeningArchitectureTests
             ResourceType.External.ToString()
         };
 
-        var policyPath = Path.Combine(GetRepoRoot(), "docs", "backend", "domain", "resource-ref-registry-policy.md");
+        var policyPath = Path.Combine(GetRepoRoot(), "docs", "domain", "resource-ref-registry-policy.md");
         File.Exists(policyPath).Should().BeTrue("ResourceRef registry policy is required by Slice D0.");
 
         var policy = File.ReadAllText(policyPath);
@@ -277,10 +277,10 @@ public class DomainHardeningArchitectureTests
     [Fact]
     public void CoreAggregateAudit_ShouldCover_EveryRequiredCoreAggregate()
     {
-        var auditPath = Path.Combine(GetRepoRoot(), "docs", "backend", "domain", "core-aggregate-audit.md");
+        var auditPath = Path.Combine(GetRepoRoot(), "docs", "domain", "core-aggregate-audit.md");
 
         File.Exists(auditPath).Should().BeTrue(
-            "D2 requires docs/backend/domain/core-aggregate-audit.md before production Domain hardening.");
+            "D2 requires docs/domain/core-aggregate-audit.md before production Domain hardening.");
 
         var content = File.ReadAllText(auditPath);
         var missing = CoreAggregates

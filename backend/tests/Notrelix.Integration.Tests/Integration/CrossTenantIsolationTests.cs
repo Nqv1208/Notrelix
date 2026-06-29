@@ -14,20 +14,31 @@ namespace Notrelix.Integration.Tests.Integration;
 /// These tests verify that EF Core global query filters enforce workspace isolation
 /// at the database query level, not just at the model configuration level.
 /// Running on PostgreSQL ensures test behavior matches production.
+///
+/// Database is reset (TRUNCATE CASCADE) before each test to prevent cross-test contamination.
 /// </summary>
 [Collection("Database")]
 [Trait("Category", "Integration")]
-public class CrossTenantIsolationTests
+public class CrossTenantIsolationTests : IAsyncLifetime
 {
     private static readonly Guid OwnerId = Guid.Parse("00000000-0000-0000-0000-000000000099");
     private static readonly DateTimeOffset FixedTime = new(2026, 6, 28, 0, 0, 0, TimeSpan.Zero);
 
     private readonly PostgresTestContainer _fixture;
+    private DatabaseReset _reset = null!;
 
     public CrossTenantIsolationTests(PostgresTestContainer fixture)
     {
         _fixture = fixture;
     }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_fixture.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     private ApplicationDbContext CreateContext(ICurrentWorkspace workspace)
     {

@@ -86,6 +86,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext, IWorkspace
     private static readonly FieldInfo CurrentWorkspaceField = typeof(ApplicationDbContext)
         .GetField("_currentWorkspace", BindingFlags.NonPublic | BindingFlags.Instance)!;
 
+    protected ICurrentWorkspace? CurrentWorkspace => _currentWorkspace;
+
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentWorkspace? currentWorkspace = null) : base(options)
     {
         _currentWorkspace = currentWorkspace;
@@ -281,29 +283,39 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext, IWorkspace
 
             if (isWorkspaceScoped)
             {
-                if (_currentWorkspace?.IsSystemContext == true)
+                if (_currentWorkspace is null)
                 {
-                }
-                else if (_currentWorkspace?.HasWorkspace == true)
-                {
-                    var wsFilter = Expression.Equal(
-                        Expression.PropertyOrField(param, "WorkspaceId"),
-                        Expression.Convert(
-                            Expression.Property(
-                                Expression.Field(Expression.Constant(this), CurrentWorkspaceField),
-                                "WorkspaceId"),
-                            typeof(Guid)));
-
-                    filterBody = filterBody is not null
-                        ? Expression.AndAlso(filterBody, wsFilter)
-                        : wsFilter;
-                }
-                else
-                {
+                    // Null workspace → block all access (evaluated at model creation time).
+                    // Cannot use runtime expression because InMemory provider doesn't short-circuit
+                    // AndAlso, causing NullReferenceException when accessing _currentWorkspace properties.
                     var noAccess = Expression.Constant(false);
                     filterBody = filterBody is not null
                         ? Expression.AndAlso(filterBody, noAccess)
                         : noAccess;
+                }
+                else
+                {
+                    // Non-null workspace → runtime filter evaluated at QUERY TIME via EF Core's funcletizer.
+                    // This ensures the filter adapts when the workspace context changes after model creation
+                    // (e.g., switching from system context to a specific workspace).
+                    //
+                    // Expression: _currentWorkspace.IsSystemContext || e.WorkspaceId == _currentWorkspace.WorkspaceId
+                    // (_currentWorkspace is guaranteed non-null here, so property access is safe)
+
+                    var contextField = Expression.Field(Expression.Constant(this), CurrentWorkspaceField);
+                    var isSysProp = Expression.Property(contextField, nameof(ICurrentWorkspace.IsSystemContext));
+                    var wsIdProp = Expression.Property(contextField, nameof(ICurrentWorkspace.WorkspaceId));
+
+                    // Lift e.WorkspaceId (Guid) to Guid? for comparison with _currentWorkspace.WorkspaceId (Guid?)
+                    var wsIdEquals = Expression.Equal(
+                        Expression.Convert(Expression.PropertyOrField(param, "WorkspaceId"), typeof(Guid?)),
+                        wsIdProp);
+
+                    var innerOr = Expression.OrElse(isSysProp, wsIdEquals);
+
+                    filterBody = filterBody is not null
+                        ? Expression.AndAlso(filterBody, innerOr)
+                        : innerOr;
                 }
             }
 

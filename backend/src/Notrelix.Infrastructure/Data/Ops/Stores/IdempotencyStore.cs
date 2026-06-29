@@ -25,8 +25,8 @@ public sealed class IdempotencyStore : IIdempotencyStore
         CancellationToken ct = default)
     {
         const string sql = """
-            INSERT INTO ops.idempotency_keys (id, workspace_id, user_id, scope, idempotency_key, request_method, request_path, request_hash, status, expires_at, created_at)
-            VALUES (gen_random_uuid(), @ws, @user, @scope, @key, @method, @path, @hash, 'Started', @expires, @now)
+            INSERT INTO ops.idempotency_keys (id, workspace_id, user_id, scope, idempotency_key, request_method, request_path, request_hash, status, expires_at, created_at, locked_until)
+            VALUES (gen_random_uuid(), @ws, @user, @scope, @key, @method, @path, @hash, 'Started', @expires, @now, @until)
             ON CONFLICT (scope, idempotency_key) DO UPDATE SET locked_until = @until
             WHERE ops.idempotency_keys.status = 'Started' AND ops.idempotency_keys.locked_until IS NULL
             RETURNING id

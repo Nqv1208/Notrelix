@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -87,11 +88,30 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 sp.GetRequiredService<ApplicationDbContext>());
 
             // Replace Redis cache with in-memory distributed cache for testing.
-            // CacheRegistration.AddCaching throws when ConnectionStrings__Redis is missing.
+            // Remove ALL Redis-dependent services to prevent DI resolution failures.
             services.RemoveAll<IConnectionMultiplexer>();
             services.RemoveAll<IDistributedCache>();
             services.RemoveAll<IRedisCacheService>();
             services.AddDistributedMemoryCache();
+
+            // Redis-dependent singletons that inject IConnectionMultiplexer.
+            // Without these removals, the rate limiting middleware and other
+            // pipeline components resolve null/missing IConnectionMultiplexer → 500.
+            services.RemoveAll<IRateLimitService>();
+            services.AddSingleton<IRateLimitService>(_ => Mock.Of<IRateLimitService>());
+            services.RemoveAll<IOtpService>();
+            services.AddSingleton<IOtpService>(_ => Mock.Of<IOtpService>());
+            services.RemoveAll<IJwtBlacklistService>();
+            services.AddSingleton<IJwtBlacklistService>(_ => Mock.Of<IJwtBlacklistService>());
+            services.RemoveAll<INotificationService>();
+            services.AddScoped<INotificationService>(_ => Mock.Of<INotificationService>());
+
+            // Clear all health checks (RedisHealthCheck, DatabaseHealthCheck,
+            // OutboxHealthCheck) to prevent 500s on /health endpoint.
+            services.Configure<HealthCheckServiceOptions>(options =>
+            {
+                options.Registrations.Clear();
+            });
 
             // IPermissionEvaluator is not registered in the real DI (pre-existing gap).
             // WorkspaceResolutionMiddleware requires it for every request.
