@@ -34,10 +34,17 @@ describe("frontend API contracts", () => {
   })
 
   test("feature hooks import auth-style service modules rather than legacy api files", () => {
+    const docsHooksDirs = [
+      "pages", "blocks", "editor", "tree", "comments",
+    ].flatMap((sub) => {
+      const dir = join(frontendRoot, "features", "docs", sub, "hooks")
+      try { statSync(dir); return sourceFiles(dir) } catch { return [] }
+    })
+
     const files = [
       ...sourceFiles(join(frontendRoot, "features", "work-management", "hooks")),
       ...sourceFiles(join(frontendRoot, "features", "workspace", "hooks")),
-      ...sourceFiles(join(frontendRoot, "features", "docs", "hooks")),
+      ...docsHooksDirs,
     ]
 
     const offenders = files

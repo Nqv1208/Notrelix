@@ -247,6 +247,89 @@ for (const file of tsFiles) {
     }
   }
 
+  // Rule 14: Guarded mock imports
+  for (const imp of imports) {
+    if (imp.includes('/mock/') || imp.includes('mock-data') || imp.includes('sample-data')) {
+      const isMockOrTest = relativeFile.includes('/mock/') || relativeFile.includes('.test.') || relativeFile.includes('.spec.');
+      if (!isMockOrTest) {
+        if (!content.includes('isMockModeEnabled') && !content.includes('isDocsMockModeEnabled')) {
+          addViolation(
+            'ARCH_UNGUARDED_MOCK_IMPORT',
+            file,
+            imp,
+            'Production files importing mock data must be guarded by isMockModeEnabled check.',
+            'Wrap the mock usage with isMockModeEnabled() check or move the mock data behind an adapter.'
+          );
+        }
+      }
+    }
+  }
+
+  // Rule 15: No raw role checks in UI files (excluding workspace settings and tests)
+  if (relativeFile.endsWith('.tsx') && !relativeFile.includes('.test.') && !relativeFile.includes('/mock/')) {
+    if (relativeFile !== 'features/workspace/components/workspace-management-panel.tsx') {
+      if (content.includes('role ===') || content.includes('role !==')) {
+        addViolation(
+          'ARCH_NO_RAW_ROLE_CHECK',
+          file,
+          null,
+          'Raw role check found in UI file. Use useCan() or permission guards instead.',
+          'Replace raw role comparison with useCan(permission) or <PermissionGuard>.'
+        );
+      }
+    }
+  }
+
+  // Rule 16: No raw plan/tier checks in UI files (excluding billing/entitlements and tests)
+  if (relativeFile.endsWith('.tsx') && !relativeFile.includes('.test.') && !relativeFile.includes('/mock/') && !relativeFile.includes('features/billing/')) {
+    if (content.includes('plan ===') || content.includes('tier ===') || content.includes('subscription.plan')) {
+      addViolation(
+        'ARCH_NO_RAW_PLAN_CHECK',
+        file,
+        null,
+        'Raw plan or tier check found in UI file. Use useEntitlement() instead.',
+        'Replace raw plan comparison with useEntitlement(feature).'
+      );
+    }
+  }
+
+  // Rule 17: No direct fetch() calls outside lib/api/ or tests
+  if (!relativeFile.startsWith('lib/api/') && !relativeFile.includes('.test.') && !relativeFile.includes('.spec.')) {
+    if (/(?<!\w)fetch\(/.test(content) && !content.includes('window.fetch')) {
+      addViolation(
+        'ARCH_NO_DIRECT_FETCH',
+        file,
+        null,
+        'Direct fetch() call found outside lib/api/. Use the unified api client instead.',
+        'Replace fetch() with api.get, api.post, etc.'
+      );
+    }
+  }
+
+  // Rule 18: No direct response.json() calls outside lib/api/api-client.ts or tests
+  if (relativeFile !== 'lib/api/api-client.ts' && !relativeFile.includes('.test.') && !relativeFile.includes('.spec.')) {
+    if (content.includes('.json()')) {
+      addViolation(
+        'ARCH_NO_DIRECT_RESPONSE_JSON',
+        file,
+        null,
+        'Direct response.json() call found. All responses must be parsed safely inside api-client.',
+        'Rely on the api-client to parse and return the JSON payload.'
+      );
+    }
+  }
+
+  // Rule 19: Prevent features/theme from reappearing as a business feature
+  if (relativeFile.startsWith('features/theme/')) {
+    addViolation(
+      'ARCH_NO_THEME_IN_FEATURES',
+      file,
+      null,
+      'Theme infrastructure found under features/. Theme must reside in lib/theme or components/theme.',
+      'Move theme files to lib/theme or components/theme.'
+    );
+  }
+
   // Rule 8: Feature root index.ts must not use export *
   if (relativeFile.match(/^features\/[^/]+\/index\.ts[x]?$/)) {
     if (content.includes('export *')) {
