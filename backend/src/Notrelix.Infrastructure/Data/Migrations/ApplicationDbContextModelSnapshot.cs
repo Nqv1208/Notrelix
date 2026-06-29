@@ -7861,6 +7861,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedBy")
+                        .IsUnique()
+                        .HasDatabaseName("idx_workspaces_personal_per_user")
+                        .HasFilter("is_personal = true AND deleted_at IS NULL");
+
                     b.HasIndex("Name")
                         .HasDatabaseName("idx_workspaces_name");
 
@@ -9078,24 +9083,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Notrelix.Domain.Collaboration.Activity.ActivityLog", b =>
                 {
-                    b.OwnsOne("Notrelix.Domain.Collaboration.Activity.ActivityMetadata", "Metadata", b1 =>
-                        {
-                            b1.Property<Guid>("ActivityLogId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<string>("Data")
-                                .IsRequired()
-                                .HasColumnType("jsonb")
-                                .HasColumnName("metadata");
-
-                            b1.HasKey("ActivityLogId");
-
-                            b1.ToTable("activity_logs", "collab");
-
-                            b1.WithOwner()
-                                .HasForeignKey("ActivityLogId");
-                        });
-
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
                         {
                             b1.Property<Guid>("ActivityLogId")
@@ -9126,6 +9113,24 @@ namespace Notrelix.Infrastructure.Data.Migrations
                                 .HasForeignKey("ActivityLogId");
                         });
 
+                    b.OwnsOne("Notrelix.Domain.Collaboration.Activity.ActivityMetadata", "Metadata", b1 =>
+                        {
+                            b1.Property<Guid>("ActivityLogId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Data")
+                                .IsRequired()
+                                .HasColumnType("jsonb")
+                                .HasColumnName("metadata");
+
+                            b1.HasKey("ActivityLogId");
+
+                            b1.ToTable("activity_logs", "collab");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ActivityLogId");
+                        });
+
                     b.Navigation("Metadata")
                         .IsRequired();
 
@@ -9135,6 +9140,36 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Notrelix.Domain.Collaboration.Attachments.Attachment", b =>
                 {
+                    b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
+                        {
+                            b1.Property<Guid>("AttachmentId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<Guid>("ResourceId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("resource_id");
+
+                            b1.Property<string>("ResourceType")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("resource_type");
+
+                            b1.Property<Guid?>("WorkspaceId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("target_workspace_id");
+
+                            b1.HasKey("AttachmentId");
+
+                            b1.HasIndex("ResourceType", "ResourceId")
+                                .HasDatabaseName("idx_attachments_resource");
+
+                            b1.ToTable("attachments", "collab");
+
+                            b1.WithOwner()
+                                .HasForeignKey("AttachmentId");
+                        });
+
                     b.OwnsOne("Notrelix.Domain.Collaboration.Attachments.FileMetadata", "Metadata", b1 =>
                         {
                             b1.Property<Guid>("AttachmentId")
@@ -9174,36 +9209,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                                 .HasForeignKey("AttachmentId");
                         });
 
-                    b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
-                        {
-                            b1.Property<Guid>("AttachmentId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<Guid>("ResourceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("resource_id");
-
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("resource_type");
-
-                            b1.Property<Guid?>("WorkspaceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("target_workspace_id");
-
-                            b1.HasKey("AttachmentId");
-
-                            b1.HasIndex("ResourceType", "ResourceId")
-                                .HasDatabaseName("idx_attachments_resource");
-
-                            b1.ToTable("attachments", "collab");
-
-                            b1.WithOwner()
-                                .HasForeignKey("AttachmentId");
-                        });
-
                     b.Navigation("Metadata")
                         .IsRequired();
 
@@ -9217,28 +9222,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .WithMany()
                         .HasForeignKey("ParentId")
                         .OnDelete(DeleteBehavior.Restrict);
-
-                    b.OwnsOne("Notrelix.Domain.Collaboration.Comments.CommentAnchor", "Anchor", b1 =>
-                        {
-                            b1.Property<Guid>("CommentId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<int?>("Offset")
-                                .HasColumnType("integer")
-                                .HasColumnName("anchor_offset");
-
-                            b1.Property<string>("Selector")
-                                .HasMaxLength(256)
-                                .HasColumnType("character varying(256)")
-                                .HasColumnName("anchor_selector");
-
-                            b1.HasKey("CommentId");
-
-                            b1.ToTable("comments", "collab");
-
-                            b1.WithOwner()
-                                .HasForeignKey("CommentId");
-                        });
 
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
                         {
@@ -9263,6 +9246,28 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                             b1.HasIndex("ResourceType", "ResourceId")
                                 .HasDatabaseName("idx_comments_resource");
+
+                            b1.ToTable("comments", "collab");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CommentId");
+                        });
+
+                    b.OwnsOne("Notrelix.Domain.Collaboration.Comments.CommentAnchor", "Anchor", b1 =>
+                        {
+                            b1.Property<Guid>("CommentId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<int?>("Offset")
+                                .HasColumnType("integer")
+                                .HasColumnName("anchor_offset");
+
+                            b1.Property<string>("Selector")
+                                .HasMaxLength(256)
+                                .HasColumnType("character varying(256)")
+                                .HasColumnName("anchor_selector");
+
+                            b1.HasKey("CommentId");
 
                             b1.ToTable("comments", "collab");
 
@@ -9561,34 +9566,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Notrelix.Domain.Governance.Audit.AuditLog", b =>
                 {
-                    b.OwnsOne("Notrelix.Domain.Governance.Audit.AuditMetadata", "Metadata", b1 =>
-                        {
-                            b1.Property<Guid>("AuditLogId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<string>("IpAddress")
-                                .HasMaxLength(45)
-                                .HasColumnType("character varying(45)")
-                                .HasColumnName("metadata_ip_address");
-
-                            b1.Property<string>("TraceId")
-                                .HasMaxLength(128)
-                                .HasColumnType("character varying(128)")
-                                .HasColumnName("metadata_trace_id");
-
-                            b1.Property<string>("UserAgent")
-                                .HasMaxLength(512)
-                                .HasColumnType("character varying(512)")
-                                .HasColumnName("metadata_user_agent");
-
-                            b1.HasKey("AuditLogId");
-
-                            b1.ToTable("audit_logs", "governance");
-
-                            b1.WithOwner()
-                                .HasForeignKey("AuditLogId");
-                        });
-
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
                         {
                             b1.Property<Guid>("AuditLogId")
@@ -9612,6 +9589,34 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                             b1.HasIndex("ResourceType", "ResourceId")
                                 .HasDatabaseName("idx_audit_logs_resource");
+
+                            b1.ToTable("audit_logs", "governance");
+
+                            b1.WithOwner()
+                                .HasForeignKey("AuditLogId");
+                        });
+
+                    b.OwnsOne("Notrelix.Domain.Governance.Audit.AuditMetadata", "Metadata", b1 =>
+                        {
+                            b1.Property<Guid>("AuditLogId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("IpAddress")
+                                .HasMaxLength(45)
+                                .HasColumnType("character varying(45)")
+                                .HasColumnName("metadata_ip_address");
+
+                            b1.Property<string>("TraceId")
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("metadata_trace_id");
+
+                            b1.Property<string>("UserAgent")
+                                .HasMaxLength(512)
+                                .HasColumnType("character varying(512)")
+                                .HasColumnName("metadata_user_agent");
+
+                            b1.HasKey("AuditLogId");
 
                             b1.ToTable("audit_logs", "governance");
 
@@ -9900,25 +9905,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.OwnsOne("Notrelix.Domain.SharedKernel.SyncHash", "SyncHash", b1 =>
-                        {
-                            b1.Property<Guid>("CalendarEventId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<string>("Value")
-                                .IsRequired()
-                                .HasMaxLength(64)
-                                .HasColumnType("character varying(64)")
-                                .HasColumnName("sync_hash");
-
-                            b1.HasKey("CalendarEventId");
-
-                            b1.ToTable("calendar_events", "integration");
-
-                            b1.WithOwner()
-                                .HasForeignKey("CalendarEventId");
-                        });
-
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
                         {
                             b1.Property<Guid>("CalendarEventId")
@@ -9942,6 +9928,25 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                             b1.HasIndex("ResourceType", "ResourceId")
                                 .HasDatabaseName("idx_calendar_events_resource");
+
+                            b1.ToTable("calendar_events", "integration");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CalendarEventId");
+                        });
+
+                    b.OwnsOne("Notrelix.Domain.SharedKernel.SyncHash", "SyncHash", b1 =>
+                        {
+                            b1.Property<Guid>("CalendarEventId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character varying(64)")
+                                .HasColumnName("sync_hash");
+
+                            b1.HasKey("CalendarEventId");
 
                             b1.ToTable("calendar_events", "integration");
 

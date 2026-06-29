@@ -2,22 +2,22 @@ using Notrelix.Application.Common.Events;
 
 namespace Notrelix.Application.Events.Identity;
 
-[EventName("user.registered", Version = 1)]
+[EventName("identity.user-registered", Version = 1)]
 public sealed record UserRegisteredIntegrationEvent(
     Guid UserId,
     string Email,
     string DisplayName,
-    Guid? ActorUserId = null,
-    string? CorrelationId = null,
-    string? CausationId = null,
-    DateTimeOffset OccurredAt = default
+    Guid? ActorUserId,
+    Guid? SourceEventId,
+    string? CorrelationId,
+    string? CausationId,
+    DateTimeOffset OccurredAt
 ) : IntegrationEvent(
-    "user.registered",
-    1,
-    sourceEventId: null,
+    messageName: "identity.user-registered",
+    schemaVersion: 1,
+    sourceEventId: SourceEventId,
     workspaceId: null,
-    ActorUserId,
-    CorrelationId,
-    CausationId,
-    OccurredAt
-);
+    actorUserId: ActorUserId,
+    correlationId: CorrelationId,
+    causationId: CausationId,
+    occurredAt: OccurredAt);

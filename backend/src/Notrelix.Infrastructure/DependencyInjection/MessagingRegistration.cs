@@ -22,30 +22,63 @@ public static class MessagingRegistration
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Billing.SubscriptionEventMapper>();
         services.AddScoped<IIntegrationEventMapper, CompositeIntegrationEventMapper>();
 
-        var mtLicense = configuration["MT_LICENSE"];
+        // Message deduplication store (Application abstraction -> Infrastructure implementation).
+        services.AddScoped<IMessageDeduplicationStore, MessageDeduplicationStore>();
 
-        if (!string.IsNullOrEmpty(mtLicense))
+        var transport = configuration["Messaging:Transport"] ?? "InMemory";
+
+        switch (transport)
         {
-            services.AddMassTransit(cfg =>
-            {
-                cfg.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("notrelix", false));
-                cfg.AddConsumers(typeof(MessagingRegistration).Assembly);
-
-                cfg.UsingInMemory((ctx, mem) =>
+            case "InMemory":
+            case "MassTransitInMemory":
+                services.AddMassTransit(cfg =>
                 {
-                    mem.ConfigureEndpoints(ctx);
-                });
-            });
+                    cfg.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("notrelix", false));
+                    cfg.AddConsumers(typeof(MessagingRegistration).Assembly);
 
-            services.AddScoped<IIntegrationEventBus, IntegrationEventBus>();
-        }
-        else
-        {
-            // Dev fallback: no-op bus when MT_LICENSE is not set.
-            services.AddScoped<IIntegrationEventBus>(_ => new DevNullIntegrationEventBus());
+                    cfg.UsingInMemory((ctx, mem) =>
+                    {
+                        mem.ConfigureEndpoints(ctx);
+                    });
+                });
+
+                services.AddScoped<IIntegrationEventBus, IntegrationEventBus>();
+                break;
+
+            case "RabbitMQ":
+                throw new InvalidOperationException(
+                    "Messaging transport 'RabbitMQ' is declared but not implemented yet. " +
+                    "Use InMemory for current runtime or implement RabbitMQ adapter first.");
+
+            case "Kafka":
+                throw new InvalidOperationException(
+                    "Messaging transport 'Kafka' is declared but not implemented yet. " +
+                    "Use InMemory for current runtime or implement Kafka adapter first.");
+
+            case "None":
+                if (!IsDevelopment(configuration))
+                {
+                    throw new InvalidOperationException(
+                        "Messaging:Transport=None is only allowed in Development. " +
+                        "Set Messaging:Transport to InMemory/RabbitMQ/Kafka in staging/production.");
+                }
+                services.AddScoped<IIntegrationEventBus>(_ => new DevNullIntegrationEventBus());
+                break;
+
+            default:
+                throw new InvalidOperationException(
+                    $"Unknown Messaging:Transport '{transport}'. " +
+                    "Valid values: InMemory, RabbitMQ, Kafka, None.");
         }
 
         return services;
+    }
+
+    private static bool IsDevelopment(IConfiguration configuration)
+    {
+        var env = configuration["DOTNET_ENVIRONMENT"]
+               ?? configuration["ASPNETCORE_ENVIRONMENT"];
+        return string.Equals(env, "Development", StringComparison.OrdinalIgnoreCase);
     }
 }
 

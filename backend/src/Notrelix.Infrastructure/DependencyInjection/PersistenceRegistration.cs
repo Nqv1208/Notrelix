@@ -12,7 +12,6 @@ using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Interceptors;
 using Notrelix.Infrastructure.Data.Outbox;
 using Notrelix.Infrastructure.Events;
-using Notrelix.Infrastructure.Messaging.Consumers.Identity;
 using Notrelix.Infrastructure.Options;
 
 namespace Notrelix.Infrastructure;
@@ -71,7 +70,6 @@ public static class PersistenceRegistration
         services.AddSingleton<IEventTypeRegistry, EventTypeRegistry>();
         services.AddSingleton<IDomainEventDispatchPolicy, DomainEventDispatchPolicy>();
         services.AddScoped<IProcessedEventStore, ProcessedEventStore>();
-        services.AddScoped<WorkspaceProvisioningService>();
 
         return services;
     }

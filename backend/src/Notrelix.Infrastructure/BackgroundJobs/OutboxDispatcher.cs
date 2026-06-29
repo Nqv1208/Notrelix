@@ -148,19 +148,23 @@ internal sealed class OutboxDispatcher : BackgroundService
 
         try
         {
-            switch (message.MessageType)
+            var result = message.MessageType switch
             {
-                case OutboxMessageType.DomainEvent:
-                    await DispatchDomainEventAsync(message, eventTypeRegistry, mediator, dateTimeProvider, cancellationToken);
-                    break;
-                case OutboxMessageType.IntegrationEvent:
-                    await DispatchIntegrationEventAsync(message, eventTypeRegistry, integrationEventBus, dateTimeProvider, cancellationToken);
-                    break;
-                default:
-                    _logger.LogWarning("Outbox message {Id}: unknown MessageType {MessageType}", message.Id, message.MessageType);
-                    message.MarkProcessed(dateTimeProvider.UtcNow);
-                    break;
+                OutboxMessageType.DomainEvent =>
+                    await DispatchDomainEventAsync(message, eventTypeRegistry, mediator, cancellationToken),
+                OutboxMessageType.IntegrationEvent =>
+                    await DispatchIntegrationEventAsync(message, eventTypeRegistry, integrationEventBus, cancellationToken),
+                _ => DispatchResult.Failed($"Unknown MessageType: {message.MessageType}")
+            };
+
+            if (!result.Succeeded)
+            {
+                message.MarkFailed(result.Error!, dateTimeProvider.UtcNow);
+                _metrics.OutboxFailedDispatchCount.Add(1);
+                return;
             }
+
+            message.MarkProcessed(dateTimeProvider.UtcNow);
 
             var processedEvent = ProcessedEvent.Create(
                 message.EventId,
@@ -185,11 +189,10 @@ internal sealed class OutboxDispatcher : BackgroundService
         _metrics.OutboxDispatchDuration.Record(sw.Elapsed.TotalMilliseconds);
     }
 
-    private async Task DispatchDomainEventAsync(
+    private async Task<DispatchResult> DispatchDomainEventAsync(
         OutboxMessage message,
         IEventTypeRegistry eventTypeRegistry,
         IMediator mediator,
-        IDateTimeProvider dateTimeProvider,
         CancellationToken cancellationToken)
     {
         var domainEventType = eventTypeRegistry.GetEventType(message.MessageName);
@@ -197,8 +200,7 @@ internal sealed class OutboxDispatcher : BackgroundService
         if (domainEventType is null)
         {
             _logger.LogWarning("Outbox message {Id}: domain event type {MessageName} not found in registry", message.Id, message.MessageName);
-            message.MarkFailed("EventType not found in registry: " + message.MessageName, dateTimeProvider.UtcNow);
-            return;
+            return DispatchResult.Failed("EventType not found in registry: " + message.MessageName);
         }
 
         var domainEvent = JsonSerializer.Deserialize(message.PayloadJson, domainEventType, JsonOptions) as IDomainEvent;
@@ -206,8 +208,7 @@ internal sealed class OutboxDispatcher : BackgroundService
         if (domainEvent is null)
         {
             _logger.LogError("Outbox message {Id}: failed to deserialize payload as {MessageName}", message.Id, message.MessageName);
-            message.MarkFailed("Deserialization returned null or unexpected type", dateTimeProvider.UtcNow);
-            return;
+            return DispatchResult.Failed("Deserialization returned null or unexpected type");
         }
 
         var notificationType = typeof(DomainEventNotification<>).MakeGenericType(domainEventType);
@@ -215,16 +216,16 @@ internal sealed class OutboxDispatcher : BackgroundService
 
         await mediator.Publish(notification!, cancellationToken);
 
-        message.MarkProcessed(dateTimeProvider.UtcNow);
-        _logger.LogDebug("Outbox message {Id}: {MessageName} domain event processed (attempt {Retry})",
+        _logger.LogDebug("Outbox message {Id}: {MessageName} domain event dispatched (attempt {Retry})",
             message.Id, message.MessageName, message.RetryCount + 1);
+
+        return DispatchResult.Success();
     }
 
-    private async Task DispatchIntegrationEventAsync(
+    private async Task<DispatchResult> DispatchIntegrationEventAsync(
         OutboxMessage message,
         IEventTypeRegistry eventTypeRegistry,
         IIntegrationEventBus integrationEventBus,
-        IDateTimeProvider dateTimeProvider,
         CancellationToken cancellationToken)
     {
         var integrationEventType = eventTypeRegistry.GetEventType(message.MessageName);
@@ -232,8 +233,7 @@ internal sealed class OutboxDispatcher : BackgroundService
         if (integrationEventType is null)
         {
             _logger.LogWarning("Outbox message {Id}: integration event type {MessageName} not found in registry", message.Id, message.MessageName);
-            message.MarkFailed("EventType not found in registry: " + message.MessageName, dateTimeProvider.UtcNow);
-            return;
+            return DispatchResult.Failed("EventType not found in registry: " + message.MessageName);
         }
 
         var integrationEvent = JsonSerializer.Deserialize(message.PayloadJson, integrationEventType, JsonOptions) as IIntegrationEvent;
@@ -241,14 +241,20 @@ internal sealed class OutboxDispatcher : BackgroundService
         if (integrationEvent is null)
         {
             _logger.LogError("Outbox message {Id}: failed to deserialize integration event payload as {MessageName}", message.Id, message.MessageName);
-            message.MarkFailed("Deserialization returned null or unexpected type", dateTimeProvider.UtcNow);
-            return;
+            return DispatchResult.Failed("Deserialization returned null or unexpected type");
         }
 
         await integrationEventBus.PublishAsync(integrationEvent, cancellationToken);
 
-        message.MarkProcessed(dateTimeProvider.UtcNow);
         _logger.LogDebug("Outbox message {Id}: {MessageName} integration event published (attempt {Retry})",
             message.Id, message.MessageName, message.RetryCount + 1);
+
+        return DispatchResult.Success();
+    }
+
+    private sealed record DispatchResult(bool Succeeded, string? Error = null)
+    {
+        public static DispatchResult Success() => new(true);
+        public static DispatchResult Failed(string error) => new(false, error);
     }
 }

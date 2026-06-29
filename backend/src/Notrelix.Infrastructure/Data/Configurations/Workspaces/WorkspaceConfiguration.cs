@@ -39,5 +39,11 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
 
         builder.HasIndex(x => x.Slug).IsUnique().HasDatabaseName("idx_workspaces_slug");
         builder.HasIndex(x => x.Name).HasDatabaseName("idx_workspaces_name");
+
+        // One personal workspace per user (soft-delete aware)
+        builder.HasIndex(x => x.CreatedBy)
+            .IsUnique()
+            .HasFilter("is_personal = true AND deleted_at IS NULL")
+            .HasDatabaseName("idx_workspaces_personal_per_user");
     }
 }

@@ -1,4 +1,5 @@
 using Notrelix.Application.Events.Identity;
+using Notrelix.Domain.Common;
 using Notrelix.Domain.Identity.Users.Events;
 
 namespace Notrelix.Application.EventMappers.Identity;
@@ -9,25 +10,28 @@ public sealed class UserEventMapper :
 {
     public override UserRegisteredIntegrationEvent? Map(UserRegisteredDomainEvent domainEvent)
     {
+        var de = (IDomainEvent)domainEvent;
         return new UserRegisteredIntegrationEvent(
             domainEvent.UserId,
             domainEvent.Email.Value,
             string.Empty,
-            ((IDomainEvent)domainEvent).ActorUserId,
-            null,
-            null,
-            domainEvent.OccurredAt
+            de.ActorUserId,
+            SourceEventId: de.EventId,
+            CorrelationId: de.CorrelationId,
+            CausationId: de.CausationId ?? de.EventId.ToString(),
+            domainEvent.RegisteredAt
         );
     }
 
     public UserDeactivatedIntegrationEvent? Map(UserDeactivatedDomainEvent domainEvent)
     {
+        var de = (IDomainEvent)domainEvent;
         return new UserDeactivatedIntegrationEvent(
             domainEvent.UserId,
-            ((IDomainEvent)domainEvent).ActorUserId,
-            null,
-            null,
-            domainEvent.OccurredAt
+            domainEvent.DeactivatedBy,
+            de.CorrelationId,
+            de.CausationId,
+            domainEvent.DeactivatedAt
         );
     }
 
