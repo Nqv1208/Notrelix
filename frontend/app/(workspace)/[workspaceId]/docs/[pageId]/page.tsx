@@ -1,13 +1,19 @@
-import { EditorShell } from "./_components/editor-shell"
+"use client"
+
+import { use } from "react"
+import { DocumentScreen } from "@/features/docs"
 
 interface PageEditorProps {
   params: Promise<{ workspaceId: string; pageId: string }>
 }
 
-export default async function PageEditorPage({ params }: PageEditorProps) {
-  await params
+export default function PageEditorPage({ params }: PageEditorProps) {
+  const { workspaceId, pageId } = use(params)
 
-  // TODO(api):
-  // Server-prefetch page detail and blocks through HydrationBoundary when backend APIs are live.
-  return <EditorShell />
+  return (
+    <DocumentScreen
+      workspaceId={workspaceId}
+      pageId={pageId}
+    />
+  )
 }
