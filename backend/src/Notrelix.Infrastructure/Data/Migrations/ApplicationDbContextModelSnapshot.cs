@@ -7873,6 +7873,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("idx_workspaces_slug");
 
+                    b.HasIndex("CreatedBy")
+                        .IsUnique()
+                        .HasFilter("is_personal = true AND deleted_at IS NULL")
+                        .HasDatabaseName("idx_workspaces_personal_per_user");
+
                     b.ToTable("workspaces", "workspace");
                 });
 
