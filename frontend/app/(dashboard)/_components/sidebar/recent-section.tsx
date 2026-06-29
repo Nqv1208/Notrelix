@@ -11,7 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { getWorkspaceBoardHref, getWorkspaceDocHref, getWorkspaceRootHref } from "@/features/workspace/utils/workspace-routes"
+import { getWorkspaceBoardHref, getWorkspaceDocHref, getWorkspaceRootHref } from "@/features/workspace"
 import { recentBoards, recentDocs, recentWorkspaces } from "../home-data"
 
 const recents = [

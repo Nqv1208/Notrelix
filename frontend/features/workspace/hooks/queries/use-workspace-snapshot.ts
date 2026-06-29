@@ -2,7 +2,7 @@
 
 import { useMemo } from "react"
 import type { WorkspaceSnapshot } from "../../types"
-import { useWorkspaceActivity } from "./use-workspace-activity"
+import { useWorkspaceActivity } from "@/features/activity"
 import { useWorkspaceMembers } from "./use-workspace-members"
 import { useWorkspaceViews } from "./use-workspace-views"
 import { useWorkspace } from "./use-workspace"

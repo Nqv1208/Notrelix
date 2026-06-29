@@ -1,4 +1,4 @@
-import { api } from "@/lib/api/api-client"
+import { api, type ApiRequestOptions } from "@/lib/api/api-client"
 import { endpoints } from "@/lib/api/endpoints"
 import type {
   CreateWorkspaceDto,
@@ -31,13 +31,13 @@ export function mapWorkspaceDto(workspace: WorkspaceDtoApi): WorkspaceSummary {
 }
 
 export const workspaceApi = {
-  async listWorkspaces(): Promise<WorkspaceSummary[]> {
-    const workspaces = await api.get<WorkspaceDtoApi[]>(endpoints.workspaces.list)
+  async listWorkspaces(options?: ApiRequestOptions): Promise<WorkspaceSummary[]> {
+    const workspaces = await api.get<WorkspaceDtoApi[]>(endpoints.workspaces.list, options)
     return workspaces.map(mapWorkspaceDto)
   },
 
-  async getWorkspace(workspaceId: string): Promise<WorkspaceSummary> {
-    const workspace = await api.get<WorkspaceDtoApi>(endpoints.workspaces.detail(workspaceId))
+  async getWorkspace(workspaceId: string, options?: ApiRequestOptions): Promise<WorkspaceSummary> {
+    const workspace = await api.get<WorkspaceDtoApi>(endpoints.workspaces.detail(workspaceId), options)
     return mapWorkspaceDto(workspace)
   },
 

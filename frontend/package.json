@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "react-doctor": "react-doctor ."
+    "react-doctor": "react-doctor .",
+    "type-check": "tsc --noEmit",
+    "test": "bun test",
+    "arch-check": "node scripts/check-architecture.mjs",
+    "quality": "bun run type-check && bun run lint && bun run test && bun run arch-check"
   },
   "dependencies": {
     "@base-ui/react": "^1.0.0",

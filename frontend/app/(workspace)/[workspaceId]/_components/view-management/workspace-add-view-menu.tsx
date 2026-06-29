@@ -12,23 +12,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { workspaceViewTemplates } from "@/features/workspace/mock/mock-data"
-import { useCreateWorkspaceView } from "@/features/workspace/hooks"
-import type { WorkspaceViewType } from "@/features/workspace/types"
-import { useWorkspaceBoards } from "@/features/boards/hooks"
-import { usePageList } from "@/features/docs/hooks/use-page-tree"
+import { useCreateWorkspaceView, type WorkspaceViewType, workspaceViewTemplates } from "@/features/workspace"
+import { useWorkspaceBoards } from "@/features/work-management"
+import { DocsViewPickerDataProvider } from "@/features/docs"
 
 export function WorkspaceAddViewMenu({ workspaceId }: { workspaceId: string }) {
   const router = useRouter()
   const createView = useCreateWorkspaceView()
   const { data: boards = [] } = useWorkspaceBoards(workspaceId)
-  const { data: pages = [] } = usePageList(workspaceId)
 
-  async function handleCreate(type: WorkspaceViewType, label: string, disabled?: boolean) {
+  async function handleCreate(type: WorkspaceViewType, label: string, firstPageId?: string, disabled?: boolean) {
     if (disabled || createView.isPending) return
 
     const firstBoardId = boards[0]?.id
-    const firstPageId = pages[0]?.id
 
     let target: { boardId?: string; pageId?: string; calendarId?: string; dashboardId?: string } = {}
     if (type === "table" || type === "kanban" || type === "timeline") {
@@ -51,36 +47,40 @@ export function WorkspaceAddViewMenu({ workspaceId }: { workspaceId: string }) {
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-9 rounded-full px-2.5">
-          <Plus className="size-4" />
-          <span className="sr-only sm:not-sr-only">Add view</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-[330px]">
-        <DropdownMenuLabel>Add workspace view</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {workspaceViewTemplates.map((template) => (
-          <DropdownMenuItem
-            key={template.type}
-            disabled={Boolean(template.badge)}
-            onClick={() => handleCreate(template.type, template.label, Boolean(template.badge))}
-            className="items-start gap-3 py-3"
-          >
-            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-sm text-foreground">
-              {template.icon}
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="flex items-center gap-2 text-sm font-medium text-foreground">
-                {template.label}
-                {template.badge ? <Badge variant="secondary" className="rounded-full">{template.badge}</Badge> : null}
-              </span>
-              <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{template.description}</span>
-            </span>
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <DocsViewPickerDataProvider workspaceId={workspaceId}>
+      {({ firstPageId }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-9 rounded-full px-2.5">
+              <Plus className="size-4" />
+              <span className="sr-only sm:not-sr-only">Add view</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-[330px]">
+            <DropdownMenuLabel>Add workspace view</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {workspaceViewTemplates.map((template) => (
+              <DropdownMenuItem
+                key={template.type}
+                disabled={Boolean(template.badge)}
+                onClick={() => handleCreate(template.type, template.label, firstPageId, Boolean(template.badge))}
+                className="items-start gap-3 py-3"
+              >
+                <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-sm text-foreground">
+                  {template.icon}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    {template.label}
+                    {template.badge ? <Badge variant="secondary" className="rounded-full">{template.badge}</Badge> : null}
+                  </span>
+                  <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{template.description}</span>
+                </span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+    </DocsViewPickerDataProvider>
   )
 }

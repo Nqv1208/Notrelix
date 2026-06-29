@@ -1,8 +1,15 @@
 "use client"
 
 import { Clock, ArrowRight } from "lucide-react"
+import Link from "next/link"
 import { UPCOMING_DEADLINES } from "./workspace-mock-data"
+import { isMockModeEnabled } from "@/lib/config/mock-mode"
 import { cn } from "@/lib/utils"
+import { EmptyState } from "@/components/feedback"
+
+interface UpcomingDeadlinesProps {
+  workspaceId: string
+}
 
 const priorityConfig = {
   urgent: { dot: "bg-red-500", badge: "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400" },
@@ -20,17 +27,37 @@ function groupByDate(items: typeof UPCOMING_DEADLINES) {
   return groups
 }
 
-export function UpcomingDeadlines() {
+export function UpcomingDeadlines({ workspaceId }: UpcomingDeadlinesProps) {
+  const isMock = isMockModeEnabled("work-management")
+
+  if (!isMock) {
+    return (
+      <section className="rounded-2xl border border-border/50 bg-card p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Clock className="size-4 text-primary" />
+          <h3 className="text-[15px] font-semibold tracking-[-0.01em] text-foreground" style={{ fontFamily: "var(--font-poppins)" }}>
+            Upcoming Deadlines
+          </h3>
+        </div>
+        <EmptyState
+          title="No upcoming deadlines"
+          description="Your tasks with due dates will appear in this timeline."
+          className="py-6"
+        />
+      </section>
+    )
+  }
+
   const grouped = groupByDate(UPCOMING_DEADLINES)
 
   return (
-    <section className="rounded-2xl border border-border/50 bg-card overflow-hidden">
+    <section className="rounded-2xl border border-border/50 bg-card p-5">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-3">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Clock className="size-4 text-muted-foreground" />
+          <Clock className="size-4 text-primary" />
           <h3 className="text-[15px] font-semibold tracking-[-0.01em] text-foreground" style={{ fontFamily: "var(--font-poppins)" }}>
-            Upcoming
+            Upcoming Deadlines
           </h3>
         </div>
         <button className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
@@ -39,7 +66,7 @@ export function UpcomingDeadlines() {
       </div>
 
       {/* Grouped Timeline */}
-      <div className="px-5 pb-5 space-y-4">
+      <div className="space-y-4">
         {Object.entries(grouped).map(([date, items]) => (
           <div key={date}>
             {/* Date Label */}

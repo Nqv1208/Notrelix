@@ -3,7 +3,7 @@ import Link from "next/link"
 
 import { routes } from "@/lib/routes"
 
-const columns: { heading: string; links: { label: string; href: string }[] }[] = [
+const columns: { heading: string; links: { label: string; href: any }[] }[] = [
   {
     heading: "Product",
     links: [

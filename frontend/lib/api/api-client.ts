@@ -1,121 +1,211 @@
-import { endpoints } from "@/lib/api/endpoints";
-import { ApiError } from "@/lib/api/api-error";
+import { endpoints } from "@/lib/api/endpoints"
+import { AppError } from "@/lib/errors/app-error"
+import { mapStatusToKind } from "@/lib/errors/error-map"
+import { getCsrfToken } from "./csrf"
+import { generateCorrelationId } from "./request-id"
+
+export type ApiRequestOptions = {
+  signal?: AbortSignal
+  headers?: Record<string, string>
+  skipAuthRefresh?: boolean
+  skipGlobalErrorToast?: boolean
+  correlationId?: string
+}
 
 const configuredBaseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "/api/v1").replace(/\/$/, "");
 const BASE_URL = configuredBaseUrl.endsWith("/api")
   ? `${configuredBaseUrl}/v1`
   : configuredBaseUrl;
 
-type RefreshResponse = {
-  accessToken: string;
-  refreshToken: string;
-};
-
-export async function apiFetch<T>(
+export async function apiFetch<TResponse>(
   url: string,
-  options: RequestInit = {},
+  options: RequestInit & ApiRequestOptions = {},
   retry = true
-): Promise<T> {
+): Promise<TResponse> {
+  const correlationId = options.correlationId || generateCorrelationId()
+
   const headers: HeadersInit = {
     "Content-Type": "application/json",
+    "X-Correlation-ID": correlationId,
     ...(options.headers as Record<string, string>),
-  };
+  }
 
-  const response = await fetch(`${BASE_URL}${url}`, {
-    credentials: "include",
-    ...options,
-    headers,
-  });
+  // Attach CSRF token if available for unsafe methods
+  const csrfToken = getCsrfToken()
+  if (csrfToken && options.method && ["POST", "PUT", "PATCH", "DELETE"].includes(options.method.toUpperCase())) {
+    headers["X-XSRF-TOKEN"] = csrfToken
+  }
 
+  let response: Response
+  try {
+    response = await fetch(`${BASE_URL}${url}`, {
+      credentials: "include",
+      ...options,
+      headers,
+    })
+  } catch (error) {
+    const isAbort = (error as { name?: string }).name === "AbortError"
+    throw new AppError({
+      kind: isAbort ? "aborted" : "network",
+      message: isAbort ? "Request was aborted." : "Network error. Please check your internet connection.",
+      correlationId,
+      cause: error,
+    })
+  }
+
+  // Handle 401 Unauthorized (Auth Refresh)
   if (
     response.status === 401 &&
     retry &&
-    url !== endpoints.auth.refresh
+    !options.skipAuthRefresh &&
+    url !== endpoints.auth.refresh &&
+    url !== endpoints.auth.login &&
+    url !== endpoints.auth.register
   ) {
-    return handleRefreshToken<T>(url, options);
+    try {
+      await refreshOnce()
+      // Retry original request with same correlationId and skipAuthRefresh = true
+      return await apiFetch<TResponse>(
+        url,
+        { ...options, skipAuthRefresh: true, correlationId },
+        false
+      )
+    } catch (refreshError) {
+      if (refreshError instanceof AppError) {
+        throw refreshError
+      }
+      throw new AppError({
+        kind: "auth",
+        message: "Session expired. Please sign in again.",
+        status: 401,
+        correlationId,
+        cause: refreshError,
+      })
+    }
   }
 
-  const data = await parseJsonResponse(response);
+  // Handle 204 No Content
+  if (response.status === 204) {
+    return null as unknown as TResponse
+  }
+
+  // Parse JSON safely
+  const text = await response.text()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let data: any = null
+  if (text) {
+    try {
+      data = JSON.parse(text)
+    } catch (parseError) {
+      if (!response.ok) {
+        throw new AppError({
+          kind: mapStatusToKind(response.status),
+          status: response.status,
+          message: text || "Request failed",
+          correlationId,
+        })
+      }
+      throw new AppError({
+        kind: "server",
+        status: response.status,
+        code: "parse_error",
+        message: "Failed to parse server response.",
+        correlationId,
+        cause: parseError,
+      })
+    }
+  }
+
+  // Handle non-2xx responses
   if (!response.ok) {
-    throw new ApiError(response.status, extractErrorMessage(data), data);
+    const message = extractErrorMessage(data)
+    const kind = mapStatusToKind(response.status)
+    const validationErrors = kind === "validation" ? (data?.errors || data?.validationErrors) : undefined
+
+    throw new AppError({
+      kind,
+      status: response.status,
+      message,
+      details: data,
+      validationErrors,
+      correlationId,
+    })
   }
 
-  return data as T;
+  return (data ?? null) as TResponse
 }
 
-async function handleRefreshToken<T>(
-  url: string,
-  options: RequestInit
-): Promise<T> {
-  const refreshResponse = await fetch(`${BASE_URL}${endpoints.auth.refresh}`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+let refreshPromise: Promise<void> | null = null
 
-  const refreshData = (await parseJsonResponse(refreshResponse)) as RefreshResponse;
-  if (!refreshResponse.ok) {
-    throw new ApiError(refreshResponse.status, extractErrorMessage(refreshData), refreshData);
+async function refreshOnce(): Promise<void> {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      const refreshResponse = await fetch(`${BASE_URL}${endpoints.auth.refresh}`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (!refreshResponse.ok) {
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("auth:failure"))
+        }
+        throw new AppError({
+          kind: "auth",
+          status: refreshResponse.status,
+          message: "Session expired. Please sign in again.",
+        })
+      }
+    })().finally(() => {
+      refreshPromise = null
+    })
   }
+  return refreshPromise;
+}
 
-  return apiFetch<T>(url, options, false);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractErrorMessage(data: any): string {
+  if (!data || typeof data !== "object") return "Request failed"
+  if (data.message) return data.message
+  if (data.detail) return data.detail
+  if (Array.isArray(data.errors) && data.errors.length > 0) {
+    return String(data.errors[0])
+  }
+  return "Request failed"
 }
 
 export const api = {
-  get<T>(url: string) {
-    return apiFetch<T>(url);
+  get<TResponse>(url: string, options?: ApiRequestOptions): Promise<TResponse> {
+    return apiFetch<TResponse>(url, { method: "GET", ...options })
   },
 
-  post<T>(url: string, data?: unknown) {
-    return apiFetch<T>(url, {
+  post<TResponse, TBody = unknown>(url: string, body?: TBody, options?: ApiRequestOptions): Promise<TResponse> {
+    return apiFetch<TResponse>(url, {
       method: "POST",
-      body: JSON.stringify(data),
-    });
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      ...options,
+    })
   },
 
-  put<T>(url: string, data?: unknown) {
-    return apiFetch<T>(url, {
+  put<TResponse, TBody = unknown>(url: string, body?: TBody, options?: ApiRequestOptions): Promise<TResponse> {
+    return apiFetch<TResponse>(url, {
       method: "PUT",
-      body: JSON.stringify(data),
-    });
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      ...options,
+    })
   },
 
-  patch<T>(url: string, data?: unknown) {
-    return apiFetch<T>(url, {
+  patch<TResponse, TBody = unknown>(url: string, body?: TBody, options?: ApiRequestOptions): Promise<TResponse> {
+    return apiFetch<TResponse>(url, {
       method: "PATCH",
-      body: JSON.stringify(data),
-    });
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      ...options,
+    })
   },
 
-  delete<T>(url: string) {
-    return apiFetch<T>(url, {
-      method: "DELETE",
-    });
+  delete<TResponse>(url: string, options?: ApiRequestOptions): Promise<TResponse> {
+    return apiFetch<TResponse>(url, { method: "DELETE", ...options })
   },
-};
-
-async function parseJsonResponse(response: Response): Promise<unknown> {
-  const text = await response.text();
-  if (!text) return null;
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    return { message: text };
-  }
-}
-
-function extractErrorMessage(data: unknown): string {
-  if (!data || typeof data !== "object") return "Request failed";
-
-  const payload = data as { message?: string; detail?: string; errors?: unknown };
-  if (payload.message) return payload.message;
-  if (payload.detail) return payload.detail;
-  if (Array.isArray(payload.errors) && payload.errors.length > 0) {
-    return String(payload.errors[0]);
-  }
-
-  return "Request failed";
 }

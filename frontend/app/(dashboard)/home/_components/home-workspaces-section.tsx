@@ -4,9 +4,7 @@ import Link from "next/link"
 import { ArrowUpRight, RefreshCw, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useWorkspaceList } from "@/features/workspace/hooks"
-import type { WorkspaceSummary } from "@/features/workspace/types"
-import { getWorkspaceRootHref } from "@/features/workspace/utils/workspace-routes"
+import { useWorkspaceList, type WorkspaceSummary, getWorkspaceRootHref } from "@/features/workspace"
 
 const workspaceColors = ["#6161ff", "#2a9d99", "#ff8940", "#8b5cf6", "#0f9f6e", "#dc3f6d"]
 

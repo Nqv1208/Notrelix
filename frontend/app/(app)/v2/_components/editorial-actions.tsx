@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link, { LinkProps } from "next/link"
 import { ArrowRight } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -9,7 +9,7 @@ export function PrimaryAction({
   children,
   className,
 }: {
-  href: string
+  href: LinkProps<any>["href"]
   children: React.ReactNode
   className?: string
 }) {
@@ -34,7 +34,7 @@ export function GhostAction({
   children,
   className,
 }: {
-  href: string
+  href: LinkProps<any>["href"]
   children: React.ReactNode
   className?: string
 }) {

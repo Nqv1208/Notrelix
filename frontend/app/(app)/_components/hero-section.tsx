@@ -12,7 +12,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { useAuthUser } from "@/features/auth/hooks/useAuthUser"
+import { useAuthUser } from "@/features/auth"
 import { routes } from "@/lib/routes"
 
 export function HeroSection() {

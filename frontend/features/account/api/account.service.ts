@@ -1,6 +1,6 @@
 import { api } from "@/lib/api/api-client"
 import { endpoints } from "@/lib/api/endpoints"
-import type { User } from "@/features/auth/types/auth.types"
+import type { User } from "@/features/auth"
 
 export interface UpdateProfileRequest {
   name: string

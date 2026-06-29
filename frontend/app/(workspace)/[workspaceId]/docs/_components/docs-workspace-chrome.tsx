@@ -2,8 +2,7 @@
 
 import type { ReactNode } from "react"
 import { useMemo } from "react"
-import { useWorkspaceSnapshot, useWorkspaceViews } from "@/features/workspace/hooks"
-import type { WorkspaceView } from "@/features/workspace/types"
+import { useWorkspaceSnapshot, useWorkspaceViews, type WorkspaceView } from "@/features/workspace"
 import { WorkspaceTabbedError, WorkspaceTabbedShell, WorkspaceTabbedSkeleton } from "../../_components/shell/workspace-tabbed-shell"
 
 export function DocsWorkspaceChrome({

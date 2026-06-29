@@ -1,5 +1,5 @@
 import { Suspense } from "react"
-import { LoginForm } from "@/app/(auth)/_components/login-form"
+import { LoginForm } from "@/features/auth"
 
 export default function SignInPage() {
   return (

@@ -4,7 +4,7 @@ import { Poppins, Inter } from "next/font/google"
 import { QueryProvider } from "./providers"
 import { NextIntlClientProvider } from "next-intl"
 import { getLocale, getMessages } from "next-intl/server"
-import { colorThemeScript } from "@/features/theme/color-theme-script"
+import { colorThemeScript } from "@/lib/theme"
 
 const poppins = Poppins({
   subsets: ["latin", "latin-ext"],

@@ -7,7 +7,7 @@ import {
   SidebarContent,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { WorkspaceSwitcher } from "./sidebar/workspace-switcher"
+import { WorkspaceSwitcher } from "@/features/workspace"
 import { PrimaryNav } from "./sidebar/primary-nav"
 import { FavoritesSection } from "./sidebar/favorites-section"
 import { RecentSection } from "./sidebar/recent-section"

@@ -1,5 +1,14 @@
-import { DocsClientPage } from "./_components/docs-client-page"
+"use client"
 
-export default function DocsPage() {
-  return <DocsClientPage />
+import { use } from "react"
+import { DocsWorkspaceView } from "@/features/docs"
+
+interface DocsPageProps {
+  params: Promise<{ workspaceId: string }>
+}
+
+export default function DocsPage({ params }: DocsPageProps) {
+  const { workspaceId } = use(params)
+
+  return <DocsWorkspaceView workspaceId={workspaceId} />
 }
