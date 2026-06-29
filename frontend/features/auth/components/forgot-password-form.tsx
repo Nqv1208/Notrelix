@@ -28,7 +28,7 @@ import { forgotPasswordSchema, type ForgotPasswordRequest } from "@/features/aut
 import { resetPasswordSchema, type ResetPasswordFormData } from "@/features/auth/schemas/reset-password.schema"
 import { parseAuthError } from "@/features/auth/utils/parse-auth-error"
 import { resolveErrorDisplay } from "@/features/auth/utils/resolve-error-display"
-import { ApiError } from "@/lib/api/api-error"
+
 
 type Step = "email" | "otp" | "success"
 

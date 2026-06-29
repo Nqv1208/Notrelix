@@ -1,4 +1,4 @@
-import { ApiError } from "@/lib/api/api-error"
+import { AppError } from "@/lib/errors/app-error"
 import { AUTH_ERROR_KEYS, type AuthErrorKey, isAuthErrorKey } from "@/features/auth/i18n/auth-error-keys"
 import { matchServerError } from "@/features/auth/i18n/server-error-map"
 
@@ -22,9 +22,9 @@ export function parseAuthError(error: unknown): ParsedAuthError {
     fieldErrors: {},
   }
 
-  if (!(error instanceof ApiError)) return fallback
+  if (!(error instanceof AppError)) return fallback
 
-  const body = (error.data ?? {}) as MiddlewareErrorBody
+  const body = (error.details ?? {}) as MiddlewareErrorBody
 
   if (body.type === "Unauthorized") {
     return { messageKey: AUTH_ERROR_KEYS.UNAUTHORIZED, rawMessage: null, fieldErrors: {} }

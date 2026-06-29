@@ -1,9 +1,24 @@
-// Permission evaluator helper.
-// Evaluates permissions based on the active member role in a workspace.
+import type { Permission } from "./permissions"
 
 export type UserRole = "owner" | "admin" | "member" | "viewer"
 
-const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
+export type PermissionResourceContext = {
+  workspaceId?: string
+  resourceType?:
+    | "workspace"
+    | "board"
+    | "item"
+    | "field"
+    | "doc"
+    | "comment"
+    | "billing"
+    | "automation"
+    | "integration"
+  resourceId?: string
+  targetUserId?: string
+}
+
+const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   owner: [
     "workspace.manage",
     "workspace.member.invite",
@@ -65,10 +80,32 @@ const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   ]
 }
 
-export function hasPermission(role: string | undefined, permission: string): boolean {
+export function hasPermission(
+  role: string | undefined,
+  permission: Permission,
+  context?: PermissionResourceContext
+): boolean {
   if (!role) return false
-  const normalizedRole = role.toLowerCase() as UserRole
-  const permissions = ROLE_PERMISSIONS[normalizedRole]
-  if (!permissions) return false
-  return permissions.includes(permission)
+  
+  // Normalize roles: guest role maps to viewer permissions
+  let normalizedRole = role.toLowerCase().trim()
+  if (normalizedRole === "guest") {
+    normalizedRole = "viewer"
+  }
+  
+  const permissionsList = ROLE_PERMISSIONS[normalizedRole as UserRole]
+  if (!permissionsList) return false
+  
+  const baseAllowed = permissionsList.includes(permission)
+  if (!baseAllowed) return false
+
+  // Resource context rules (hardening)
+  if (context) {
+    // Last-owner rules: cannot remove owner
+    if (permission === "workspace.member.remove" && context.targetUserId === "owner") {
+      return false
+    }
+  }
+
+  return true
 }

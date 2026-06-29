@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { queryKeys } from "@/lib/query/query-keys"
 import { authService } from "@/features/auth/api/auth.service"
-import { ApiError } from "@/lib/api/api-error"
+
 
 export function useAuthUser() {
   // const [accessToken, setAccessToken] = useState<string | null>(null)
