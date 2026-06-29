@@ -10,6 +10,7 @@ import {
   getWorkspaceTabbedViews,
   resolveWorkspaceTabbedActiveView,
   resolveWorkspaceTabbedRoute,
+  WorkspaceCompactHeader,
   type WorkspaceTabbedRoute,
   type WorkspaceSnapshot,
   type WorkspaceView,
@@ -17,7 +18,6 @@ import {
 import { cn } from "@/lib/utils"
 import { WorkspaceContextualToolbar } from "../board-layout/workspace-contextual-toolbar"
 import { WorkspaceViewTabs } from "../board-layout/workspace-view-tabs"
-import { WorkspaceCompactHeader } from "./workspace-compact-header"
 
 type WorkspaceTabbedRouteContextValue = WorkspaceTabbedRoute & {
   activeView: WorkspaceView

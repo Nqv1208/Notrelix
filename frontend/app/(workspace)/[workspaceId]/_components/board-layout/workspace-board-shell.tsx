@@ -9,9 +9,9 @@ import {
   useWorkspaceSnapshot,
   getWorkspaceBoardHref,
   WorkspaceManagementPanel,
+  WorkspaceCompactHeader,
 } from "@/features/workspace"
 import { useResolvedWorkspaceBoard } from "@/features/work-management"
-import { WorkspaceCompactHeader } from "../shell/workspace-compact-header"
 import { WorkspaceContextualToolbar } from "./workspace-contextual-toolbar"
 import { WorkspaceViewContent } from "../dashboard/workspace-view-content"
 import { WorkspaceViewTabs } from "./workspace-view-tabs"

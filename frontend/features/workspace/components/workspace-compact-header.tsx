@@ -27,8 +27,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
-import type { WorkspaceMember, WorkspaceSummary } from "@/features/workspace"
+import type { WorkspaceMember, WorkspaceSummary } from "../types"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
 export function WorkspaceCompactHeader({
   workspace,
@@ -45,6 +46,17 @@ export function WorkspaceCompactHeader({
         .catch(() => toast.error("Failed to copy workspace link"))
     }
   }
+
+  const avatarColors = [
+    "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
+    "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
+    "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+    "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+    "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
+    "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300",
+    "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
+  ]
+
   return (
     <header className="border-b border-border bg-card px-4 py-2.5 sm:px-6">
       <div className="flex min-h-10 flex-wrap items-center gap-2">
@@ -63,11 +75,11 @@ export function WorkspaceCompactHeader({
           <DropdownMenuContent align="start" className="w-64">
             <DropdownMenuLabel>Workspace actions</DropdownMenuLabel>
             <DropdownMenuItem>
-              <Star className="size-4" />
+              <Star className="size-4 mr-2" />
               Add to favorites
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleCopyLink} className="cursor-pointer">
-              <Link2 className="size-4" />
+              <Link2 className="size-4 mr-2" />
               Copy workspace link
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -83,7 +95,7 @@ export function WorkspaceCompactHeader({
         <Button variant="ghost" size="icon-sm" aria-label="Favorite workspace">
           <Star className="size-4" />
         </Button>
-        <Badge variant="secondary" className="rounded-full">{workspace.plan}</Badge>
+        <Badge variant="secondary" className="rounded-full capitalize">{workspace.plan}</Badge>
         <Separator orientation="vertical" className="mx-1 hidden h-6 md:block" />
         <Button variant="ghost" size="sm" className="rounded-full">
           <Sparkles className="size-4" />
@@ -107,9 +119,9 @@ export function WorkspaceCompactHeader({
         </Button>
         <div className="ml-auto flex items-center gap-2">
           <div className="hidden -space-x-2 md:flex">
-            {members.slice(0, 4).map((member) => (
+            {members.slice(0, 4).map((member, i) => (
               <Avatar key={member.id} className="size-8 border-2 border-card">
-                <AvatarFallback className="text-[10px] text-primary-foreground" style={{ backgroundColor: member.color }}>
+                <AvatarFallback className={cn("text-[10px]", avatarColors[i % avatarColors.length])}>
                   {member.initials}
                 </AvatarFallback>
               </Avatar>
@@ -117,7 +129,7 @@ export function WorkspaceCompactHeader({
           </div>
           <Button size="sm" className="rounded-full" asChild>
             <Link href={`/${workspace.id}?panel=settings&tab=members`}>
-              <UserPlus className="size-4" />
+              <UserPlus className="size-4 mr-2" />
               Invite
             </Link>
           </Button>

@@ -7,7 +7,7 @@ import { workspaceApi } from "../../api/workspace.api"
 export function useWorkspaceList() {
   return useQuery({
     queryKey: queryKeys.workspaces.all,
-    queryFn: () => workspaceApi.listWorkspaces(),
+    queryFn: ({ signal }) => workspaceApi.listWorkspaces({ signal }),
     staleTime: 60_000,
   })
 }
@@ -15,7 +15,7 @@ export function useWorkspaceList() {
 export function useWorkspace(workspaceId: string) {
   return useQuery({
     queryKey: queryKeys.workspaces.detail(workspaceId),
-    queryFn: () => workspaceApi.getWorkspace(workspaceId),
+    queryFn: ({ signal }) => workspaceApi.getWorkspace(workspaceId, { signal }),
     enabled: Boolean(workspaceId),
     staleTime: 60_000,
   })

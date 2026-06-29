@@ -3,9 +3,8 @@
 import type { ReactNode } from "react"
 import { useState } from "react"
 import Link from "next/link"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import {
-  Activity,
   Bell,
   ChevronDown,
   ChevronLeft,
@@ -13,23 +12,20 @@ import {
   Home,
   Inbox,
   LifeBuoy,
-  LockKeyhole,
   MessageSquareText,
   MoreHorizontal,
   Search,
   Settings,
-  Sparkles,
   Star,
   UserRoundCheck,
-  Users,
-  Workflow,
 } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { useWorkspaceSnapshot } from "@/features/workspace"
-import { GlobalSearchDialog } from "@/app/(dashboard)/_components/header/global-search-dialog"
+import { useWorkspaceSnapshot } from "../hooks/queries/use-workspace-snapshot"
+import type { WorkspaceMember, WorkspaceFavorite } from "../types"
+import { GlobalSearchDialog } from "@/features/search"
 import { cn } from "@/lib/utils"
 
 interface WorkspaceSidebarProps {
@@ -50,7 +46,6 @@ type NavItem = {
 
 export function WorkspaceSidebar({ workspaceId, collapsed, onCollapse, onExpand, inSheet }: WorkspaceSidebarProps) {
   const pathname = usePathname()
-  const router = useRouter()
   // react-doctor-disable-next-line react-doctor/nextjs-no-use-search-params-without-suspense
   const searchParams = useSearchParams()
   const panel = searchParams.get("panel")
@@ -58,7 +53,6 @@ export function WorkspaceSidebar({ workspaceId, collapsed, onCollapse, onExpand,
 
   const { data: snapshot } = useWorkspaceSnapshot(workspaceId)
 
-  const workspace = snapshot?.workspace ?? { id: workspaceId, name: "Loading...", slug: workspaceId, icon: "W" }
   const members = snapshot?.members ?? []
   const favorites = snapshot?.favorites ?? []
 
@@ -72,6 +66,16 @@ export function WorkspaceSidebar({ workspaceId, collapsed, onCollapse, onExpand,
   const supportNav: NavItem[] = [
     { label: "Help / Support", icon: LifeBuoy, href: `/${workspaceId}?panel=support`, panel: "support" },
     { label: "Settings", icon: Settings, href: `/${workspaceId}?panel=settings`, panel: "settings" },
+  ]
+
+  const avatarColors = [
+    "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
+    "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
+    "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+    "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+    "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
+    "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300",
+    "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
   ]
 
   return (
@@ -110,7 +114,7 @@ export function WorkspaceSidebar({ workspaceId, collapsed, onCollapse, onExpand,
           <div className="space-y-6 mt-6 pb-6">
             <SidebarSection title="Quick access">
               <div className="space-y-1">
-                {favorites.map((item) => (
+                {favorites.map((item: WorkspaceFavorite) => (
                   <Link
                     key={item.id}
                     href={item.href as never}
@@ -126,10 +130,10 @@ export function WorkspaceSidebar({ workspaceId, collapsed, onCollapse, onExpand,
 
             <SidebarSection title="Team online">
               <div className="space-y-1">
-                {members.map((member) => (
+                {members.map((member: WorkspaceMember, i: number) => (
                   <div key={member.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm">
                     <Avatar className="size-6">
-                      <AvatarFallback className="text-[10px] text-primary-foreground" style={{ backgroundColor: member.color }}>
+                      <AvatarFallback className={cn("text-[10px]", avatarColors[i % avatarColors.length])}>
                         {member.initials}
                       </AvatarFallback>
                     </Avatar>

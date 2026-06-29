@@ -3,7 +3,7 @@
 import type { ComponentType } from "react"
 import { useState } from "react"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { GlobalSearchDialog } from "./header/global-search-dialog"
+import { GlobalSearchDialog } from "@/features/search"
 import { UserMenu } from "./header/user-menu"
 import { NotificationBell } from "@/features/notifications"
 import { Grip, HelpCircle, Hexagon, Inbox, Puzzle, Search } from "lucide-react"

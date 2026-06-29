@@ -2,6 +2,8 @@
 export { WorkspaceSwitcher } from "./components/workspace-switcher"
 export { PendingInvitationsMenu } from "./components/pending-invitations-menu"
 export { WorkspaceManagementPanel } from "./components/workspace-management-panel"
+export { WorkspaceSidebar } from "./components/workspace-sidebar"
+export { WorkspaceCompactHeader } from "./components/workspace-compact-header"
 
 // Hook exports
 export { useWorkspace, useWorkspaceList } from "./hooks/queries/use-workspace"
@@ -67,3 +69,5 @@ export {
 } from "./utils/workspace-routes"
 
 export type { WorkspaceTabbedRoute } from "./utils/workspace-routes"
+
+export { workspaceViewTemplates } from "./constants/view-templates"

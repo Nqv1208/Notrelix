@@ -2,14 +2,20 @@
 
 import { useMemo } from "react"
 import { useWorkspaceBoards } from "@/features/work-management"
-import { usePageList } from "@/features/docs"
+import { useQuery } from "@tanstack/react-query"
+import { api } from "@/lib/api/api-client"
+import { endpoints } from "@/lib/api/endpoints"
+import { queryKeys } from "@/lib/query/query-keys"
 import { resolveWorkspaceViews } from "../../utils/workspace-views"
 import { useWorkspace } from "./use-workspace"
 
 export function useWorkspaceViews(workspaceId: string) {
   const workspaceQuery = useWorkspace(workspaceId)
   const boardsQuery = useWorkspaceBoards(workspaceId)
-  const pagesQuery = usePageList(workspaceId)
+  const pagesQuery = useQuery({
+    queryKey: queryKeys.docs.list(workspaceId),
+    queryFn: () => api.get<Array<{ id: string }>>(endpoints.pages.list(workspaceId)),
+  })
 
   const data = useMemo(
     () =>

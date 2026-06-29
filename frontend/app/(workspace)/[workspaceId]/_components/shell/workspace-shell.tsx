@@ -6,7 +6,7 @@ import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { AppHeader } from "@/app/(dashboard)/_components/app-header"
-import { WorkspaceSidebar } from "./workspace-sidebar"
+import { WorkspaceSidebar } from "@/features/workspace"
 import { WorkspaceTabbedRouteFrame } from "./workspace-tabbed-shell"
 
 export function WorkspaceShell({ workspaceId, children }: { workspaceId: string; children: ReactNode }) {
