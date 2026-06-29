@@ -2,7 +2,7 @@
 
 import { useTheme } from "next-themes"
 import { useTranslations } from "next-intl"
-import { useColorTheme } from "@/features/theme"
+import { useColorTheme } from "@/lib/theme"
 import { useMounted } from "@/hooks/use-mounted"
 import { Sun, Moon, Laptop, Check } from "lucide-react"
 import { cn } from "@/lib/utils"

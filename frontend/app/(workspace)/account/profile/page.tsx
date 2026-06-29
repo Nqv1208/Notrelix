@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useTranslations } from "next-intl"
 import { useAuthUser } from "@/features/auth"
-import { useUpdateProfile } from "@/features/account/hooks/use-update-profile"
+import { useUpdateProfile } from "@/features/account"
 import { useMounted } from "@/hooks/use-mounted"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"

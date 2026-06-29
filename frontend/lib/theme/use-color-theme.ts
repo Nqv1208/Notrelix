@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-// ── Types ───────────────────────────────────────────────────────────────────
-
 export type ColorTheme =
   | 'default'
   | 'editorial'
@@ -24,8 +22,6 @@ export interface ColorThemeMeta {
   accentHue: number;
 }
 
-// ── Constants ───────────────────────────────────────────────────────────────
-
 const STORAGE_KEY = 'notrelix-color-theme';
 
 export const COLOR_THEMES: ColorThemeMeta[] = [
@@ -39,8 +35,6 @@ export const COLOR_THEMES: ColorThemeMeta[] = [
   { id: 'aurora', name: 'Aurora', description: 'Ngọc lam công nghệ', primaryColor: '#0d9488', accentHue: 190 },
 ];
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
-
 function isValidTheme(value: string | null): value is ColorTheme {
   return !!value && COLOR_THEMES.some((t) => t.id === value);
 }
@@ -50,30 +44,18 @@ function removeThemeClasses(el: HTMLElement) {
   toRemove.forEach((c) => el.classList.remove(c));
 }
 
-// ── Hook ────────────────────────────────────────────────────────────────────
-
-/**
- * Manages the active **color** theme (not light/dark mode — that's next-themes).
- *
- * On mount, reads from localStorage. When setting a new theme it:
- * 1. Removes all existing `theme-*` classes from `<html>`
- * 2. Adds the new class (unless 'default')
- * 3. Persists the choice to localStorage
- */
 export function useColorTheme() {
   const [colorTheme, setColorThemeState] = useState<ColorTheme>('default');
 
-  // Hydration-safe: read persisted value after mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (isValidTheme(stored)) {
-        setTimeout(() => {
-          setColorThemeState(stored);
-        }, 0);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setColorThemeState(stored);
       }
     } catch {
-      // localStorage unavailable (SSR / privacy mode)
+      // localStorage unavailable
     }
   }, []);
 
