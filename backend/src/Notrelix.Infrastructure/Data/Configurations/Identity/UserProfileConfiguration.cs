@@ -18,7 +18,8 @@ public class UserProfileConfiguration : IEntityTypeConfiguration<UserProfile>
         builder.Property(x => x.Timezone).HasColumnName("timezone").IsRequired().HasMaxLength(64).HasDefaultValue("UTC");
         builder.Property(x => x.Locale).HasColumnName("locale").IsRequired().HasMaxLength(10).HasDefaultValue("vi");
         builder.Property(x => x.Theme).HasColumnName("theme").IsRequired().HasMaxLength(20).HasDefaultValue("system");
-        builder.Property(x => x.Preferences).HasColumnName("preferences").HasColumnType("jsonb").IsRequired().HasDefaultValue("{}");
+        builder.Property(x => x.Preferences).HasColumnName("preferences_json").HasColumnType("jsonb").IsRequired().HasDefaultValue("{}");
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 
         builder.HasOne<User>()

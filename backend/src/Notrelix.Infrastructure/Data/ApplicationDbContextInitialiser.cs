@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Abstractions;
+using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Data.Seed;
 
 namespace Notrelix.Infrastructure.Data;
@@ -12,17 +13,23 @@ public class ApplicationDbContextInitialiser
     private readonly ApplicationDbContext _context;
     private readonly SeedDataOptions _options;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly RlsPolicyApplier _rlsPolicyApplier;
+    private readonly ICurrentWorkspace _currentWorkspace;
 
     public ApplicationDbContextInitialiser(
         ILogger<ApplicationDbContextInitialiser> logger,
         ApplicationDbContext context,
         IPasswordHasher passwordHasher,
-        IOptions<SeedDataOptions> options)
+        IOptions<SeedDataOptions> options,
+        RlsPolicyApplier rlsPolicyApplier,
+        ICurrentWorkspace currentWorkspace)
     {
         _logger = logger;
         _context = context;
         _passwordHasher = passwordHasher;
         _options = options.Value;
+        _rlsPolicyApplier = rlsPolicyApplier;
+        _currentWorkspace = currentWorkspace;
     }
 
     public async Task InitialiseAsync()
@@ -32,6 +39,8 @@ public class ApplicationDbContextInitialiser
             if (_context.Database.IsNpgsql())
             {
                 await _context.Database.MigrateAsync();
+                await ApplyRlsFoundationAsync();
+                await _rlsPolicyApplier.ApplyAsync();
             }
         }
         catch (Exception ex)
@@ -49,6 +58,7 @@ public class ApplicationDbContextInitialiser
             return;
         }
 
+        using var systemScope = _currentWorkspace.EnterSystemContext();
         try
         {
             var result = await TrySeedAsync();
@@ -105,5 +115,21 @@ public class ApplicationDbContextInitialiser
         _context.UserProfiles.RemoveRange(await _context.UserProfiles.IgnoreQueryFilters().ToListAsync());
         _context.Users.RemoveRange(await _context.Users.IgnoreQueryFilters().ToListAsync());
         await _context.SaveChangesAsync();
+    }
+
+    private async Task ApplyRlsFoundationAsync()
+    {
+        var assembly = typeof(ApplicationDbContextInitialiser).Assembly;
+        var resourceName = "Notrelix.Infrastructure.Data.Rls.rls_foundation.sql";
+        await using var stream = assembly.GetManifestResourceStream(resourceName);
+        if (stream is null)
+        {
+            _logger.LogWarning("RLS foundation SQL resource '{Resource}' not found. Skipping.", resourceName);
+            return;
+        }
+        using var reader = new StreamReader(stream);
+        var sql = await reader.ReadToEndAsync();
+        await _context.Database.ExecuteSqlRawAsync(sql);
+        _logger.LogInformation("RLS foundation SQL applied (roles, functions, grants, triggers).");
     }
 }

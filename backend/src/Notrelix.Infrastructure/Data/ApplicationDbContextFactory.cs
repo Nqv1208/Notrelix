@@ -12,7 +12,7 @@ namespace Notrelix.Infrastructure.Data
 
             optionsBuilder.UseNpgsql(
                 "Host=127.0.0.1;Port=5432;Database=notrelix_dev;Username=postgres;Password=postgres"
-            );
+            ).UseSnakeCaseNamingConvention();
 
             return new ApplicationDbContext(optionsBuilder.Options, new DesignTimeCurrentWorkspace());
         }

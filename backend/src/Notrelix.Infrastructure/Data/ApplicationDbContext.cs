@@ -75,6 +75,12 @@ using Notrelix.Infrastructure.Data.Projections.Search;
 using Notrelix.Infrastructure.Data.Projections.Collab;
 using Notrelix.Infrastructure.Data.Ops.Entities;
 using Notrelix.Infrastructure.Data.Governance.Projections;
+using Notrelix.Infrastructure.Data.Events;
+using Notrelix.Infrastructure.Data.Messaging;
+using Notrelix.Infrastructure.Data.Notifications;
+using Notrelix.Infrastructure.Data.Analytics;
+using Notrelix.Infrastructure.Data.Authz;
+using Notrelix.Infrastructure.Data.Projections.Activity;
 using System.Linq.Expressions;
 
 namespace Notrelix.Infrastructure.Data;
@@ -242,6 +248,39 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext, IWorkspace
     public DbSet<DashboardWidget> DashboardWidgets => Set<DashboardWidget>();
     public DbSet<DashboardSource> DashboardSources => Set<DashboardSource>();
     public DbSet<ReportingSnapshot> ReportingSnapshots => Set<ReportingSnapshot>();
+
+    // Enterprise event store
+    public DbSet<DomainEventLog> DomainEventLogs => Set<DomainEventLog>();
+
+    // Enterprise messaging
+    public DbSet<MessagingOutboxMessage> MessagingOutboxMessages => Set<MessagingOutboxMessage>();
+    public DbSet<OutboxDeliveryAttempt> OutboxDeliveryAttempts => Set<OutboxDeliveryAttempt>();
+    public DbSet<MessagingProcessedEvent> MessagingProcessedEvents => Set<MessagingProcessedEvent>();
+
+    // Enterprise notifications
+    public DbSet<EmailOutboxMessage> EmailOutboxMessages => Set<EmailOutboxMessage>();
+    public DbSet<EmailDeliveryAttempt> EmailDeliveryAttempts => Set<EmailDeliveryAttempt>();
+
+    // Canonical notifications (V5)
+    public DbSet<global::Notrelix.Domain.Notifications.NotificationItems.NotificationItem> NotificationItems => Set<global::Notrelix.Domain.Notifications.NotificationItems.NotificationItem>();
+    public DbSet<global::Notrelix.Domain.Notifications.NotificationRecipients.NotificationRecipient> NotificationRecipients => Set<global::Notrelix.Domain.Notifications.NotificationRecipients.NotificationRecipient>();
+    public DbSet<global::Notrelix.Domain.Notifications.NotificationPreferences.NotificationPreference> CanonicalNotificationPreferences => Set<global::Notrelix.Domain.Notifications.NotificationPreferences.NotificationPreference>();
+
+    // Enterprise audit
+    public DbSet<global::Notrelix.Infrastructure.Data.Audit.AuditLog> EnterpriseAuditLogs => Set<global::Notrelix.Infrastructure.Data.Audit.AuditLog>();
+    public DbSet<global::Notrelix.Infrastructure.Data.Audit.SecurityEvent> EnterpriseSecurityEvents => Set<global::Notrelix.Infrastructure.Data.Audit.SecurityEvent>();
+    public DbSet<global::Notrelix.Infrastructure.Data.Audit.ActivityLog> EnterpriseActivityLogs => Set<global::Notrelix.Infrastructure.Data.Audit.ActivityLog>();
+
+    // Enterprise analytics
+    public DbSet<WorkspaceUsageDaily> WorkspaceUsageDaily => Set<WorkspaceUsageDaily>();
+    public DbSet<FeatureUsageDaily> FeatureUsageDaily => Set<FeatureUsageDaily>();
+
+    // Enterprise authz
+    public DbSet<WorkspaceAccessGrant> WorkspaceAccessGrants => Set<WorkspaceAccessGrant>();
+
+    // Activity projection
+    public DbSet<WorkspaceActivityLogRecord> WorkspaceActivityLogs => Set<WorkspaceActivityLogRecord>();
+    public DbSet<ActivityReadStateRecord> ActivityReadStates => Set<ActivityReadStateRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
