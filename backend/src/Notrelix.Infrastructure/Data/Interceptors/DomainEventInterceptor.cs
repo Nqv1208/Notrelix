@@ -3,7 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Events;
-using Notrelix.Infrastructure.Data.Outbox;
+using Notrelix.Infrastructure.Data.Events;
+using Notrelix.Infrastructure.Data.Messaging;
 
 namespace Notrelix.Infrastructure.Data.Interceptors;
 
@@ -103,14 +104,15 @@ public class DomainEventInterceptor : SaveChangesInterceptor
                 case DomainEventDispatchMode.Outbox:
                     {
                         var messageName = _eventTypeRegistry.GetMessageName(domainEvent.GetType());
-                        var outboxMessage = OutboxMessage.From(domainEvent, now, messageName);
-                        context.Set<OutboxMessage>().Add(outboxMessage);
+
+                        var eventLog = DomainEventLog.FromDomainEvent(domainEvent, messageName, now);
+                        context.Set<DomainEventLog>().Add(eventLog);
 
                         var mappings = _integrationEventMapper.Map(domainEvent);
                         foreach (var mapping in mappings)
                         {
-                            var integrationMessage = OutboxMessage.From(mapping.IntegrationEvent, now);
-                            context.Set<OutboxMessage>().Add(integrationMessage);
+                            var outboxMsg = MessagingOutboxMessage.FromIntegrationEvent(mapping.IntegrationEvent, domainEvent, now);
+                            context.Set<MessagingOutboxMessage>().Add(outboxMsg);
                         }
                         break;
                     }

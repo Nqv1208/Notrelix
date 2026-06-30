@@ -3,6 +3,11 @@ using Notrelix.Application.Common.Events;
 
 namespace Notrelix.Infrastructure.Data.Outbox;
 
+/// <summary>
+/// DEPRECATED — V5 outbox writes go to messaging.outbox_messages (MessagingOutboxMessage).
+/// This entity maps to ops.outbox_messages which is kept for draining old messages only.
+/// Remove once all legacy messages have been processed and V5 pipeline is verified.
+/// </summary>
 public enum OutboxMessageType
 {
     DomainEvent = 1,

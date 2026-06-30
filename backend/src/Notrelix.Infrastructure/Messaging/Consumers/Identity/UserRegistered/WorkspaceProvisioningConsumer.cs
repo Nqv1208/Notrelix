@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Workspaces.Provisioning.Commands.ProvisionPersonalWorkspace;
 
-namespace Notrelix.Infrastructure.Messaging.Consumers.Identity;
+namespace Notrelix.Infrastructure.Messaging.Consumers.Identity.UserRegistered;
 
 public sealed class WorkspaceProvisioningConsumer : IConsumer<UserRegisteredIntegrationEvent>
 {

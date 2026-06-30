@@ -57,6 +57,8 @@ public static class EmailRegistration
             services.AddTransient<IEmailService, NoopEmailService>();
         }
 
+        services.AddScoped<IEmailOutboxWriter, EmailOutboxWriter>();
+
         return services;
     }
 }

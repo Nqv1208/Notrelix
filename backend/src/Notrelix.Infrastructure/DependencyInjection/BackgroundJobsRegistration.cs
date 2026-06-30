@@ -21,6 +21,8 @@ public static class BackgroundJobsRegistration
 
         services.AddHostedService<QueuedJobWorker>();
         services.AddHostedService<OutboxDispatcher>();
+        services.AddHostedService<V5OutboxDispatcher>();
+        services.AddHostedService<EmailDispatcher>();
 
         return services;
     }

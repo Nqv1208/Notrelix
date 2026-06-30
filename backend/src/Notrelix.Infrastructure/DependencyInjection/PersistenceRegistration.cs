@@ -11,6 +11,7 @@ using Notrelix.Infrastructure.Services;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Interceptors;
 using Notrelix.Infrastructure.Data.Outbox;
+using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Events;
 using Notrelix.Infrastructure.Options;
 
@@ -37,6 +38,7 @@ public static class PersistenceRegistration
         // Interceptors (resolved inside AddDbContext below).
         services.AddScoped<AuditableEntityInterceptor>();
         services.AddScoped<DomainEventInterceptor>();
+        services.AddScoped<RlsSessionInterceptor>();
 
         var connectionString = configuration.GetConnectionString("NotrelixDb");
 
@@ -44,13 +46,15 @@ public static class PersistenceRegistration
         {
             options.AddInterceptors(sp.GetRequiredService<AuditableEntityInterceptor>());
             options.AddInterceptors(sp.GetRequiredService<DomainEventInterceptor>());
+            options.AddInterceptors(sp.GetRequiredService<RlsSessionInterceptor>());
             options.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 
             options.UseNpgsql(connectionString, npgOptions =>
             {
                 npgOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
                 npgOptions.MigrationsHistoryTable("__EFMigrationsHistory", DbSchemas.Ops);
-            });
+            })
+              .UseSnakeCaseNamingConvention();
         });
 
         services.AddScoped<IApplicationDbContext>(provider =>
@@ -63,6 +67,7 @@ public static class PersistenceRegistration
             provider.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IWorkspaceAccessChecker, WorkspaceAccessChecker>();
         services.AddScoped<ApplicationDbContextInitialiser>();
+        services.AddScoped<RlsPolicyApplier>();
 
         services.AddScoped<IDateTimeProvider, DateTimeProvider>();
 
