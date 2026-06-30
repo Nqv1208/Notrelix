@@ -54,7 +54,7 @@ public sealed class N8nDispatchService
 
         try
         {
-            var result = await _n8nClient.TriggerWebhookAsync(webhookPath, execution.Payload, cancellationToken);
+            var result = await _n8nClient.TriggerWebhookAsync(webhookPath, execution.Payload ?? string.Empty, cancellationToken);
 
             if (result.Succeeded)
             {
