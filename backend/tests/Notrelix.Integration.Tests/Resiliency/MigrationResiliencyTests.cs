@@ -3,6 +3,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Infrastructure.Data.Rls;
+using Notrelix.Testing.Application.Fakes;
 using Notrelix.Testing.Integration;
 
 namespace Notrelix.Integration.Tests.Resiliency;
@@ -44,7 +46,9 @@ public class MigrationResiliencyTests
                 Enabled = true,
                 Profile = SeedProfile.Small,
                 ResetBeforeSeed = false
-            }));
+            }),
+            new RlsPolicyApplier(context, NullLogger<RlsPolicyApplier>.Instance),
+            new FakeCurrentWorkspace());
     }
 
     private sealed class DeterministicPasswordHasher : IPasswordHasher

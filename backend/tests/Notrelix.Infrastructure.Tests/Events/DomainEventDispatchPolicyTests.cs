@@ -30,6 +30,11 @@ public class DomainEventDispatchPolicyTests
     {
         public Guid EventId { get; init; } = Guid.NewGuid();
         public DateTimeOffset OccurredAt { get; init; } = DateTimeOffset.UtcNow;
+        public string SourceContext { get; init; } = "test";
+        public string AggregateType { get; init; } = "Fake";
+        public Guid AggregateId { get; init; } = Guid.NewGuid();
+        public string SubjectType { get; init; } = "Fake";
+        public Guid SubjectId { get; init; } = Guid.NewGuid();
         public Guid? WorkspaceId { get; init; }
         public Guid? ActorUserId { get; init; }
         public string? CorrelationId { get; init; }
