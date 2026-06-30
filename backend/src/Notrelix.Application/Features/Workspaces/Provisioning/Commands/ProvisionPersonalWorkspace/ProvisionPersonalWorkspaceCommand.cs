@@ -86,7 +86,7 @@ public sealed class ProvisionPersonalWorkspaceCommandHandler
                 request.SourceMessageName,
                 request.SourceMessageVersion,
                 sourceEventId: request.SourceEventId,
-                workspaceId: request.WorkspaceId,
+                workspaceId: existingWorkspace.Id,
                 processedAt: now);
 
             return new ProvisionPersonalWorkspaceResult(
@@ -110,7 +110,7 @@ public sealed class ProvisionPersonalWorkspaceCommandHandler
             request.SourceMessageName,
             request.SourceMessageVersion,
             sourceEventId: request.SourceEventId,
-            workspaceId: request.WorkspaceId,
+            workspaceId: workspace.Workspace.Id,
             processedAt: now);
 
         return new ProvisionPersonalWorkspaceResult(

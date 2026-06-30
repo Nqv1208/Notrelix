@@ -12,14 +12,14 @@ public sealed class UserEventMapper :
     {
         var de = (IDomainEvent)domainEvent;
         return new UserRegisteredIntegrationEvent(
-            domainEvent.UserId,
-            domainEvent.Email.Value,
-            string.Empty,
-            de.ActorUserId,
+            UserId: domainEvent.UserId,
+            Email: domainEvent.Email,
+            DisplayName: domainEvent.DisplayName,
+            ActorUserId: de.ActorUserId,
             SourceEventId: de.EventId,
             CorrelationId: de.CorrelationId,
             CausationId: de.CausationId ?? de.EventId.ToString(),
-            domainEvent.RegisteredAt
+            OccurredAt: domainEvent.RegisteredAt
         );
     }
 

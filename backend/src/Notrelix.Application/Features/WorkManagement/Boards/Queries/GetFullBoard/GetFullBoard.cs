@@ -63,7 +63,7 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 (cardLabel, label) => new
                 {
                     cardLabel.ItemId,
-                    Dto = new BoardItemLabelDto(label.Id, label.Name, label.Color.ToString())
+                    Dto = new BoardItemLabelDto(label.Id, label.Name, label.Color.Hex)
                 })
             .ToListAsync(cancellationToken);
 
