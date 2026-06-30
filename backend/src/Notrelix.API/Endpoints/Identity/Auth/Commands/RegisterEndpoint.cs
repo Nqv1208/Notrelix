@@ -1,6 +1,6 @@
 using Notrelix.API.Extensions;
 using Notrelix.API.RateLimiting;
-using Notrelix.Application.Features.Identity.Auth.Commands.Register;
+using Notrelix.Application.Features.Identity.Registration.Commands.Register;
 
 namespace Notrelix.API.Endpoints.Identity.Auth.Commands;
 
