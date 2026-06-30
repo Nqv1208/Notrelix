@@ -2,8 +2,8 @@ namespace Notrelix.Domain.Automation.Scheduled;
 
 public sealed class ScheduleDefinition : ValueObject
 {
-    public string CronExpression { get; }
-    public string TimeZone { get; }
+    public string CronExpression { get; private set; } = null!;
+    public string TimeZone { get; private set; } = null!;
 
     private ScheduleDefinition() { }
     private ScheduleDefinition(string cronExpression, string timeZone)

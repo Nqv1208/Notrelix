@@ -5,7 +5,7 @@ public sealed record ResourcePermissionGrantedDomainEvent(
     Guid PermissionId,
     ResourceType ResourceType,
     Guid ResourceId,
-    PermissionSubjectType SubjectType,
+    PermissionSubjectType Subject,
     Guid SubjectId,
     PermissionLevel Level,
     Guid GrantedBy,

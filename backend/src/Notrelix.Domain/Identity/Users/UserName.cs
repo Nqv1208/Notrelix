@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Identity.Users;
 
 public sealed class UserName : ValueObject
 {
-    public string Value { get; }
+    public string Value { get; private set; } = null!;
 
     private UserName() { }
     private UserName(string value)

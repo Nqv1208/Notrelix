@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Automation.Actions;
 
 public sealed class ActionConfig : ValueObject
 {
-    public JsonValue Data { get; }
+    public JsonValue Data { get; private set; } = null!;
 
     private ActionConfig() { }
     private ActionConfig(JsonValue data)

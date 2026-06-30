@@ -5,7 +5,7 @@ namespace Notrelix.Domain.Governance.ShareLinks;
 
 public sealed class ShareLinkTokenHash : ValueObject
 {
-    public string Hash { get; }
+    public string Hash { get; private set; } = null!;
 
     private ShareLinkTokenHash() { }
     private ShareLinkTokenHash(string hash)

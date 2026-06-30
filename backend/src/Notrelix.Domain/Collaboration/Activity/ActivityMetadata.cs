@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Collaboration.Activity;
 
 public sealed class ActivityMetadata : ValueObject
 {
-    public JsonValue Data { get; }
+    public JsonValue Data { get; private set; } = null!;
 
     private ActivityMetadata() { }
     private ActivityMetadata(JsonValue data)
