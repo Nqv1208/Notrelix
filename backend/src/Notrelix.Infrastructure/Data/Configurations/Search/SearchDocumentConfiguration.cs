@@ -22,8 +22,8 @@ public class SearchDocumentConfiguration : IEntityTypeConfiguration<SearchDocume
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 
-        builder.HasIndex(x => new { x.WorkspaceId, x.ResourceType }).HasDatabaseName("ix_search_documents_workspace_type");
         builder.HasIndex(x => new { x.WorkspaceId, x.ResourceType, x.ResourceId }).IsUnique().HasDatabaseName("ux_search_documents_resource");
+        builder.HasIndex(x => new { x.WorkspaceId, x.ResourceType }).HasDatabaseName("ix_search_documents_workspace_type");
 
         builder.HasIndex(x => x.SearchVector)
             .HasMethod("gin")

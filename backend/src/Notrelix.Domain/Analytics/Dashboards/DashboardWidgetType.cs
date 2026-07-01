@@ -1,6 +1,6 @@
 namespace Notrelix.Domain.Analytics.Dashboards;
 
-public enum WidgetType
+public enum DashboardWidgetType
 {
     BoardWidget,
     BoardFieldWidget,

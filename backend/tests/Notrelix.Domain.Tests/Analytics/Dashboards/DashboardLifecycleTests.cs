@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Analytics.Dashboards;
-using WidgetType = Notrelix.Domain.Analytics.Dashboards.WidgetType;
 using Notrelix.Domain.Analytics.Widgets;
 
 namespace Notrelix.Domain.Tests.Analytics.Dashboards;
@@ -68,7 +67,7 @@ public class DashboardLifecycleTests
         var versionBefore = dashboard.Version;
         var pos = WidgetPosition.Create(0, 0, 2, 2);
 
-        dashboard.AddWidget("Stats", WidgetType.TextWidget, JsonValue.Create("{\"content\":\"stats\"}"), pos, _actor, _now);
+        dashboard.AddWidget("Stats", DashboardWidgetType.TextWidget, JsonValue.Create("{\"content\":\"stats\"}"), pos, _actor, _now);
 
         dashboard.Version.Should().Be(versionBefore + 1);
         dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetAddedDomainEvent);
@@ -79,7 +78,7 @@ public class DashboardLifecycleTests
     {
         var dashboard = Dashboard.Create(_workspaceId, "D", _actor, _now);
         var pos = WidgetPosition.Create(0, 0, 2, 2);
-        dashboard.AddWidget("Stats", WidgetType.TextWidget, JsonValue.Create("{\"content\":\"stats\"}"), pos, _actor, _now);
+        dashboard.AddWidget("Stats", DashboardWidgetType.TextWidget, JsonValue.Create("{\"content\":\"stats\"}"), pos, _actor, _now);
         dashboard.ClearDomainEvents();
         var versionBefore = dashboard.Version;
         var widgetId = dashboard.Widgets.First().Id;
@@ -108,7 +107,7 @@ public class DashboardLifecycleTests
     {
         var dashboard = Dashboard.Create(_workspaceId, "D", _actor, _now);
         var pos1 = WidgetPosition.Create(0, 0, 2, 2);
-        dashboard.AddWidget("Stats", WidgetType.TextWidget, JsonValue.Create("{\"content\":\"stats\"}"), pos1, _actor, _now);
+        dashboard.AddWidget("Stats", DashboardWidgetType.TextWidget, JsonValue.Create("{\"content\":\"stats\"}"), pos1, _actor, _now);
         dashboard.ClearDomainEvents();
         var versionBefore = dashboard.Version;
         var widgetId = dashboard.Widgets.First().Id;

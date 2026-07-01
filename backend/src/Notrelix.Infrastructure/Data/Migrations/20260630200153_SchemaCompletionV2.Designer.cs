@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Notrelix.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260630134417_SchemaCompletionV2")]
+    [Migration("20260630200153_SchemaCompletionV2")]
     partial class SchemaCompletionV2
     {
         /// <inheritdoc />
@@ -220,6 +220,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("type");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
 
                     b.HasKey("Id")
                         .HasName("pk_dashboard_widgets");
@@ -2225,6 +2229,65 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDatabaseName("idx_reactions_user_id");
 
                     b.ToTable("reactions", "collab");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Collaboration.ReadStates.ResourceReadState", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("LastReadAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_read_at");
+
+                    b.Property<Guid?>("LastReadCommentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("last_read_comment_id");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_id");
+
+                    b.Property<string>("ResourceType")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("resource_type");
+
+                    b.Property<int>("UnreadCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("unread_count");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_resource_read_states");
+
+                    b.HasIndex("WorkspaceId", "UserId", "ResourceType", "ResourceId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_collab_resource_read_states_user_resource");
+
+                    b.HasIndex("WorkspaceId", "UserId", "UnreadCount", "UpdatedAt")
+                        .HasDatabaseName("ix_collab_resource_read_states_user");
+
+                    b.ToTable("resource_read_states", "collab");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Collaboration.Watchers.ResourceWatcher", b =>
@@ -5250,6 +5313,56 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDatabaseName("idx_webhook_subscriptions_workspace_id");
 
                     b.ToTable("webhook_subscriptions", "integration");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Notifications.NotificationCounters.NotificationCounter", b =>
+                {
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("CounterType")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasDefaultValue("Notification")
+                        .HasColumnName("counter_type");
+
+                    b.Property<int>("CounterValue")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("counter_value");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long>("Version")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("version");
+
+                    b.HasKey("WorkspaceId", "UserId", "CounterType")
+                        .HasName("pk_notification_counters");
+
+                    b.HasIndex("UserId", "WorkspaceId")
+                        .HasDatabaseName("ix_notification_counters_user_workspace");
+
+                    b.ToTable("notification_counters", "notifications");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Notifications.NotificationItems.NotificationItem", b =>

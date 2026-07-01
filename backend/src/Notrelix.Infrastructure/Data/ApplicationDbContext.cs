@@ -265,6 +265,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext, IWorkspace
     public DbSet<global::Notrelix.Domain.Notifications.NotificationItems.NotificationItem> NotificationItems => Set<global::Notrelix.Domain.Notifications.NotificationItems.NotificationItem>();
     public DbSet<global::Notrelix.Domain.Notifications.NotificationRecipients.NotificationRecipient> NotificationRecipients => Set<global::Notrelix.Domain.Notifications.NotificationRecipients.NotificationRecipient>();
     public DbSet<global::Notrelix.Domain.Notifications.NotificationPreferences.NotificationPreference> CanonicalNotificationPreferences => Set<global::Notrelix.Domain.Notifications.NotificationPreferences.NotificationPreference>();
+    public DbSet<global::Notrelix.Domain.Notifications.NotificationCounters.NotificationCounter> NotificationCounters => Set<global::Notrelix.Domain.Notifications.NotificationCounters.NotificationCounter>();
+
+    // Collaboration read states
+    public DbSet<global::Notrelix.Domain.Collaboration.ReadStates.ResourceReadState> ResourceReadStates => Set<global::Notrelix.Domain.Collaboration.ReadStates.ResourceReadState>();
 
     // Enterprise audit
     public DbSet<global::Notrelix.Infrastructure.Data.Audit.AuditLog> EnterpriseAuditLogs => Set<global::Notrelix.Infrastructure.Data.Audit.AuditLog>();

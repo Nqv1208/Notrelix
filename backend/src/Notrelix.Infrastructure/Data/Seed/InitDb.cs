@@ -1,12 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Domain.Collaboration.Comments;
-using Notrelix.Domain.Collaboration.Notifications;
 using Notrelix.Domain.Documents.Blocks;
 using Notrelix.Domain.Documents.Pages;
 using Notrelix.Domain.Identity.Profiles;
 using Notrelix.Domain.Identity.Sessions;
 using Notrelix.Domain.Identity.Users;
+using Notrelix.Domain.Notifications.NotificationItems;
+using Notrelix.Domain.Notifications.NotificationRecipients;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.BoardGroups;
@@ -16,6 +17,7 @@ using Notrelix.Domain.WorkManagement.Labels;
 using Notrelix.Domain.WorkManagement.Views;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Infrastructure.Data.Authz;
 
 namespace Notrelix.Infrastructure.Data.Seed;
 
@@ -66,6 +68,8 @@ internal static class InitDb
 
         var workspaces = await CreateWorkspacesAsync(context, targets, users, ct);
         result = result with { WorkspacesCreated = workspaces.Count };
+
+        await SeedAuthzGrantsAsync(context, ct);
 
         var boardData = await CreateBoardStructuresAsync(context, targets, workspaces, users, ct);
         result = result with { BoardsCreated = boardData.Count };
@@ -185,6 +189,37 @@ internal static class InitDb
         context.Workspaces.AddRange(workspaces);
         await ClearAndSaveAsync(context, ct);
         return workspaces;
+    }
+
+    private static async Task SeedAuthzGrantsAsync(ApplicationDbContext context, CancellationToken ct)
+    {
+        if (await context.Set<WorkspaceAccessGrant>().AnyAsync(ct)) return;
+
+        var members = await context.WorkspaceMembers
+            .Where(m => m.Status == WorkspaceMemberStatus.Active)
+            .ToListAsync(ct);
+
+        var grants = new List<WorkspaceAccessGrant>(members.Count);
+        foreach (var member in members)
+        {
+            var isAdmin = member.Role == WorkspaceRole.Owner || member.Role == WorkspaceRole.Admin;
+            var isOwner = member.Role == WorkspaceRole.Owner;
+            grants.Add(new WorkspaceAccessGrant(
+                member.WorkspaceId,
+                member.UserId,
+                "Workspace",
+                "Active",
+                [member.Role.ToString()],
+                [],
+                isAdmin,
+                member.CreatedAt,
+                null,
+                null,
+                null));
+        }
+
+        context.Set<WorkspaceAccessGrant>().AddRange(grants);
+        await ClearAndSaveAsync(context, ct);
     }
 
     private sealed record BoardStructure(
@@ -519,7 +554,7 @@ internal static class InitDb
         ApplicationDbContext context, SeedTargets targets,
         List<User> users, CancellationToken ct)
     {
-        if (await context.Notifications.AnyAsync(ct) || users.Count == 0)
+        if (await context.NotificationItems.AnyAsync(ct) || users.Count == 0)
         {
             return 0;
         }
@@ -537,20 +572,24 @@ internal static class InitDb
             for (int i = 0; i < count; i++)
             {
                 var wsId = workspaceIds[i % workspaceIds.Count];
-                var nType = (NotificationType)(i % Enum.GetValues<NotificationType>().Length);
                 var createdAt = Epoch.AddDays(i);
 
-                var notification = Notification.Create(
-                    user.Id, wsId, nType,
+                var item = NotificationItem.Create(
+                    wsId,
+                    "System",
+                    "General",
+                    NotificationSeverity.Info,
                     $"Notification {i + 1} for {user.Email.Value}",
-                    $"This is a {nType} notification body.",
-                    createdAt);
-                context.Notifications.Add(notification);
+                    createdAt,
+                    body: $"This is a general notification body.",
+                    actorUserId: user.Id);
+                context.NotificationItems.Add(item);
 
-                var delivery = NotificationDelivery.Create(
-                    notification.Id, wsId, user.Id,
-                    NotificationChannel.InApp, createdAt);
-                context.NotificationDeliveries.Add(delivery);
+                var recipient = NotificationRecipient.Create(
+                    item.Id, wsId, user.Id, createdAt,
+                    recipientEmail: user.Email.Value,
+                    recipientName: user.Name);
+                context.NotificationRecipients.Add(recipient);
             }
         }
 

@@ -1,13 +1,5 @@
 namespace Notrelix.Domain.Analytics.Dashboards;
 
-public enum DashboardSourceType
-{
-    Board,
-    BoardView,
-    Search,
-    External
-}
-
 public class DashboardSource : AggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId { get; private set; }

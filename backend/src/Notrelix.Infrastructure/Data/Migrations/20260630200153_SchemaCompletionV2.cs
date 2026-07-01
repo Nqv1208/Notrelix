@@ -1426,6 +1426,14 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 table: "board_fields",
                 newName: "data_classification");
 
+            migrationBuilder.AddColumn<Guid>(
+                name: "workspace_id",
+                schema: "reporting",
+                table: "dashboard_widgets",
+                type: "uuid",
+                nullable: false,
+                defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
+
             migrationBuilder.AlterColumn<bool>(
                 name: "is_system",
                 schema: "governance",
@@ -2370,6 +2378,25 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "notification_counters",
+                schema: "notifications",
+                columns: table => new
+                {
+                    workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    counter_type = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false, defaultValue: "Notification"),
+                    counter_value = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    version = table.Column<long>(type: "bigint", nullable: false, defaultValue: 1L),
+                    id = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_notification_counters", x => new { x.workspace_id, x.user_id, x.counter_type });
+                });
+
+            migrationBuilder.CreateTable(
                 name: "notification_items",
                 schema: "notifications",
                 columns: table => new
@@ -2527,6 +2554,27 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_processed_events", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "resource_read_states",
+                schema: "collab",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    resource_type = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: false),
+                    resource_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    last_read_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    last_read_comment_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    unread_count = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_resource_read_states", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -2886,6 +2934,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 descending: new[] { false, true });
 
             migrationBuilder.CreateIndex(
+                name: "ix_notification_counters_user_workspace",
+                schema: "notifications",
+                table: "notification_counters",
+                columns: new[] { "user_id", "workspace_id" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_notifications_items_resource",
                 schema: "notifications",
                 table: "notification_items",
@@ -3095,6 +3149,19 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 columns: new[] { "workspace_id", "processed_at" },
                 descending: new[] { false, true },
                 filter: "\"workspace_id\" IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_collab_resource_read_states_user",
+                schema: "collab",
+                table: "resource_read_states",
+                columns: new[] { "workspace_id", "user_id", "unread_count", "updated_at" });
+
+            migrationBuilder.CreateIndex(
+                name: "ux_collab_resource_read_states_user_resource",
+                schema: "collab",
+                table: "resource_read_states",
+                columns: new[] { "workspace_id", "user_id", "resource_type", "resource_id" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_security_events_event_type_occurred_at",
@@ -4081,6 +4148,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 schema: "analytics");
 
             migrationBuilder.DropTable(
+                name: "notification_counters",
+                schema: "notifications");
+
+            migrationBuilder.DropTable(
                 name: "notification_preferences",
                 schema: "notifications");
 
@@ -4099,6 +4170,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
             migrationBuilder.DropTable(
                 name: "processed_events",
                 schema: "messaging");
+
+            migrationBuilder.DropTable(
+                name: "resource_read_states",
+                schema: "collab");
 
             migrationBuilder.DropTable(
                 name: "security_events",
@@ -4734,6 +4809,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 name: "pk_activity_logs",
                 schema: "collab",
                 table: "activity_logs");
+
+            migrationBuilder.DropColumn(
+                name: "workspace_id",
+                schema: "reporting",
+                table: "dashboard_widgets");
 
             migrationBuilder.RenameColumn(
                 name: "max_retries",
