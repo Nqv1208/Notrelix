@@ -18,7 +18,7 @@ public class SearchDocumentConfiguration : IEntityTypeConfiguration<SearchDocume
         builder.Property(x => x.Content).HasColumnName("content");
         builder.Property(x => x.Tags).HasColumnName("tags").HasColumnType("text[]");
         builder.Property(x => x.MetadataJson).HasColumnName("metadata_json").HasColumnType("jsonb").HasDefaultValue("{}");
-        builder.Property(x => x.SearchVector).HasColumnName("search_vector");
+        builder.Property(x => x.SearchVector).HasColumnName("search_vector").HasColumnType("tsvector");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 
@@ -27,7 +27,6 @@ public class SearchDocumentConfiguration : IEntityTypeConfiguration<SearchDocume
 
         builder.HasIndex(x => x.SearchVector)
             .HasMethod("gin")
-            .HasDatabaseName("ix_search_documents_search_vector")
-            .HasOperators("gin_trgm_ops");
+            .HasDatabaseName("ix_search_documents_search_vector");
     }
 }

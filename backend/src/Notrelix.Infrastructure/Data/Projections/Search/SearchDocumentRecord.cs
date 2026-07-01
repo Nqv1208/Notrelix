@@ -1,3 +1,5 @@
+using NpgsqlTypes;
+
 namespace Notrelix.Infrastructure.Data.Projections.Search;
 
 public sealed class SearchDocumentRecord
@@ -10,7 +12,7 @@ public sealed class SearchDocumentRecord
     public string? Content { get; private set; }
     public string[] Tags { get; private set; } = [];
     public string MetadataJson { get; private set; } = null!;
-    public string? SearchVector { get; private set; }
+    public NpgsqlTsVector? SearchVector { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset? UpdatedAt { get; private set; }
 
