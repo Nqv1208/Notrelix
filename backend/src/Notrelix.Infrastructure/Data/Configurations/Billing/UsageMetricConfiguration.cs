@@ -14,6 +14,7 @@ public class UsageMetricConfiguration : IEntityTypeConfiguration<UsageMetric>
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
 
+        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.Key).HasColumnName("metric_key").HasConversion<UsageMetricKeyConverter>().IsRequired().HasMaxLength(128);
         builder.Property(x => x.CurrentValue).HasColumnName("current_value").IsRequired();

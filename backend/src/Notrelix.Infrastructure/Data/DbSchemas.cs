@@ -2,6 +2,7 @@ namespace Notrelix.Infrastructure.Data;
 
 public static class DbSchemas
 {
+    public const string Account = "account";
     public const string Identity = "identity";
     public const string Workspace = "workspace";
     public const string Governance = "governance";

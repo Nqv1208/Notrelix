@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Notrelix.Infrastructure.Data;
-using Notrelix.Infrastructure.Data.Outbox;
+using Notrelix.Infrastructure.Data.Messaging;
 
 namespace Notrelix.Infrastructure.Observability.HealthChecks;
 
@@ -32,15 +32,15 @@ public sealed class OutboxHealthCheck : IHealthCheck
         {
             var now = DateTimeOffset.UtcNow;
 
-            var oldestPending = await _context.Set<OutboxMessage>()
-                .Where(m => m.Status == OutboxStatus.Pending)
+            var oldestPending = await _context.Set<MessagingOutboxMessage>()
+                .Where(m => m.Status == "Pending")
                 .MinAsync(m => (DateTimeOffset?)m.CreatedAt, cancellationToken);
 
-            var failedCount = await _context.Set<OutboxMessage>()
-                .CountAsync(m => m.Status == OutboxStatus.Failed, cancellationToken);
+            var failedCount = await _context.Set<MessagingOutboxMessage>()
+                .CountAsync(m => m.Status == "Failed", cancellationToken);
 
-            var deadLetterCount = await _context.Set<OutboxMessage>()
-                .CountAsync(m => m.Status == OutboxStatus.DeadLetter, cancellationToken);
+            var deadLetterCount = await _context.Set<MessagingOutboxMessage>()
+                .CountAsync(m => m.Status == "DeadLetter", cancellationToken);
 
             if (deadLetterCount >= _options.UnhealthyDeadLetterCount)
                 return HealthCheckResult.Unhealthy(

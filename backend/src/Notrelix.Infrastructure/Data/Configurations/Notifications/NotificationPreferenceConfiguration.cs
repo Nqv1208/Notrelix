@@ -1,12 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Notrelix.Domain.Notifications.NotificationPreferences;
+using Notrelix.Infrastructure.Data.Notifications;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Notifications;
 
-public sealed class NotificationPreferenceConfiguration : IEntityTypeConfiguration<NotificationPreference>
+public sealed class NotificationPreferenceConfiguration : IEntityTypeConfiguration<NotificationPreferenceRecord>
 {
-    public void Configure(EntityTypeBuilder<NotificationPreference> builder)
+    public void Configure(EntityTypeBuilder<NotificationPreferenceRecord> builder)
     {
         builder.ToTable("notification_preferences", DbSchemas.Notifications);
 
@@ -22,7 +22,7 @@ public sealed class NotificationPreferenceConfiguration : IEntityTypeConfigurati
         builder.Property(x => x.IsEnabled).HasColumnName("is_enabled").IsRequired().HasDefaultValue(true);
         builder.Property(x => x.DeliveryMode).HasColumnName("delivery_mode").HasConversion<string>().IsRequired().HasMaxLength(40).HasDefaultValue(DeliveryMode.Immediate);
         builder.Property(x => x.DigestIntervalMinutes).HasColumnName("digest_interval_minutes");
-        builder.Property(x => x.QuietHoursJson).HasColumnName("quiet_hours_json").HasColumnType("jsonb").IsRequired().HasDefaultValueSql("'{}'::jsonb");
+        builder.Property(x => x.QuietHoursJson).HasColumnName("quiet_hours_json").HasColumnType("jsonb").IsRequired();
         builder.Property(x => x.Timezone).HasColumnName("timezone").HasMaxLength(80);
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();

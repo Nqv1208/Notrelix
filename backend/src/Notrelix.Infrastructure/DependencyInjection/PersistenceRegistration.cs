@@ -4,13 +4,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Events;
+using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Infrastructure.Services;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Interceptors;
-using Notrelix.Infrastructure.Data.Outbox;
 using Notrelix.Application.Common.Abstractions.Rls;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Events;
@@ -68,6 +68,8 @@ public static class PersistenceRegistration
             provider.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IIdentityDbContext>(provider =>
             provider.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IAccountDbContext>(provider =>
+            provider.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IWorkspaceAccessChecker, WorkspaceAccessChecker>();
         services.AddScoped<ApplicationDbContextInitialiser>();
         services.AddScoped<RlsPolicyApplier>();
@@ -76,9 +78,8 @@ public static class PersistenceRegistration
         services.AddScoped<IDateTimeProvider, DateTimeProvider>();
 
         // Outbox persistence infrastructure.
-        services.AddSingleton<IEventTypeRegistry, EventTypeRegistry>();
+        services.AddSingleton<IEventTypeRegistry, Notrelix.Infrastructure.Messaging.EventTypeRegistry>();
         services.AddSingleton<IDomainEventDispatchPolicy, DomainEventDispatchPolicy>();
-        services.AddScoped<IProcessedEventStore, ProcessedEventStore>();
 
         return services;
     }

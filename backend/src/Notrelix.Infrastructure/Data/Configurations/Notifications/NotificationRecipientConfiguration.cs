@@ -1,13 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Notrelix.Domain.Notifications.NotificationItems;
-using Notrelix.Domain.Notifications.NotificationRecipients;
+using Notrelix.Infrastructure.Data.Notifications;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Notifications;
 
-public sealed class NotificationRecipientConfiguration : IEntityTypeConfiguration<NotificationRecipient>
+public sealed class NotificationRecipientConfiguration : IEntityTypeConfiguration<NotificationRecipientRecord>
 {
-    public void Configure(EntityTypeBuilder<NotificationRecipient> builder)
+    public void Configure(EntityTypeBuilder<NotificationRecipientRecord> builder)
     {
         builder.ToTable("notification_recipients", DbSchemas.Notifications);
 
@@ -15,17 +14,18 @@ public sealed class NotificationRecipientConfiguration : IEntityTypeConfiguratio
         builder.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
 
         builder.Property(x => x.NotificationId).HasColumnName("notification_id").IsRequired();
-        builder.HasOne<NotificationItem>()
+        builder.HasOne<NotificationItemRecord>()
             .WithMany()
             .HasForeignKey(x => x.NotificationId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id");
         builder.Property(x => x.RecipientUserId).HasColumnName("recipient_user_id").IsRequired();
         builder.Property(x => x.RecipientEmail).HasColumnName("recipient_email");
         builder.Property(x => x.RecipientName).HasColumnName("recipient_name").HasMaxLength(240);
 
-        builder.Property(x => x.DeliveryPolicyJson).HasColumnName("delivery_policy_json").HasColumnType("jsonb").IsRequired().HasDefaultValueSql("'{}'::jsonb");
+        builder.Property(x => x.DeliveryPolicyJson).HasColumnName("delivery_policy_json").HasColumnType("jsonb").IsRequired();
 
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(40).HasDefaultValue(RecipientStatus.Unread);
         builder.Property(x => x.SeenAt).HasColumnName("seen_at");

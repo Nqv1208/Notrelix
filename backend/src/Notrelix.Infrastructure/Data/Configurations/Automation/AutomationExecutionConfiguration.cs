@@ -14,6 +14,7 @@ public class AutomationExecutionConfiguration : IEntityTypeConfiguration<Automat
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
 
+        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.RuleId).HasColumnName("rule_id").IsRequired();
         builder.Property(x => x.TriggerId).HasColumnName("trigger_id").IsRequired();

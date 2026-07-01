@@ -24,10 +24,11 @@ public static class AuthRegistration
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IJwtBlacklistService, JwtBlacklistService>();
 
-        // Current-user / current-workspace context resolved from the HTTP request.
+        // Current-user / current-workspace / current-account context resolved from the HTTP request.
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, CurrentUser>();
         services.AddScoped<ICurrentWorkspace, CurrentWorkspace>();
+        services.AddScoped<ICurrentAccount, CurrentAccount>();
 
         services.AddJwtBearer(configuration);
 

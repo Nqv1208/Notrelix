@@ -1,13 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Notrelix.Domain.Notifications.NotificationItems;
-using Notrelix.Domain.SharedKernel;
+using Notrelix.Infrastructure.Data.Notifications;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Notifications;
 
-public sealed class NotificationItemConfiguration : IEntityTypeConfiguration<NotificationItem>
+public sealed class NotificationItemConfiguration : IEntityTypeConfiguration<NotificationItemRecord>
 {
-    public void Configure(EntityTypeBuilder<NotificationItem> builder)
+    public void Configure(EntityTypeBuilder<NotificationItemRecord> builder)
     {
         builder.ToTable("notification_items", DbSchemas.Notifications);
 
@@ -20,6 +19,7 @@ public sealed class NotificationItemConfiguration : IEntityTypeConfiguration<Not
         builder.Property(x => x.SourceContext).HasColumnName("source_context").IsRequired().HasMaxLength(80);
         builder.Property(x => x.SourceEventId).HasColumnName("source_event_id");
         builder.Property(x => x.SourceMessageId).HasColumnName("source_message_id");
+        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id");
         builder.Property(x => x.ActorUserId).HasColumnName("actor_user_id");
 
@@ -34,7 +34,7 @@ public sealed class NotificationItemConfiguration : IEntityTypeConfiguration<Not
         builder.Property(x => x.Title).HasColumnName("title").IsRequired().HasMaxLength(320);
         builder.Property(x => x.Body).HasColumnName("body");
         builder.Property(x => x.ActionUrl).HasColumnName("action_url");
-        builder.Property(x => x.DataJson).HasColumnName("data_json").HasColumnType("jsonb").IsRequired().HasDefaultValueSql("'{}'::jsonb");
+        builder.Property(x => x.DataJson).HasColumnName("data_json").HasColumnType("jsonb").IsRequired();
 
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(40).HasDefaultValue(NotificationItemStatus.Active);
         builder.Property(x => x.ExpiresAt).HasColumnName("expires_at");
@@ -48,7 +48,6 @@ public sealed class NotificationItemConfiguration : IEntityTypeConfiguration<Not
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
         builder.Property(x => x.RestoredAt).HasColumnName("restored_at");
         builder.Property(x => x.RestoredBy).HasColumnName("restored_by");
-        builder.Ignore(x => x.IsDeleted);
 
         builder.Property(x => x.Version).HasColumnName("version").IsConcurrencyToken().HasDefaultValue(1L);
 

@@ -1,24 +1,25 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Notrelix.Domain.Identity.Security;
+using Notrelix.Domain.Accounts.Scim;
 
-namespace Notrelix.Infrastructure.Data.Configurations.Identity;
+namespace Notrelix.Infrastructure.Data.Configurations.Account;
 
-public class ScimDirectorySyncConfiguration : IEntityTypeConfiguration<ScimDirectorySync>
+public class ScimDirectoryConfiguration : IEntityTypeConfiguration<ScimDirectory>
 {
-    public void Configure(EntityTypeBuilder<ScimDirectorySync> builder)
+    public void Configure(EntityTypeBuilder<ScimDirectory> builder)
     {
-        builder.ToTable("scim_directory_syncs", DbSchemas.Identity);
+        builder.ToTable("scim_directories", DbSchemas.Account);
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
 
-        builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
-        builder.Property(x => x.ProviderName).HasColumnName("provider_name").IsRequired().HasMaxLength(256);
-        builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
+        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
+        builder.Property(x => x.IdentityProviderId).HasColumnName("identity_provider_id");
+        builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(120);
+        builder.Property(x => x.BaseUrl).HasColumnName("base_url");
+        builder.Property(x => x.BearerTokenHash).HasColumnName("bearer_token_hash").HasMaxLength(255);
+        builder.Property(x => x.Status).HasColumnName("status").IsRequired().HasMaxLength(32);
         builder.Property(x => x.LastSyncAt).HasColumnName("last_sync_at");
-        builder.Property(x => x.CursorJson).HasColumnName("cursor").IsRequired().HasDefaultValue("{}");
-        builder.Property(x => x.ConfigJson).HasColumnName("config").IsRequired().HasDefaultValue("{}");
 
         builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
@@ -31,6 +32,6 @@ public class ScimDirectorySyncConfiguration : IEntityTypeConfiguration<ScimDirec
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => x.WorkspaceId).HasDatabaseName("idx_scim_directory_syncs_workspace_id");
+        builder.HasIndex(x => new { x.AccountId, x.Name }).IsUnique().HasDatabaseName("idx_scim_directories_account_name");
     }
 }

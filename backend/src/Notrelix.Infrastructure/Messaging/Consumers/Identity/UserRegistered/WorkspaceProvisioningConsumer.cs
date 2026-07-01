@@ -23,6 +23,7 @@ public sealed class WorkspaceProvisioningConsumer : IConsumer<UserRegisteredInte
 
         var result = await _sender.Send(new ProvisionPersonalWorkspaceCommand(
             UserId: msg.UserId,
+            AccountId: msg.AccountId,
             Email: msg.Email,
             MessageId: msg.EventId,
             SourceEventId: msg.SourceEventId,
@@ -34,8 +35,9 @@ public sealed class WorkspaceProvisioningConsumer : IConsumer<UserRegisteredInte
         ), context.CancellationToken);
 
         _logger.LogInformation(
-            "Workspace provisioning for {UserId}: {Status}",
+            "Workspace provisioning for {UserId} in account {AccountId}: {Status}",
             msg.UserId,
+            msg.AccountId,
             result.AlreadyExisted ? "already-existed" : "created");
     }
 }

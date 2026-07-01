@@ -2,9 +2,8 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Events.Collaboration;
-using Notrelix.Domain.Notifications.NotificationItems;
-using Notrelix.Domain.Notifications.NotificationRecipients;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Infrastructure.Data.Notifications;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Collaboration;
 
@@ -45,7 +44,8 @@ public sealed class MentionCreatedNotificationConsumer : IConsumer<MentionCreate
             return;
         }
 
-        var notificationItem = NotificationItem.Create(
+        var notificationItem = NotificationItemRecord.Create(
+            accountId: Guid.Empty,
             workspaceId: msg.WorkspaceId.Value,
             sourceContext: "collaboration",
             notificationType: "mention.created",
@@ -63,7 +63,8 @@ public sealed class MentionCreatedNotificationConsumer : IConsumer<MentionCreate
 
         _context.NotificationItems.Add(notificationItem);
 
-        var recipient = NotificationRecipient.Create(
+        var recipient = NotificationRecipientRecord.Create(
+            accountId: Guid.Empty,
             notificationId: notificationItem.Id,
             workspaceId: msg.WorkspaceId.Value,
             recipientUserId: msg.MentionedUserId,

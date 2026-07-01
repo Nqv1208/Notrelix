@@ -11,11 +11,9 @@ using Notrelix.Domain.Billing.Payments.Events;
 using Notrelix.Domain.Billing.Plans.Events;
 using Notrelix.Domain.Billing.Subscriptions.Events;
 using Notrelix.Domain.Billing.Usage.Events;
-using Notrelix.Domain.Collaboration.Activity.Events;
 using Notrelix.Domain.Collaboration.Attachments.Events;
 using Notrelix.Domain.Collaboration.Comments.Events;
 using Notrelix.Domain.Collaboration.Mentions.Events;
-using Notrelix.Domain.Collaboration.Notifications.Events;
 using Notrelix.Domain.Collaboration.Presence.Events;
 using Notrelix.Domain.Collaboration.Reactions.Events;
 using Notrelix.Domain.Collaboration.Watchers.Events;
@@ -24,11 +22,9 @@ using Notrelix.Domain.Documents.Pages.Events;
 using Notrelix.Domain.Documents.ResourceLinks.Events;
 using Notrelix.Domain.Documents.Templates.Events;
 using Notrelix.Domain.Documents.Versions.Events;
-using Notrelix.Domain.Governance.Audit.Events;
 using Notrelix.Domain.Governance.Policies.Events;
 using Notrelix.Domain.Governance.Permissions.Events;
 using Notrelix.Domain.Governance.Roles.Events;
-using Notrelix.Domain.Governance.Security.Events;
 using Notrelix.Domain.Governance.ShareLinks.Events;
 using Notrelix.Domain.Governance.Templates.Events;
 using Notrelix.Domain.Identity.Mfa.Events;
@@ -200,7 +196,6 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
 
     private static void RegisterCollaboration(Dictionary<Type, DomainEventDispatchMode> d)
     {
-        Add<ActivityLoggedDomainEvent>(d);
         Add<AttachmentCreatedDomainEvent>(d);
         Add<AttachmentDeletedDomainEvent>(d);
         Add<AttachmentRestoredDomainEvent>(d);
@@ -210,9 +205,6 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
         Add<CommentSoftDeletedDomainEvent>(d);
         Add<CommentUpdatedDomainEvent>(d);
         Add<MentionCreatedDomainEvent>(d);
-        Add<NotificationArchivedDomainEvent>(d);
-        Add<NotificationCreatedDomainEvent>(d);
-        Add<NotificationReadDomainEvent>(d);
         Add<PresenceUpdatedDomainEvent>(d);
         Add<ReactionCreatedDomainEvent>(d);
         Add<ReactionRemovedDomainEvent>(d);
@@ -244,7 +236,6 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
 
     private static void RegisterGovernance(Dictionary<Type, DomainEventDispatchMode> d)
     {
-        Add<AuditLogRecordedDomainEvent>(d);
         Add<WorkspacePolicyUpdatedEvent>(d);
         Add<FieldPermissionGrantedDomainEvent>(d);
         Add<FieldPermissionRevokedDomainEvent>(d);
@@ -265,7 +256,6 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
         Add<CustomRoleRevokedDomainEvent>(d);
         Add<CustomRoleSoftDeletedDomainEvent>(d);
         Add<CustomRoleUpdatedDomainEvent>(d);
-        Add<SecurityEventRecordedEvent>(d);
         Add<ShareLinkCreatedEvent>(d);
         Add<ShareLinkDisabledEvent>(d);
         Add<ShareLinkExpiredEvent>(d);
@@ -292,17 +282,6 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
         Add<UserProfileUpdatedDomainEvent>(d);
         Add<LoginAttemptRecordedDomainEvent>(d);
         Add<PasswordChangeRequiredDomainEvent>(d);
-        Add<ScimDirectorySyncCompletedDomainEvent>(d);
-        Add<ScimDirectorySyncCreatedDomainEvent>(d);
-        Add<ScimDirectorySyncPausedDomainEvent>(d);
-        Add<ScimDirectorySyncResumedDomainEvent>(d);
-        Add<ScimDirectorySyncRestoredDomainEvent>(d);
-        Add<ScimDirectorySyncSoftDeletedDomainEvent>(d);
-        Add<SsoProviderCreatedDomainEvent>(d);
-        Add<SsoProviderDisabledDomainEvent>(d);
-        Add<SsoProviderEnabledDomainEvent>(d);
-        Add<SsoProviderRestoredDomainEvent>(d);
-        Add<SsoProviderSoftDeletedDomainEvent>(d);
         Add<UserMfaRequirementDisabledDomainEvent>(d);
         Add<UserMfaRequirementEnabledDomainEvent>(d);
         Add<UserSecurityPasswordChangedDomainEvent>(d);

@@ -13,6 +13,7 @@ public class FeatureUsageLedgerConfiguration : IEntityTypeConfiguration<FeatureU
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
 
+        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.FeatureCode).HasColumnName("feature_code").IsRequired().HasMaxLength(128);
         builder.Property(x => x.Delta).HasColumnName("delta").HasColumnType("decimal(18,2)").IsRequired();

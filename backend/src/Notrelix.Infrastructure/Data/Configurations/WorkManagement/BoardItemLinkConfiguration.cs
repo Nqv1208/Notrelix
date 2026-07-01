@@ -13,6 +13,8 @@ public class BoardItemLinkConfiguration : IEntityTypeConfiguration<BoardItemLink
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
 
+        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
+        builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.SourceItemId).HasColumnName("source_item_id").IsRequired();
         builder.Property(x => x.LinkType).HasColumnName("link_type").HasConversion<string>().IsRequired().HasMaxLength(50);
 

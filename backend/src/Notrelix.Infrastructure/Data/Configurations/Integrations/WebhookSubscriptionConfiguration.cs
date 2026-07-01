@@ -13,6 +13,7 @@ public class WebhookSubscriptionConfiguration : IEntityTypeConfiguration<Webhook
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
 
+        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.IsActive).HasColumnName("is_active");
 

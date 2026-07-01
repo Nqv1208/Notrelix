@@ -20,8 +20,7 @@ public static class BackgroundJobsRegistration
         services.AddScoped<N8nDispatchService>();
 
         services.AddHostedService<QueuedJobWorker>();
-        services.AddHostedService<OutboxDispatcher>();
-        services.AddHostedService<V5OutboxDispatcher>();
+services.AddHostedService<V5OutboxDispatcher>();
         services.AddHostedService<EmailDispatcher>();
 
         return services;
