@@ -18,10 +18,10 @@ public class GetBoardQueryHandlerTests
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
-        var workspace = Workspace.Create(userId, "Test", "test", now);
+        var workspace = Workspace.Create(Guid.NewGuid(), userId, "Test", "test", now);
         context.Workspaces.Add(workspace);
 
-        var board = Board.Create(workspace.Id, userId, "My Board", "desc", now, BoardVisibility.Workspace);
+        var board = Board.Create(Guid.NewGuid(), workspace.Id, userId, "My Board", "desc", now, BoardVisibility.Workspace);
         context.Boards.Add(board);
         await context.SaveChangesAsync();
 

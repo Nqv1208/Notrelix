@@ -21,12 +21,12 @@ public class WorkspacePermissionServiceTests
         var adminId = Guid.NewGuid();
         var memberId = Guid.NewGuid();
 
-        var workspace = Workspace.Create(ownerId, "Workspace", "workspace", now);
+        var workspace = Workspace.Create(Guid.NewGuid(), ownerId, "Workspace", "workspace", now);
         context.Workspaces.Add(workspace);
 
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, now));
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, adminId, WorkspaceRole.Admin, ownerId, now));
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, memberId, WorkspaceRole.Member, ownerId, now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, adminId, WorkspaceRole.Admin, ownerId, now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, memberId, WorkspaceRole.Member, ownerId, now));
         await context.SaveChangesAsync();
 
         var service = CreateService(context);
@@ -46,14 +46,14 @@ public class WorkspacePermissionServiceTests
         var workspaceMemberId = Guid.NewGuid();
         var boardAdminId = Guid.NewGuid();
 
-        var workspace = Workspace.Create(ownerId, "Workspace", "workspace", now);
+        var workspace = Workspace.Create(Guid.NewGuid(), ownerId, "Workspace", "workspace", now);
         context.Workspaces.Add(workspace);
 
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, now));
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, workspaceMemberId, WorkspaceRole.Member, ownerId, now));
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, boardAdminId, WorkspaceRole.Member, ownerId, now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, workspaceMemberId, WorkspaceRole.Member, ownerId, now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, boardAdminId, WorkspaceRole.Member, ownerId, now));
 
-        var board = Board.Create(workspace.Id, ownerId, "Board", null, now);
+        var board = Board.Create(Guid.NewGuid(), workspace.Id, ownerId, "Board", null, now);
         context.Boards.Add(board);
 
         context.BoardMembers.Add(BoardMember.Create(board.Id, boardAdminId, BoardRole.Admin, now));
@@ -76,14 +76,14 @@ public class WorkspacePermissionServiceTests
         var memberId = Guid.NewGuid();
         var guestId = Guid.NewGuid();
 
-        var workspace = Workspace.Create(ownerId, "Workspace", "workspace", now);
+        var workspace = Workspace.Create(Guid.NewGuid(), ownerId, "Workspace", "workspace", now);
         context.Workspaces.Add(workspace);
 
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, now));
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, memberId, WorkspaceRole.Member, ownerId, now));
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, guestId, WorkspaceRole.Guest, ownerId, now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, memberId, WorkspaceRole.Member, ownerId, now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, guestId, WorkspaceRole.Guest, ownerId, now));
 
-        var board = Board.Create(workspace.Id, ownerId, "Board", null, now);
+        var board = Board.Create(Guid.NewGuid(), workspace.Id, ownerId, "Board", null, now);
         context.Boards.Add(board);
         await context.SaveChangesAsync();
 

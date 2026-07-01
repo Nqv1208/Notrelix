@@ -17,31 +17,31 @@ public class GetUserWorkspacesQueryHandlerTests
         var otherOwnerId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
-        var ownedWorkspace = Workspace.Create(userId, "Owned Workspace", "owned-workspace", now);
+        var ownedWorkspace = Workspace.Create(Guid.NewGuid(), userId, "Owned Workspace", "owned-workspace", now);
         context.Workspaces.Add(ownedWorkspace);
 
-        var ownedMember = WorkspaceMember.Create(ownedWorkspace.Id, userId, WorkspaceRole.Owner, userId, now);
-        var ownedTeammate = WorkspaceMember.Create(ownedWorkspace.Id, teammateId, WorkspaceRole.Member, userId, now);
+        var ownedMember = WorkspaceMember.Create(Guid.NewGuid(), ownedWorkspace.Id, userId, WorkspaceRole.Owner, userId, now);
+        var ownedTeammate = WorkspaceMember.Create(Guid.NewGuid(), ownedWorkspace.Id, teammateId, WorkspaceRole.Member, userId, now);
         context.WorkspaceMembers.Add(ownedMember);
         context.WorkspaceMembers.Add(ownedTeammate);
 
-        var joinedWorkspace = Workspace.Create(otherOwnerId, "Joined Workspace", "joined-workspace", now);
+        var joinedWorkspace = Workspace.Create(Guid.NewGuid(), otherOwnerId, "Joined Workspace", "joined-workspace", now);
         context.Workspaces.Add(joinedWorkspace);
 
-        var joinedOwner = WorkspaceMember.Create(joinedWorkspace.Id, otherOwnerId, WorkspaceRole.Owner, otherOwnerId, now);
-        var joinedMember = WorkspaceMember.Create(joinedWorkspace.Id, userId, WorkspaceRole.Admin, otherOwnerId, now);
+        var joinedOwner = WorkspaceMember.Create(Guid.NewGuid(), joinedWorkspace.Id, otherOwnerId, WorkspaceRole.Owner, otherOwnerId, now);
+        var joinedMember = WorkspaceMember.Create(Guid.NewGuid(), joinedWorkspace.Id, userId, WorkspaceRole.Admin, otherOwnerId, now);
         context.WorkspaceMembers.Add(joinedOwner);
         context.WorkspaceMembers.Add(joinedMember);
 
-        var archivedWorkspace = Workspace.Create(userId, "Archived Workspace", "archived-workspace", now);
+        var archivedWorkspace = Workspace.Create(Guid.NewGuid(), userId, "Archived Workspace", "archived-workspace", now);
         archivedWorkspace.Archive(userId, now);
         context.Workspaces.Add(archivedWorkspace);
-        var archivedMember = WorkspaceMember.Create(archivedWorkspace.Id, userId, WorkspaceRole.Owner, userId, now);
+        var archivedMember = WorkspaceMember.Create(Guid.NewGuid(), archivedWorkspace.Id, userId, WorkspaceRole.Owner, userId, now);
         context.WorkspaceMembers.Add(archivedMember);
 
-        var unrelatedWorkspace = Workspace.Create(otherOwnerId, "Unrelated Workspace", "unrelated-workspace", now);
+        var unrelatedWorkspace = Workspace.Create(Guid.NewGuid(), otherOwnerId, "Unrelated Workspace", "unrelated-workspace", now);
         context.Workspaces.Add(unrelatedWorkspace);
-        var unrelatedMember = WorkspaceMember.Create(unrelatedWorkspace.Id, otherOwnerId, WorkspaceRole.Owner, otherOwnerId, now);
+        var unrelatedMember = WorkspaceMember.Create(Guid.NewGuid(), unrelatedWorkspace.Id, otherOwnerId, WorkspaceRole.Owner, otherOwnerId, now);
         context.WorkspaceMembers.Add(unrelatedMember);
 
         await context.SaveChangesAsync();

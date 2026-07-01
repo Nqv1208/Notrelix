@@ -84,7 +84,6 @@ public class DomainArchitectureTests
         "BoardItem.cs",
         "FormQuestionConfig.cs",
         "ApiTokenScopes.cs",
-        "SsoProviderConfiguration.cs",
         "UserProfile.cs",
         "AutomationActionValidator.cs",
         "AutomationActionDefinition.cs",

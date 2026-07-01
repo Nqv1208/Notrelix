@@ -27,7 +27,7 @@ public class BoardBuilder
     public Board Build()
     {
         return Board.Create(
-            _workspaceId, _createdBy, _title, _description, _createdAt,
+            Guid.NewGuid(), _workspaceId, _createdBy, _title, _description, _createdAt,
             _visibility, _type, _family, _itemKeyPrefix, _spaceId);
     }
 }

@@ -5,14 +5,17 @@ namespace Notrelix.Domain.Tests.Governance;
 
 public class WorkspacePolicyTests
 {
+    private static readonly Guid AccountId = Guid.NewGuid();
+    private static readonly Guid WorkspaceId = Guid.NewGuid();
+    private static readonly Guid Actor = Guid.NewGuid();
+    private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
+
     [Fact]
     public void Create_ShouldSucceed()
     {
-        var workspaceId = Guid.NewGuid();
+        var policy = WorkspacePolicy.Create(AccountId, WorkspaceId, Actor, Now);
 
-        var policy = WorkspacePolicy.Create(workspaceId, Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        policy.WorkspaceId.Should().Be(workspaceId);
+        policy.WorkspaceId.Should().Be(WorkspaceId);
         policy.GuestPolicy.Should().NotBeNull();
         policy.ResourcePolicy.Should().NotBeNull();
         policy.SharingPolicy.Should().NotBeNull();
@@ -21,21 +24,21 @@ public class WorkspacePolicyTests
     [Fact]
     public void Create_WithEmptyWorkspaceId_ShouldThrow()
     {
-        var act = () => WorkspacePolicy.Create(Guid.Empty, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var act = () => WorkspacePolicy.Create(AccountId, Guid.Empty, Actor, Now);
         act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
     public void UpdatePolicy_ShouldReplacePoliciesAndRaiseEvent()
     {
-        var policy = WorkspacePolicy.Create(Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var policy = WorkspacePolicy.Create(AccountId, WorkspaceId, Actor, Now);
         policy.ClearDomainEvents();
 
         var newGuestPolicy = GuestAccessPolicy.Create(false);
         var newResourcePolicy = ResourcePolicy.Create(true);
         var newSharingPolicy = SharingPolicy.Create(true, true);
 
-        policy.UpdatePolicy(newGuestPolicy, newResourcePolicy, newSharingPolicy, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        policy.UpdatePolicy(newGuestPolicy, newResourcePolicy, newSharingPolicy, Actor, Now);
 
         policy.GuestPolicy.AllowGuestInvites.Should().BeFalse();
         policy.ResourcePolicy.AllowPublicSharing.Should().BeTrue();
@@ -47,10 +50,10 @@ public class WorkspacePolicyTests
     [Fact]
     public void UpdatePolicy_WithNullGuestPolicy_ShouldKeepExisting()
     {
-        var policy = WorkspacePolicy.Create(Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var policy = WorkspacePolicy.Create(AccountId, WorkspaceId, Actor, Now);
         var originalGuest = policy.GuestPolicy;
 
-        policy.UpdatePolicy(null, null, null, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        policy.UpdatePolicy(null, null, null, Actor, Now);
 
         policy.GuestPolicy.Should().Be(originalGuest);
     }

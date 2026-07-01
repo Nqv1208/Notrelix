@@ -14,7 +14,7 @@ public class BoardViewTests
         var config = TableViewConfig.Create(JsonValue.EmptyObject());
         var createdBy = Guid.NewGuid();
 
-        var view = BoardView.Create(workspaceId, boardId, "Table View", ViewType.Table, config, createdBy, DateTimeOffset.UtcNow);
+        var view = BoardView.Create(Guid.NewGuid(), workspaceId, boardId, "Table View", ViewType.Table, config, createdBy, DateTimeOffset.UtcNow);
 
         view.Name.Should().Be("Table View");
         view.Type.Should().Be(ViewType.Table);
@@ -28,7 +28,7 @@ public class BoardViewTests
         var boardId = Guid.NewGuid();
         var config = TableViewConfig.Create(JsonValue.EmptyObject());
         var createdBy = Guid.NewGuid();
-        var view = BoardView.Create(workspaceId, boardId, "View", ViewType.Table, config, createdBy, DateTimeOffset.UtcNow);
+        var view = BoardView.Create(Guid.NewGuid(), workspaceId, boardId, "View", ViewType.Table, config, createdBy, DateTimeOffset.UtcNow);
         view.ClearDomainEvents();
 
         var newConfig = TableViewConfig.Create(JsonValue.Create("{\"sorts\":[]}"));
@@ -43,7 +43,7 @@ public class BoardViewTests
     [Fact]
     public void KanbanViewConfig_ShouldReject_EmptyVisibleFieldIds()
     {
-        var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Status, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Status, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         Action act = () => KanbanViewConfig.Create(field, new[] { Guid.Empty }, Guid.NewGuid());
 
@@ -53,7 +53,7 @@ public class BoardViewTests
     [Fact]
     public void KanbanViewConfig_ShouldDeduplicate_VisibleFieldIds()
     {
-        var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Status, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Status, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         var id1 = Guid.NewGuid();
         var id2 = Guid.NewGuid();
 
@@ -67,7 +67,7 @@ public class BoardViewTests
     [Fact]
     public void KanbanViewConfig_ShouldReject_EmptySwimlaneFieldId()
     {
-        var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Status, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Status, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         Action act = () => KanbanViewConfig.Create(field, new[] { Guid.NewGuid() }, Guid.Empty);
 
@@ -79,7 +79,7 @@ public class BoardViewTests
     {
         var workspaceId = Guid.NewGuid();
         var boardId = Guid.NewGuid();
-        var view = BoardView.Create(workspaceId, boardId, "View", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), Guid.NewGuid(), DateTimeOffset.UtcNow, isDefault: false);
+        var view = BoardView.Create(Guid.NewGuid(), workspaceId, boardId, "View", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), Guid.NewGuid(), DateTimeOffset.UtcNow, isDefault: false);
 
         view.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

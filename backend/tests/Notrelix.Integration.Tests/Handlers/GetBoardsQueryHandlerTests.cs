@@ -18,11 +18,11 @@ public class GetBoardsQueryHandlerTests
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
-        var workspace = Workspace.Create(userId, "Test", "test", now);
+        var workspace = Workspace.Create(Guid.NewGuid(), userId, "Test", "test", now);
         context.Workspaces.Add(workspace);
 
-        var board1 = Board.Create(workspace.Id, userId, "Board 1", null, now, BoardVisibility.Workspace);
-        var board2 = Board.Create(workspace.Id, userId, "Board 2", null, now, BoardVisibility.Workspace);
+        var board1 = Board.Create(Guid.NewGuid(), workspace.Id, userId, "Board 1", null, now, BoardVisibility.Workspace);
+        var board2 = Board.Create(Guid.NewGuid(), workspace.Id, userId, "Board 2", null, now, BoardVisibility.Workspace);
         context.Boards.AddRange(board1, board2);
         await context.SaveChangesAsync();
 
@@ -43,11 +43,11 @@ public class GetBoardsQueryHandlerTests
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
-        var workspace = Workspace.Create(userId, "Test", "test", now);
+        var workspace = Workspace.Create(Guid.NewGuid(), userId, "Test", "test", now);
         context.Workspaces.Add(workspace);
 
-        var active = Board.Create(workspace.Id, userId, "Active", null, now, BoardVisibility.Workspace);
-        var archived = Board.Create(workspace.Id, userId, "Archived", null, now, BoardVisibility.Workspace);
+        var active = Board.Create(Guid.NewGuid(), workspace.Id, userId, "Active", null, now, BoardVisibility.Workspace);
+        var archived = Board.Create(Guid.NewGuid(), workspace.Id, userId, "Archived", null, now, BoardVisibility.Workspace);
         archived.Archive(userId, now);
         context.Boards.AddRange(active, archived);
         await context.SaveChangesAsync();

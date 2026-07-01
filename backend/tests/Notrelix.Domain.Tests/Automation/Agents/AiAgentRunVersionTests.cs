@@ -13,7 +13,7 @@ public class AiAgentRunVersionTests
     [Fact]
     public void Start_ShouldIncrementVersion()
     {
-        var run = AiAgentRun.Create(_workspaceId, Guid.NewGuid(), "webhook", null, null, JsonValue.Null(), _actorId, null, _now);
+        var run = AiAgentRun.Create(Guid.NewGuid(), _workspaceId, Guid.NewGuid(), "webhook", null, null, JsonValue.Null(), _actorId, null, _now);
         run.ClearDomainEvents();
         var version = run.Version;
 
@@ -26,7 +26,7 @@ public class AiAgentRunVersionTests
     [Fact]
     public void Succeed_ShouldIncrementVersion()
     {
-        var run = AiAgentRun.Create(_workspaceId, Guid.NewGuid(), "webhook", null, null, JsonValue.Null(), _actorId, null, _now);
+        var run = AiAgentRun.Create(Guid.NewGuid(), _workspaceId, Guid.NewGuid(), "webhook", null, null, JsonValue.Null(), _actorId, null, _now);
         run.Start(_now);
         run.ClearDomainEvents();
         var version = run.Version;
@@ -40,7 +40,7 @@ public class AiAgentRunVersionTests
     [Fact]
     public void Fail_ShouldIncrementVersion()
     {
-        var run = AiAgentRun.Create(_workspaceId, Guid.NewGuid(), "webhook", null, null, JsonValue.Null(), _actorId, null, _now);
+        var run = AiAgentRun.Create(Guid.NewGuid(), _workspaceId, Guid.NewGuid(), "webhook", null, null, JsonValue.Null(), _actorId, null, _now);
         run.Start(_now);
         run.ClearDomainEvents();
         var version = run.Version;
@@ -54,7 +54,7 @@ public class AiAgentRunVersionTests
     [Fact]
     public void Cancel_ShouldIncrementVersion()
     {
-        var run = AiAgentRun.Create(_workspaceId, Guid.NewGuid(), "webhook", null, null, JsonValue.Null(), _actorId, null, _now);
+        var run = AiAgentRun.Create(Guid.NewGuid(), _workspaceId, Guid.NewGuid(), "webhook", null, null, JsonValue.Null(), _actorId, null, _now);
         run.Start(_now);
         run.ClearDomainEvents();
         var version = run.Version;

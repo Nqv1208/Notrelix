@@ -13,7 +13,7 @@ public class ApprovalRequestEventTests
     public void ApprovalRequest_SoftDelete_ShouldRaiseEvent()
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsA);
-        var request = ApprovalRequest.Create(WsA, target, "Approve this", Actor, Now);
+        var request = ApprovalRequest.Create(Guid.NewGuid(), WsA, target, "Approve this", Actor, Now);
         request.ClearDomainEvents();
         var version = request.Version;
 
@@ -28,7 +28,7 @@ public class ApprovalRequestEventTests
     public void ApprovalRequest_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsA);
-        var request = ApprovalRequest.Create(WsA, target, "Approve this", Actor, Now);
+        var request = ApprovalRequest.Create(Guid.NewGuid(), WsA, target, "Approve this", Actor, Now);
         request.SoftDelete(Actor, Now);
         request.ClearDomainEvents();
         var version = request.Version;
@@ -43,7 +43,7 @@ public class ApprovalRequestEventTests
     public void ApprovalRequest_Restore_ShouldRaiseEvent()
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsA);
-        var request = ApprovalRequest.Create(WsA, target, "Approve this", Actor, Now);
+        var request = ApprovalRequest.Create(Guid.NewGuid(), WsA, target, "Approve this", Actor, Now);
         request.SoftDelete(Actor, Now);
         request.ClearDomainEvents();
         var version = request.Version;
@@ -59,7 +59,7 @@ public class ApprovalRequestEventTests
     public void ApprovalRequest_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsA);
-        var request = ApprovalRequest.Create(WsA, target, "Approve this", Actor, Now);
+        var request = ApprovalRequest.Create(Guid.NewGuid(), WsA, target, "Approve this", Actor, Now);
         request.ClearDomainEvents();
         var version = request.Version;
 

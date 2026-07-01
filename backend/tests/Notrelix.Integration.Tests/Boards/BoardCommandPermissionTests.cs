@@ -67,15 +67,15 @@ public class BoardCommandPermissionTests
         WorkspaceRole addedUserRole = WorkspaceRole.Member)
     {
         var now = DateTimeOffset.UtcNow;
-        var workspace = Workspace.Create(ownerId, "Workspace", "workspace", now);
-        var workspaceMember = WorkspaceMember.Create(workspace.Id, userId, userRole, ownerId, now);
-        var board = Board.Create(workspace.Id, ownerId, "Board", null, now);
+        var workspace = Workspace.Create(Guid.NewGuid(), ownerId, "Workspace", "workspace", now);
+        var workspaceMember = WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, userId, userRole, ownerId, now);
+        var board = Board.Create(Guid.NewGuid(), workspace.Id, ownerId, "Board", null, now);
 
         context.Workspaces.Add(workspace);
         context.WorkspaceMembers.Add(workspaceMember);
         if (addedUserId.HasValue)
         {
-            context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, addedUserId.Value, addedUserRole, ownerId, now));
+            context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, addedUserId.Value, addedUserRole, ownerId, now));
         }
         context.Boards.Add(board);
         await context.SaveChangesAsync();

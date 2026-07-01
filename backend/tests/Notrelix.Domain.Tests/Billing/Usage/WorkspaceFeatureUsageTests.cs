@@ -11,7 +11,7 @@ public class WorkspaceFeatureUsageTests
     [Fact]
     public void Create_ShouldSucceed_AndRaiseEvent()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 0, 100, 80, DateTimeOffset.UtcNow);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, 80, DateTimeOffset.UtcNow);
 
         usage.CurrentUsage.Should().Be(0);
         usage.HardLimit.Should().Be(100);
@@ -22,21 +22,21 @@ public class WorkspaceFeatureUsageTests
     [Fact]
     public void Create_WithNegativeUsage_ShouldThrow()
     {
-        var act = () => WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, -1, 100, null, DateTimeOffset.UtcNow);
+        var act = () => WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, -1, 100, null, DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>().WithMessage("*negative*");
     }
 
     [Fact]
     public void Create_WithSoftLimitExceedingHardLimit_ShouldThrow()
     {
-        var act = () => WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 0, 100, 150, DateTimeOffset.UtcNow);
+        var act = () => WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, 150, DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>().WithMessage("*Soft limit cannot exceed hard limit*");
     }
 
     [Fact]
     public void Consume_WithinLimit_ShouldSucceed_AndRaiseEvent()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
         usage.ClearDomainEvents();
 
         usage.Consume(30, Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -48,7 +48,7 @@ public class WorkspaceFeatureUsageTests
     [Fact]
     public void Consume_ExceedingHardLimit_WhenOverageDisallowed_ShouldThrow()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 80, 100, null, DateTimeOffset.UtcNow);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 80, 100, null, DateTimeOffset.UtcNow);
 
         var act = () => usage.Consume(30, Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>().WithMessage("*limit exceeded*");
@@ -58,7 +58,7 @@ public class WorkspaceFeatureUsageTests
     [Fact]
     public void Consume_ExceedingHardLimit_WhenOverageAllowed_ShouldSucceed()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 80, 100, null, DateTimeOffset.UtcNow, overageAllowed: true);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 80, 100, null, DateTimeOffset.UtcNow, overageAllowed: true);
 
         usage.Consume(30, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -68,7 +68,7 @@ public class WorkspaceFeatureUsageTests
     [Fact]
     public void Consume_WithNonPositiveAmount_ShouldThrow()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
         var act = () => usage.Consume(-5, Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>().WithMessage("*positive*");
     }
@@ -76,7 +76,7 @@ public class WorkspaceFeatureUsageTests
     [Fact]
     public void Consume_WhenDeleted_ShouldThrow()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
         usage.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => usage.Consume(10, Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -86,7 +86,7 @@ public class WorkspaceFeatureUsageTests
     [Fact]
     public void Release_ShouldSucceed_AndRaiseEvent()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 50, 100, null, DateTimeOffset.UtcNow);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 50, 100, null, DateTimeOffset.UtcNow);
         usage.ClearDomainEvents();
 
         usage.Release(20, Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -98,7 +98,7 @@ public class WorkspaceFeatureUsageTests
     [Fact]
     public void Release_WithAmountExceedingCurrent_ShouldThrow()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 10, 100, null, DateTimeOffset.UtcNow);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 10, 100, null, DateTimeOffset.UtcNow);
         var act = () => usage.Release(20, Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>().WithMessage("*below zero*");
     }
@@ -106,7 +106,7 @@ public class WorkspaceFeatureUsageTests
     [Fact]
     public void Release_WithNonPositiveAmount_ShouldThrow()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 50, 100, null, DateTimeOffset.UtcNow);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 50, 100, null, DateTimeOffset.UtcNow);
         var act = () => usage.Release(-5, Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>().WithMessage("*positive*");
     }
@@ -114,7 +114,7 @@ public class WorkspaceFeatureUsageTests
     [Fact]
     public void Reset_ShouldClearUsage_AndRaiseEvent()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 75, 100, null, DateTimeOffset.UtcNow);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 75, 100, null, DateTimeOffset.UtcNow);
         usage.ClearDomainEvents();
 
         usage.Reset(DateTimeOffset.UtcNow, Guid.NewGuid());
@@ -126,7 +126,7 @@ public class WorkspaceFeatureUsageTests
     [Fact]
     public void Release_WhenDeleted_ShouldThrow()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 50, 100, null, DateTimeOffset.UtcNow);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 50, 100, null, DateTimeOffset.UtcNow);
         usage.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => usage.Release(10, Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -136,7 +136,7 @@ public class WorkspaceFeatureUsageTests
     [Fact]
     public void SoftDelete_ShouldMarkDeleted_AndRaiseEvent()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
         usage.ClearDomainEvents();
 
         usage.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -148,7 +148,7 @@ public class WorkspaceFeatureUsageTests
     [Fact]
     public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
         usage.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         usage.ClearDomainEvents();
 
@@ -160,7 +160,7 @@ public class WorkspaceFeatureUsageTests
     [Fact]
     public void Restore_ShouldRestore_AndRaiseEvent()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
         usage.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         usage.ClearDomainEvents();
 
@@ -173,7 +173,7 @@ public class WorkspaceFeatureUsageTests
     [Fact]
     public void SoftDelete_WhenConsumeAfterRestore_ShouldSucceed()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
         usage.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         usage.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -185,28 +185,28 @@ public class WorkspaceFeatureUsageTests
     [Fact]
     public void Create_WithNegativeSoftLimit_ShouldThrow()
     {
-        var act = () => WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 0, 100, -5, DateTimeOffset.UtcNow);
+        var act = () => WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, -5, DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>().WithMessage("*negative*");
     }
 
     [Fact]
     public void Create_WithNegativeHardLimit_ShouldThrow()
     {
-        var act = () => WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 0, -1, null, DateTimeOffset.UtcNow);
+        var act = () => WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, -1, null, DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>().WithMessage("*negative*");
     }
 
     [Fact]
     public void Create_WithUsageExceedingHardLimit_AndOverageNotAllowed_ShouldThrow()
     {
-        var act = () => WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 150, 100, null, DateTimeOffset.UtcNow, overageAllowed: false);
+        var act = () => WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 150, 100, null, DateTimeOffset.UtcNow, overageAllowed: false);
         act.Should().Throw<BusinessRuleException>().WithMessage("*exceeds hard limit*");
     }
 
     [Fact]
     public void Create_WithUsageExceedingHardLimit_AndOverageAllowed_ShouldSucceed()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 150, 100, null, DateTimeOffset.UtcNow, overageAllowed: true);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 150, 100, null, DateTimeOffset.UtcNow, overageAllowed: true);
 
         usage.CurrentUsage.Should().Be(150);
         usage.OverageAllowed.Should().BeTrue();
@@ -215,7 +215,7 @@ public class WorkspaceFeatureUsageTests
     [Fact]
     public void Reset_ShouldClearUsage_AndSetLastResetAt()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 75, 100, null, DateTimeOffset.UtcNow);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 75, 100, null, DateTimeOffset.UtcNow);
 
         usage.Reset(DateTimeOffset.UtcNow, Guid.NewGuid());
 
@@ -226,7 +226,7 @@ public class WorkspaceFeatureUsageTests
     [Fact]
     public void Consume_WhenUsageExceedsSoftLimit_ShouldNotThrow()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 70, 100, 80, DateTimeOffset.UtcNow, overageAllowed: true);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 70, 100, 80, DateTimeOffset.UtcNow, overageAllowed: true);
 
         usage.Consume(15, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -236,7 +236,7 @@ public class WorkspaceFeatureUsageTests
     [Fact]
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
         usage.ClearDomainEvents();
 
         usage.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -247,7 +247,7 @@ public class WorkspaceFeatureUsageTests
     [Fact]
     public void SoftDelete_AndRestore_ShouldToggleIsDeleted()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
 
         usage.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         usage.IsDeleted.Should().BeTrue();
@@ -259,7 +259,7 @@ public class WorkspaceFeatureUsageTests
     [Fact]
     public void Consume_WhenDeletedAndRestored_ShouldSucceed()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
         usage.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         usage.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -271,7 +271,7 @@ public class WorkspaceFeatureUsageTests
     [Fact]
     public void Release_WhenDeletedAndRestored_ShouldSucceed()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), SampleFeature, 50, 100, null, DateTimeOffset.UtcNow);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 50, 100, null, DateTimeOffset.UtcNow);
         usage.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         usage.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

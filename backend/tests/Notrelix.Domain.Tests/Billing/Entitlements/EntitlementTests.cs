@@ -172,7 +172,7 @@ public class EntitlementTests
     [Fact]
     public void IsActiveAt_WhenActiveAndNotExpired_ShouldReturnTrue()
     {
-        var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(30));
+        var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow, expiresAt: DateTimeOffset.UtcNow.AddDays(30));
 
         entitlement.IsActiveAt(DateTimeOffset.UtcNow).Should().BeTrue();
     }
@@ -180,7 +180,7 @@ public class EntitlementTests
     [Fact]
     public void IsActiveAt_WhenExpired_ShouldReturnFalse()
     {
-        var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(-1));
+        var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow, expiresAt: DateTimeOffset.UtcNow.AddDays(-1));
 
         entitlement.IsActiveAt(DateTimeOffset.UtcNow).Should().BeFalse();
     }

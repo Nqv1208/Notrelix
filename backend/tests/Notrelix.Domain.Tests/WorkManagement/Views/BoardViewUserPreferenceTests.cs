@@ -14,7 +14,7 @@ public class BoardViewUserPreferenceTests
     {
         var viewId = Guid.NewGuid();
 
-        var pref = BoardViewUserPreference.Create(WorkspaceId, BoardId, viewId, UserId, DateTimeOffset.UtcNow);
+        var pref = BoardViewUserPreference.Create(Guid.NewGuid(), WorkspaceId, BoardId, viewId, UserId, DateTimeOffset.UtcNow);
 
         pref.WorkspaceId.Should().Be(WorkspaceId);
         pref.BoardId.Should().Be(BoardId);
@@ -26,7 +26,7 @@ public class BoardViewUserPreferenceTests
     [Fact]
     public void ApplyFilter_ShouldUpdateFilterRules()
     {
-        var pref = BoardViewUserPreference.Create(WorkspaceId, BoardId, Guid.NewGuid(), UserId, DateTimeOffset.UtcNow);
+        var pref = BoardViewUserPreference.Create(Guid.NewGuid(), WorkspaceId, BoardId, Guid.NewGuid(), UserId, DateTimeOffset.UtcNow);
         pref.ClearDomainEvents();
 
         var rules = new[] { FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "value") };
@@ -39,7 +39,7 @@ public class BoardViewUserPreferenceTests
     [Fact]
     public void ApplySort_ShouldUpdateSortRules()
     {
-        var pref = BoardViewUserPreference.Create(WorkspaceId, BoardId, Guid.NewGuid(), UserId, DateTimeOffset.UtcNow);
+        var pref = BoardViewUserPreference.Create(Guid.NewGuid(), WorkspaceId, BoardId, Guid.NewGuid(), UserId, DateTimeOffset.UtcNow);
         pref.ClearDomainEvents();
 
         var sorts = new[] { SortRule.Create(Guid.NewGuid(), SortDirection.Ascending) };
@@ -52,7 +52,7 @@ public class BoardViewUserPreferenceTests
     [Fact]
     public void ApplyGroup_ShouldSetGroupRule()
     {
-        var pref = BoardViewUserPreference.Create(WorkspaceId, BoardId, Guid.NewGuid(), UserId, DateTimeOffset.UtcNow);
+        var pref = BoardViewUserPreference.Create(Guid.NewGuid(), WorkspaceId, BoardId, Guid.NewGuid(), UserId, DateTimeOffset.UtcNow);
         pref.ClearDomainEvents();
 
         var group = GroupRule.Create(Guid.NewGuid());
@@ -66,7 +66,7 @@ public class BoardViewUserPreferenceTests
     [Fact]
     public void ApplyGroup_WithNull_ShouldClearGroup()
     {
-        var pref = BoardViewUserPreference.Create(WorkspaceId, BoardId, Guid.NewGuid(), UserId, DateTimeOffset.UtcNow);
+        var pref = BoardViewUserPreference.Create(Guid.NewGuid(), WorkspaceId, BoardId, Guid.NewGuid(), UserId, DateTimeOffset.UtcNow);
         pref.ClearDomainEvents();
 
         pref.ApplyGroup(null, DateTimeOffset.UtcNow);
@@ -77,7 +77,7 @@ public class BoardViewUserPreferenceTests
     [Fact]
     public void DuplicateFilter_ShouldThrow()
     {
-        var pref = BoardViewUserPreference.Create(WorkspaceId, BoardId, Guid.NewGuid(), UserId, DateTimeOffset.UtcNow);
+        var pref = BoardViewUserPreference.Create(Guid.NewGuid(), WorkspaceId, BoardId, Guid.NewGuid(), UserId, DateTimeOffset.UtcNow);
         pref.ClearDomainEvents();
 
         var fieldId = Guid.NewGuid();
@@ -94,7 +94,7 @@ public class BoardViewUserPreferenceTests
     [Fact]
     public void DuplicateSort_ShouldThrow()
     {
-        var pref = BoardViewUserPreference.Create(WorkspaceId, BoardId, Guid.NewGuid(), UserId, DateTimeOffset.UtcNow);
+        var pref = BoardViewUserPreference.Create(Guid.NewGuid(), WorkspaceId, BoardId, Guid.NewGuid(), UserId, DateTimeOffset.UtcNow);
         pref.ClearDomainEvents();
 
         var fieldId = Guid.NewGuid();

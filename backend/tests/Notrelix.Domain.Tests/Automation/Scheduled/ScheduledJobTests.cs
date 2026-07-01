@@ -9,7 +9,7 @@ public class ScheduledJobTests
     public void Create_ShouldSucceed_AndRaiseEvent()
     {
         var schedule = ScheduleDefinition.Create("0 9 * * 1-5");
-        var job = ScheduledJob.Create(Guid.NewGuid(), Guid.NewGuid(), schedule, DateTimeOffset.UtcNow);
+        var job = ScheduledJob.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), schedule, DateTimeOffset.UtcNow);
 
         job.Status.Should().Be(ScheduledJobStatus.Active);
         job.Schedule.Should().Be(schedule);
@@ -84,6 +84,6 @@ public class ScheduledJobTests
 
     private static ScheduledJob CreateJob()
     {
-        return ScheduledJob.Create(Guid.NewGuid(), Guid.NewGuid(), ScheduleDefinition.Create("0 0 * * *"), DateTimeOffset.UtcNow);
+        return ScheduledJob.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), ScheduleDefinition.Create("0 0 * * *"), DateTimeOffset.UtcNow);
     }
 }

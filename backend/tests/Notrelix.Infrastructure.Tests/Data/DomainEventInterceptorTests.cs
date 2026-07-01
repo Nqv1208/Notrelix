@@ -31,7 +31,7 @@ public class DomainEventInterceptorTests
         await using var context = CreateContext(interceptor);
 
         var workspace = Workspace.Create(
-            Guid.CreateVersion7(), "Personal Workspace", "personal-workspace",
+            Guid.NewGuid(), Guid.CreateVersion7(), "Personal Workspace", "personal-workspace",
             DateTimeOffset.UtcNow, isPersonal: true);
         context.Workspaces.Add(workspace);
 

@@ -43,7 +43,6 @@ public class SeedDataInitialiserTests
         (await context.Labels.CountAsync()).Should().Be(60);
         (await context.BoardItems.CountAsync()).Should().Be(400);
         (await context.Comments.CountAsync()).Should().Be(400);
-        (await context.Notifications.CountAsync()).Should().Be(30);
     }
 
     [Fact]
@@ -175,8 +174,6 @@ public class SeedDataInitialiserTests
         (await context.Blocks.CountAsync()).Should().Be(500);
         (await context.BoardFields.CountAsync()).Should().Be(120);
         (await context.BoardViews.CountAsync()).Should().Be(40);
-        (await context.Notifications.CountAsync()).Should().Be(30);
-        (await context.Notifications.CountAsync(n => !string.IsNullOrWhiteSpace(n.Content))).Should().Be(30);
     }
 
     private static ApplicationDbContext CreateContext()

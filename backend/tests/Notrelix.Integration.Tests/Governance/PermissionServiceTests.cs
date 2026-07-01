@@ -34,9 +34,9 @@ public class PermissionServiceTests
     {
         var (context, service) = CreateFixture();
         var ownerId = Guid.NewGuid();
-        var workspace = Workspace.Create(ownerId, "Test WS", "test-ws", Now);
+        var workspace = Workspace.Create(Guid.NewGuid(), ownerId, "Test WS", "test-ws", Now);
         context.Workspaces.Add(workspace);
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
         await context.SaveChangesAsync();
 
         var permissionContext = new PermissionContext(ownerId, workspace.Id, ResourceType.Workspace, null, PermissionAction.DeleteWorkspace);
@@ -51,7 +51,7 @@ public class PermissionServiceTests
     public async Task EvaluateAsync_ShouldDenyNonMembers()
     {
         var (context, service) = CreateFixture();
-        var workspace = Workspace.Create(Guid.NewGuid(), "Test WS", "test-ws", Now);
+        var workspace = Workspace.Create(Guid.NewGuid(), Guid.NewGuid(), "Test WS", "test-ws", Now);
         context.Workspaces.Add(workspace);
         await context.SaveChangesAsync();
 
@@ -69,12 +69,12 @@ public class PermissionServiceTests
         var (context, service) = CreateFixture();
         var ownerId = Guid.NewGuid();
         var memberId = Guid.NewGuid();
-        var workspace = Workspace.Create(ownerId, "Test WS", "test-ws", Now);
+        var workspace = Workspace.Create(Guid.NewGuid(), ownerId, "Test WS", "test-ws", Now);
         context.Workspaces.Add(workspace);
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, memberId, WorkspaceRole.Member, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, memberId, WorkspaceRole.Member, ownerId, Now));
 
-        var board = Board.Create(workspace.Id, ownerId, "Private Board", null, Now, BoardVisibility.Private);
+        var board = Board.Create(Guid.NewGuid(), workspace.Id, ownerId, "Private Board", null, Now, BoardVisibility.Private);
         context.Boards.Add(board);
         await context.SaveChangesAsync();
 
@@ -92,12 +92,12 @@ public class PermissionServiceTests
         var (context, service) = CreateFixture();
         var ownerId = Guid.NewGuid();
         var memberId = Guid.NewGuid();
-        var workspace = Workspace.Create(ownerId, "Test WS", "test-ws", Now);
+        var workspace = Workspace.Create(Guid.NewGuid(), ownerId, "Test WS", "test-ws", Now);
         context.Workspaces.Add(workspace);
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, memberId, WorkspaceRole.Member, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, memberId, WorkspaceRole.Member, ownerId, Now));
 
-        var board = Board.Create(workspace.Id, ownerId, "Workspace Board", null, Now, BoardVisibility.Workspace);
+        var board = Board.Create(Guid.NewGuid(), workspace.Id, ownerId, "Workspace Board", null, Now, BoardVisibility.Workspace);
         context.Boards.Add(board);
         await context.SaveChangesAsync();
 
@@ -114,9 +114,9 @@ public class PermissionServiceTests
         var expirationDateTime = DateTimeOffset.UtcNow;
         var workspaceId = Guid.NewGuid();
 
-        var activePerm = ResourcePermission.Grant(workspaceId, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Guid.NewGuid(), PermissionLevel.Viewer, PermissionLevel.Owner, Guid.NewGuid(), expirationDateTime);
+        var activePerm = ResourcePermission.Grant(Guid.NewGuid(), workspaceId, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Guid.NewGuid(), PermissionLevel.Viewer, PermissionLevel.Owner, Guid.NewGuid(), expirationDateTime);
 
-        var expiredPerm = ResourcePermission.Grant(workspaceId, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Guid.NewGuid(), PermissionLevel.Viewer, PermissionLevel.Owner, Guid.NewGuid(), expirationDateTime.AddHours(-2), effect: PermissionEffect.Allow, conditionJson: null, priority: 100);
+        var expiredPerm = ResourcePermission.Grant(Guid.NewGuid(), workspaceId, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Guid.NewGuid(), PermissionLevel.Viewer, PermissionLevel.Owner, Guid.NewGuid(), expirationDateTime.AddHours(-2), effect: PermissionEffect.Allow, conditionJson: null, priority: 100);
 
         activePerm.IsDeleted.Should().BeFalse();
         expiredPerm.IsDeleted.Should().BeFalse();
@@ -128,12 +128,12 @@ public class PermissionServiceTests
         var (context, service) = CreateFixture();
         var ownerId = Guid.NewGuid();
         var viewerId = Guid.NewGuid();
-        var workspace = Workspace.Create(ownerId, "Test WS", "test-ws", Now);
+        var workspace = Workspace.Create(Guid.NewGuid(), ownerId, "Test WS", "test-ws", Now);
         context.Workspaces.Add(workspace);
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, viewerId, WorkspaceRole.Member, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, viewerId, WorkspaceRole.Member, ownerId, Now));
 
-        var board = Board.Create(workspace.Id, ownerId, "Board", null, Now, BoardVisibility.Workspace);
+        var board = Board.Create(Guid.NewGuid(), workspace.Id, ownerId, "Board", null, Now, BoardVisibility.Workspace);
         context.Boards.Add(board);
         context.BoardMembers.Add(BoardMember.Create(board.Id, viewerId, BoardRole.Observer, Now));
         await context.SaveChangesAsync();
@@ -152,12 +152,12 @@ public class PermissionServiceTests
         var (context, service) = CreateFixture();
         var ownerId = Guid.NewGuid();
         var editorId = Guid.NewGuid();
-        var workspace = Workspace.Create(ownerId, "Test WS", "test-ws", Now);
+        var workspace = Workspace.Create(Guid.NewGuid(), ownerId, "Test WS", "test-ws", Now);
         context.Workspaces.Add(workspace);
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, editorId, WorkspaceRole.Member, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, editorId, WorkspaceRole.Member, ownerId, Now));
 
-        var board = Board.Create(workspace.Id, ownerId, "Board", null, Now, BoardVisibility.Workspace);
+        var board = Board.Create(Guid.NewGuid(), workspace.Id, ownerId, "Board", null, Now, BoardVisibility.Workspace);
         context.Boards.Add(board);
         context.BoardMembers.Add(BoardMember.Create(board.Id, editorId, BoardRole.Member, Now));
         await context.SaveChangesAsync();
@@ -175,12 +175,12 @@ public class PermissionServiceTests
         var (context, service) = CreateFixture();
         var ownerId = Guid.NewGuid();
         var guestId = Guid.NewGuid();
-        var workspace = Workspace.Create(ownerId, "Test WS", "test-ws", Now);
+        var workspace = Workspace.Create(Guid.NewGuid(), ownerId, "Test WS", "test-ws", Now);
         context.Workspaces.Add(workspace);
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, guestId, WorkspaceRole.Guest, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, guestId, WorkspaceRole.Guest, ownerId, Now));
 
-        var board = Board.Create(workspace.Id, ownerId, "Private Board", null, Now, BoardVisibility.Private);
+        var board = Board.Create(Guid.NewGuid(), workspace.Id, ownerId, "Private Board", null, Now, BoardVisibility.Private);
         context.Boards.Add(board);
         await context.SaveChangesAsync();
 
@@ -198,15 +198,15 @@ public class PermissionServiceTests
         var (context, service) = CreateFixture();
         var ownerId = Guid.NewGuid();
         var memberId = Guid.NewGuid();
-        var workspace = Workspace.Create(ownerId, "Test WS", "test-ws", Now);
+        var workspace = Workspace.Create(Guid.NewGuid(), ownerId, "Test WS", "test-ws", Now);
         context.Workspaces.Add(workspace);
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
-        context.WorkspaceMembers.Add(WorkspaceMember.Create(workspace.Id, memberId, WorkspaceRole.Member, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
+        context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, memberId, WorkspaceRole.Member, ownerId, Now));
 
-        var board = Board.Create(workspace.Id, ownerId, "Private Board", null, Now, BoardVisibility.Private);
+        var board = Board.Create(Guid.NewGuid(), workspace.Id, ownerId, "Private Board", null, Now, BoardVisibility.Private);
         context.Boards.Add(board);
 
-        var permission = ResourcePermission.Grant(workspace.Id, ResourceType.Board, board.Id, PermissionSubjectType.User, memberId, PermissionLevel.Editor, PermissionLevel.Owner, ownerId, Now);
+        var permission = ResourcePermission.Grant(Guid.NewGuid(), workspace.Id, ResourceType.Board, board.Id, PermissionSubjectType.User, memberId, PermissionLevel.Editor, PermissionLevel.Owner, ownerId, Now);
         permission.Revoke(ownerId, Now);
 
         context.ResourcePermissions.Add(permission);
@@ -228,7 +228,7 @@ public class PermissionServiceTests
         var groupId = Guid.NewGuid();
         var creatorId = Guid.NewGuid();
 
-        var item = BoardItem.Create(workspaceId, boardId, groupId, "Enterprise Item", Notrelix.Domain.SharedKernel.FractionalIndex.Initial(), creatorId, Now);
+        var item = BoardItem.Create(Guid.NewGuid(), workspaceId, boardId, groupId, "Enterprise Item", Notrelix.Domain.SharedKernel.FractionalIndex.Initial(), creatorId, Now);
 
         item.Rename("Renamed Item", creatorId, Now);
 

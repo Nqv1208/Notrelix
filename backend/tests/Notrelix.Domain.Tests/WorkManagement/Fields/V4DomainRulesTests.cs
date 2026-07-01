@@ -20,9 +20,9 @@ public class V4DomainRulesTests
     public void WorkspaceMismatch_ShouldThrowException_WhenFormQuestionWorkspaceIdMismatchesForm()
     {
         var otherWorkspaceId = Guid.NewGuid();
-        var form = Form.Create(_workspaceId, _boardId, "Contact Form", "contact-form", _actorId, _now);
+        var form = Form.Create(Guid.NewGuid(), _workspaceId, _boardId, "Contact Form", "contact-form", _actorId, _now);
 
-        var question = FormQuestion.Create(
+        var question = FormQuestion.Create(Guid.NewGuid(), 
             otherWorkspaceId,
             form.Id,
             boardFieldId: null,
@@ -43,7 +43,7 @@ public class V4DomainRulesTests
     {
         var itemId = Guid.NewGuid();
 
-        Action act = () => ItemDependency.Create(
+        Action act = () => ItemDependency.Create(Guid.NewGuid(), 
             _workspaceId,
             _boardId,
             itemId,
@@ -82,8 +82,8 @@ public class V4DomainRulesTests
     [Fact]
     public void BoardItem_SetTimeline_ShouldThrow_WhenDueDateIsBeforeStartDate()
     {
-        var group = BoardGroup.Create(_workspaceId, _boardId, "Group", Color.Create("#0079BF"), FractionalIndex.Initial(), _actorId, _now);
-        var item = BoardItem.Create(_workspaceId, _boardId, group.Id, "Item", FractionalIndex.Initial(), _actorId, _now);
+        var group = BoardGroup.Create(Guid.NewGuid(), _workspaceId, _boardId, "Group", Color.Create("#0079BF"), FractionalIndex.Initial(), _actorId, _now);
+        var item = BoardItem.Create(Guid.NewGuid(), _workspaceId, _boardId, group.Id, "Item", FractionalIndex.Initial(), _actorId, _now);
 
         Action act = () => item.SetTimeline(_now, _now.AddDays(-1), _actorId, _now);
 
@@ -94,7 +94,7 @@ public class V4DomainRulesTests
     public void TimeTrackingEntry_Stop_ShouldThrow_WhenTimerNotRunning()
     {
         var itemId = Guid.NewGuid();
-        var entry = TimeTrackingEntry.Start(_workspaceId, _boardId, itemId, _actorId, _now);
+        var entry = TimeTrackingEntry.Start(Guid.NewGuid(), _workspaceId, _boardId, itemId, _actorId, _now);
 
         entry.Stop(_now.AddMinutes(5), _actorId);
 
@@ -108,7 +108,7 @@ public class V4DomainRulesTests
     public void TimeTrackingEntry_Stop_ShouldThrow_WhenEndTimeBeforeStartTime()
     {
         var itemId = Guid.NewGuid();
-        var entry = TimeTrackingEntry.Start(_workspaceId, _boardId, itemId, _actorId, _now);
+        var entry = TimeTrackingEntry.Start(Guid.NewGuid(), _workspaceId, _boardId, itemId, _actorId, _now);
 
         Action act = () => entry.Stop(_now.AddMinutes(-5), _actorId);
 
@@ -118,7 +118,7 @@ public class V4DomainRulesTests
     [Fact]
     public void PermissionRule_IsActive_ShouldReturnFalse_WhenStartsAtIsFutureOrExpiresAtIsPast()
     {
-        var ruleFuture = PermissionRule.Create(
+        var ruleFuture = PermissionRule.Create(Guid.NewGuid(), 
             _workspaceId,
             PermissionScopeType.Workspace,
             null,
@@ -132,7 +132,7 @@ public class V4DomainRulesTests
             _now,
             startsAt: _now.AddDays(1)); // future start
 
-        var ruleExpired = PermissionRule.Create(
+        var ruleExpired = PermissionRule.Create(Guid.NewGuid(), 
             _workspaceId,
             PermissionScopeType.Workspace,
             null,
@@ -153,7 +153,7 @@ public class V4DomainRulesTests
     [Fact]
     public void ShareLink_IsExpired_ShouldReturnTrue_WhenExpiryDatePassed()
     {
-        var link = ShareLink.Create(
+        var link = ShareLink.Create(Guid.NewGuid(), 
             _workspaceId,
             ResourceType.Board,
             _boardId,
@@ -170,7 +170,7 @@ public class V4DomainRulesTests
     public void WorkspaceFeatureUsage_Consume_ShouldThrowAndRaiseEvent_WhenLimitExceeded()
     {
         var featureCode = FeatureCode.Create("Boards");
-        var usage = WorkspaceFeatureUsage.Create(
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), 
             _workspaceId,
             featureCode,
             currentUsage: 8,
@@ -193,7 +193,7 @@ public class V4DomainRulesTests
     [Fact]
     public void WorkspaceFeatureUsage_Release_ShouldThrow_WhenGoingBelowZero()
     {
-        var usage = WorkspaceFeatureUsage.Create(
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), 
             _workspaceId,
             FeatureCode.Create("Boards"),
             currentUsage: 2,

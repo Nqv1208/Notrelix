@@ -9,7 +9,7 @@ public class TeamTests
     public void AddMember_ShouldAddToList_AndRaiseEvent()
     {
         var workspaceId = Guid.NewGuid();
-        var team = Team.Create(workspaceId, "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var team = Team.Create(Guid.NewGuid(), workspaceId, "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
         var userId = Guid.NewGuid();
         team.ClearDomainEvents();
 
@@ -24,7 +24,7 @@ public class TeamTests
     [Fact]
     public void SoftDelete_ShouldSetStatusToSoftDeleted_AndRaiseEvent()
     {
-        var team = Team.Create(Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
         team.ClearDomainEvents();
 
         team.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -37,7 +37,7 @@ public class TeamTests
     [Fact]
     public void Restore_ShouldSetStatusToActive_AndRaiseEvent()
     {
-        var team = Team.Create(Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
         team.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         team.ClearDomainEvents();
 
@@ -51,7 +51,7 @@ public class TeamTests
     [Fact]
     public void AddMember_ShouldThrow_WhenArchived()
     {
-        var team = Team.Create(Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
         team.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => team.AddMember(Guid.NewGuid(), TeamMemberRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -62,7 +62,7 @@ public class TeamTests
     [Fact]
     public void RemoveMember_ShouldThrow_WhenArchived()
     {
-        var team = Team.Create(Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
         var userId = Guid.NewGuid();
         team.AddMember(userId, TeamMemberRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
         team.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -75,7 +75,7 @@ public class TeamTests
     [Fact]
     public void AddMember_ShouldThrow_WhenDeleted()
     {
-        var team = Team.Create(Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
         team.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => team.AddMember(Guid.NewGuid(), TeamMemberRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -86,7 +86,7 @@ public class TeamTests
     [Fact]
     public void RemoveMember_ShouldSetMemberStatusToRemoved()
     {
-        var team = Team.Create(Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
         var userId = Guid.NewGuid();
         team.AddMember(userId, TeamMemberRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -99,7 +99,7 @@ public class TeamTests
     [Fact]
     public void AddMember_DuplicateActiveMember_ShouldThrow()
     {
-        var team = Team.Create(Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
         var userId = Guid.NewGuid();
         team.AddMember(userId, TeamMemberRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -110,7 +110,7 @@ public class TeamTests
     [Fact]
     public void AddMember_ReAddRemovedMember_ShouldReactivateMember()
     {
-        var team = Team.Create(Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
         var userId = Guid.NewGuid();
         var actor = Guid.NewGuid();
 
@@ -138,7 +138,7 @@ public class TeamTests
     [Fact]
     public void Rename_ShouldSucceed_AndRaiseEvent()
     {
-        var team = Team.Create(Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
         team.ClearDomainEvents();
 
         team.Rename("QA Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -150,7 +150,7 @@ public class TeamTests
     [Fact]
     public void Rename_ShouldThrow_WhenArchived()
     {
-        var team = Team.Create(Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
         team.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => team.Rename("New Name", Guid.NewGuid(), DateTimeOffset.UtcNow);

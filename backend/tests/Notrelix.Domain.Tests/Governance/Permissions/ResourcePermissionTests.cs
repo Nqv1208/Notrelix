@@ -13,7 +13,7 @@ public class ResourcePermissionTests
         var subjectId = Guid.NewGuid();
         var grantedBy = Guid.NewGuid();
 
-        var permission = ResourcePermission.Grant(
+        var permission = ResourcePermission.Grant(Guid.NewGuid(), 
             workspaceId,
             ResourceType.Board,
             resourceId,
@@ -34,7 +34,7 @@ public class ResourcePermissionTests
     public void ChangeLevel_ShouldUpdateLevel_AndRaiseEvent()
     {
         var workspaceId = Guid.NewGuid();
-        var permission = ResourcePermission.Grant(
+        var permission = ResourcePermission.Grant(Guid.NewGuid(), 
             workspaceId, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Guid.NewGuid(), PermissionLevel.Viewer, PermissionLevel.Owner, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         permission.ClearDomainEvents();
@@ -51,7 +51,7 @@ public class ResourcePermissionTests
     public void Revoke_ShouldSoftDelete_AndRaiseEvent()
     {
         var workspaceId = Guid.NewGuid();
-        var permission = ResourcePermission.Grant(
+        var permission = ResourcePermission.Grant(Guid.NewGuid(), 
             workspaceId, ResourceType.Workspace, Guid.NewGuid(), PermissionSubjectType.Team, Guid.NewGuid(), PermissionLevel.Viewer, PermissionLevel.Owner, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         permission.ClearDomainEvents();

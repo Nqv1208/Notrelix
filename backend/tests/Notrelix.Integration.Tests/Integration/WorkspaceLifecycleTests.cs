@@ -16,9 +16,10 @@ public class WorkspaceLifecycleTests
         var userId = Guid.CreateVersion7();
         var now = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
         var currentUser = MockCurrentUser(userId);
+        var currentAccount = MockCurrentAccount();
         var clock = MockClock(now);
 
-        var handler = new CreateWorkspaceCommandHandler(context, currentUser.Object, clock.Object);
+        var handler = new CreateWorkspaceCommandHandler(context, currentUser.Object, currentAccount.Object, clock.Object);
         var command = new CreateWorkspaceCommand("Integration Workspace", "Phase 3 test", false);
 
         var result = await handler.Handle(command, default);
@@ -40,7 +41,7 @@ public class WorkspaceLifecycleTests
         var now = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
 
         var handler = new CreateWorkspaceCommandHandler(
-            context, MockCurrentUser(userId).Object, MockClock(now).Object);
+            context, MockCurrentUser(userId).Object, MockCurrentAccount().Object, MockClock(now).Object);
         var command = new CreateWorkspaceCommand("Personal Tasks", null, true);
 
         var result = await handler.Handle(command, default);
@@ -60,7 +61,7 @@ public class WorkspaceLifecycleTests
         var now = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
 
         var handler = new CreateWorkspaceCommandHandler(
-            context, MockCurrentUser(userId).Object, MockClock(now).Object);
+            context, MockCurrentUser(userId).Object, MockCurrentAccount().Object, MockClock(now).Object);
         var command = new CreateWorkspaceCommand("Team Space", null, false);
 
         var result = await handler.Handle(command, default);
@@ -69,7 +70,7 @@ public class WorkspaceLifecycleTests
         await context.SaveChangesAsync();
 
         var workspaceId = result.Data;
-        var member = WorkspaceMember.Create(workspaceId, userId, WorkspaceRole.Admin, userId, now);
+        var member = WorkspaceMember.Create(Guid.NewGuid(), workspaceId, userId, WorkspaceRole.Admin, userId, now);
         context.WorkspaceMembers.Add(member);
         await context.SaveChangesAsync();
 
@@ -85,6 +86,13 @@ public class WorkspaceLifecycleTests
     {
         var mock = new Mock<ICurrentUser>();
         mock.Setup(x => x.UserId).Returns(userId);
+        return mock;
+    }
+
+    private static Mock<ICurrentAccount> MockCurrentAccount()
+    {
+        var mock = new Mock<ICurrentAccount>();
+        mock.Setup(x => x.AccountId).Returns(Guid.NewGuid());
         return mock;
     }
 

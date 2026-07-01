@@ -26,25 +26,25 @@ public class N8nAutomationTests
         var queue = new CapturingJobQueue();
         var ownerId = Guid.NewGuid();
         var assignedUserId = Guid.NewGuid();
-        var workspace = Workspace.Create(ownerId, "Workspace", "workspace", Now);
+        var workspace = Workspace.Create(Guid.NewGuid(), ownerId, "Workspace", "workspace", Now);
         context.Workspaces.Add(workspace);
 
-        var ownerMember = WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now);
-        var assignedMember = WorkspaceMember.Create(workspace.Id, assignedUserId, WorkspaceRole.Member, ownerId, Now);
+        var ownerMember = WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now);
+        var assignedMember = WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, assignedUserId, WorkspaceRole.Member, ownerId, Now);
         context.WorkspaceMembers.Add(ownerMember);
         context.WorkspaceMembers.Add(assignedMember);
 
-        var board = Board.Create(workspace.Id, ownerId, "Board", null, Now);
+        var board = Board.Create(Guid.NewGuid(), workspace.Id, ownerId, "Board", null, Now);
         context.Boards.Add(board);
 
         var groupId = Guid.NewGuid();
-        var item = BoardItem.Create(workspace.Id, board.Id, groupId, "Task", Notrelix.Domain.SharedKernel.FractionalIndex.Initial(), ownerId, Now);
+        var item = BoardItem.Create(Guid.NewGuid(), workspace.Id, board.Id, groupId, "Task", Notrelix.Domain.SharedKernel.FractionalIndex.Initial(), ownerId, Now);
         context.BoardItems.Add(item);
 
         var trigger = AutomationTriggerDefinition.Create("ItemAssigned");
         var action = AutomationActionDefinition.Create("Webhook", """{"webhookPath":"notrelix-card-assigned"}""");
         var config = AutomationConfiguration.Create(trigger, action);
-        var rule = AutomationRule.Create(workspace.Id, "Card assigned alert", config, ownerId, Now);
+        var rule = AutomationRule.Create(Guid.NewGuid(), workspace.Id, "Card assigned alert", config, ownerId, Now);
         rule.Enable(ownerId, Now);
         context.AutomationRules.Add(rule);
 
@@ -52,7 +52,7 @@ public class N8nAutomationTests
 
         var handler = new CardAssignedN8nAutomationHandler(context, queue);
         var domainEvent = new BoardItemMemberAssignedDomainEvent(
-            workspace.Id, item.Id, assignedUserId, ownerId, Now);
+            Guid.NewGuid(), workspace.Id, item.Id, assignedUserId, ownerId, Now);
 
         await handler.Handle(
             new DomainEventNotification<BoardItemMemberAssignedDomainEvent>(domainEvent),

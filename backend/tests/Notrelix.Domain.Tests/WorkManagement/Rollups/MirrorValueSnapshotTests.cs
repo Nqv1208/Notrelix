@@ -14,7 +14,7 @@ public class MirrorValueSnapshotTests
         var sourceFieldId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
-        var snapshot = MirrorValueSnapshot.Create(workspaceId, relationId, connectionId, sourceFieldId, null, "{\"val\":1}", "hash123", now);
+        var snapshot = MirrorValueSnapshot.Create(Guid.NewGuid(), workspaceId, relationId, connectionId, sourceFieldId, null, "{\"val\":1}", "hash123", now);
 
         snapshot.WorkspaceId.Should().Be(workspaceId);
         snapshot.RelationId.Should().Be(relationId);
@@ -29,28 +29,28 @@ public class MirrorValueSnapshotTests
     [Fact]
     public void Create_WithEmptyWorkspaceId_ShouldThrow()
     {
-        var act = () => MirrorValueSnapshot.Create(Guid.Empty, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null, null, null, DateTimeOffset.UtcNow);
+        var act = () => MirrorValueSnapshot.Create(Guid.NewGuid(), Guid.Empty, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null, null, null, DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
     public void Create_WithEmptyRelationId_ShouldThrow()
     {
-        var act = () => MirrorValueSnapshot.Create(Guid.NewGuid(), Guid.Empty, Guid.NewGuid(), Guid.NewGuid(), null, null, null, DateTimeOffset.UtcNow);
+        var act = () => MirrorValueSnapshot.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.Empty, Guid.NewGuid(), Guid.NewGuid(), null, null, null, DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
     public void Create_WithEmptyConnectionId_ShouldThrow()
     {
-        var act = () => MirrorValueSnapshot.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.Empty, Guid.NewGuid(), null, null, null, DateTimeOffset.UtcNow);
+        var act = () => MirrorValueSnapshot.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.Empty, Guid.NewGuid(), null, null, null, DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
     public void Create_WithEmptySourceFieldId_ShouldThrow()
     {
-        var act = () => MirrorValueSnapshot.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.Empty, null, null, null, DateTimeOffset.UtcNow);
+        var act = () => MirrorValueSnapshot.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.Empty, null, null, null, DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>();
     }
 
@@ -92,7 +92,7 @@ public class MirrorValueSnapshotTests
 
     private static MirrorValueSnapshot CreateSnapshot()
     {
-        return MirrorValueSnapshot.Create(
+        return MirrorValueSnapshot.Create(Guid.NewGuid(), 
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
             null, "{\"val\":1}", "hash123", DateTimeOffset.UtcNow);
     }

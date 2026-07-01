@@ -13,7 +13,7 @@ public class BoardRelationEventTests
     [Fact]
     public void BoardRelation_Pause_ShouldRaiseEvent()
     {
-        var relation = BoardRelation.Create(WsA, BoardA, Guid.NewGuid(), null, null, Actor, Now);
+        var relation = BoardRelation.Create(Guid.NewGuid(), WsA, BoardA, Guid.NewGuid(), null, null, Actor, Now);
         relation.ClearDomainEvents();
         var version = relation.Version;
 
@@ -27,7 +27,7 @@ public class BoardRelationEventTests
     [Fact]
     public void BoardRelation_Pause_WhenAlreadyPaused_ShouldNotRaiseEvent()
     {
-        var relation = BoardRelation.Create(WsA, BoardA, Guid.NewGuid(), null, null, Actor, Now);
+        var relation = BoardRelation.Create(Guid.NewGuid(), WsA, BoardA, Guid.NewGuid(), null, null, Actor, Now);
         relation.Pause(Actor, Now);
         relation.ClearDomainEvents();
         var version = relation.Version;
@@ -41,7 +41,7 @@ public class BoardRelationEventTests
     [Fact]
     public void BoardRelation_Resume_ShouldRaiseEvent()
     {
-        var relation = BoardRelation.Create(WsA, BoardA, Guid.NewGuid(), null, null, Actor, Now);
+        var relation = BoardRelation.Create(Guid.NewGuid(), WsA, BoardA, Guid.NewGuid(), null, null, Actor, Now);
         relation.Pause(Actor, Now);
         relation.ClearDomainEvents();
         var version = relation.Version;
@@ -56,7 +56,7 @@ public class BoardRelationEventTests
     [Fact]
     public void BoardRelation_Resume_WhenAlreadyActive_ShouldNotRaiseEvent()
     {
-        var relation = BoardRelation.Create(WsA, BoardA, Guid.NewGuid(), null, null, Actor, Now);
+        var relation = BoardRelation.Create(Guid.NewGuid(), WsA, BoardA, Guid.NewGuid(), null, null, Actor, Now);
         relation.ClearDomainEvents();
         var version = relation.Version;
 
@@ -69,7 +69,7 @@ public class BoardRelationEventTests
     [Fact]
     public void BoardRelation_MarkBroken_ShouldRaiseEvent()
     {
-        var relation = BoardRelation.Create(WsA, BoardA, Guid.NewGuid(), null, null, Actor, Now);
+        var relation = BoardRelation.Create(Guid.NewGuid(), WsA, BoardA, Guid.NewGuid(), null, null, Actor, Now);
         relation.ClearDomainEvents();
         var version = relation.Version;
 
@@ -83,7 +83,7 @@ public class BoardRelationEventTests
     [Fact]
     public void BoardRelation_MarkBroken_WhenAlreadyBroken_ShouldNotRaiseEvent()
     {
-        var relation = BoardRelation.Create(WsA, BoardA, Guid.NewGuid(), null, null, Actor, Now);
+        var relation = BoardRelation.Create(Guid.NewGuid(), WsA, BoardA, Guid.NewGuid(), null, null, Actor, Now);
         relation.MarkBroken(Actor, Now);
         relation.ClearDomainEvents();
         var version = relation.Version;

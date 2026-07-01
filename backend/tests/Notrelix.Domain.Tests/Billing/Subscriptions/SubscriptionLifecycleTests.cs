@@ -12,7 +12,7 @@ public class SubscriptionLifecycleTests
     [Fact]
     public void Subscription_ScheduleCancellation_ShouldRaiseEvent()
     {
-        var sub = Subscription.Create(WsA, Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
+        var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
         sub.ClearDomainEvents();
         var version = sub.Version;
 
@@ -29,7 +29,7 @@ public class SubscriptionLifecycleTests
     [Fact]
     public void Subscription_ScheduleCancellation_WhenAlreadyScheduled_ShouldNotRaiseEvent()
     {
-        var sub = Subscription.Create(WsA, Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
+        var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
         sub.ScheduleCancellation(Actor, Now);
         sub.ClearDomainEvents();
         var version = sub.Version;
@@ -43,7 +43,7 @@ public class SubscriptionLifecycleTests
     [Fact]
     public void Subscription_SoftDelete_ShouldRaiseEvent()
     {
-        var sub = Subscription.Create(WsA, Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
+        var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
         var version = sub.Version;
 
         sub.SoftDelete(Actor, Now);
@@ -60,7 +60,7 @@ public class SubscriptionLifecycleTests
     [Fact]
     public void Subscription_Restore_ShouldRaiseEvent()
     {
-        var sub = Subscription.Create(WsA, Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
+        var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
         sub.SoftDelete(Actor, Now);
         sub.ClearDomainEvents();
         var version = sub.Version;
@@ -78,7 +78,7 @@ public class SubscriptionLifecycleTests
     [Fact]
     public void Subscription_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
-        var sub = Subscription.Create(WsA, Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
+        var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
         sub.SoftDelete(Actor, Now);
         sub.ClearDomainEvents();
         var version = sub.Version;
@@ -92,7 +92,7 @@ public class SubscriptionLifecycleTests
     [Fact]
     public void Subscription_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
-        var sub = Subscription.Create(WsA, Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
+        var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
         sub.ClearDomainEvents();
         var version = sub.Version;
 

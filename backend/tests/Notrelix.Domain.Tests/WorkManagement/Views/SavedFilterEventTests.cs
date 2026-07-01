@@ -14,7 +14,7 @@ public class SavedFilterEventTests
     public void SavedFilter_Rename_ShouldRaiseEvent()
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
-        var filter = SavedFilter.Create(WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
+        var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
         filter.ClearDomainEvents();
         var version = filter.Version;
 
@@ -30,7 +30,7 @@ public class SavedFilterEventTests
     public void SavedFilter_UpdateVisibility_ShouldRaiseEvent()
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
-        var filter = SavedFilter.Create(WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
+        var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
         filter.ClearDomainEvents();
         var version = filter.Version;
 
@@ -44,7 +44,7 @@ public class SavedFilterEventTests
     public void SavedFilter_UpdateFilters_ShouldRaiseEvent()
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
-        var filter = SavedFilter.Create(WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
+        var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
         filter.ClearDomainEvents();
         var version = filter.Version;
 
@@ -58,7 +58,7 @@ public class SavedFilterEventTests
     public void SavedFilter_UpdateSorts_ShouldRaiseEvent()
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
-        var filter = SavedFilter.Create(WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
+        var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
         filter.ClearDomainEvents();
         var version = filter.Version;
 
@@ -72,7 +72,7 @@ public class SavedFilterEventTests
     public void SavedFilter_UpdateGroup_ShouldRaiseEvent()
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
-        var filter = SavedFilter.Create(WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
+        var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
         filter.ClearDomainEvents();
         var version = filter.Version;
 
@@ -86,7 +86,7 @@ public class SavedFilterEventTests
     public void SavedFilter_SoftDelete_ShouldRaiseEvent()
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
-        var filter = SavedFilter.Create(WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
+        var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
         filter.ClearDomainEvents();
         var version = filter.Version;
 
@@ -101,7 +101,7 @@ public class SavedFilterEventTests
     public void SavedFilter_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
-        var filter = SavedFilter.Create(WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
+        var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
         filter.SoftDelete(Actor, Now);
         filter.ClearDomainEvents();
         var version = filter.Version;
@@ -116,7 +116,7 @@ public class SavedFilterEventTests
     public void SavedFilter_Restore_ShouldRaiseEvent()
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
-        var filter = SavedFilter.Create(WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
+        var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
         filter.SoftDelete(Actor, Now);
         filter.ClearDomainEvents();
         var version = filter.Version;
@@ -132,7 +132,7 @@ public class SavedFilterEventTests
     public void SavedFilter_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
-        var filter = SavedFilter.Create(WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
+        var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
         filter.ClearDomainEvents();
         var version = filter.Version;
 

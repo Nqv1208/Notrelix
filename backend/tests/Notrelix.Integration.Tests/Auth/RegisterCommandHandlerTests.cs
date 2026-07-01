@@ -28,7 +28,7 @@ public class RegisterCommandHandlerTests
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
 
-        var handler = new RegisterCommandHandler(context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object);
+        var handler = new RegisterCommandHandler(context, context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object);
 
         var result = await handler.Handle(new RegisterCommand
         {
@@ -59,7 +59,7 @@ public class RegisterCommandHandlerTests
 
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
-        var handler = new RegisterCommandHandler(context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object);
+        var handler = new RegisterCommandHandler(context, context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object);
 
         var now = DateTime.UtcNow;
         var result = await handler.Handle(new RegisterCommand
@@ -105,7 +105,7 @@ public class RegisterCommandHandlerTests
         jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>())).Returns("access-token");
         jwtService.Setup(x => x.GenerateRefreshToken()).Returns("refresh-token");
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
-        var handler = new RegisterCommandHandler(context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object);
+        var handler = new RegisterCommandHandler(context, context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object);
 
         AuthResult? authResult = null;
         var act = async () =>
@@ -146,7 +146,7 @@ public class RegisterCommandHandlerTests
 
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
-        var handler = new RegisterCommandHandler(context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object);
+        var handler = new RegisterCommandHandler(context, context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object);
 
         var result = await handler.Handle(new RegisterCommand
         {

@@ -14,7 +14,7 @@ public class DomainEventCompletenessTests
     {
         var aggregateCases = new[]
         {
-            (object)Board.Create(Guid.NewGuid(), _actorId, "Test", null, _now)
+            (object)Board.Create(Guid.NewGuid(), Guid.NewGuid(), _actorId, "Test", null, _now)
         };
 
         foreach (var aggregate in aggregateCases)
@@ -41,7 +41,7 @@ public class DomainEventCompletenessTests
     [Fact]
     public void DomainEvent_ShouldHaveNonDefaultEventId()
     {
-        var board = Board.Create(Guid.NewGuid(), _actorId, "Test", null, _now);
+        var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), _actorId, "Test", null, _now);
         foreach (var evt in board.DomainEvents)
         {
             evt.EventId.Should().NotBe(default(Guid));
@@ -51,7 +51,7 @@ public class DomainEventCompletenessTests
     [Fact]
     public void DomainEvent_ShouldHaveNonDefaultOccurredAt()
     {
-        var board = Board.Create(Guid.NewGuid(), _actorId, "Test", null, _now);
+        var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), _actorId, "Test", null, _now);
         foreach (var evt in board.DomainEvents)
         {
             evt.OccurredAt.Should().NotBe(default(DateTimeOffset));
@@ -64,8 +64,6 @@ public class DomainEventCompletenessTests
     [InlineData("UserMfaMethod")]
     [InlineData("UserSecuritySettings")]
     [InlineData("ApiToken")]
-    [InlineData("SsoProvider")]
-    [InlineData("ScimDirectorySync")]
     [InlineData("Board")]
     [InlineData("BoardField")]
     [InlineData("BoardItem")]
@@ -121,8 +119,6 @@ public class DomainEventCompletenessTests
         "UserSecuritySettings" => "Identity.Security",
         "ApiToken" => "Identity.Tokens",
         "UserProfile" => "Identity.Profiles",
-        "SsoProvider" => "Identity.Security",
-        "ScimDirectorySync" => "Identity.Security",
         "Board" => "WorkManagement.Boards",
         "BoardField" => "WorkManagement.Fields",
         "BoardItem" => "WorkManagement.Items",

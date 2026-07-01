@@ -13,7 +13,7 @@ public class AutomationRuleValidatorTests
         var config = AutomationConfiguration.Create(
             AutomationTriggerDefinition.Create("ItemCreated"),
             action);
-        var rule = AutomationRule.Create(Guid.NewGuid(), "Valid Rule", config, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Valid Rule", config, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => AutomationRuleValidator.Validate(rule);
         act.Should().NotThrow();
@@ -25,7 +25,7 @@ public class AutomationRuleValidatorTests
         var config = AutomationConfiguration.Create(
             AutomationTriggerDefinition.Create("ItemCreated"),
             AutomationActionDefinition.Create("SendEmail", """{"templateId":"tpl_1"}"""));
-        var rule = AutomationRule.Create(Guid.NewGuid(), "Valid", config, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Valid", config, Guid.NewGuid(), DateTimeOffset.UtcNow);
         rule.GetType().GetProperty("Name")!.SetValue(rule, "");
 
         var act = () => AutomationRuleValidator.Validate(rule);

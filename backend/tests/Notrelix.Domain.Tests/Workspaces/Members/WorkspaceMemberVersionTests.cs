@@ -5,6 +5,7 @@ namespace Notrelix.Domain.Tests.Workspaces;
 
 public class WorkspaceMemberVersionTests
 {
+    private readonly Guid _accountId = Guid.NewGuid();
     private readonly Guid _workspaceId = Guid.NewGuid();
     private readonly Guid _actorId = Guid.NewGuid();
     private readonly Guid _userId = Guid.NewGuid();
@@ -13,7 +14,7 @@ public class WorkspaceMemberVersionTests
     [Fact]
     public void ChangeRole_ShouldIncrementVersion()
     {
-        var member = WorkspaceMember.Create(_workspaceId, _userId, WorkspaceRole.Member, _actorId, _now);
+        var member = WorkspaceMember.Create(_accountId, _workspaceId, _userId, WorkspaceRole.Member, _actorId, _now);
         member.ClearDomainEvents();
         var version = member.Version;
 
@@ -26,7 +27,7 @@ public class WorkspaceMemberVersionTests
     [Fact]
     public void Suspend_ShouldIncrementVersion()
     {
-        var member = WorkspaceMember.Create(_workspaceId, _userId, WorkspaceRole.Member, _actorId, _now);
+        var member = WorkspaceMember.Create(_accountId, _workspaceId, _userId, WorkspaceRole.Member, _actorId, _now);
         member.ClearDomainEvents();
         var version = member.Version;
 
@@ -39,7 +40,7 @@ public class WorkspaceMemberVersionTests
     [Fact]
     public void Activate_ShouldIncrementVersion()
     {
-        var member = WorkspaceMember.Create(_workspaceId, _userId, WorkspaceRole.Member, _actorId, _now);
+        var member = WorkspaceMember.Create(_accountId, _workspaceId, _userId, WorkspaceRole.Member, _actorId, _now);
         member.Suspend(_actorId, _now, 2);
         member.ClearDomainEvents();
         var version = member.Version;
@@ -53,7 +54,7 @@ public class WorkspaceMemberVersionTests
     [Fact]
     public void SoftDelete_ShouldIncrementVersion()
     {
-        var member = WorkspaceMember.Create(_workspaceId, _userId, WorkspaceRole.Member, _actorId, _now);
+        var member = WorkspaceMember.Create(_accountId, _workspaceId, _userId, WorkspaceRole.Member, _actorId, _now);
         member.ClearDomainEvents();
         var version = member.Version;
 
@@ -67,7 +68,7 @@ public class WorkspaceMemberVersionTests
     [Fact]
     public void Restore_ShouldIncrementVersion()
     {
-        var member = WorkspaceMember.Create(_workspaceId, _userId, WorkspaceRole.Member, _actorId, _now);
+        var member = WorkspaceMember.Create(_accountId, _workspaceId, _userId, WorkspaceRole.Member, _actorId, _now);
         member.SoftDelete(_actorId, _now);
         member.ClearDomainEvents();
         var version = member.Version;

@@ -59,8 +59,8 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         using var _ = workspace.EnterSystemContext();
         await using var context = CreateContext(workspace);
 
-        var workspaceA = Workspace.Create(OwnerId, "Workspace A", "ws-a", FixedTime);
-        var workspaceB = Workspace.Create(OwnerId, "Workspace B", "ws-b", FixedTime);
+        var workspaceA = Workspace.Create(Guid.NewGuid(), OwnerId, "Workspace A", "ws-a", FixedTime);
+        var workspaceB = Workspace.Create(Guid.NewGuid(), OwnerId, "Workspace B", "ws-b", FixedTime);
         context.Workspaces.AddRange(workspaceA, workspaceB);
 
         context.Boards.Add(new BoardBuilder()
@@ -87,8 +87,8 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         using var _ = workspace.EnterSystemContext();
         await using var context = CreateContext(workspace);
 
-        var workspaceA = Workspace.Create(OwnerId, "Workspace A", "ws-a", FixedTime);
-        var workspaceB = Workspace.Create(OwnerId, "Workspace B", "ws-b", FixedTime);
+        var workspaceA = Workspace.Create(Guid.NewGuid(), OwnerId, "Workspace A", "ws-a", FixedTime);
+        var workspaceB = Workspace.Create(Guid.NewGuid(), OwnerId, "Workspace B", "ws-b", FixedTime);
         context.Workspaces.AddRange(workspaceA, workspaceB);
 
         context.Boards.Add(new BoardBuilder()
@@ -115,8 +115,8 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         using var _ = workspace.EnterSystemContext();
         await using var context = CreateContext(workspace);
 
-        var workspaceA = Workspace.Create(OwnerId, "Workspace A", "ws-a", FixedTime);
-        var workspaceB = Workspace.Create(OwnerId, "Workspace B", "ws-b", FixedTime);
+        var workspaceA = Workspace.Create(Guid.NewGuid(), OwnerId, "Workspace A", "ws-a", FixedTime);
+        var workspaceB = Workspace.Create(Guid.NewGuid(), OwnerId, "Workspace B", "ws-b", FixedTime);
         context.Workspaces.AddRange(workspaceA, workspaceB);
 
         context.Boards.AddRange(
@@ -294,8 +294,8 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         using var _ = workspace.EnterSystemContext();
         await using var context = CreateContext(workspace);
 
-        var workspaceA = Workspace.Create(OwnerId, "WS A", "ws-a", FixedTime);
-        var workspaceB = Workspace.Create(OwnerId, "WS B", "ws-b", FixedTime);
+        var workspaceA = Workspace.Create(Guid.NewGuid(), OwnerId, "WS A", "ws-a", FixedTime);
+        var workspaceB = Workspace.Create(Guid.NewGuid(), OwnerId, "WS B", "ws-b", FixedTime);
         context.Workspaces.AddRange(workspaceA, workspaceB);
 
         var boardA = new BoardBuilder()
@@ -322,7 +322,7 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         using var _ = workspace.EnterSystemContext();
         await using var context = CreateContext(workspace);
 
-        var wsA = Workspace.Create(OwnerId, "WS A", "ws-a", FixedTime);
+        var wsA = Workspace.Create(Guid.NewGuid(), OwnerId, "WS A", "ws-a", FixedTime);
         context.Workspaces.Add(wsA);
         await context.SaveChangesAsync();
 

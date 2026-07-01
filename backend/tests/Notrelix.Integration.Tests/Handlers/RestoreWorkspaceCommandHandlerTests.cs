@@ -15,7 +15,7 @@ public class RestoreWorkspaceCommandHandlerTests
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
-        var workspace = Workspace.Create(userId, "Test", "test", now);
+        var workspace = Workspace.Create(Guid.NewGuid(), userId, "Test", "test", now);
         workspace.SoftDelete(userId, now);
         context.Workspaces.Add(workspace);
         await context.SaveChangesAsync();
@@ -48,7 +48,7 @@ public class RestoreWorkspaceCommandHandlerTests
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
-        var workspace = Workspace.Create(userId, "Test", "test", now);
+        var workspace = Workspace.Create(Guid.NewGuid(), userId, "Test", "test", now);
         context.Workspaces.Add(workspace);
         await context.SaveChangesAsync();
 

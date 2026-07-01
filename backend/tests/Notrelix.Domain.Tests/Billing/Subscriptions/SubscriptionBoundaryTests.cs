@@ -12,7 +12,7 @@ public class SubscriptionBoundaryTests
     [Fact]
     public void Subscription_ChangePlan_WhenCanceled_ShouldThrow()
     {
-        var sub = Subscription.Create(WsA, Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
+        var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
         sub.CancelImmediately(Actor, Now);
         var act = () => sub.ChangePlan(Guid.NewGuid(), Actor, Now);
         act.Should().Throw<BusinessRuleException>().WithMessage("*inactive*");
@@ -21,7 +21,7 @@ public class SubscriptionBoundaryTests
     [Fact]
     public void Subscription_ChangePlan_WhenActive_ShouldSucceed()
     {
-        var sub = Subscription.Create(WsA, Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
+        var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
         sub.ClearDomainEvents();
         var newPlanId = Guid.NewGuid();
         sub.ChangePlan(newPlanId, Actor, Now);

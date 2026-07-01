@@ -13,7 +13,7 @@ public class WebhookDeliveryLifecycleTests
     [Fact]
     public void Create_ShouldSetPendingStatus_AndRaiseEvent()
     {
-        var delivery = WebhookDelivery.Create(_workspaceId, _subscriptionId, WebhookEventType.ItemUpdated, _payload, _now);
+        var delivery = WebhookDelivery.Create(Guid.NewGuid(), _workspaceId, _subscriptionId, WebhookEventType.ItemUpdated, _payload, _now);
 
         delivery.Status.Should().Be(WebhookDeliveryStatus.Pending);
         delivery.WorkspaceId.Should().Be(_workspaceId);
@@ -115,6 +115,6 @@ public class WebhookDeliveryLifecycleTests
 
     private WebhookDelivery CreateDelivery(int maxRetries = 3)
     {
-        return WebhookDelivery.Create(_workspaceId, _subscriptionId, WebhookEventType.ItemUpdated, _payload, _now, maxRetries);
+        return WebhookDelivery.Create(Guid.NewGuid(), _workspaceId, _subscriptionId, WebhookEventType.ItemUpdated, _payload, _now, maxRetries);
     }
 }

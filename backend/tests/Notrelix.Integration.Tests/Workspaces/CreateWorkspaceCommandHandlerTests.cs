@@ -8,11 +8,14 @@ namespace Notrelix.Integration.Tests.Workspaces;
 public class CreateWorkspaceCommandHandlerTests
 {
     private readonly Mock<ICurrentUser> _currentUserMock;
+    private readonly Mock<ICurrentAccount> _currentAccountMock;
     private readonly Mock<IDateTimeProvider> _dateTimeMock;
 
     public CreateWorkspaceCommandHandlerTests()
     {
         _currentUserMock = new Mock<ICurrentUser>();
+        _currentAccountMock = new Mock<ICurrentAccount>();
+        _currentAccountMock.Setup(a => a.AccountId).Returns(Guid.NewGuid());
         _dateTimeMock = new Mock<IDateTimeProvider>();
         _dateTimeMock.Setup(d => d.UtcNow).Returns(DateTimeOffset.UtcNow);
     }
@@ -24,7 +27,7 @@ public class CreateWorkspaceCommandHandlerTests
         var userId = Guid.NewGuid();
         _currentUserMock.Setup(u => u.UserId).Returns(userId);
 
-        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object, _dateTimeMock.Object);
+        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object, _currentAccountMock.Object, _dateTimeMock.Object);
         var command = new CreateWorkspaceCommand("Awesome Project", "A great software project", false);
 
         var result = await handler.Handle(command, CancellationToken.None);
@@ -51,7 +54,7 @@ public class CreateWorkspaceCommandHandlerTests
         var userId = Guid.NewGuid();
         _currentUserMock.Setup(u => u.UserId).Returns(userId);
 
-        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object, _dateTimeMock.Object);
+        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object, _currentAccountMock.Object, _dateTimeMock.Object);
         var command = new CreateWorkspaceCommand("My Personal Tasks", null, true);
 
         var result = await handler.Handle(command, CancellationToken.None);
@@ -78,11 +81,11 @@ public class CreateWorkspaceCommandHandlerTests
         _currentUserMock.Setup(u => u.UserId).Returns(userId);
         _dateTimeMock.Setup(d => d.UtcNow).Returns(now);
 
-        var existingWorkspace = Workspace.Create(userId, "Awesome Project", "awesome-project", now);
+        var existingWorkspace = Workspace.Create(Guid.NewGuid(), userId, "Awesome Project", "awesome-project", now);
         context.Workspaces.Add(existingWorkspace);
         await context.SaveChangesAsync();
 
-        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object, _dateTimeMock.Object);
+        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object, _currentAccountMock.Object, _dateTimeMock.Object);
         var command = new CreateWorkspaceCommand("Awesome Project", "A duplicate project name", false);
 
         var result = await handler.Handle(command, CancellationToken.None);

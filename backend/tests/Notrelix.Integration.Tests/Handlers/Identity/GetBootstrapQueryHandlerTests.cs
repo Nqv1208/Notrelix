@@ -55,10 +55,10 @@ public class GetBootstrapQueryHandlerTests
         var user = User.Create("test@example.com", "Test User", "hashedpassword", now);
         context.Users.Add(user);
 
-        var workspace = Workspace.Create(user.Id, "My Workspace", "my-workspace", now);
+        var workspace = Workspace.Create(Guid.NewGuid(), user.Id, "My Workspace", "my-workspace", now);
         context.Workspaces.Add(workspace);
 
-        var member = WorkspaceMember.Create(workspace.Id, user.Id, WorkspaceRole.Admin, user.Id, now);
+        var member = WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, user.Id, WorkspaceRole.Admin, user.Id, now);
         context.WorkspaceMembers.Add(member);
         await context.SaveChangesAsync();
 
@@ -85,7 +85,7 @@ public class GetBootstrapQueryHandlerTests
         var user = User.Create("test@example.com", "Test User", "hashedpassword", now);
         context.Users.Add(user);
 
-        var personalWorkspace = Workspace.Create(user.Id, "Personal", "personal", now, isPersonal: true);
+        var personalWorkspace = Workspace.Create(Guid.NewGuid(), user.Id, "Personal", "personal", now, isPersonal: true);
         context.Workspaces.Add(personalWorkspace);
         await context.SaveChangesAsync();
 

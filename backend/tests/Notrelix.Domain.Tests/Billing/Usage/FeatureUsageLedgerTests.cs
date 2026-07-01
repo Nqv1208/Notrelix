@@ -11,6 +11,7 @@ public class FeatureUsageLedgerTests
         var now = DateTimeOffset.UtcNow;
         var ledger = FeatureUsageLedger.Create(
             Guid.NewGuid(),
+            Guid.NewGuid(),
             "BOARD_COUNT",
             5,
             Guid.NewGuid(),
@@ -29,6 +30,7 @@ public class FeatureUsageLedgerTests
     {
         var ledger = FeatureUsageLedger.Create(
             Guid.NewGuid(),
+            Guid.NewGuid(),
             " Board_Limit ",
             1,
             null,
@@ -43,6 +45,7 @@ public class FeatureUsageLedgerTests
     public void Create_WithNegativeDelta_ShouldSucceed()
     {
         var ledger = FeatureUsageLedger.Create(
+            Guid.NewGuid(),
             Guid.NewGuid(),
             "API_CALLS",
             -3,
@@ -59,6 +62,7 @@ public class FeatureUsageLedgerTests
     {
         var act = () => FeatureUsageLedger.Create(
             Guid.NewGuid(),
+            Guid.NewGuid(),
             "",
             1,
             null,
@@ -72,6 +76,7 @@ public class FeatureUsageLedgerTests
     public void Create_WithNullFeatureCode_ShouldThrow()
     {
         var act = () => FeatureUsageLedger.Create(
+            Guid.NewGuid(),
             Guid.NewGuid(),
             null!,
             1,

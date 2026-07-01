@@ -19,10 +19,10 @@ public class UnarchiveBoardCommandHandlerTests
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
-        var workspace = Workspace.Create(userId, "Test", "test", now);
+        var workspace = Workspace.Create(Guid.NewGuid(), userId, "Test", "test", now);
         context.Workspaces.Add(workspace);
 
-        var board = Board.Create(workspace.Id, userId, "Board", null, now, BoardVisibility.Workspace);
+        var board = Board.Create(Guid.NewGuid(), workspace.Id, userId, "Board", null, now, BoardVisibility.Workspace);
         board.Archive(userId, now);
         context.Boards.Add(board);
         await context.SaveChangesAsync();
