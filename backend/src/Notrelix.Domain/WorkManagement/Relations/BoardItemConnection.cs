@@ -2,6 +2,7 @@ namespace Notrelix.Domain.WorkManagement.Relations;
 
 public class BoardItemConnection : Entity, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid RelationId { get; private set; }
     public Guid SourceBoardId { get; private set; }
@@ -17,6 +18,7 @@ public class BoardItemConnection : Entity, IWorkspaceScoped
     private BoardItemConnection() : base() { }
 
     public static BoardItemConnection Create(
+        Guid accountId,
         Guid workspaceId,
         Guid relationId,
         Guid sourceBoardId,
@@ -38,8 +40,11 @@ public class BoardItemConnection : Entity, IWorkspaceScoped
         if (sourceItemId == targetItemId)
             throw new BusinessRuleException("Cannot connect an item to itself.");
 
+        Guard.NotEmpty(accountId);
+
         return new BoardItemConnection
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             RelationId = relationId,
             SourceBoardId = sourceBoardId,

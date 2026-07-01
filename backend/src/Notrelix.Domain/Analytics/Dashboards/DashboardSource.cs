@@ -2,6 +2,7 @@ namespace Notrelix.Domain.Analytics.Dashboards;
 
 public class DashboardSource : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid DashboardId { get; private set; }
     public DashboardSourceType SourceType { get; private set; }
@@ -12,6 +13,7 @@ public class DashboardSource : AggregateRoot, IWorkspaceScoped
     private DashboardSource() : base() { }
 
     public static DashboardSource Create(
+        Guid accountId,
         Guid workspaceId,
         Guid dashboardId,
         DashboardSourceType sourceType,
@@ -24,6 +26,7 @@ public class DashboardSource : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(dashboardId);
         Guard.NotNull(filter);
+        Guard.NotEmpty(accountId);
 
         if (sourceType == DashboardSourceType.Board || sourceType == DashboardSourceType.BoardView)
         {
@@ -36,6 +39,7 @@ public class DashboardSource : AggregateRoot, IWorkspaceScoped
 
         var source = new DashboardSource
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             DashboardId = dashboardId,
             SourceType = sourceType,
@@ -45,7 +49,7 @@ public class DashboardSource : AggregateRoot, IWorkspaceScoped
         };
 
         source.SetAuditOnCreate(createdBy, createdAt);
-        source.AddDomainEvent(new DashboardSourceAddedDomainEvent(workspaceId, dashboardId, source.Id, createdBy, createdAt));
+        source.AddDomainEvent(new DashboardSourceAddedDomainEvent(accountId, workspaceId, dashboardId, source.Id, createdBy, createdAt));
         return source;
     }
 
@@ -57,6 +61,6 @@ public class DashboardSource : AggregateRoot, IWorkspaceScoped
         Filter = newFilter;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardSourceUpdatedDomainEvent(WorkspaceId, DashboardId, Id, updatedBy, updatedAt));
+        AddDomainEvent(new DashboardSourceUpdatedDomainEvent(AccountId, WorkspaceId, DashboardId, Id, updatedBy, updatedAt));
     }
 }

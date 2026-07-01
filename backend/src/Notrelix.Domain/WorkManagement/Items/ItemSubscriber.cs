@@ -2,6 +2,7 @@ namespace Notrelix.Domain.WorkManagement.Items;
 
 public class ItemSubscriber : Entity, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid BoardId { get; private set; }
     public Guid ItemId { get; private set; }
@@ -13,6 +14,7 @@ public class ItemSubscriber : Entity, IWorkspaceScoped
     private ItemSubscriber() : base() { }
 
     public static ItemSubscriber Create(
+        Guid accountId,
         Guid workspaceId,
         Guid boardId,
         Guid itemId,
@@ -24,9 +26,11 @@ public class ItemSubscriber : Entity, IWorkspaceScoped
         Guard.NotEmpty(boardId);
         Guard.NotEmpty(itemId);
         Guard.NotEmpty(userId);
+        Guard.NotEmpty(accountId);
 
         return new ItemSubscriber
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             BoardId = boardId,
             ItemId = itemId,

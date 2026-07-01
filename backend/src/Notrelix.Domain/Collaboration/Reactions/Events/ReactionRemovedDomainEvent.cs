@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.Collaboration.Reactions.Events;
 
 public sealed record ReactionRemovedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid ReactionId,
     ResourceRef Target,

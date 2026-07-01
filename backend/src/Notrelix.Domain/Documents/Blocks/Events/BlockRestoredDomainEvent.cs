@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.Documents.Blocks.Events;
 
 public sealed record BlockRestoredDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid BlockId,
     Guid PageId,

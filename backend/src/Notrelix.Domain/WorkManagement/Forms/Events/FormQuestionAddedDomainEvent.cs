@@ -6,6 +6,7 @@ public record FormQuestionAddedDomainEvent : WorkspaceScopedDomainEvent
     public string QuestionKey { get; }
 
     public FormQuestionAddedDomainEvent(
+        Guid accountId,
         Guid workspaceId,
         Guid formId,
         string questionKey,

@@ -2,6 +2,7 @@ namespace Notrelix.Domain.WorkManagement.Relations;
 
 public class MirrorValueSnapshot : Entity, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid RelationId { get; private set; }
     public Guid ConnectionId { get; private set; }
@@ -15,6 +16,7 @@ public class MirrorValueSnapshot : Entity, IWorkspaceScoped
     private MirrorValueSnapshot() : base() { }
 
     public static MirrorValueSnapshot Create(
+        Guid accountId,
         Guid workspaceId,
         Guid relationId,
         Guid connectionId,
@@ -28,9 +30,11 @@ public class MirrorValueSnapshot : Entity, IWorkspaceScoped
         Guard.NotEmpty(relationId);
         Guard.NotEmpty(connectionId);
         Guard.NotEmpty(sourceFieldId);
+        Guard.NotEmpty(accountId);
 
         return new MirrorValueSnapshot
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             RelationId = relationId,
             ConnectionId = connectionId,

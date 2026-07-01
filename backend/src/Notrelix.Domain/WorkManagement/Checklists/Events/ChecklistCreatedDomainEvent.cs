@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.WorkManagement.Checklists.Events;
 
 public sealed record ChecklistCreatedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid ItemId,
     Guid ChecklistId,

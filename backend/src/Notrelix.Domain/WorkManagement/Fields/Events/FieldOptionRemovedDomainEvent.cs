@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.WorkManagement.Fields.Events;
 
 public sealed record FieldOptionRemovedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid FieldId,
     Guid OptionId,

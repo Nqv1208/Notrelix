@@ -7,6 +7,7 @@ public record FormCreatedDomainEvent : WorkspaceScopedDomainEvent
     public string Name { get; }
 
     public FormCreatedDomainEvent(
+        Guid accountId,
         Guid workspaceId,
         Guid formId,
         Guid boardId,

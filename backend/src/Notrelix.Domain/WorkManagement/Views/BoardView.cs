@@ -2,6 +2,7 @@ namespace Notrelix.Domain.WorkManagement.Views;
 
 public class BoardView : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid BoardId { get; private set; }
     public string Name { get; private set; } = null!;
@@ -12,6 +13,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
     private BoardView() : base() { }
 
     public static BoardView Create(
+        Guid accountId,
         Guid workspaceId,
         Guid boardId,
         string name,
@@ -27,9 +29,11 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         Guard.NotNullOrWhiteSpace(name);
         Guard.MaxLength(name, 255);
         Guard.NotNull(config);
+        Guard.NotEmpty(accountId);
 
         var view = new BoardView
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             BoardId = boardId,
             Name = name.Trim(),
@@ -39,7 +43,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         };
 
         view.SetAuditOnCreate(createdBy, createdAt);
-        view.AddDomainEvent(new BoardViewCreatedDomainEvent(workspaceId, boardId, view.Id, view.Name, type, createdBy, createdAt));
+        view.AddDomainEvent(new BoardViewCreatedDomainEvent(accountId, workspaceId, boardId, view.Id, view.Name, type, createdBy, createdAt));
 
         return view;
     }
@@ -64,7 +68,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         Config = config;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardViewConfigUpdatedDomainEvent(WorkspaceId, Id, BoardId, updatedBy, updatedAt));
+        AddDomainEvent(new BoardViewConfigUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
 
     public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
@@ -80,7 +84,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         Name = normalizedName;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardViewRenamedDomainEvent(WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
+        AddDomainEvent(new BoardViewRenamedDomainEvent(AccountId, WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -90,7 +94,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardViewDeletedDomainEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
+        AddDomainEvent(new BoardViewDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -99,6 +103,6 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new BoardViewRestoredDomainEvent(WorkspaceId, Id, BoardId, restoredBy, restoredAt));
+        AddDomainEvent(new BoardViewRestoredDomainEvent(AccountId, WorkspaceId, Id, BoardId, restoredBy, restoredAt));
     }
 }

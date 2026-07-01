@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.Workspaces.Members.Events;
 
 public sealed record WorkspaceMemberRoleChangedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid MemberId,
     Guid UserId,

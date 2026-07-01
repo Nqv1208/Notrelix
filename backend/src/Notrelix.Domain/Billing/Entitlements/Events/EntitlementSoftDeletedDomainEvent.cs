@@ -1,9 +1,10 @@
 namespace Notrelix.Domain.Billing.Entitlements.Events;
 
 public sealed record EntitlementSoftDeletedDomainEvent(
-    Guid WorkspaceId,
+    Guid AccountId,
+    Guid? WorkspaceId,
     Guid EntitlementId,
     string FeatureCode,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, DeletedBy);
+) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, DeletedBy);

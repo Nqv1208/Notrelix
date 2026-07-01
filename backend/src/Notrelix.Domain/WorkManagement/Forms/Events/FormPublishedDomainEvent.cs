@@ -5,6 +5,7 @@ public record FormPublishedDomainEvent : WorkspaceScopedDomainEvent
     public Guid FormId { get; }
 
     public FormPublishedDomainEvent(
+        Guid accountId,
         Guid workspaceId,
         Guid formId,
         Guid? actorUserId,

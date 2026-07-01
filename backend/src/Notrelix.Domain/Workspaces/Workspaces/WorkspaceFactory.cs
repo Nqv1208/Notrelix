@@ -3,6 +3,7 @@ namespace Notrelix.Domain.Workspaces.Workspaces;
 public static class WorkspaceFactory
 {
     public static WorkspaceCreationResult CreateWithOwner(
+        Guid accountId,
         Guid ownerId,
         string name,
         string slug,
@@ -10,8 +11,8 @@ public static class WorkspaceFactory
         bool isPersonal = false,
         string? description = null)
     {
-        var workspace = Workspace.Create(ownerId, name, slug, createdAt, description: description, isPersonal: isPersonal);
-        var ownerMember = WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, createdAt);
+        var workspace = Workspace.Create(accountId, ownerId, name, slug, createdAt, description: description, isPersonal: isPersonal);
+        var ownerMember = WorkspaceMember.Create(accountId, workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, createdAt);
 
         return new WorkspaceCreationResult(workspace, ownerMember);
     }

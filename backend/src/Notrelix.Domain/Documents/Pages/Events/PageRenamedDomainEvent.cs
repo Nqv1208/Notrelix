@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.Documents.Pages.Events;
 
 public sealed record PageRenamedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid PageId,
     string OldTitle,

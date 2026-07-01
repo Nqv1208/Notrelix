@@ -32,6 +32,7 @@ public class CalendarEventLink : Entity
 
 public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid ConnectionId { get; private set; }
     public CalendarProvider Provider { get; private set; }
@@ -43,13 +44,15 @@ public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
 
     private CalendarIntegration() : base() { }
 
-    public static CalendarIntegration Create(Guid workspaceId, Guid connectionId, CalendarProvider provider, CalendarSyncDirection syncDirection, Guid createdBy, DateTimeOffset createdAt)
+    public static CalendarIntegration Create(Guid accountId, Guid workspaceId, Guid connectionId, CalendarProvider provider, CalendarSyncDirection syncDirection, Guid createdBy, DateTimeOffset createdAt)
     {
+        Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(connectionId);
 
         var integration = new CalendarIntegration
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             ConnectionId = connectionId,
             Provider = provider,
@@ -58,7 +61,7 @@ public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
         };
 
         integration.SetAuditOnCreate(createdBy, createdAt);
-        integration.AddDomainEvent(new CalendarIntegrationConnectedDomainEvent(workspaceId, connectionId, createdAt));
+        integration.AddDomainEvent(new CalendarIntegrationConnectedDomainEvent(accountId, workspaceId, connectionId, createdAt));
 
         return integration;
     }
@@ -70,7 +73,7 @@ public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
 
         IsActive = true;
         SetAuditOnUpdate(updatedBy, occurredAt);
-        AddDomainEvent(new CalendarIntegrationActivatedDomainEvent(WorkspaceId, Id, updatedBy, occurredAt));
+        AddDomainEvent(new CalendarIntegrationActivatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
     }
 
     public void Deactivate(Guid updatedBy, DateTimeOffset occurredAt)
@@ -80,7 +83,7 @@ public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
 
         IsActive = false;
         SetAuditOnUpdate(updatedBy, occurredAt);
-        AddDomainEvent(new CalendarIntegrationDeactivatedDomainEvent(WorkspaceId, Id, updatedBy, occurredAt));
+        AddDomainEvent(new CalendarIntegrationDeactivatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
     }
 
     public void ChangeSyncDirection(CalendarSyncDirection newDirection, Guid updatedBy, DateTimeOffset occurredAt)
@@ -92,7 +95,7 @@ public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
 
         SyncDirection = newDirection;
         SetAuditOnUpdate(updatedBy, occurredAt);
-        AddDomainEvent(new CalendarIntegrationSyncDirectionChangedDomainEvent(WorkspaceId, Id, newDirection, updatedBy, occurredAt));
+        AddDomainEvent(new CalendarIntegrationSyncDirectionChangedDomainEvent(AccountId, WorkspaceId, Id, newDirection, updatedBy, occurredAt));
     }
 
     public void LinkEvent(Guid internalEventId, string externalEventId, string? eTag = null)

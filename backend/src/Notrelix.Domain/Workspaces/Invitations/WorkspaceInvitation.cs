@@ -2,6 +2,7 @@ namespace Notrelix.Domain.Workspaces.Invitations;
 
 public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public string Email { get; private set; } = null!;
     public WorkspaceRole Role { get; private set; }

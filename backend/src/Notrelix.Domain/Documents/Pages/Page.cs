@@ -2,6 +2,7 @@ namespace Notrelix.Domain.Documents.Pages;
 
 public class Page : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid? ParentId { get; private set; }
     public string Title { get; private set; } = null!;
@@ -12,8 +13,9 @@ public class Page : AggregateRoot, IWorkspaceScoped
 
     private Page() : base() { }
 
-    public static Page Create(Guid workspaceId, string title, Guid createdBy, DateTimeOffset createdAt, Guid? parentId = null)
+    public static Page Create(Guid accountId, Guid workspaceId, string title, Guid createdBy, DateTimeOffset createdAt, Guid? parentId = null)
     {
+        Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(createdBy);
         Guard.NotNullOrWhiteSpace(title);
@@ -21,6 +23,7 @@ public class Page : AggregateRoot, IWorkspaceScoped
 
         var page = new Page
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             ParentId = parentId,
             Title = title.Trim(),
@@ -29,7 +32,7 @@ public class Page : AggregateRoot, IWorkspaceScoped
         };
 
         page.SetAuditOnCreate(createdBy, createdAt);
-        page.AddDomainEvent(new PageCreatedDomainEvent(workspaceId, page.Id, page.Title, createdBy, createdAt));
+        page.AddDomainEvent(new PageCreatedDomainEvent(accountId, workspaceId, page.Id, page.Title, createdBy, createdAt));
 
         return page;
     }
@@ -48,7 +51,7 @@ public class Page : AggregateRoot, IWorkspaceScoped
         Title = newTitle.Trim();
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new PageRenamedDomainEvent(WorkspaceId, Id, oldTitle, Title, updatedBy, updatedAt));
+        AddDomainEvent(new PageRenamedDomainEvent(AccountId, WorkspaceId, Id, oldTitle, Title, updatedBy, updatedAt));
     }
 
     public void Move(Guid? newParentId, Guid updatedBy, DateTimeOffset updatedAt, Func<Guid, Guid?> getParentId)
@@ -67,7 +70,7 @@ public class Page : AggregateRoot, IWorkspaceScoped
         ParentId = newParentId;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new PageMovedDomainEvent(WorkspaceId, Id, oldParentId, ParentId, updatedBy, updatedAt));
+        AddDomainEvent(new PageMovedDomainEvent(AccountId, WorkspaceId, Id, oldParentId, ParentId, updatedBy, updatedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
@@ -78,7 +81,7 @@ public class Page : AggregateRoot, IWorkspaceScoped
         Status = PageStatus.Archived;
         SetAuditOnUpdate(archivedBy, archivedAt);
         IncrementVersion();
-        AddDomainEvent(new PageArchivedDomainEvent(WorkspaceId, Id, archivedBy, archivedAt));
+        AddDomainEvent(new PageArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -88,7 +91,7 @@ public class Page : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new PageSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new PageSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -98,6 +101,6 @@ public class Page : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new PageRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new PageRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

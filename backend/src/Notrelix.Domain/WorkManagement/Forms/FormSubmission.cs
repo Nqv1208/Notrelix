@@ -4,6 +4,7 @@ namespace Notrelix.Domain.WorkManagement.Forms;
 
 public class FormSubmission : Entity, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid FormId { get; private set; }
     public Guid BoardId { get; private set; }
@@ -20,6 +21,7 @@ public class FormSubmission : Entity, IWorkspaceScoped
     private FormSubmission() : base() { }
 
     public static FormSubmission Create(
+        Guid accountId,
         Guid workspaceId,
         Guid formId,
         Guid boardId,
@@ -34,9 +36,11 @@ public class FormSubmission : Entity, IWorkspaceScoped
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(formId);
         Guard.NotEmpty(boardId);
+        Guard.NotEmpty(accountId);
 
         var submission = new FormSubmission
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             FormId = formId,
             BoardId = boardId,
@@ -50,7 +54,7 @@ public class FormSubmission : Entity, IWorkspaceScoped
             SubmittedAt = submittedAt
         };
 
-        submission.AddDomainEvent(new FormSubmissionCreatedDomainEvent(workspaceId, submission.Id, formId, boardId, submitterUserId, submittedAt));
+        submission.AddDomainEvent(new FormSubmissionCreatedDomainEvent(accountId, workspaceId, submission.Id, formId, boardId, submitterUserId, submittedAt));
 
         return submission;
     }
@@ -59,20 +63,20 @@ public class FormSubmission : Entity, IWorkspaceScoped
     {
         Status = FormSubmissionStatus.Rejected;
         ProcessedAt = processedAt;
-        AddDomainEvent(new FormSubmissionRejectedDomainEvent(WorkspaceId, Id, FormId, processedAt));
+        AddDomainEvent(new FormSubmissionRejectedDomainEvent(AccountId, WorkspaceId, Id, FormId, processedAt));
     }
 
     public void MarkAsSpam(DateTimeOffset processedAt)
     {
         Status = FormSubmissionStatus.Spam;
         ProcessedAt = processedAt;
-        AddDomainEvent(new FormSubmissionMarkedAsSpamDomainEvent(WorkspaceId, Id, FormId, processedAt));
+        AddDomainEvent(new FormSubmissionMarkedAsSpamDomainEvent(AccountId, WorkspaceId, Id, FormId, processedAt));
     }
 
     public void MarkProcessed(Guid createdItemId, DateTimeOffset processedAt)
     {
         CreatedItemId = createdItemId;
         ProcessedAt = processedAt;
-        AddDomainEvent(new FormSubmissionProcessedDomainEvent(WorkspaceId, Id, FormId, createdItemId, processedAt));
+        AddDomainEvent(new FormSubmissionProcessedDomainEvent(AccountId, WorkspaceId, Id, FormId, createdItemId, processedAt));
     }
 }

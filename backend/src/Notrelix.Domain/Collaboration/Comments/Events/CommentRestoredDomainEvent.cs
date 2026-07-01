@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.Collaboration.Comments.Events;
 
 public sealed record CommentRestoredDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid CommentId,
     Guid RestoredBy,

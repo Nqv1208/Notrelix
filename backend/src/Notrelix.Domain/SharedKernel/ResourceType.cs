@@ -54,8 +54,6 @@ public enum ResourceType
     User,
     UserSession,
     ApiToken,
-    SsoProvider,
-    ScimDirectorySync,
     AuditLog,
     SecurityEvent,
     WorkspaceInvitation,

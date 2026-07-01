@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.Governance.Permissions.Events;
 
 public sealed record ResourcePermissionRevokedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid PermissionId,
     ResourceType ResourceType,

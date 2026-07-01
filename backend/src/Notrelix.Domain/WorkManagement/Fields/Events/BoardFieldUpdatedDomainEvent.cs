@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.WorkManagement.Fields.Events;
 
 public sealed record BoardFieldUpdatedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid FieldId,
     Guid BoardId,

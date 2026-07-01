@@ -2,6 +2,7 @@ namespace Notrelix.Domain.Governance.Permissions;
 
 public class FieldPermission : Entity, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid BoardId { get; private set; }
     public Guid FieldId { get; private set; }
@@ -17,6 +18,7 @@ public class FieldPermission : Entity, IWorkspaceScoped
     private FieldPermission() : base() { }
 
     public static FieldPermission Grant(
+        Guid accountId,
         Guid workspaceId,
         Guid boardId,
         Guid fieldId,
@@ -32,9 +34,11 @@ public class FieldPermission : Entity, IWorkspaceScoped
         Guard.NotEmpty(boardId);
         Guard.NotEmpty(fieldId);
         Guard.NotEmpty(subjectId);
+        Guard.NotEmpty(accountId);
 
         return new FieldPermission
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             BoardId = boardId,
             FieldId = fieldId,

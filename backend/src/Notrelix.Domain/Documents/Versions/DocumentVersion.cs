@@ -2,6 +2,7 @@ namespace Notrelix.Domain.Documents.Versions;
 
 public class DocumentVersion : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid PageId { get; private set; }
     public int VersionNumber { get; private set; }
@@ -10,8 +11,9 @@ public class DocumentVersion : AggregateRoot, IWorkspaceScoped
 
     private DocumentVersion() : base() { }
 
-    public static DocumentVersion Create(Guid workspaceId, Guid pageId, int versionNumber, DocumentSnapshot snapshot, Guid createdBy, DateTimeOffset createdAt, string? changeSummary = null)
+    public static DocumentVersion Create(Guid accountId, Guid workspaceId, Guid pageId, int versionNumber, DocumentSnapshot snapshot, Guid createdBy, DateTimeOffset createdAt, string? changeSummary = null)
     {
+        Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(pageId);
         Guard.Positive(versionNumber);
@@ -19,6 +21,7 @@ public class DocumentVersion : AggregateRoot, IWorkspaceScoped
 
         var version = new DocumentVersion
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             PageId = pageId,
             VersionNumber = versionNumber,
@@ -27,12 +30,12 @@ public class DocumentVersion : AggregateRoot, IWorkspaceScoped
         };
 
         version.SetAuditOnCreate(createdBy, createdAt);
-        version.AddDomainEvent(new DocumentVersionCreatedDomainEvent(workspaceId, pageId, versionNumber, createdAt));
+        version.AddDomainEvent(new DocumentVersionCreatedDomainEvent(accountId, workspaceId, pageId, versionNumber, createdAt));
         return version;
     }
 
     public void ApplyRestore(Guid restoredBy, DateTimeOffset restoredAt)
     {
-        AddDomainEvent(new DocumentVersionRestoredDomainEvent(WorkspaceId, PageId, VersionNumber, restoredAt));
+        AddDomainEvent(new DocumentVersionRestoredDomainEvent(AccountId, WorkspaceId, PageId, VersionNumber, restoredAt));
     }
 }

@@ -6,6 +6,13 @@ global using Notrelix.Domain.Common.Exceptions;
 global using Notrelix.Domain.SharedKernel;
 
 
+// Bounded Contexts - Accounts
+global using Notrelix.Domain.Accounts.Accounts.Events;
+global using Notrelix.Domain.Accounts.Members;
+global using Notrelix.Domain.Accounts.Members.Events;
+global using Notrelix.Domain.Accounts.Invitations.Events;
+global using Notrelix.Domain.Accounts.Rules;
+
 // Bounded Contexts - Workspaces
 global using Notrelix.Domain.Workspaces.Workspaces.Events;
 global using Notrelix.Domain.Workspaces.Members;
@@ -49,7 +56,6 @@ global using Notrelix.Domain.Billing.Subscriptions.Events;
 global using Notrelix.Domain.Billing.Usage.Events;
 global using Notrelix.Domain.Collaboration.Attachments.Events;
 global using Notrelix.Domain.Collaboration.Comments.Events;
-global using Notrelix.Domain.Collaboration.Notifications.Events;
 global using Notrelix.Domain.Collaboration.Reactions.Events;
 global using Notrelix.Domain.Collaboration.Watchers.Events;
 global using Notrelix.Domain.Documents.Blocks.Events;
@@ -57,7 +63,6 @@ global using Notrelix.Domain.Documents.Pages.Events;
 global using Notrelix.Domain.Documents.ResourceLinks.Events;
 global using Notrelix.Domain.Documents.Templates.Events;
 global using Notrelix.Domain.Documents.Versions.Events;
-global using Notrelix.Domain.Governance.Audit.Events;
 global using Notrelix.Domain.Governance.Permissions.Events;
 global using Notrelix.Domain.Governance.Policies.Events;
 global using Notrelix.Domain.Governance.Roles.Events;

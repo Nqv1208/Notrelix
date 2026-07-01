@@ -6,6 +6,7 @@ public record FeatureUsageConsumedDomainEvent : WorkspaceScopedDomainEvent
     public decimal Amount { get; }
 
     public FeatureUsageConsumedDomainEvent(
+        Guid accountId,
         Guid workspaceId,
         string featureCode,
         decimal amount,

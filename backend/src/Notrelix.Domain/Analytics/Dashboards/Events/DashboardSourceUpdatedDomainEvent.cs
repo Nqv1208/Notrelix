@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.Analytics.Dashboards.Events;
 
 public sealed record DashboardSourceUpdatedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid DashboardId,
     Guid SourceId,

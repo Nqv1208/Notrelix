@@ -1,8 +1,9 @@
 namespace Notrelix.Domain.Billing.Payments.Events;
 
 public sealed record InvoiceRestoredDomainEvent(
-    Guid WorkspaceId,
+    Guid AccountId,
+    Guid? WorkspaceId,
     Guid InvoiceId,
     Guid RestoredBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, RestoredBy);
+) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, RestoredBy);

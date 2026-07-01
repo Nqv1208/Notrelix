@@ -2,6 +2,7 @@ namespace Notrelix.Domain.Workspaces.Members;
 
 public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid UserId { get; private set; }
     public WorkspaceRole Role { get; private set; }
@@ -9,14 +10,16 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
 
     private WorkspaceMember() : base() { }
 
-    public static WorkspaceMember Create(Guid workspaceId, Guid userId, WorkspaceRole role, Guid addedBy, DateTimeOffset createdAt)
+    public static WorkspaceMember Create(Guid accountId, Guid workspaceId, Guid userId, WorkspaceRole role, Guid addedBy, DateTimeOffset createdAt)
     {
+        Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(userId);
         Guard.NotEmpty(addedBy);
 
         var member = new WorkspaceMember
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             UserId = userId,
             Role = role,
@@ -24,7 +27,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         };
 
         member.SetAuditOnCreate(addedBy, createdAt);
-        member.AddDomainEvent(new WorkspaceMemberAddedDomainEvent(workspaceId, member.Id, userId, role, addedBy, createdAt));
+        member.AddDomainEvent(new WorkspaceMemberAddedDomainEvent(accountId, workspaceId, member.Id, userId, role, addedBy, createdAt));
         return member;
     }
 
@@ -52,7 +55,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
         AddDomainEvent(new WorkspaceMemberRoleChangedDomainEvent(
-            WorkspaceId, Id, UserId, oldRole, newRole, updatedBy, updatedAt));
+            AccountId, WorkspaceId, Id, UserId, oldRole, newRole, updatedBy, updatedAt));
     }
 
     public void Suspend(
@@ -72,7 +75,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
         AddDomainEvent(new WorkspaceMemberSuspendedDomainEvent(
-            WorkspaceId, Id, UserId, updatedBy, updatedAt));
+            AccountId, WorkspaceId, Id, UserId, updatedBy, updatedAt));
     }
 
     public void Activate(Guid updatedBy, DateTimeOffset updatedAt)
@@ -90,7 +93,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         Status = WorkspaceMemberStatus.Active;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceMemberActivatedDomainEvent(WorkspaceId, Id, UserId, updatedBy, updatedAt));
+        AddDomainEvent(new WorkspaceMemberActivatedDomainEvent(AccountId, WorkspaceId, Id, UserId, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -103,7 +106,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceMemberRemovedDomainEvent(WorkspaceId, Id, UserId, deletedBy, deletedAt));
+        AddDomainEvent(new WorkspaceMemberRemovedDomainEvent(AccountId, WorkspaceId, Id, UserId, deletedBy, deletedAt));
     }
 
     public void Remove(int activeOwnerCount, Guid removedBy, DateTimeOffset removedAt, string? reason = null)
@@ -127,6 +130,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
         AddDomainEvent(new WorkspaceMemberRestoredDomainEvent(
+            AccountId,
             WorkspaceId,
             Id,
             UserId,

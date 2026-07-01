@@ -5,6 +5,7 @@ namespace Notrelix.Domain.Collaboration.ReadStates;
 
 public class ResourceReadState : Entity, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid UserId { get; private set; }
     public string ResourceType { get; private set; } = null!;
@@ -18,16 +19,19 @@ public class ResourceReadState : Entity, IWorkspaceScoped
     private ResourceReadState() : base() { }
 
     public static ResourceReadState Create(
+        Guid accountId,
         Guid workspaceId,
         Guid userId,
         ResourceRef target,
         DateTimeOffset createdAt)
     {
+        Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(userId);
 
         return new ResourceReadState
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             UserId = userId,
             ResourceType = target.ResourceType.ToString(),

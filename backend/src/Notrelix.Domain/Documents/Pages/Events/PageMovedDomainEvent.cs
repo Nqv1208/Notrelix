@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.Documents.Pages.Events;
 
 public sealed record PageMovedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid PageId,
     Guid? OldParentId,

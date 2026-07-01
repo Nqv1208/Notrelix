@@ -2,6 +2,7 @@ namespace Notrelix.Domain.Billing.Payments;
 
 public class PaymentMethod : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public PaymentProvider Provider { get; private set; }
     public string ProviderMethodId { get; private set; } = null!;
@@ -12,13 +13,15 @@ public class PaymentMethod : AggregateRoot, IWorkspaceScoped
 
     private PaymentMethod() : base() { }
 
-    public static PaymentMethod Create(Guid workspaceId, PaymentProvider provider, string providerMethodId, string last4, string brand, Guid createdBy, DateTimeOffset createdAt, bool isDefault = false)
+    public static PaymentMethod Create(Guid accountId, Guid workspaceId, PaymentProvider provider, string providerMethodId, string last4, string brand, Guid createdBy, DateTimeOffset createdAt, bool isDefault = false)
     {
+        Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(providerMethodId);
 
         var method = new PaymentMethod
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             Provider = provider,
             ProviderMethodId = providerMethodId,
@@ -29,7 +32,7 @@ public class PaymentMethod : AggregateRoot, IWorkspaceScoped
         };
 
         method.SetAuditOnCreate(createdBy, createdAt);
-        method.AddDomainEvent(new PaymentMethodAddedDomainEvent(workspaceId, method.Id, provider, last4, brand, createdAt));
+        method.AddDomainEvent(new PaymentMethodAddedDomainEvent(accountId, workspaceId, method.Id, provider, last4, brand, createdAt));
         return method;
     }
 

@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.WorkManagement.BoardGroups.Events;
 
 public sealed record BoardGroupColorChangedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid BoardId,
     Guid GroupId,

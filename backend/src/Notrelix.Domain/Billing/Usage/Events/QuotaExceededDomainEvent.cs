@@ -6,6 +6,7 @@ public record QuotaExceededDomainEvent : WorkspaceScopedDomainEvent
     public decimal Limit { get; }
 
     public QuotaExceededDomainEvent(
+        Guid accountId,
         Guid workspaceId,
         string featureCode,
         decimal limit,

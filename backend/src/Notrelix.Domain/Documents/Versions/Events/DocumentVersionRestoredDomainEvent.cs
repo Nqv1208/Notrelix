@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.Documents.Versions.Events;
 
 public sealed record DocumentVersionRestoredDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid PageId,
     int VersionNumber,

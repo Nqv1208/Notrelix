@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.Workspaces.Spaces.Events;
 
 public sealed record SpaceRenamedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid SpaceId,
     string OldName,

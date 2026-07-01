@@ -2,6 +2,7 @@ namespace Notrelix.Domain.Documents.ResourceLinks;
 
 public class ResourceLink : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public ResourceRef Source { get; private set; } = null!;
     public ResourceRef Target { get; private set; } = null!;
@@ -9,8 +10,9 @@ public class ResourceLink : AggregateRoot, IWorkspaceScoped
 
     private ResourceLink() : base() { }
 
-    public static ResourceLink Create(Guid workspaceId, ResourceRef source, ResourceRef target, LinkType type, Guid createdBy, DateTimeOffset createdAt)
+    public static ResourceLink Create(Guid accountId, Guid workspaceId, ResourceRef source, ResourceRef target, LinkType type, Guid createdBy, DateTimeOffset createdAt)
     {
+        Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(source);
         Guard.NotNull(target);
@@ -23,6 +25,7 @@ public class ResourceLink : AggregateRoot, IWorkspaceScoped
 
         var link = new ResourceLink
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             Source = source,
             Target = target,
@@ -30,7 +33,7 @@ public class ResourceLink : AggregateRoot, IWorkspaceScoped
         };
 
         link.SetAuditOnCreate(createdBy, createdAt);
-        link.AddDomainEvent(new ResourceLinkCreatedDomainEvent(workspaceId, source.ResourceId, target.ResourceId, type, createdAt));
+        link.AddDomainEvent(new ResourceLinkCreatedDomainEvent(accountId, workspaceId, source.ResourceId, target.ResourceId, type, createdAt));
         return link;
     }
 
@@ -40,6 +43,6 @@ public class ResourceLink : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new ResourceLinkDeletedDomainEvent(WorkspaceId, Id, deletedAt));
+        AddDomainEvent(new ResourceLinkDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
     }
 }

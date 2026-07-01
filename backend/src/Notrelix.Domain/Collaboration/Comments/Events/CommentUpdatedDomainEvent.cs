@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.Collaboration.Comments.Events;
 
 public sealed record CommentUpdatedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid CommentId,
     Guid UpdatedBy,

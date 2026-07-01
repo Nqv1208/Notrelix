@@ -7,6 +7,7 @@ public record BoardRelationCreatedDomainEvent : WorkspaceScopedDomainEvent
     public Guid TargetBoardId { get; }
 
     public BoardRelationCreatedDomainEvent(
+        Guid accountId,
         Guid workspaceId,
         Guid relationId,
         Guid sourceBoardId,

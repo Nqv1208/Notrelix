@@ -2,6 +2,7 @@ namespace Notrelix.Domain.WorkManagement.Items;
 
 public class TimeTrackingEntry : SoftDeletableEntity, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid BoardId { get; private set; }
     public Guid ItemId { get; private set; }
@@ -25,6 +26,7 @@ public class TimeTrackingEntry : SoftDeletableEntity, IWorkspaceScoped
     private TimeTrackingEntry() : base() { }
 
     public static TimeTrackingEntry Start(
+        Guid accountId,
         Guid workspaceId,
         Guid boardId,
         Guid itemId,
@@ -36,9 +38,11 @@ public class TimeTrackingEntry : SoftDeletableEntity, IWorkspaceScoped
         Guard.NotEmpty(boardId);
         Guard.NotEmpty(itemId);
         Guard.NotEmpty(userId);
+        Guard.NotEmpty(accountId);
 
         var entry = new TimeTrackingEntry
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             BoardId = boardId,
             ItemId = itemId,

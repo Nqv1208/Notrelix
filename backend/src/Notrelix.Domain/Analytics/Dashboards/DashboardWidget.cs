@@ -5,6 +5,7 @@ namespace Notrelix.Domain.Analytics.Dashboards;
 
 public class DashboardWidget : Entity, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid DashboardId { get; private set; }
     public string Title { get; private set; } = null!;

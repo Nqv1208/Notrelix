@@ -2,6 +2,7 @@ namespace Notrelix.Domain.Integrations.Webhooks;
 
 public class WebhookDelivery : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid WebhookSubscriptionId { get; private set; }
     public WebhookEventType EventType { get; private set; }
@@ -18,14 +19,16 @@ public class WebhookDelivery : AggregateRoot, IWorkspaceScoped
 
     private WebhookDelivery() : base() { }
 
-    public static WebhookDelivery Create(Guid workspaceId, Guid subscriptionId, WebhookEventType eventType, JsonValue payload, DateTimeOffset createdAt, int maxRetries = 3)
+    public static WebhookDelivery Create(Guid accountId, Guid workspaceId, Guid subscriptionId, WebhookEventType eventType, JsonValue payload, DateTimeOffset createdAt, int maxRetries = 3)
     {
+        Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(subscriptionId);
         Guard.NotNull(payload);
 
         var delivery = new WebhookDelivery
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             WebhookSubscriptionId = subscriptionId,
             EventType = eventType,
@@ -34,7 +37,7 @@ public class WebhookDelivery : AggregateRoot, IWorkspaceScoped
             MaxRetries = maxRetries
         };
 
-        delivery.AddDomainEvent(new WebhookDeliveryRecordedDomainEvent(workspaceId, subscriptionId, delivery.Id, WebhookDeliveryStatus.Pending, createdAt));
+        delivery.AddDomainEvent(new WebhookDeliveryRecordedDomainEvent(accountId, workspaceId, subscriptionId, delivery.Id, WebhookDeliveryStatus.Pending, createdAt));
         return delivery;
     }
 
@@ -48,7 +51,7 @@ public class WebhookDelivery : AggregateRoot, IWorkspaceScoped
         ResponseBody = responseBody;
         DeliveredAt = deliveredAt;
         IncrementVersion();
-        AddDomainEvent(new WebhookDeliveryRecordedDomainEvent(WorkspaceId, WebhookSubscriptionId, Id, WebhookDeliveryStatus.Sent, deliveredAt));
+        AddDomainEvent(new WebhookDeliveryRecordedDomainEvent(AccountId, WorkspaceId, WebhookSubscriptionId, Id, WebhookDeliveryStatus.Sent, deliveredAt));
     }
 
     public void MarkFailed(int? statusCode, string? responseBody, DateTimeOffset failedAt, string? reason = null)
@@ -62,7 +65,7 @@ public class WebhookDelivery : AggregateRoot, IWorkspaceScoped
         FailedAt = failedAt;
         FailureReason = reason;
         IncrementVersion();
-        AddDomainEvent(new WebhookDeliveryRecordedDomainEvent(WorkspaceId, WebhookSubscriptionId, Id, WebhookDeliveryStatus.Failed, failedAt));
+        AddDomainEvent(new WebhookDeliveryRecordedDomainEvent(AccountId, WorkspaceId, WebhookSubscriptionId, Id, WebhookDeliveryStatus.Failed, failedAt));
     }
 
     public void ScheduleRetry(DateTimeOffset nextRetryAt)

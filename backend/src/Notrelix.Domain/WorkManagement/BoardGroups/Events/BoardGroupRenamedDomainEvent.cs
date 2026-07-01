@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.WorkManagement.BoardGroups.Events;
 
 public sealed record BoardGroupRenamedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid GroupId,
     Guid BoardId,

@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.Billing.Payments.Events;
 
 public sealed record PaymentMethodAddedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid PaymentMethodId,
     PaymentProvider Provider,

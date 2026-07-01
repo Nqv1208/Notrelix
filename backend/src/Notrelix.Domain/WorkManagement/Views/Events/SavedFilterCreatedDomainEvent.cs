@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.WorkManagement.Views.Events;
 
 public sealed record SavedFilterCreatedDomainEvent(
+    Guid AccountId,
     Guid FilterId,
     Guid WorkspaceId,
     Guid BoardId,

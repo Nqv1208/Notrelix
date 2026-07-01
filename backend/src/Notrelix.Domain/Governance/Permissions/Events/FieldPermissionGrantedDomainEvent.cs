@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.Governance.Permissions.Events;
 
 public sealed record FieldPermissionGrantedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid FieldId,
     PermissionSubjectType Subject,
