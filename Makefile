@@ -74,14 +74,14 @@ dev-reset:
 	$(COMPOSE_DEV) $(ENV_DEV) down -v
 	$(COMPOSE_DEV) $(ENV_DEV) up -d postgres redis
 	$(BACKEND_RUN) dotnet restore $(BACKEND_PROJECT)
-	$(BACKEND_RUN) dotnet run --project $(BACKEND_PROJECT) --no-launch-profile --no-restore -- --migrate --seed
+	$(BACKEND_RUN) $(DOTNET_RUN_API) -- --migrate --seed
 	$(COMPOSE_DEV) $(ENV_DEV) up -d
 
 dev-reset-full:
 	$(COMPOSE_DEV) $(ENV_DEV) down -v
 	$(COMPOSE_DEV) $(ENV_DEV) up -d postgres redis
 	$(BACKEND_RUN) dotnet restore $(BACKEND_PROJECT) --force
-	$(BACKEND_RUN) dotnet run --project $(BACKEND_PROJECT) --no-launch-profile --no-restore -- --migrate --seed
+	$(BACKEND_RUN) $(DOTNET_RUN_API) -- --migrate --seed
 	$(COMPOSE_DEV) $(ENV_DEV) up -d
 
 be-restore: db-up

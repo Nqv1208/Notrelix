@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.CreateChecklist;
@@ -28,7 +26,7 @@ public class CreateChecklistCommandHandler : IRequestHandler<CreateChecklistComm
             throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
         var position = FractionalIndex.Initial();
-        var checklist = Checklist.Create(item.WorkspaceId, request.BoardItemId, request.Title, position, _currentUser.UserId, _dateTimeProvider.UtcNow);
+        var checklist = Checklist.Create(Guid.Empty, item.WorkspaceId, request.BoardItemId, request.Title, position, _currentUser.UserId, _dateTimeProvider.UtcNow);
         _context.Checklists.Add(checklist);
         return Result<Guid>.Success(checklist.Id);
     }

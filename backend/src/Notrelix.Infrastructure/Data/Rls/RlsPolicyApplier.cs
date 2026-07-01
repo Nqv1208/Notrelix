@@ -1,8 +1,3 @@
-using System.Reflection;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Npgsql;
-
 namespace Notrelix.Infrastructure.Data.Rls;
 
 public sealed class RlsPolicyApplier
@@ -12,7 +7,7 @@ public sealed class RlsPolicyApplier
 
     private static readonly string[] ScriptNames =
     [
-        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.rls-policy-pack.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.schema-v2-rls-policy-pack.sql",
         // "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.001_roles.sql",
         // "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.002_helpers.sql",
         // "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.003_authz_projection.sql",

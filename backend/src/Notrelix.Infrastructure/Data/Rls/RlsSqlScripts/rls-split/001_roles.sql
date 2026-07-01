@@ -1,7 +1,5 @@
 -- =============================================================================
--- 001_roles.sql — Create PostgreSQL roles for Notrelix V5 RLS
--- =============================================================================
--- Idempotent. Safe to run multiple times.
+-- 001_roles.sql — Runtime roles for Notrelix Schema V2 RLS
 -- =============================================================================
 
 DO $$
@@ -20,11 +18,5 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'notrelix_migrator') THEN
         CREATE ROLE notrelix_migrator NOLOGIN;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'notrelix_admin') THEN
-        CREATE ROLE notrelix_admin NOLOGIN;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'notrelix_owner') THEN
-        CREATE ROLE notrelix_owner NOLOGIN;
     END IF;
 END $$;
