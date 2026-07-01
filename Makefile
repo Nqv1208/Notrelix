@@ -11,9 +11,12 @@ ENV_PROD ?= --env-file .env.prod
 
 BACKEND_PROJECT := src/Notrelix.API/Notrelix.API.csproj
 
+BACKEND_RUN := $(COMPOSE_DEV) $(ENV_DEV) run --rm --no-deps backend
+DOTNET_RUN_API := dotnet run --project $(BACKEND_PROJECT) --no-launch-profile --no-restore
+
 .PHONY: help \
-	dev dev-up dev-down dev-restart dev-logs backend-logs dev-tools dev-clean dev-reset \
-	db-up db-restore db-migrate db-seed db-init db-psql \
+	dev dev-up dev-down dev-restart dev-logs backend-logs dev-tools dev-clean dev-reset dev-reset-full \
+	db-up db-restore db-restore-force db-migrate db-seed db-init db-rls db-psql \
 	staging staging-up staging-down staging-logs \
 	prod prod-up prod-down prod-logs \
 	build build-staging ps config-dev clean
@@ -22,25 +25,28 @@ help:
 	@echo "Notrelix — Docker"
 	@echo ""
 	@echo "Development:"
-	@echo "  make dev-up        Start dev stack"
-	@echo "  make dev-logs      Follow dev logs"
-	@echo "  make backend-logs  Follow backend logs"
-	@echo "  make dev-down      Stop dev stack"
-	@echo "  make dev-restart   Restart dev stack"
-	@echo "  make dev-clean     Stop dev stack and delete volumes"
-	@echo "  make dev-reset     Delete dev volumes, migrate, seed, start"
-	@echo "  make dev-tools     Start tools profile, including pgAdmin"
+	@echo "  make dev-up          Start dev stack"
+	@echo "  make dev-logs        Follow dev logs"
+	@echo "  make backend-logs    Follow backend logs"
+	@echo "  make dev-down        Stop dev stack"
+	@echo "  make dev-restart     Restart dev stack"
+	@echo "  make dev-clean       Stop dev stack and delete volumes"
+	@echo "  make dev-reset       Delete dev volumes, migrate, seed, start"
+	@echo "  make dev-reset-full  Delete dev volumes, force restore, migrate, seed, start"
+	@echo "  make dev-tools       Start tools profile, including pgAdmin"
 	@echo ""
 	@echo "Database:"
-	@echo "  make db-up         Start postgres/redis only"
-	@echo "  make db-restore    Restore backend dependencies"
-	@echo "  make db-migrate    Run EF migrations"
-	@echo "  make db-seed       Run seed data"
-	@echo "  make db-init       Run migrations + seed"
-	@echo "  make db-psql       Open psql"
+	@echo "  make db-up           Start postgres/redis only"
+	@echo "  make db-restore      Restore backend dependencies"
+	@echo "  make db-restore-force Force restore backend dependencies"
+	@echo "  make db-migrate      Run EF migrations"
+	@echo "  make db-seed         Run seed data"
+	@echo "  make db-init         Run migrations + seed"
+	@echo "  make db-rls          Apply RLS policies"
+	@echo "  make db-psql         Open psql"
 	@echo ""
 	@echo "Config:"
-	@echo "  make config-dev    Print resolved dev compose config"
+	@echo "  make config-dev      Print resolved dev compose config"
 
 dev: dev-up
 
@@ -67,30 +73,37 @@ dev-clean:
 dev-reset:
 	$(COMPOSE_DEV) $(ENV_DEV) down -v
 	$(COMPOSE_DEV) $(ENV_DEV) up -d postgres redis
-	$(COMPOSE_DEV) $(ENV_DEV) run --rm --no-deps backend \
-		dotnet restore $(BACKEND_PROJECT) --disable-parallel --force
-	$(COMPOSE_DEV) $(ENV_DEV) run --rm --no-deps backend \
-		dotnet run --project $(BACKEND_PROJECT) --no-launch-profile --no-restore -- --migrate --seed
+	$(BACKEND_RUN) dotnet restore $(BACKEND_PROJECT)
+	$(BACKEND_RUN) dotnet run --project $(BACKEND_PROJECT) --no-launch-profile --no-restore -- --migrate --seed
 	$(COMPOSE_DEV) $(ENV_DEV) up -d
+
+dev-reset-full:
+	$(COMPOSE_DEV) $(ENV_DEV) down -v
+	$(COMPOSE_DEV) $(ENV_DEV) up -d postgres redis
+	$(BACKEND_RUN) dotnet restore $(BACKEND_PROJECT) --force
+	$(BACKEND_RUN) dotnet run --project $(BACKEND_PROJECT) --no-launch-profile --no-restore -- --migrate --seed
+	$(COMPOSE_DEV) $(ENV_DEV) up -d
+
+be-restore: db-up
+	$(BACKEND_RUN) dotnet restore $(BACKEND_PROJECT)
+
+be-restore-force: db-up
+	$(BACKEND_RUN) dotnet restore $(BACKEND_PROJECT) --force
 
 db-up:
 	$(COMPOSE_DEV) $(ENV_DEV) up -d postgres redis
 
-db-restore: db-up
-	$(COMPOSE_DEV) $(ENV_DEV) run --rm --no-deps backend \
-		dotnet restore $(BACKEND_PROJECT) --disable-parallel --force
+db-migrate: db-up
+	$(BACKEND_RUN) $(DOTNET_RUN_API) -- --migrate
 
-db-migrate: db-restore
-	$(COMPOSE_DEV) $(ENV_DEV) run --rm --no-deps backend \
-		dotnet run --project $(BACKEND_PROJECT) --no-launch-profile --no-restore -- --migrate
+db-seed: db-up
+	$(BACKEND_RUN) $(DOTNET_RUN_API) -- --seed
 
-db-seed: db-restore
-	$(COMPOSE_DEV) $(ENV_DEV) run --rm --no-deps backend \
-		dotnet run --project $(BACKEND_PROJECT) --no-launch-profile --no-restore -- --seed
+db-init: db-up
+	$(BACKEND_RUN) $(DOTNET_RUN_API) -- --migrate --seed
 
-db-init: db-restore
-	$(COMPOSE_DEV) $(ENV_DEV) run --rm --no-deps backend \
-		dotnet run --project $(BACKEND_PROJECT) --no-launch-profile --no-restore -- --migrate --seed
+db-rls: db-up
+	$(BACKEND_RUN) $(DOTNET_RUN_API) -- --rls-apply
 
 db-psql:
 	$(COMPOSE_DEV) $(ENV_DEV) exec postgres \
