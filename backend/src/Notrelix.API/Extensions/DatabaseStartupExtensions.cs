@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Options;
+using Notrelix.Application.Common.Abstractions.Rls;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Infrastructure.Data.Rls;
 
 namespace Notrelix.API.Extensions;
 
@@ -12,8 +14,9 @@ public static class DatabaseStartupExtensions
         var shouldMigrate = args.Contains("--migrate", StringComparer.OrdinalIgnoreCase)
                             || args.Contains("--migrate-only", StringComparer.OrdinalIgnoreCase);
         var shouldSeed = args.Contains("--seed", StringComparer.OrdinalIgnoreCase);
+        var shouldApplyRls = args.Contains("--rls-apply", StringComparer.OrdinalIgnoreCase);
 
-        if (!shouldMigrate && !shouldSeed)
+        if (!shouldMigrate && !shouldSeed && !shouldApplyRls)
         {
             return false;
         }
@@ -27,6 +30,13 @@ public static class DatabaseStartupExtensions
         {
             await initialiser.InitialiseAsync();
             app.Logger.LogInformation("Database migration completed.");
+        }
+
+        if (shouldApplyRls)
+        {
+            var applier = scope.ServiceProvider.GetRequiredService<RlsPolicyApplier>();
+            await applier.ApplyAsync();
+            app.Logger.LogInformation("RLS policies applied.");
         }
 
         if (shouldSeed)

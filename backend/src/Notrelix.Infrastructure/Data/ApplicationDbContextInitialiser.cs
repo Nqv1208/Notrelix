@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Common.Abstractions.Rls;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Data.Seed;
 
@@ -15,6 +16,7 @@ public class ApplicationDbContextInitialiser
     private readonly IPasswordHasher _passwordHasher;
     private readonly RlsPolicyApplier _rlsPolicyApplier;
     private readonly ICurrentWorkspace _currentWorkspace;
+    private readonly RlsOptions _rlsOptions;
 
     public ApplicationDbContextInitialiser(
         ILogger<ApplicationDbContextInitialiser> logger,
@@ -22,7 +24,8 @@ public class ApplicationDbContextInitialiser
         IPasswordHasher passwordHasher,
         IOptions<SeedDataOptions> options,
         RlsPolicyApplier rlsPolicyApplier,
-        ICurrentWorkspace currentWorkspace)
+        ICurrentWorkspace currentWorkspace,
+        IOptions<RlsOptions> rlsOptions)
     {
         _logger = logger;
         _context = context;
@@ -30,6 +33,7 @@ public class ApplicationDbContextInitialiser
         _options = options.Value;
         _rlsPolicyApplier = rlsPolicyApplier;
         _currentWorkspace = currentWorkspace;
+        _rlsOptions = rlsOptions.Value;
     }
 
     public async Task InitialiseAsync()
@@ -39,8 +43,16 @@ public class ApplicationDbContextInitialiser
             if (_context.Database.IsNpgsql())
             {
                 await _context.Database.MigrateAsync();
-                await ApplyRlsFoundationAsync();
-                await _rlsPolicyApplier.ApplyAsync();
+
+                if (_rlsOptions.Enabled)
+                {
+                    await ApplyRlsFoundationAsync();
+                }
+
+                if (_rlsOptions.Enabled && _rlsOptions.ApplyPoliciesOnStartup)
+                {
+                    await _rlsPolicyApplier.ApplyAsync();
+                }
             }
         }
         catch (Exception ex)
@@ -91,7 +103,8 @@ public class ApplicationDbContextInitialiser
 
     private async Task ResetSeedDataAsync()
     {
-        _context.Notifications.RemoveRange(await _context.Notifications.IgnoreQueryFilters().ToListAsync());
+        _context.NotificationRecipients.RemoveRange(await _context.NotificationRecipients.IgnoreQueryFilters().ToListAsync());
+        _context.NotificationItems.RemoveRange(await _context.NotificationItems.IgnoreQueryFilters().ToListAsync());
         _context.Comments.RemoveRange(await _context.Comments.IgnoreQueryFilters().ToListAsync());
         _context.Blocks.RemoveRange(await _context.Blocks.IgnoreQueryFilters().ToListAsync());
         _context.Pages.RemoveRange(await _context.Pages.IgnoreQueryFilters().ToListAsync());
@@ -120,16 +133,43 @@ public class ApplicationDbContextInitialiser
     private async Task ApplyRlsFoundationAsync()
     {
         var assembly = typeof(ApplicationDbContextInitialiser).Assembly;
-        var resourceName = "Notrelix.Infrastructure.Data.Rls.rls_foundation.sql";
-        await using var stream = assembly.GetManifestResourceStream(resourceName);
-        if (stream is null)
+        var connection = (Npgsql.NpgsqlConnection)_context.Database.GetDbConnection();
+
+        if (connection.State != System.Data.ConnectionState.Open)
+            await connection.OpenAsync();
+
+        var scriptNames = new[]
         {
-            _logger.LogWarning("RLS foundation SQL resource '{Resource}' not found. Skipping.", resourceName);
-            return;
+            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.001_roles.sql",
+            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.002_helpers.sql",
+            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.003_authz_projection.sql",
+            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.004_grants.sql",
+            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.005_policies_identity.sql",
+            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.006_policies_workspace_governance_authz.sql",
+            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.007_policies_workspace_scoped_domain.sql",
+            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.008_policies_events.sql",
+            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.009_policies_messaging.sql",
+            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.010_policies_notifications.sql",
+            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.011_policies_activity.sql",
+            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.012_policies_audit.sql",
+            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.013_policies_projection.sql",
+            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.014_policies_ops.sql",
+        };
+
+        foreach (var resourceName in scriptNames)
+        {
+            await using var stream = assembly.GetManifestResourceStream(resourceName);
+            if (stream is null)
+            {
+                _logger.LogWarning("RLS SQL resource '{Resource}' not found. Skipping.", resourceName);
+                continue;
+            }
+            using var reader = new StreamReader(stream);
+            var sql = await reader.ReadToEndAsync();
+            await using var cmd = new Npgsql.NpgsqlCommand(sql, connection);
+            cmd.CommandTimeout = 60;
+            await cmd.ExecuteNonQueryAsync();
+            _logger.LogInformation("RLS script applied: {Script}", resourceName);
         }
-        using var reader = new StreamReader(stream);
-        var sql = await reader.ReadToEndAsync();
-        await _context.Database.ExecuteSqlRawAsync(sql);
-        _logger.LogInformation("RLS foundation SQL applied (roles, functions, grants, triggers).");
     }
 }

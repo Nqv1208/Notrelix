@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Common.Abstractions.Rls;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Testing.Application.Fakes;
@@ -48,7 +49,8 @@ public class MigrationResiliencyTests
                 ResetBeforeSeed = false
             }),
             new RlsPolicyApplier(context, NullLogger<RlsPolicyApplier>.Instance),
-            new FakeCurrentWorkspace());
+            new FakeCurrentWorkspace(),
+            Options.Create(new RlsOptions()));
     }
 
     private sealed class DeterministicPasswordHasher : IPasswordHasher

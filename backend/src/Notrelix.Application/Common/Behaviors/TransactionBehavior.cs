@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
+using Notrelix.Application.Common.Abstractions.Rls;
 
 namespace Notrelix.Application.Common.Behaviors;
 
@@ -8,11 +9,16 @@ public class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
 {
     private readonly IApplicationDbContext _context;
     private readonly ILogger<TransactionBehavior<TRequest, TResponse>> _logger;
+    private readonly IRlsSessionContext? _rlsSessionContext;
 
-    public TransactionBehavior(IApplicationDbContext context, ILogger<TransactionBehavior<TRequest, TResponse>> logger)
+    public TransactionBehavior(
+        IApplicationDbContext context,
+        ILogger<TransactionBehavior<TRequest, TResponse>> logger,
+        IRlsSessionContext? rlsSessionContext = null)
     {
         _context = context;
         _logger = logger;
+        _rlsSessionContext = rlsSessionContext;
     }
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
@@ -25,6 +31,11 @@ public class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
         try
         {
+            if (_rlsSessionContext is not null)
+            {
+                await _rlsSessionContext.ApplyAsync((Microsoft.EntityFrameworkCore.DbContext)_context, cancellationToken);
+            }
+
             var response = await next();
 
             await _context.SaveChangesAsync(cancellationToken);

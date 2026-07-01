@@ -1,5 +1,7 @@
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 
 namespace Notrelix.Infrastructure.Data.Rls;
 
@@ -7,6 +9,24 @@ public sealed class RlsPolicyApplier
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<RlsPolicyApplier> _logger;
+
+    private static readonly string[] ScriptNames =
+    [
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.001_roles.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.002_helpers.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.003_authz_projection.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.004_grants.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.005_policies_identity.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.006_policies_workspace_governance_authz.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.007_policies_workspace_scoped_domain.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.008_policies_events.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.009_policies_messaging.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.010_policies_notifications.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.011_policies_activity.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.012_policies_audit.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.013_policies_projection.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.014_policies_ops.sql",
+    ];
 
     public RlsPolicyApplier(ApplicationDbContext context, ILogger<RlsPolicyApplier> logger)
     {
@@ -16,78 +36,38 @@ public sealed class RlsPolicyApplier
 
     public async Task ApplyAsync(CancellationToken ct = default)
     {
-        var sql = """
-            DO $$
-            DECLARE
-                tbl text;
-                sch text;
-                workspace_schemas text[] := ARRAY[
-                    'workspace','governance','work','docs','collab',
-                    'automation','integration','billing','reporting',
-                    'activity','search','analytics','notifications'
-                ];
-            BEGIN
-                FOREACH sch IN ARRAY workspace_schemas
-                LOOP
-                    IF NOT EXISTS(SELECT 1 FROM information_schema.schemata s WHERE s.schema_name = sch) THEN
-                        CONTINUE;
-                    END IF;
+        var assembly = typeof(RlsPolicyApplier).Assembly;
+        var connection = (NpgsqlConnection)_context.Database.GetDbConnection();
 
-                    FOR tbl IN
-                        SELECT c.table_name FROM information_schema.columns c
-                        WHERE c.table_schema = sch
-                          AND c.column_name = 'workspace_id'
-                          AND c.table_name NOT IN ('workspace_usage_daily','feature_usage_daily')
-                        ORDER BY c.table_name
-                    LOOP
-                        EXECUTE format('ALTER TABLE %I.%I ENABLE ROW LEVEL SECURITY', sch, tbl);
-                        EXECUTE format('DROP POLICY IF EXISTS workspace_access ON %I.%I', sch, tbl);
-                        EXECUTE format(
-                            'CREATE POLICY workspace_access ON %I.%I FOR ALL USING (authz.current_user_has_workspace_access("workspace_id") OR ops.current_request_scope() = ''system'')',
-                            sch, tbl
-                        );
-                    END LOOP;
-                END LOOP;
+        if (connection.State != System.Data.ConnectionState.Open)
+            await connection.OpenAsync(ct);
 
-                -- Identity (user-scoped) tables
-                FOREACH tbl IN ARRAY ARRAY['users','user_profiles','user_sessions','oauth_accounts',
-                    'user_security_settings','user_mfa_methods','email_verification_tokens','password_reset_tokens']
-                LOOP
-                    IF NOT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_schema = 'identity' AND table_name = tbl) THEN
-                        CONTINUE;
-                    END IF;
-                    EXECUTE format('ALTER TABLE identity.%I ENABLE ROW LEVEL SECURITY', tbl);
-                    EXECUTE format('DROP POLICY IF EXISTS user_access ON identity.%I', tbl);
-                    IF tbl = 'users' THEN
-                        EXECUTE format('CREATE POLICY user_access ON identity.%I FOR ALL USING (id = ops.current_user_id() OR ops.current_request_scope() = ''system'')', tbl);
-                    ELSE
-                        EXECUTE format('CREATE POLICY user_access ON identity.%I FOR ALL USING (user_id = ops.current_user_id() OR ops.current_request_scope() = ''system'')', tbl);
-                    END IF;
-                END LOOP;
-
-                -- Reference tables (read-all policy)
-                FOREACH tbl IN ARRAY ARRAY['plans','plan_limits']
-                LOOP
-                    IF NOT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_schema = 'billing' AND table_name = tbl) THEN
-                        CONTINUE;
-                    END IF;
-                    EXECUTE format('ALTER TABLE billing.%I ENABLE ROW LEVEL SECURITY', tbl);
-                    EXECUTE format('DROP POLICY IF EXISTS read_all ON billing.%I', tbl);
-                    EXECUTE format('CREATE POLICY read_all ON billing.%I FOR SELECT USING (true)', tbl);
-                END LOOP;
-            END;
-            $$;
-            """;
-
-        try
+        foreach (var resourceName in ScriptNames)
         {
-            await _context.Database.ExecuteSqlRawAsync(sql, ct);
-            _logger.LogInformation("RLS policies applied via PL/pgSQL");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to apply RLS policies");
-            throw;
+            await using var stream = assembly.GetManifestResourceStream(resourceName);
+            if (stream is null)
+            {
+                _logger.LogWarning("RLS SQL resource '{Resource}' not found. Skipping.", resourceName);
+                continue;
+            }
+
+            using var reader = new StreamReader(stream);
+            var sql = await reader.ReadToEndAsync(ct);
+
+            try
+            {
+                _logger.LogInformation("Executing RLS script: {Script} (length={Length}, connection={Conn})",
+                    resourceName, sql.Length, connection.ConnectionString?.Split(';')[0]);
+                await using var cmd = new NpgsqlCommand(sql, connection);
+                cmd.CommandTimeout = 60;
+                await cmd.ExecuteNonQueryAsync(ct);
+                _logger.LogInformation("RLS script applied: {Script}", resourceName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to apply RLS script: {Script}", resourceName);
+                throw;
+            }
         }
     }
 }
