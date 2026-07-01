@@ -138,19 +138,6 @@ CREATE POLICY p_identity_api_tokens_worker_read ON identity.api_tokens
     FOR SELECT TO notrelix_worker
     USING (true);
 
--- identity.sso_providers
-ALTER TABLE identity.sso_providers ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS p_identity_sso_providers_auth_all ON identity.sso_providers;
-CREATE POLICY p_identity_sso_providers_auth_all ON identity.sso_providers
-    FOR ALL TO notrelix_auth
-    USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS p_identity_sso_providers_worker_read ON identity.sso_providers;
-CREATE POLICY p_identity_sso_providers_worker_read ON identity.sso_providers
-    FOR SELECT TO notrelix_worker
-    USING (true);
-
 -- identity.email_verification_tokens (auth only)
 ALTER TABLE identity.email_verification_tokens ENABLE ROW LEVEL SECURITY;
 
@@ -174,16 +161,3 @@ DROP POLICY IF EXISTS p_identity_user_login_attempts_auth_all ON identity.user_l
 CREATE POLICY p_identity_user_login_attempts_auth_all ON identity.user_login_attempts
     FOR ALL TO notrelix_auth
     USING (true) WITH CHECK (true);
-
--- identity.scim_directory_syncs
-ALTER TABLE identity.scim_directory_syncs ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS p_identity_scim_directory_syncs_auth_all ON identity.scim_directory_syncs;
-CREATE POLICY p_identity_scim_directory_syncs_auth_all ON identity.scim_directory_syncs
-    FOR ALL TO notrelix_auth
-    USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS p_identity_scim_directory_syncs_worker_read ON identity.scim_directory_syncs;
-CREATE POLICY p_identity_scim_directory_syncs_worker_read ON identity.scim_directory_syncs
-    FOR SELECT TO notrelix_worker
-    USING (true);

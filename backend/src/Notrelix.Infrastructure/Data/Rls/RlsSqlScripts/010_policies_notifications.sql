@@ -140,19 +140,6 @@ CREATE POLICY p_resource_read_states_worker_all ON collab.resource_read_states
     FOR ALL TO notrelix_worker
     USING (true) WITH CHECK (true);
 
--- collab.notification_deliveries (legacy table, not canonical notifications schema)
-ALTER TABLE collab.notification_deliveries ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS p_notification_deliveries_worker_all ON collab.notification_deliveries;
-CREATE POLICY p_notification_deliveries_worker_all ON collab.notification_deliveries
-    FOR ALL TO notrelix_worker
-    USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS p_notification_deliveries_support_read ON collab.notification_deliveries;
-CREATE POLICY p_notification_deliveries_support_read ON collab.notification_deliveries
-    FOR SELECT TO notrelix_support_readonly
-    USING (true);
-
 -- notifications.email_outbox (internal — app must NOT read)
 ALTER TABLE notifications.email_outbox ENABLE ROW LEVEL SECURITY;
 

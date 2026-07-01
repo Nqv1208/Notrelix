@@ -12,20 +12,21 @@ public sealed class RlsPolicyApplier
 
     private static readonly string[] ScriptNames =
     [
-        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.001_roles.sql",
-        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.002_helpers.sql",
-        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.003_authz_projection.sql",
-        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.004_grants.sql",
-        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.005_policies_identity.sql",
-        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.006_policies_workspace_governance_authz.sql",
-        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.007_policies_workspace_scoped_domain.sql",
-        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.008_policies_events.sql",
-        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.009_policies_messaging.sql",
-        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.010_policies_notifications.sql",
-        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.011_policies_activity.sql",
-        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.012_policies_audit.sql",
-        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.013_policies_projection.sql",
-        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.014_policies_ops.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.rls-policy-pack.sql",
+        // "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.001_roles.sql",
+        // "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.002_helpers.sql",
+        // "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.003_authz_projection.sql",
+        // "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.004_grants.sql",
+        // "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.005_policies_identity.sql",
+        // "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.006_policies_workspace_governance_authz.sql",
+        // "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.007_policies_workspace_scoped_domain.sql",
+        // "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.008_policies_events.sql",
+        // "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.009_policies_messaging.sql",
+        // "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.010_policies_notifications.sql",
+        // "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.011_policies_activity.sql",
+        // "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.012_policies_audit.sql",
+        // "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.013_policies_projection.sql",
+        // "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.014_policies_ops.sql",
     ];
 
     public RlsPolicyApplier(ApplicationDbContext context, ILogger<RlsPolicyApplier> logger)

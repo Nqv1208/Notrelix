@@ -146,20 +146,20 @@ DROP POLICY IF EXISTS p_workspace_invitations_worker_all ON workspace.workspace_
 CREATE POLICY p_workspace_invitations_worker_all ON workspace.workspace_invitations
     FOR ALL TO notrelix_worker USING (true) WITH CHECK (true);
 
--- authz.workspace_access_grants
-ALTER TABLE authz.workspace_access_grants ENABLE ROW LEVEL SECURITY;
+-- authz.access_grants
+ALTER TABLE authz.access_grants ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS p_authz_grants_app_select_own ON authz.workspace_access_grants;
-CREATE POLICY p_authz_grants_app_select_own ON authz.workspace_access_grants
+DROP POLICY IF EXISTS p_authz_grants_app_select_own ON authz.access_grants;
+CREATE POLICY p_authz_grants_app_select_own ON authz.access_grants
     FOR SELECT TO notrelix_app
-    USING (user_id = ops.current_user_id());
+    USING (user_id = ops.current_user_id() AND (account_id = ops.current_account_id()::uuid OR ops.current_account_id() = ''));
 
-DROP POLICY IF EXISTS p_authz_grants_worker_all ON authz.workspace_access_grants;
-CREATE POLICY p_authz_grants_worker_all ON authz.workspace_access_grants
+DROP POLICY IF EXISTS p_authz_grants_worker_all ON authz.access_grants;
+CREATE POLICY p_authz_grants_worker_all ON authz.access_grants
     FOR ALL TO notrelix_worker USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS p_authz_grants_support_read ON authz.workspace_access_grants;
-CREATE POLICY p_authz_grants_support_read ON authz.workspace_access_grants
+DROP POLICY IF EXISTS p_authz_grants_support_read ON authz.access_grants;
+CREATE POLICY p_authz_grants_support_read ON authz.access_grants
     FOR SELECT TO notrelix_support_readonly USING (true);
 
 -- governance tables (workspace-scoped, admin write)

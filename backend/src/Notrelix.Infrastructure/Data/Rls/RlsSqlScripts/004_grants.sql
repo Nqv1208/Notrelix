@@ -33,7 +33,6 @@ GRANT SELECT, INSERT, UPDATE ON identity.user_security_settings TO notrelix_app;
 GRANT SELECT, INSERT, UPDATE ON identity.user_mfa_methods TO notrelix_app;
 GRANT SELECT, INSERT, UPDATE ON identity.api_tokens TO notrelix_app;
 GRANT SELECT, INSERT, UPDATE ON identity.oauth_accounts TO notrelix_app;
-GRANT SELECT, INSERT, UPDATE ON identity.sso_providers TO notrelix_app;
 
 -- Workspace tables
 GRANT SELECT, INSERT, UPDATE ON workspace.workspaces TO notrelix_app;
@@ -157,7 +156,6 @@ GRANT SELECT, INSERT, UPDATE ON notifications.notification_items TO notrelix_app
 GRANT SELECT, INSERT, UPDATE ON notifications.notification_recipients TO notrelix_app;
 GRANT SELECT, INSERT, UPDATE ON notifications.notification_preferences TO notrelix_app;
 GRANT SELECT, INSERT, UPDATE ON notifications.notification_counters TO notrelix_app;
-GRANT SELECT, INSERT, UPDATE ON collab.notification_deliveries TO notrelix_app;
 GRANT SELECT, INSERT, UPDATE ON collab.resource_read_states TO notrelix_app;
 -- NO SELECT on notifications.email_outbox — internal worker table
 -- NO SELECT on notifications.email_delivery_attempts — internal worker table
