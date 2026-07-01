@@ -1,6 +1,5 @@
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Domain.Common.Auditing;
-using Notrelix.Domain.SharedKernel;
 using Notrelix.Infrastructure.Data;
 
 namespace Notrelix.Infrastructure.Auditing;

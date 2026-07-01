@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Notrelix.Application.Common.Abstractions;
 
 namespace Notrelix.Infrastructure.Identity.Services;

@@ -1,3 +1,13 @@
+// Framework
+global using MediatR;
+global using FluentValidation;
+global using FluentValidation.Results;
+global using Microsoft.EntityFrameworkCore;
+global using Microsoft.EntityFrameworkCore.Infrastructure;
+global using Microsoft.Extensions.Configuration;
+global using Microsoft.Extensions.Hosting;
+global using Microsoft.Extensions.Logging;
+
 // Common
 global using Notrelix.Domain.Common;
 global using Notrelix.Domain.SharedKernel;

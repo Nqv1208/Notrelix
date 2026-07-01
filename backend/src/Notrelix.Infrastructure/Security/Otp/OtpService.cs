@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using Notrelix.Application.Common.Abstractions;
 
 namespace Notrelix.Infrastructure.Security.Otp;

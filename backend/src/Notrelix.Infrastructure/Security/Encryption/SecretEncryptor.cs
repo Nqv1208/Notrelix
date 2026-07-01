@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Notrelix.Infrastructure.Security.Encryption;
 
 public interface ISecretEncryptor

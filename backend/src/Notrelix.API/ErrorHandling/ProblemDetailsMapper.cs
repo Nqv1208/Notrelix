@@ -17,7 +17,7 @@ public static class ProblemDetailsMapper
     {
         (int StatusCode, string ErrorCode, string Title, string Detail, IReadOnlyDictionary<string, string[]>? Errors) mapped = exception switch
         {
-            ValidationException ex => (
+            FluentValidation.ValidationException ex => (
                 StatusCodes.Status400BadRequest,
                 ErrorCodes.ValidationFailed,
                 "Validation failed",

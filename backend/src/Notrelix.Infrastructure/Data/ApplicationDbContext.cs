@@ -4,7 +4,6 @@ using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.Accounts.Abstractions;
-using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Domain.Analytics.Dashboards;
 using Notrelix.Domain.Analytics.Snapshots;

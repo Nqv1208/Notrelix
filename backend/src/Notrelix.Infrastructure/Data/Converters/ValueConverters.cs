@@ -2,7 +2,6 @@ using Notrelix.Domain.Billing.Usage;
 using Notrelix.Domain.Documents.Versions;
 using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Domain.Integrations.Sync;
-using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.WorkManagement.Views;
 
 namespace Notrelix.Infrastructure.Data.Converters;
