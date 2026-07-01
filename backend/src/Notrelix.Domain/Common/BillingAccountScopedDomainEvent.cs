@@ -1,9 +1,8 @@
 namespace Notrelix.Domain.Common;
 
-public abstract record BillingAccountScopedDomainEvent : DomainEvent, IAccountScoped
+public abstract record BillingAccountScopedDomainEvent : WorkspaceScopedDomainEvent, IAccountScoped
 {
     public Guid AccountId { get; }
-    public Guid? WorkspaceId { get; }
 
     protected BillingAccountScopedDomainEvent(
         Guid accountId,
@@ -12,10 +11,9 @@ public abstract record BillingAccountScopedDomainEvent : DomainEvent, IAccountSc
         Guid? actorUserId = null,
         string? correlationId = null,
         string? causationId = null)
-        : base(occurredAt, workspaceId, actorUserId)
+        : base(workspaceId ?? accountId, occurredAt, actorUserId, correlationId, causationId)
     {
         AccountId = accountId;
-        WorkspaceId = workspaceId;
         CorrelationId = correlationId;
         CausationId = causationId;
     }

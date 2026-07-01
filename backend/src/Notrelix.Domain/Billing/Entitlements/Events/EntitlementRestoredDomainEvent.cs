@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Billing.Entitlements.Events;
 
 public sealed record EntitlementRestoredDomainEvent(
     Guid AccountId,
-    Guid? WorkspaceId,
+    Guid WorkspaceId,
     Guid EntitlementId,
     string FeatureCode,
     Guid RestoredBy,

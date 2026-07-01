@@ -1,6 +1,6 @@
 namespace Notrelix.Domain.Common;
 
-public abstract record AccountScopedDomainEvent : DomainEvent, IAccountScoped
+public abstract record AccountScopedDomainEvent : WorkspaceScopedDomainEvent, IAccountScoped
 {
     public Guid AccountId { get; }
 
@@ -10,7 +10,7 @@ public abstract record AccountScopedDomainEvent : DomainEvent, IAccountScoped
         Guid? actorUserId = null,
         string? correlationId = null,
         string? causationId = null)
-        : base(occurredAt, accountId, actorUserId)
+        : base(accountId, occurredAt, actorUserId, correlationId, causationId)
     {
         AccountId = accountId;
         CorrelationId = correlationId;

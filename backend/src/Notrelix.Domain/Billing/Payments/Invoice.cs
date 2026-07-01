@@ -30,7 +30,7 @@ public class Invoice : AggregateRoot, IAccountScoped
         };
 
         invoice.SetAuditOnCreate(null, createdAt);
-        invoice.AddDomainEvent(new InvoiceCreatedDomainEvent(accountId, invoice.Id, workspaceId, amount, dueAt, createdAt));
+        invoice.AddDomainEvent(new InvoiceCreatedDomainEvent(accountId, invoice.Id, workspaceId ?? Guid.Empty, amount, dueAt, createdAt));
         return invoice;
     }
 
@@ -40,7 +40,7 @@ public class Invoice : AggregateRoot, IAccountScoped
             throw new BusinessRuleException("Only draft invoices can be issued.");
         Status = InvoiceStatus.Open;
         SetAuditOnUpdate(null, issuedAt);
-        AddDomainEvent(new InvoiceIssuedDomainEvent(AccountId, Id, WorkspaceId, Amount, issuedAt));
+        AddDomainEvent(new InvoiceIssuedDomainEvent(AccountId, Id, WorkspaceId ?? Guid.Empty, Amount, issuedAt));
     }
 
     public void MarkPaid(DateTimeOffset paidAt)
@@ -51,7 +51,7 @@ public class Invoice : AggregateRoot, IAccountScoped
 
         Status = InvoiceStatus.Paid;
         SetAuditOnUpdate(null, paidAt);
-        AddDomainEvent(new InvoicePaidDomainEvent(AccountId, Id, WorkspaceId, paidAt));
+        AddDomainEvent(new InvoicePaidDomainEvent(AccountId, Id, WorkspaceId ?? Guid.Empty, paidAt));
     }
 
     public void MarkFailed(string reason, DateTimeOffset failedAt)
@@ -63,7 +63,7 @@ public class Invoice : AggregateRoot, IAccountScoped
 
         Status = InvoiceStatus.Uncollectible;
         SetAuditOnUpdate(null, failedAt);
-        AddDomainEvent(new InvoiceFailedDomainEvent(AccountId, Id, WorkspaceId, reason, failedAt));
+        AddDomainEvent(new InvoiceFailedDomainEvent(AccountId, Id, WorkspaceId ?? Guid.Empty, reason, failedAt));
     }
 
     public void Void(DateTimeOffset voidedAt)
@@ -75,7 +75,7 @@ public class Invoice : AggregateRoot, IAccountScoped
         Status = InvoiceStatus.Void;
         SetAuditOnUpdate(null, voidedAt);
         IncrementVersion();
-        AddDomainEvent(new InvoiceVoidedDomainEvent(AccountId, Id, WorkspaceId, voidedAt));
+        AddDomainEvent(new InvoiceVoidedDomainEvent(AccountId, Id, WorkspaceId ?? Guid.Empty, voidedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -83,7 +83,7 @@ public class Invoice : AggregateRoot, IAccountScoped
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
         IncrementVersion();
-        AddDomainEvent(new InvoiceSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new InvoiceSoftDeletedDomainEvent(AccountId, WorkspaceId ?? Guid.Empty, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -91,6 +91,6 @@ public class Invoice : AggregateRoot, IAccountScoped
         if (!IsDeleted) return;
         base.Restore(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new InvoiceRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new InvoiceRestoredDomainEvent(AccountId, WorkspaceId ?? Guid.Empty, Id, restoredBy, restoredAt));
     }
 }

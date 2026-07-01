@@ -13,7 +13,7 @@ public class SubscriptionTests
         var now = DateTimeOffset.UtcNow;
         var actor = Guid.NewGuid();
 
-        var subscription = Subscription.Create(Guid.NewGuid(), planId, SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
+        var subscription = Subscription.Create(Guid.NewGuid(), planId, SubscriptionTier.Pro, now, now.AddDays(30), actor, now, workspaceId);
 
         subscription.WorkspaceId.Should().Be(workspaceId);
         subscription.PlanId.Should().Be(planId);

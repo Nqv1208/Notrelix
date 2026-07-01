@@ -33,7 +33,7 @@ public class Subscription : AggregateRoot, IAccountScoped
         };
 
         subscription.SetAuditOnCreate(createdBy, createdAt);
-        subscription.AddDomainEvent(new SubscriptionStartedDomainEvent(accountId, workspaceId, subscription.Id, planId, createdAt));
+        subscription.AddDomainEvent(new SubscriptionStartedDomainEvent(accountId, workspaceId ?? Guid.Empty, subscription.Id, planId, createdAt));
         return subscription;
     }
 
@@ -49,7 +49,7 @@ public class Subscription : AggregateRoot, IAccountScoped
         PlanId = newPlanId;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new SubscriptionChangedDomainEvent(AccountId, WorkspaceId, Id, oldPlanId, newPlanId, updatedAt));
+        AddDomainEvent(new SubscriptionChangedDomainEvent(AccountId, WorkspaceId ?? Guid.Empty, Id, oldPlanId, newPlanId, updatedAt));
     }
 
     public void ScheduleCancellation(Guid updatedBy, DateTimeOffset occurredAt)
@@ -59,7 +59,7 @@ public class Subscription : AggregateRoot, IAccountScoped
         CancelAtPeriodEnd = true;
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
-        AddDomainEvent(new SubscriptionCancellationScheduledDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
+        AddDomainEvent(new SubscriptionCancellationScheduledDomainEvent(AccountId, WorkspaceId ?? Guid.Empty, Id, updatedBy, occurredAt));
     }
 
     public void CancelImmediately(Guid updatedBy, DateTimeOffset cancelledAt)
@@ -69,7 +69,7 @@ public class Subscription : AggregateRoot, IAccountScoped
         Status = SubscriptionStatus.Canceled;
         SetAuditOnUpdate(updatedBy, cancelledAt);
         IncrementVersion();
-        AddDomainEvent(new SubscriptionCanceledDomainEvent(AccountId, WorkspaceId, Id, updatedBy, cancelledAt));
+        AddDomainEvent(new SubscriptionCanceledDomainEvent(AccountId, WorkspaceId ?? Guid.Empty, Id, updatedBy, cancelledAt));
     }
 
     public void Renew(DateTimeOffset newStart, DateTimeOffset newEnd, Guid updatedBy, DateTimeOffset renewedAt)
@@ -84,7 +84,7 @@ public class Subscription : AggregateRoot, IAccountScoped
         Status = SubscriptionStatus.Active;
         SetAuditOnUpdate(updatedBy, renewedAt);
         IncrementVersion();
-        AddDomainEvent(new SubscriptionRenewedDomainEvent(AccountId, WorkspaceId, Id, newStart, newEnd, renewedAt));
+        AddDomainEvent(new SubscriptionRenewedDomainEvent(AccountId, WorkspaceId ?? Guid.Empty, Id, newStart, newEnd, renewedAt));
     }
 
     public void Expire(Guid updatedBy, DateTimeOffset expiredAt)
@@ -94,7 +94,7 @@ public class Subscription : AggregateRoot, IAccountScoped
         Status = SubscriptionStatus.Expired;
         SetAuditOnUpdate(updatedBy, expiredAt);
         IncrementVersion();
-        AddDomainEvent(new SubscriptionExpiredDomainEvent(AccountId, WorkspaceId, Id, expiredAt));
+        AddDomainEvent(new SubscriptionExpiredDomainEvent(AccountId, WorkspaceId ?? Guid.Empty, Id, expiredAt));
     }
 
     public void MarkPastDue(Guid updatedBy, DateTimeOffset occurredAt)
@@ -104,7 +104,7 @@ public class Subscription : AggregateRoot, IAccountScoped
         Status = SubscriptionStatus.PastDue;
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
-        AddDomainEvent(new SubscriptionPastDueDomainEvent(AccountId, WorkspaceId, Id, occurredAt));
+        AddDomainEvent(new SubscriptionPastDueDomainEvent(AccountId, WorkspaceId ?? Guid.Empty, Id, occurredAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -112,7 +112,7 @@ public class Subscription : AggregateRoot, IAccountScoped
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
         IncrementVersion();
-        AddDomainEvent(new SubscriptionSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new SubscriptionSoftDeletedDomainEvent(AccountId, WorkspaceId ?? Guid.Empty, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -120,6 +120,6 @@ public class Subscription : AggregateRoot, IAccountScoped
         if (!IsDeleted) return;
         base.Restore(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new SubscriptionRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new SubscriptionRestoredDomainEvent(AccountId, WorkspaceId ?? Guid.Empty, Id, restoredBy, restoredAt));
     }
 }

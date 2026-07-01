@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Billing.Entitlements.Events;
 
 public sealed record EntitlementSoftDeletedDomainEvent(
     Guid AccountId,
-    Guid? WorkspaceId,
+    Guid WorkspaceId,
     Guid EntitlementId,
     string FeatureCode,
     Guid DeletedBy,

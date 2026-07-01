@@ -77,7 +77,6 @@ public class DomainEventCompletenessTests
     [InlineData("ResourceLink")]
     [InlineData("Comment")]
     [InlineData("Reaction")]
-    [InlineData("Notification")]
     [InlineData("IntegrationConnection")]
     [InlineData("CalendarIntegration")]
     [InlineData("WebhookSubscription")]
@@ -132,7 +131,6 @@ public class DomainEventCompletenessTests
         "Form" => "WorkManagement.Forms",
         "Comment" => "Collaboration.Comments",
         "Reaction" => "Collaboration.Reactions",
-        "Notification" => "Collaboration.Notifications",
         "ResourceLink" => "Documents.ResourceLinks",
         "ShareLink" => "Governance.ShareLinks",
         "CustomRole" => "Governance.Roles",
