@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Accounts.WorkspaceRoutes;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Account;

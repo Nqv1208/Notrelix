@@ -1,4 +1,3 @@
-using MediatR;
 using Notrelix.Application.Common.Models;
 using Notrelix.Domain.Automation.RulesEngine;
 
@@ -39,6 +38,7 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
         var config = AutomationConfiguration.Create(trigger, action);
 
         var rule = AutomationRule.Create(
+            Guid.Empty,
             request.WorkspaceId,
             request.Name,
             config,

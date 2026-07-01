@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Workspaces.Teams;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Workspaces;

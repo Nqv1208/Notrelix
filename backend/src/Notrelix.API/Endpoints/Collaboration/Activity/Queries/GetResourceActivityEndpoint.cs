@@ -1,6 +1,5 @@
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Collaboration.Activity.Queries.GetResourceActivity;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.API.Endpoints.Collaboration.Activity.Queries;
 

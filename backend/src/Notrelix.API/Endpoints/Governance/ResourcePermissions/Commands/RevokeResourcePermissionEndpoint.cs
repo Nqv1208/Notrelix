@@ -1,6 +1,5 @@
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Governance.ResourcePermissions.Commands.RevokeResourcePermission;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.API.Endpoints.Governance.ResourcePermissions.Commands;
 

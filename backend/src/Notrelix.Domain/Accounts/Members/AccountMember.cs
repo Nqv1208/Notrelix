@@ -1,6 +1,3 @@
-using Notrelix.Domain.Accounts.Members.Events;
-using Notrelix.Domain.Accounts.Rules;
-
 namespace Notrelix.Domain.Accounts.Members;
 
 public class AccountMember : AggregateRoot, IAccountScoped

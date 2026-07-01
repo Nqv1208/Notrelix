@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.OpenApi.Models;
 using Notrelix.API.ErrorHandling;
 using Notrelix.API.Options;
 using Notrelix.API.RateLimiting;

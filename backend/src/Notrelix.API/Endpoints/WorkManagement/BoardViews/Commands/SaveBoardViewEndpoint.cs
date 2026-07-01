@@ -1,7 +1,6 @@
 using Notrelix.API.Contracts.WorkManagement.BoardViews.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SaveBoardView;
-using Notrelix.Domain.WorkManagement;
 
 namespace Notrelix.API.Endpoints.WorkManagement.BoardViews.Commands;
 

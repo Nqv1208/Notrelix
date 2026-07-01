@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Documents.ResourceLinks;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Documents;

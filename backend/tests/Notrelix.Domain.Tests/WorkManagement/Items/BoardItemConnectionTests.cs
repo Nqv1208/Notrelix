@@ -29,7 +29,7 @@ public class BoardItemConnectionTests
     [Fact]
     public void Create_WithCustomSyncStatus_ShouldSetStatus()
     {
-        var connection = BoardItemConnection.Create(Guid.NewGuid(), 
+        var connection = BoardItemConnection.Create(Guid.NewGuid(),
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow,
             syncStatus: BoardItemSyncStatus.Pending);
@@ -42,7 +42,7 @@ public class BoardItemConnectionTests
     {
         var itemId = Guid.NewGuid();
 
-        var act = () => BoardItemConnection.Create(Guid.NewGuid(), 
+        var act = () => BoardItemConnection.Create(Guid.NewGuid(),
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), itemId,
             Guid.NewGuid(), itemId, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -83,7 +83,7 @@ public class BoardItemConnectionTests
 
     private static BoardItemConnection CreateConnection()
     {
-        return BoardItemConnection.Create(Guid.NewGuid(), 
+        return BoardItemConnection.Create(Guid.NewGuid(),
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
     }

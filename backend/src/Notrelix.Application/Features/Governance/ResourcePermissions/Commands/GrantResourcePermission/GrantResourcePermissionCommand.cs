@@ -1,9 +1,6 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.DTOs;
 using SharedKernel = Notrelix.Domain.SharedKernel;
-using System.Text.Json;
 
 namespace Notrelix.Application.Features.Governance.ResourcePermissions.Commands.GrantResourcePermission;
 
@@ -81,6 +78,7 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
         }
 
         var permission = ResourcePermission.Grant(
+            Guid.Empty,
             request.WorkspaceId,
             request.ResourceType,
             request.ResourceId,
@@ -101,25 +99,6 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
             AuditMetadata.Create(),
             AuditSeverity.Info,
             cancellationToken: cancellationToken);
-
-        // Keep ActivityLog for user feed
-        var metadata = JsonSerializer.Serialize(new
-        {
-            subjectType = request.SubjectType,
-            subjectId = request.SubjectId,
-            level = request.Level,
-            expiresAt = request.ExpiresAt
-        });
-
-        var activityLog = ActivityLog.Record(
-            request.WorkspaceId,
-            actorId,
-            ActivityType.Created,
-            SharedKernel.ResourceRef.Create(request.ResourceType, request.ResourceId),
-            _dateTimeProvider.UtcNow,
-            ActivityMetadata.Create(SharedKernel.JsonValue.Create(metadata))
-        );
-        _context.ActivityLogs.Add(activityLog);
 
         var dto = new ResourcePermissionDto(
             permission.Id,

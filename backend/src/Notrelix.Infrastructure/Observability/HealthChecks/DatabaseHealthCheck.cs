@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Notrelix.Infrastructure.Data;
 
 namespace Notrelix.Infrastructure.Observability.HealthChecks;

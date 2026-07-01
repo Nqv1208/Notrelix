@@ -1,4 +1,3 @@
-using MediatR;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
 

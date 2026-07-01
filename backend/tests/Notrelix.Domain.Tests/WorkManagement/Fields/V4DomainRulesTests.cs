@@ -22,7 +22,7 @@ public class V4DomainRulesTests
         var otherWorkspaceId = Guid.NewGuid();
         var form = Form.Create(Guid.NewGuid(), _workspaceId, _boardId, "Contact Form", "contact-form", _actorId, _now);
 
-        var question = FormQuestion.Create(Guid.NewGuid(), 
+        var question = FormQuestion.Create(Guid.NewGuid(),
             otherWorkspaceId,
             form.Id,
             boardFieldId: null,
@@ -43,7 +43,7 @@ public class V4DomainRulesTests
     {
         var itemId = Guid.NewGuid();
 
-        Action act = () => ItemDependency.Create(Guid.NewGuid(), 
+        Action act = () => ItemDependency.Create(Guid.NewGuid(),
             _workspaceId,
             _boardId,
             itemId,
@@ -118,7 +118,7 @@ public class V4DomainRulesTests
     [Fact]
     public void PermissionRule_IsActive_ShouldReturnFalse_WhenStartsAtIsFutureOrExpiresAtIsPast()
     {
-        var ruleFuture = PermissionRule.Create(Guid.NewGuid(), 
+        var ruleFuture = PermissionRule.Create(Guid.NewGuid(),
             _workspaceId,
             PermissionScopeType.Workspace,
             null,
@@ -132,7 +132,7 @@ public class V4DomainRulesTests
             _now,
             startsAt: _now.AddDays(1)); // future start
 
-        var ruleExpired = PermissionRule.Create(Guid.NewGuid(), 
+        var ruleExpired = PermissionRule.Create(Guid.NewGuid(),
             _workspaceId,
             PermissionScopeType.Workspace,
             null,
@@ -153,7 +153,7 @@ public class V4DomainRulesTests
     [Fact]
     public void ShareLink_IsExpired_ShouldReturnTrue_WhenExpiryDatePassed()
     {
-        var link = ShareLink.Create(Guid.NewGuid(), 
+        var link = ShareLink.Create(Guid.NewGuid(),
             _workspaceId,
             ResourceType.Board,
             _boardId,
@@ -170,7 +170,7 @@ public class V4DomainRulesTests
     public void WorkspaceFeatureUsage_Consume_ShouldThrowAndRaiseEvent_WhenLimitExceeded()
     {
         var featureCode = FeatureCode.Create("Boards");
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), 
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(),
             _workspaceId,
             featureCode,
             currentUsage: 8,
@@ -193,7 +193,7 @@ public class V4DomainRulesTests
     [Fact]
     public void WorkspaceFeatureUsage_Release_ShouldThrow_WhenGoingBelowZero()
     {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), 
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(),
             _workspaceId,
             FeatureCode.Create("Boards"),
             currentUsage: 2,

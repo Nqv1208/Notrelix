@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using Notrelix.Application.Common.Models;
 
@@ -82,6 +80,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
                         {
                             await EnsurePageCanBeLinkedAsync(pageId.Value, card.WorkspaceId, ct);
                             var link = BoardItemLink.Create(
+                                Guid.Empty,
                                 card.WorkspaceId, card.BoardId, card.Id,
                                 ResourceRef.Create(ResourceType.Page, pageId.Value, card.WorkspaceId),
                                 BoardItemLinkType.Reference,
@@ -154,6 +153,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
         foreach (var userId in requested.Where(userId => !existingUserIds.Contains(userId)))
         {
             var member = BoardItemMember.Create(
+                Guid.Empty,
                 card.WorkspaceId, card.BoardId, card.Id,
                 userId, _currentUser.UserId, now);
             _context.BoardItemMembers.Add(member);

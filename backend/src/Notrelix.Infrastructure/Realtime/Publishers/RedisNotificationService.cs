@@ -1,4 +1,3 @@
-using StackExchange.Redis;
 using System.Text.Json;
 using Notrelix.Application.Common.Abstractions;
 

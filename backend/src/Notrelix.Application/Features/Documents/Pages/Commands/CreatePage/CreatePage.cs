@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.Documents.Pages.Commands.CreatePage;
@@ -29,7 +27,7 @@ public class CreatePageCommandHandler : IRequestHandler<CreatePageCommand, Resul
             .AnyAsync(workspace => workspace.Id == request.WorkspaceId && workspace.Status == WorkspaceStatus.Active && !workspace.IsDeleted, ct);
         if (!workspaceExists) throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
-        var page = Page.Create(request.WorkspaceId, request.Title, _currentUser.UserId, _dateTimeProvider.UtcNow, request.ParentId);
+        var page = Page.Create(Guid.Empty, request.WorkspaceId, request.Title, _currentUser.UserId, _dateTimeProvider.UtcNow, request.ParentId);
         _context.Pages.Add(page);
 
         return Result<Guid>.Success(page.Id);

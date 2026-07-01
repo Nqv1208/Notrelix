@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.Extensions.Logging;
 using Notrelix.Application.Common.Abstractions.Rls;
 
 namespace Notrelix.Application.Common.Behaviors;

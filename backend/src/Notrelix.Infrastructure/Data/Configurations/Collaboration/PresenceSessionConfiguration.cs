@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Collaboration.Presence;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Collaboration;

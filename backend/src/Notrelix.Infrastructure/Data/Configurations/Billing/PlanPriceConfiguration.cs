@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Billing.Plans;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Billing;

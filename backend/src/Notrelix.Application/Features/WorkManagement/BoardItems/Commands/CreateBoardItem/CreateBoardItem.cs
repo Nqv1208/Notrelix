@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CreateBoardItem;
@@ -41,6 +39,7 @@ public class CreateBoardItemCommandHandler : IRequestHandler<CreateBoardItemComm
         var position = FractionalIndex.Create(request.Position.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
         var item = BoardItem.Create(
+            Guid.Empty,
             request.WorkspaceId,
             request.BoardId,
             request.GroupId,

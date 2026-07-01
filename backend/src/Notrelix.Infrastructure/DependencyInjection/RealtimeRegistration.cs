@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Messaging;
 using Notrelix.Infrastructure.Realtime.Publishers;

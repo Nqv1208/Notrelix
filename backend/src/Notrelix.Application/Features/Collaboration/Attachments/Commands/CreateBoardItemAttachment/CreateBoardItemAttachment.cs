@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Collaboration.Attachments.DTOs;
 
@@ -41,7 +39,7 @@ public class CreateBoardItemAttachmentCommandHandler : IRequestHandler<CreateBoa
         var now = _dateTimeProvider.UtcNow;
         var target = ResourceRef.Create(ResourceType.BoardItem, request.BoardItemId, item.WorkspaceId);
         var metadata = FileMetadata.Create(request.Filename, request.SizeBytes ?? 0, request.ContentType ?? "application/octet-stream", url: request.Url);
-        var attachment = Attachment.Create(item.WorkspaceId, target, AttachmentType.Link, metadata, _currentUser.UserId, now);
+        var attachment = Attachment.Create(Guid.Empty, item.WorkspaceId, target, AttachmentType.Link, metadata, _currentUser.UserId, now);
 
         _context.Attachments.Add(attachment);
 

@@ -1,7 +1,6 @@
 using Notrelix.API.Contracts.Workspaces.Members.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember;
-using Notrelix.Domain.Workspaces.Members;
 
 namespace Notrelix.API.Endpoints.Workspaces.Members.Commands;
 

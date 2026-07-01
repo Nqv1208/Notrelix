@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DuplicateBoardGroup;
@@ -42,7 +40,7 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
 
         var now = _timeProvider.UtcNow;
 
-        var duplicate = BoardGroup.Create(board.WorkspaceId, source.BoardId, $"{source.Title} copy", source.Color, nextPosition, _currentUser.UserId, now);
+        var duplicate = BoardGroup.Create(Guid.Empty, board.WorkspaceId, source.BoardId, $"{source.Title} copy", source.Color, nextPosition, _currentUser.UserId, now);
         _context.BoardGroups.Add(duplicate);
 
         var cards = await _context.BoardItems
@@ -62,6 +60,7 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
     internal static BoardItem CloneCard(BoardItem source, Guid groupId, Guid boardId, Guid workspaceId, Guid createdByUserId, string name, FractionalIndex position, DateTimeOffset createdAt)
     {
         var copy = BoardItem.Create(
+            Guid.Empty,
             workspaceId,
             boardId,
             groupId,

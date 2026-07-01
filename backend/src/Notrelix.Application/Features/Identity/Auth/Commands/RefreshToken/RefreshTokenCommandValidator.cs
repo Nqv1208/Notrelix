@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace Notrelix.Application.Features.Identity.Auth.Commands.RefreshToken;
 
 // Validator cho RefreshTokenCommand

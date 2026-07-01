@@ -1,7 +1,4 @@
 using System.Reflection;
-using FluentValidation;
-using MediatR;
-using Microsoft.Extensions.Hosting;
 using Notrelix.Application.Common.Behaviors;
 using Notrelix.Application.Common.Security;
 

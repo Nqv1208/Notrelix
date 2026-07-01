@@ -1,6 +1,5 @@
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.RateLimiting;
-using StackExchange.Redis;
 
 namespace Notrelix.Infrastructure.RateLimiting;
 

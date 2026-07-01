@@ -1,7 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Notifications;

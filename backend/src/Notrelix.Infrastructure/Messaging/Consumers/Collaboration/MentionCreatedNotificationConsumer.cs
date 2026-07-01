@@ -1,6 +1,3 @@
-using MassTransit;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Notrelix.Application.Events.Collaboration;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Notifications;

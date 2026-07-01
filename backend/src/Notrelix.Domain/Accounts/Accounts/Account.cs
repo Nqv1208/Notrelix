@@ -1,5 +1,3 @@
-using Notrelix.Domain.Accounts.Accounts.Events;
-
 namespace Notrelix.Domain.Accounts.Accounts;
 
 public class Account : AggregateRoot

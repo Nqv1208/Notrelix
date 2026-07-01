@@ -1,7 +1,6 @@
 using Notrelix.API.Contracts.Collaboration.Comments.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.API.Endpoints.Collaboration.Comments.Commands;
 

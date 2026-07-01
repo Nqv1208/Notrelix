@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
@@ -15,12 +13,14 @@ public class CreateWorkspaceCommandHandler : IRequestHandler<CreateWorkspaceComm
 {
     private readonly IWorkspaceDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly ICurrentAccount _currentAccount;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public CreateWorkspaceCommandHandler(IWorkspaceDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public CreateWorkspaceCommandHandler(IWorkspaceDbContext context, ICurrentUser currentUser, ICurrentAccount currentAccount, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
+        _currentAccount = currentAccount;
         _dateTimeProvider = dateTimeProvider;
     }
 
@@ -35,6 +35,7 @@ public class CreateWorkspaceCommandHandler : IRequestHandler<CreateWorkspaceComm
             : slug.Value;
 
         var creationResult = WorkspaceFactory.CreateWithOwner(
+            _currentAccount.AccountId ?? Guid.Empty,
             _currentUser.UserId, request.Name, finalSlug,
             _dateTimeProvider.UtcNow, request.IsPersonal,
             request.Description);

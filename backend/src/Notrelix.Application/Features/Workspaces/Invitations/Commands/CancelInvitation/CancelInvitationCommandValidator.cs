@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.CancelInvitation;
 
 public class CancelInvitationCommandValidator : AbstractValidator<CancelInvitationCommand>

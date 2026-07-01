@@ -1,8 +1,6 @@
-using MediatR;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.DTOs;
 using SharedKernel = Notrelix.Domain.SharedKernel;
-using System.Text.Json;
 
 namespace Notrelix.Application.Features.Governance.ShareLinks.Commands.CreateShareLink;
 
@@ -54,6 +52,7 @@ public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkComm
         var tokenHash = ShareLinkTokenHash.Create(rawToken);
 
         var shareLink = ShareLink.Create(
+            Guid.Empty,
             request.WorkspaceId,
             request.ResourceType,
             request.ResourceId,
@@ -65,24 +64,6 @@ public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkComm
         );
 
         _context.ShareLinks.Add(shareLink);
-
-        // Write Audit Log
-        var metadata = JsonSerializer.Serialize(new
-        {
-            level = request.Level,
-            expiresAt = request.ExpiresAt,
-            shareLinkId = shareLink.Id
-        });
-
-        var auditLog = ActivityLog.Record(
-            request.WorkspaceId,
-            actorId,
-            ActivityType.Created,
-            SharedKernel.ResourceRef.Create(request.ResourceType, request.ResourceId),
-            _dateTimeProvider.UtcNow,
-            ActivityMetadata.Create(SharedKernel.JsonValue.Create(metadata))
-        );
-        _context.ActivityLogs.Add(auditLog);
 
         var dto = new ShareLinkDto(
             shareLink.Id,

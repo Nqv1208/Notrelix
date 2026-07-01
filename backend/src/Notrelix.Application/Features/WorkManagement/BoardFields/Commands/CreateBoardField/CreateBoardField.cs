@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
@@ -47,6 +45,7 @@ public class CreateBoardFieldCommandHandler : IRequestHandler<CreateBoardFieldCo
             : FieldType.Text;
 
         var column = BoardField.Create(
+            Guid.Empty,
             board.WorkspaceId,
             request.BoardId,
             request.Name,

@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Notrelix.Domain.Analytics.Dashboards;
 using Notrelix.Domain.Automation.Agents;
 using Notrelix.Domain.Automation.Scheduled;
@@ -35,6 +33,18 @@ namespace Notrelix.Application.Common.Abstractions;
 public interface IApplicationDbContext
 {
     DatabaseFacade Database { get; }
+    // Account
+    DbSet<global::Notrelix.Domain.Accounts.Accounts.Account> Accounts { get; }
+    DbSet<global::Notrelix.Domain.Accounts.Members.AccountMember> AccountMembers { get; }
+    DbSet<global::Notrelix.Domain.Accounts.Invitations.AccountInvitation> AccountInvitations { get; }
+    DbSet<global::Notrelix.Domain.Accounts.Domains.AccountDomain> AccountDomains { get; }
+    DbSet<global::Notrelix.Domain.Accounts.Settings.AccountSettings> AccountSettingsEntities { get; }
+    DbSet<global::Notrelix.Domain.Accounts.Regions.AccountRegion> AccountRegions { get; }
+    DbSet<global::Notrelix.Domain.Accounts.IdentityProviders.AccountIdentityProvider> AccountIdentityProviders { get; }
+    DbSet<global::Notrelix.Domain.Accounts.Scim.ScimDirectory> ScimDirectories { get; }
+    DbSet<global::Notrelix.Domain.Accounts.Scim.ScimSyncRun> ScimSyncRuns { get; }
+    DbSet<global::Notrelix.Domain.Accounts.WorkspaceRoutes.WorkspaceRoute> WorkspaceRoutes { get; }
+
     // Identity
     DbSet<User> Users { get; }
     DbSet<UserProfile> UserProfiles { get; }
@@ -45,9 +55,7 @@ public interface IApplicationDbContext
     DbSet<UserLoginAttempt> UserLoginAttempts { get; }
     DbSet<EmailVerificationToken> EmailVerificationTokens { get; }
     DbSet<PasswordResetToken> PasswordResetTokens { get; }
-    DbSet<SsoProvider> SsoProviders { get; }
     DbSet<ApiToken> ApiTokens { get; }
-    DbSet<ScimDirectorySync> ScimDirectorySyncs { get; }
 
     // Workspace
     DbSet<Workspace> Workspaces { get; }
@@ -128,9 +136,6 @@ public interface IApplicationDbContext
     DbSet<CustomRolePermission> CustomRolePermissions { get; }
     DbSet<MemberRoleAssignment> MemberRoleAssignments { get; }
     DbSet<ShareLink> ShareLinks { get; }
-    DbSet<AuditLog> AuditLogs { get; }
-    DbSet<AuditRetentionPolicy> AuditRetentionPolicies { get; }
-    DbSet<SecurityEvent> SecurityEvents { get; }
     DbSet<WorkspacePolicy> WorkspacePolicies { get; }
     DbSet<PermissionTemplate> PermissionTemplates { get; }
 
@@ -139,10 +144,6 @@ public interface IApplicationDbContext
     DbSet<Mention> PageMentions { get; }
     DbSet<Reaction> Reactions { get; }
     DbSet<Attachment> Attachments { get; }
-    DbSet<Notification> Notifications { get; }
-    DbSet<NotificationPreference> NotificationPreferences { get; }
-    DbSet<NotificationDelivery> NotificationDeliveries { get; }
-    DbSet<ActivityLog> ActivityLogs { get; }
     DbSet<ResourceWatcher> ResourceWatchers { get; }
     DbSet<PresenceSession> PresenceSessions { get; }
 

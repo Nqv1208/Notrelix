@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.WorkManagement.Labels.Commands.AddLabelToBoardItem;
@@ -34,6 +32,7 @@ public class AddLabelToBoardItemCommandHandler : IRequestHandler<AddLabelToBoard
         if (exists) return Result.Success();
 
         var link = BoardItemLabel.Create(
+            Guid.Empty,
             card.WorkspaceId, label.BoardId, request.BoardItemId, request.LabelId,
             _currentUser.UserId, _dateTimeProvider.UtcNow);
         _context.BoardItemLabels.Add(link);

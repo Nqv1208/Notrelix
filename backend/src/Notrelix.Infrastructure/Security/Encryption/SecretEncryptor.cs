@@ -1,5 +1,4 @@
 using System.Text;
-using Microsoft.AspNetCore.DataProtection;
 
 namespace Notrelix.Infrastructure.Security.Encryption;
 

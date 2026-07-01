@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Notrelix.Application.Common.Messaging;
 
 namespace Notrelix.Application.Features.Identity.Registration.Commands.SendWelcomeEmail;

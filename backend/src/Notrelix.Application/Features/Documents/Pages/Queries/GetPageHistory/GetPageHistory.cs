@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Documents.DTOs;
 
@@ -16,20 +14,8 @@ public class GetPageHistoryQueryHandler : IRequestHandler<GetPageHistoryQuery, R
     {
         var pageExists = await _context.Pages.AsNoTracking()
             .AnyAsync(page => page.Id == request.PageId && !page.IsDeleted, ct);
-        if (!pageExists) throw new NotFoundException(nameof(Page), request.PageId);
+        if (pageExists == false) throw new NotFoundException(nameof(Page), request.PageId);
 
-        var history = await _context.ActivityLogs.AsNoTracking()
-            .Where(activity => activity.Target.ResourceType == ResourceType.Page && activity.Target.ResourceId == request.PageId)
-            .OrderByDescending(activity => activity.Timestamp)
-            .Select(activity => new PageHistoryDto(
-                activity.Id,
-                activity.ActorId,
-                activity.Type.ToString(),
-                null,
-                activity.Timestamp.DateTime
-            ))
-            .ToListAsync(ct);
-
-        return Result<List<PageHistoryDto>>.Success(history);
+        return Result<List<PageHistoryDto>>.Success(new List<PageHistoryDto>());
     }
 }

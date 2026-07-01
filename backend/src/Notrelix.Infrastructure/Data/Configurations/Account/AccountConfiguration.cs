@@ -1,7 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Notrelix.Domain.Accounts.Accounts;
-
 namespace Notrelix.Infrastructure.Data.Configurations.Account;
 
 public class AccountConfiguration : IEntityTypeConfiguration<Domain.Accounts.Accounts.Account>

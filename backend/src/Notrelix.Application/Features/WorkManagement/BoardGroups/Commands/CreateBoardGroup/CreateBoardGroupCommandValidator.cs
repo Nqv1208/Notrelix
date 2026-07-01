@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.CreateBoardGroup;
 
 public class CreateBoardGroupCommandValidator : AbstractValidator<CreateBoardGroupCommand>

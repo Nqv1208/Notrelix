@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Automation.Jobs;
 using Notrelix.Application.Features.Integrations;

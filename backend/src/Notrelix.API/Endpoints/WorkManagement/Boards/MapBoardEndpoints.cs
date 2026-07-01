@@ -7,7 +7,6 @@ using Notrelix.Application.Features.WorkManagement.Boards.Commands.ArchiveBoard;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.UnarchiveBoard;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.RemoveBoardMember;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMembers;
-using Notrelix.Domain.WorkManagement.Boards;
 
 namespace Notrelix.API.Endpoints.WorkManagement.Boards;
 

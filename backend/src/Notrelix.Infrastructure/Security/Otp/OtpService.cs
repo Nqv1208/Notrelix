@@ -1,5 +1,4 @@
 using System.Security.Cryptography;
-using StackExchange.Redis;
 using Notrelix.Application.Common.Abstractions;
 
 namespace Notrelix.Infrastructure.Security.Otp;

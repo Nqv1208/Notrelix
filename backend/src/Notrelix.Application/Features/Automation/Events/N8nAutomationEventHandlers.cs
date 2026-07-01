@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Events;
 using Notrelix.Application.Features.Automation.Jobs;
 
@@ -50,6 +48,7 @@ public class CardAssignedN8nAutomationHandler : INotificationHandler<DomainEvent
             if (exists) continue;
 
             var execution = AutomationExecution.Create(
+                Guid.Empty,
                 card.WorkspaceId,
                 rule.Id,
                 domainEvent.EventId,

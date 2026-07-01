@@ -1,8 +1,5 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
 using SharedKernel = Notrelix.Domain.SharedKernel;
-using System.Text.Json;
 
 namespace Notrelix.Application.Features.Governance.ResourcePermissions.Commands.RevokeResourcePermission;
 
@@ -68,24 +65,6 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
             AuditMetadata.Create(),
             AuditSeverity.Info,
             cancellationToken: cancellationToken);
-
-        // Keep ActivityLog for user feed
-        var metadata = JsonSerializer.Serialize(new
-        {
-            subjectType = permission.SubjectType.ToString(),
-            subjectId = permission.SubjectId,
-            level = permission.Level.ToString()
-        });
-
-        var activityLog = ActivityLog.Record(
-            request.WorkspaceId,
-            actorId,
-            ActivityType.Deleted,
-            SharedKernel.ResourceRef.Create(request.ResourceType, request.ResourceId),
-            _dateTimeProvider.UtcNow,
-            ActivityMetadata.Create(SharedKernel.JsonValue.Create(metadata))
-        );
-        _context.ActivityLogs.Add(activityLog);
 
         return Result.Success();
     }

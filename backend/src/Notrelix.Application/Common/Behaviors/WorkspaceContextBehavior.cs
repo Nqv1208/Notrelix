@@ -1,5 +1,3 @@
-using MediatR;
-
 namespace Notrelix.Application.Common.Behaviors;
 
 public class WorkspaceContextBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>

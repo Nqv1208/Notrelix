@@ -1,9 +1,4 @@
-using System.Text.Json;
-using MassTransit;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Notrelix.Application.Events.Collaboration;
-using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Events.WorkManagement;
 using Notrelix.Application.Events.Workspaces;
 using Notrelix.Infrastructure.Data;

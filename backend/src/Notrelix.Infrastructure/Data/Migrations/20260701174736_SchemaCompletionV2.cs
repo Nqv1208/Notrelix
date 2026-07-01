@@ -1,7 +1,4 @@
-﻿using System;
-using System.Text.Json;
-using Microsoft.EntityFrameworkCore.Migrations;
-using NpgsqlTypes;
+﻿using System.Text.Json;
 
 #nullable disable
 

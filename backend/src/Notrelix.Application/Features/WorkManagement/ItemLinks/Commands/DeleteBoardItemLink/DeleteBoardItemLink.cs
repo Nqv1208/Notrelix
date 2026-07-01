@@ -1,4 +1,3 @@
-using MediatR;
 using global::Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.WorkManagement.ItemLinks.Commands.DeleteBoardItemLink;

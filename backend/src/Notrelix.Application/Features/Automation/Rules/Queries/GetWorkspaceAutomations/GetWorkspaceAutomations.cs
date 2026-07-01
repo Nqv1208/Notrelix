@@ -1,6 +1,4 @@
 using System.Text.Json;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Automation.DTOs;
 

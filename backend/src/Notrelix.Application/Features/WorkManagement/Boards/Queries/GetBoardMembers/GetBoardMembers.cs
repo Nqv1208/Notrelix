@@ -1,6 +1,4 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
 

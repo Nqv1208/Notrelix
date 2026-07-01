@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
 using Notrelix.Application.Common.Abstractions;
 
 namespace Notrelix.Infrastructure.Data

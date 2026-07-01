@@ -1,8 +1,3 @@
-using System.IdentityModel.Tokens.Jwt;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.IdentityModel.Tokens;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Auth.Cookies;
 using Notrelix.Infrastructure.Auth.Jwt;

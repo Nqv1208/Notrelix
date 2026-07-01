@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.LinkPageToBoardItem;
@@ -47,6 +45,7 @@ public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoard
         var now = _timeProvider.UtcNow;
 
         var link = BoardItemLink.Create(
+            Guid.Empty,
             card.WorkspaceId,
             card.BoardId,
             card.Id,

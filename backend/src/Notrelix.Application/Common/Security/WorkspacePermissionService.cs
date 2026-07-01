@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-
 namespace Notrelix.Application.Common.Security;
 
 public class WorkspacePermissionService : IWorkspacePermissionService

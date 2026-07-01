@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.Documents.Blocks.Commands.CreateBlock;
@@ -34,7 +32,7 @@ public class CreateBlockCommandHandler : IRequestHandler<CreateBlockCommand, Res
         var content = BlockContent.Create(JsonValue.Create(request.Properties ?? "{}"));
         var position = FractionalIndex.Create(request.Position);
 
-        var block = Block.Create(page.WorkspaceId, request.PageId, request.Type, content, position, _currentUser.UserId, _dateTimeProvider.UtcNow, parentId: request.ParentBlockId);
+        var block = Block.Create(Guid.Empty, page.WorkspaceId, request.PageId, request.Type, content, position, _currentUser.UserId, _dateTimeProvider.UtcNow, parentId: request.ParentBlockId);
         _context.Blocks.Add(block);
         return Result<Guid>.Success(block.Id);
     }

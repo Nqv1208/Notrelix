@@ -92,7 +92,7 @@ public class MirrorValueSnapshotTests
 
     private static MirrorValueSnapshot CreateSnapshot()
     {
-        return MirrorValueSnapshot.Create(Guid.NewGuid(), 
+        return MirrorValueSnapshot.Create(Guid.NewGuid(),
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
             null, "{\"val\":1}", "hash123", DateTimeOffset.UtcNow);
     }

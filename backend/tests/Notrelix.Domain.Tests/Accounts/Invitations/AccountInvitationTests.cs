@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Accounts.Invitations;
 
 namespace Notrelix.Domain.Tests.Accounts;
 

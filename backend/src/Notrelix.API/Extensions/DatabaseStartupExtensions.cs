@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Options;
-using Notrelix.Application.Common.Abstractions.Rls;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Rls;
 

@@ -1,6 +1,3 @@
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using StackExchange.Redis;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Caching;
 

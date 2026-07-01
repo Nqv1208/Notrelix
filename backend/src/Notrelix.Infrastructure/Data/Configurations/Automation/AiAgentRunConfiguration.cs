@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Automation.Agents;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Automation;

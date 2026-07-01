@@ -1,6 +1,3 @@
-using System.Reflection;
-using FluentAssertions;
-
 namespace Notrelix.Architecture.Tests;
 
 public class ForbiddenLegacyNameArchitectureTests

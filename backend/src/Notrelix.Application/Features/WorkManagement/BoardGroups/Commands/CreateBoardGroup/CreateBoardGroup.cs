@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.CreateBoardGroup;
@@ -38,7 +36,7 @@ public class CreateBoardGroupCommandHandler : IRequestHandler<CreateBoardGroupCo
             : FractionalIndex.Initial();
 
         var color = request.Color is not null ? Color.Create(request.Color) : Color.Create("#808080");
-        var list = BoardGroup.Create(board.WorkspaceId, request.BoardId, request.Title, color, position, _currentUser.UserId, _dateTimeProvider.UtcNow);
+        var list = BoardGroup.Create(Guid.Empty, board.WorkspaceId, request.BoardId, request.Title, color, position, _currentUser.UserId, _dateTimeProvider.UtcNow);
         _context.BoardGroups.Add(list);
         return Result<Guid>.Success(list.Id);
     }

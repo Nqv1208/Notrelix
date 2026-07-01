@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemStatus;
 
 public class UpdateBoardItemStatusCommandValidator : AbstractValidator<UpdateBoardItemStatusCommand>

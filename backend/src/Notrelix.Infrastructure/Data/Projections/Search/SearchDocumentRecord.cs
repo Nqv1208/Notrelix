@@ -1,5 +1,3 @@
-using NpgsqlTypes;
-
 namespace Notrelix.Infrastructure.Data.Projections.Search;
 
 public sealed class SearchDocumentRecord

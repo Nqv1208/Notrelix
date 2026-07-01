@@ -1,8 +1,5 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
 using SharedKernel = Notrelix.Domain.SharedKernel;
-using System.Text.Json;
 
 namespace Notrelix.Application.Features.Governance.ShareLinks.Commands.DisableShareLink;
 
@@ -52,22 +49,6 @@ public class DisableShareLinkCommandHandler : IRequestHandler<DisableShareLinkCo
         var userId = _currentUser.UserId;
 
         shareLink.Disable(userId, _dateTimeProvider.UtcNow);
-
-        // Write Audit Log
-        var metadata = JsonSerializer.Serialize(new
-        {
-            shareLinkId = shareLink.Id,
-            level = shareLink.AccessMode.ToString()
-        });
-
-        var auditLog = ActivityLog.Record(
-            shareLink.WorkspaceId,
-            userId,
-            ActivityType.Updated,
-            ResourceRef.Create(shareLink.ResourceType, shareLink.ResourceId),
-            _dateTimeProvider.UtcNow
-        );
-        _context.ActivityLogs.Add(auditLog);
 
         return Result.Success();
     }

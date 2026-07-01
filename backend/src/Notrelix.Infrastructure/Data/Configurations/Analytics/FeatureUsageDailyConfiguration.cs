@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Infrastructure.Data.Analytics;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Analytics;

@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.WorkManagement.Labels.Commands.CreateLabel;
@@ -25,7 +23,7 @@ public class CreateLabelCommandHandler : IRequestHandler<CreateLabelCommand, Res
             .FirstOrDefaultAsync(b => b.Id == request.BoardId, ct);
         if (board is null) throw new NotFoundException("Board", request.BoardId);
 
-        var label = Label.Create(board.WorkspaceId, request.BoardId, request.Name ?? "", LabelColor.Create(request.Color), _currentUser.UserId, _dateTimeProvider.UtcNow);
+        var label = Label.Create(Guid.Empty, board.WorkspaceId, request.BoardId, request.Name ?? "", LabelColor.Create(request.Color), _currentUser.UserId, _dateTimeProvider.UtcNow);
         _context.Labels.Add(label);
         return Result<Guid>.Success(label.Id);
     }

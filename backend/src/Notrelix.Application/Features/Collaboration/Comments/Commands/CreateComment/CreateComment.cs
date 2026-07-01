@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
@@ -42,7 +40,7 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
         }
 
         var target = ResourceRef.Create(request.ResourceType, request.ResourceId, workspaceId);
-        var comment = Comment.Create(workspaceId, target, request.ContentMd, _currentUser.UserId, _dateTimeProvider.UtcNow, parentId: request.ParentCommentId);
+        var comment = Comment.Create(Guid.Empty, workspaceId, target, request.ContentMd, _currentUser.UserId, _dateTimeProvider.UtcNow, parentId: request.ParentCommentId);
 
         _context.Comments.Add(comment);
         return Result<Guid>.Success(comment.Id);

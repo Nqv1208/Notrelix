@@ -1,7 +1,6 @@
 using Notrelix.API.Contracts.Governance.ResourcePermissions.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Governance.ResourcePermissions.Commands.GrantResourcePermission;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.API.Endpoints.Governance.ResourcePermissions.Commands;
 

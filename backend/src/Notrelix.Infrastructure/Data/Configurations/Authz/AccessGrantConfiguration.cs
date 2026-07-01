@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Infrastructure.Data.Authz;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Authz;

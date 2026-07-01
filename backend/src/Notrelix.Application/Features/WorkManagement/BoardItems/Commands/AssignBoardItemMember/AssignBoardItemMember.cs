@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.AssignBoardItemMember;
@@ -47,6 +45,7 @@ public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardIt
         if (alreadyAssigned) return Result.Success();
 
         var member = BoardItemMember.Create(
+            Guid.Empty,
             card.WorkspaceId,
             card.BoardId,
             card.Id,

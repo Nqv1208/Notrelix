@@ -1,5 +1,3 @@
-using Notrelix.Domain.Accounts.Invitations.Events;
-
 namespace Notrelix.Domain.Accounts.Invitations;
 
 public class AccountInvitation : AggregateRoot, IAccountScoped

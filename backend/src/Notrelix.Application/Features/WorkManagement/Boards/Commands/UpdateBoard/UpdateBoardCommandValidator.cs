@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoard;
 
 using Notrelix.Domain.WorkManagement.Boards;

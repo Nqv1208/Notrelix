@@ -1,7 +1,6 @@
 using Notrelix.API.Contracts.Governance.ShareLinks.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Governance.ShareLinks.Commands.CreateShareLink;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.API.Endpoints.Governance.ShareLinks.Commands;
 

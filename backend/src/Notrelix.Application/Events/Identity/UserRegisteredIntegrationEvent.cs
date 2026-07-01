@@ -2,9 +2,10 @@ using Notrelix.Application.Common.Events;
 
 namespace Notrelix.Application.Events.Identity;
 
-[EventName("identity.user-registered", Version = 1)]
+[EventName("identity.user-registered", Version = 2)]
 public sealed record UserRegisteredIntegrationEvent(
     Guid UserId,
+    Guid AccountId,
     string Email,
     string DisplayName,
     Guid? ActorUserId,
@@ -14,7 +15,7 @@ public sealed record UserRegisteredIntegrationEvent(
     DateTimeOffset OccurredAt
 ) : IntegrationEvent(
     messageName: "identity.user-registered",
-    schemaVersion: 1,
+    schemaVersion: 2,
     sourceEventId: SourceEventId,
     workspaceId: null,
     actorUserId: ActorUserId,

@@ -1,6 +1,4 @@
 using System.Security.Claims;
-using System.IdentityModel.Tokens.Jwt;
-using Microsoft.AspNetCore.Http;
 using Notrelix.Application.Common.Abstractions;
 
 namespace Notrelix.Infrastructure.Identity.Services;

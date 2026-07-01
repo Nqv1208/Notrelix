@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace Notrelix.Application.Features.Identity.Registration.Commands.Register;
 
 // Validator cho RegisterCommand

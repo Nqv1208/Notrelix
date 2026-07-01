@@ -1,7 +1,4 @@
 using System.Net;
-using System.Threading.Tasks;
-using MediatR;
-using Notrelix.Application.Common.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Registration.Commands.SendWelcomeEmail;
 

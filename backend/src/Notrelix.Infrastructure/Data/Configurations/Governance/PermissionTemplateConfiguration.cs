@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Governance.Templates;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Governance;

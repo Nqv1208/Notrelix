@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Accounts.Domains;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Account;

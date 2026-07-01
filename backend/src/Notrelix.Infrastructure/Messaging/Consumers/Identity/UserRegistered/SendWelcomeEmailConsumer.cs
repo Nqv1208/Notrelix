@@ -1,6 +1,3 @@
-using MassTransit;
-using MediatR;
-using Microsoft.Extensions.Logging;
 using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Identity.Registration.Commands.SendWelcomeEmail;
 

@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-
 namespace Notrelix.Application.Features.WorkManagement.Abstractions;
 
 public interface IWorkManagementDbContext

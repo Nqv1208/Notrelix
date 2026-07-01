@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
@@ -15,17 +13,20 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
     private readonly IWorkspaceDbContext _workspaceContext;
     private readonly IIdentityDbContext _identityContext;
     private readonly ICurrentUser _currentUser;
+    private readonly ICurrentAccount _currentAccount;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public AcceptInvitationCommandHandler(
         IWorkspaceDbContext workspaceContext,
         IIdentityDbContext identityContext,
         ICurrentUser currentUser,
+        ICurrentAccount currentAccount,
         IDateTimeProvider dateTimeProvider)
     {
         _workspaceContext = workspaceContext;
         _identityContext = identityContext;
         _currentUser = currentUser;
+        _currentAccount = currentAccount;
         _dateTimeProvider = dateTimeProvider;
     }
 
@@ -73,7 +74,7 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
 
         invitation.Accept(_currentUser.UserId, now);
 
-        var member = WorkspaceMember.Create(invitation.WorkspaceId, _currentUser.UserId, invitation.Role, invitation.InvitedBy, now);
+        var member = WorkspaceMember.Create(_currentAccount.AccountId ?? Guid.Empty, invitation.WorkspaceId, _currentUser.UserId, invitation.Role, invitation.InvitedBy, now);
         _workspaceContext.WorkspaceMembers.Add(member);
 
         return Result<AcceptInvitationResultDto>.Success(new AcceptInvitationResultDto(workspace?.Slug ?? "", invitation.WorkspaceId));

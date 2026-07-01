@@ -1,4 +1,3 @@
-using MediatR;
 using Notrelix.Application.Common.Security;
 
 namespace Notrelix.Application.Common.Behaviors;

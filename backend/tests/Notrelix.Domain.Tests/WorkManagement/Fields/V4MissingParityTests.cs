@@ -15,7 +15,7 @@ public class V4MissingParityTests
     [Fact]
     public void AiAgent_Create_ShouldSucceed_AndRaiseEvent()
     {
-        var agent = AiAgent.Create(Guid.NewGuid(), 
+        var agent = AiAgent.Create(Guid.NewGuid(),
             _workspaceId,
             "Translation Bot",
             "Translates items automatically",
@@ -47,7 +47,7 @@ public class V4MissingParityTests
     [Fact]
     public void AiAgent_Update_ShouldModifyFields_AndRaiseEvent()
     {
-        var agent = AiAgent.Create(Guid.NewGuid(), 
+        var agent = AiAgent.Create(Guid.NewGuid(),
             _workspaceId,
             "Agent",
             null,
@@ -78,7 +78,7 @@ public class V4MissingParityTests
     [Fact]
     public void AiAgent_ChangeStatus_ShouldTransitionStatus()
     {
-        var agent = AiAgent.Create(Guid.NewGuid(), 
+        var agent = AiAgent.Create(Guid.NewGuid(),
             _workspaceId,
             "Agent",
             null,
@@ -103,7 +103,7 @@ public class V4MissingParityTests
     public void AiAgentRun_CreateAndTransition_ShouldManageLifecycle()
     {
         var agentId = Guid.NewGuid();
-        var run = AiAgentRun.Create(Guid.NewGuid(), 
+        var run = AiAgentRun.Create(Guid.NewGuid(),
             _workspaceId,
             agentId,
             "ItemCreated",
@@ -136,7 +136,7 @@ public class V4MissingParityTests
         var dashboardId = Guid.NewGuid();
         var filter = JsonValue.Create("{\"status\":\"Done\"}");
 
-        var source = DashboardSource.Create(Guid.NewGuid(), 
+        var source = DashboardSource.Create(Guid.NewGuid(),
             _workspaceId,
             dashboardId,
             DashboardSourceType.BoardView,

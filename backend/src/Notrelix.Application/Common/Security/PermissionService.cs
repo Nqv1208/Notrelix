@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
 
 namespace Notrelix.Application.Common.Security;

@@ -1,6 +1,4 @@
 using System.Text.Json;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.Logout;

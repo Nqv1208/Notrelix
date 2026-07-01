@@ -1,6 +1,4 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SaveBoardView;
@@ -62,6 +60,7 @@ public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand,
         else
         {
             view = BoardView.Create(
+                Guid.Empty,
                 request.WorkspaceId,
                 request.BoardId,
                 viewType.ToString(),

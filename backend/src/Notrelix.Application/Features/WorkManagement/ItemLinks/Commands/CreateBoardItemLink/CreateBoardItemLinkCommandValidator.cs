@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace Notrelix.Application.Features.WorkManagement.ItemLinks.Commands.CreateBoardItemLink;
 
 public class CreateBoardItemLinkCommandValidator : AbstractValidator<CreateBoardItemLinkCommand>
