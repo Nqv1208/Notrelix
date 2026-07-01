@@ -20,8 +20,8 @@ public sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
         builder.Property(x => x.RequestId).HasMaxLength(120);
         builder.Property(x => x.CorrelationId).HasMaxLength(100);
         builder.Property(x => x.CausationId).HasMaxLength(100);
-        builder.Property(x => x.BeforeJson).HasColumnType("jsonb");
-        builder.Property(x => x.AfterJson).HasColumnType("jsonb");
+        builder.Property(x => x.BeforeJson).HasColumnType("jsonb").HasConversion<string>();
+        builder.Property(x => x.AfterJson).HasColumnType("jsonb").HasConversion<string>();
         builder.Property(x => x.MetadataJson).HasColumnType("jsonb").IsRequired().HasDefaultValueSql("'{}'::jsonb");
         builder.Property(x => x.OccurredAt).IsRequired();
         builder.Property(x => x.RecordedAt).IsRequired();

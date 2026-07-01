@@ -5,6 +5,7 @@ using Notrelix.Application.Common.Events;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Governance.Roles;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Interceptors;
 
@@ -68,6 +69,7 @@ public class DomainEventInterceptorTests
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase($"Notrelix-domain-events-{Guid.NewGuid():N}")
             .AddInterceptors(interceptor)
+            .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning))
             .Options;
 
         return new TestApplicationDbContext(options);

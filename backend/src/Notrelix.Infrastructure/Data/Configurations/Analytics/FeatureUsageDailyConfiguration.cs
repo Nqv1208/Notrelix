@@ -16,7 +16,12 @@ public sealed class FeatureUsageDailyConfiguration : IEntityTypeConfiguration<Fe
         builder.Property(x => x.UniqueActorCount).IsRequired().HasDefaultValue(0);
         builder.Property(x => x.Quantity).IsRequired().HasDefaultValue(0m);
         builder.Property(x => x.Unit).HasMaxLength(80);
-        builder.Property(x => x.MetadataJson).HasColumnType("jsonb").IsRequired().HasDefaultValueSql("'{}'::jsonb");
+        builder.Property(x => x.MetadataJson)
+            .HasColumnType("jsonb")
+            .IsRequired()
+            .HasDefaultValueSql("'{}'::jsonb")
+            .HasConversion<string>();
+        builder.Ignore(x => x.MetadataJson);
         builder.Property(x => x.CalculatedAt).IsRequired();
 
         builder.HasIndex(x => new { x.FeatureCode, x.UsageDate }).IsDescending(false, true);

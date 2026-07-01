@@ -76,6 +76,7 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
     {
         var d = new Dictionary<Type, DomainEventDispatchMode>();
 
+        RegisterAccounts(d);
         RegisterAnalytics(d);
         RegisterAutomation(d);
         RegisterBilling(d);
@@ -88,6 +89,26 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
         RegisterWorkspaces(d);
 
         return d;
+    }
+
+    private static void RegisterAccounts(Dictionary<Type, DomainEventDispatchMode> d)
+    {
+        Add<AccountCreatedDomainEvent>(d);
+        Add<AccountArchivedDomainEvent>(d);
+        Add<AccountRenamedDomainEvent>(d);
+        Add<AccountRestoredDomainEvent>(d);
+        Add<AccountSoftDeletedDomainEvent>(d);
+        Add<AccountSuspendedDomainEvent>(d);
+        Add<AccountMemberActivatedDomainEvent>(d);
+        Add<AccountMemberAddedDomainEvent>(d);
+        Add<AccountMemberRemovedDomainEvent>(d);
+        Add<AccountMemberRestoredDomainEvent>(d);
+        Add<AccountMemberRoleChangedDomainEvent>(d);
+        Add<AccountMemberSuspendedDomainEvent>(d);
+        Add<AccountInvitationAcceptedDomainEvent>(d);
+        Add<AccountInvitationCreatedDomainEvent>(d);
+        Add<AccountInvitationExpiredDomainEvent>(d);
+        Add<AccountInvitationRevokedDomainEvent>(d);
     }
 
     private static void RegisterAnalytics(Dictionary<Type, DomainEventDispatchMode> d)

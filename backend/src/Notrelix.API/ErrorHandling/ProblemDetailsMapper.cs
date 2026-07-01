@@ -24,6 +24,13 @@ public static class ProblemDetailsMapper
                 "One or more validation errors occurred.",
                 (IReadOnlyDictionary<string, string[]>)ex.Errors
             ),
+            Notrelix.Application.Common.Exceptions.ValidationException ex => (
+                StatusCodes.Status400BadRequest,
+                ErrorCodes.ValidationFailed,
+                "Validation failed",
+                "One or more validation errors occurred.",
+                (IReadOnlyDictionary<string, string[]>)ex.Errors
+            ),
             DomainValidationException ex => (
                 StatusCodes.Status400BadRequest,
                 ErrorCodes.ValidationFailed,
