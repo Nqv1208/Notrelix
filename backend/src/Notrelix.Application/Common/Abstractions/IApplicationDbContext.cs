@@ -157,7 +157,6 @@ public interface IApplicationDbContext
     DbSet<Entitlement> Entitlements { get; }
     DbSet<UsageMetric> UsageMetrics { get; }
     DbSet<UsageMetricHistory> UsageMetricHistories { get; }
-    DbSet<WorkspaceFeatureUsage> WorkspaceFeatureUsages { get; }
     DbSet<FeatureUsageLedger> FeatureUsageLedger { get; }
 
     // Analytics

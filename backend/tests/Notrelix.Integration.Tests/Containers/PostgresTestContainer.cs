@@ -31,17 +31,10 @@ public sealed class PostgresTestContainer : IAsyncLifetime
         {
             await _container.StartAsync();
 
-            // Use EnsureCreated so the schema matches the current model.
-            // MigrateAsync applies the last snapshot migration, which may be
-            // out of sync with the current model (pending model changes cause
-            // PendingModelChangesWarning and inconsistent schema).
-            //
-            // PendingModelChangesWarning is suppressed just like production:
-            // see PersistenceRegistration.cs which also ignores it.
             var workspace = new FakeCurrentWorkspace();
             workspace.SetWorkspace(Guid.Parse("00000000-0000-0000-0000-000000000001"), Guid.Parse("00000000-0000-0000-0000-000000000001"));
             await using var context = CreateContext(workspace);
-            await context.Database.EnsureCreatedAsync();
+            await context.Database.MigrateAsync();
         }
     }
 
@@ -61,7 +54,6 @@ public sealed class PostgresTestContainer : IAsyncLifetime
                 npgOptions.MigrationsHistoryTable("__EFMigrationsHistory", "ops");
             })
             .UseSnakeCaseNamingConvention()
-            .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning))
             .ReplaceService<IModelCacheKeyFactory, WorkspaceAwareModelCacheKeyFactory>();
 
         if (interceptors.Length > 0)

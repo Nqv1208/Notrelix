@@ -9,6 +9,7 @@ using Notrelix.Application.Common.Behaviors;
 using Notrelix.Application.Common.CQRS;
 using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Common.Security;
+using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.SharedKernel;
 using ValidationException = Notrelix.Application.Common.Exceptions.ValidationException;
@@ -139,7 +140,7 @@ public class PipelineExecutionTests
             mockUser.Object, mockPermissionService.Object);
 
         var workspaceBehavior = new WorkspaceContextBehavior<ExecutableCommand, string>(
-            mockUser.Object, Mock.Of<ICurrentAccount>(), Mock.Of<ICurrentWorkspace>(), mockWorkspaceService.Object);
+            mockUser.Object, Mock.Of<ICurrentWorkspace>(), Mock.Of<IWorkspaceDbContext>(), mockWorkspaceService.Object);
 
         var validationBehavior = new ValidationBehavior<ExecutableCommand, string>(
             Array.Empty<IValidator<ExecutableCommand>>());
@@ -616,7 +617,7 @@ public class PipelineExecutionTests
         var mockWorkspaceService = CreateMockWorkspacePermissionService();
 
         var behavior = new WorkspaceContextBehavior<EmptyWorkspaceCommand, string>(
-            mockUser.Object, Mock.Of<ICurrentAccount>(), Mock.Of<ICurrentWorkspace>(), mockWorkspaceService.Object);
+            mockUser.Object, Mock.Of<ICurrentWorkspace>(), Mock.Of<IWorkspaceDbContext>(), mockWorkspaceService.Object);
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("ok");
 

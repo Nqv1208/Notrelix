@@ -256,7 +256,6 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext, IWorkspace
     public DbSet<Entitlement> Entitlements => Set<Entitlement>();
     public DbSet<UsageMetric> UsageMetrics => Set<UsageMetric>();
     public DbSet<UsageMetricHistory> UsageMetricHistories => Set<UsageMetricHistory>();
-    public DbSet<WorkspaceFeatureUsage> WorkspaceFeatureUsages => Set<WorkspaceFeatureUsage>();
     public DbSet<FeatureUsageLedger> FeatureUsageLedger => Set<FeatureUsageLedger>();
 
     // Search projections
@@ -383,15 +382,14 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext, IWorkspace
                     var wsIdProp = Expression.Property(contextField, nameof(ICurrentWorkspace.WorkspaceId));
                     var acctIdProp = Expression.Property(contextField, nameof(ICurrentWorkspace.AccountId));
 
-                    // Lift e.WorkspaceId (Guid) to Guid? for comparison with _currentWorkspace.WorkspaceId (Guid?)
+                    // Convert both sides to Guid? for comparison
                     var wsIdEquals = Expression.Equal(
                         Expression.Convert(Expression.PropertyOrField(param, "WorkspaceId"), typeof(Guid?)),
-                        wsIdProp);
+                        Expression.Convert(wsIdProp, typeof(Guid?)));
 
-                    // Lift e.AccountId (Guid) to Guid? for comparison with _currentWorkspace.AccountId (Guid?)
                     var acctIdEquals = Expression.Equal(
                         Expression.Convert(Expression.PropertyOrField(param, "AccountId"), typeof(Guid?)),
-                        acctIdProp);
+                        Expression.Convert(acctIdProp, typeof(Guid?)));
 
                     // AccountId AND WorkspaceId must both match
                     var tenantMatch = Expression.AndAlso(acctIdEquals, wsIdEquals);

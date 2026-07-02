@@ -17,8 +17,8 @@ namespace Notrelix.Infrastructure.Data
 
         private sealed class DesignTimeCurrentWorkspace : ICurrentWorkspace
         {
-            public Guid? AccountId => null;
-            public Guid? WorkspaceId => null;
+            public Guid AccountId => default;
+            public Guid WorkspaceId => default;
             public bool IsSet => false;
             public bool IsSystemContext => true;
             public void SetWorkspace(Guid accountId, Guid workspaceId) { }

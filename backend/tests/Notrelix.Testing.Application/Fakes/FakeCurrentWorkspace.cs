@@ -4,12 +4,10 @@ namespace Notrelix.Testing.Application.Fakes;
 
 public sealed class FakeCurrentWorkspace : ICurrentWorkspace
 {
-    public Guid? AccountId { get; private set; }
-    public Guid? WorkspaceId { get; private set; }
-    public bool IsSet => WorkspaceId.HasValue || AccountId.HasValue;
+    public Guid AccountId { get; private set; }
+    public Guid WorkspaceId { get; private set; }
+    public bool IsSet => WorkspaceId != default || AccountId != default;
     public bool IsSystemContext { get; private set; }
-    public bool HasWorkspace => WorkspaceId.HasValue;
-    public bool HasAccount => AccountId.HasValue;
 
     public void SetWorkspace(Guid accountId, Guid workspaceId)
     {
@@ -20,8 +18,8 @@ public sealed class FakeCurrentWorkspace : ICurrentWorkspace
 
     public void Clear()
     {
-        AccountId = null;
-        WorkspaceId = null;
+        AccountId = default;
+        WorkspaceId = default;
         IsSystemContext = false;
     }
 
@@ -30,8 +28,8 @@ public sealed class FakeCurrentWorkspace : ICurrentWorkspace
         var previousAccountId = AccountId;
         var previousWorkspaceId = WorkspaceId;
         var previousSystemContext = IsSystemContext;
-        AccountId = null;
-        WorkspaceId = null;
+        AccountId = default;
+        WorkspaceId = default;
         IsSystemContext = true;
         return new SystemContextReset(() =>
         {

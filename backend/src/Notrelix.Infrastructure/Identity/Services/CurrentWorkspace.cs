@@ -18,7 +18,7 @@ public class CurrentWorkspace : ICurrentWorkspace
         _httpContextAccessor = httpContextAccessor;
     }
 
-    public Guid? AccountId
+    public Guid AccountId
     {
         get
         {
@@ -29,11 +29,11 @@ public class CurrentWorkspace : ICurrentWorkspace
             if (context?.Items.TryGetValue(AccountIdKey, out var value) == true && value is Guid guid)
                 return guid;
 
-            return null;
+            return default;
         }
     }
 
-    public Guid? WorkspaceId
+    public Guid WorkspaceId
     {
         get
         {
@@ -44,7 +44,7 @@ public class CurrentWorkspace : ICurrentWorkspace
             if (context?.Items.TryGetValue(WorkspaceIdKey, out var value) == true && value is Guid guid)
                 return guid;
 
-            return null;
+            return default;
         }
     }
 
@@ -63,14 +63,30 @@ public class CurrentWorkspace : ICurrentWorkspace
 
     public IDisposable EnterSystemContext()
     {
+        var savedAccountId = _explicitAccountId;
+        var savedWorkspaceId = _explicitWorkspaceId;
         _explicitSystemContext = true;
-        return new SystemContextScope(this);
+        return new SystemContextScope(this, savedAccountId, savedWorkspaceId);
     }
 
     private sealed class SystemContextScope : IDisposable
     {
         private readonly CurrentWorkspace _owner;
-        public SystemContextScope(CurrentWorkspace owner) => _owner = owner;
-        public void Dispose() => _owner._explicitSystemContext = false;
+        private readonly Guid? _savedAccountId;
+        private readonly Guid? _savedWorkspaceId;
+
+        public SystemContextScope(CurrentWorkspace owner, Guid? savedAccountId, Guid? savedWorkspaceId)
+        {
+            _owner = owner;
+            _savedAccountId = savedAccountId;
+            _savedWorkspaceId = savedWorkspaceId;
+        }
+
+        public void Dispose()
+        {
+            _owner._explicitSystemContext = false;
+            _owner._explicitAccountId = _savedAccountId;
+            _owner._explicitWorkspaceId = _savedWorkspaceId;
+        }
     }
 }

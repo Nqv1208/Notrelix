@@ -30,8 +30,8 @@ public sealed class RlsSessionContext : IRlsSessionContext
         var accountId = _currentAccount.IsSet && _currentAccount.AccountId.HasValue
             ? _currentAccount.AccountId.Value.ToString()
             : "";
-        var workspaceId = _currentWorkspace.IsSet && _currentWorkspace.WorkspaceId.HasValue
-            ? _currentWorkspace.WorkspaceId.Value.ToString()
+        var workspaceId = _currentWorkspace.IsSet
+            ? _currentWorkspace.WorkspaceId.ToString()
             : "";
         var scope = _currentWorkspace.IsSystemContext ? "worker" : "app";
         var correlationId = System.Diagnostics.Activity.Current?.Id ?? "";

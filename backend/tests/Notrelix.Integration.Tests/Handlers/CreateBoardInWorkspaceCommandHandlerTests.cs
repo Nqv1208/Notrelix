@@ -40,11 +40,12 @@ public class CreateBoardInWorkspaceCommandHandlerTests : IAsyncLifetime
         context.Workspaces.Add(workspace);
         await context.SaveChangesAsync();
 
+        currentWorkspace.SetWorkspace(accountId, workspace.Id);
+
         var accessChecker = new TestWorkspaceAccessCheckerStub(true);
         var handler = new CreateBoardInWorkspaceCommandHandler(
             context, new FakeCurrentUser { UserId = userId },
-            FakeDateTimeProvider.WithFixedTime(now), accessChecker,
-            new FakeCurrentAccount { AccountId = accountId });
+            currentWorkspace, FakeDateTimeProvider.WithFixedTime(now), accessChecker);
 
         var result = await handler.Handle(
             new CreateBoardInWorkspaceCommand(workspace.Id, "My Board", null, null, null),
@@ -75,8 +76,7 @@ public class CreateBoardInWorkspaceCommandHandlerTests : IAsyncLifetime
 
         var handler = new CreateBoardInWorkspaceCommandHandler(
             context, new FakeCurrentUser(),
-            FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow), accessChecker,
-            new FakeCurrentAccount { AccountId = Guid.NewGuid() });
+            currentWorkspace, FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow), accessChecker);
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
             handler.Handle(new CreateBoardInWorkspaceCommand(Guid.NewGuid(), "Board", null, null, null), CancellationToken.None));
@@ -96,11 +96,12 @@ public class CreateBoardInWorkspaceCommandHandlerTests : IAsyncLifetime
         context.Workspaces.Add(workspace);
         await context.SaveChangesAsync();
 
+        currentWorkspace.SetWorkspace(accountId, workspace.Id);
+
         var accessChecker = new TestWorkspaceAccessCheckerStub(true);
         var handler = new CreateBoardInWorkspaceCommandHandler(
             context, new FakeCurrentUser { UserId = userId },
-            FakeDateTimeProvider.WithFixedTime(now), accessChecker,
-            new FakeCurrentAccount { AccountId = accountId });
+            currentWorkspace, FakeDateTimeProvider.WithFixedTime(now), accessChecker);
 
         var result = await handler.Handle(
             new CreateBoardInWorkspaceCommand(workspace.Id, "Private Board", null, null, BoardVisibility.Private),

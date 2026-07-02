@@ -1,22 +1,24 @@
+using Notrelix.Application.Features.Workspaces.Abstractions;
+
 namespace Notrelix.Application.Common.Behaviors;
 
 public class WorkspaceContextBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
     private readonly ICurrentUser _currentUser;
-    private readonly ICurrentAccount _currentAccount;
     private readonly ICurrentWorkspace _currentWorkspace;
+    private readonly IWorkspaceDbContext _workspaceDbContext;
     private readonly IWorkspacePermissionService _workspacePermissionService;
 
     public WorkspaceContextBehavior(
         ICurrentUser currentUser,
-        ICurrentAccount currentAccount,
         ICurrentWorkspace currentWorkspace,
+        IWorkspaceDbContext workspaceDbContext,
         IWorkspacePermissionService workspacePermissionService)
     {
         _currentUser = currentUser;
-        _currentAccount = currentAccount;
         _currentWorkspace = currentWorkspace;
+        _workspaceDbContext = workspaceDbContext;
         _workspacePermissionService = workspacePermissionService;
     }
 
@@ -36,12 +38,18 @@ public class WorkspaceContextBehavior<TRequest, TResponse> : IPipelineBehavior<T
                 throw new UnauthorizedAccessException("Authentication required.");
             }
 
-            if (!_currentAccount.AccountId.HasValue)
+            // Resolve AccountId from DB — single source of truth
+            var workspace = await _workspaceDbContext.Workspaces
+                .Where(w => w.Id == workspaceId)
+                .Select(w => new { w.AccountId, w.Status })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (workspace is null)
             {
-                throw new UnauthorizedAccessException("Account context required.");
+                throw new NotFoundException(nameof(Workspace), workspaceId);
             }
 
-            _currentWorkspace.SetWorkspace(_currentAccount.AccountId.Value, workspaceId);
+            _currentWorkspace.SetWorkspace(workspace.AccountId, workspaceId);
 
             var canView = await _workspacePermissionService.CanViewWorkspaceAsync(workspaceId, _currentUser.UserId, cancellationToken);
             if (!canView)
