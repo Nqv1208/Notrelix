@@ -6,4 +6,4 @@ public sealed record UsageMetricIncreasedDomainEvent(
     UsageMetricKey Key,
     int Amount,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);

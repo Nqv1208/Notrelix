@@ -14,7 +14,7 @@ public sealed class WorkspaceResolutionMiddleware
         _next = next;
     }
 
-    public async Task InvokeAsync(HttpContext context, ICurrentWorkspace currentWorkspace, IPermissionEvaluator permissionEvaluator)
+    public async Task InvokeAsync(HttpContext context, ICurrentWorkspace currentWorkspace, ICurrentAccount currentAccount, IPermissionEvaluator permissionEvaluator)
     {
         var workspaceId = ResolveWorkspaceId(context);
 
@@ -59,8 +59,14 @@ public sealed class WorkspaceResolutionMiddleware
             return;
         }
 
+        if (!currentAccount.AccountId.HasValue)
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return;
+        }
+
         context.Items[ItemsKey] = workspaceId.Value;
-        currentWorkspace.SetWorkspace(workspaceId.Value);
+        currentWorkspace.SetWorkspace(currentAccount.AccountId.Value, workspaceId.Value);
 
         await _next(context);
     }

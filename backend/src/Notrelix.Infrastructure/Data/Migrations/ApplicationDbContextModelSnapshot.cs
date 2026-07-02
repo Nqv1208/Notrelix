@@ -11185,6 +11185,10 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
                     b.Property<string>("Content")
                         .HasColumnType("text")
                         .HasColumnName("content");
@@ -11240,10 +11244,10 @@ namespace Notrelix.Infrastructure.Migrations
 
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchVector"), "gin");
 
-                    b.HasIndex("WorkspaceId", "ResourceType")
-                        .HasDatabaseName("ix_search_documents_workspace_type");
+                    b.HasIndex("AccountId", "WorkspaceId", "ResourceType")
+                        .HasDatabaseName("ix_search_documents_account_workspace_type");
 
-                    b.HasIndex("WorkspaceId", "ResourceType", "ResourceId")
+                    b.HasIndex("AccountId", "WorkspaceId", "ResourceType", "ResourceId")
                         .IsUnique()
                         .HasDatabaseName("ux_search_documents_resource");
 

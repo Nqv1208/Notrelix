@@ -49,7 +49,7 @@ public class TenantIsolationTests
     public void QueryFilter_WhenWorkspaceSet_FiltersByWorkspaceId()
     {
         var workspace = new FakeCurrentWorkspace();
-        workspace.SetWorkspace(WorkspaceA);
+        workspace.SetWorkspace(Guid.NewGuid(), WorkspaceA);
         var model = BuildModel(workspace);
 
         var boardEntity = model.FindEntityType(typeof(Board));
@@ -109,14 +109,14 @@ public class TenantIsolationTests
     {
         var workspace = new FakeCurrentWorkspace();
 
-        workspace.SetWorkspace(WorkspaceA);
+        workspace.SetWorkspace(Guid.NewGuid(), WorkspaceA);
         var modelA = BuildModel(workspace);
         var boardA = modelA.FindEntityType(typeof(Board))!;
         var bodyA = Normalize(boardA.GetQueryFilter()!.Body.ToString());
         bodyA.Should().Contain("WorkspaceId", "model A should filter by workspace");
 
         var workspaceB = Guid.Parse("B0000000-0000-0000-0000-000000000002");
-        workspace.SetWorkspace(workspaceB);
+        workspace.SetWorkspace(Guid.NewGuid(), workspaceB);
         var modelB = BuildModel(workspace);
         var boardB = modelB.FindEntityType(typeof(Board))!;
         var bodyB = Normalize(boardB.GetQueryFilter()!.Body.ToString());
@@ -127,7 +127,7 @@ public class TenantIsolationTests
     public void MultipleBoundedContexts_AllHaveQueryFilters()
     {
         var workspace = new FakeCurrentWorkspace();
-        workspace.SetWorkspace(WorkspaceA);
+        workspace.SetWorkspace(Guid.NewGuid(), WorkspaceA);
         var model = BuildModel(workspace);
 
         var boardFilter = model.FindEntityType(typeof(Board))!.GetQueryFilter();
@@ -146,7 +146,7 @@ public class TenantIsolationTests
     public void QueryFilter_SoftDeleteAndWorkspace_CombineCorrectly()
     {
         var workspace = new FakeCurrentWorkspace();
-        workspace.SetWorkspace(WorkspaceA);
+        workspace.SetWorkspace(Guid.NewGuid(), WorkspaceA);
         var model = BuildModel(workspace);
 
         var boardEntity = model.FindEntityType(typeof(Board))!;

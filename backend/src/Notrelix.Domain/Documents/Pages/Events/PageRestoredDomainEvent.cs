@@ -6,4 +6,4 @@ public sealed record PageRestoredDomainEvent(
     Guid PageId,
     Guid RestoredBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, RestoredBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, RestoredBy);

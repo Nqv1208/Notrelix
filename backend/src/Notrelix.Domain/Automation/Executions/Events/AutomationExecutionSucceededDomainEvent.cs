@@ -6,4 +6,4 @@ public sealed record AutomationExecutionSucceededDomainEvent(
     Guid ExecutionId,
     Guid RuleId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);

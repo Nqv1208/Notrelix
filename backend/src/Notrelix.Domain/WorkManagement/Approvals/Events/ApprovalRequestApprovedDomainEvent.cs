@@ -6,4 +6,4 @@ public sealed record ApprovalRequestApprovedDomainEvent(
     Guid RequestId,
     Guid DecidedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, DecidedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, DecidedBy);

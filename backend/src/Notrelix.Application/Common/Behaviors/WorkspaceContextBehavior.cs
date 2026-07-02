@@ -4,15 +4,18 @@ public class WorkspaceContextBehavior<TRequest, TResponse> : IPipelineBehavior<T
     where TRequest : notnull
 {
     private readonly ICurrentUser _currentUser;
+    private readonly ICurrentAccount _currentAccount;
     private readonly ICurrentWorkspace _currentWorkspace;
     private readonly IWorkspacePermissionService _workspacePermissionService;
 
     public WorkspaceContextBehavior(
         ICurrentUser currentUser,
+        ICurrentAccount currentAccount,
         ICurrentWorkspace currentWorkspace,
         IWorkspacePermissionService workspacePermissionService)
     {
         _currentUser = currentUser;
+        _currentAccount = currentAccount;
         _currentWorkspace = currentWorkspace;
         _workspacePermissionService = workspacePermissionService;
     }
@@ -33,7 +36,12 @@ public class WorkspaceContextBehavior<TRequest, TResponse> : IPipelineBehavior<T
                 throw new UnauthorizedAccessException("Authentication required.");
             }
 
-            _currentWorkspace.SetWorkspace(workspaceId);
+            if (!_currentAccount.AccountId.HasValue)
+            {
+                throw new UnauthorizedAccessException("Account context required.");
+            }
+
+            _currentWorkspace.SetWorkspace(_currentAccount.AccountId.Value, workspaceId);
 
             var canView = await _workspacePermissionService.CanViewWorkspaceAsync(workspaceId, _currentUser.UserId, cancellationToken);
             if (!canView)

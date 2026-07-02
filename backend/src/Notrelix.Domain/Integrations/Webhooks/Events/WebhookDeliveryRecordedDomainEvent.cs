@@ -7,4 +7,4 @@ public sealed record WebhookDeliveryRecordedDomainEvent(
     Guid DeliveryId,
     WebhookDeliveryStatus Status,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);

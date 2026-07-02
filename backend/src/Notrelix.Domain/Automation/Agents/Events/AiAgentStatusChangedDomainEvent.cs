@@ -7,4 +7,4 @@ public sealed record AiAgentStatusChangedDomainEvent(
     AiAgentStatus Status,
     Guid ActorUserId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, ActorUserId);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, ActorUserId);

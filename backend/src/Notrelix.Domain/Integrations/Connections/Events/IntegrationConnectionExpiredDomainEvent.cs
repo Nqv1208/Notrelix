@@ -6,4 +6,4 @@ public sealed record IntegrationConnectionExpiredDomainEvent(
     Guid ConnectionId,
     Guid ExpiredBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, ExpiredBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, ExpiredBy);

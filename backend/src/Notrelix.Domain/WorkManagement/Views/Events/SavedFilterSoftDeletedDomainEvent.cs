@@ -7,4 +7,4 @@ public sealed record SavedFilterSoftDeletedDomainEvent(
     Guid BoardId,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, DeletedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, DeletedBy);

@@ -105,7 +105,7 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             services.AddScoped<ICurrentWorkspace>(_ =>
             {
                 var workspace = new FakeCurrentWorkspace();
-                workspace.SetWorkspace(Guid.Parse("A0000000-0000-0000-0000-000000000001"));
+                workspace.SetWorkspace(Guid.Parse("A0000000-0000-0000-0000-000000000001"), Guid.Parse("A0000000-0000-0000-0000-000000000001"));
                 return workspace;
             });
 

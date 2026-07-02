@@ -33,7 +33,7 @@ public sealed class RlsSessionContext : IRlsSessionContext
         var workspaceId = _currentWorkspace.IsSet && _currentWorkspace.WorkspaceId.HasValue
             ? _currentWorkspace.WorkspaceId.Value.ToString()
             : "";
-        var scope = _currentWorkspace.IsSystemContext ? "system" : "api";
+        var scope = _currentWorkspace.IsSystemContext ? "worker" : "app";
         var correlationId = System.Diagnostics.Activity.Current?.Id ?? "";
 
         await context.Database.ExecuteSqlInterpolatedAsync($@"

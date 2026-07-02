@@ -6,4 +6,4 @@ public sealed record TeamArchivedDomainEvent(
     Guid TeamId,
     Guid ArchivedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, ArchivedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, ArchivedBy);

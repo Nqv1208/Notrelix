@@ -8,4 +8,4 @@ public sealed record BoardViewUserPreferenceSortChangedDomainEvent(
     Guid UserId,
     Guid PreferenceId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);

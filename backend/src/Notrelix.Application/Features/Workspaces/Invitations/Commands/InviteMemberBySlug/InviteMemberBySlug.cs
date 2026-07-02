@@ -31,7 +31,7 @@ public class InviteMemberBySlugCommandHandler : IRequestHandler<InviteMemberBySl
 
         var now = _dateTimeProvider.UtcNow;
         var token = InvitationTokenHash.Create(Guid.NewGuid().ToString("N"));
-        var invitation = WorkspaceInvitation.Create(workspace.Id, request.Email.Trim().ToLowerInvariant(), request.Role, token, _currentUser.UserId, now);
+        var invitation = WorkspaceInvitation.Create(workspace.AccountId, workspace.Id, request.Email.Trim().ToLowerInvariant(), request.Role, token, _currentUser.UserId, now);
 
         _context.WorkspaceInvitations.Add(invitation);
         return Result<Guid>.Success(invitation.Id);

@@ -5,4 +5,4 @@ public sealed record ResourceUnwatchedDomainEvent(
     Guid WorkspaceId,
     Guid WatcherId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);

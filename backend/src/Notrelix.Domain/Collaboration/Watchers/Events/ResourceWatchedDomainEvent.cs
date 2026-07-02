@@ -7,4 +7,4 @@ public sealed record ResourceWatchedDomainEvent(
     ResourceRef Target,
     Guid UserId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);

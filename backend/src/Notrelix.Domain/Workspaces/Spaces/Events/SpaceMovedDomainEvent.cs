@@ -7,4 +7,4 @@ public sealed record SpaceMovedDomainEvent(
     Guid NewWorkspaceId,
     Guid MovedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(NewWorkspaceId, OccurredAt, MovedBy);
+) : WorkspaceScopedDomainEvent(AccountId, NewWorkspaceId, OccurredAt, MovedBy);

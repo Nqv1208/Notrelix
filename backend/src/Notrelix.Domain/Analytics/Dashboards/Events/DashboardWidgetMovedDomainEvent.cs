@@ -10,4 +10,4 @@ public sealed record DashboardWidgetMovedDomainEvent(
     WidgetPosition NewPosition,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, UpdatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, UpdatedBy);

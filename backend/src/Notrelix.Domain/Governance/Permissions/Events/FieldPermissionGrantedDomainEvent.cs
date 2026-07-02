@@ -9,4 +9,4 @@ public sealed record FieldPermissionGrantedDomainEvent(
     PermissionLevel Level,
     Guid GrantedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, GrantedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, GrantedBy);

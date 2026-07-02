@@ -39,7 +39,7 @@ public sealed class PostgresTestContainer : IAsyncLifetime
             // PendingModelChangesWarning is suppressed just like production:
             // see PersistenceRegistration.cs which also ignores it.
             var workspace = new FakeCurrentWorkspace();
-            workspace.SetWorkspace(Guid.Parse("00000000-0000-0000-0000-000000000001"));
+            workspace.SetWorkspace(Guid.Parse("00000000-0000-0000-0000-000000000001"), Guid.Parse("00000000-0000-0000-0000-000000000001"));
             await using var context = CreateContext(workspace);
             await context.Database.EnsureCreatedAsync();
         }

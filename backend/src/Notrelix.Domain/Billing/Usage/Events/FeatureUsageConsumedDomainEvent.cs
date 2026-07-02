@@ -12,7 +12,7 @@ public record FeatureUsageConsumedDomainEvent : WorkspaceScopedDomainEvent
         decimal amount,
         Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(workspaceId, occurredAt, actorUserId)
+        : base(accountId, workspaceId, occurredAt, actorUserId)
     {
         FeatureCode = featureCode;
         Amount = amount;

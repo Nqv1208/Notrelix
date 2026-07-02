@@ -1,52 +1,47 @@
 using System.Reflection;
 using System.Text.Json;
+using System.Linq.Expressions;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.Accounts.Abstractions;
-using Notrelix.Domain.Identity.Tokens;
-using Notrelix.Domain.Analytics.Dashboards;
-using Notrelix.Domain.Analytics.Snapshots;
-using Notrelix.Domain.Automation.Agents;
-using Notrelix.Domain.Automation.Executions;
-using Notrelix.Domain.Automation.Rules;
-using Notrelix.Domain.Automation.Scheduled;
-using Notrelix.Domain.Automation.Templates;
-using Notrelix.Domain.Billing.Customers;
-using Notrelix.Domain.Billing.Entitlements;
-using Notrelix.Domain.Billing.BillingEvents;
-using Notrelix.Domain.Billing.Payments;
-using Notrelix.Domain.Billing.Plans;
-using Notrelix.Domain.Billing.Subscriptions;
-using Notrelix.Domain.Billing.Usage;
-using Notrelix.Domain.Collaboration.Attachments;
-using Notrelix.Domain.Collaboration.Comments;
-using Notrelix.Domain.Collaboration.Mentions;
-using Notrelix.Domain.Collaboration.Presence;
-using Notrelix.Domain.Collaboration.Reactions;
-using Notrelix.Domain.Collaboration.Watchers;
-using Notrelix.Domain.Documents.Blocks;
-using Notrelix.Domain.Documents.Pages;
-using Notrelix.Domain.Documents.ResourceLinks;
-using Notrelix.Domain.Documents.Templates;
-using Notrelix.Domain.Documents.Versions;
-using Notrelix.Domain.Governance.Permissions;
-using Notrelix.Domain.Governance.Policies;
-using Notrelix.Domain.Governance.Roles;
-using Notrelix.Domain.Governance.ShareLinks;
-using Notrelix.Domain.Governance.Templates;
+
+// Account
+using Notrelix.Domain.Accounts.Accounts;
+using Notrelix.Domain.Accounts.Domains;
+using Notrelix.Domain.Accounts.IdentityProviders;
+using Notrelix.Domain.Accounts.Invitations;
+using Notrelix.Domain.Accounts.Members;
+using Notrelix.Domain.Accounts.Regions;
+using Notrelix.Domain.Accounts.Scim;
+using Notrelix.Domain.Accounts.Settings;
+using Notrelix.Domain.Accounts.WorkspaceRoutes;
+
+// Identity
 using Notrelix.Domain.Identity.Mfa;
 using Notrelix.Domain.Identity.OAuth;
 using Notrelix.Domain.Identity.Profiles;
 using Notrelix.Domain.Identity.Security;
 using Notrelix.Domain.Identity.Sessions;
+using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Domain.Identity.Users;
-using Notrelix.Domain.Integrations.Calendar;
-using Notrelix.Domain.Integrations.Connections;
-using Notrelix.Domain.Integrations.Sync;
-using Notrelix.Domain.Integrations.Webhooks;
-using Notrelix.Domain.Integrations.Webhooks.Events;
+
+// Workspace
+using Notrelix.Domain.Workspaces.Invitations;
+using Notrelix.Domain.Workspaces.Members;
+using Notrelix.Domain.Workspaces.Spaces;
+using Notrelix.Domain.Workspaces.Teams;
+using Notrelix.Domain.Workspaces.Workspaces;
+
+// Documents
+using Notrelix.Domain.Documents.Blocks;
+using Notrelix.Domain.Documents.Pages;
+using Notrelix.Domain.Documents.ResourceLinks;
+using Notrelix.Domain.Documents.Templates;
+using Notrelix.Domain.Documents.Versions;
+
+// WorkManagement
 using Notrelix.Domain.WorkManagement.Approvals;
 using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Boards;
@@ -61,21 +56,61 @@ using Notrelix.Domain.WorkManagement.Rollups;
 using Notrelix.Domain.WorkManagement.Templates;
 using Notrelix.Domain.WorkManagement.Views;
 using Notrelix.Domain.WorkManagement.Workload;
-using Notrelix.Domain.Workspaces.Invitations;
-using Notrelix.Domain.Workspaces.Members;
-using Notrelix.Domain.Workspaces.Spaces;
-using Notrelix.Domain.Workspaces.Teams;
-using Notrelix.Domain.Workspaces.Workspaces;
-using Notrelix.Infrastructure.Data.Projections.Search;
-using Notrelix.Infrastructure.Data.Ops.Entities;
-using Notrelix.Infrastructure.Data.Governance.Projections;
+
+// Collaboration
+using Notrelix.Domain.Collaboration.Attachments;
+using Notrelix.Domain.Collaboration.Comments;
+using Notrelix.Domain.Collaboration.Mentions;
+using Notrelix.Domain.Collaboration.Presence;
+using Notrelix.Domain.Collaboration.Reactions;
+using Notrelix.Domain.Collaboration.ReadStates;
+using Notrelix.Domain.Collaboration.Watchers;
+
+// Governance
+using Notrelix.Domain.Governance.Permissions;
+using Notrelix.Domain.Governance.Policies;
+using Notrelix.Domain.Governance.Roles;
+using Notrelix.Domain.Governance.ShareLinks;
+using Notrelix.Domain.Governance.Templates;
+
+// Automation
+using Notrelix.Domain.Automation.Agents;
+using Notrelix.Domain.Automation.Executions;
+using Notrelix.Domain.Automation.Rules;
+using Notrelix.Domain.Automation.Scheduled;
+using Notrelix.Domain.Automation.Templates;
+
+// Integrations
+using Notrelix.Domain.Integrations.Calendar;
+using Notrelix.Domain.Integrations.Connections;
+using Notrelix.Domain.Integrations.Sync;
+using Notrelix.Domain.Integrations.Webhooks;
+using Notrelix.Domain.Integrations.Webhooks.Events;
+
+// Billing
+using Notrelix.Domain.Billing.Customers;
+using Notrelix.Domain.Billing.Entitlements;
+using Notrelix.Domain.Billing.BillingEvents;
+using Notrelix.Domain.Billing.Payments;
+using Notrelix.Domain.Billing.Plans;
+using Notrelix.Domain.Billing.Subscriptions;
+using Notrelix.Domain.Billing.Usage;
+
+// Analytics
+using Notrelix.Domain.Analytics.Dashboards;
+using Notrelix.Domain.Analytics.Snapshots;
+
+// Infrastructure projections & records
+using Notrelix.Infrastructure.Data.Analytics;
+using Notrelix.Infrastructure.Data.Audit;
+using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Data.Events;
+using Notrelix.Infrastructure.Data.Governance.Projections;
 using Notrelix.Infrastructure.Data.Messaging;
 using Notrelix.Infrastructure.Data.Notifications;
-using Notrelix.Infrastructure.Data.Analytics;
-using Notrelix.Infrastructure.Data.Authz;
+using Notrelix.Infrastructure.Data.Ops.Entities;
 using Notrelix.Infrastructure.Data.Projections.Activity;
-using System.Linq.Expressions;
+using Notrelix.Infrastructure.Data.Projections.Search;
 
 namespace Notrelix.Infrastructure.Data;
 
@@ -94,16 +129,16 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext, IWorkspace
     }
 
     // Account
-    public DbSet<global::Notrelix.Domain.Accounts.Accounts.Account> Accounts => Set<global::Notrelix.Domain.Accounts.Accounts.Account>();
-    public DbSet<global::Notrelix.Domain.Accounts.Members.AccountMember> AccountMembers => Set<global::Notrelix.Domain.Accounts.Members.AccountMember>();
-    public DbSet<global::Notrelix.Domain.Accounts.Invitations.AccountInvitation> AccountInvitations => Set<global::Notrelix.Domain.Accounts.Invitations.AccountInvitation>();
-    public DbSet<global::Notrelix.Domain.Accounts.Domains.AccountDomain> AccountDomains => Set<global::Notrelix.Domain.Accounts.Domains.AccountDomain>();
-    public DbSet<global::Notrelix.Domain.Accounts.Settings.AccountSettings> AccountSettingsEntities => Set<global::Notrelix.Domain.Accounts.Settings.AccountSettings>();
-    public DbSet<global::Notrelix.Domain.Accounts.Regions.AccountRegion> AccountRegions => Set<global::Notrelix.Domain.Accounts.Regions.AccountRegion>();
-    public DbSet<global::Notrelix.Domain.Accounts.IdentityProviders.AccountIdentityProvider> AccountIdentityProviders => Set<global::Notrelix.Domain.Accounts.IdentityProviders.AccountIdentityProvider>();
-    public DbSet<global::Notrelix.Domain.Accounts.Scim.ScimDirectory> ScimDirectories => Set<global::Notrelix.Domain.Accounts.Scim.ScimDirectory>();
-    public DbSet<global::Notrelix.Domain.Accounts.Scim.ScimSyncRun> ScimSyncRuns => Set<global::Notrelix.Domain.Accounts.Scim.ScimSyncRun>();
-    public DbSet<global::Notrelix.Domain.Accounts.WorkspaceRoutes.WorkspaceRoute> WorkspaceRoutes => Set<global::Notrelix.Domain.Accounts.WorkspaceRoutes.WorkspaceRoute>();
+    public DbSet<Account> Accounts => Set<Account>();
+    public DbSet<AccountMember> AccountMembers => Set<AccountMember>();
+    public DbSet<AccountInvitation> AccountInvitations => Set<AccountInvitation>();
+    public DbSet<AccountDomain> AccountDomains => Set<AccountDomain>();
+    public DbSet<AccountSettings> AccountSettingsEntities => Set<AccountSettings>();
+    public DbSet<AccountRegion> AccountRegions => Set<AccountRegion>();
+    public DbSet<AccountIdentityProvider> AccountIdentityProviders => Set<AccountIdentityProvider>();
+    public DbSet<ScimDirectory> ScimDirectories => Set<ScimDirectory>();
+    public DbSet<ScimSyncRun> ScimSyncRuns => Set<ScimSyncRun>();
+    public DbSet<WorkspaceRoute> WorkspaceRoutes => Set<WorkspaceRoute>();
 
     // Identity
     public DbSet<User> Users => Set<User>();
@@ -255,18 +290,18 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext, IWorkspace
     public DbSet<EmailOutboxMessage> EmailOutboxMessages => Set<EmailOutboxMessage>();
     public DbSet<EmailDeliveryAttempt> EmailDeliveryAttempts => Set<EmailDeliveryAttempt>();
 
-    // Canonical notifications (V5)
-    public DbSet<global::Notrelix.Infrastructure.Data.Notifications.NotificationItemRecord> NotificationItems => Set<global::Notrelix.Infrastructure.Data.Notifications.NotificationItemRecord>();
-    public DbSet<global::Notrelix.Infrastructure.Data.Notifications.NotificationRecipientRecord> NotificationRecipients => Set<global::Notrelix.Infrastructure.Data.Notifications.NotificationRecipientRecord>();
-    public DbSet<global::Notrelix.Infrastructure.Data.Notifications.NotificationPreferenceRecord> CanonicalNotificationPreferences => Set<global::Notrelix.Infrastructure.Data.Notifications.NotificationPreferenceRecord>();
-    public DbSet<global::Notrelix.Infrastructure.Data.Notifications.NotificationCounterRecord> NotificationCounters => Set<global::Notrelix.Infrastructure.Data.Notifications.NotificationCounterRecord>();
+    // Canonical notifications
+    public DbSet<NotificationItemRecord> NotificationItems => Set<NotificationItemRecord>();
+    public DbSet<NotificationRecipientRecord> NotificationRecipients => Set<NotificationRecipientRecord>();
+    public DbSet<NotificationPreferenceRecord> CanonicalNotificationPreferences => Set<NotificationPreferenceRecord>();
+    public DbSet<NotificationCounterRecord> NotificationCounters => Set<NotificationCounterRecord>();
 
     // Collaboration read states
-    public DbSet<global::Notrelix.Domain.Collaboration.ReadStates.ResourceReadState> ResourceReadStates => Set<global::Notrelix.Domain.Collaboration.ReadStates.ResourceReadState>();
+    public DbSet<ResourceReadState> ResourceReadStates => Set<ResourceReadState>();
 
     // Enterprise audit
-    public DbSet<global::Notrelix.Infrastructure.Data.Audit.AuditLog> EnterpriseAuditLogs => Set<global::Notrelix.Infrastructure.Data.Audit.AuditLog>();
-    public DbSet<global::Notrelix.Infrastructure.Data.Audit.SecurityEvent> EnterpriseSecurityEvents => Set<global::Notrelix.Infrastructure.Data.Audit.SecurityEvent>();
+    public DbSet<AuditLog> EnterpriseAuditLogs => Set<AuditLog>();
+    public DbSet<SecurityEvent> EnterpriseSecurityEvents => Set<SecurityEvent>();
 
     // Enterprise analytics
     public DbSet<WorkspaceUsageDaily> WorkspaceUsageDaily => Set<WorkspaceUsageDaily>();
@@ -339,19 +374,29 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext, IWorkspace
                     // This ensures the filter adapts when the workspace context changes after model creation
                     // (e.g., switching from system context to a specific workspace).
                     //
-                    // Expression: _currentWorkspace.IsSystemContext || e.WorkspaceId == _currentWorkspace.WorkspaceId
+                    // Expression: _currentWorkspace.IsSystemContext 
+                    //     || (e.AccountId == _currentWorkspace.AccountId && e.WorkspaceId == _currentWorkspace.WorkspaceId)
                     // (_currentWorkspace is guaranteed non-null here, so property access is safe)
 
                     var contextField = Expression.Field(Expression.Constant(this), CurrentWorkspaceField);
                     var isSysProp = Expression.Property(contextField, nameof(ICurrentWorkspace.IsSystemContext));
                     var wsIdProp = Expression.Property(contextField, nameof(ICurrentWorkspace.WorkspaceId));
+                    var acctIdProp = Expression.Property(contextField, nameof(ICurrentWorkspace.AccountId));
 
                     // Lift e.WorkspaceId (Guid) to Guid? for comparison with _currentWorkspace.WorkspaceId (Guid?)
                     var wsIdEquals = Expression.Equal(
                         Expression.Convert(Expression.PropertyOrField(param, "WorkspaceId"), typeof(Guid?)),
                         wsIdProp);
 
-                    var innerOr = Expression.OrElse(isSysProp, wsIdEquals);
+                    // Lift e.AccountId (Guid) to Guid? for comparison with _currentWorkspace.AccountId (Guid?)
+                    var acctIdEquals = Expression.Equal(
+                        Expression.Convert(Expression.PropertyOrField(param, "AccountId"), typeof(Guid?)),
+                        acctIdProp);
+
+                    // AccountId AND WorkspaceId must both match
+                    var tenantMatch = Expression.AndAlso(acctIdEquals, wsIdEquals);
+
+                    var innerOr = Expression.OrElse(isSysProp, tenantMatch);
 
                     filterBody = filterBody is not null
                         ? Expression.AndAlso(filterBody, innerOr)

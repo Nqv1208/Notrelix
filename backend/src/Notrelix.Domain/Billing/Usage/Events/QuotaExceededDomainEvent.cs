@@ -11,7 +11,7 @@ public record QuotaExceededDomainEvent : WorkspaceScopedDomainEvent
         string featureCode,
         decimal limit,
         DateTimeOffset occurredAt)
-        : base(workspaceId, occurredAt, null)
+        : base(accountId, workspaceId, occurredAt, null)
     {
         FeatureCode = featureCode;
         Limit = limit;

@@ -7,4 +7,4 @@ public sealed record WorkspaceMemberSuspendedDomainEvent(
     Guid UserId,
     Guid ActorId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, ActorId);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, ActorId);

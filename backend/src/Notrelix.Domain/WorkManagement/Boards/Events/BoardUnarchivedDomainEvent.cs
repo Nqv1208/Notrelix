@@ -6,4 +6,4 @@ public sealed record BoardUnarchivedDomainEvent(
     Guid BoardId,
     Guid UnarchivedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, UnarchivedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, UnarchivedBy);

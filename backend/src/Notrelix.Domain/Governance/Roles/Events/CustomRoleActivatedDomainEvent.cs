@@ -6,4 +6,4 @@ public sealed record CustomRoleActivatedDomainEvent(
     Guid RoleId,
     Guid ActivatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, ActivatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, ActivatedBy);

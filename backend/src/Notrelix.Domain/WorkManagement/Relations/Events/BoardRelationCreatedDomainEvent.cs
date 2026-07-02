@@ -14,7 +14,7 @@ public record BoardRelationCreatedDomainEvent : WorkspaceScopedDomainEvent
         Guid targetBoardId,
         Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(workspaceId, occurredAt, actorUserId)
+        : base(accountId, workspaceId, occurredAt, actorUserId)
     {
         RelationId = relationId;
         SourceBoardId = sourceBoardId;

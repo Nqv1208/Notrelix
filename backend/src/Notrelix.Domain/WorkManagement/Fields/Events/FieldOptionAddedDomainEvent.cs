@@ -8,4 +8,4 @@ public sealed record FieldOptionAddedDomainEvent(
     string Name,
     Guid AddedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, AddedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, AddedBy);

@@ -10,7 +10,7 @@ public class WorkspaceInvitationTests
     public void Accept_ShouldSucceed_WhenPendingAndNotExpired()
     {
         var workspaceId = Guid.NewGuid();
-        var invitation = WorkspaceInvitation.Create(workspaceId, "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("token"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), workspaceId, "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("token"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         var userId = Guid.NewGuid();
 
         invitation.Accept(userId, DateTimeOffset.UtcNow);
@@ -23,7 +23,7 @@ public class WorkspaceInvitationTests
     public void Accept_ShouldThrow_WhenExpired()
     {
         var now = DateTimeOffset.UtcNow;
-        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("token"), Guid.NewGuid(), now, TimeSpan.FromDays(1));
+        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("token"), Guid.NewGuid(), now, TimeSpan.FromDays(1));
 
         Action act = () => invitation.Accept(Guid.NewGuid(), now.AddDays(2));
 
@@ -34,7 +34,7 @@ public class WorkspaceInvitationTests
     public void Accept_ShouldThrow_WithoutMutating_WhenExpired()
     {
         var now = DateTimeOffset.UtcNow;
-        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("token"), Guid.NewGuid(), now, TimeSpan.FromDays(1));
+        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("token"), Guid.NewGuid(), now, TimeSpan.FromDays(1));
 
         Action act = () => invitation.Accept(Guid.NewGuid(), now.AddDays(2));
 
@@ -46,7 +46,7 @@ public class WorkspaceInvitationTests
     [Fact]
     public void Expire_ShouldSucceed_WhenPending_AndUseNullActor()
     {
-        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("token"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("token"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         invitation.Expire(DateTimeOffset.UtcNow);
 
@@ -58,7 +58,7 @@ public class WorkspaceInvitationTests
     [Fact]
     public void Expire_ShouldDoNothing_WhenAlreadyExpired()
     {
-        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("token"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("token"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         invitation.Expire(DateTimeOffset.UtcNow);
         invitation.ClearDomainEvents();
 
@@ -71,7 +71,7 @@ public class WorkspaceInvitationTests
     [Fact]
     public void Accept_ShouldThrow_WhenDeleted()
     {
-        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("token"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("token"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         invitation.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         Action act = () => invitation.Accept(Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -82,7 +82,7 @@ public class WorkspaceInvitationTests
     [Fact]
     public void Revoke_ShouldThrow_WhenDeleted()
     {
-        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("token"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("token"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         invitation.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         Action act = () => invitation.Revoke(Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -95,7 +95,7 @@ public class WorkspaceInvitationTests
     {
         var now = DateTimeOffset.UtcNow;
         var expiry = TimeSpan.FromHours(1);
-        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("token"), Guid.NewGuid(), now, expiry);
+        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("token"), Guid.NewGuid(), now, expiry);
 
         var acceptedAt = now.Add(expiry); // exactly at ExpiresAt
         Action act = () => invitation.Accept(Guid.NewGuid(), acceptedAt);
@@ -106,7 +106,7 @@ public class WorkspaceInvitationTests
     [Fact]
     public void Accept_ShouldThrow_WhenRevoked()
     {
-        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("token"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("token"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         invitation.Revoke(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         Action act = () => invitation.Accept(Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -116,7 +116,7 @@ public class WorkspaceInvitationTests
     [Fact]
     public void Accept_ShouldThrow_WhenAlreadyExpiredState()
     {
-        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("token"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("token"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         invitation.Expire(DateTimeOffset.UtcNow);
 
         Action act = () => invitation.Accept(Guid.NewGuid(), DateTimeOffset.UtcNow);

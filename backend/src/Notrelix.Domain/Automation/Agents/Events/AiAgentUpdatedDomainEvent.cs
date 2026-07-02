@@ -7,4 +7,4 @@ public sealed record AiAgentUpdatedDomainEvent(
     string Name,
     Guid ActorUserId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, ActorUserId);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, ActorUserId);

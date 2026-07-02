@@ -139,7 +139,7 @@ public class PipelineExecutionTests
             mockUser.Object, mockPermissionService.Object);
 
         var workspaceBehavior = new WorkspaceContextBehavior<ExecutableCommand, string>(
-            mockUser.Object, Mock.Of<ICurrentWorkspace>(), mockWorkspaceService.Object);
+            mockUser.Object, Mock.Of<ICurrentAccount>(), Mock.Of<ICurrentWorkspace>(), mockWorkspaceService.Object);
 
         var validationBehavior = new ValidationBehavior<ExecutableCommand, string>(
             Array.Empty<IValidator<ExecutableCommand>>());
@@ -616,7 +616,7 @@ public class PipelineExecutionTests
         var mockWorkspaceService = CreateMockWorkspacePermissionService();
 
         var behavior = new WorkspaceContextBehavior<EmptyWorkspaceCommand, string>(
-            mockUser.Object, Mock.Of<ICurrentWorkspace>(), mockWorkspaceService.Object);
+            mockUser.Object, Mock.Of<ICurrentAccount>(), Mock.Of<ICurrentWorkspace>(), mockWorkspaceService.Object);
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("ok");
 

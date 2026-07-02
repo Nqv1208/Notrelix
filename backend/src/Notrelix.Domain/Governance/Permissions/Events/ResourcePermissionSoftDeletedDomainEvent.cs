@@ -8,4 +8,4 @@ public sealed record ResourcePermissionSoftDeletedDomainEvent(
     Guid ResourceId,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, DeletedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, DeletedBy);

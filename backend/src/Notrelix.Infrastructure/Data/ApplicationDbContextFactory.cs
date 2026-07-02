@@ -17,10 +17,11 @@ namespace Notrelix.Infrastructure.Data
 
         private sealed class DesignTimeCurrentWorkspace : ICurrentWorkspace
         {
+            public Guid? AccountId => null;
             public Guid? WorkspaceId => null;
             public bool IsSet => false;
             public bool IsSystemContext => true;
-            public void SetWorkspace(Guid workspaceId) { }
+            public void SetWorkspace(Guid accountId, Guid workspaceId) { }
             public IDisposable EnterSystemContext() => new NoopDisposable();
         }
 

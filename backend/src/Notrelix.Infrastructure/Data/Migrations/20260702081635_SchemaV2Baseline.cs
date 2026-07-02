@@ -3,7 +3,7 @@
 namespace Notrelix.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class SchemaCompletionV2 : Migration
+    public partial class SchemaV2Baseline : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -2108,6 +2108,7 @@ namespace Notrelix.Infrastructure.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
+                    account_id = table.Column<Guid>(type: "uuid", nullable: false),
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
                     resource_type = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false),
                     resource_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -5608,6 +5609,12 @@ namespace Notrelix.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_search_documents_account_workspace_type",
+                schema: "search",
+                table: "search_documents",
+                columns: new[] { "account_id", "workspace_id", "resource_type" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_search_documents_search_vector",
                 schema: "search",
                 table: "search_documents",
@@ -5615,16 +5622,10 @@ namespace Notrelix.Infrastructure.Migrations
                 .Annotation("Npgsql:IndexMethod", "gin");
 
             migrationBuilder.CreateIndex(
-                name: "ix_search_documents_workspace_type",
-                schema: "search",
-                table: "search_documents",
-                columns: new[] { "workspace_id", "resource_type" });
-
-            migrationBuilder.CreateIndex(
                 name: "ux_search_documents_resource",
                 schema: "search",
                 table: "search_documents",
-                columns: new[] { "workspace_id", "resource_type", "resource_id" },
+                columns: new[] { "account_id", "workspace_id", "resource_type", "resource_id" },
                 unique: true);
 
             migrationBuilder.CreateIndex(

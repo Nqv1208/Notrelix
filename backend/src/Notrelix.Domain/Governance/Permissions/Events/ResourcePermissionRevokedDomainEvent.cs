@@ -10,4 +10,4 @@ public sealed record ResourcePermissionRevokedDomainEvent(
     Guid SubjectId,
     Guid RevokedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, RevokedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, RevokedBy);

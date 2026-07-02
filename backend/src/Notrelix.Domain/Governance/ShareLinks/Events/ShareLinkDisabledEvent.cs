@@ -6,4 +6,4 @@ public sealed record ShareLinkDisabledEvent(
     Guid LinkId,
     Guid DisabledBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, DisabledBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, DisabledBy);

@@ -5,4 +5,4 @@ public sealed record WebhookSubscriptionSecretRotatedDomainEvent(
     Guid SubscriptionId,
     Guid WorkspaceId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);

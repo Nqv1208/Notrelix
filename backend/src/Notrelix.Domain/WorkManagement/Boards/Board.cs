@@ -97,6 +97,8 @@ public class Board : AggregateRoot, IWorkspaceScoped
     public void UpdateBackground(string background, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (IsArchived)
+            throw new BusinessRuleException("Cannot update background of an archived board.");
         if (string.IsNullOrWhiteSpace(background) || Background == background) return;
         var oldBackground = Background;
         Background = background;
@@ -162,6 +164,8 @@ public class Board : AggregateRoot, IWorkspaceScoped
     public (long Sequence, string Key) GenerateNextItemIdentity(Guid actorUserId, DateTimeOffset now)
     {
         EnsureNotDeleted();
+        if (IsArchived)
+            throw new BusinessRuleException("Cannot generate item identity for an archived board.");
         ItemSequence++;
         var key = string.IsNullOrWhiteSpace(ItemKeyPrefix)
             ? ItemSequence.ToString()

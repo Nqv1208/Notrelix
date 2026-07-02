@@ -21,6 +21,7 @@ namespace Notrelix.Integration.Tests.Integration;
 [Trait("Category", "Integration")]
 public class CrossTenantIsolationTests : IAsyncLifetime
 {
+    private static readonly Guid AccountId = Guid.Parse("00000000-0000-0000-0000-000000000088");
     private static readonly Guid OwnerId = Guid.Parse("00000000-0000-0000-0000-000000000099");
     private static readonly DateTimeOffset FixedTime = new(2026, 6, 28, 0, 0, 0, TimeSpan.Zero);
 
@@ -64,13 +65,13 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         context.Workspaces.AddRange(workspaceA, workspaceB);
 
         context.Boards.Add(new BoardBuilder()
-            .WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build());
+            .WithAccountId(AccountId).WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build());
         context.Boards.Add(new BoardBuilder()
-            .WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B").WithCreatedAt(FixedTime).Build());
+            .WithAccountId(AccountId).WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B").WithCreatedAt(FixedTime).Build());
 
         await context.SaveChangesAsync();
 
-        workspace.SetWorkspace(wsA);
+        workspace.SetWorkspace(AccountId, wsA);
 
         var boards = await context.Boards.ToListAsync();
         boards.Should().AllSatisfy(b => b.WorkspaceId.Should().Be(wsA));
@@ -92,13 +93,13 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         context.Workspaces.AddRange(workspaceA, workspaceB);
 
         context.Boards.Add(new BoardBuilder()
-            .WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build());
+            .WithAccountId(AccountId).WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build());
         context.Boards.Add(new BoardBuilder()
-            .WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B").WithCreatedAt(FixedTime).Build());
+            .WithAccountId(AccountId).WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B").WithCreatedAt(FixedTime).Build());
 
         await context.SaveChangesAsync();
 
-        workspace.SetWorkspace(wsB);
+        workspace.SetWorkspace(AccountId, wsB);
 
         var boards = await context.Boards.ToListAsync();
         boards.Should().AllSatisfy(b => b.WorkspaceId.Should().Be(wsB));
@@ -120,18 +121,18 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         context.Workspaces.AddRange(workspaceA, workspaceB);
 
         context.Boards.AddRange(
-            new BoardBuilder().WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A1").WithCreatedAt(FixedTime).Build(),
-            new BoardBuilder().WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B1").WithCreatedAt(FixedTime).Build(),
-            new BoardBuilder().WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B2").WithCreatedAt(FixedTime).Build());
+            new BoardBuilder().WithAccountId(AccountId).WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A1").WithCreatedAt(FixedTime).Build(),
+            new BoardBuilder().WithAccountId(AccountId).WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B1").WithCreatedAt(FixedTime).Build(),
+            new BoardBuilder().WithAccountId(AccountId).WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B2").WithCreatedAt(FixedTime).Build());
 
         await context.SaveChangesAsync();
 
-        workspace.SetWorkspace(wsA);
+        workspace.SetWorkspace(AccountId, wsA);
         var boardsA = await context.Boards.ToListAsync();
         boardsA.Should().HaveCount(1);
         boardsA.Should().AllSatisfy(b => b.WorkspaceId.Should().Be(wsA));
 
-        workspace.SetWorkspace(wsB);
+        workspace.SetWorkspace(AccountId, wsB);
         var boardsB = await context.Boards.ToListAsync();
         boardsB.Should().HaveCount(2);
         boardsB.Should().AllSatisfy(b => b.WorkspaceId.Should().Be(wsB));
@@ -148,17 +149,17 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         await using var context = CreateContext(workspace);
 
         var boardA = new BoardBuilder()
-            .WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build();
+            .WithAccountId(AccountId).WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build();
         context.Boards.Add(boardA);
         await context.SaveChangesAsync();
 
-        workspace.SetWorkspace(wsA);
+        workspace.SetWorkspace(AccountId, wsA);
 
         var boardFromB = await context.Boards
             .FirstOrDefaultAsync(b => b.Id == boardA.Id);
         boardFromB.Should().NotBeNull("board A should be visible in workspace A");
 
-        workspace.SetWorkspace(wsB);
+        workspace.SetWorkspace(AccountId, wsB);
 
         var boardFromOtherWorkspace = await context.Boards
             .FirstOrDefaultAsync(b => b.Id == boardA.Id);
@@ -179,7 +180,7 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         await using var context = CreateContext(workspace);
 
         context.Boards.Add(new BoardBuilder()
-            .WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board").WithCreatedAt(FixedTime).Build());
+            .WithAccountId(AccountId).WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board").WithCreatedAt(FixedTime).Build());
         await context.SaveChangesAsync();
 
         workspace.Clear();
@@ -199,12 +200,12 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         await using var context = CreateContext(workspace);
 
         context.Boards.AddRange(
-            new BoardBuilder().WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build(),
-            new BoardBuilder().WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B").WithCreatedAt(FixedTime).Build());
+            new BoardBuilder().WithAccountId(AccountId).WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build(),
+            new BoardBuilder().WithAccountId(AccountId).WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B").WithCreatedAt(FixedTime).Build());
 
         await context.SaveChangesAsync();
 
-        workspace.SetWorkspace(wsA);
+        workspace.SetWorkspace(AccountId, wsA);
 
         var boardsInA = await context.Boards.ToListAsync();
         boardsInA.Should().HaveCount(1);
@@ -225,8 +226,8 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         await using var context = CreateContext(workspace);
 
         context.Boards.AddRange(
-            new BoardBuilder().WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build(),
-            new BoardBuilder().WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B").WithCreatedAt(FixedTime).Build());
+            new BoardBuilder().WithAccountId(AccountId).WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build(),
+            new BoardBuilder().WithAccountId(AccountId).WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B").WithCreatedAt(FixedTime).Build());
 
         await context.SaveChangesAsync();
 
@@ -242,7 +243,7 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         await using var context = CreateContext(workspace);
 
         var board = new BoardBuilder()
-            .WithWorkspaceId(TestIds.NewWorkspaceId()).WithCreatedBy(OwnerId).WithTitle("To Delete").WithCreatedAt(FixedTime).Build();
+            .WithAccountId(AccountId).WithWorkspaceId(TestIds.NewWorkspaceId()).WithCreatedBy(OwnerId).WithTitle("To Delete").WithCreatedAt(FixedTime).Build();
         context.Boards.Add(board);
         await context.SaveChangesAsync();
 
@@ -264,11 +265,11 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         await using var context = CreateContext(workspace);
 
         var boardA = new BoardBuilder()
-            .WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A Active").WithCreatedAt(FixedTime).Build();
+            .WithAccountId(AccountId).WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A Active").WithCreatedAt(FixedTime).Build();
         var boardADeleted = new BoardBuilder()
-            .WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A Deleted").WithCreatedAt(FixedTime).Build();
+            .WithAccountId(AccountId).WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A Deleted").WithCreatedAt(FixedTime).Build();
         var boardB = new BoardBuilder()
-            .WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B Active").WithCreatedAt(FixedTime).Build();
+            .WithAccountId(AccountId).WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B Active").WithCreatedAt(FixedTime).Build();
 
         context.Boards.AddRange(boardA, boardADeleted, boardB);
         await context.SaveChangesAsync();
@@ -276,7 +277,7 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         boardADeleted.SoftDelete(OwnerId, FixedTime);
         await context.SaveChangesAsync();
 
-        workspace.SetWorkspace(wsA);
+        workspace.SetWorkspace(AccountId, wsA);
         var boards = await context.Boards.ToListAsync();
         boards.Should().HaveCount(1, "only active board in workspace A should be visible");
         boards.Should().Contain(b => b.Title == "Board A Active");
@@ -299,16 +300,16 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         context.Workspaces.AddRange(workspaceA, workspaceB);
 
         var boardA = new BoardBuilder()
-            .WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build();
+            .WithAccountId(AccountId).WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build();
         var boardB = new BoardBuilder()
-            .WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B").WithCreatedAt(FixedTime).Build();
+            .WithAccountId(AccountId).WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B").WithCreatedAt(FixedTime).Build();
         context.Boards.AddRange(boardA, boardB);
         await context.SaveChangesAsync();
 
-        workspace.SetWorkspace(wsA);
+        workspace.SetWorkspace(AccountId, wsA);
         var countA = await context.Boards.CountAsync();
 
-        workspace.SetWorkspace(wsB);
+        workspace.SetWorkspace(AccountId, wsB);
         var countB = await context.Boards.CountAsync();
 
         countA.Should().Be(1, "workspace A should see 1 board");
@@ -326,7 +327,7 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         context.Workspaces.Add(wsA);
         await context.SaveChangesAsync();
 
-        workspace.SetWorkspace(TestIds.NewWorkspaceId());
+        workspace.SetWorkspace(AccountId, TestIds.NewWorkspaceId());
 
         var workspaces = await context.Workspaces.ToListAsync();
         workspaces.Should().HaveCount(1, "Workspace does not implement IWorkspaceScoped and should not be filtered by workspace");
@@ -343,12 +344,12 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         await using var context = CreateContext(workspace);
 
         context.Boards.AddRange(
-            new BoardBuilder().WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build(),
-            new BoardBuilder().WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B").WithCreatedAt(FixedTime).Build());
+            new BoardBuilder().WithAccountId(AccountId).WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build(),
+            new BoardBuilder().WithAccountId(AccountId).WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B").WithCreatedAt(FixedTime).Build());
 
         await context.SaveChangesAsync();
 
-        workspace.SetWorkspace(wsA);
+        workspace.SetWorkspace(AccountId, wsA);
 
         var allBoards = await context.Boards.IgnoreQueryFilters().ToListAsync();
         allBoards.Should().HaveCount(2, "IgnoreQueryFilters should bypass workspace filter");

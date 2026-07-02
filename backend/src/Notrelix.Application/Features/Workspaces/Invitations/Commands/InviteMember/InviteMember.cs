@@ -35,11 +35,11 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
 
     public async Task<Result<Guid>> Handle(InviteMemberCommand request, CancellationToken ct)
     {
-        var workspaceExists = await _workspaceContext.Workspaces
+        var workspace = await _workspaceContext.Workspaces
             .AsNoTracking()
-            .AnyAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && !w.IsDeleted, ct);
+            .FirstOrDefaultAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && !w.IsDeleted, ct);
 
-        if (!workspaceExists)
+        if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
         var cleanEmail = request.Email.Trim().ToLowerInvariant();
@@ -69,7 +69,7 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
             return Result<Guid>.Failure("Đã có một lời mời đang chờ xử lý dành cho email này.");
 
         var token = InvitationTokenHash.Create(Guid.NewGuid().ToString("N"));
-        var invitation = WorkspaceInvitation.Create(request.WorkspaceId, cleanEmail, request.Role, token, _currentUser.UserId, now);
+        var invitation = WorkspaceInvitation.Create(workspace.AccountId, request.WorkspaceId, cleanEmail, request.Role, token, _currentUser.UserId, now);
 
         _workspaceContext.WorkspaceInvitations.Add(invitation);
         return Result<Guid>.Success(invitation.Id);

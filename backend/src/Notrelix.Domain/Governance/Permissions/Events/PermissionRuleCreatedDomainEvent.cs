@@ -13,7 +13,7 @@ public record PermissionRuleCreatedDomainEvent : WorkspaceScopedDomainEvent
         string action,
         Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(workspaceId, occurredAt, actorUserId)
+        : base(accountId, workspaceId, occurredAt, actorUserId)
     {
         AccountId = accountId;
         RuleId = ruleId;

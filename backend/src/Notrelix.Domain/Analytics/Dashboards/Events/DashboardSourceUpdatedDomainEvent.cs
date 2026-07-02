@@ -7,4 +7,4 @@ public sealed record DashboardSourceUpdatedDomainEvent(
     Guid SourceId,
     Guid ActorUserId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, ActorUserId);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, ActorUserId);
