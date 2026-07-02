@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Abstractions.Rls;
 

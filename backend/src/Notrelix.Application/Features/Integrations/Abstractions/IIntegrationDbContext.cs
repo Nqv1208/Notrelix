@@ -1,6 +1,4 @@
-using Notrelix.Domain.Automation.Executions;
 using Notrelix.Domain.Integrations.Sync;
-using Notrelix.Domain.Integrations.Webhooks.Events;
 // ReSharper disable InconsistentNaming — intentionally mirrors DbContext member naming
 
 namespace Notrelix.Application.Features.Integrations.Abstractions;

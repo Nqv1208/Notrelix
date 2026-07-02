@@ -17,9 +17,7 @@ global using Notrelix.Domain.WorkManagement;
 
 // Added by script for Bounded Context entities
 global using Notrelix.Domain.Identity.Users;
-global using Notrelix.Domain.Identity.Profiles;
 global using Notrelix.Domain.Identity.Sessions;
-global using Notrelix.Domain.Identity.OAuth;
 global using Notrelix.Domain.Workspaces.Workspaces;
 global using Notrelix.Domain.Workspaces.Members;
 global using Notrelix.Domain.Workspaces.Invitations;

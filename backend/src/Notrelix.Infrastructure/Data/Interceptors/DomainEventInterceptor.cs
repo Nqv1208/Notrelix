@@ -14,14 +14,6 @@ public class DomainEventInterceptor : SaveChangesInterceptor
     private readonly IDomainEventDispatchPolicy _dispatchPolicy;
     private readonly AsyncLocal<List<IDomainEvent>?> _inlineEvents = new();
 
-    /// <summary>
-    /// When multiple DbContexts share the same transaction (TransactionDbContext pattern),
-    /// domain events captured from contexts that don't map DomainEventLog/MessagingOutboxMessage
-    /// are deferred here. The InfrastructureDbContext's interceptor picks them up on its save.
-    /// AsyncLocal ensures isolation per async flow / request.
-    /// </summary>
-    private static readonly AsyncLocal<List<(IDomainEvent DomainEvent, string MessageName, IReadOnlyList<IntegrationEventMapping> Mappings, DateTimeOffset Timestamp)>?> _deferredOutboxEvents = new();
-
     public DomainEventInterceptor(
         IDateTimeProvider dateTimeProvider,
         IEventTypeRegistry eventTypeRegistry,
@@ -85,60 +77,28 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         if (context is null) return;
 
         var now = _dateTimeProvider.UtcNow;
-
-        // Check whether this context's EF model includes the outbox entity types.
-        // Split DbContexts (Platform, Product, Projection) don't map these; only
-        // InfrastructureDbContext does. Events are deferred via static AsyncLocal
-        // and picked up when InfrastructureDbContext saves.
-        var canWriteOutbox = context.Model.FindEntityType(typeof(DomainEventLog)) is not null;
-
-        // If this context CAN write outbox entries, flush any events deferred from
-        // earlier contexts in the same TransactionDbContext save sequence.
-        if (canWriteOutbox)
-        {
-            FlushDeferredEvents(context, now);
-        }
-
-        var domainEvents = context.ChangeTracker
-            .Entries<Entity>()
-            .Where(e => e.Entity.DomainEvents.Any())
-            .SelectMany(e => e.Entity.DomainEvents)
-            .ToList();
-
-        if (domainEvents.Count == 0) return;
-
         var inlineEvents = new List<IDomainEvent>();
 
-        foreach (var domainEvent in domainEvents)
+        foreach (var entry in context.ChangeTracker
+            .Entries<Entity>()
+            .Where(e => e.Entity.DomainEvents.Any()))
         {
-            var mode = _dispatchPolicy.GetMode(domainEvent.GetType());
-
-            switch (mode)
+            foreach (var domainEvent in entry.Entity.DomainEvents)
             {
-                case DomainEventDispatchMode.Inline:
-                    inlineEvents.Add(domainEvent);
-                    break;
-
-                case DomainEventDispatchMode.Outbox:
-                    {
-                        var messageName = _eventTypeRegistry.GetMessageName(domainEvent.GetType());
-
-                        if (canWriteOutbox)
-                        {
-                            WriteOutboxEntries(context, domainEvent, messageName, now);
-                        }
-                        else
-                        {
-                            // Context doesn't map outbox tables — defer for InfrastructureDbContext.
-                            var mappings = _integrationEventMapper.Map(domainEvent);
-                            _deferredOutboxEvents.Value ??= [];
-                            _deferredOutboxEvents.Value.Add((domainEvent, messageName, mappings, now));
-                        }
+                switch (_dispatchPolicy.GetMode(domainEvent.GetType()))
+                {
+                    case DomainEventDispatchMode.Inline:
+                        inlineEvents.Add(domainEvent);
                         break;
-                    }
 
-                case DomainEventDispatchMode.Ignore:
-                    break;
+                    case DomainEventDispatchMode.Outbox:
+                        var messageName = _eventTypeRegistry.GetMessageName(domainEvent.GetType());
+                        WriteOutboxEntries(context, domainEvent, messageName, now);
+                        break;
+
+                    case DomainEventDispatchMode.Ignore:
+                        break;
+                }
             }
         }
 
@@ -150,26 +110,6 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         {
             entry.Entity.ClearDomainEvents();
         }
-    }
-
-    private static void FlushDeferredEvents(DbContext context, DateTimeOffset now)
-    {
-        var deferred = _deferredOutboxEvents.Value;
-        if (deferred is null || deferred.Count == 0) return;
-
-        foreach (var (domainEvent, messageName, mappings, timestamp) in deferred)
-        {
-            var eventLog = DomainEventLog.FromDomainEvent(domainEvent, messageName, timestamp);
-            context.Set<DomainEventLog>().Add(eventLog);
-
-            foreach (var mapping in mappings)
-            {
-                var outboxMsg = MessagingOutboxMessage.FromIntegrationEvent(mapping.IntegrationEvent, domainEvent, timestamp);
-                context.Set<MessagingOutboxMessage>().Add(outboxMsg);
-            }
-        }
-
-        _deferredOutboxEvents.Value = null;
     }
 
     private void WriteOutboxEntries(DbContext context, IDomainEvent domainEvent, string messageName, DateTimeOffset now)

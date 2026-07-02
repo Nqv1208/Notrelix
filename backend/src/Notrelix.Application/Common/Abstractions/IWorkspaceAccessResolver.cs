@@ -3,7 +3,7 @@ namespace Notrelix.Application.Common.Abstractions;
 /// <summary>
 /// Resolves workspace access for a given actor.
 /// Returns tenant identity (AccountId) and access status.
-/// Implementation queries PlatformDbContext; handler does not know the source.
+/// Implementation queries workspace data; handler does not know the source.
 /// </summary>
 public interface IWorkspaceAccessResolver
 {

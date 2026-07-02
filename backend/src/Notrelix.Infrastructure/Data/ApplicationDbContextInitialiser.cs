@@ -2,10 +2,7 @@ using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Abstractions.Rls;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Data.Seed;
-using Notrelix.Infrastructure.Data.Platform;
-using Notrelix.Infrastructure.Data.Product;
-using Notrelix.Infrastructure.Data.Projection;
-using Notrelix.Infrastructure.Data.Runtime;
+
 
 namespace Notrelix.Infrastructure.Data;
 
@@ -13,10 +10,6 @@ public class ApplicationDbContextInitialiser
 {
     private readonly ILogger<ApplicationDbContextInitialiser> _logger;
     private readonly ApplicationDbContext _context;
-    private readonly PlatformDbContext? _platform;
-    private readonly ProductDbContext? _product;
-    private readonly ProjectionDbContext? _projection;
-    private readonly InfrastructureDbContext? _infrastructure;
     private readonly SeedDataOptions _options;
     private readonly IPasswordHasher _passwordHasher;
     private readonly RlsPolicyApplier _rlsPolicyApplier;
@@ -30,18 +23,10 @@ public class ApplicationDbContextInitialiser
         IOptions<SeedDataOptions> options,
         RlsPolicyApplier rlsPolicyApplier,
         ICurrentWorkspace currentWorkspace,
-        IOptions<RlsOptions> rlsOptions,
-        PlatformDbContext? platform = null,
-        ProductDbContext? product = null,
-        ProjectionDbContext? projection = null,
-        InfrastructureDbContext? infrastructure = null)
+        IOptions<RlsOptions> rlsOptions)
     {
         _logger = logger;
         _context = context;
-        _platform = platform;
-        _product = product;
-        _projection = projection;
-        _infrastructure = infrastructure;
         _passwordHasher = passwordHasher;
         _options = options.Value;
         _rlsPolicyApplier = rlsPolicyApplier;
@@ -55,17 +40,7 @@ public class ApplicationDbContextInitialiser
         {
             if (_context.Database.IsNpgsql())
             {
-                // Migrate split contexts if available, then legacy context
-                if (_platform is not null) await _platform.Database.MigrateAsync();
-                if (_product is not null) await _product.Database.MigrateAsync();
-                if (_projection is not null) await _projection.Database.MigrateAsync();
-                if (_infrastructure is not null) await _infrastructure.Database.MigrateAsync();
                 await _context.Database.MigrateAsync();
-
-                if (_rlsOptions.Enabled)
-                {
-                    await ApplyRlsFoundationAsync();
-                }
 
                 if (_rlsOptions.Enabled && _rlsOptions.ApplyPoliciesOnStartup)
                 {
@@ -148,46 +123,4 @@ public class ApplicationDbContextInitialiser
         await _context.SaveChangesAsync();
     }
 
-    private async Task ApplyRlsFoundationAsync()
-    {
-        var assembly = typeof(ApplicationDbContextInitialiser).Assembly;
-        var connection = (Npgsql.NpgsqlConnection)_context.Database.GetDbConnection();
-
-        if (connection.State != System.Data.ConnectionState.Open)
-            await connection.OpenAsync();
-
-        var scriptNames = new[]
-        {
-            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.001_roles.sql",
-            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.002_helpers.sql",
-            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.003_authz_projection.sql",
-            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.004_grants.sql",
-            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.005_policies_identity.sql",
-            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.006_policies_workspace_governance_authz.sql",
-            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.007_policies_workspace_scoped_domain.sql",
-            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.008_policies_events.sql",
-            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.009_policies_messaging.sql",
-            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.010_policies_notifications.sql",
-            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.011_policies_activity.sql",
-            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.012_policies_audit.sql",
-            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.013_policies_projection.sql",
-            "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.014_policies_ops.sql",
-        };
-
-        foreach (var resourceName in scriptNames)
-        {
-            await using var stream = assembly.GetManifestResourceStream(resourceName);
-            if (stream is null)
-            {
-                _logger.LogWarning("RLS SQL resource '{Resource}' not found. Skipping.", resourceName);
-                continue;
-            }
-            using var reader = new StreamReader(stream);
-            var sql = await reader.ReadToEndAsync();
-            await using var cmd = new Npgsql.NpgsqlCommand(sql, connection);
-            cmd.CommandTimeout = 60;
-            await cmd.ExecuteNonQueryAsync();
-            _logger.LogInformation("RLS script applied: {Script}", resourceName);
-        }
-    }
 }

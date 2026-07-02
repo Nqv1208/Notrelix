@@ -1,5 +1,5 @@
 using Notrelix.Application.Common.Abstractions;
-using Notrelix.Infrastructure.Data.Projection;
+using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Notifications;
 
 namespace Notrelix.Infrastructure.BackgroundJobs;
@@ -48,7 +48,7 @@ internal sealed class EmailDispatcher : BackgroundService
     private async Task ProcessBatchAsync(CancellationToken cancellationToken)
     {
         await using var scope = _scopeFactory.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<ProjectionDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
         var dateTimeProvider = scope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
 

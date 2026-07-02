@@ -1,4 +1,3 @@
-using Moq;
 using Notrelix.Application.Common.Events;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Automation.Events;

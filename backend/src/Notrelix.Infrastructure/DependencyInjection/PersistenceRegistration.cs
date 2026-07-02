@@ -20,17 +20,11 @@ using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Events;
 using Notrelix.Infrastructure.Options;
 
-using Notrelix.Infrastructure.Data.Platform;
-using Notrelix.Infrastructure.Data.Product;
-using Notrelix.Infrastructure.Data.Projection;
-using Notrelix.Infrastructure.Data.Runtime;
-
 namespace Notrelix.Infrastructure;
 
 /// <summary>
 /// EF Core, PostgreSQL, interceptors, outbox persistence and seed options.
-/// Registers 4 split bounded-context DbContexts (Platform, Product, Projection, Infrastructure)
-/// plus a TransactionDbContext that coordinates atomic saves across all four.
+/// Single ApplicationDbContext maps all bounded-context interfaces.
 /// </summary>
 public static class PersistenceRegistration
 {
@@ -57,97 +51,44 @@ public static class PersistenceRegistration
 
         var connectionString = configuration.GetConnectionString("NotrelixDb");
 
-        // ─── 1. PlatformDbContext — Account, Identity, Workspace, Governance ───
-        services.AddDbContext<PlatformDbContext>((sp, options) =>
-        {
-            options.AddInterceptors(sp.GetRequiredService<AuditableEntityInterceptor>());
-            options.AddInterceptors(sp.GetRequiredService<DomainEventInterceptor>());
-            options.UseNpgsql(connectionString, npg =>
-            {
-                npg.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
-                npg.MigrationsHistoryTable("__EFMigrationsHistory_Platform", DbSchemas.Ops);
-            }).UseSnakeCaseNamingConvention();
-        });
-
-        // ─── 2. ProductDbContext — WorkMgmt, Docs, Collab, Automation, Integrations, Billing ───
-        services.AddDbContext<ProductDbContext>((sp, options) =>
-        {
-            options.AddInterceptors(sp.GetRequiredService<AuditableEntityInterceptor>());
-            options.AddInterceptors(sp.GetRequiredService<DomainEventInterceptor>());
-            options.UseNpgsql(connectionString, npg =>
-            {
-                npg.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
-                npg.MigrationsHistoryTable("__EFMigrationsHistory_Product", DbSchemas.Ops);
-            }).UseSnakeCaseNamingConvention();
-        });
-
-        // ─── 3. ProjectionDbContext — Search, Notifications, Activity ───
-        services.AddDbContext<ProjectionDbContext>((sp, options) =>
-        {
-            options.AddInterceptors(sp.GetRequiredService<AuditableEntityInterceptor>());
-            options.UseNpgsql(connectionString, npg =>
-            {
-                npg.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
-                npg.MigrationsHistoryTable("__EFMigrationsHistory_Projection", DbSchemas.Ops);
-            }).UseSnakeCaseNamingConvention();
-        });
-
-        // ─── 4. InfrastructureDbContext — Events, Messaging, Audit, Ops ───
-        services.AddDbContext<InfrastructureDbContext>((sp, options) =>
-        {
-            options.AddInterceptors(sp.GetRequiredService<AuditableEntityInterceptor>());
-            options.AddInterceptors(sp.GetRequiredService<DomainEventInterceptor>());
-            options.UseNpgsql(connectionString, npg =>
-            {
-                npg.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
-                npg.MigrationsHistoryTable("__EFMigrationsHistory_Infrastructure", DbSchemas.Ops);
-            }).UseSnakeCaseNamingConvention();
-        });
-
-        // ─── 5. Legacy ApplicationDbContext — migrations / design-time / tests ───
+        // Single unified ApplicationDbContext
         services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
             options.AddInterceptors(sp.GetRequiredService<AuditableEntityInterceptor>());
             options.AddInterceptors(sp.GetRequiredService<DomainEventInterceptor>());
-            options.UseNpgsql(connectionString, npgOptions =>
+            options.UseNpgsql(connectionString, npg =>
             {
-                npgOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
-                npgOptions.MigrationsHistoryTable("__EFMigrationsHistory", DbSchemas.Ops);
+                npg.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                npg.MigrationsHistoryTable("__EFMigrationsHistory", DbSchemas.Ops);
             }).UseSnakeCaseNamingConvention();
         });
 
-        // ─── IApplicationDbContext → TransactionDbContext (atomic cross-context save) ───
-        services.AddScoped<IApplicationDbContext>(sp =>
-        {
-            var platform = sp.GetRequiredService<PlatformDbContext>();
-            var product = sp.GetRequiredService<ProductDbContext>();
-            var projection = sp.GetRequiredService<ProjectionDbContext>();
-            var infrastructure = sp.GetRequiredService<InfrastructureDbContext>();
-            return new TransactionDbContext(platform, product, projection, infrastructure);
-        });
+        // IApplicationDbContext maps to ApplicationDbContext
+        services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
-        // ─── Map bounded-context interfaces → correct physical DbContext ───
+        // Map bounded-context interfaces to ApplicationDbContext
         // Platform
-        services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<PlatformDbContext>());
-        services.AddScoped<IIdentityDbContext>(sp => sp.GetRequiredService<PlatformDbContext>());
-        services.AddScoped<IWorkspaceDbContext>(sp => sp.GetRequiredService<PlatformDbContext>());
-        services.AddScoped<IGovernanceDbContext>(sp => sp.GetRequiredService<PlatformDbContext>());
+        services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IIdentityDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IWorkspaceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IGovernanceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         // Product
-        services.AddScoped<IWorkManagementDbContext>(sp => sp.GetRequiredService<ProductDbContext>());
-        services.AddScoped<IDocumentDbContext>(sp => sp.GetRequiredService<ProductDbContext>());
-        services.AddScoped<ICollaborationDbContext>(sp => sp.GetRequiredService<ProductDbContext>());
-        services.AddScoped<IAutomationDbContext>(sp => sp.GetRequiredService<ProductDbContext>());
-        services.AddScoped<IIntegrationDbContext>(sp => sp.GetRequiredService<ProductDbContext>());
-        services.AddScoped<IBillingDbContext>(sp => sp.GetRequiredService<ProductDbContext>());
-        services.AddScoped<IReportingDbContext>(sp => sp.GetRequiredService<ProductDbContext>());
+        services.AddScoped<IWorkManagementDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IDocumentDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<ICollaborationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IAutomationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IIntegrationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IBillingDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IReportingDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         // Projection
-        services.AddScoped<ISearchProjectionDbContext>(sp => sp.GetRequiredService<ProjectionDbContext>());
-        services.AddScoped<INotificationDbContext>(sp => sp.GetRequiredService<ProjectionDbContext>());
-        services.AddScoped<IActivityProjectionDbContext>(sp => sp.GetRequiredService<ProjectionDbContext>());
+        services.AddScoped<ISearchProjectionDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<INotificationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IActivityProjectionDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         // Infrastructure
-        services.AddScoped<IMessagingDbContext>(sp => sp.GetRequiredService<InfrastructureDbContext>());
-        services.AddScoped<IAuditDbContext>(sp => sp.GetRequiredService<InfrastructureDbContext>());
-        services.AddScoped<IOpsDbContext>(sp => sp.GetRequiredService<InfrastructureDbContext>());
+        services.AddScoped<IMessagingDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IAuditDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IOpsDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+
         services.AddScoped<IWorkspaceAccessChecker, WorkspaceAccessChecker>();
         services.AddScoped<IWorkspaceAccessResolver, WorkspaceAccessResolver>();
         services.AddScoped<IActorLookupService, ActorLookupService>();

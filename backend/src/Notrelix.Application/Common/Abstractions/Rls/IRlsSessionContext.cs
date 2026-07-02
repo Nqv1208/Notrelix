@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore.Infrastructure;
-
 namespace Notrelix.Application.Common.Abstractions.Rls;
 
 public interface IRlsSessionContext
