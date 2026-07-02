@@ -32,7 +32,7 @@ public sealed class NotificationItemConfiguration : IEntityTypeConfiguration<Not
         builder.Property(x => x.Title).HasColumnName("title").IsRequired().HasMaxLength(320);
         builder.Property(x => x.Body).HasColumnName("body");
         builder.Property(x => x.ActionUrl).HasColumnName("action_url");
-        builder.Property(x => x.DataJson).HasColumnName("data_json").HasColumnType("jsonb").IsRequired();
+        builder.Property(x => x.DataJson).HasColumnName("data_json").HasColumnType("jsonb").HasConversion<string>().IsRequired();
 
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(40).HasDefaultValue(NotificationItemStatus.Active);
         builder.Property(x => x.ExpiresAt).HasColumnName("expires_at");

@@ -2,19 +2,36 @@ using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoards;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
-using Notrelix.Testing.Integration.Factories;
 
 namespace Notrelix.Integration.Tests.Handlers;
 
-public class GetBoardsQueryHandlerTests
+[Collection("Database")]
+public class GetBoardsQueryHandlerTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public GetBoardsQueryHandlerTests(PostgresTestContainer db)
+    {
+        _db = db;
+    }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public async Task Handle_ShouldReturnActiveBoards()
     {
         var currentWorkspace = new FakeCurrentWorkspace();
         currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        await using var context = _db.CreateContext(currentWorkspace);
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -39,7 +56,7 @@ public class GetBoardsQueryHandlerTests
     {
         var currentWorkspace = new FakeCurrentWorkspace();
         currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        await using var context = _db.CreateContext(currentWorkspace);
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -65,7 +82,7 @@ public class GetBoardsQueryHandlerTests
     {
         var currentWorkspace = new FakeCurrentWorkspace();
         currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        await using var context = _db.CreateContext(currentWorkspace);
 
         var handler = new GetBoardsQueryHandler(context, new TestWorkspaceAccessCheckerStub(false));
 

@@ -1,17 +1,34 @@
 using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.RestoreWorkspace;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
-using Notrelix.Testing.Integration.Factories;
 
 namespace Notrelix.Integration.Tests.Handlers;
 
-public class RestoreWorkspaceCommandHandlerTests
+[Collection("Database")]
+public class RestoreWorkspaceCommandHandlerTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public RestoreWorkspaceCommandHandlerTests(PostgresTestContainer db)
+    {
+        _db = db;
+    }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public async Task Handle_WhenWorkspaceIsSoftDeleted_ShouldRestore()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        await using var context = _db.CreateContext();
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -32,7 +49,7 @@ public class RestoreWorkspaceCommandHandlerTests
     [Fact]
     public async Task Handle_WhenWorkspaceNotFound_ShouldThrowNotFoundException()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        await using var context = _db.CreateContext();
         var userId = Guid.NewGuid();
 
         var handler = new RestoreWorkspaceCommandHandler(context, new FakeCurrentUser { UserId = userId }, FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow));
@@ -44,7 +61,7 @@ public class RestoreWorkspaceCommandHandlerTests
     [Fact]
     public async Task Handle_WhenWorkspaceIsActive_ShouldBeNoOp()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        await using var context = _db.CreateContext();
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 

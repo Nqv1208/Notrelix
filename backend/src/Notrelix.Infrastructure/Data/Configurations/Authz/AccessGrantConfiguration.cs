@@ -25,7 +25,7 @@ public sealed class AccessGrantConfiguration : IEntityTypeConfiguration<AccessGr
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at").IsRequired();
         builder.Property(x => x.SourceEventId).HasColumnName("source_event_id");
         builder.Property(x => x.SourceVersion).HasColumnName("source_version").IsRequired().HasDefaultValue(1L);
-        builder.Property(x => x.MetadataJson).HasColumnName("metadata_json").HasColumnType("jsonb").IsRequired().HasDefaultValueSql("'{}'::jsonb");
+        builder.Property(x => x.MetadataJson).HasColumnName("metadata_json").HasColumnType("jsonb").HasConversion<string>().IsRequired().HasDefaultValueSql("'{}'::jsonb");
 
         builder.HasIndex(x => new { x.AccountId, x.WorkspaceId, x.UserId }).IsUnique().HasDatabaseName("ux_access_grants_account_workspace_user");
         builder.HasIndex(x => new { x.UserId, x.AccountId })

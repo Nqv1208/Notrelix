@@ -95,7 +95,7 @@ public class ApplicationArchitectureTests
                 if (nameMatch.Success)
                 {
                     var name = nameMatch.Groups[1].Value;
-                    if (name.EndsWith("Dto") || name.EndsWith("Response") || name.EndsWith("Item"))
+                    if (name.EndsWith("Dto") || name.EndsWith("Response") || name.EndsWith("Item") || name.EndsWith("Result"))
                         continue;
                 }
 

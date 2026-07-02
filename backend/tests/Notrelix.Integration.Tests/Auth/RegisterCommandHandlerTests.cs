@@ -7,16 +7,33 @@ using Notrelix.Domain.Common;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Infrastructure.Data.Interceptors;
 using Notrelix.Testing.Application.Fakes;
-using Notrelix.Testing.Integration.Factories;
+using Notrelix.Integration.Tests.Containers;
 
 namespace Notrelix.Integration.Tests.Auth;
 
-public class RegisterCommandHandlerTests
+[Collection("Database")]
+public class RegisterCommandHandlerTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public RegisterCommandHandlerTests(PostgresTestContainer db)
+    {
+        _db = db;
+    }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public async Task Handle_WhenEmailExists_ShouldReturnFailure()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        await using var context = _db.CreateContext();
 
         var existing = User.Create("test@example.com", "Old", "hash", DateTimeOffset.UtcNow);
         context.Users.Add(existing);
@@ -48,7 +65,7 @@ public class RegisterCommandHandlerTests
     [Fact]
     public async Task Handle_WhenValid_ShouldCreateUserAndSession()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        await using var context = _db.CreateContext();
 
         var passwordHasher = new Mock<IPasswordHasher>();
         passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");
@@ -83,6 +100,9 @@ public class RegisterCommandHandlerTests
     [Fact]
     public async Task Handle_WhenValidAndDomainEventInterceptorEnabled_ShouldCreateUserAndSession()
     {
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         var eventTypeRegistry = new Mock<IEventTypeRegistry>();
         var integrationEventMapper = new Mock<IIntegrationEventMapper>();
@@ -94,9 +114,7 @@ public class RegisterCommandHandlerTests
         dispatchPolicy.Setup(x => x.GetMode(It.IsAny<Type>()))
             .Returns(DomainEventDispatchMode.Inline);
         var interceptor = new DomainEventInterceptor(dateTimeProvider.Object, eventTypeRegistry.Object, integrationEventMapper.Object, mediator.Object, dispatchPolicy.Object);
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace, interceptor);
+        await using var context = _db.CreateContext(currentWorkspace, interceptor);
 
         var passwordHasher = new Mock<IPasswordHasher>();
         passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");
@@ -129,13 +147,13 @@ public class RegisterCommandHandlerTests
         (await context.Users.CountAsync()).Should().Be(1);
         (await context.Sessions.CountAsync()).Should().Be(1);
 
-        mediator.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        mediator.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Exactly(4));
     }
 
     [Fact]
     public async Task Handle_WhenValid_ShouldNotCreateWorkspaceSynchronously()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        await using var context = _db.CreateContext();
 
         var passwordHasher = new Mock<IPasswordHasher>();
         passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");

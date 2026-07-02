@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.Json;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
@@ -388,6 +389,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext, IWorkspace
                     property.SetValueConverter(new Converters.FractionalIndexConverter());
                 else if (property.ClrType == typeof(SecretRef))
                     property.SetValueConverter(new Converters.SecretRefConverter());
+                else if (property.ClrType == typeof(JsonDocument))
+                    property.SetValueConverter(new Converters.JsonDocumentConverter());
                 else if (property.ClrType == typeof(TokenHash))
                     property.SetValueConverter(new Converters.TokenHashConverter());
                 else if (property.ClrType == typeof(DocumentSnapshot))

@@ -7,16 +7,36 @@ using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Boards;
 
-public class BoardCommandPermissionTests
+[Collection("Database")]
+public class BoardCommandPermissionTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public BoardCommandPermissionTests(PostgresTestContainer db)
+    {
+        _db = db;
+    }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public async Task AddBoardMember_ShouldRequireBoardManagePermission()
     {
-        await using var context = CreateContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        await using var context = _db.CreateContext(currentWorkspace);
         var ownerId = Guid.NewGuid();
         var guestId = Guid.NewGuid();
         var addedUserId = Guid.NewGuid();
@@ -38,7 +58,9 @@ public class BoardCommandPermissionTests
     [Fact]
     public async Task CreateBoardField_ShouldRequireBoardEditPermission()
     {
-        await using var context = CreateContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        await using var context = _db.CreateContext(currentWorkspace);
         var ownerId = Guid.NewGuid();
         var guestId = Guid.NewGuid();
         var board = await SeedBoardAsync(context, ownerId, guestId, WorkspaceRole.Guest);
@@ -49,7 +71,8 @@ public class BoardCommandPermissionTests
             context,
             CurrentUser(guestId),
             new WorkspacePermissionService(evaluator, context),
-            timeProvider.Object);
+            timeProvider.Object,
+            new FakeCurrentAccount { AccountId = Guid.NewGuid() });
 
         var act = () => handler.Handle(
             new CreateBoardFieldCommand(board.Id, "Risk", "select", "{}", null),
@@ -88,17 +111,5 @@ public class BoardCommandPermissionTests
         var currentUser = new Mock<ICurrentUser>();
         currentUser.SetupGet(item => item.UserId).Returns(userId);
         return currentUser.Object;
-    }
-
-    private static ApplicationDbContext CreateContext()
-    {
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase($"Notrelix-board-permissions-{Guid.NewGuid():N}")
-            .Options;
-
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-
-        return new ApplicationDbContext(options, currentWorkspace);
     }
 }

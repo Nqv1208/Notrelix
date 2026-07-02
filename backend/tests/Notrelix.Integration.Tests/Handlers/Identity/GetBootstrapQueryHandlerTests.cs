@@ -2,19 +2,36 @@ using Notrelix.Application.Features.Identity.Auth.Queries.GetBootstrap;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
-using Notrelix.Testing.Integration.Factories;
 
 namespace Notrelix.Integration.Tests.Handlers.Identity;
 
-public class GetBootstrapQueryHandlerTests
+[Collection("Database")]
+public class GetBootstrapQueryHandlerTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public GetBootstrapQueryHandlerTests(PostgresTestContainer db)
+    {
+        _db = db;
+    }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public async Task Handle_WhenUserNotFound_ReturnsFailure()
     {
         var currentWorkspace = new FakeCurrentWorkspace();
         currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        await using var context = _db.CreateContext(currentWorkspace);
         var handler = new GetBootstrapQueryHandler(context, context);
 
         var result = await handler.Handle(new GetBootstrapQuery(Guid.NewGuid()), CancellationToken.None);
@@ -28,7 +45,7 @@ public class GetBootstrapQueryHandlerTests
     {
         var currentWorkspace = new FakeCurrentWorkspace();
         currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        await using var context = _db.CreateContext(currentWorkspace);
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hashedpassword", now);
         context.Users.Add(user);
@@ -49,7 +66,7 @@ public class GetBootstrapQueryHandlerTests
     {
         var currentWorkspace = new FakeCurrentWorkspace();
         currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        await using var context = _db.CreateContext(currentWorkspace);
         var now = DateTimeOffset.UtcNow;
 
         var user = User.Create("test@example.com", "Test User", "hashedpassword", now);
@@ -79,7 +96,7 @@ public class GetBootstrapQueryHandlerTests
     {
         var currentWorkspace = new FakeCurrentWorkspace();
         currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        await using var context = _db.CreateContext(currentWorkspace);
         var now = DateTimeOffset.UtcNow;
 
         var user = User.Create("test@example.com", "Test User", "hashedpassword", now);
@@ -103,7 +120,7 @@ public class GetBootstrapQueryHandlerTests
     {
         var currentWorkspace = new FakeCurrentWorkspace();
         currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        await using var context = _db.CreateContext(currentWorkspace);
         var now = DateTimeOffset.UtcNow;
 
         var user = User.Create("test@example.com", "Test User", "hashedpassword", now);

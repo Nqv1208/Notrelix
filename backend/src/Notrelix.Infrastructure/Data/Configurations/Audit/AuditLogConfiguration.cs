@@ -22,7 +22,8 @@ public sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
         builder.Property(x => x.CausationId).HasMaxLength(100);
         builder.Property(x => x.BeforeJson).HasColumnType("jsonb").HasConversion<string>();
         builder.Property(x => x.AfterJson).HasColumnType("jsonb").HasConversion<string>();
-        builder.Property(x => x.MetadataJson).HasColumnType("jsonb").IsRequired().HasDefaultValueSql("'{}'::jsonb");
+        builder.Property(x => x.ActorUserId).HasColumnName("actor_user_id");
+        builder.Property(x => x.MetadataJson).HasColumnType("jsonb").HasConversion<string>().IsRequired().HasDefaultValueSql("'{}'::jsonb");
         builder.Property(x => x.OccurredAt).IsRequired();
         builder.Property(x => x.RecordedAt).IsRequired();
 

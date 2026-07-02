@@ -55,8 +55,8 @@ public class CommandMarkerArchitectureTests
                     var nextLine = lines[j].Trim();
                     declaration += " " + nextLine;
                     parenDepth += nextLine.Count(c => c == '(') - nextLine.Count(c => c == ')');
-                    if (parenDepth <= 0 && (nextLine.Contains(';') || nextLine.Contains('{') || nextLine.Contains(':')))
-                        break;
+        if (parenDepth <= 0 && (nextLine.Contains(';') || nextLine.Contains('{')))
+            break;
                 }
             }
             return declaration;
@@ -148,6 +148,13 @@ public class CommandMarkerArchitectureTests
         ["CreatePageCommand"] = new("CreatePageCommand", AllowlistClassification.LegacyGap,
             "Document command missing workspace marker",
             "Add IWorkspaceRequest"),
+
+        ["ProvisionPersonalWorkspaceCommand"] = new("ProvisionPersonalWorkspaceCommand", AllowlistClassification.SystemCommand,
+            "System command triggered by user registration — no workspace context exists yet (WorkspaceId => null)",
+            "Keep as-is; system command with null workspace scope"),
+        ["SendWelcomeEmailCommand"] = new("SendWelcomeEmailCommand", AllowlistClassification.SystemCommand,
+            "System command triggered by user registration — no workspace context exists yet (WorkspaceId => null)",
+            "Keep as-is; system command with null workspace scope"),
     };
 
     private static readonly Dictionary<string, AllowlistEntry> KnownMissingRequirePermission = new()

@@ -21,7 +21,7 @@ public sealed class OutboxDeliveryAttemptConfiguration : IEntityTypeConfiguratio
         builder.Property(x => x.StartedAt).IsRequired();
         builder.Property(x => x.DurationMs);
         builder.Property(x => x.ErrorCode).HasMaxLength(120);
-        builder.Property(x => x.ErrorDetailJson).HasColumnType("jsonb").IsRequired().HasDefaultValueSql("'{}'::jsonb");
+        builder.Property(x => x.ErrorDetailJson).HasColumnType("jsonb").HasConversion<string>().IsRequired().HasDefaultValueSql("'{}'::jsonb");
 
         builder.HasIndex(x => new { x.OutboxMessageId, x.AttemptNo }).IsUnique();
         builder.HasIndex(x => new { x.EventId, x.StartedAt }).IsDescending(false, true);

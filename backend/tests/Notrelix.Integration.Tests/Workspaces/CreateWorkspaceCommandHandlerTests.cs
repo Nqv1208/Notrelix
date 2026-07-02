@@ -1,18 +1,22 @@
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace;
 using Notrelix.Domain.Workspaces.Workspaces;
-using Notrelix.Testing.Integration.Factories;
+using Notrelix.Integration.Tests.Containers;
 
 namespace Notrelix.Integration.Tests.Workspaces;
 
-public class CreateWorkspaceCommandHandlerTests
+[Collection("Database")]
+public class CreateWorkspaceCommandHandlerTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
     private readonly Mock<ICurrentUser> _currentUserMock;
     private readonly Mock<ICurrentAccount> _currentAccountMock;
     private readonly Mock<IDateTimeProvider> _dateTimeMock;
 
-    public CreateWorkspaceCommandHandlerTests()
+    public CreateWorkspaceCommandHandlerTests(PostgresTestContainer db)
     {
+        _db = db;
         _currentUserMock = new Mock<ICurrentUser>();
         _currentAccountMock = new Mock<ICurrentAccount>();
         _currentAccountMock.Setup(a => a.AccountId).Returns(Guid.NewGuid());
@@ -20,10 +24,18 @@ public class CreateWorkspaceCommandHandlerTests
         _dateTimeMock.Setup(d => d.UtcNow).Returns(DateTimeOffset.UtcNow);
     }
 
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public async Task Handle_WhenCreatingTeamWorkspace_ShouldSucceed()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        await using var context = _db.CreateContext();
         var userId = Guid.NewGuid();
         _currentUserMock.Setup(u => u.UserId).Returns(userId);
 
@@ -50,7 +62,7 @@ public class CreateWorkspaceCommandHandlerTests
     [Fact]
     public async Task Handle_WhenCreatingPersonalWorkspace_ShouldSucceed()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        await using var context = _db.CreateContext();
         var userId = Guid.NewGuid();
         _currentUserMock.Setup(u => u.UserId).Returns(userId);
 
@@ -75,7 +87,7 @@ public class CreateWorkspaceCommandHandlerTests
     [Fact]
     public async Task Handle_WhenSlugAlreadyExists_ShouldAppendUniqueSuffix()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        await using var context = _db.CreateContext();
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
         _currentUserMock.Setup(u => u.UserId).Returns(userId);

@@ -3,19 +3,36 @@ using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.UnarchiveBoard;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
-using Notrelix.Testing.Integration.Factories;
 
 namespace Notrelix.Integration.Tests.Handlers;
 
-public class UnarchiveBoardCommandHandlerTests
+[Collection("Database")]
+public class UnarchiveBoardCommandHandlerTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public UnarchiveBoardCommandHandlerTests(PostgresTestContainer db)
+    {
+        _db = db;
+    }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public async Task Handle_ShouldUnarchiveBoard()
     {
         var currentWorkspace = new FakeCurrentWorkspace();
         currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        await using var context = _db.CreateContext(currentWorkspace);
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -47,7 +64,7 @@ public class UnarchiveBoardCommandHandlerTests
     {
         var currentWorkspace = new FakeCurrentWorkspace();
         currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        await using var context = _db.CreateContext(currentWorkspace);
         var permissionMock = new Mock<IWorkspacePermissionService>();
 
         var handler = new UnarchiveBoardCommandHandler(

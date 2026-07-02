@@ -3,16 +3,36 @@ using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspa
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Integration;
 
-public class WorkspaceLifecycleTests
+[Collection("Database")]
+public class WorkspaceLifecycleTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public WorkspaceLifecycleTests(PostgresTestContainer db)
+    {
+        _db = db;
+    }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public async Task CreateWorkspace_WhenNonPersonal_StoresInDatabase()
     {
-        await using var context = CreateContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        await using var context = _db.CreateContext(currentWorkspace);
         var userId = Guid.CreateVersion7();
         var now = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
         var currentUser = MockCurrentUser(userId);
@@ -36,7 +56,9 @@ public class WorkspaceLifecycleTests
     [Fact]
     public async Task CreateWorkspace_WhenPersonal_SetsIsPersonalFlag()
     {
-        await using var context = CreateContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        await using var context = _db.CreateContext(currentWorkspace);
         var userId = Guid.CreateVersion7();
         var now = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
 
@@ -56,7 +78,9 @@ public class WorkspaceLifecycleTests
     [Fact]
     public async Task WorkspaceWithMembers_CanQueryBothAggregates()
     {
-        await using var context = CreateContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        await using var context = _db.CreateContext(currentWorkspace);
         var userId = Guid.CreateVersion7();
         var now = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
 
@@ -70,7 +94,8 @@ public class WorkspaceLifecycleTests
         await context.SaveChangesAsync();
 
         var workspaceId = result.Data;
-        var member = WorkspaceMember.Create(Guid.NewGuid(), workspaceId, userId, WorkspaceRole.Admin, userId, now);
+        var adminUserName = Guid.CreateVersion7();
+        var member = WorkspaceMember.Create(Guid.NewGuid(), workspaceId, adminUserName, WorkspaceRole.Admin, userId, now);
         context.WorkspaceMembers.Add(member);
         await context.SaveChangesAsync();
 
@@ -79,7 +104,7 @@ public class WorkspaceLifecycleTests
             .Where(m => m.WorkspaceId == workspaceId).ToListAsync();
 
         workspace.Should().NotBeNull();
-        members.Should().ContainSingle(m => m.UserId == userId && m.Role == WorkspaceRole.Admin);
+        members.Should().Contain(m => m.UserId == adminUserName && m.Role == WorkspaceRole.Admin);
     }
 
     private static Mock<ICurrentUser> MockCurrentUser(Guid userId)
@@ -101,21 +126,5 @@ public class WorkspaceLifecycleTests
         var mock = new Mock<IDateTimeProvider>();
         mock.Setup(x => x.UtcNow).Returns(now);
         return mock;
-    }
-
-    private static ApplicationDbContext CreateContext()
-    {
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase($"Notrelix-workspace-lifecycle-{Guid.NewGuid():N}")
-            .Options;
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        return new TestApplicationDbContext(options, currentWorkspace);
-    }
-
-    private sealed class TestApplicationDbContext : ApplicationDbContext
-    {
-        public TestApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentWorkspace currentWorkspace)
-            : base(options, currentWorkspace) { }
     }
 }

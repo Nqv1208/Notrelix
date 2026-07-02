@@ -1,17 +1,36 @@
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetUserWorkspaces;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
-using Notrelix.Infrastructure.Data;
+using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Workspaces;
 
-public class GetUserWorkspacesQueryHandlerTests
+[Collection("Database")]
+public class GetUserWorkspacesQueryHandlerTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public GetUserWorkspacesQueryHandlerTests(PostgresTestContainer db)
+    {
+        _db = db;
+    }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public async Task Handle_returns_active_workspaces_for_user_with_member_counts()
     {
-        await using var context = CreateContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        await using var context = _db.CreateContext(currentWorkspace);
         var userId = Guid.NewGuid();
         var teammateId = Guid.NewGuid();
         var otherOwnerId = Guid.NewGuid();
@@ -65,23 +84,14 @@ public class GetUserWorkspacesQueryHandlerTests
     [Fact]
     public async Task Handle_rejects_empty_user_id()
     {
-        await using var context = CreateContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        await using var context = _db.CreateContext(currentWorkspace);
         var handler = new GetUserWorkspacesQueryHandler(context);
 
         var result = await handler.Handle(new GetUserWorkspacesQuery(Guid.Empty), CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().ContainSingle("User is not authenticated");
-    }
-
-    private static ApplicationDbContext CreateContext()
-    {
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase($"Notrelix-workspaces-{Guid.NewGuid():N}")
-            .Options;
-
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        return new ApplicationDbContext(options, currentWorkspace);
     }
 }

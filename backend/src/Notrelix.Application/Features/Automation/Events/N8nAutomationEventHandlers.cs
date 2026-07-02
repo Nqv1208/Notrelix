@@ -48,7 +48,7 @@ public class CardAssignedN8nAutomationHandler : INotificationHandler<DomainEvent
             if (exists) continue;
 
             var execution = AutomationExecution.Create(
-                Guid.Empty,
+                card.AccountId,
                 card.WorkspaceId,
                 rule.Id,
                 domainEvent.EventId,

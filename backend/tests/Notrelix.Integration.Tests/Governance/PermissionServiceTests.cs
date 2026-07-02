@@ -7,22 +7,37 @@ using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Governance;
 
-public class PermissionServiceTests
+[Collection("Database")]
+public class PermissionServiceTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public PermissionServiceTests(PostgresTestContainer db)
+    {
+        _db = db;
+    }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
-    private static (ApplicationDbContext Context, PermissionService Service) CreateFixture()
+    private (ApplicationDbContext Context, PermissionService Service) CreateFixture()
     {
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase($"Notrelix-perm-tests-{Guid.NewGuid():N}")
-            .Options;
         var currentWorkspace = new FakeCurrentWorkspace();
         currentWorkspace.EnterSystemContext();
-        var context = new ApplicationDbContext(options, currentWorkspace);
+        var context = _db.CreateContext(currentWorkspace);
         var clockMock = new Mock<IDateTimeProvider>();
         clockMock.Setup(c => c.UtcNow).Returns(DateTimeOffset.UtcNow);
         var service = new PermissionService(context, clockMock.Object);

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Notrelix.Domain.Billing.Usage;
 using Notrelix.Domain.Documents.Versions;
 using Notrelix.Domain.Identity.Tokens;
@@ -79,3 +80,15 @@ public class ApiTokenScopesConverter : ValueConverter<ApiTokenScopes, string>
     {
     }
 }
+
+public class JsonDocumentConverter : ValueConverter<JsonDocument, string>
+{
+    public JsonDocumentConverter()
+        : base(
+            d => d.RootElement.GetRawText(),
+            s => JsonDocument.Parse(s, default))
+    {
+    }
+}
+
+

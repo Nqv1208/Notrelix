@@ -11,16 +11,36 @@ using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Boards;
 
-public class UpdateBoardItemFieldValuesCommandHandlerTests
+[Collection("Database")]
+public class UpdateBoardItemFieldValuesCommandHandlerTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public UpdateBoardItemFieldValuesCommandHandlerTests(PostgresTestContainer db)
+    {
+        _db = db;
+    }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public async Task Handle_ShouldRejectUserWithoutBoardEditPermission()
     {
-        await using var context = CreateContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        await using var context = _db.CreateContext(currentWorkspace);
         var ownerId = Guid.NewGuid();
         var guestId = Guid.NewGuid();
         var (boardItem, statusField, doneOption) = await SeedBoardAsync(context, ownerId, guestId, WorkspaceRole.Guest);
@@ -36,7 +56,9 @@ public class UpdateBoardItemFieldValuesCommandHandlerTests
     [Fact]
     public async Task Handle_ShouldUseDomainBehaviorWhenUpdatingStatusField()
     {
-        await using var context = CreateContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        await using var context = _db.CreateContext(currentWorkspace);
         var ownerId = Guid.NewGuid();
         var memberId = Guid.NewGuid();
         var (boardItem, statusField, doneOption) = await SeedBoardAsync(context, ownerId, memberId, WorkspaceRole.Member);
@@ -81,7 +103,7 @@ public class UpdateBoardItemFieldValuesCommandHandlerTests
         return (boardItem, statusField, doneOption);
     }
 
-    private static UpdateBoardItemFieldValuesCommandHandler CreateHandler(ApplicationDbContext context, Guid userId)
+    private UpdateBoardItemFieldValuesCommandHandler CreateHandler(ApplicationDbContext context, Guid userId)
     {
         var currentUser = new Mock<ICurrentUser>();
         currentUser.SetupGet(item => item.UserId).Returns(userId);
@@ -91,16 +113,5 @@ public class UpdateBoardItemFieldValuesCommandHandlerTests
         var permissions = new WorkspacePermissionService(evaluator, context);
 
         return new UpdateBoardItemFieldValuesCommandHandler(context, currentUser.Object, permissions, timeProvider.Object);
-    }
-
-    private static ApplicationDbContext CreateContext()
-    {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase($"Notrelix-card-fields-{Guid.NewGuid():N}")
-            .Options;
-
-        return new ApplicationDbContext(options, currentWorkspace);
     }
 }

@@ -5,6 +5,7 @@ using Notrelix.Application.Common.Events;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Governance.Roles;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Infrastructure.Data.Projections.Search;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Interceptors;
@@ -83,6 +84,7 @@ public class DomainEventInterceptorTests
         {
             base.OnModelCreating(modelBuilder);
             modelBuilder.Entity<CustomRole>().Ignore(x => x.Permissions);
+            modelBuilder.Entity<SearchDocumentRecord>().Ignore(x => x.SearchVector);
         }
     }
 }

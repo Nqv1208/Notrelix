@@ -16,7 +16,7 @@ public class BoardConfiguration : IEntityTypeConfiguration<Board>
         builder.Property(x => x.Title).HasColumnName("title").IsRequired().HasMaxLength(256);
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(1024);
         builder.Property(x => x.Background).HasColumnName("background").HasColumnType("jsonb").IsRequired().HasDefaultValue("{\"type\":\"color\",\"value\":\"#0079BF\"}");
-        builder.Property(x => x.Visibility).HasColumnName("visibility").HasConversion<string>().IsRequired().HasMaxLength(50).HasDefaultValue(BoardVisibility.Workspace);
+        builder.Property(x => x.Visibility).HasColumnName("visibility").HasConversion<string>().IsRequired().HasMaxLength(50).HasDefaultValue(BoardVisibility.Workspace).HasSentinel(BoardVisibility.Workspace);
         builder.Property(x => x.IsArchived).HasColumnName("is_archived");
 
         builder.Ignore(x => x.IsDeleted);

@@ -19,7 +19,7 @@ public sealed class EmailDeliveryAttemptConfiguration : IEntityTypeConfiguration
         builder.Property(x => x.StartedAt).IsRequired();
         builder.Property(x => x.DurationMs);
         builder.Property(x => x.ErrorCode).HasMaxLength(120);
-        builder.Property(x => x.ProviderResponseJson).HasColumnType("jsonb").IsRequired().HasDefaultValueSql("'{}'::jsonb");
+        builder.Property(x => x.ProviderResponseJson).HasColumnType("jsonb").HasConversion<string>().IsRequired().HasDefaultValueSql("'{}'::jsonb");
 
         builder.HasIndex(x => new { x.EmailOutboxId, x.AttemptNo }).IsUnique();
         builder.HasIndex(x => new { x.Status, x.StartedAt }).IsDescending(false, true);

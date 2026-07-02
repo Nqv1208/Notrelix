@@ -2,19 +2,36 @@ using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoard;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
-using Notrelix.Testing.Integration.Factories;
 
 namespace Notrelix.Integration.Tests.Handlers;
 
-public class UpdateBoardCommandHandlerTests
+[Collection("Database")]
+public class UpdateBoardCommandHandlerTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public UpdateBoardCommandHandlerTests(PostgresTestContainer db)
+    {
+        _db = db;
+    }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public async Task Handle_ShouldUpdateTitle()
     {
         var currentWorkspace = new FakeCurrentWorkspace();
         currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        await using var context = _db.CreateContext(currentWorkspace);
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -43,7 +60,7 @@ public class UpdateBoardCommandHandlerTests
     {
         var currentWorkspace = new FakeCurrentWorkspace();
         currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        await using var context = _db.CreateContext(currentWorkspace);
 
         var handler = new UpdateBoardCommandHandler(
             context, new FakeCurrentUser(),
@@ -59,7 +76,7 @@ public class UpdateBoardCommandHandlerTests
     {
         var currentWorkspace = new FakeCurrentWorkspace();
         currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        await using var context = _db.CreateContext(currentWorkspace);
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -75,14 +92,14 @@ public class UpdateBoardCommandHandlerTests
             FakeDateTimeProvider.WithFixedTime(now));
 
         var result = await handler.Handle(
-            new UpdateBoardCommand(workspace.Id, board.Id, null, "new desc", "blue", BoardVisibility.Workspace, null),
+            new UpdateBoardCommand(workspace.Id, board.Id, null, "new desc", "{\"type\":\"color\",\"value\":\"blue\"}", BoardVisibility.Workspace, null),
             CancellationToken.None);
         await context.SaveChangesAsync();
 
         result.Succeeded.Should().BeTrue();
         var updated = context.Boards.First(b => b.Id == board.Id);
         updated.Description.Should().Be("new desc");
-        updated.Background.Should().Be("blue");
+        updated.Background.Should().Be("{\"type\":\"color\",\"value\":\"blue\"}");
         updated.Visibility.Should().Be(BoardVisibility.Workspace);
     }
 }

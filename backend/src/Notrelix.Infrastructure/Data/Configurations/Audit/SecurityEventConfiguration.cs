@@ -17,7 +17,7 @@ public sealed class SecurityEventConfiguration : IEntityTypeConfiguration<Securi
         builder.Property(x => x.DeviceId).HasMaxLength(160);
         builder.Property(x => x.ResourceType).HasMaxLength(160);
         builder.Property(x => x.CorrelationId).HasMaxLength(100);
-        builder.Property(x => x.MetadataJson).HasColumnType("jsonb").IsRequired().HasDefaultValueSql("'{}'::jsonb");
+        builder.Property(x => x.MetadataJson).HasColumnType("jsonb").HasConversion<string>().IsRequired().HasDefaultValueSql("'{}'::jsonb");
         builder.Property(x => x.OccurredAt).IsRequired();
         builder.Property(x => x.RecordedAt).IsRequired();
 

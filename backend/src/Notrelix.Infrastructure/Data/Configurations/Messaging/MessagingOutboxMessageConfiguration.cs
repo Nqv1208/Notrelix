@@ -24,9 +24,9 @@ public sealed class MessagingOutboxMessageConfiguration : IEntityTypeConfigurati
         builder.Property(x => x.CorrelationId).HasMaxLength(100);
         builder.Property(x => x.CausationId).HasMaxLength(100);
         builder.Property(x => x.PartitionKey).HasMaxLength(240);
-        builder.Property(x => x.PayloadJson).HasColumnType("jsonb").IsRequired();
-        builder.Property(x => x.HeadersJson).HasColumnType("jsonb").IsRequired().HasDefaultValueSql("'{}'::jsonb");
-        builder.Property(x => x.MetadataJson).HasColumnType("jsonb").IsRequired().HasDefaultValueSql("'{}'::jsonb");
+        builder.Property(x => x.PayloadJson).HasColumnType("jsonb").HasConversion<string>().IsRequired();
+        builder.Property(x => x.HeadersJson).HasColumnType("jsonb").HasConversion<string>().IsRequired().HasDefaultValueSql("'{}'::jsonb");
+        builder.Property(x => x.MetadataJson).HasColumnType("jsonb").HasConversion<string>().IsRequired().HasDefaultValueSql("'{}'::jsonb");
         builder.Property(x => x.Status).IsRequired().HasMaxLength(40).HasDefaultValue("Pending");
         builder.Property(x => x.RetryCount).IsRequired().HasDefaultValue(0);
         builder.Property(x => x.MaxRetries).IsRequired().HasDefaultValue(5);

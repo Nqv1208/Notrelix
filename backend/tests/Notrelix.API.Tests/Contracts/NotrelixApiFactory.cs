@@ -17,6 +17,7 @@ using Notrelix.Application.Features.Workspaces.DTOs;
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetUserWorkspaces;
 using Notrelix.Domain.Governance.Roles;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Infrastructure.Data.Projections.Search;
 using Notrelix.Testing.Application.Fakes;
 using StackExchange.Redis;
 
@@ -42,6 +43,8 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             // Workspace.IsDeleted is ignored in the base config and is a
             // read-only computed property (=> DeletedAt.HasValue). It can't be
             // remapped. See handler mock below for the workaround.
+
+            modelBuilder.Entity<SearchDocumentRecord>().Ignore(x => x.SearchVector);
         }
     }
 

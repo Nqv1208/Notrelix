@@ -23,8 +23,8 @@ public sealed class DomainEventLogConfiguration : IEntityTypeConfiguration<Domai
         builder.Property(x => x.CausationId).HasMaxLength(100);
         builder.Property(x => x.OccurredAt).IsRequired();
         builder.Property(x => x.RecordedAt).IsRequired();
-        builder.Property(x => x.PayloadJson).HasColumnType("jsonb").IsRequired();
-        builder.Property(x => x.MetadataJson).HasColumnType("jsonb").IsRequired().HasDefaultValueSql("'{}'::jsonb");
+        builder.Property(x => x.PayloadJson).HasColumnType("jsonb").HasConversion<string>().IsRequired();
+        builder.Property(x => x.MetadataJson).HasColumnType("jsonb").HasConversion<string>().IsRequired().HasDefaultValueSql("'{}'::jsonb");
         builder.Property(x => x.RetentionUntil);
 
         builder.HasIndex(x => x.RecordedAt).IsDescending();

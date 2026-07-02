@@ -2,30 +2,50 @@ using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
-using Notrelix.Testing.Integration.Factories;
+using Npgsql;
 
 namespace Notrelix.Integration.Tests.Handlers;
 
-public class CreateBoardInWorkspaceCommandHandlerTests
+[Collection("Database")]
+public class CreateBoardInWorkspaceCommandHandlerTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public CreateBoardInWorkspaceCommandHandlerTests(PostgresTestContainer db)
+    {
+        _db = db;
+    }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public async Task Handle_ShouldCreateBoard_WithDefaultFields()
     {
         var currentWorkspace = new FakeCurrentWorkspace();
         currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        await using var context = _db.CreateContext(currentWorkspace);
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
+        var accountId = Guid.NewGuid();
 
-        var workspace = Workspace.Create(Guid.NewGuid(), userId, "Test", "test", now);
+        var workspace = Workspace.Create(accountId, userId, "Test", "test", now);
         context.Workspaces.Add(workspace);
         await context.SaveChangesAsync();
 
         var accessChecker = new TestWorkspaceAccessCheckerStub(true);
         var handler = new CreateBoardInWorkspaceCommandHandler(
             context, new FakeCurrentUser { UserId = userId },
-            FakeDateTimeProvider.WithFixedTime(now), accessChecker);
+            FakeDateTimeProvider.WithFixedTime(now), accessChecker,
+            new FakeCurrentAccount { AccountId = accountId });
 
         var result = await handler.Handle(
             new CreateBoardInWorkspaceCommand(workspace.Id, "My Board", null, null, null),
@@ -39,9 +59,11 @@ public class CreateBoardInWorkspaceCommandHandlerTests
         board.Should().NotBeNull();
         board!.Title.Should().Be("My Board");
         board.WorkspaceId.Should().Be(workspace.Id);
+        board.AccountId.Should().Be(accountId);
 
         var fields = await context.BoardFields.Where(f => f.BoardId == board.Id).ToListAsync();
         fields.Should().HaveCount(4);
+        fields.Should().AllSatisfy(f => f.AccountId.Should().Be(accountId));
     }
 
     [Fact]
@@ -49,12 +71,13 @@ public class CreateBoardInWorkspaceCommandHandlerTests
     {
         var currentWorkspace = new FakeCurrentWorkspace();
         currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        await using var context = _db.CreateContext(currentWorkspace);
         var accessChecker = new TestWorkspaceAccessCheckerStub(false);
 
         var handler = new CreateBoardInWorkspaceCommandHandler(
             context, new FakeCurrentUser(),
-            FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow), accessChecker);
+            FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow), accessChecker,
+            new FakeCurrentAccount { AccountId = Guid.NewGuid() });
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
             handler.Handle(new CreateBoardInWorkspaceCommand(Guid.NewGuid(), "Board", null, null, null), CancellationToken.None));
@@ -65,18 +88,20 @@ public class CreateBoardInWorkspaceCommandHandlerTests
     {
         var currentWorkspace = new FakeCurrentWorkspace();
         currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        await using var context = _db.CreateContext(currentWorkspace);
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
+        var accountId = Guid.NewGuid();
 
-        var workspace = Workspace.Create(Guid.NewGuid(), userId, "Test", "test", now);
+        var workspace = Workspace.Create(accountId, userId, "Test", "test", now);
         context.Workspaces.Add(workspace);
         await context.SaveChangesAsync();
 
         var accessChecker = new TestWorkspaceAccessCheckerStub(true);
         var handler = new CreateBoardInWorkspaceCommandHandler(
             context, new FakeCurrentUser { UserId = userId },
-            FakeDateTimeProvider.WithFixedTime(now), accessChecker);
+            FakeDateTimeProvider.WithFixedTime(now), accessChecker,
+            new FakeCurrentAccount { AccountId = accountId });
 
         var result = await handler.Handle(
             new CreateBoardInWorkspaceCommand(workspace.Id, "Private Board", null, null, BoardVisibility.Private),
@@ -85,6 +110,7 @@ public class CreateBoardInWorkspaceCommandHandlerTests
 
         result.Succeeded.Should().BeTrue();
         var board = await context.Boards.FirstOrDefaultAsync(b => b.Id == result.Data);
+        board.Should().NotBeNull();
         board!.Visibility.Should().Be(BoardVisibility.Private);
     }
 }

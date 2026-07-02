@@ -36,7 +36,7 @@ public sealed class WorkspaceActivityLogRecordConfiguration : IEntityTypeConfigu
 
         builder.Property(x => x.Title).HasColumnName("title").IsRequired().HasMaxLength(300);
         builder.Property(x => x.Body).HasColumnName("body");
-        builder.Property(x => x.DataJson).HasColumnName("data_json").HasColumnType("jsonb").IsRequired().HasDefaultValueSql("'{}'::jsonb");
+        builder.Property(x => x.DataJson).HasColumnName("data_json").HasColumnType("jsonb").HasConversion<string>().IsRequired().HasDefaultValueSql("'{}'::jsonb");
 
         builder.Property(x => x.Visibility).HasColumnName("visibility").IsRequired().HasMaxLength(40).HasDefaultValue("Workspace");
         builder.Property(x => x.Importance).HasColumnName("importance").IsRequired().HasMaxLength(40).HasDefaultValue("Normal");

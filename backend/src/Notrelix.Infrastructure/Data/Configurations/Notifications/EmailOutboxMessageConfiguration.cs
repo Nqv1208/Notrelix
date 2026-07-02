@@ -24,8 +24,8 @@ public sealed class EmailOutboxMessageConfiguration : IEntityTypeConfiguration<E
         builder.Property(x => x.TemplateName).IsRequired().HasMaxLength(160);
         builder.Property(x => x.TemplateVersion).IsRequired().HasDefaultValue(1);
         builder.Property(x => x.Subject).IsRequired().HasMaxLength(320);
-        builder.Property(x => x.TemplateDataJson).HasColumnType("jsonb").IsRequired().HasDefaultValueSql("'{}'::jsonb");
-        builder.Property(x => x.HeadersJson).HasColumnType("jsonb").IsRequired().HasDefaultValueSql("'{}'::jsonb");
+        builder.Property(x => x.TemplateDataJson).HasColumnType("jsonb").HasConversion<string>().IsRequired().HasDefaultValueSql("'{}'::jsonb");
+        builder.Property(x => x.HeadersJson).HasColumnType("jsonb").HasConversion<string>().IsRequired().HasDefaultValueSql("'{}'::jsonb");
         builder.Property(x => x.Priority).IsRequired().HasDefaultValue(100);
         builder.Property(x => x.Status).IsRequired().HasMaxLength(40).HasDefaultValue("Pending");
         builder.Property(x => x.RetryCount).IsRequired().HasDefaultValue(0);

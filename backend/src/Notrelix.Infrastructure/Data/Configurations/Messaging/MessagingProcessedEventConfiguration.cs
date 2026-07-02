@@ -24,7 +24,7 @@ public sealed class MessagingProcessedEventConfiguration : IEntityTypeConfigurat
         builder.Property(x => x.CausationId).HasMaxLength(100);
         builder.Property(x => x.ProcessedAt).IsRequired();
         builder.Property(x => x.Result).IsRequired().HasMaxLength(40).HasDefaultValue("Succeeded");
-        builder.Property(x => x.MetadataJson).HasColumnType("jsonb").IsRequired().HasDefaultValueSql("'{}'::jsonb");
+        builder.Property(x => x.MetadataJson).HasColumnType("jsonb").HasConversion<string>().IsRequired().HasDefaultValueSql("'{}'::jsonb");
 
         builder.HasIndex(x => new { x.ConsumerName, x.ProcessedAt }).IsDescending(false, true);
         builder.HasIndex(x => new { x.WorkspaceId, x.ProcessedAt })

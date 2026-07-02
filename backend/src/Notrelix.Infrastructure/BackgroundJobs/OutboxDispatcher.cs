@@ -6,9 +6,9 @@ using Notrelix.Infrastructure.Data.Messaging;
 
 namespace Notrelix.Infrastructure.BackgroundJobs;
 
-internal sealed class V5OutboxDispatcher : BackgroundService
+internal sealed class OutboxDispatcher : BackgroundService
 {
-    private const string DispatcherConsumerName = "V5OutboxDispatcher";
+    private const string DispatcherConsumerName = "OutboxDispatcher";
     private const int BatchSize = 20;
     private const int PollIntervalMs = 5000;
     private const int ProcessingTimeoutSeconds = 60;
@@ -16,16 +16,16 @@ internal sealed class V5OutboxDispatcher : BackgroundService
     private const int MaxBackoffSeconds = 60;
 
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly ILogger<V5OutboxDispatcher> _logger;
+    private readonly ILogger<OutboxDispatcher> _logger;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    public V5OutboxDispatcher(
+    public OutboxDispatcher(
         IServiceScopeFactory scopeFactory,
-        ILogger<V5OutboxDispatcher> logger)
+        ILogger<OutboxDispatcher> logger)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
@@ -33,7 +33,7 @@ internal sealed class V5OutboxDispatcher : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("V5OutboxDispatcher started");
+        _logger.LogInformation("OutboxDispatcher started");
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -47,7 +47,7 @@ internal sealed class V5OutboxDispatcher : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "V5OutboxDispatcher failed");
+                _logger.LogError(ex, "OutboxDispatcher failed");
             }
 
             await Task.Delay(PollIntervalMs, stoppingToken);
@@ -69,13 +69,13 @@ internal sealed class V5OutboxDispatcher : BackgroundService
             .FromSqlRaw("""
                 SELECT * FROM messaging.outbox_messages
                 WHERE (
-                    ("Status" = 'Pending' AND "NextAttemptAt" <= {0})
+                    (status = 'Pending' AND next_attempt_at <= {0})
                     OR
-                    ("Status" = 'Processing' AND "ProcessingStartedAt" <= {1})
+                    (status = 'Processing' AND processing_started_at <= {1})
                     OR
-                    ("Status" = 'Failed' AND "NextAttemptAt" <= {0})
+                    (status = 'Failed' AND next_attempt_at <= {0})
                 )
-                ORDER BY "CreatedAt"
+                ORDER BY created_at
                 LIMIT {2}
                 FOR UPDATE SKIP LOCKED
             """, now.UtcDateTime, processingCutoff.UtcDateTime, BatchSize)

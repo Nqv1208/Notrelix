@@ -28,7 +28,7 @@ public class MigrationSmokeTests
               AND table_name <> '__EFMigrationsHistory'";
 
         var count = (long)(await cmd.ExecuteScalarAsync())!;
-        count.Should().Be(125);
+        count.Should().Be(145);
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public class MigrationSmokeTests
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
             SELECT column_name, data_type FROM information_schema.columns
-            WHERE table_schema = 'ops' AND table_name = 'outbox_messages'
+            WHERE table_schema = 'messaging' AND table_name = 'outbox_messages'
             ORDER BY ordinal_position";
 
         await using var reader = await cmd.ExecuteReaderAsync();
@@ -86,15 +86,14 @@ public class MigrationSmokeTests
         columns.Should().Contain(c => c.Name == "id" && c.Type == "uuid");
         columns.Should().Contain(c => c.Name == "event_id" && c.Type == "uuid");
         columns.Should().Contain(c => c.Name == "source_event_id" && c.Type == "uuid");
+        columns.Should().Contain(c => c.Name == "source_context" && c.Type == "character varying");
         columns.Should().Contain(c => c.Name == "message_name" && c.Type == "character varying");
-        columns.Should().Contain(c => c.Name == "message_type" && c.Type == "character varying");
         columns.Should().Contain(c => c.Name == "schema_version" && c.Type == "integer");
-        columns.Should().Contain(c => c.Name == "event_version" && c.Type == "integer");
         columns.Should().Contain(c => c.Name == "workspace_id" && c.Type == "uuid");
         columns.Should().Contain(c => c.Name == "actor_user_id" && c.Type == "uuid");
         columns.Should().Contain(c => c.Name == "correlation_id" && c.Type == "character varying");
         columns.Should().Contain(c => c.Name == "causation_id" && c.Type == "character varying");
-        columns.Should().Contain(c => c.Name == "payload" && c.Type == "jsonb");
+        columns.Should().Contain(c => c.Name == "payload_json" && c.Type == "jsonb");
         columns.Should().Contain(c => c.Name == "status" && c.Type == "character varying");
         columns.Should().Contain(c => c.Name == "retry_count" && c.Type == "integer");
         columns.Should().Contain(c => c.Name == "max_retries" && c.Type == "integer");
@@ -102,6 +101,6 @@ public class MigrationSmokeTests
         columns.Should().Contain(c => c.Name == "processing_started_at" && c.Type == "timestamp with time zone");
         columns.Should().Contain(c => c.Name == "created_at" && c.Type == "timestamp with time zone");
         columns.Should().Contain(c => c.Name == "processed_at" && c.Type == "timestamp with time zone");
-        columns.Should().Contain(c => c.Name == "error" && c.Type == "text");
+        columns.Should().Contain(c => c.Name == "error_message" && c.Type == "text");
     }
 }

@@ -11,18 +11,38 @@ using Notrelix.Domain.WorkManagement.Items.Events;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Extensibility;
 
-public class N8nAutomationTests
+[Collection("Database")]
+public class N8nAutomationTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public N8nAutomationTests(PostgresTestContainer db)
+    {
+        _db = db;
+    }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
     [Fact]
     public async Task CardAssignedN8nAutomationHandler_ShouldCreateExecutionAndQueueDispatchJob()
     {
-        await using var context = CreateContext();
+        var currentWorkspace = new FakeCurrentWorkspace();
+        currentWorkspace.EnterSystemContext();
+        await using var context = _db.CreateContext(currentWorkspace);
         var queue = new CapturingJobQueue();
         var ownerId = Guid.NewGuid();
         var assignedUserId = Guid.NewGuid();
@@ -37,8 +57,10 @@ public class N8nAutomationTests
         var board = Board.Create(Guid.NewGuid(), workspace.Id, ownerId, "Board", null, Now);
         context.Boards.Add(board);
 
-        var groupId = Guid.NewGuid();
-        var item = BoardItem.Create(Guid.NewGuid(), workspace.Id, board.Id, groupId, "Task", Notrelix.Domain.SharedKernel.FractionalIndex.Initial(), ownerId, Now);
+        var group = Notrelix.Domain.WorkManagement.BoardGroups.BoardGroup.Create(Guid.NewGuid(), workspace.Id, board.Id, "Todo", Notrelix.Domain.SharedKernel.Color.Create("#808080"), Notrelix.Domain.SharedKernel.FractionalIndex.Initial(), ownerId, Now);
+        context.BoardGroups.Add(group);
+
+        var item = BoardItem.Create(Guid.NewGuid(), workspace.Id, board.Id, group.Id, "Task", Notrelix.Domain.SharedKernel.FractionalIndex.Initial(), ownerId, Now);
         context.BoardItems.Add(item);
 
         var trigger = AutomationTriggerDefinition.Create("ItemAssigned");
@@ -67,18 +89,6 @@ public class N8nAutomationTests
         var job = queue.Jobs.Should().ContainSingle().Subject.Should().BeOfType<N8nDispatchJob>().Subject;
         job.ExecutionId.Should().Be(execution.Id);
         job.AutomationRuleId.Should().Be(rule.Id);
-    }
-
-    private static ApplicationDbContext CreateContext()
-    {
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase($"Notrelix-n8n-{Guid.NewGuid():N}")
-            .Options;
-
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-
-        return new ApplicationDbContext(options, currentWorkspace);
     }
 
     private sealed class CapturingJobQueue : IJobQueue

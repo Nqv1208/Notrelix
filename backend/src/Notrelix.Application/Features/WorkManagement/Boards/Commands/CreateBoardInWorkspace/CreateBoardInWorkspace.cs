@@ -23,17 +23,20 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspaceAccessChecker _workspaceAccessChecker;
+    private readonly ICurrentAccount _currentAccount;
 
     public CreateBoardInWorkspaceCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
-        IWorkspaceAccessChecker workspaceAccessChecker)
+        IWorkspaceAccessChecker workspaceAccessChecker,
+        ICurrentAccount currentAccount)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
         _workspaceAccessChecker = workspaceAccessChecker;
+        _currentAccount = currentAccount;
     }
 
     public async Task<Result<Guid>> Handle(CreateBoardInWorkspaceCommand request, CancellationToken ct)
@@ -45,7 +48,7 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
         var createdAt = _dateTimeProvider.UtcNow;
         var visibility = request.Visibility ?? BoardVisibility.Workspace;
 
-        var board = BoardEntity.Create(Guid.Empty, request.WorkspaceId, _currentUser.UserId, request.Title, request.Description, createdAt, visibility);
+        var board = BoardEntity.Create(_currentAccount.AccountId!.Value, request.WorkspaceId, _currentUser.UserId, request.Title, request.Description, createdAt, visibility);
 
         if (request.Background is not null) board.UpdateBackground(request.Background, _currentUser.UserId, createdAt);
 
@@ -53,10 +56,10 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
 
         var defaultFields = new[]
         {
-            BoardFieldEntity.Create(Guid.Empty, board.WorkspaceId, board.Id, "Title", FieldType.Text, FieldSettings.Empty(), FractionalIndex.Create("a0"), _currentUser.UserId, createdAt, isSystem: true),
-            BoardFieldEntity.Create(Guid.Empty, board.WorkspaceId, board.Id, "Status", FieldType.Status, FieldSettings.Empty(), FractionalIndex.Create("a1"), _currentUser.UserId, createdAt, isSystem: true),
-            BoardFieldEntity.Create(Guid.Empty, board.WorkspaceId, board.Id, "Assignee", FieldType.Person, FieldSettings.Empty(), FractionalIndex.Create("a2"), _currentUser.UserId, createdAt, isSystem: true),
-            BoardFieldEntity.Create(Guid.Empty, board.WorkspaceId, board.Id, "Due Date", FieldType.Date, FieldSettings.Empty(), FractionalIndex.Create("a3"), _currentUser.UserId, createdAt, isSystem: true),
+            BoardFieldEntity.Create(_currentAccount.AccountId!.Value, board.WorkspaceId, board.Id, "Title", FieldType.Text, FieldSettings.Empty(), FractionalIndex.Create("a0"), _currentUser.UserId, createdAt, isSystem: true),
+            BoardFieldEntity.Create(_currentAccount.AccountId!.Value, board.WorkspaceId, board.Id, "Status", FieldType.Status, FieldSettings.Empty(), FractionalIndex.Create("a1"), _currentUser.UserId, createdAt, isSystem: true),
+            BoardFieldEntity.Create(_currentAccount.AccountId!.Value, board.WorkspaceId, board.Id, "Assignee", FieldType.Person, FieldSettings.Empty(), FractionalIndex.Create("a2"), _currentUser.UserId, createdAt, isSystem: true),
+            BoardFieldEntity.Create(_currentAccount.AccountId!.Value, board.WorkspaceId, board.Id, "Due Date", FieldType.Date, FieldSettings.Empty(), FractionalIndex.Create("a3"), _currentUser.UserId, createdAt, isSystem: true),
         };
         _context.BoardFields.AddRange(defaultFields);
 
