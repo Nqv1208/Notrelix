@@ -1,11 +1,6 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Notrelix.Domain.WorkManagement.Boards;
-using Notrelix.Infrastructure.Data;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
-using Npgsql;
 using Xunit.Abstractions;
 
 namespace Notrelix.Integration.Tests.WorkManagement;

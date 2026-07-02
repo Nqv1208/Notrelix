@@ -1,8 +1,4 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
-using NpgsqlTypes;
-
-#nullable disable
+﻿#nullable disable
 
 namespace Notrelix.Infrastructure.Migrations
 {

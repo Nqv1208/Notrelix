@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Npgsql;
 using Testcontainers.PostgreSql;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Rls;

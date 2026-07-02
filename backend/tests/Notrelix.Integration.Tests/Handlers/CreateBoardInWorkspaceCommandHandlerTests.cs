@@ -4,7 +4,6 @@ using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
-using Npgsql;
 
 namespace Notrelix.Integration.Tests.Handlers;
 

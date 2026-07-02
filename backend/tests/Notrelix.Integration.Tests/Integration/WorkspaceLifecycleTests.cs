@@ -2,7 +2,6 @@ using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
-using Notrelix.Infrastructure.Data;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 

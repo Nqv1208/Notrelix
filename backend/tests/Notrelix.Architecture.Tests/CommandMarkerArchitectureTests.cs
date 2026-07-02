@@ -55,8 +55,8 @@ public class CommandMarkerArchitectureTests
                     var nextLine = lines[j].Trim();
                     declaration += " " + nextLine;
                     parenDepth += nextLine.Count(c => c == '(') - nextLine.Count(c => c == ')');
-        if (parenDepth <= 0 && (nextLine.Contains(';') || nextLine.Contains('{')))
-            break;
+                    if (parenDepth <= 0 && (nextLine.Contains(';') || nextLine.Contains('{')))
+                        break;
                 }
             }
             return declaration;
