@@ -31,7 +31,7 @@ public class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         {
             if (_rlsSessionContext is not null)
             {
-                await _rlsSessionContext.ApplyAsync((Microsoft.EntityFrameworkCore.DbContext)_context, cancellationToken);
+                await _rlsSessionContext.ApplyAsync(_context.Database, cancellationToken);
             }
 
             var response = await next();

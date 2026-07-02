@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CreateBoardItem;
 
@@ -16,11 +17,11 @@ public record CreateBoardItemCommand(
 
 public class CreateBoardItemCommandHandler : IRequestHandler<CreateBoardItemCommand, BoardItemSlimDto>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _timeProvider;
 
-    public CreateBoardItemCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider)
+    public CreateBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider)
     {
         _context = context;
         _currentUser = currentUser;

@@ -1,16 +1,17 @@
 using global::Notrelix.Application.Common.Events;
+using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Events;
 
 [Obsolete("This handler is dead code because WorkspaceInvitationCreatedDomainEvent is dispatched via Outbox mode. Email/notification delivery should be implemented through an outbox consumer.")]
 public class MemberInvitedEventHandler : INotificationHandler<DomainEventNotification<WorkspaceInvitationCreatedDomainEvent>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkspaceDbContext _context;
     private readonly IEmailService _emailService;
     private readonly IConfiguration _configuration;
 
     public MemberInvitedEventHandler(
-        IApplicationDbContext context,
+        IWorkspaceDbContext context,
         IEmailService emailService,
         IConfiguration configuration)
     {

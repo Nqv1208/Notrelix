@@ -2,6 +2,10 @@ using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Abstractions.Rls;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Data.Seed;
+using Notrelix.Infrastructure.Data.Platform;
+using Notrelix.Infrastructure.Data.Product;
+using Notrelix.Infrastructure.Data.Projection;
+using Notrelix.Infrastructure.Data.Runtime;
 
 namespace Notrelix.Infrastructure.Data;
 
@@ -9,6 +13,10 @@ public class ApplicationDbContextInitialiser
 {
     private readonly ILogger<ApplicationDbContextInitialiser> _logger;
     private readonly ApplicationDbContext _context;
+    private readonly PlatformDbContext? _platform;
+    private readonly ProductDbContext? _product;
+    private readonly ProjectionDbContext? _projection;
+    private readonly InfrastructureDbContext? _infrastructure;
     private readonly SeedDataOptions _options;
     private readonly IPasswordHasher _passwordHasher;
     private readonly RlsPolicyApplier _rlsPolicyApplier;
@@ -22,10 +30,18 @@ public class ApplicationDbContextInitialiser
         IOptions<SeedDataOptions> options,
         RlsPolicyApplier rlsPolicyApplier,
         ICurrentWorkspace currentWorkspace,
-        IOptions<RlsOptions> rlsOptions)
+        IOptions<RlsOptions> rlsOptions,
+        PlatformDbContext? platform = null,
+        ProductDbContext? product = null,
+        ProjectionDbContext? projection = null,
+        InfrastructureDbContext? infrastructure = null)
     {
         _logger = logger;
         _context = context;
+        _platform = platform;
+        _product = product;
+        _projection = projection;
+        _infrastructure = infrastructure;
         _passwordHasher = passwordHasher;
         _options = options.Value;
         _rlsPolicyApplier = rlsPolicyApplier;
@@ -39,6 +55,11 @@ public class ApplicationDbContextInitialiser
         {
             if (_context.Database.IsNpgsql())
             {
+                // Migrate split contexts if available, then legacy context
+                if (_platform is not null) await _platform.Database.MigrateAsync();
+                if (_product is not null) await _product.Database.MigrateAsync();
+                if (_projection is not null) await _projection.Database.MigrateAsync();
+                if (_infrastructure is not null) await _infrastructure.Database.MigrateAsync();
                 await _context.Database.MigrateAsync();
 
                 if (_rlsOptions.Enabled)

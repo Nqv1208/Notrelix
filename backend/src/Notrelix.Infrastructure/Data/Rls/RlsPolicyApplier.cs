@@ -2,7 +2,7 @@ namespace Notrelix.Infrastructure.Data.Rls;
 
 public sealed class RlsPolicyApplier
 {
-    private readonly ApplicationDbContext _context;
+    private readonly DbContext _context;
     private readonly ILogger<RlsPolicyApplier> _logger;
 
     private static readonly string[] ScriptNames =
@@ -20,7 +20,7 @@ public sealed class RlsPolicyApplier
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.011_verification.sql",
     ];
 
-    public RlsPolicyApplier(ApplicationDbContext context, ILogger<RlsPolicyApplier> logger)
+    public RlsPolicyApplier(DbContext context, ILogger<RlsPolicyApplier> logger)
     {
         _context = context;
         _logger = logger;

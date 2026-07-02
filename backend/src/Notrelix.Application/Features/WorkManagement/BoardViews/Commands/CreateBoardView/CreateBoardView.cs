@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.CreateBoardView;
 
@@ -16,11 +17,11 @@ public record CreateBoardViewCommand(
 
 public class CreateBoardViewCommandHandler : IRequestHandler<CreateBoardViewCommand, BoardViewDto>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public CreateBoardViewCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public CreateBoardViewCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;

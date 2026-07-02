@@ -1,5 +1,6 @@
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderBoardFields;
 
@@ -7,13 +8,13 @@ public record ReorderBoardFieldsCommand(Guid BoardId, List<ReorderItem> Items) :
 
 public class ReorderBoardFieldsCommandHandler : IRequestHandler<ReorderBoardFieldsCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public ReorderBoardFieldsCommandHandler(
-        IApplicationDbContext context,
+        IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IWorkspacePermissionService permissions,
         IDateTimeProvider dateTimeProvider)

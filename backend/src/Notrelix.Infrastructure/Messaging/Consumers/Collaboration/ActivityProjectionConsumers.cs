@@ -1,17 +1,17 @@
 using Notrelix.Application.Events.Collaboration;
 using Notrelix.Application.Events.WorkManagement;
 using Notrelix.Application.Events.Workspaces;
-using Notrelix.Infrastructure.Data;
+using Notrelix.Infrastructure.Data.Abstractions;
 using Notrelix.Infrastructure.Data.Projections.Activity;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Collaboration;
 
 public sealed class BoardCreatedActivityConsumer : IConsumer<BoardCreatedIntegrationEvent>
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IActivityProjectionDbContext _context;
     private readonly ILogger<BoardCreatedActivityConsumer> _logger;
 
-    public BoardCreatedActivityConsumer(ApplicationDbContext context, ILogger<BoardCreatedActivityConsumer> logger)
+    public BoardCreatedActivityConsumer(IActivityProjectionDbContext context, ILogger<BoardCreatedActivityConsumer> logger)
     {
         _context = context;
         _logger = logger;
@@ -43,10 +43,10 @@ public sealed class BoardCreatedActivityConsumer : IConsumer<BoardCreatedIntegra
 
 public sealed class CommentCreatedActivityConsumer : IConsumer<CommentCreatedIntegrationEvent>
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IActivityProjectionDbContext _context;
     private readonly ILogger<CommentCreatedActivityConsumer> _logger;
 
-    public CommentCreatedActivityConsumer(ApplicationDbContext context, ILogger<CommentCreatedActivityConsumer> logger)
+    public CommentCreatedActivityConsumer(IActivityProjectionDbContext context, ILogger<CommentCreatedActivityConsumer> logger)
     {
         _context = context;
         _logger = logger;
@@ -79,10 +79,10 @@ public sealed class CommentCreatedActivityConsumer : IConsumer<CommentCreatedInt
 
 public sealed class MentionCreatedActivityConsumer : IConsumer<MentionCreatedIntegrationEvent>
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IActivityProjectionDbContext _context;
     private readonly ILogger<MentionCreatedActivityConsumer> _logger;
 
-    public MentionCreatedActivityConsumer(ApplicationDbContext context, ILogger<MentionCreatedActivityConsumer> logger)
+    public MentionCreatedActivityConsumer(IActivityProjectionDbContext context, ILogger<MentionCreatedActivityConsumer> logger)
     {
         _context = context;
         _logger = logger;
@@ -115,10 +115,10 @@ public sealed class MentionCreatedActivityConsumer : IConsumer<MentionCreatedInt
 
 public sealed class WorkspaceMemberAddedActivityConsumer : IConsumer<WorkspaceMemberAddedIntegrationEvent>
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IActivityProjectionDbContext _context;
     private readonly ILogger<WorkspaceMemberAddedActivityConsumer> _logger;
 
-    public WorkspaceMemberAddedActivityConsumer(ApplicationDbContext context, ILogger<WorkspaceMemberAddedActivityConsumer> logger)
+    public WorkspaceMemberAddedActivityConsumer(IActivityProjectionDbContext context, ILogger<WorkspaceMemberAddedActivityConsumer> logger)
     {
         _context = context;
         _logger = logger;

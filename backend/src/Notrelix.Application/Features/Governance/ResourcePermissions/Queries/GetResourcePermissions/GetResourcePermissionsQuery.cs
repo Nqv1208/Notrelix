@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Governance.DTOs;
 using SharedKernel = Notrelix.Domain.SharedKernel;
 
@@ -20,9 +21,9 @@ public record GetResourcePermissionsQuery(
 
 public class GetResourcePermissionsQueryHandler : IRequestHandler<GetResourcePermissionsQuery, Result<List<ResourcePermissionDto>>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IGovernanceDbContext _context;
 
-    public GetResourcePermissionsQueryHandler(IApplicationDbContext context)
+    public GetResourcePermissionsQueryHandler(IGovernanceDbContext context)
     {
         _context = context;
     }

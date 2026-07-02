@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Blocks.Commands.CreateBlock;
 
@@ -12,11 +13,11 @@ public record CreateBlockCommand(
 
 public class CreateBlockCommandHandler : IRequestHandler<CreateBlockCommand, Result<Guid>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IDocumentDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public CreateBlockCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public CreateBlockCommandHandler(IDocumentDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;

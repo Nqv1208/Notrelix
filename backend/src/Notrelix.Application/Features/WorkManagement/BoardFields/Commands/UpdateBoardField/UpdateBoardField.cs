@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
 
@@ -6,13 +7,13 @@ public record UpdateBoardFieldCommand(Guid BoardId, Guid ColumnId, string? Name,
 
 public class UpdateBoardFieldCommandHandler : IRequestHandler<UpdateBoardFieldCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public UpdateBoardFieldCommandHandler(
-        IApplicationDbContext context,
+        IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IWorkspacePermissionService permissions,
         IDateTimeProvider dateTimeProvider)

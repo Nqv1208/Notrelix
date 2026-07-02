@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Governance.DTOs;
 using SharedKernel = Notrelix.Domain.SharedKernel;
 
@@ -27,12 +28,12 @@ public record CreateShareLinkCommand(
 
 public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkCommand, Result<CreateShareLinkResponse>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IGovernanceDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public CreateShareLinkCommandHandler(
-        IApplicationDbContext context,
+        IGovernanceDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider)
     {

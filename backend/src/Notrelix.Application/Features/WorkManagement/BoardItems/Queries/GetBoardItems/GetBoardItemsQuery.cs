@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetBoardItems;
 
@@ -12,9 +13,9 @@ public record GetBoardItemsQuery(Guid WorkspaceId, Guid BoardId) : IQuery<List<B
 
 public class GetBoardItemsQueryHandler : IRequestHandler<GetBoardItemsQuery, List<BoardItemSlimDto>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
 
-    public GetBoardItemsQueryHandler(IApplicationDbContext context)
+    public GetBoardItemsQueryHandler(IWorkManagementDbContext context)
     {
         _context = context;
     }

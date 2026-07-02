@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Events;
-using Notrelix.Infrastructure.Data;
+using Notrelix.Infrastructure.Data.Runtime;
 using Notrelix.Infrastructure.Data.Messaging;
 
 namespace Notrelix.Infrastructure.BackgroundJobs;
@@ -57,7 +57,7 @@ internal sealed class OutboxDispatcher : BackgroundService
     private async Task ProcessBatchAsync(CancellationToken cancellationToken)
     {
         await using var scope = _scopeFactory.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<InfrastructureDbContext>();
         var integrationEventBus = scope.ServiceProvider.GetRequiredService<IIntegrationEventBus>();
         var eventTypeRegistry = scope.ServiceProvider.GetRequiredService<IEventTypeRegistry>();
         var dateTimeProvider = scope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
@@ -100,7 +100,7 @@ internal sealed class OutboxDispatcher : BackgroundService
 
     private async Task ProcessMessageAsync(
         MessagingOutboxMessage message,
-        ApplicationDbContext context,
+        InfrastructureDbContext context,
         IEventTypeRegistry eventTypeRegistry,
         IIntegrationEventBus integrationEventBus,
         IDateTimeProvider dateTimeProvider,

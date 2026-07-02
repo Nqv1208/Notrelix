@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Queries.GetInvitationByToken;
 
@@ -16,12 +17,14 @@ public record GetInvitationByTokenQuery(string Token) : IQuery<Result<WorkspaceI
 
 public class GetInvitationByTokenQueryHandler : IRequestHandler<GetInvitationByTokenQuery, Result<WorkspaceInvitationDto>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkspaceDbContext _context;
+    private readonly IActorLookupService _actorLookup;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public GetInvitationByTokenQueryHandler(IApplicationDbContext context, IDateTimeProvider dateTimeProvider)
+    public GetInvitationByTokenQueryHandler(IWorkspaceDbContext context, IActorLookupService actorLookup, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
+        _actorLookup = actorLookup;
         _dateTimeProvider = dateTimeProvider;
     }
 
@@ -37,14 +40,11 @@ public class GetInvitationByTokenQueryHandler : IRequestHandler<GetInvitationByT
         var workspace = await _context.Workspaces.AsNoTracking()
             .FirstOrDefaultAsync(w => w.Id == invitation.WorkspaceId, ct);
 
-        var inviter = await _context.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Id == invitation.InvitedBy, ct);
-
+        var inviter = await _actorLookup.FindAsync(invitation.InvitedBy, ct);
         var inviterName = inviter?.Name ?? "Ai đó";
         if (string.IsNullOrWhiteSpace(inviterName))
         {
-            inviterName = inviter?.Email?.Value ?? "Người dùng Workspace";
+            inviterName = "Người dùng Workspace";
         }
 
         var now = _dateTimeProvider.UtcNow;

@@ -1,5 +1,6 @@
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Collaboration.Comments.DTOs;
+using Notrelix.Application.Features.Collaboration.Abstractions;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments;
 
@@ -7,8 +8,13 @@ public record GetCommentsQuery(ResourceType ResourceType, Guid ResourceId) : IQu
 
 public class GetCommentsQueryHandler : IRequestHandler<GetCommentsQuery, Result<List<CommentDto>>>
 {
-    private readonly IApplicationDbContext _context;
-    public GetCommentsQueryHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICollaborationDbContext _context;
+    private readonly IActorLookupService _actorLookup;
+    public GetCommentsQueryHandler(ICollaborationDbContext context, IActorLookupService actorLookup)
+    {
+        _context = context;
+        _actorLookup = actorLookup;
+    }
 
     public async Task<Result<List<CommentDto>>> Handle(GetCommentsQuery request, CancellationToken ct)
     {
@@ -18,15 +24,16 @@ public class GetCommentsQueryHandler : IRequestHandler<GetCommentsQuery, Result<
             .ToListAsync(ct);
 
         var userIds = comments.Select(c => c.CreatedBy).Where(id => id.HasValue).Select(id => id!.Value).Distinct().ToList();
-        var users = await _context.Users.AsNoTracking()
-            .Where(u => userIds.Contains(u.Id))
-            .ToDictionaryAsync(u => u.Id, ct);
+        var actors = await _actorLookup.FindManyAsync(userIds, ct);
+        var actorMap = actors.ToDictionary(a => a.UserId);
 
         var result = comments.Select(c =>
         {
-            var user = c.CreatedBy.HasValue && users.TryGetValue(c.CreatedBy.Value, out var u) ? u : null;
+            ActorSnapshot? actor = null;
+            if (c.CreatedBy.HasValue)
+                actorMap.TryGetValue(c.CreatedBy.Value, out actor);
             return new CommentDto(
-                c.Id, user?.Id ?? Guid.Empty, user?.Name ?? "Unknown", user?.AvatarUrl,
+                c.Id, actor?.UserId ?? Guid.Empty, actor?.Name ?? "Unknown", actor?.AvatarUrl,
                 c.Content, c.ParentId, c.UpdatedAt != null,
                 null,
                 c.CreatedAt.DateTime);

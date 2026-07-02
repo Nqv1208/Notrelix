@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Collaboration.Abstractions;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Commands.UpdateComment;
 
@@ -6,10 +7,10 @@ public record UpdateCommentCommand(Guid CommentId, string ContentMd) : ICommand<
 
 public class UpdateCommentCommandHandler : IRequestHandler<UpdateCommentCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly ICollaborationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
-    public UpdateCommentCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public UpdateCommentCommandHandler(ICollaborationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;

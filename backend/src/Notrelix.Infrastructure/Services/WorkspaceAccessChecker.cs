@@ -1,4 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Domain.Workspaces.Workspaces;
 
@@ -6,9 +8,9 @@ namespace Notrelix.Infrastructure.Services;
 
 public sealed class WorkspaceAccessChecker : IWorkspaceAccessChecker
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkspaceDbContext _context;
 
-    public WorkspaceAccessChecker(IApplicationDbContext context)
+    public WorkspaceAccessChecker(IWorkspaceDbContext context)
     {
         _context = context;
     }

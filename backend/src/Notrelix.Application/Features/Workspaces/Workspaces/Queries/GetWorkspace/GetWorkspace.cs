@@ -1,5 +1,6 @@
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Workspaces.DTOs;
+using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspace;
 
@@ -11,9 +12,9 @@ public record GetWorkspaceQuery(Guid WorkspaceId) : IQuery<Result<WorkspaceDto>>
 
 public class GetWorkspaceQueryHandler : IRequestHandler<GetWorkspaceQuery, Result<WorkspaceDto>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkspaceDbContext _context;
 
-    public GetWorkspaceQueryHandler(IApplicationDbContext context)
+    public GetWorkspaceQueryHandler(IWorkspaceDbContext context)
     {
         _context = context;
     }

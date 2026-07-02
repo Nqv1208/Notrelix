@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Labels.Commands.AddLabelToBoardItem;
 
@@ -6,11 +7,11 @@ public record AddLabelToBoardItemCommand(Guid BoardItemId, Guid LabelId) : IComm
 
 public class AddLabelToBoardItemCommandHandler : IRequestHandler<AddLabelToBoardItemCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public AddLabelToBoardItemCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public AddLabelToBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;

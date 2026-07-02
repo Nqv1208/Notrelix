@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.AssignBoardItemMember;
 
@@ -14,18 +15,21 @@ public record AssignBoardItemMemberCommand(
 
 public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardItemMemberCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IWorkspaceAccessResolver _workspaceAccess;
 
     public AssignBoardItemMemberCommandHandler(
-        IApplicationDbContext context,
+        IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IWorkspaceAccessResolver workspaceAccess)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
+        _workspaceAccess = workspaceAccess;
     }
 
     public async Task<Result> Handle(AssignBoardItemMemberCommand request, CancellationToken ct)
@@ -34,10 +38,8 @@ public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardIt
             .FirstOrDefaultAsync(c => c.Id == request.BoardItemId, ct);
         if (card is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
-        var isMemberOfWorkspace = await _context.WorkspaceMembers
-            .AnyAsync(m => m.WorkspaceId == request.WorkspaceId && m.UserId == request.UserId, ct);
-
-        if (!isMemberOfWorkspace)
+        var access = await _workspaceAccess.ResolveAsync(request.WorkspaceId, request.UserId, ct);
+        if (!access.CanAccess)
             throw new ForbiddenException("Chỉ có thể assign thành viên thuộc cùng workspace.");
 
         var alreadyAssigned = await _context.BoardItemMembers

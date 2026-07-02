@@ -1,5 +1,6 @@
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Documents.DTOs;
+using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Pages.Queries.GetPageBreadcrumb;
 
@@ -7,8 +8,8 @@ public record GetPageBreadcrumbQuery(Guid PageId) : IQuery<Result<List<PageBread
 
 public class GetPageBreadcrumbQueryHandler : IRequestHandler<GetPageBreadcrumbQuery, Result<List<PageBreadcrumbDto>>>
 {
-    private readonly IApplicationDbContext _context;
-    public GetPageBreadcrumbQueryHandler(IApplicationDbContext context) => _context = context;
+    private readonly IDocumentDbContext _context;
+    public GetPageBreadcrumbQueryHandler(IDocumentDbContext context) => _context = context;
 
     public async Task<Result<List<PageBreadcrumbDto>>> Handle(GetPageBreadcrumbQuery request, CancellationToken ct)
     {

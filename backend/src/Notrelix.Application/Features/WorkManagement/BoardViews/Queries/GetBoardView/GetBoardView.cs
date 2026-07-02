@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Queries.GetBoardView;
 
@@ -10,10 +11,10 @@ public record GetBoardViewQuery(Guid WorkspaceId, Guid BoardId) : IQuery<Result<
 
 public class GetBoardViewQueryHandler : IRequestHandler<GetBoardViewQuery, Result<object>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
 
-    public GetBoardViewQueryHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public GetBoardViewQueryHandler(IWorkManagementDbContext context, ICurrentUser currentUser)
     {
         _context = context;
         _currentUser = currentUser;

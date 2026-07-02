@@ -1,5 +1,6 @@
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Collaboration.Attachments.DTOs;
+using Notrelix.Application.Features.Collaboration.Abstractions;
 
 namespace Notrelix.Application.Features.Collaboration.Attachments.Commands.CreateBoardItemAttachment;
 
@@ -7,13 +8,15 @@ public record CreateBoardItemAttachmentCommand(Guid BoardItemId, string Filename
 
 public class CreateBoardItemAttachmentCommandHandler : IRequestHandler<CreateBoardItemAttachmentCommand, Result<AttachmentDto>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly ICollaborationDbContext _context;
+    private readonly IResourceReferenceResolver _resourceResolver;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public CreateBoardItemAttachmentCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public CreateBoardItemAttachmentCommandHandler(ICollaborationDbContext context, IResourceReferenceResolver resourceResolver, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
+        _resourceResolver = resourceResolver;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
     }
@@ -23,23 +26,13 @@ public class CreateBoardItemAttachmentCommandHandler : IRequestHandler<CreateBoa
         if (!Uri.TryCreate(request.Url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
             return Result<AttachmentDto>.Failure("Attachment URL must be an absolute HTTP(S) URL.");
 
-        var item = await _context.BoardItems.AsNoTracking()
-            .Where(card => card.Id == request.BoardItemId && !card.IsDeleted)
-            .Join(_context.BoardGroups.AsNoTracking(),
-                card => card.GroupId,
-                list => list.Id,
-                (card, list) => new { card, list })
-            .Join(_context.Boards.AsNoTracking(),
-                item => item.list.BoardId,
-                board => board.Id,
-                (item, board) => new { item.card, board.WorkspaceId })
-            .FirstOrDefaultAsync(ct);
-        if (item is null) throw new NotFoundException("BoardItem", request.BoardItemId);
+        var workspaceId = await _resourceResolver.GetWorkspaceIdAsync(request.BoardItemId, ResourceTypes.BoardItem, ct)
+            ?? throw new NotFoundException("BoardItem", request.BoardItemId);
 
         var now = _dateTimeProvider.UtcNow;
-        var target = ResourceRef.Create(ResourceType.BoardItem, request.BoardItemId, item.WorkspaceId);
+        var target = ResourceRef.Create(ResourceType.BoardItem, request.BoardItemId, workspaceId);
         var metadata = FileMetadata.Create(request.Filename, request.SizeBytes ?? 0, request.ContentType ?? "application/octet-stream", url: request.Url);
-        var attachment = Attachment.Create(Guid.Empty, item.WorkspaceId, target, AttachmentType.Link, metadata, _currentUser.UserId, now);
+        var attachment = Attachment.Create(Guid.Empty, workspaceId, target, AttachmentType.Link, metadata, _currentUser.UserId, now);
 
         _context.Attachments.Add(attachment);
 

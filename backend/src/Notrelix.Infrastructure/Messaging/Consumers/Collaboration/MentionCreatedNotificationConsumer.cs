@@ -1,16 +1,16 @@
 using Notrelix.Application.Events.Collaboration;
-using Notrelix.Infrastructure.Data;
+using Notrelix.Infrastructure.Data.Abstractions;
 using Notrelix.Infrastructure.Data.Notifications;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Collaboration;
 
 public sealed class MentionCreatedNotificationConsumer : IConsumer<MentionCreatedIntegrationEvent>
 {
-    private readonly ApplicationDbContext _context;
+    private readonly INotificationDbContext _context;
     private readonly ILogger<MentionCreatedNotificationConsumer> _logger;
 
     public MentionCreatedNotificationConsumer(
-        ApplicationDbContext context,
+        INotificationDbContext context,
         ILogger<MentionCreatedNotificationConsumer> logger)
     {
         _context = context;

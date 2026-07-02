@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Abstractions.Rls;
 
@@ -22,7 +23,7 @@ public sealed class RlsSessionContext : IRlsSessionContext
         _currentAccount = currentAccount;
     }
 
-    public async Task ApplyAsync(DbContext context, CancellationToken cancellationToken)
+    public async Task ApplyAsync(DatabaseFacade database, CancellationToken cancellationToken)
     {
         if (!_options.Value.SetSessionContext) return;
 
@@ -36,7 +37,7 @@ public sealed class RlsSessionContext : IRlsSessionContext
         var scope = _currentWorkspace.IsSystemContext ? "worker" : "app";
         var correlationId = System.Diagnostics.Activity.Current?.Id ?? "";
 
-        await context.Database.ExecuteSqlInterpolatedAsync($@"
+        await database.ExecuteSqlInterpolatedAsync($@"
             SELECT set_config('app.current_user_id', {userId}, true);
             SELECT set_config('app.current_account_id', {accountId}, true);
             SELECT set_config('app.current_workspace_id', {workspaceId}, true);

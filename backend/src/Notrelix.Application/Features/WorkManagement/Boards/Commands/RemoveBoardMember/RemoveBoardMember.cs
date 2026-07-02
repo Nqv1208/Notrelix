@@ -1,5 +1,6 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.RemoveBoardMember;
 
@@ -7,12 +8,12 @@ public record RemoveBoardMemberCommand(Guid BoardId, Guid UserId) : ICommand<Res
 
 public class RemoveBoardMemberCommandHandler : IRequestHandler<RemoveBoardMemberCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
 
     public RemoveBoardMemberCommandHandler(
-        IApplicationDbContext context,
+        IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IWorkspacePermissionService permissions)
     {

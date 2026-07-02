@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.DeleteBoardField;
 
@@ -6,12 +7,12 @@ public record DeleteBoardFieldCommand(Guid BoardId, Guid ColumnId) : ICommand<Re
 
 public class DeleteBoardFieldCommandHandler : IRequestHandler<DeleteBoardFieldCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
 
     public DeleteBoardFieldCommandHandler(
-        IApplicationDbContext context,
+        IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IWorkspacePermissionService permissions)
     {

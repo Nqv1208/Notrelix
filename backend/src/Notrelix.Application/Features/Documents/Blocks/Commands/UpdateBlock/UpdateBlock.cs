@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Blocks.Commands.UpdateBlock;
 
@@ -10,9 +11,9 @@ public record UpdateBlockCommand(
 
 public class UpdateBlockCommandHandler : IRequestHandler<UpdateBlockCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IDocumentDbContext _context;
     private readonly ICurrentUser _currentUser;
-    public UpdateBlockCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public UpdateBlockCommandHandler(IDocumentDbContext context, ICurrentUser currentUser)
     {
         _context = context;
         _currentUser = currentUser;

@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardSchema.Queries.GetBoardSchema;
 
@@ -12,9 +13,9 @@ public record GetBoardSchemaQuery(Guid WorkspaceId, Guid BoardId) : IQuery<Board
 
 public class GetBoardSchemaQueryHandler : IRequestHandler<GetBoardSchemaQuery, BoardSchemaDto>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
 
-    public GetBoardSchemaQueryHandler(IApplicationDbContext context)
+    public GetBoardSchemaQueryHandler(IWorkManagementDbContext context)
     {
         _context = context;
     }

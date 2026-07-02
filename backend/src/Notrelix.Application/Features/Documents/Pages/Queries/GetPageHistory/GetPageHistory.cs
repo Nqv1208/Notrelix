@@ -1,5 +1,6 @@
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Documents.DTOs;
+using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Pages.Queries.GetPageHistory;
 
@@ -7,8 +8,8 @@ public record GetPageHistoryQuery(Guid PageId) : IQuery<Result<List<PageHistoryD
 
 public class GetPageHistoryQueryHandler : IRequestHandler<GetPageHistoryQuery, Result<List<PageHistoryDto>>>
 {
-    private readonly IApplicationDbContext _context;
-    public GetPageHistoryQueryHandler(IApplicationDbContext context) => _context = context;
+    private readonly IDocumentDbContext _context;
+    public GetPageHistoryQueryHandler(IDocumentDbContext context) => _context = context;
 
     public async Task<Result<List<PageHistoryDto>>> Handle(GetPageHistoryQuery request, CancellationToken ct)
     {

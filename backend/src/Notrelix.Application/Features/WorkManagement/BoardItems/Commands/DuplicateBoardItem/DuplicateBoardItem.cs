@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DuplicateBoardGroup;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.DuplicateBoardItem;
@@ -7,11 +8,11 @@ public record DuplicateBoardItemCommand(Guid BoardItemId) : ICommand<Result<Guid
 
 public class DuplicateBoardItemCommandHandler : IRequestHandler<DuplicateBoardItemCommand, Result<Guid>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _timeProvider;
 
-    public DuplicateBoardItemCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider)
+    public DuplicateBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider)
     {
         _context = context;
         _currentUser = currentUser;

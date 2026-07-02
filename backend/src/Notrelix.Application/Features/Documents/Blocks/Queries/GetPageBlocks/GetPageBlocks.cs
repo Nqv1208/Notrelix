@@ -1,6 +1,7 @@
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Documents.Common;
 using global::Notrelix.Application.Features.Documents.DTOs;
+using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Blocks.Queries.GetPageBlocks;
 
@@ -8,8 +9,8 @@ public record GetPageBlocksQuery(Guid PageId) : IQuery<Result<List<BlockDto>>>;
 
 public class GetPageBlocksQueryHandler : IRequestHandler<GetPageBlocksQuery, Result<List<BlockDto>>>
 {
-    private readonly IApplicationDbContext _context;
-    public GetPageBlocksQueryHandler(IApplicationDbContext context) => _context = context;
+    private readonly IDocumentDbContext _context;
+    public GetPageBlocksQueryHandler(IDocumentDbContext context) => _context = context;
 
     public async Task<Result<List<BlockDto>>> Handle(GetPageBlocksQuery request, CancellationToken ct)
     {

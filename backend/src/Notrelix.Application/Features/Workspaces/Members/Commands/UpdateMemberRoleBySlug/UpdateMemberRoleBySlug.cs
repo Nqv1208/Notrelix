@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Members.Commands.UpdateMemberRoleBySlug;
 
@@ -10,11 +11,11 @@ public record UpdateMemberRoleBySlugCommand(
 
 public class UpdateMemberRoleBySlugCommandHandler : IRequestHandler<UpdateMemberRoleBySlugCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkspaceDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public UpdateMemberRoleBySlugCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public UpdateMemberRoleBySlugCommandHandler(IWorkspaceDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;

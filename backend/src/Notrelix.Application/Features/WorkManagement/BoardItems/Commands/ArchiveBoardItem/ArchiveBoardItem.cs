@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ArchiveBoardItem;
 
@@ -6,13 +7,13 @@ public record ArchiveBoardItemCommand(Guid BoardItemId) : ICommand<Result>, ITra
 
 public class ArchiveBoardItemCommandHandler : IRequestHandler<ArchiveBoardItemCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _timeProvider;
 
     public ArchiveBoardItemCommandHandler(
-        IApplicationDbContext context,
+        IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IWorkspacePermissionService permissions,
         IDateTimeProvider timeProvider)

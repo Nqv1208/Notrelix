@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Blocks.Commands.ReorderBlocks;
 
@@ -11,10 +12,10 @@ public record ReorderBlockItem(Guid BlockId, string NewPosition, Guid? NewParent
 
 public class ReorderBlocksCommandHandler : IRequestHandler<ReorderBlocksCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IDocumentDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
-    public ReorderBlocksCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public ReorderBlocksCommandHandler(IDocumentDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;

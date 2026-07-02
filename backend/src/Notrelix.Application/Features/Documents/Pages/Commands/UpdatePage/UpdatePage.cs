@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Pages.Commands.UpdatePage;
 
@@ -9,10 +10,10 @@ public record UpdatePageCommand(
 
 public class UpdatePageCommandHandler : IRequestHandler<UpdatePageCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IDocumentDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
-    public UpdatePageCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public UpdatePageCommandHandler(IDocumentDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;

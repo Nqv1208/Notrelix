@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValues;
 
@@ -7,21 +8,24 @@ public record UpdateBoardItemFieldValuesCommand(Guid BoardItemId, Dictionary<Gui
 
 public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBoardItemFieldValuesCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _timeProvider;
+    private readonly IResourceReferenceResolver _resourceResolver;
 
     public UpdateBoardItemFieldValuesCommandHandler(
-        IApplicationDbContext context,
+        IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IWorkspacePermissionService permissions,
-        IDateTimeProvider timeProvider)
+        IDateTimeProvider timeProvider,
+        IResourceReferenceResolver resourceResolver)
     {
         _context = context;
         _currentUser = currentUser;
         _permissions = permissions;
         _timeProvider = timeProvider;
+        _resourceResolver = resourceResolver;
     }
 
     public async Task<Result> Handle(UpdateBoardItemFieldValuesCommand request, CancellationToken ct)
@@ -122,16 +126,12 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
 
     private async Task EnsurePageCanBeLinkedAsync(Guid pageId, Guid boardWorkspaceId, CancellationToken ct)
     {
-        var pageWorkspaceId = await _context.Pages
-            .AsNoTracking()
-            .Where(page => page.Id == pageId && !page.IsDeleted)
-            .Select(page => page.WorkspaceId)
-            .FirstOrDefaultAsync(ct);
+        var pageWorkspaceId = await _resourceResolver.GetWorkspaceIdAsync(pageId, ResourceTypes.Page, ct);
 
-        if (pageWorkspaceId == Guid.Empty)
+        if (!pageWorkspaceId.HasValue)
             throw new NotFoundException(nameof(Page), pageId);
 
-        if (pageWorkspaceId != boardWorkspaceId)
+        if (pageWorkspaceId.Value != boardWorkspaceId)
             throw new Notrelix.Domain.Common.Exceptions.BusinessRuleViolationException(
                 "CardPageSameWorkspace",
                 "BoardItem can only be linked to a page in the same workspace.");

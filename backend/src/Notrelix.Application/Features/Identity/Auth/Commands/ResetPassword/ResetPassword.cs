@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Email;
+using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.ResetPassword;
 
@@ -12,14 +13,14 @@ public record ResetPasswordCommand : ICommand<Result>, ITransactionalRequest
 
 public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IIdentityDbContext _context;
     private readonly IOtpService _otpService;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IEmailService _emailService;
     private readonly ILogger<ResetPasswordCommandHandler> _logger;
 
     public ResetPasswordCommandHandler(
-        IApplicationDbContext context,
+        IIdentityDbContext context,
         IOtpService otpService,
         IPasswordHasher passwordHasher,
         IEmailService emailService,

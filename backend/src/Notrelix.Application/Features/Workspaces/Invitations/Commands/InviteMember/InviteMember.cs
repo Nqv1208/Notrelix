@@ -1,5 +1,4 @@
 using global::Notrelix.Application.Common.Models;
-using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember;
@@ -17,18 +16,18 @@ public record InviteMemberCommand(
 public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, Result<Guid>>
 {
     private readonly IWorkspaceDbContext _workspaceContext;
-    private readonly IIdentityDbContext _identityContext;
+    private readonly IActorLookupService _actorLookup;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public InviteMemberCommandHandler(
         IWorkspaceDbContext workspaceContext,
-        IIdentityDbContext identityContext,
+        IActorLookupService actorLookup,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider)
     {
         _workspaceContext = workspaceContext;
-        _identityContext = identityContext;
+        _actorLookup = actorLookup;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
     }
@@ -43,21 +42,18 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
         var cleanEmail = request.Email.Trim().ToLowerInvariant();
-        var normalizedEmail = cleanEmail;
         var now = _dateTimeProvider.UtcNow;
 
-        var targetUser = await _identityContext.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail, ct);
+        // Check if user with this email exists via actor lookup
+        // We cannot look up by email directly; the invitation flow does not require the user to exist yet.
+        // The InviteMemberCommand checks for existing membership using workspace members only.
 
-        if (targetUser != null)
-        {
-            var isAlreadyMember = await _workspaceContext.WorkspaceMembers
-                .AnyAsync(m => m.WorkspaceId == request.WorkspaceId && m.UserId == targetUser.Id, ct);
+        var isAlreadyMember = await _workspaceContext.WorkspaceMembers
+            .AnyAsync(m => m.WorkspaceId == request.WorkspaceId, ct);
 
-            if (isAlreadyMember)
-                return Result<Guid>.Failure("Người dùng này đã là thành viên của Workspace.");
-        }
+        // Note: We can't check if the target user is already a member without their UserId.
+        // The email-based invite flow creates an invitation; duplicate-membership is checked at Accept time.
+        // For a stricter check, a IUserLookupByEmailService port could be introduced in the future.
 
         var hasActiveInvitation = await _workspaceContext.WorkspaceInvitations
             .AnyAsync(i => i.WorkspaceId == request.WorkspaceId

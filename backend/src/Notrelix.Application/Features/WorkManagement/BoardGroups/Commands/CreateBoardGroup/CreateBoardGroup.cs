@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.CreateBoardGroup;
 
@@ -6,13 +7,13 @@ public record CreateBoardGroupCommand(Guid BoardId, string Title, string? Positi
 
 public class CreateBoardGroupCommandHandler : IRequestHandler<CreateBoardGroupCommand, Result<Guid>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspacePermissionService _permissions;
 
     public CreateBoardGroupCommandHandler(
-        IApplicationDbContext context,
+        IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
         IWorkspacePermissionService permissions)

@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UnlinkPageFromBoardItem;
 
@@ -6,12 +7,12 @@ public record UnlinkPageFromBoardItemCommand(Guid BoardItemId) : ICommand<Result
 
 public class UnlinkPageFromBoardItemCommandHandler : IRequestHandler<UnlinkPageFromBoardItemCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
 
     public UnlinkPageFromBoardItemCommandHandler(
-        IApplicationDbContext context,
+        IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IWorkspacePermissionService permissions)
     {

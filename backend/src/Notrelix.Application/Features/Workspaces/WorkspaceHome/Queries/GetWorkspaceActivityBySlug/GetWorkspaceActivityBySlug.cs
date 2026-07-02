@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Workspaces.Abstractions;
 namespace Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceActivityBySlug;
 
 public record GetWorkspaceActivityBySlugQuery(Guid WorkspaceId, string Slug, int Page = 1, int PageSize = 20) : IQuery<Result<object>>, IRequirePermission
@@ -9,9 +10,9 @@ public record GetWorkspaceActivityBySlugQuery(Guid WorkspaceId, string Slug, int
 
 public class GetWorkspaceActivityBySlugQueryHandler : IRequestHandler<GetWorkspaceActivityBySlugQuery, Result<object>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkspaceDbContext _context;
 
-    public GetWorkspaceActivityBySlugQueryHandler(IApplicationDbContext context)
+    public GetWorkspaceActivityBySlugQueryHandler(IWorkspaceDbContext context)
     {
         _context = context;
     }

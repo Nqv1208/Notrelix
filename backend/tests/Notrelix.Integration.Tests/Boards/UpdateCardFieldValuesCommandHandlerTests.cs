@@ -109,9 +109,9 @@ public class UpdateBoardItemFieldValuesCommandHandlerTests : IAsyncLifetime
         currentUser.SetupGet(item => item.UserId).Returns(userId);
         var timeProvider = new Mock<IDateTimeProvider>();
         timeProvider.Setup(t => t.UtcNow).Returns(DateTimeOffset.UtcNow);
-        var evaluator = new PermissionService(context, timeProvider.Object);
+        var evaluator = new PermissionService(context, context, context, timeProvider.Object);
         var permissions = new WorkspacePermissionService(evaluator, context);
 
-        return new UpdateBoardItemFieldValuesCommandHandler(context, currentUser.Object, permissions, timeProvider.Object);
+        return new UpdateBoardItemFieldValuesCommandHandler(context, currentUser.Object, permissions, timeProvider.Object, Mock.Of<IResourceReferenceResolver>());
     }
 }

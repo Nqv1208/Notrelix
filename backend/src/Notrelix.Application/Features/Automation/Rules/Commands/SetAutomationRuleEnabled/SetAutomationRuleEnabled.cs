@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Automation.Abstractions;
 
 namespace Notrelix.Application.Features.Automation.Rules.Commands.SetAutomationRuleEnabled;
 
@@ -6,13 +7,13 @@ public record SetAutomationRuleEnabledCommand(Guid AutomationRuleId, bool IsEnab
 
 public class SetAutomationRuleEnabledCommandHandler : IRequestHandler<SetAutomationRuleEnabledCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IAutomationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspacePermissionService _permissions;
 
     public SetAutomationRuleEnabledCommandHandler(
-        IApplicationDbContext context,
+        IAutomationDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
         IWorkspacePermissionService permissions)

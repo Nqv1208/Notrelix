@@ -1,25 +1,17 @@
-using Notrelix.Application.Features.Workspaces.Abstractions;
-
 namespace Notrelix.Application.Common.Behaviors;
 
 public class WorkspaceContextBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
-    private readonly ICurrentUser _currentUser;
-    private readonly ICurrentWorkspace _currentWorkspace;
-    private readonly IWorkspaceDbContext _workspaceDbContext;
-    private readonly IWorkspacePermissionService _workspacePermissionService;
+    private readonly ICurrentTenantContext _tenant;
+    private readonly IWorkspaceAccessResolver _workspaceAccessResolver;
 
     public WorkspaceContextBehavior(
-        ICurrentUser currentUser,
-        ICurrentWorkspace currentWorkspace,
-        IWorkspaceDbContext workspaceDbContext,
-        IWorkspacePermissionService workspacePermissionService)
+        ICurrentTenantContext tenant,
+        IWorkspaceAccessResolver workspaceAccessResolver)
     {
-        _currentUser = currentUser;
-        _currentWorkspace = currentWorkspace;
-        _workspaceDbContext = workspaceDbContext;
-        _workspacePermissionService = workspacePermissionService;
+        _tenant = tenant;
+        _workspaceAccessResolver = workspaceAccessResolver;
     }
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
@@ -33,29 +25,17 @@ public class WorkspaceContextBehavior<TRequest, TResponse> : IPipelineBehavior<T
                 throw new ForbiddenException("Invalid workspace context.");
             }
 
-            if (_currentUser.UserId == Guid.Empty)
-            {
-                throw new UnauthorizedAccessException("Authentication required.");
-            }
+            // Resolve workspace access from DB — single source of truth for AccountId
+            var snapshot = await _workspaceAccessResolver.ResolveAsync(
+                workspaceId, _tenant.UserId ?? Guid.Empty, cancellationToken);
 
-            // Resolve AccountId from DB — single source of truth
-            var workspace = await _workspaceDbContext.Workspaces
-                .Where(w => w.Id == workspaceId)
-                .Select(w => new { w.AccountId, w.Status })
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (workspace is null)
-            {
-                throw new NotFoundException(nameof(Workspace), workspaceId);
-            }
-
-            _currentWorkspace.SetWorkspace(workspace.AccountId, workspaceId);
-
-            var canView = await _workspacePermissionService.CanViewWorkspaceAsync(workspaceId, _currentUser.UserId, cancellationToken);
-            if (!canView)
+            if (!snapshot.CanAccess)
             {
                 throw new ForbiddenException("Access to workspace denied.");
             }
+
+            // Set tenant context with resolved AccountId
+            _tenant.SetWorkspace(snapshot.AccountId, snapshot.WorkspaceId, snapshot.ActorUserId);
         }
 
         return await next();

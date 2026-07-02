@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Automation.DTOs;
 
 namespace Notrelix.Application.Features.Automation.Executions.Queries.GetAutomationExecutions;
@@ -8,12 +9,12 @@ public record GetAutomationExecutionsQuery(Guid AutomationRuleId, int Page = 1, 
 
 public class GetAutomationExecutionsQueryHandler : IRequestHandler<GetAutomationExecutionsQuery, Result<IReadOnlyList<AutomationExecutionDto>>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IAutomationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
 
     public GetAutomationExecutionsQueryHandler(
-        IApplicationDbContext context,
+        IAutomationDbContext context,
         ICurrentUser currentUser,
         IWorkspacePermissionService permissions)
     {

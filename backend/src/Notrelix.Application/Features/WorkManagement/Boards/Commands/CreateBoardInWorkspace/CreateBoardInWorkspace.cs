@@ -21,20 +21,20 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
 {
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
-    private readonly ICurrentWorkspace _currentWorkspace;
+    private readonly ICurrentTenantContext _tenant;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspaceAccessChecker _workspaceAccessChecker;
 
     public CreateBoardInWorkspaceCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        ICurrentWorkspace currentWorkspace,
+        ICurrentTenantContext tenant,
         IDateTimeProvider dateTimeProvider,
         IWorkspaceAccessChecker workspaceAccessChecker)
     {
         _context = context;
         _currentUser = currentUser;
-        _currentWorkspace = currentWorkspace;
+        _tenant = tenant;
         _dateTimeProvider = dateTimeProvider;
         _workspaceAccessChecker = workspaceAccessChecker;
     }
@@ -45,7 +45,7 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
         if (!workspaceCheck.Succeeded)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
-        var accountId = _currentWorkspace.AccountId;
+        var accountId = _tenant.RequireAccountId();
         var createdAt = _dateTimeProvider.UtcNow;
         var visibility = request.Visibility ?? BoardVisibility.Workspace;
 

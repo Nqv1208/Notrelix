@@ -40,7 +40,7 @@ public class PermissionServiceTests : IAsyncLifetime
         var context = _db.CreateContext(currentWorkspace);
         var clockMock = new Mock<IDateTimeProvider>();
         clockMock.Setup(c => c.UtcNow).Returns(DateTimeOffset.UtcNow);
-        var service = new PermissionService(context, clockMock.Object);
+        var service = new PermissionService(context, context, context, clockMock.Object);
         return (context, service);
     }
 

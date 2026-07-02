@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Email;
+using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.ForgotPassword;
 
@@ -10,14 +11,14 @@ public record ForgotPasswordCommand : ICommand<Result>
 
 public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IIdentityDbContext _context;
     private readonly IOtpService _otpService;
     private readonly IRateLimitService _rateLimitService;
     private readonly IEmailService _emailService;
     private readonly ILogger<ForgotPasswordCommandHandler> _logger;
 
     public ForgotPasswordCommandHandler(
-        IApplicationDbContext context,
+        IIdentityDbContext context,
         IOtpService otpService,
         IRateLimitService rateLimitService,
         IEmailService emailService,

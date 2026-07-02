@@ -6,6 +6,14 @@ using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.Accounts.Abstractions;
+using Notrelix.Application.Features.Documents.Abstractions;
+using Notrelix.Application.Features.Collaboration.Abstractions;
+using Notrelix.Application.Features.Automation.Abstractions;
+using Notrelix.Application.Features.Governance.Abstractions;
+using Notrelix.Application.Features.Integrations.Abstractions;
+using Notrelix.Application.Features.Billing.Abstractions;
+using Notrelix.Application.Features.Analytics.Abstractions;
+using Notrelix.Infrastructure.Data.Abstractions;
 
 // Account
 using Notrelix.Domain.Accounts.Accounts;
@@ -114,7 +122,25 @@ using Notrelix.Infrastructure.Data.Projections.Search;
 
 namespace Notrelix.Infrastructure.Data;
 
-public class ApplicationDbContext : DbContext, IApplicationDbContext, IWorkspaceDbContext, IWorkManagementDbContext, IIdentityDbContext, IAccountDbContext
+public class ApplicationDbContext : DbContext,
+    IApplicationDbContext,
+    IWorkspaceDbContext,
+    IWorkManagementDbContext,
+    IIdentityDbContext,
+    IAccountDbContext,
+    IDocumentDbContext,
+    ICollaborationDbContext,
+    IAutomationDbContext,
+    IGovernanceDbContext,
+    IIntegrationDbContext,
+    IBillingDbContext,
+    IReportingDbContext,
+    ISearchProjectionDbContext,
+    IMessagingDbContext,
+    IAuditDbContext,
+    IOpsDbContext,
+    IActivityProjectionDbContext,
+    INotificationDbContext
 {
     private readonly ICurrentWorkspace? _currentWorkspace;
 

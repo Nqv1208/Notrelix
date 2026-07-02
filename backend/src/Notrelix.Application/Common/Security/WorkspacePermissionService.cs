@@ -1,11 +1,13 @@
+using Notrelix.Application.Features.WorkManagement.Abstractions;
+
 namespace Notrelix.Application.Common.Security;
 
 public class WorkspacePermissionService : IWorkspacePermissionService
 {
     private readonly IPermissionEvaluator _permissionEvaluator;
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
 
-    public WorkspacePermissionService(IPermissionEvaluator permissionEvaluator, IApplicationDbContext context)
+    public WorkspacePermissionService(IPermissionEvaluator permissionEvaluator, IWorkManagementDbContext context)
     {
         _permissionEvaluator = permissionEvaluator;
         _context = context;

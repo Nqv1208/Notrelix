@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
 
@@ -6,24 +7,24 @@ public record CreateBoardFieldCommand(Guid BoardId, string Name, string FieldTyp
 
 public class CreateBoardFieldCommandHandler : IRequestHandler<CreateBoardFieldCommand, Result<Guid>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly ICurrentAccount _currentAccount;
+    private readonly ICurrentTenantContext _tenant;
 
     public CreateBoardFieldCommandHandler(
-        IApplicationDbContext context,
+        IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IWorkspacePermissionService permissions,
         IDateTimeProvider dateTimeProvider,
-        ICurrentAccount currentAccount)
+        ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
         _permissions = permissions;
         _dateTimeProvider = dateTimeProvider;
-        _currentAccount = currentAccount;
+        _tenant = tenant;
     }
 
     public async Task<Result<Guid>> Handle(CreateBoardFieldCommand request, CancellationToken ct)
@@ -48,7 +49,7 @@ public class CreateBoardFieldCommandHandler : IRequestHandler<CreateBoardFieldCo
             : FieldType.Text;
 
         var column = BoardField.Create(
-            _currentAccount.AccountId!.Value,
+            _tenant.RequireAccountId(),
             board.WorkspaceId,
             request.BoardId,
             request.Name,

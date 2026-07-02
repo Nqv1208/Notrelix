@@ -24,6 +24,7 @@ public static class AuthRegistration
         services.AddScoped<ICurrentUser, CurrentUser>();
         services.AddScoped<ICurrentWorkspace, CurrentWorkspace>();
         services.AddScoped<ICurrentAccount, CurrentAccount>();
+        services.AddScoped<ICurrentTenantContext, CurrentTenantContext>();
 
         services.AddJwtBearer(configuration);
 

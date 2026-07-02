@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Governance.Abstractions;
 using SharedKernel = Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.Governance.ResourcePermissions.Commands.RevokeResourcePermission;
@@ -20,13 +21,13 @@ public record RevokeResourcePermissionCommand(
 
 public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeResourcePermissionCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IGovernanceDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IAuditService _auditService;
 
     public RevokeResourcePermissionCommandHandler(
-        IApplicationDbContext context,
+        IGovernanceDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
         IAuditService auditService)

@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ArchiveBoardGroup;
 
@@ -6,13 +7,13 @@ public record ArchiveBoardGroupCommand(Guid GroupId) : ICommand<Result>, ITransa
 
 public class ArchiveBoardGroupCommandHandler : IRequestHandler<ArchiveBoardGroupCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public ArchiveBoardGroupCommandHandler(
-        IApplicationDbContext context,
+        IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IWorkspacePermissionService permissions,
         IDateTimeProvider dateTimeProvider)

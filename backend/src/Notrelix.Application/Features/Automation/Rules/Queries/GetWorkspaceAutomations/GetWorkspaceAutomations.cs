@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Automation.DTOs;
 
 namespace Notrelix.Application.Features.Automation.Rules.Queries.GetWorkspaceAutomations;
@@ -8,12 +9,12 @@ public record GetWorkspaceAutomationsQuery(Guid WorkspaceId) : IQuery<Result<IRe
 
 public class GetWorkspaceAutomationsQueryHandler : IRequestHandler<GetWorkspaceAutomationsQuery, Result<IReadOnlyList<AutomationRuleDto>>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IAutomationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
 
     public GetWorkspaceAutomationsQueryHandler(
-        IApplicationDbContext context,
+        IAutomationDbContext context,
         ICurrentUser currentUser,
         IWorkspacePermissionService permissions)
     {

@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceActivity;
 
@@ -10,9 +11,9 @@ public record GetWorkspaceActivityQuery(Guid WorkspaceId, int Page = 1, int Page
 
 public class GetWorkspaceActivityQueryHandler : IRequestHandler<GetWorkspaceActivityQuery, Result<object>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkspaceDbContext _context;
 
-    public GetWorkspaceActivityQueryHandler(IApplicationDbContext context)
+    public GetWorkspaceActivityQueryHandler(IWorkspaceDbContext context)
     {
         _context = context;
     }

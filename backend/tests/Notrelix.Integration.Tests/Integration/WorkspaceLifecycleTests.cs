@@ -35,10 +35,11 @@ public class WorkspaceLifecycleTests : IAsyncLifetime
         var userId = Guid.CreateVersion7();
         var now = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
         var currentUser = MockCurrentUser(userId);
-        var currentAccount = MockCurrentAccount();
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetAccount(Guid.NewGuid(), userId);
         var clock = MockClock(now);
 
-        var handler = new CreateWorkspaceCommandHandler(context, currentUser.Object, currentAccount.Object, clock.Object);
+        var handler = new CreateWorkspaceCommandHandler(context, currentUser.Object, tenant, clock.Object);
         var command = new CreateWorkspaceCommand("Integration Workspace", "Phase 3 test", false);
 
         var result = await handler.Handle(command, default);
@@ -61,8 +62,11 @@ public class WorkspaceLifecycleTests : IAsyncLifetime
         var userId = Guid.CreateVersion7();
         var now = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
 
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetAccount(Guid.NewGuid(), userId);
+
         var handler = new CreateWorkspaceCommandHandler(
-            context, MockCurrentUser(userId).Object, MockCurrentAccount().Object, MockClock(now).Object);
+            context, MockCurrentUser(userId).Object, tenant, MockClock(now).Object);
         var command = new CreateWorkspaceCommand("Personal Tasks", null, true);
 
         var result = await handler.Handle(command, default);
@@ -83,8 +87,11 @@ public class WorkspaceLifecycleTests : IAsyncLifetime
         var userId = Guid.CreateVersion7();
         var now = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
 
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetAccount(Guid.NewGuid(), userId);
+
         var handler = new CreateWorkspaceCommandHandler(
-            context, MockCurrentUser(userId).Object, MockCurrentAccount().Object, MockClock(now).Object);
+            context, MockCurrentUser(userId).Object, tenant, MockClock(now).Object);
         var command = new CreateWorkspaceCommand("Team Space", null, false);
 
         var result = await handler.Handle(command, default);
@@ -110,13 +117,6 @@ public class WorkspaceLifecycleTests : IAsyncLifetime
     {
         var mock = new Mock<ICurrentUser>();
         mock.Setup(x => x.UserId).Returns(userId);
-        return mock;
-    }
-
-    private static Mock<ICurrentAccount> MockCurrentAccount()
-    {
-        var mock = new Mock<ICurrentAccount>();
-        mock.Setup(x => x.AccountId).Returns(Guid.NewGuid());
         return mock;
     }
 

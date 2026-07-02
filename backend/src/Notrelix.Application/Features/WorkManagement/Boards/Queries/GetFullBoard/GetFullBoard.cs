@@ -1,6 +1,8 @@
 using System.Text.Json;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
+using Notrelix.Application.Features.Collaboration.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetFullBoard;
 
@@ -8,11 +10,15 @@ public record GetFullBoardQuery(Guid BoardId) : IQuery<Result<FullBoardDto>>;
 
 public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Result<FullBoardDto>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
+    private readonly IActorLookupService _actorLookup;
+    private readonly ICollaborationDbContext _collabContext;
 
-    public GetFullBoardQueryHandler(IApplicationDbContext context)
+    public GetFullBoardQueryHandler(IWorkManagementDbContext context, IActorLookupService actorLookup, ICollaborationDbContext collabContext)
     {
         _context = context;
+        _actorLookup = actorLookup;
+        _collabContext = collabContext;
     }
 
     public async Task<Result<FullBoardDto>> Handle(GetFullBoardQuery request, CancellationToken cancellationToken)
@@ -39,18 +45,26 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
 
         var cardIds = cards.Select(card => card.Id).ToList();
 
-        var cardMembers = await _context.BoardItemMembers
+        var cardMemberEntities = await _context.BoardItemMembers
             .AsNoTracking()
             .Where(member => cardIds.Contains(member.ItemId))
-            .Join(_context.Users.AsNoTracking(),
-                member => member.UserId,
-                user => user.Id,
-                (member, user) => new
-                {
-                    member.ItemId,
-                    Dto = new BoardItemMemberDto(member.UserId, user.Name, user.Avatar, member.AssignedAt)
-                })
             .ToListAsync(cancellationToken);
+
+        var memberUserIds = cardMemberEntities.Select(m => m.UserId).Distinct().ToList();
+        var memberActors = await _actorLookup.FindManyAsync(memberUserIds, cancellationToken);
+        var memberActorMap = memberActors.ToDictionary(a => a.UserId);
+
+        var cardMembers = cardMemberEntities
+            .Select(member => new
+            {
+                member.ItemId,
+                Dto = new BoardItemMemberDto(
+                    member.UserId,
+                    memberActorMap.TryGetValue(member.UserId, out var actor) ? actor.Name : "Unknown",
+                    memberActorMap.TryGetValue(member.UserId, out var a) ? a.AvatarUrl : null,
+                    member.AssignedAt)
+            })
+            .ToList();
 
         var cardLabels = await _context.BoardItemLabels
             .AsNoTracking()
@@ -73,14 +87,14 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 (item, checklist) => new { checklist.ItemId, IsDone = item.Status == ChecklistItemStatus.Done })
             .ToListAsync(cancellationToken);
 
-        var commentCounts = await _context.Comments
+        var commentCounts = await _collabContext.Comments
             .AsNoTracking()
             .Where(comment => comment.Target.ResourceType == ResourceType.BoardItem && cardIds.Contains(comment.Target.ResourceId))
             .GroupBy(comment => comment.Target.ResourceId)
             .Select(group => new { BoardItemId = group.Key, Count = group.Count() })
             .ToDictionaryAsync(item => item.BoardItemId, item => item.Count, cancellationToken);
 
-        var attachmentCounts = await _context.Attachments
+        var attachmentCounts = await _collabContext.Attachments
             .AsNoTracking()
             .Where(attachment => attachment.Target.ResourceType == ResourceType.BoardItem && cardIds.Contains(attachment.Target.ResourceId))
             .GroupBy(attachment => attachment.Target.ResourceId)
@@ -170,20 +184,24 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
             ));
         }
 
-        var members = await _context.BoardMembers
+        var boardMemberEntities = await _context.BoardMembers
             .AsNoTracking()
             .Where(m => m.BoardId == request.BoardId)
-            .Join(_context.Users.AsNoTracking(),
-                m => m.UserId,
-                u => u.Id,
-                (m, u) => new BoardMemberDto(
-                    m.UserId,
-                    u.Name,
-                    u.Avatar,
-                    m.Role.ToString(),
-                    m.JoinedAt.DateTime
-                ))
             .ToListAsync(cancellationToken);
+
+        var boardMemberUserIds = boardMemberEntities.Select(m => m.UserId).Distinct().ToList();
+        var boardMemberActors = await _actorLookup.FindManyAsync(boardMemberUserIds, cancellationToken);
+        var boardMemberActorMap = boardMemberActors.ToDictionary(a => a.UserId);
+
+        var members = boardMemberEntities
+            .Select(m => new BoardMemberDto(
+                m.UserId,
+                boardMemberActorMap.TryGetValue(m.UserId, out var actor) ? actor.Name : "Unknown",
+                boardMemberActorMap.TryGetValue(m.UserId, out var a) ? a.AvatarUrl : null,
+                m.Role.ToString(),
+                m.JoinedAt.DateTime
+            ))
+            .ToList();
 
         return Result<FullBoardDto>.Success(new FullBoardDto(
             board.Id,

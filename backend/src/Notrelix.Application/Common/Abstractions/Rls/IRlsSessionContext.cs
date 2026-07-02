@@ -1,6 +1,8 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
+
 namespace Notrelix.Application.Common.Abstractions.Rls;
 
 public interface IRlsSessionContext
 {
-    Task ApplyAsync(DbContext context, CancellationToken cancellationToken);
+    Task ApplyAsync(DatabaseFacade database, CancellationToken cancellationToken);
 }

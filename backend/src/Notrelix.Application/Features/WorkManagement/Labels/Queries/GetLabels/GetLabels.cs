@@ -1,5 +1,6 @@
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Labels.Queries.GetLabels;
 
@@ -7,8 +8,8 @@ public record GetLabelsQuery(Guid BoardId) : IQuery<Result<List<BoardItemLabelDt
 
 public class GetLabelsQueryHandler : IRequestHandler<GetLabelsQuery, Result<List<BoardItemLabelDto>>>
 {
-    private readonly IApplicationDbContext _context;
-    public GetLabelsQueryHandler(IApplicationDbContext context) => _context = context;
+    private readonly IWorkManagementDbContext _context;
+    public GetLabelsQueryHandler(IWorkManagementDbContext context) => _context = context;
 
     public async Task<Result<List<BoardItemLabelDto>>> Handle(GetLabelsQuery request, CancellationToken ct)
     {

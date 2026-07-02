@@ -42,10 +42,13 @@ public class CreateBoardInWorkspaceCommandHandlerTests : IAsyncLifetime
 
         currentWorkspace.SetWorkspace(accountId, workspace.Id);
 
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetWorkspace(accountId, workspace.Id, userId);
+
         var accessChecker = new TestWorkspaceAccessCheckerStub(true);
         var handler = new CreateBoardInWorkspaceCommandHandler(
             context, new FakeCurrentUser { UserId = userId },
-            currentWorkspace, FakeDateTimeProvider.WithFixedTime(now), accessChecker);
+            tenant, FakeDateTimeProvider.WithFixedTime(now), accessChecker);
 
         var result = await handler.Handle(
             new CreateBoardInWorkspaceCommand(workspace.Id, "My Board", null, null, null),
@@ -74,9 +77,12 @@ public class CreateBoardInWorkspaceCommandHandlerTests : IAsyncLifetime
         await using var context = _db.CreateContext(currentWorkspace);
         var accessChecker = new TestWorkspaceAccessCheckerStub(false);
 
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetWorkspace(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+
         var handler = new CreateBoardInWorkspaceCommandHandler(
             context, new FakeCurrentUser(),
-            currentWorkspace, FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow), accessChecker);
+            tenant, FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow), accessChecker);
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
             handler.Handle(new CreateBoardInWorkspaceCommand(Guid.NewGuid(), "Board", null, null, null), CancellationToken.None));
@@ -98,10 +104,13 @@ public class CreateBoardInWorkspaceCommandHandlerTests : IAsyncLifetime
 
         currentWorkspace.SetWorkspace(accountId, workspace.Id);
 
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetWorkspace(accountId, workspace.Id, userId);
+
         var accessChecker = new TestWorkspaceAccessCheckerStub(true);
         var handler = new CreateBoardInWorkspaceCommandHandler(
             context, new FakeCurrentUser { UserId = userId },
-            currentWorkspace, FakeDateTimeProvider.WithFixedTime(now), accessChecker);
+            tenant, FakeDateTimeProvider.WithFixedTime(now), accessChecker);
 
         var result = await handler.Handle(
             new CreateBoardInWorkspaceCommand(workspace.Id, "Private Board", null, null, BoardVisibility.Private),

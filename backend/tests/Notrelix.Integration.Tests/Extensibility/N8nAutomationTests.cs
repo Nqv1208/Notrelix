@@ -1,3 +1,4 @@
+using Moq;
 using Notrelix.Application.Common.Events;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Automation.Events;
@@ -10,6 +11,7 @@ using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.WorkManagement.Items.Events;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Infrastructure.Data;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
@@ -71,7 +73,8 @@ public class N8nAutomationTests : IAsyncLifetime
 
         await context.SaveChangesAsync();
 
-        var handler = new CardAssignedN8nAutomationHandler(context, queue);
+        var resourceResolver = new TestResourceReferenceResolver(context);
+        var handler = new CardAssignedN8nAutomationHandler(context, resourceResolver, queue);
         var domainEvent = new BoardItemMemberAssignedDomainEvent(
             Guid.NewGuid(), workspace.Id, item.Id, assignedUserId, ownerId, Now);
 
@@ -88,6 +91,36 @@ public class N8nAutomationTests : IAsyncLifetime
         var job = queue.Jobs.Should().ContainSingle().Subject.Should().BeOfType<N8nDispatchJob>().Subject;
         job.ExecutionId.Should().Be(execution.Id);
         job.AutomationRuleId.Should().Be(rule.Id);
+    }
+
+    private sealed class TestResourceReferenceResolver : IResourceReferenceResolver
+    {
+        private readonly ApplicationDbContext _context;
+        public TestResourceReferenceResolver(ApplicationDbContext context) => _context = context;
+
+        public async Task<Guid?> GetWorkspaceIdAsync(Guid resourceId, string resourceType, CancellationToken ct)
+        {
+            if (resourceType == ResourceTypes.BoardItem)
+            {
+                var item = await _context.BoardItems.FindAsync([resourceId], ct);
+                return item?.WorkspaceId;
+            }
+            return null;
+        }
+
+        public async Task<bool> ExistsAsync(Guid resourceId, string resourceType, CancellationToken ct)
+            => (await GetWorkspaceIdAsync(resourceId, resourceType, ct)).HasValue;
+
+        public async Task<AccountContextSnapshot?> GetAccountContextAsync(Guid resourceId, string resourceType, CancellationToken ct)
+        {
+            if (resourceType == ResourceTypes.BoardItem)
+            {
+                var item = await _context.BoardItems.FindAsync([resourceId], ct);
+                if (item is null) return null;
+                return new AccountContextSnapshot(item.AccountId, item.WorkspaceId);
+            }
+            return null;
+        }
     }
 
     private sealed class CapturingJobQueue : IJobQueue

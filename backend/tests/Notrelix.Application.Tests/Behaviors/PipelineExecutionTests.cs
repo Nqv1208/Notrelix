@@ -9,7 +9,6 @@ using Notrelix.Application.Common.Behaviors;
 using Notrelix.Application.Common.CQRS;
 using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Common.Security;
-using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.SharedKernel;
 using ValidationException = Notrelix.Application.Common.Exceptions.ValidationException;
@@ -92,14 +91,6 @@ public class PipelineExecutionTests
         return service;
     }
 
-    private static Mock<IWorkspacePermissionService> CreateMockWorkspacePermissionService(bool canView = true)
-    {
-        var service = new Mock<IWorkspacePermissionService>();
-        service.Setup(x => x.CanViewWorkspaceAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(canView);
-        return service;
-    }
-
     private static Mock<IIdempotencyStore> CreateMockIdempotencyStore(bool lockAcquired = true)
     {
         var store = new Mock<IIdempotencyStore>();
@@ -123,7 +114,6 @@ public class PipelineExecutionTests
         var mockContext = CreateMockContext();
         var mockUser = CreateMockUser();
         var mockPermissionService = CreateMockPermissionService();
-        var mockWorkspaceService = CreateMockWorkspacePermissionService();
         var mockCache = CreateMockCacheService();
         var mockRealtime = CreateMockRealtimePublisher();
 
@@ -140,7 +130,7 @@ public class PipelineExecutionTests
             mockUser.Object, mockPermissionService.Object);
 
         var workspaceBehavior = new WorkspaceContextBehavior<ExecutableCommand, string>(
-            mockUser.Object, Mock.Of<ICurrentWorkspace>(), Mock.Of<IWorkspaceDbContext>(), mockWorkspaceService.Object);
+            Mock.Of<ICurrentTenantContext>(), Mock.Of<IWorkspaceAccessResolver>());
 
         var validationBehavior = new ValidationBehavior<ExecutableCommand, string>(
             Array.Empty<IValidator<ExecutableCommand>>());
@@ -613,11 +603,8 @@ public class PipelineExecutionTests
     [Fact]
     public async Task WorkspaceContextBehavior_EmptyWorkspaceId_ThrowsForbidden()
     {
-        var mockUser = CreateMockUser();
-        var mockWorkspaceService = CreateMockWorkspacePermissionService();
-
         var behavior = new WorkspaceContextBehavior<EmptyWorkspaceCommand, string>(
-            mockUser.Object, Mock.Of<ICurrentWorkspace>(), Mock.Of<IWorkspaceDbContext>(), mockWorkspaceService.Object);
+            Mock.Of<ICurrentTenantContext>(), Mock.Of<IWorkspaceAccessResolver>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("ok");
 

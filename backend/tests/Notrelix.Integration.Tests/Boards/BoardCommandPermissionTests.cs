@@ -43,12 +43,13 @@ public class BoardCommandPermissionTests : IAsyncLifetime
         var board = await SeedBoardAsync(context, ownerId, guestId, WorkspaceRole.Guest, addedUserId);
         var timeProvider = new Mock<IDateTimeProvider>();
         timeProvider.Setup(t => t.UtcNow).Returns(DateTimeOffset.UtcNow);
-        var evaluator = new PermissionService(context, timeProvider.Object);
+        var evaluator = new PermissionService(context, context, context, timeProvider.Object);
         var handler = new AddBoardMemberCommandHandler(
             context,
             CurrentUser(guestId),
             new WorkspacePermissionService(evaluator, context),
-            timeProvider.Object);
+            timeProvider.Object,
+            Mock.Of<IWorkspaceAccessResolver>());
 
         var act = () => handler.Handle(new AddBoardMemberCommand(board.Id, addedUserId, BoardRole.Member), CancellationToken.None);
 
@@ -66,13 +67,15 @@ public class BoardCommandPermissionTests : IAsyncLifetime
         var board = await SeedBoardAsync(context, ownerId, guestId, WorkspaceRole.Guest);
         var timeProvider = new Mock<IDateTimeProvider>();
         timeProvider.Setup(t => t.UtcNow).Returns(DateTimeOffset.UtcNow);
-        var evaluator = new PermissionService(context, timeProvider.Object);
+        var evaluator = new PermissionService(context, context, context, timeProvider.Object);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetAccount(Guid.NewGuid(), guestId);
         var handler = new CreateBoardFieldCommandHandler(
             context,
             CurrentUser(guestId),
             new WorkspacePermissionService(evaluator, context),
             timeProvider.Object,
-            new FakeCurrentAccount { AccountId = Guid.NewGuid() });
+            tenant);
 
         var act = () => handler.Handle(
             new CreateBoardFieldCommand(board.Id, "Risk", "select", "{}", null),

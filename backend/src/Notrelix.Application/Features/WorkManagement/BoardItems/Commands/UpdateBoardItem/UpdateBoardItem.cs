@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItem;
 
@@ -6,13 +7,13 @@ public record UpdateBoardItemCommand(Guid BoardItemId, string? Title, string? De
 
 public class UpdateBoardItemCommandHandler : IRequestHandler<UpdateBoardItemCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _timeProvider;
 
     public UpdateBoardItemCommandHandler(
-        IApplicationDbContext context,
+        IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IWorkspacePermissionService permissions,
         IDateTimeProvider timeProvider)

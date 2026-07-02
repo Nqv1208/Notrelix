@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.DeleteChecklistItem;
 
@@ -6,8 +7,8 @@ public record DeleteChecklistItemCommand(Guid ItemId) : ICommand<Result>, ITrans
 
 public class DeleteChecklistItemCommandHandler : IRequestHandler<DeleteChecklistItemCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
-    public DeleteChecklistItemCommandHandler(IApplicationDbContext context) => _context = context;
+    private readonly IWorkManagementDbContext _context;
+    public DeleteChecklistItemCommandHandler(IWorkManagementDbContext context) => _context = context;
 
     public async Task<Result> Handle(DeleteChecklistItemCommand request, CancellationToken ct)
     {

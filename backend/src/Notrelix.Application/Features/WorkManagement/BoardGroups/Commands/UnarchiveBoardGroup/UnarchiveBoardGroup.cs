@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UnarchiveBoardGroup;
 
@@ -6,13 +7,13 @@ public record UnarchiveBoardGroupCommand(Guid GroupId) : ICommand<Result>, ITran
 
 public class UnarchiveBoardGroupCommandHandler : IRequestHandler<UnarchiveBoardGroupCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspacePermissionService _permissions;
 
     public UnarchiveBoardGroupCommandHandler(
-        IApplicationDbContext context,
+        IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
         IWorkspacePermissionService permissions)

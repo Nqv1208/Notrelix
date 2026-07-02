@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Members.Commands.RemoveMember;
 
@@ -9,13 +10,13 @@ public record RemoveMemberCommand(
 
 public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkspaceDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspacePermissionService _permissions;
 
     public RemoveMemberCommandHandler(
-        IApplicationDbContext context,
+        IWorkspaceDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
         IWorkspacePermissionService permissions)

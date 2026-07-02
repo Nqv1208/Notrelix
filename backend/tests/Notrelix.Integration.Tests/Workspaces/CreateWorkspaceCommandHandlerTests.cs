@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Integration.Tests.Containers;
+using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Workspaces;
 
@@ -11,15 +12,15 @@ public class CreateWorkspaceCommandHandlerTests : IAsyncLifetime
     private readonly PostgresTestContainer _db;
     private DatabaseReset _reset = null!;
     private readonly Mock<ICurrentUser> _currentUserMock;
-    private readonly Mock<ICurrentAccount> _currentAccountMock;
+    private readonly FakeCurrentTenantContext _tenant;
     private readonly Mock<IDateTimeProvider> _dateTimeMock;
 
     public CreateWorkspaceCommandHandlerTests(PostgresTestContainer db)
     {
         _db = db;
         _currentUserMock = new Mock<ICurrentUser>();
-        _currentAccountMock = new Mock<ICurrentAccount>();
-        _currentAccountMock.Setup(a => a.AccountId).Returns(Guid.NewGuid());
+        _tenant = new FakeCurrentTenantContext();
+        _tenant.SetAccount(Guid.NewGuid(), null);
         _dateTimeMock = new Mock<IDateTimeProvider>();
         _dateTimeMock.Setup(d => d.UtcNow).Returns(DateTimeOffset.UtcNow);
     }
@@ -39,7 +40,7 @@ public class CreateWorkspaceCommandHandlerTests : IAsyncLifetime
         var userId = Guid.NewGuid();
         _currentUserMock.Setup(u => u.UserId).Returns(userId);
 
-        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object, _currentAccountMock.Object, _dateTimeMock.Object);
+        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object, _tenant, _dateTimeMock.Object);
         var command = new CreateWorkspaceCommand("Awesome Project", "A great software project", false);
 
         var result = await handler.Handle(command, CancellationToken.None);
@@ -66,7 +67,7 @@ public class CreateWorkspaceCommandHandlerTests : IAsyncLifetime
         var userId = Guid.NewGuid();
         _currentUserMock.Setup(u => u.UserId).Returns(userId);
 
-        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object, _currentAccountMock.Object, _dateTimeMock.Object);
+        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object, _tenant, _dateTimeMock.Object);
         var command = new CreateWorkspaceCommand("My Personal Tasks", null, true);
 
         var result = await handler.Handle(command, CancellationToken.None);
@@ -97,7 +98,7 @@ public class CreateWorkspaceCommandHandlerTests : IAsyncLifetime
         context.Workspaces.Add(existingWorkspace);
         await context.SaveChangesAsync();
 
-        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object, _currentAccountMock.Object, _dateTimeMock.Object);
+        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object, _tenant, _dateTimeMock.Object);
         var command = new CreateWorkspaceCommand("Awesome Project", "A duplicate project name", false);
 
         var result = await handler.Handle(command, CancellationToken.None);

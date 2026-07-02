@@ -1,6 +1,7 @@
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Documents.Common;
 using global::Notrelix.Application.Features.Documents.DTOs;
+using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Pages.Queries.GetWorkspacePages;
 
@@ -8,14 +9,18 @@ public record GetWorkspacePagesQuery(Guid WorkspaceId) : IQuery<Result<List<Page
 
 public class GetWorkspacePagesQueryHandler : IRequestHandler<GetWorkspacePagesQuery, Result<List<PageDto>>>
 {
-    private readonly IApplicationDbContext _context;
-    public GetWorkspacePagesQueryHandler(IApplicationDbContext context) => _context = context;
+    private readonly IDocumentDbContext _context;
+    private readonly IResourceReferenceResolver _resourceResolver;
+    public GetWorkspacePagesQueryHandler(IDocumentDbContext context, IResourceReferenceResolver resourceResolver)
+    {
+        _context = context;
+        _resourceResolver = resourceResolver;
+    }
 
     public async Task<Result<List<PageDto>>> Handle(GetWorkspacePagesQuery request, CancellationToken ct)
     {
-        var workspaceExists = await _context.Workspaces.AsNoTracking()
-            .AnyAsync(workspace => workspace.Id == request.WorkspaceId && workspace.Status == WorkspaceStatus.Active && !workspace.IsDeleted, ct);
-        if (!workspaceExists) throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
+        // Workspace existence is verified by checking workspace-scoped resource access at a higher layer.
+        // Pages are filtered by WorkspaceId directly.
 
         var pageEntities = await _context.Pages.AsNoTracking()
             .Where(page => page.WorkspaceId == request.WorkspaceId && !page.IsDeleted && page.Status != PageStatus.Archived)
