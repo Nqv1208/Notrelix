@@ -20,7 +20,7 @@ public sealed class CurrentTenantContext : ICurrentTenantContext
         if (_isSystemContext)
             throw new InvalidOperationException("Cannot require AccountId in system context.");
         return _accountId
-            ?? throw new InvalidOperationException("Account context has not been resolved. Ensure WorkspaceContextBehavior runs before the handler.");
+            ?? throw new InvalidOperationException("Account context has not been resolved. Ensure TenantBootstrapBehavior runs before the handler.");
     }
 
     public Guid RequireWorkspaceId()
@@ -28,7 +28,7 @@ public sealed class CurrentTenantContext : ICurrentTenantContext
         if (_isSystemContext)
             throw new InvalidOperationException("Cannot require WorkspaceId in system context.");
         return _workspaceId
-            ?? throw new InvalidOperationException("Workspace context has not been resolved. Ensure WorkspaceContextBehavior runs before the handler.");
+            ?? throw new InvalidOperationException("Workspace context has not been resolved. Ensure TenantBootstrapBehavior runs before the handler.");
     }
 
     public Guid RequireUserId()

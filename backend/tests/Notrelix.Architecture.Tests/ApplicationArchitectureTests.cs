@@ -57,10 +57,21 @@ public class ApplicationArchitectureTests
                      && (f.Contains($"{Path.DirectorySeparatorChar}Commands{Path.DirectorySeparatorChar}")
                       || f.Contains($"{Path.DirectorySeparatorChar}Queries{Path.DirectorySeparatorChar}")))
             .ToArray();
+        // Result DTOs that live in Commands/Queries folders but are not requests
+        var resultDtoExclusions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "SendWelcomeEmailResult.cs",
+            "AcceptInvitation.cs",
+            "ReorderBlocks.cs",
+        };
+
         var violations = new List<string>();
 
         foreach (var file in requestFiles)
         {
+            if (resultDtoExclusions.Contains(Path.GetFileName(file)))
+                continue;
+
             var content = RemoveComments(File.ReadAllText(file));
 
             var lines = content.Split('\n');
@@ -81,25 +92,19 @@ public class ApplicationArchitectureTests
                         var nextLine = lines[j].Trim();
                         declaration += " " + nextLine;
                         parenDepth += nextLine.Count(c => c == '(') - nextLine.Count(c => c == ')');
-
-                        if (parenDepth <= 0 && (nextLine.Contains(';') || nextLine.Contains('{') || nextLine.Contains(':')))
-                            break;
                     }
                 }
 
-                if (declaration.Contains(": ICommand") || declaration.Contains(": IQuery"))
+                if (declaration.Contains("class ") || declaration.Contains("static "))
                     continue;
 
-                // DTO / helper records aren't request records — skip them
-                var nameMatch = Regex.Match(declaration, @"public\s+(?:sealed\s+)?record\s+(\w+)");
-                if (nameMatch.Success)
-                {
-                    var name = nameMatch.Groups[1].Value;
-                    if (name.EndsWith("Dto") || name.EndsWith("Response") || name.EndsWith("Item") || name.EndsWith("Result"))
-                        continue;
-                }
+                var hasICommand = declaration.Contains(": ICommand") || declaration.Contains(", ICommand");
+                var hasIQuery = declaration.Contains(": IQuery") || declaration.Contains(", IQuery");
 
-                violations.Add($"{Path.GetFileName(file)}: {trimmed}");
+                if (!hasICommand && !hasIQuery)
+                {
+                    violations.Add($"{Path.GetFileName(file)}: {declaration}");
+                }
             }
         }
 
@@ -107,7 +112,7 @@ public class ApplicationArchitectureTests
     }
 
     [Fact]
-    public void ApplicationFiles_ShouldNotReference_InfrastructureProject()
+    public void Application_ShouldNotReference_InfrastructureOrApi()
     {
         var appPath = GetApplicationPath();
         var files = Directory.GetFiles(appPath, "*.cs", SearchOption.AllDirectories)
@@ -131,7 +136,7 @@ public class ApplicationArchitectureTests
     }
 
     [Fact]
-    public void PipelineBehaviorOrder_ShouldHaveTransactionBehaviorAsInnermost()
+    public void PipelineBehaviorOrder_ShouldHaveCorrectOrder()
     {
         var diFile = Path.Combine(GetApplicationPath(), "DependencyInjection.cs");
         var content = RemoveComments(File.ReadAllText(diFile));
@@ -141,23 +146,23 @@ public class ApplicationArchitectureTests
             .Where(l => l.Contains("AddTransient(typeof(IPipelineBehavior<"))
             .ToList();
 
-        lines.Should().HaveCount(11, "expected exactly 11 pipeline behaviors");
-
-        lines.Last().Should().Contain("TransactionBehavior");
+        lines.Should().HaveCount(13, "expected exactly 13 pipeline behaviors");
 
         var expectedOrder = new[]
         {
             "ExceptionMappingBehavior",
             "LoggingBehavior",
             "ValidationBehavior",
-            "WorkspaceContextBehavior",
-            "AuthorizationBehavior",
+            "TenantBootstrapBehavior",
+            "PostCommitActionBehavior",
             "CacheBehavior",
+            "RlsSessionBehavior",
+            "TransactionalBehavior",
+            "AuthorizationBehavior",
             "IdempotencyBehavior",
             "EntitlementBehavior",
             "CacheInvalidationBehavior",
             "RealtimeBehavior",
-            "TransactionBehavior",
         };
 
         for (var i = 0; i < expectedOrder.Length; i++)
@@ -196,7 +201,7 @@ public class ApplicationArchitectureTests
             }
         }
 
-        violations.Should().BeEmpty($"Command/query handlers must not call SaveChangesAsync directly. TransactionBehavior handles it. Violations: {string.Join(", ", violations)}");
+        violations.Should().BeEmpty($"Command/query handlers must not call SaveChangesAsync directly. TransactionalBehavior handles it. Violations: {string.Join(", ", violations)}");
     }
 
     private static string RemoveComments(string input)

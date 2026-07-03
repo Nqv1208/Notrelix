@@ -1,8 +1,10 @@
 using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Common.Context;
 using Notrelix.Infrastructure.Auth.Cookies;
 using Notrelix.Infrastructure.Auth.Jwt;
 using Notrelix.Infrastructure.Auth.Passwords;
 using Notrelix.Infrastructure.Identity.Services;
+using Notrelix.Infrastructure.Services;
 
 namespace Notrelix.Infrastructure;
 
@@ -25,6 +27,12 @@ public static class AuthRegistration
         services.AddScoped<ICurrentWorkspace, CurrentWorkspace>();
         services.AddScoped<ICurrentAccount, CurrentAccount>();
         services.AddScoped<ICurrentTenantContext, CurrentTenantContext>();
+
+        // Correlation context for events/outbox/logs.
+        services.AddScoped<ICorrelationContext, CurrentCorrelationContext>();
+
+        // Post-commit action queue for cache invalidation and realtime dispatch.
+        services.AddScoped<IPostCommitActionQueue, PostCommitActionQueue>();
 
         services.AddJwtBearer(configuration);
 

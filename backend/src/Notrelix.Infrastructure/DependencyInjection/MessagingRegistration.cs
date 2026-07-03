@@ -1,6 +1,8 @@
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Events;
+using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Infrastructure.Messaging;
+using Notrelix.Infrastructure.Messaging.Options;
 
 namespace Notrelix.Infrastructure;
 
@@ -21,6 +23,9 @@ public static class MessagingRegistration
 
         // Message deduplication store (Application abstraction -> Infrastructure implementation).
         services.AddScoped<IMessageDeduplicationStore, MessageDeduplicationStore>();
+
+        // Consumer pipeline executor — RLS + transaction + idempotency for integration event consumers.
+        services.AddScoped<IConsumerPipelineExecutor, ConsumerPipelineExecutor>();
 
         var transport = configuration["Messaging:Transport"] ?? "InMemory";
 
@@ -43,9 +48,62 @@ public static class MessagingRegistration
                 break;
 
             case "RabbitMQ":
-                throw new InvalidOperationException(
-                    "Messaging transport 'RabbitMQ' is declared but not implemented yet. " +
-                    "Use InMemory for current runtime or implement RabbitMQ adapter first.");
+                services.AddOptions<RabbitMqOptions>()
+                    .Bind(configuration.GetSection("Messaging:RabbitMQ"))
+                    .ValidateDataAnnotations()
+                    .ValidateOnStart();
+
+                services.AddMassTransit(cfg =>
+                {
+                    cfg.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("notrelix", false));
+                    cfg.AddConsumers(typeof(MessagingRegistration).Assembly);
+
+                    cfg.UsingRabbitMq((ctx, rbt) =>
+                    {
+                        var opts = ctx.GetRequiredService<IOptions<RabbitMqOptions>>().Value;
+
+                        var vhostPath = string.IsNullOrEmpty(opts.VHost) || opts.VHost == "/"
+                            ? ""
+                            : $"/{opts.VHost.TrimStart('/')}";
+                        var hostUri = new Uri($"rabbitmq://{opts.Host}:{opts.Port}{vhostPath}");
+
+                        rbt.Host(hostUri, h =>
+                        {
+                            h.Username(opts.Username);
+                            h.Password(opts.Password);
+                            if (opts.UseSsl) h.UseSsl();
+                        });
+
+                        rbt.UseMessageRetry(r =>
+                        {
+                            r.Exponential(
+                                retryLimit: opts.RetryCount,
+                                minInterval: TimeSpan.FromMilliseconds(opts.RetryIntervalMs),
+                                maxInterval: TimeSpan.FromSeconds(10),
+                                intervalDelta: TimeSpan.FromSeconds(2));
+                            r.Ignore<ArgumentException>();
+                            r.Ignore<DomainException>();
+                            r.Ignore<NotFoundException>();
+                            r.Ignore<ForbiddenException>();
+                            r.Ignore<BusinessRuleException>();
+                        });
+
+                        rbt.UseCircuitBreaker(cb =>
+                        {
+                            cb.TrackingPeriod = TimeSpan.FromMinutes(1);
+                            cb.TripThreshold = opts.CircuitBreakerTripThreshold;
+                            cb.ActiveThreshold = opts.CircuitBreakerActiveThreshold;
+                            cb.ResetInterval = TimeSpan.FromMinutes(opts.CircuitBreakerResetIntervalMinutes);
+                        });
+
+                        rbt.PrefetchCount = opts.PrefetchCount;
+
+                        rbt.ConfigureEndpoints(ctx);
+                    });
+                });
+
+                services.AddScoped<IIntegrationEventBus, IntegrationEventBus>();
+                break;
 
             case "Kafka":
                 throw new InvalidOperationException(

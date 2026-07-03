@@ -7,13 +7,14 @@ public sealed record WorkspaceMemberRemovedIntegrationEvent(
     Guid? WorkspaceId,
     Guid UserId,
     Guid? ActorUserId = null,
-    string? CorrelationId = null,
-    string? CausationId = null,
+    Guid CorrelationId = default,
+    Guid? CausationId = null,
     DateTimeOffset OccurredAt = default
 ) : IntegrationEvent(
     "workspace.member.removed",
     1,
     sourceEventId: null,
+    accountId: null,
     WorkspaceId,
     ActorUserId,
     CorrelationId,

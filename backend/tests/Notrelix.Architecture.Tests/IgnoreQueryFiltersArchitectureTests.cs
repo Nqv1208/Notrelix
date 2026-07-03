@@ -73,6 +73,9 @@ public class IgnoreQueryFiltersArchitectureTests
         ["ApplicationDbContextInitialiser.cs"] = new("ApplicationDbContextInitialiser.cs", AllowlistClassification.SystemCommand,
             "Database seed/reset must clear all tables regardless of query filters",
             "Keep as SystemCommand — infrastructure maintenance operation"),
+        ["WorkspaceAccessResolver.cs"] = new("WorkspaceAccessResolver.cs", AllowlistClassification.InfrastructureBootstrap,
+            "Bootstrap resolver bypasses EF query filter to resolve tenant before RLS context is set",
+            "Keep as InfrastructureBootstrap — resolver runs before RLS session is established"),
     };
 
     [Fact]

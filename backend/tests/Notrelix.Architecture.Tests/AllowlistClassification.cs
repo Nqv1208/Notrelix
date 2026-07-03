@@ -23,6 +23,9 @@ public enum AllowlistClassification
 
     /// <summary>Entry will be fixed as part of a migration that is not yet complete.</summary>
     MigrationPending,
+
+    /// <summary>Entry is an infrastructure bootstrap resolver that must bypass EF query filters to resolve tenant before RLS context is set.</summary>
+    InfrastructureBootstrap,
 }
 
 /// <summary>

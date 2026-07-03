@@ -20,14 +20,14 @@ public sealed class WorkspaceProvisioningConsumer : IConsumer<UserRegisteredInte
 
         var result = await _sender.Send(new ProvisionPersonalWorkspaceCommand(
             UserId: msg.UserId,
-            AccountId: msg.AccountId,
+            AccountId: msg.AccountId ?? Guid.Empty,
             Email: msg.Email,
             MessageId: msg.EventId,
             SourceEventId: msg.SourceEventId,
             SourceMessageName: msg.MessageName,
             SourceMessageVersion: msg.SchemaVersion,
-            CorrelationId: msg.CorrelationId,
-            CausationId: msg.CausationId,
+            CorrelationId: msg.CorrelationId.ToString(),
+            CausationId: msg.CausationId?.ToString(),
             OccurredAt: msg.OccurredAt
         ), context.CancellationToken);
 

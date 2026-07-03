@@ -5,7 +5,10 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Common.Abstractions.Rls;
 using Notrelix.Application.Common.Behaviors;
+using Notrelix.Application.Common.Context;
+using Notrelix.Application.Common.Pipeline;
 using Notrelix.Application.Common.CQRS;
 using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Common.Security;
@@ -102,6 +105,14 @@ public class PipelineExecutionTests
     private static Mock<IRedisCacheService> CreateMockCacheService() => new();
     private static Mock<IRealtimePublisher> CreateMockRealtimePublisher() => new();
 
+    private static Mock<IPostCommitActionQueue> CreateMockPostCommitQueue()
+    {
+        var queue = new Mock<IPostCommitActionQueue>();
+        queue.Setup(x => x.CacheInvalidations).Returns([]);
+        queue.Setup(x => x.RealtimeActions).Returns([]);
+        return queue;
+    }
+
     #endregion
 
     #region 1. Pipeline execution order (runtime proof)
@@ -116,9 +127,14 @@ public class PipelineExecutionTests
         var mockPermissionService = CreateMockPermissionService();
         var mockCache = CreateMockCacheService();
         var mockRealtime = CreateMockRealtimePublisher();
+        var mockPostCommit = CreateMockPostCommitQueue();
+        var rls = new Mock<IRlsSessionContext>();
+        var dbRls = new Mock<IApplicationDbContext>();
+        var database = new Mock<DatabaseFacade>(Mock.Of<DbContext>());
+        dbRls.Setup(x => x.Database).Returns(database.Object);
 
-        var transactionBehavior = new TransactionBehavior<ExecutableCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<TransactionBehavior<ExecutableCommand, string>>>());
+        var transactionBehavior = new TransactionalBehavior<ExecutableCommand, string>(
+            mockContext.Object, Mock.Of<ILogger<TransactionalBehavior<ExecutableCommand, string>>>());
 
         var realtimeBehavior = new RealtimeBehavior<ExecutableCommand, string>(
             mockRealtime.Object, Mock.Of<ILogger<RealtimeBehavior<ExecutableCommand, string>>>());
@@ -129,8 +145,8 @@ public class PipelineExecutionTests
         var authorizationBehavior = new AuthorizationBehavior<ExecutableCommand, string>(
             mockUser.Object, mockPermissionService.Object);
 
-        var workspaceBehavior = new WorkspaceContextBehavior<ExecutableCommand, string>(
-            Mock.Of<ICurrentTenantContext>(), Mock.Of<IWorkspaceAccessResolver>());
+        var workspaceBehavior = new TenantBootstrapBehavior<ExecutableCommand, string>(
+            Mock.Of<ICurrentTenantContext>(), Mock.Of<IWorkspaceAccessResolver>(), Mock.Of<IAccountAccessEvaluator>());
 
         var validationBehavior = new ValidationBehavior<ExecutableCommand, string>(
             Array.Empty<IValidator<ExecutableCommand>>());
@@ -141,14 +157,14 @@ public class PipelineExecutionTests
             return Task.FromResult("result");
         };
 
-        RequestHandlerDelegate<string> realtimeNext = ct =>
+        RequestHandlerDelegate<string> invalidationNext = ct =>
             transactionBehavior.Handle(new ExecutableCommand(), txNext, ct);
 
-        RequestHandlerDelegate<string> cacheNext = ct =>
-            realtimeBehavior.Handle(new ExecutableCommand(), realtimeNext, ct);
+        RequestHandlerDelegate<string> realtimeNext = ct =>
+            cacheInvalidationBehavior.Handle(new ExecutableCommand(), invalidationNext, ct);
 
         RequestHandlerDelegate<string> authNext = ct =>
-            cacheInvalidationBehavior.Handle(new ExecutableCommand(), cacheNext, ct);
+            realtimeBehavior.Handle(new ExecutableCommand(), realtimeNext, ct);
 
         RequestHandlerDelegate<string> wsNext = ct =>
             authorizationBehavior.Handle(new ExecutableCommand(), authNext, ct);
@@ -169,8 +185,8 @@ public class PipelineExecutionTests
         var mockContext = CreateMockContext();
         var executionOrder = new List<string>();
 
-        var behavior = new TransactionBehavior<ExecutableCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<TransactionBehavior<ExecutableCommand, string>>>());
+        var behavior = new TransactionalBehavior<ExecutableCommand, string>(
+            mockContext.Object, Mock.Of<ILogger<TransactionalBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = ct =>
         {
@@ -189,11 +205,11 @@ public class PipelineExecutionTests
     #region 2. Transaction success/failure/rollback
 
     [Fact]
-    public async Task TransactionBehavior_HandlerSucceeds_CommitsAndReturnsResponse()
+    public async Task TransactionalBehavior_HandlerSucceeds_CommitsAndReturnsResponse()
     {
         var mockContext = CreateMockContext();
-        var behavior = new TransactionBehavior<ExecutableCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<TransactionBehavior<ExecutableCommand, string>>>());
+        var behavior = new TransactionalBehavior<ExecutableCommand, string>(
+            mockContext.Object, Mock.Of<ILogger<TransactionalBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("success");
         var result = await behavior.Handle(new ExecutableCommand(), next, CancellationToken.None);
@@ -203,11 +219,11 @@ public class PipelineExecutionTests
     }
 
     [Fact]
-    public async Task TransactionBehavior_HandlerThrows_RollsBackAndDoesNotCommit()
+    public async Task TransactionalBehavior_HandlerThrows_RollsBackAndDoesNotCommit()
     {
         var mockContext = CreateMockContext();
-        var behavior = new TransactionBehavior<ExecutableCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<TransactionBehavior<ExecutableCommand, string>>>());
+        var behavior = new TransactionalBehavior<ExecutableCommand, string>(
+            mockContext.Object, Mock.Of<ILogger<TransactionalBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => throw new InvalidOperationException("handler failed");
 
@@ -218,11 +234,11 @@ public class PipelineExecutionTests
     }
 
     [Fact]
-    public async Task TransactionBehavior_SaveChangesFails_RollsBackAndDoesNotCommit()
+    public async Task TransactionalBehavior_SaveChangesFails_RollsBackAndDoesNotCommit()
     {
         var mockContext = CreateMockContext(throwOnSave: true);
-        var behavior = new TransactionBehavior<ExecutableCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<TransactionBehavior<ExecutableCommand, string>>>());
+        var behavior = new TransactionalBehavior<ExecutableCommand, string>(
+            mockContext.Object, Mock.Of<ILogger<TransactionalBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("ok");
 
@@ -233,11 +249,11 @@ public class PipelineExecutionTests
     }
 
     [Fact]
-    public async Task TransactionBehavior_NonTransactionalRequest_SkipsTransaction()
+    public async Task TransactionalBehavior_NonTransactionalRequest_SkipsTransaction()
     {
         var mockContext = CreateMockContext();
-        var behavior = new TransactionBehavior<NonTransactionalCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<TransactionBehavior<NonTransactionalCommand, string>>>());
+        var behavior = new TransactionalBehavior<NonTransactionalCommand, string>(
+            mockContext.Object, Mock.Of<ILogger<TransactionalBehavior<NonTransactionalCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("passthrough");
         var result = await behavior.Handle(new NonTransactionalCommand(), next, CancellationToken.None);
@@ -323,21 +339,70 @@ public class PipelineExecutionTests
     }
 
     [Fact]
+    public async Task PostCommitActionBehavior_ProcessesQueueAfterNext()
+    {
+        var queue = new Mock<IPostCommitActionQueue>();
+        queue.Setup(x => x.CacheInvalidations).Returns([new CacheInvalidationAction("test:*", null, null)]);
+        queue.Setup(x => x.RealtimeActions).Returns([]);
+
+        var behavior = new PostCommitActionBehavior<SideEffectCommand, string>(
+            queue.Object, Mock.Of<ILogger<PostCommitActionBehavior<SideEffectCommand, string>>>());
+
+        var handlerCalled = false;
+        RequestHandlerDelegate<string> next = ct =>
+        {
+            handlerCalled = true;
+            return Task.FromResult("ok");
+        };
+
+        var result = await behavior.Handle(new SideEffectCommand(), next, CancellationToken.None);
+
+        result.Should().Be("ok");
+        handlerCalled.Should().BeTrue();
+        queue.Verify(x => x.Clear(), Times.Once);
+    }
+
+    [Fact]
+    public async Task PostCommitActionBehavior_HandlerThrows_DoesNotClearQueue()
+    {
+        var queue = new Mock<IPostCommitActionQueue>();
+        queue.Setup(x => x.CacheInvalidations).Returns([]);
+        queue.Setup(x => x.RealtimeActions).Returns([]);
+
+        var behavior = new PostCommitActionBehavior<SideEffectCommand, string>(
+            queue.Object, Mock.Of<ILogger<PostCommitActionBehavior<SideEffectCommand, string>>>());
+
+        RequestHandlerDelegate<string> next = _ => throw new InvalidOperationException("fail");
+
+        Func<Task> act = () => behavior.Handle(new SideEffectCommand(), next, CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        queue.Verify(x => x.Clear(), Times.Never);
+    }
+
+    [Fact]
     public async Task FullPipeline_SideEffectsRunAfterTransaction()
     {
         var mockContext = CreateMockContext();
         var mockCache = CreateMockCacheService();
         var mockRealtime = CreateMockRealtimePublisher();
         var executionOrder = new List<string>();
+        var mockPostCommit = CreateMockPostCommitQueue();
 
-        var transactionBehavior = new TransactionBehavior<SideEffectCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<TransactionBehavior<SideEffectCommand, string>>>());
+        var transactionBehavior = new TransactionalBehavior<SideEffectCommand, string>(
+            mockContext.Object, Mock.Of<ILogger<TransactionalBehavior<SideEffectCommand, string>>>());
 
         var realtimeBehavior = new RealtimeBehavior<SideEffectCommand, string>(
             mockRealtime.Object, Mock.Of<ILogger<RealtimeBehavior<SideEffectCommand, string>>>());
 
         var cacheInvalidationBehavior = new CacheInvalidationBehavior<SideEffectCommand, string>(
             mockCache.Object, Mock.Of<ILogger<CacheInvalidationBehavior<SideEffectCommand, string>>>());
+
+        var postCommitBehavior = new PostCommitActionBehavior<SideEffectCommand, string>(
+            mockPostCommit.Object, Mock.Of<ILogger<PostCommitActionBehavior<SideEffectCommand, string>>>());
+
+        // Nesting order matches DI: CacheInvalidation (outer) → Realtime (inner) → Transactional → Handler
+        // After handler: inner runs first → PublishAsync, then outer → RemoveAsync
 
         RequestHandlerDelegate<string> txNext = ct =>
         {
@@ -348,10 +413,13 @@ public class PipelineExecutionTests
         RequestHandlerDelegate<string> realtimeNext = ct =>
             transactionBehavior.Handle(new SideEffectCommand(), txNext, ct);
 
-        RequestHandlerDelegate<string> cacheNext = ct =>
+        RequestHandlerDelegate<string> invalidationNext = ct =>
             realtimeBehavior.Handle(new SideEffectCommand(), realtimeNext, ct);
 
-        await cacheInvalidationBehavior.Handle(new SideEffectCommand(), cacheNext, CancellationToken.None);
+        RequestHandlerDelegate<string> postCommitNext = ct =>
+            cacheInvalidationBehavior.Handle(new SideEffectCommand(), invalidationNext, ct);
+
+        await postCommitBehavior.Handle(new SideEffectCommand(), postCommitNext, CancellationToken.None);
 
         mockContext.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         mockCache.Verify(x => x.RemoveAsync("test:*"), Times.Once);
@@ -364,6 +432,7 @@ public class PipelineExecutionTests
         var (mockContext, mockTransaction) = CreateMockContextPair();
         var mockCache = CreateMockCacheService();
         var mockRealtime = CreateMockRealtimePublisher();
+        var mockPostCommit = CreateMockPostCommitQueue();
         var callOrder = new List<string>();
 
         mockContext.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
@@ -382,8 +451,11 @@ public class PipelineExecutionTests
             .Callback(() => callOrder.Add("PublishAsync"))
             .Returns(Task.CompletedTask);
 
-        var transactionBehavior = new TransactionBehavior<SideEffectCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<TransactionBehavior<SideEffectCommand, string>>>());
+        // Nesting: CacheInvalidation(outer) → Realtime(inner) → Transactional → Handler
+        // After handler returns: Transaction(SaveChanges+Commit) → Realtime(Publish) → CacheInvalidation(Remove)
+
+        var transactionBehavior = new TransactionalBehavior<SideEffectCommand, string>(
+            mockContext.Object, Mock.Of<ILogger<TransactionalBehavior<SideEffectCommand, string>>>());
 
         var realtimeBehavior = new RealtimeBehavior<SideEffectCommand, string>(
             mockRealtime.Object, Mock.Of<ILogger<RealtimeBehavior<SideEffectCommand, string>>>());
@@ -400,10 +472,10 @@ public class PipelineExecutionTests
         RequestHandlerDelegate<string> realtimeNext = ct =>
             transactionBehavior.Handle(new SideEffectCommand(), txNext, ct);
 
-        RequestHandlerDelegate<string> cacheNext = ct =>
+        RequestHandlerDelegate<string> invalidationNext = ct =>
             realtimeBehavior.Handle(new SideEffectCommand(), realtimeNext, ct);
 
-        await cacheInvalidationBehavior.Handle(new SideEffectCommand(), cacheNext, CancellationToken.None);
+        await cacheInvalidationBehavior.Handle(new SideEffectCommand(), invalidationNext, CancellationToken.None);
 
         callOrder.Should().ContainInOrder("Handler", "SaveChanges", "CommitAsync", "PublishAsync", "RemoveAsync");
     }
@@ -432,8 +504,9 @@ public class PipelineExecutionTests
             .Callback(() => commitHappened.Should().BeTrue("commit must happen before realtime publish"))
             .Returns(Task.CompletedTask);
 
-        var transactionBehavior = new TransactionBehavior<SideEffectCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<TransactionBehavior<SideEffectCommand, string>>>());
+        // Nesting: CacheInvalidation(outer) → Realtime(inner) → Transactional → Handler
+        var transactionBehavior = new TransactionalBehavior<SideEffectCommand, string>(
+            mockContext.Object, Mock.Of<ILogger<TransactionalBehavior<SideEffectCommand, string>>>());
 
         var realtimeBehavior = new RealtimeBehavior<SideEffectCommand, string>(
             mockRealtime.Object, Mock.Of<ILogger<RealtimeBehavior<SideEffectCommand, string>>>());
@@ -446,10 +519,10 @@ public class PipelineExecutionTests
         RequestHandlerDelegate<string> realtimeNext = ct =>
             transactionBehavior.Handle(new SideEffectCommand(), txNext, ct);
 
-        RequestHandlerDelegate<string> cacheNext = ct =>
+        RequestHandlerDelegate<string> invalidationNext = ct =>
             realtimeBehavior.Handle(new SideEffectCommand(), realtimeNext, ct);
 
-        await cacheInvalidationBehavior.Handle(new SideEffectCommand(), cacheNext, CancellationToken.None);
+        await cacheInvalidationBehavior.Handle(new SideEffectCommand(), invalidationNext, CancellationToken.None);
     }
 
     #endregion
@@ -601,10 +674,10 @@ public class PipelineExecutionTests
     }
 
     [Fact]
-    public async Task WorkspaceContextBehavior_EmptyWorkspaceId_ThrowsForbidden()
+    public async Task TenantBootstrapBehavior_EmptyWorkspaceId_ThrowsForbidden()
     {
-        var behavior = new WorkspaceContextBehavior<EmptyWorkspaceCommand, string>(
-            Mock.Of<ICurrentTenantContext>(), Mock.Of<IWorkspaceAccessResolver>());
+        var behavior = new TenantBootstrapBehavior<EmptyWorkspaceCommand, string>(
+            Mock.Of<ICurrentTenantContext>(), Mock.Of<IWorkspaceAccessResolver>(), Mock.Of<IAccountAccessEvaluator>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("ok");
 
@@ -620,8 +693,8 @@ public class PipelineExecutionTests
         var validators = new IValidator<ValidationFailCommand>[] { new ValidationFailCommandValidator() };
 
         var validationBehavior = new ValidationBehavior<ValidationFailCommand, string>(validators);
-        var transactionBehavior = new TransactionBehavior<ValidationFailCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<TransactionBehavior<ValidationFailCommand, string>>>());
+        var transactionBehavior = new TransactionalBehavior<ValidationFailCommand, string>(
+            mockContext.Object, Mock.Of<ILogger<TransactionalBehavior<ValidationFailCommand, string>>>());
 
         RequestHandlerDelegate<string> txNext = _ => Task.FromResult("ok");
 

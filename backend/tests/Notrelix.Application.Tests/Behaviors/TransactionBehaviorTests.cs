@@ -4,12 +4,13 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Common.Abstractions.Rls;
 using Notrelix.Application.Common.Behaviors;
 using Notrelix.Application.Common.CQRS;
 
 namespace Notrelix.Application.Tests.Behaviors;
 
-public class TransactionBehaviorTests
+public class TransactionalBehaviorTests
 {
     public sealed record TestCommand : ITransactionalRequest;
     public sealed record TestResponse(bool Success);
@@ -26,8 +27,8 @@ public class TransactionBehaviorTests
         context.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
 
-        var behavior = new TransactionBehavior<TestCommand, TestResponse>(
-            context.Object, Mock.Of<ILogger<TransactionBehavior<TestCommand, TestResponse>>>());
+        var behavior = new TransactionalBehavior<TestCommand, TestResponse>(
+            context.Object, Mock.Of<ILogger<TransactionalBehavior<TestCommand, TestResponse>>>());
 
         var response = await behavior.Handle(new TestCommand(), ct => Task.FromResult(new TestResponse(true)), default);
 
@@ -47,8 +48,8 @@ public class TransactionBehaviorTests
             .ReturnsAsync(transaction.Object);
         context.Setup(x => x.Database).Returns(database.Object);
 
-        var behavior = new TransactionBehavior<TestCommand, TestResponse>(
-            context.Object, Mock.Of<ILogger<TransactionBehavior<TestCommand, TestResponse>>>());
+        var behavior = new TransactionalBehavior<TestCommand, TestResponse>(
+            context.Object, Mock.Of<ILogger<TransactionalBehavior<TestCommand, TestResponse>>>());
 
         Func<Task> act = () => behavior.Handle(
             new TestCommand(),
@@ -64,8 +65,8 @@ public class TransactionBehaviorTests
     public async Task Handle_WhenNonTransactionalRequest_SkipsTransaction()
     {
         var context = new Mock<IApplicationDbContext>();
-        var behavior = new TransactionBehavior<NonTransactionalCommand, TestResponse>(
-            context.Object, Mock.Of<ILogger<TransactionBehavior<NonTransactionalCommand, TestResponse>>>());
+        var behavior = new TransactionalBehavior<NonTransactionalCommand, TestResponse>(
+            context.Object, Mock.Of<ILogger<TransactionalBehavior<NonTransactionalCommand, TestResponse>>>());
 
         var response = await behavior.Handle(new NonTransactionalCommand(), ct => Task.FromResult(new TestResponse(true)), default);
 
@@ -74,4 +75,44 @@ public class TransactionBehaviorTests
     }
 
     public sealed record NonTransactionalCommand : IRequest<TestResponse>;
+}
+
+public class RlsSessionBehaviorTests
+{
+    [Fact]
+    public async Task Handle_WhenRlsIsNull_PassesThrough()
+    {
+        var handlerCalled = false;
+        var behavior = new RlsSessionBehavior<object, string>(
+            Mock.Of<IApplicationDbContext>(),
+            Mock.Of<ILogger<RlsSessionBehavior<object, string>>>());
+
+        var result = await behavior.Handle(new object(), ct =>
+        {
+            handlerCalled = true;
+            return Task.FromResult("ok");
+        }, default);
+
+        result.Should().Be("ok");
+        handlerCalled.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Handle_WhenRlsIsNotNull_AppliesSession()
+    {
+        var rls = new Mock<IRlsSessionContext>();
+        var db = new Mock<IApplicationDbContext>();
+        var database = new Mock<DatabaseFacade>(Mock.Of<DbContext>());
+        db.Setup(x => x.Database).Returns(database.Object);
+
+        var behavior = new RlsSessionBehavior<object, string>(
+            db.Object,
+            Mock.Of<ILogger<RlsSessionBehavior<object, string>>>(),
+            rls.Object);
+
+        var result = await behavior.Handle(new object(), ct => Task.FromResult("ok"), default);
+
+        result.Should().Be("ok");
+        rls.Verify(x => x.ApplyAsync(database.Object, It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

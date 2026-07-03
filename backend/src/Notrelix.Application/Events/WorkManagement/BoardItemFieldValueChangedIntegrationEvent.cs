@@ -11,13 +11,14 @@ public sealed record BoardItemFieldValueChangedIntegrationEvent(
     string? OldValue,
     string? NewValue,
     Guid? ActorUserId = null,
-    string? CorrelationId = null,
-    string? CausationId = null,
+    Guid CorrelationId = default,
+    Guid? CausationId = null,
     DateTimeOffset OccurredAt = default
 ) : IntegrationEvent(
     "board.item.field_value.changed",
     1,
     sourceEventId: null,
+    accountId: null,
     WorkspaceId,
     ActorUserId,
     CorrelationId,

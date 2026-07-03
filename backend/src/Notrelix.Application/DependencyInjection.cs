@@ -1,5 +1,6 @@
 using System.Reflection;
 using Notrelix.Application.Common.Behaviors;
+using Notrelix.Application.Common.Pipeline;
 using Notrelix.Application.Common.Security;
 
 namespace Microsoft.Extensions.DependencyInjection;
@@ -22,12 +23,18 @@ public static class DependencyInjection
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
         // Validation
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-        // Workspace context resolution
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(WorkspaceContextBehavior<,>));
+        // Tenant context bootstrap
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TenantBootstrapBehavior<,>));
+        // Post-commit: dispatch cache invalidations + realtime after commit succeeds
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(PostCommitActionBehavior<,>));
+        // Cache-first for ICacheableQuery (before RLS/TXN — cache hits skip DB entirely)
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CacheBehavior<,>));
+        // RLS session: set PostgreSQL session vars for DB-level security
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(RlsSessionBehavior<,>));
+        // Transactional: begin/commit transaction, SaveChanges for commands
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TransactionalBehavior<,>));
         // Authorization (IRequirePermission only)
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
-        // Cache-first for ICacheableQuery
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CacheBehavior<,>));
         // Idempotency for IIdempotentRequest
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
         // Entitlement check for IRequireEntitlement
@@ -36,8 +43,6 @@ public static class DependencyInjection
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CacheInvalidationBehavior<,>));
         // Realtime publish after successful handler
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(RealtimeBehavior<,>));
-        // Transaction wraps handler, runs SaveChanges before CacheInvalidation/Realtime run
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
 
         // FluentValidation - auto register all validators
         services.AddValidatorsFromAssembly(assembly);

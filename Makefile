@@ -23,6 +23,7 @@ DOTNET_RUN_API := dotnet run --project $(BACKEND_PROJECT) --no-launch-profile --
 
 .PHONY: help \
 	dev dev-up dev-down dev-restart dev-logs backend-logs dev-tools dev-clean dev-reset dev-reset-full \
+	messaging-up messaging-down \
 	db-up db-restore db-restore-force be-restore be-restore-force db-migrate db-seed db-init db-rls db-psql \
 	be-build be-test be-clean-nuget be-shell backend-image-build \
 	staging staging-up staging-down staging-logs \
@@ -42,6 +43,8 @@ help:
 	@echo "  make dev-reset           Delete dev volumes, restore, migrate, seed, start"
 	@echo "  make dev-reset-full      Delete dev volumes, force restore, migrate, seed, start"
 	@echo "  make dev-tools           Start tools profile, including pgAdmin"
+	@echo "  make messaging-up        Start RabbitMQ (messaging profile)"
+	@echo "  make messaging-down      Stop RabbitMQ"
 	@echo ""
 	@echo "Database:"
 	@echo "  make db-up               Start postgres/redis only"
@@ -85,6 +88,12 @@ backend-logs:
 
 dev-tools:
 	$(COMPOSE_DEV) $(ENV_DEV) --profile tools up -d
+
+messaging-up:
+	$(COMPOSE_DEV) $(ENV_DEV) --profile messaging up -d rabbitmq
+
+messaging-down:
+	$(COMPOSE_DEV) $(ENV_DEV) --profile messaging down
 
 dev-clean:
 	$(COMPOSE_DEV) $(ENV_DEV) down -v

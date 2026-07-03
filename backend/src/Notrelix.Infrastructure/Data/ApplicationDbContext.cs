@@ -15,34 +15,11 @@ using Notrelix.Application.Features.Billing.Abstractions;
 using Notrelix.Application.Features.Analytics.Abstractions;
 using Notrelix.Infrastructure.Data.Abstractions;
 
-// Account
-
-// Identity
 using Notrelix.Domain.Identity.Tokens;
-
-// Workspace
-
-// Documents
 using Notrelix.Domain.Documents.Versions;
-
-// WorkManagement
 using Notrelix.Domain.WorkManagement.Views;
-
-// Collaboration
-
-// Governance
-
-// Automation
-
-// Integrations
 using Notrelix.Domain.Integrations.Sync;
-
-// Billing
 using Notrelix.Domain.Billing.Usage;
-
-// Analytics
-
-// Infrastructure projections & records
 
 namespace Notrelix.Infrastructure.Data;
 

@@ -19,8 +19,8 @@ public sealed class UserEventMapper :
             DisplayName: domainEvent.DisplayName,
             ActorUserId: de.ActorUserId,
             SourceEventId: de.EventId,
-            CorrelationId: de.CorrelationId,
-            CausationId: de.CausationId ?? de.EventId.ToString(),
+            CorrelationId: Guid.TryParse(de.CorrelationId, out var corrId) ? corrId : Guid.Empty,
+            CausationId: Guid.TryParse(de.CausationId, out var causId) ? causId : de.EventId,
             OccurredAt: domainEvent.RegisteredAt
         );
     }
@@ -35,8 +35,8 @@ public sealed class UserEventMapper :
             DisplayName: domainEvent.Name,
             ActorUserId: de.ActorUserId,
             SourceEventId: de.EventId,
-            CorrelationId: de.CorrelationId,
-            CausationId: de.CausationId ?? de.EventId.ToString(),
+            CorrelationId: Guid.TryParse(de.CorrelationId, out var corrId) ? corrId : Guid.Empty,
+            CausationId: Guid.TryParse(de.CausationId, out var causId) ? causId : de.EventId,
             OccurredAt: domainEvent.OccurredAt
         );
     }
@@ -47,8 +47,8 @@ public sealed class UserEventMapper :
         return new UserDeactivatedIntegrationEvent(
             domainEvent.UserId,
             domainEvent.DeactivatedBy,
-            de.CorrelationId,
-            de.CausationId,
+            Guid.TryParse(de.CorrelationId, out var corrId) ? corrId : Guid.Empty,
+            Guid.TryParse(de.CausationId, out var causId) ? causId : null,
             domainEvent.DeactivatedAt
         );
     }

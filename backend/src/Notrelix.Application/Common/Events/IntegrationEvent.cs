@@ -6,26 +6,29 @@ public abstract record IntegrationEvent : IIntegrationEvent
     public Guid? SourceEventId { get; }
     public string MessageName { get; }
     public int SchemaVersion { get; }
+    public Guid? AccountId { get; }
     public Guid? WorkspaceId { get; }
     public Guid? ActorUserId { get; }
-    public string? CorrelationId { get; }
-    public string? CausationId { get; }
+    public Guid CorrelationId { get; }
+    public Guid? CausationId { get; }
     public DateTimeOffset OccurredAt { get; }
 
     protected IntegrationEvent(
         string messageName,
         int schemaVersion,
         Guid? sourceEventId = null,
+        Guid? accountId = null,
         Guid? workspaceId = null,
         Guid? actorUserId = null,
-        string? correlationId = null,
-        string? causationId = null,
+        Guid correlationId = default,
+        Guid? causationId = null,
         DateTimeOffset? occurredAt = null)
     {
         EventId = Guid.CreateVersion7();
         MessageName = messageName;
         SchemaVersion = schemaVersion;
         SourceEventId = sourceEventId;
+        AccountId = accountId;
         WorkspaceId = workspaceId;
         ActorUserId = actorUserId;
         CorrelationId = correlationId;

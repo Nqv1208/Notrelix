@@ -27,6 +27,7 @@ public sealed class WorkspaceAccessResolver : IWorkspaceAccessResolver
     {
         // Load workspace from DB — single source of truth for AccountId
         var workspace = await _context.Workspaces
+            .IgnoreQueryFilters()
             .Where(w => w.Id == workspaceId)
             .Select(w => new { w.AccountId, w.Status })
             .FirstOrDefaultAsync(ct);

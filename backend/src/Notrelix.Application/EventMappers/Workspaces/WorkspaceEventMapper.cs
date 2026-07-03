@@ -15,7 +15,7 @@ public sealed class WorkspaceEventMapper :
             domainEvent.Slug,
             domainEvent.CreatedBy,
             ((IDomainEvent)domainEvent).ActorUserId,
-            null,
+            default,
             null,
             domainEvent.OccurredAt
         );
@@ -28,7 +28,7 @@ public sealed class WorkspaceEventMapper :
             domainEvent.UserId,
             domainEvent.Role.ToString(),
             ((IDomainEvent)domainEvent).ActorUserId,
-            null,
+            default,
             null,
             domainEvent.OccurredAt
         );
@@ -40,7 +40,7 @@ public sealed class WorkspaceEventMapper :
             domainEvent.WorkspaceId,
             domainEvent.UserId,
             ((IDomainEvent)domainEvent).ActorUserId,
-            null,
+            default,
             null,
             domainEvent.OccurredAt
         );
