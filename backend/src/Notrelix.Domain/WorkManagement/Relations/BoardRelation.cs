@@ -9,7 +9,7 @@ public class BoardRelation : AggregateRoot, IWorkspaceScoped
     public Guid? SourceFieldId { get; private set; }
     public Guid? TargetFieldId { get; private set; }
     public BoardRelationType RelationType { get; private set; } = BoardRelationType.ConnectBoards;
-    public BoardRelationDirection Direction { get; private set; } = BoardRelationDirection.TwoWay;
+    public RelationDirection Direction { get; private set; } = RelationDirection.TwoWay;
     public BoardRelationSyncMode SyncMode { get; private set; } = BoardRelationSyncMode.Manual;
     public BoardRelationStatus Status { get; private set; } = BoardRelationStatus.Active;
     public string ConfigJson { get; private set; } = "{}";
@@ -26,7 +26,7 @@ public class BoardRelation : AggregateRoot, IWorkspaceScoped
         Guid createdBy,
         DateTimeOffset createdAt,
         BoardRelationType relationType = BoardRelationType.ConnectBoards,
-        BoardRelationDirection direction = BoardRelationDirection.TwoWay,
+        RelationDirection direction = RelationDirection.TwoWay,
         BoardRelationSyncMode syncMode = BoardRelationSyncMode.Manual,
         string? configJson = null)
     {

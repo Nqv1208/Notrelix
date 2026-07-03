@@ -66,7 +66,7 @@ public static class EndpointRouteBuilderExtensions
         app.MapLabels();
 
         // Collaboration
-        app.RegisterCardActivityEndpoints();
+        app.RegisterBoardItemActivityEndpoints();
         app.MapAttachmentsEndpoints();
         app.MapCommentsEndpoints();
 

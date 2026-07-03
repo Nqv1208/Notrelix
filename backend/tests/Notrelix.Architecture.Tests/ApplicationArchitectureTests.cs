@@ -183,7 +183,6 @@ public class ApplicationArchitectureTests
 
         var allowedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            "MemberInvitedEventHandler.cs",
             "N8nAutomationEventHandlers.cs",
         };
 

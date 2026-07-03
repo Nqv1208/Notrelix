@@ -11,13 +11,13 @@ public static class CreateAttachmentEndpoint
         group.MapPost("/", HandleAsync)
             .WithName("Collaboration.Attachments.Create")
             .WithTags("Collaboration.Attachments")
-            .WithSummary("Register card attachment metadata");
+            .WithSummary("Register board item attachment metadata");
         return group;
     }
 
-    private static async Task<IResult> HandleAsync(Guid cardId, CreateBoardItemAttachmentRequest body, ISender sender)
+    private static async Task<IResult> HandleAsync(Guid boardItemId, CreateBoardItemAttachmentRequest body, ISender sender)
     {
-        var result = await sender.Send(new CreateBoardItemAttachmentCommand(cardId, body.Filename, body.Url, body.SizeBytes, body.ContentType, body.Source));
+        var result = await sender.Send(new CreateBoardItemAttachmentCommand(boardItemId, body.Filename, body.Url, body.SizeBytes, body.ContentType, body.Source));
         return result.ToCreatedResult();
     }
 }

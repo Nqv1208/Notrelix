@@ -2,20 +2,20 @@ namespace Notrelix.Domain.Common.Constants;
 
 public static class SubjectTypes
 {
-    public const string User = "identity.user";
-    public const string UserSession = "identity.user_session";
-    public const string Workspace = "workspace.workspace";
-    public const string WorkspaceMember = "workspace.workspace_member";
-    public const string Board = "work.board";
-    public const string BoardItem = "work.board_item";
-    public const string Page = "docs.page";
-    public const string Block = "docs.block";
-    public const string Comment = "collab.comment";
+    public const string User = AggregateTypes.User;
+    public const string UserSession = AggregateTypes.UserSession;
+    public const string Workspace = AggregateTypes.Workspace;
+    public const string WorkspaceMember = AggregateTypes.WorkspaceMember;
+    public const string Board = AggregateTypes.Board;
+    public const string BoardItem = AggregateTypes.BoardItem;
+    public const string Page = AggregateTypes.Page;
+    public const string Block = AggregateTypes.Block;
+    public const string Comment = AggregateTypes.Comment;
     public const string Mention = "collab.mention";
     public const string Reaction = "collab.reaction";
-    public const string NotificationItem = "notifications.notification_item";
+    public const string NotificationItem = AggregateTypes.NotificationItem;
     public const string EmailOutbox = "notifications.email_outbox";
-    public const string Subscription = "billing.subscription";
-    public const string AutomationRule = "automation.automation_rule";
-    public const string IntegrationConnection = "integration.integration_connection";
+    public const string Subscription = AggregateTypes.Subscription;
+    public const string AutomationRule = AggregateTypes.AutomationRule;
+    public const string IntegrationConnection = AggregateTypes.IntegrationConnection;
 }

@@ -5,12 +5,12 @@ namespace Notrelix.API.Endpoints.Collaboration.Comments.Queries;
 
 public static class GetCommentsEndpoint
 {
-    public static IEndpointRouteBuilder MapGetCardComments(this IEndpointRouteBuilder group)
+    public static IEndpointRouteBuilder MapGetBoardItemComments(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", GetCardCommentsAsync)
-            .WithName("Collaboration.Comments.GetCardComments")
+        group.MapGet("/", GetBoardItemCommentsAsync)
+            .WithName("Collaboration.Comments.GetBoardItemComments")
             .WithTags("Collaboration.Comments")
-            .WithSummary("Get comments for a card");
+            .WithSummary("Get comments for a board item");
         return group;
     }
 
@@ -23,9 +23,9 @@ public static class GetCommentsEndpoint
         return group;
     }
 
-    private static async Task<IResult> GetCardCommentsAsync(Guid cardId, ISender sender)
+    private static async Task<IResult> GetBoardItemCommentsAsync(Guid boardItemId, ISender sender)
     {
-        var result = await sender.Send(new GetCommentsQuery(Enum.Parse<ResourceType>("Card", ignoreCase: true), cardId));
+        var result = await sender.Send(new GetCommentsQuery(Enum.Parse<ResourceType>("BoardItem", ignoreCase: true), boardItemId));
         return result.ToApiResult();
     }
 

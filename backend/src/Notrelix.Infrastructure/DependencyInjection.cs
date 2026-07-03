@@ -13,7 +13,6 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         services.AddPersistence(configuration);
-        services.AddReadModels(configuration);
         services.AddMessaging(configuration);
         services.AddBackgroundJobs(configuration);
         services.AddCaching(configuration);
@@ -25,8 +24,6 @@ public static class DependencyInjection
         services.AddRealtime(configuration);
         services.AddIntegrations(configuration);
         services.AddBilling(configuration);
-        services.AddSearch(configuration);
-        services.AddReporting(configuration);
         services.AddOperations(configuration);
         services.AddObservability(configuration);
 

@@ -4,15 +4,15 @@ namespace Notrelix.API.Endpoints.Collaboration.Activity;
 
 public static class MapActivityEndpoints
 {
-    public static IEndpointRouteBuilder RegisterCardActivityEndpoints(this IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder RegisterBoardItemActivityEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app
-            .MapGroup("/api/v1/cards/{cardId:guid}/activity")
+            .MapGroup("/api/v1/board-items/{boardItemId:guid}/activity")
             .WithTags("Collaboration.Activity")
             .RequireAuthorization()
             .WithOpenApi();
 
-        group.MapGetCardActivity();
+        group.MapGetBoardItemActivity();
 
         return app;
     }

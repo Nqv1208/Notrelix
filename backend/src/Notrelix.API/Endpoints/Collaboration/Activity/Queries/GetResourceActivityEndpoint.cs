@@ -5,18 +5,18 @@ namespace Notrelix.API.Endpoints.Collaboration.Activity.Queries;
 
 public static class GetResourceActivityEndpoint
 {
-    public static IEndpointRouteBuilder MapGetCardActivity(this IEndpointRouteBuilder group)
+    public static IEndpointRouteBuilder MapGetBoardItemActivity(this IEndpointRouteBuilder group)
     {
         group.MapGet("/", HandleAsync)
-            .WithName("Collaboration.Activity.GetCardActivity")
+            .WithName("Collaboration.Activity.GetBoardItemActivity")
             .WithTags("Collaboration.Activity")
-            .WithSummary("Get activity log for a card");
+            .WithSummary("Get activity log for a board item");
         return group;
     }
 
-    private static async Task<IResult> HandleAsync(Guid cardId, ISender sender, int page = 1, int pageSize = 20)
+    private static async Task<IResult> HandleAsync(Guid boardItemId, ISender sender, int page = 1, int pageSize = 20)
     {
-        var result = await sender.Send(new GetResourceActivityQuery(Enum.Parse<ResourceType>("Card", ignoreCase: true), cardId, page, pageSize));
+        var result = await sender.Send(new GetResourceActivityQuery(Enum.Parse<ResourceType>("BoardItem", ignoreCase: true), boardItemId, page, pageSize));
         return result.ToApiResult();
     }
 }

@@ -6,12 +6,12 @@ namespace Notrelix.API.Endpoints.Collaboration.Comments.Commands;
 
 public static class CreateCommentEndpoint
 {
-    public static IEndpointRouteBuilder MapCreateCardComment(this IEndpointRouteBuilder group)
+    public static IEndpointRouteBuilder MapCreateBoardItemComment(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/", CreateCardCommentAsync)
-            .WithName("Collaboration.Comments.CreateCardComment")
+        group.MapPost("/", CreateBoardItemCommentAsync)
+            .WithName("Collaboration.Comments.CreateBoardItemComment")
             .WithTags("Collaboration.Comments")
-            .WithSummary("Create a comment on a card");
+            .WithSummary("Create a comment on a board item");
         return group;
     }
 
@@ -24,9 +24,9 @@ public static class CreateCommentEndpoint
         return group;
     }
 
-    private static async Task<IResult> CreateCardCommentAsync(Guid cardId, CreateCommentRequest body, ISender sender)
+    private static async Task<IResult> CreateBoardItemCommentAsync(Guid boardItemId, CreateCommentRequest body, ISender sender)
     {
-        var result = await sender.Send(new CreateCommentCommand(Enum.Parse<ResourceType>("Card", ignoreCase: true), cardId, body.ContentMd, body.ParentCommentId));
+        var result = await sender.Send(new CreateCommentCommand(Enum.Parse<ResourceType>("BoardItem", ignoreCase: true), boardItemId, body.ContentMd, body.ParentCommentId));
         return result.ToCreatedResult();
     }
 
