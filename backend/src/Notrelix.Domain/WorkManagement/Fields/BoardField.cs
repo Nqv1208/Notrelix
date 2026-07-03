@@ -133,6 +133,18 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         AddDomainEvent(new BoardFieldClassificationUpdatedDomainEvent(AccountId, WorkspaceId, BoardId, Id, classification, isSensitive, updatedBy, updatedAt));
     }
 
+    public void UpdatePosition(FractionalIndex position, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotNull(position);
+
+        if (Position.Value == position.Value) return;
+
+        Position = position;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+    }
+
     public void UpdateFormula(bool isFormula, string? expression, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();

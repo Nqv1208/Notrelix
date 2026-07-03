@@ -155,6 +155,8 @@ public class CommandMarkerArchitectureTests
         ["SendWelcomeEmailCommand"] = new("SendWelcomeEmailCommand", AllowlistClassification.SystemCommand,
             "System command triggered by user registration — no workspace context exists yet (WorkspaceId => null)",
             "Keep as-is; system command with null workspace scope"),
+        ["DeleteBoardViewCommand"] = new("DeleteBoardViewCommand", AllowlistClassification.LegacyGap,
+            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
     };
 
     private static readonly Dictionary<string, AllowlistEntry> KnownMissingRequirePermission = new()
@@ -256,6 +258,11 @@ public class CommandMarkerArchitectureTests
             "Documents command missing permission marker", "Add IRequirePermission"),
         ["DeletePageCommand"] = new("DeletePageCommand", AllowlistClassification.LegacyGap,
             "Documents command missing permission marker", "Add IRequirePermission"),
+
+        ["DeleteAttachmentCommand"] = new("DeleteAttachmentCommand", AllowlistClassification.LegacyGap,
+            "Collaboration command missing permission marker", "Add IRequirePermission"),
+        ["DeleteBoardViewCommand"] = new("DeleteBoardViewCommand", AllowlistClassification.LegacyGap,
+            "WorkManagement command missing permission marker", "Add IRequirePermission"),
     };
 
     // --- Validation tests ---

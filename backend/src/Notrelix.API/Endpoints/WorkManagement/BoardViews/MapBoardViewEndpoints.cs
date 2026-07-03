@@ -17,6 +17,7 @@ public static class MapBoardViewEndpoints
         group.MapSaveBoardView();
         group.MapCreateBoardView();
         group.MapUpdateBoardViewConfig();
+        group.MapDeleteBoardView();
 
         return app;
     }

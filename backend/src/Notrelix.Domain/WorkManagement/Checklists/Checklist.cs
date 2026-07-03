@@ -101,6 +101,25 @@ public class Checklist : AggregateRoot, IWorkspaceScoped
         AddDomainEvent(new ChecklistItemRemovedDomainEvent(AccountId, WorkspaceId, Id, item.Id, updatedAt));
     }
 
+    public void Rename(string title, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotNullOrWhiteSpace(title);
+        var normalizedTitle = title.Trim();
+        if (Title == normalizedTitle) return;
+        Title = normalizedTitle;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+    }
+
+    public void UpdatePosition(FractionalIndex position, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotNull(position);
+        if (Position.Value == position.Value) return;
+        Position = position;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+    }
+
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;

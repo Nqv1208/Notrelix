@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
@@ -145,6 +146,10 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             {
                 options.Registrations.Clear();
             });
+
+            // Remove background dispatchers that use FromSqlRaw (PostgreSQL-specific)
+            // since the test host uses In-Memory provider.
+            services.RemoveAll<IHostedService>();
 
             // WorkspaceResolutionMiddleware requires IPermissionEvaluator.
             services.RemoveAll<IPermissionEvaluator>();

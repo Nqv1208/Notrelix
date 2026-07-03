@@ -21,7 +21,7 @@ public static class UpdateChecklistEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new UpdateChecklistCommand(checklistId), cancellationToken);
+        var result = await sender.Send(new UpdateChecklistCommand(checklistId, body.Title, body.Position), cancellationToken);
         return result.ToApiResult();
     }
 }

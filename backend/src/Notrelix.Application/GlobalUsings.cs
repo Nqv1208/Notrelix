@@ -4,7 +4,6 @@ global using FluentValidation;
 global using FluentValidation.Results;
 global using Microsoft.EntityFrameworkCore;
 global using Microsoft.EntityFrameworkCore.Infrastructure;
-global using Microsoft.Extensions.Configuration;
 global using Microsoft.Extensions.Hosting;
 global using Microsoft.Extensions.Logging;
 
@@ -59,4 +58,3 @@ global using Notrelix.Domain.WorkManagement.Boards.Events;
 global using Notrelix.Domain.WorkManagement.Items.Events;
 global using Notrelix.Domain.Workspaces.Workspaces.Events;
 global using Notrelix.Domain.Workspaces.Members.Events;
-global using Notrelix.Domain.Workspaces.Invitations.Events;

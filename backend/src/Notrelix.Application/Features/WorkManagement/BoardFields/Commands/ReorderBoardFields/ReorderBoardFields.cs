@@ -36,7 +36,7 @@ public class ReorderBoardFieldsCommandHandler : IRequestHandler<ReorderBoardFiel
                 .FirstOrDefaultAsync(value => value.Id == item.Id && value.BoardId == request.BoardId, ct);
             if (column is not null)
             {
-                column.UpdateSettings(column.Settings, _currentUser.UserId, now);
+                column.UpdatePosition(FractionalIndex.Create(item.NewPosition.ToString("F0")), _currentUser.UserId, now);
             }
         }
 

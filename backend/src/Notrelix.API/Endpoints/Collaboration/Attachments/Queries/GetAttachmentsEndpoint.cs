@@ -10,13 +10,13 @@ public static class GetAttachmentsEndpoint
         group.MapGet("/", HandleAsync)
             .WithName("Collaboration.Attachments.Get")
             .WithTags("Collaboration.Attachments")
-            .WithSummary("Get card attachments");
+            .WithSummary("Get board item attachments");
         return group;
     }
 
-    private static async Task<IResult> HandleAsync(Guid cardId, ISender sender)
+    private static async Task<IResult> HandleAsync(Guid boardItemId, ISender sender)
     {
-        var result = await sender.Send(new GetBoardItemAttachmentsQuery(cardId));
+        var result = await sender.Send(new GetBoardItemAttachmentsQuery(boardItemId));
         return result.ToApiResult();
     }
 }

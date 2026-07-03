@@ -159,6 +159,8 @@ public class WorkspaceNamespaceArchitectureTests
             "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
         ["DeleteChecklistItemCommand"] = new("DeleteChecklistItemCommand", AllowlistClassification.LegacyGap,
             "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
+        ["DeleteBoardViewCommand"] = new("DeleteBoardViewCommand", AllowlistClassification.LegacyGap,
+            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
     };
 
     private static readonly Dictionary<string, AllowlistEntry> DocumentsMissingWorkspaceRequest = new()
@@ -204,6 +206,8 @@ public class WorkspaceNamespaceArchitectureTests
         ["CreateCommentCommand"] = new("CreateCommentCommand", AllowlistClassification.LegacyGap,
             "Collaboration command missing workspace marker", "Add IWorkspaceRequest"),
         ["ResolveCommentCommand"] = new("ResolveCommentCommand", AllowlistClassification.LegacyGap,
+            "Collaboration command missing workspace marker", "Add IWorkspaceRequest"),
+        ["DeleteAttachmentCommand"] = new("DeleteAttachmentCommand", AllowlistClassification.LegacyGap,
             "Collaboration command missing workspace marker", "Add IWorkspaceRequest"),
     };
 
@@ -287,6 +291,8 @@ public class WorkspaceNamespaceArchitectureTests
             "WorkManagement command missing permission marker", "Add IRequirePermission"),
         ["DeleteChecklistItemCommand"] = new("DeleteChecklistItemCommand", AllowlistClassification.LegacyGap,
             "WorkManagement command missing permission marker", "Add IRequirePermission"),
+        ["DeleteBoardViewCommand"] = new("DeleteBoardViewCommand", AllowlistClassification.LegacyGap,
+            "WorkManagement command missing permission marker", "Add IRequirePermission"),
     };
 
     private static readonly Dictionary<string, AllowlistEntry> DocumentsMissingPermission = new()
@@ -332,6 +338,8 @@ public class WorkspaceNamespaceArchitectureTests
         ["CreateCommentCommand"] = new("CreateCommentCommand", AllowlistClassification.LegacyGap,
             "Collaboration command missing permission marker", "Add IRequirePermission"),
         ["ResolveCommentCommand"] = new("ResolveCommentCommand", AllowlistClassification.LegacyGap,
+            "Collaboration command missing permission marker", "Add IRequirePermission"),
+        ["DeleteAttachmentCommand"] = new("DeleteAttachmentCommand", AllowlistClassification.LegacyGap,
             "Collaboration command missing permission marker", "Add IRequirePermission"),
     };
 

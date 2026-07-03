@@ -32,7 +32,7 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         DbContextEventData eventData,
         InterceptionResult<int> result)
     {
-        CaptureAndHandle(eventData.Context);
+        CaptureAndHandle(eventData.Context as ApplicationDbContext);
         return result;
     }
 
@@ -41,7 +41,7 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
-        CaptureAndHandle(eventData.Context);
+        CaptureAndHandle(eventData.Context as ApplicationDbContext);
         return new ValueTask<InterceptionResult<int>>(result);
     }
 
@@ -72,7 +72,7 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         return result;
     }
 
-    private void CaptureAndHandle(DbContext? context)
+    private void CaptureAndHandle(ApplicationDbContext? context)
     {
         if (context is null) return;
 
@@ -112,7 +112,7 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         }
     }
 
-    private void WriteOutboxEntries(DbContext context, IDomainEvent domainEvent, string messageName, DateTimeOffset now)
+    private void WriteOutboxEntries(ApplicationDbContext context, IDomainEvent domainEvent, string messageName, DateTimeOffset now)
     {
         var eventLog = DomainEventLog.FromDomainEvent(domainEvent, messageName, now);
         context.Set<DomainEventLog>().Add(eventLog);
