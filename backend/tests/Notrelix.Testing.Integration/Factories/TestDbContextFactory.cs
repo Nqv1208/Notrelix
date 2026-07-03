@@ -9,8 +9,8 @@ namespace Notrelix.Testing.Integration.Factories;
 
 internal sealed class TestDbContext : ApplicationDbContext
 {
-    public TestDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentWorkspace? currentWorkspace = null)
-        : base(options, currentWorkspace)
+    public TestDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentTenantContext? tenant = null)
+        : base(options, tenant)
     {
     }
 
@@ -37,7 +37,7 @@ public static class TestDbContextFactory
         return new TestDbContext(optionsBuilder.Options);
     }
 
-    public static ApplicationDbContext CreateInMemoryContext(ICurrentWorkspace currentWorkspace, params IInterceptor[] interceptors)
+    public static ApplicationDbContext CreateInMemoryContext(ICurrentTenantContext tenant, params IInterceptor[] interceptors)
     {
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(databaseName: $"Notrelix-test-{Guid.NewGuid():N}")
@@ -48,6 +48,6 @@ public static class TestDbContextFactory
             optionsBuilder.AddInterceptors(interceptors);
         }
 
-        return new TestDbContext(optionsBuilder.Options, currentWorkspace);
+        return new TestDbContext(optionsBuilder.Options, tenant);
     }
 }

@@ -34,9 +34,9 @@ public class BoardCommandPermissionTests : IAsyncLifetime
     [Fact]
     public async Task AddBoardMember_ShouldRequireBoardManagePermission()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var ownerId = Guid.NewGuid();
         var guestId = Guid.NewGuid();
         var addedUserId = Guid.NewGuid();
@@ -59,23 +59,23 @@ public class BoardCommandPermissionTests : IAsyncLifetime
     [Fact]
     public async Task CreateBoardField_ShouldRequireBoardEditPermission()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var ownerId = Guid.NewGuid();
         var guestId = Guid.NewGuid();
         var board = await SeedBoardAsync(context, ownerId, guestId, WorkspaceRole.Guest);
         var timeProvider = new Mock<IDateTimeProvider>();
         timeProvider.Setup(t => t.UtcNow).Returns(DateTimeOffset.UtcNow);
         var evaluator = new PermissionService(context, context, context, timeProvider.Object);
-        var tenant = new FakeCurrentTenantContext();
-        tenant.SetAccount(Guid.NewGuid(), guestId);
+        var handlerTenant = new FakeCurrentTenantContext();
+        handlerTenant.SetAccount(Guid.NewGuid(), guestId);
         var handler = new CreateBoardFieldCommandHandler(
             context,
             CurrentUser(guestId),
             new WorkspacePermissionService(evaluator, context),
             timeProvider.Object,
-            tenant);
+            handlerTenant);
 
         var act = () => handler.Handle(
             new CreateBoardFieldCommand(board.Id, "Risk", "select", "{}", null),

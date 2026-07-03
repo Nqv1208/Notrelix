@@ -35,9 +35,9 @@ public class PermissionServiceTests : IAsyncLifetime
 
     private (ApplicationDbContext Context, PermissionService Service) CreateFixture()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        var context = _db.CreateContext(tenant);
         var clockMock = new Mock<IDateTimeProvider>();
         clockMock.Setup(c => c.UtcNow).Returns(DateTimeOffset.UtcNow);
         var service = new PermissionService(context, context, context, clockMock.Object);

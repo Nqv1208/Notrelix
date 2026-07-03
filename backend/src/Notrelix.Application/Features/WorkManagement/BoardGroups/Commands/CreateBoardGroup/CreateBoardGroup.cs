@@ -11,17 +11,20 @@ public class CreateBoardGroupCommandHandler : IRequestHandler<CreateBoardGroupCo
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspacePermissionService _permissions;
+    private readonly ICurrentTenantContext _tenant;
 
     public CreateBoardGroupCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
-        IWorkspacePermissionService permissions)
+        IWorkspacePermissionService permissions,
+        ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
         _permissions = permissions;
+        _tenant = tenant;
     }
 
     public async Task<Result<Guid>> Handle(CreateBoardGroupCommand request, CancellationToken ct)
@@ -37,7 +40,7 @@ public class CreateBoardGroupCommandHandler : IRequestHandler<CreateBoardGroupCo
             : FractionalIndex.Initial();
 
         var color = request.Color is not null ? Color.Create(request.Color) : Color.Create("#808080");
-        var list = BoardGroup.Create(Guid.Empty, board.WorkspaceId, request.BoardId, request.Title, color, position, _currentUser.UserId, _dateTimeProvider.UtcNow);
+        var list = BoardGroup.Create(_tenant.RequireAccountId(), board.WorkspaceId, request.BoardId, request.Title, color, position, _currentUser.UserId, _dateTimeProvider.UtcNow);
         _context.BoardGroups.Add(list);
         return Result<Guid>.Success(list.Id);
     }

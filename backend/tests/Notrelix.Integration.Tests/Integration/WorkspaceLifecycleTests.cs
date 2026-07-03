@@ -29,17 +29,17 @@ public class WorkspaceLifecycleTests : IAsyncLifetime
     [Fact]
     public async Task CreateWorkspace_WhenNonPersonal_StoresInDatabase()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var userId = Guid.CreateVersion7();
         var now = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
         var currentUser = MockCurrentUser(userId);
-        var tenant = new FakeCurrentTenantContext();
-        tenant.SetAccount(Guid.NewGuid(), userId);
+        var handlerTenant = new FakeCurrentTenantContext();
+        handlerTenant.SetAccount(Guid.NewGuid(), userId);
         var clock = MockClock(now);
 
-        var handler = new CreateWorkspaceCommandHandler(context, currentUser.Object, tenant, clock.Object);
+        var handler = new CreateWorkspaceCommandHandler(context, currentUser.Object, handlerTenant, clock.Object);
         var command = new CreateWorkspaceCommand("Integration Workspace", "Phase 3 test", false);
 
         var result = await handler.Handle(command, default);
@@ -56,17 +56,17 @@ public class WorkspaceLifecycleTests : IAsyncLifetime
     [Fact]
     public async Task CreateWorkspace_WhenPersonal_SetsIsPersonalFlag()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var userId = Guid.CreateVersion7();
         var now = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
 
-        var tenant = new FakeCurrentTenantContext();
-        tenant.SetAccount(Guid.NewGuid(), userId);
+        var handlerTenant = new FakeCurrentTenantContext();
+        handlerTenant.SetAccount(Guid.NewGuid(), userId);
 
         var handler = new CreateWorkspaceCommandHandler(
-            context, MockCurrentUser(userId).Object, tenant, MockClock(now).Object);
+            context, MockCurrentUser(userId).Object, handlerTenant, MockClock(now).Object);
         var command = new CreateWorkspaceCommand("Personal Tasks", null, true);
 
         var result = await handler.Handle(command, default);
@@ -81,17 +81,17 @@ public class WorkspaceLifecycleTests : IAsyncLifetime
     [Fact]
     public async Task WorkspaceWithMembers_CanQueryBothAggregates()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var userId = Guid.CreateVersion7();
         var now = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
 
-        var tenant = new FakeCurrentTenantContext();
-        tenant.SetAccount(Guid.NewGuid(), userId);
+        var handlerTenant = new FakeCurrentTenantContext();
+        handlerTenant.SetAccount(Guid.NewGuid(), userId);
 
         var handler = new CreateWorkspaceCommandHandler(
-            context, MockCurrentUser(userId).Object, tenant, MockClock(now).Object);
+            context, MockCurrentUser(userId).Object, handlerTenant, MockClock(now).Object);
         var command = new CreateWorkspaceCommand("Team Space", null, false);
 
         var result = await handler.Handle(command, default);

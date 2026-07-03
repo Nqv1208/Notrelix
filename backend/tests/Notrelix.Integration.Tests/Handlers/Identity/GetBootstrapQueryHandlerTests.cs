@@ -29,9 +29,9 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenUserNotFound_ReturnsFailure()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var handler = new GetBootstrapQueryHandler(context, context);
 
         var result = await handler.Handle(new GetBootstrapQuery(Guid.NewGuid()), CancellationToken.None);
@@ -43,9 +43,9 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenUserExists_ReturnsUserInfo()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hashedpassword", now);
         context.Users.Add(user);
@@ -64,9 +64,9 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenUserHasWorkspaceMembers_ReturnsWorkspaces()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var now = DateTimeOffset.UtcNow;
 
         var user = User.Create("test@example.com", "Test User", "hashedpassword", now);
@@ -94,9 +94,9 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenPersonalWorkspaceExists_ReturnsReadyStatus()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var now = DateTimeOffset.UtcNow;
 
         var user = User.Create("test@example.com", "Test User", "hashedpassword", now);
@@ -118,9 +118,9 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenPersonalWorkspaceMissing_ReturnsPendingStatus()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var now = DateTimeOffset.UtcNow;
 
         var user = User.Create("test@example.com", "Test User", "hashedpassword", now);

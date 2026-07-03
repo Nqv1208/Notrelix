@@ -31,9 +31,9 @@ public sealed class PostgresTestContainer : IAsyncLifetime
         {
             await _container.StartAsync();
 
-            var workspace = new FakeCurrentWorkspace();
-            workspace.SetWorkspace(Guid.Parse("00000000-0000-0000-0000-000000000001"), Guid.Parse("00000000-0000-0000-0000-000000000001"));
-            await using var context = CreateContext(workspace);
+            var tenant = new FakeCurrentTenantContext();
+            tenant.SetWorkspace(Guid.Parse("00000000-0000-0000-0000-000000000001"), Guid.Parse("00000000-0000-0000-0000-000000000001"), null);
+            await using var context = CreateContext(tenant);
             await context.Database.MigrateAsync();
         }
     }
@@ -45,7 +45,7 @@ public sealed class PostgresTestContainer : IAsyncLifetime
         await _container.DisposeAsync();
     }
 
-    public ApplicationDbContext CreateContext(ICurrentWorkspace? currentWorkspace = null, params IInterceptor[] interceptors)
+    public ApplicationDbContext CreateContext(ICurrentTenantContext? tenant = null, params IInterceptor[] interceptors)
     {
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseNpgsql(ConnectionString, npgOptions =>
@@ -62,8 +62,8 @@ public sealed class PostgresTestContainer : IAsyncLifetime
         }
 
         var options = optionsBuilder.Options;
-        return currentWorkspace is not null
-            ? new ApplicationDbContext(options, currentWorkspace)
+        return tenant is not null
+            ? new ApplicationDbContext(options, tenant)
             : new ApplicationDbContext(options);
     }
 

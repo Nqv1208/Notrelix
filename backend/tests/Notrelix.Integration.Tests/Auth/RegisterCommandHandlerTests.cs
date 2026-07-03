@@ -100,8 +100,8 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenValidAndDomainEventInterceptorEnabled_ShouldCreateUserAndSession()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
 
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         var eventTypeRegistry = new Mock<IEventTypeRegistry>();
@@ -114,7 +114,7 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
         dispatchPolicy.Setup(x => x.GetMode(It.IsAny<Type>()))
             .Returns(DomainEventDispatchMode.Inline);
         var interceptor = new DomainEventInterceptor(dateTimeProvider.Object, eventTypeRegistry.Object, integrationEventMapper.Object, mediator.Object, dispatchPolicy.Object);
-        await using var context = _db.CreateContext(currentWorkspace, interceptor);
+        await using var context = _db.CreateContext(tenant, interceptor);
 
         var passwordHasher = new Mock<IPasswordHasher>();
         passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");

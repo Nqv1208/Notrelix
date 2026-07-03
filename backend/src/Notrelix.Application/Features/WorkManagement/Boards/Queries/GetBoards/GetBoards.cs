@@ -13,20 +13,15 @@ public record GetBoardsQuery(Guid WorkspaceId) : IQuery<Result<List<BoardDto>>>,
 public class GetBoardsQueryHandler : IRequestHandler<GetBoardsQuery, Result<List<BoardDto>>>
 {
     private readonly IWorkManagementDbContext _context;
-    private readonly IWorkspaceAccessChecker _workspaceAccessChecker;
 
-    public GetBoardsQueryHandler(IWorkManagementDbContext context, IWorkspaceAccessChecker workspaceAccessChecker)
+    public GetBoardsQueryHandler(IWorkManagementDbContext context)
     {
         _context = context;
-        _workspaceAccessChecker = workspaceAccessChecker;
     }
 
     public async Task<Result<List<BoardDto>>> Handle(GetBoardsQuery request, CancellationToken ct)
     {
-        var workspaceCheck = await _workspaceAccessChecker.EnsureWorkspaceIsActiveAsync(request.WorkspaceId, ct);
-        if (!workspaceCheck.Succeeded)
-            throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
-
+        // WorkspaceContextBehavior already resolved workspace access and set tenant context
         var boards = await _context.Boards.AsNoTracking()
             .Where(b => b.WorkspaceId == request.WorkspaceId && !b.IsArchived)
             .ToListAsync(ct);

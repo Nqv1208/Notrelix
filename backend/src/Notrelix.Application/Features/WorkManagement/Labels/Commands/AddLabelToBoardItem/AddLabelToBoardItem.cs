@@ -10,12 +10,14 @@ public class AddLabelToBoardItemCommandHandler : IRequestHandler<AddLabelToBoard
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ICurrentTenantContext _tenant;
 
-    public AddLabelToBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public AddLabelToBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider, ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
+        _tenant = tenant;
     }
 
     public async Task<Result> Handle(AddLabelToBoardItemCommand request, CancellationToken ct)
@@ -33,7 +35,7 @@ public class AddLabelToBoardItemCommandHandler : IRequestHandler<AddLabelToBoard
         if (exists) return Result.Success();
 
         var link = BoardItemLabel.Create(
-            Guid.Empty,
+            _tenant.RequireAccountId(),
             card.WorkspaceId, label.BoardId, request.BoardItemId, request.LabelId,
             _currentUser.UserId, _dateTimeProvider.UtcNow);
         _context.BoardItemLabels.Add(link);

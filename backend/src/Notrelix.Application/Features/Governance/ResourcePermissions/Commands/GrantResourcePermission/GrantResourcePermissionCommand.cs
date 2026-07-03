@@ -29,17 +29,20 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IAuditService _auditService;
+    private readonly ICurrentTenantContext _tenant;
 
     public GrantResourcePermissionCommandHandler(
         IGovernanceDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
-        IAuditService auditService)
+        IAuditService auditService,
+        ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
         _auditService = auditService;
+        _tenant = tenant;
     }
 
     public async Task<Result<ResourcePermissionDto>> Handle(
@@ -79,7 +82,7 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
         }
 
         var permission = ResourcePermission.Grant(
-            Guid.Empty,
+            _tenant.RequireAccountId(),
             request.WorkspaceId,
             request.ResourceType,
             request.ResourceId,

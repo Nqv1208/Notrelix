@@ -33,9 +33,9 @@ public class WorkspacePermissionServiceTests : IAsyncLifetime
     [Fact]
     public async Task CanManageWorkspaceAsync_ShouldAllowOnlyOwner()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var ownerId = Guid.NewGuid();
         var adminId = Guid.NewGuid();
         var memberId = Guid.NewGuid();
@@ -59,9 +59,9 @@ public class WorkspacePermissionServiceTests : IAsyncLifetime
     [Fact]
     public async Task CanManageBoardAsync_ShouldAllowWorkspaceMembersAndBoardAdmins()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var ownerId = Guid.NewGuid();
         var workspaceMemberId = Guid.NewGuid();
         var boardAdminId = Guid.NewGuid();
@@ -90,9 +90,9 @@ public class WorkspacePermissionServiceTests : IAsyncLifetime
     [Fact]
     public async Task CanEditBoardAsync_ShouldAllowWorkspaceMembersButRejectGuests()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var ownerId = Guid.NewGuid();
         var memberId = Guid.NewGuid();
         var guestId = Guid.NewGuid();

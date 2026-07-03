@@ -29,8 +29,8 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
     {
         public TestApplicationDbContext(
             DbContextOptions<ApplicationDbContext> options,
-            ICurrentWorkspace? currentWorkspace)
-            : base(options, currentWorkspace)
+            ICurrentTenantContext? tenant)
+            : base(options, tenant)
         {
         }
 
@@ -102,19 +102,19 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                     .UseLoggerFactory(sp.GetRequiredService<ILoggerFactory>())
                     .Options);
 
-            services.AddScoped<ICurrentWorkspace>(_ =>
+            services.AddScoped<ICurrentTenantContext>(_ =>
             {
-                var workspace = new FakeCurrentWorkspace();
-                workspace.SetWorkspace(Guid.Parse("A0000000-0000-0000-0000-000000000001"), Guid.Parse("A0000000-0000-0000-0000-000000000001"));
-                return workspace;
+                var tenant = new FakeCurrentTenantContext();
+                tenant.SetWorkspace(Guid.Parse("A0000000-0000-0000-0000-000000000001"), Guid.Parse("A0000000-0000-0000-0000-000000000001"), null);
+                return tenant;
             });
 
             services.AddScoped<ApplicationDbContext>(sp =>
             {
                 var options = sp.GetRequiredService<DbContextOptions<ApplicationDbContext>>();
-                var currentWorkspace = sp.GetRequiredService<ICurrentWorkspace>();
+                var tenant = sp.GetRequiredService<ICurrentTenantContext>();
 
-                return new TestApplicationDbContext(options, currentWorkspace);
+                return new TestApplicationDbContext(options, tenant);
             });
 
             services.AddScoped<IApplicationDbContext>(sp =>

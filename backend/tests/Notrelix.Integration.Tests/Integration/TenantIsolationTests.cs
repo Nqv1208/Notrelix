@@ -26,7 +26,7 @@ public class TenantIsolationTests
     [Fact]
     public void AllWorkspaceScopedEntities_HaveWorkspaceQueryFilter()
     {
-        var model = BuildModel(new FakeCurrentWorkspace());
+        var model = BuildModel(new FakeCurrentTenantContext());
 
         var scopedTypes = typeof(IWorkspaceScoped).Assembly.GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract && typeof(IWorkspaceScoped).IsAssignableFrom(t))
@@ -48,9 +48,9 @@ public class TenantIsolationTests
     [Fact]
     public void QueryFilter_WhenWorkspaceSet_FiltersByWorkspaceId()
     {
-        var workspace = new FakeCurrentWorkspace();
-        workspace.SetWorkspace(Guid.NewGuid(), WorkspaceA);
-        var model = BuildModel(workspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetWorkspace(Guid.NewGuid(), WorkspaceA, null);
+        var model = BuildModel(tenant);
 
         var boardEntity = model.FindEntityType(typeof(Board));
         var filter = boardEntity!.GetQueryFilter()!;
@@ -75,9 +75,9 @@ public class TenantIsolationTests
     [Fact]
     public void QueryFilter_WhenSystemContext_RemovesWorkspaceConstraint()
     {
-        var workspace = new FakeCurrentWorkspace();
-        _ = workspace.EnterSystemContext();
-        var model = BuildModel(workspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        var model = BuildModel(tenant);
 
         var boardEntity = model.FindEntityType(typeof(Board));
         var filter = boardEntity!.GetQueryFilter();
@@ -92,7 +92,7 @@ public class TenantIsolationTests
     [Fact]
     public void NonWorkspaceScopedEntities_NoWorkspaceSqlInFilter()
     {
-        var model = BuildModel(new FakeCurrentWorkspace());
+        var model = BuildModel(new FakeCurrentTenantContext());
 
         var userEntity = model.FindEntityType(typeof(User));
         var filter = userEntity!.GetQueryFilter();
@@ -107,17 +107,17 @@ public class TenantIsolationTests
     [Fact]
     public void QueryFilter_WhenSwitchingWorkspace_ChangesFilter()
     {
-        var workspace = new FakeCurrentWorkspace();
+        var tenant = new FakeCurrentTenantContext();
 
-        workspace.SetWorkspace(Guid.NewGuid(), WorkspaceA);
-        var modelA = BuildModel(workspace);
+        tenant.SetWorkspace(Guid.NewGuid(), WorkspaceA, null);
+        var modelA = BuildModel(tenant);
         var boardA = modelA.FindEntityType(typeof(Board))!;
         var bodyA = Normalize(boardA.GetQueryFilter()!.Body.ToString());
         bodyA.Should().Contain("WorkspaceId", "model A should filter by workspace");
 
         var workspaceB = Guid.Parse("B0000000-0000-0000-0000-000000000002");
-        workspace.SetWorkspace(Guid.NewGuid(), workspaceB);
-        var modelB = BuildModel(workspace);
+        tenant.SetWorkspace(Guid.NewGuid(), workspaceB, null);
+        var modelB = BuildModel(tenant);
         var boardB = modelB.FindEntityType(typeof(Board))!;
         var bodyB = Normalize(boardB.GetQueryFilter()!.Body.ToString());
         bodyB.Should().Contain("WorkspaceId", "model B should filter by workspace");
@@ -126,9 +126,9 @@ public class TenantIsolationTests
     [Fact]
     public void MultipleBoundedContexts_AllHaveQueryFilters()
     {
-        var workspace = new FakeCurrentWorkspace();
-        workspace.SetWorkspace(Guid.NewGuid(), WorkspaceA);
-        var model = BuildModel(workspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetWorkspace(Guid.NewGuid(), WorkspaceA, null);
+        var model = BuildModel(tenant);
 
         var boardFilter = model.FindEntityType(typeof(Board))!.GetQueryFilter();
         var memberFilter = model.FindEntityType(typeof(WorkspaceMember))!.GetQueryFilter();
@@ -145,9 +145,9 @@ public class TenantIsolationTests
     [Fact]
     public void QueryFilter_SoftDeleteAndWorkspace_CombineCorrectly()
     {
-        var workspace = new FakeCurrentWorkspace();
-        workspace.SetWorkspace(Guid.NewGuid(), WorkspaceA);
-        var model = BuildModel(workspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetWorkspace(Guid.NewGuid(), WorkspaceA, null);
+        var model = BuildModel(tenant);
 
         var boardEntity = model.FindEntityType(typeof(Board))!;
         var filter = boardEntity.GetQueryFilter()!;
@@ -178,18 +178,18 @@ public class TenantIsolationTests
             .Replace("\t", "");
     }
 
-    private static IModel BuildModel(ICurrentWorkspace? workspace)
+    private static IModel BuildModel(ICurrentTenantContext? tenant)
     {
         var builder = new ModelBuilder();
-        using var context = new ModelTestDbContext(workspace);
+        using var context = new ModelTestDbContext(tenant);
         context.OnModelCreatingPublic(builder);
         return builder.FinalizeModel();
     }
 
     private sealed class ModelTestDbContext : ApplicationDbContext
     {
-        public ModelTestDbContext(ICurrentWorkspace? currentWorkspace)
-            : base(new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase("test").Options, currentWorkspace) { }
+        public ModelTestDbContext(ICurrentTenantContext? tenant)
+            : base(new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase("test").Options, tenant) { }
 
         public void OnModelCreatingPublic(ModelBuilder builder) => OnModelCreating(builder);
     }

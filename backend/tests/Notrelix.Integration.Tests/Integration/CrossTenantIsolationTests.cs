@@ -41,9 +41,9 @@ public class CrossTenantIsolationTests : IAsyncLifetime
 
     public Task DisposeAsync() => Task.CompletedTask;
 
-    private ApplicationDbContext CreateContext(ICurrentWorkspace workspace)
+    private ApplicationDbContext CreateContext(ICurrentTenantContext tenant)
     {
-        return _fixture.CreateContext(workspace);
+        return _fixture.CreateContext(tenant);
     }
 
     // ============================================================
@@ -56,9 +56,9 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         var wsA = TestIds.NewWorkspaceId();
         var wsB = TestIds.NewWorkspaceId();
 
-        var workspace = new FakeCurrentWorkspace();
-        using var _ = workspace.EnterSystemContext();
-        await using var context = CreateContext(workspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
 
         var workspaceA = Workspace.Create(Guid.NewGuid(), OwnerId, "Workspace A", "ws-a", FixedTime);
         var workspaceB = Workspace.Create(Guid.NewGuid(), OwnerId, "Workspace B", "ws-b", FixedTime);
@@ -71,7 +71,7 @@ public class CrossTenantIsolationTests : IAsyncLifetime
 
         await context.SaveChangesAsync();
 
-        workspace.SetWorkspace(AccountId, wsA);
+        tenant.SetWorkspace(AccountId, wsA, null);
 
         var boards = await context.Boards.ToListAsync();
         boards.Should().AllSatisfy(b => b.WorkspaceId.Should().Be(wsA));
@@ -84,9 +84,9 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         var wsA = TestIds.NewWorkspaceId();
         var wsB = TestIds.NewWorkspaceId();
 
-        var workspace = new FakeCurrentWorkspace();
-        using var _ = workspace.EnterSystemContext();
-        await using var context = CreateContext(workspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
 
         var workspaceA = Workspace.Create(Guid.NewGuid(), OwnerId, "Workspace A", "ws-a", FixedTime);
         var workspaceB = Workspace.Create(Guid.NewGuid(), OwnerId, "Workspace B", "ws-b", FixedTime);
@@ -99,7 +99,7 @@ public class CrossTenantIsolationTests : IAsyncLifetime
 
         await context.SaveChangesAsync();
 
-        workspace.SetWorkspace(AccountId, wsB);
+        tenant.SetWorkspace(AccountId, wsB, null);
 
         var boards = await context.Boards.ToListAsync();
         boards.Should().AllSatisfy(b => b.WorkspaceId.Should().Be(wsB));
@@ -112,9 +112,9 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         var wsA = TestIds.NewWorkspaceId();
         var wsB = TestIds.NewWorkspaceId();
 
-        var workspace = new FakeCurrentWorkspace();
-        using var _ = workspace.EnterSystemContext();
-        await using var context = CreateContext(workspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
 
         var workspaceA = Workspace.Create(Guid.NewGuid(), OwnerId, "Workspace A", "ws-a", FixedTime);
         var workspaceB = Workspace.Create(Guid.NewGuid(), OwnerId, "Workspace B", "ws-b", FixedTime);
@@ -127,12 +127,12 @@ public class CrossTenantIsolationTests : IAsyncLifetime
 
         await context.SaveChangesAsync();
 
-        workspace.SetWorkspace(AccountId, wsA);
+        tenant.SetWorkspace(AccountId, wsA, null);
         var boardsA = await context.Boards.ToListAsync();
         boardsA.Should().HaveCount(1);
         boardsA.Should().AllSatisfy(b => b.WorkspaceId.Should().Be(wsA));
 
-        workspace.SetWorkspace(AccountId, wsB);
+        tenant.SetWorkspace(AccountId, wsB, null);
         var boardsB = await context.Boards.ToListAsync();
         boardsB.Should().HaveCount(2);
         boardsB.Should().AllSatisfy(b => b.WorkspaceId.Should().Be(wsB));
@@ -144,22 +144,22 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         var wsA = TestIds.NewWorkspaceId();
         var wsB = TestIds.NewWorkspaceId();
 
-        var workspace = new FakeCurrentWorkspace();
-        using var _ = workspace.EnterSystemContext();
-        await using var context = CreateContext(workspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
 
         var boardA = new BoardBuilder()
             .WithAccountId(AccountId).WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build();
         context.Boards.Add(boardA);
         await context.SaveChangesAsync();
 
-        workspace.SetWorkspace(AccountId, wsA);
+        tenant.SetWorkspace(AccountId, wsA, null);
 
         var boardFromB = await context.Boards
             .FirstOrDefaultAsync(b => b.Id == boardA.Id);
         boardFromB.Should().NotBeNull("board A should be visible in workspace A");
 
-        workspace.SetWorkspace(AccountId, wsB);
+        tenant.SetWorkspace(AccountId, wsB, null);
 
         var boardFromOtherWorkspace = await context.Boards
             .FirstOrDefaultAsync(b => b.Id == boardA.Id);
@@ -175,15 +175,15 @@ public class CrossTenantIsolationTests : IAsyncLifetime
     {
         var wsA = TestIds.NewWorkspaceId();
 
-        var workspace = new FakeCurrentWorkspace();
-        using var _ = workspace.EnterSystemContext();
-        await using var context = CreateContext(workspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
 
         context.Boards.Add(new BoardBuilder()
             .WithAccountId(AccountId).WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board").WithCreatedAt(FixedTime).Build());
         await context.SaveChangesAsync();
 
-        workspace.Clear();
+        tenant.Clear();
 
         var boards = await context.Boards.ToListAsync();
         boards.Should().BeEmpty("no workspace context should block all workspace-scoped access");
@@ -195,9 +195,9 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         var wsA = TestIds.NewWorkspaceId();
         var wsB = TestIds.NewWorkspaceId();
 
-        var workspace = new FakeCurrentWorkspace();
-        using var _ = workspace.EnterSystemContext();
-        await using var context = CreateContext(workspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
 
         context.Boards.AddRange(
             new BoardBuilder().WithAccountId(AccountId).WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build(),
@@ -205,7 +205,7 @@ public class CrossTenantIsolationTests : IAsyncLifetime
 
         await context.SaveChangesAsync();
 
-        workspace.SetWorkspace(AccountId, wsA);
+        tenant.SetWorkspace(AccountId, wsA, null);
 
         var boardsInA = await context.Boards.ToListAsync();
         boardsInA.Should().HaveCount(1);
@@ -221,9 +221,9 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         var wsA = TestIds.NewWorkspaceId();
         var wsB = TestIds.NewWorkspaceId();
 
-        var workspace = new FakeCurrentWorkspace();
-        using var _ = workspace.EnterSystemContext();
-        await using var context = CreateContext(workspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
 
         context.Boards.AddRange(
             new BoardBuilder().WithAccountId(AccountId).WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build(),
@@ -238,9 +238,9 @@ public class CrossTenantIsolationTests : IAsyncLifetime
     [Fact]
     public async Task SystemContext_StillAppliesSoftDeleteFilter()
     {
-        var workspace = new FakeCurrentWorkspace();
-        using var _ = workspace.EnterSystemContext();
-        await using var context = CreateContext(workspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
 
         var board = new BoardBuilder()
             .WithAccountId(AccountId).WithWorkspaceId(TestIds.NewWorkspaceId()).WithCreatedBy(OwnerId).WithTitle("To Delete").WithCreatedAt(FixedTime).Build();
@@ -260,9 +260,9 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         var wsA = TestIds.NewWorkspaceId();
         var wsB = TestIds.NewWorkspaceId();
 
-        var workspace = new FakeCurrentWorkspace();
-        using var _ = workspace.EnterSystemContext();
-        await using var context = CreateContext(workspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
 
         var boardA = new BoardBuilder()
             .WithAccountId(AccountId).WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A Active").WithCreatedAt(FixedTime).Build();
@@ -277,7 +277,7 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         boardADeleted.SoftDelete(OwnerId, FixedTime);
         await context.SaveChangesAsync();
 
-        workspace.SetWorkspace(AccountId, wsA);
+        tenant.SetWorkspace(AccountId, wsA, null);
         var boards = await context.Boards.ToListAsync();
         boards.Should().HaveCount(1, "only active board in workspace A should be visible");
         boards.Should().Contain(b => b.Title == "Board A Active");
@@ -291,9 +291,9 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         var wsA = TestIds.NewWorkspaceId();
         var wsB = TestIds.NewWorkspaceId();
 
-        var workspace = new FakeCurrentWorkspace();
-        using var _ = workspace.EnterSystemContext();
-        await using var context = CreateContext(workspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
 
         var workspaceA = Workspace.Create(Guid.NewGuid(), OwnerId, "WS A", "ws-a", FixedTime);
         var workspaceB = Workspace.Create(Guid.NewGuid(), OwnerId, "WS B", "ws-b", FixedTime);
@@ -306,10 +306,10 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         context.Boards.AddRange(boardA, boardB);
         await context.SaveChangesAsync();
 
-        workspace.SetWorkspace(AccountId, wsA);
+        tenant.SetWorkspace(AccountId, wsA, null);
         var countA = await context.Boards.CountAsync();
 
-        workspace.SetWorkspace(AccountId, wsB);
+        tenant.SetWorkspace(AccountId, wsB, null);
         var countB = await context.Boards.CountAsync();
 
         countA.Should().Be(1, "workspace A should see 1 board");
@@ -319,15 +319,15 @@ public class CrossTenantIsolationTests : IAsyncLifetime
     [Fact]
     public async Task NonWorkspaceScopedEntities_AreNotAffectedByWorkspaceFilter()
     {
-        var workspace = new FakeCurrentWorkspace();
-        using var _ = workspace.EnterSystemContext();
-        await using var context = CreateContext(workspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
 
         var wsA = Workspace.Create(Guid.NewGuid(), OwnerId, "WS A", "ws-a", FixedTime);
         context.Workspaces.Add(wsA);
         await context.SaveChangesAsync();
 
-        workspace.SetWorkspace(AccountId, TestIds.NewWorkspaceId());
+        tenant.SetWorkspace(AccountId, TestIds.NewWorkspaceId(), null);
 
         var workspaces = await context.Workspaces.ToListAsync();
         workspaces.Should().HaveCount(1, "Workspace does not implement IWorkspaceScoped and should not be filtered by workspace");
@@ -339,9 +339,9 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         var wsA = TestIds.NewWorkspaceId();
         var wsB = TestIds.NewWorkspaceId();
 
-        var workspace = new FakeCurrentWorkspace();
-        using var _ = workspace.EnterSystemContext();
-        await using var context = CreateContext(workspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
 
         context.Boards.AddRange(
             new BoardBuilder().WithAccountId(AccountId).WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build(),
@@ -349,7 +349,7 @@ public class CrossTenantIsolationTests : IAsyncLifetime
 
         await context.SaveChangesAsync();
 
-        workspace.SetWorkspace(AccountId, wsA);
+        tenant.SetWorkspace(AccountId, wsA, null);
 
         var allBoards = await context.Boards.IgnoreQueryFilters().ToListAsync();
         allBoards.Should().HaveCount(2, "IgnoreQueryFilters should bypass workspace filter");

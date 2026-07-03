@@ -25,9 +25,13 @@ public class WorkspaceContextBehavior<TRequest, TResponse> : IPipelineBehavior<T
                 throw new ForbiddenException("Invalid workspace context.");
             }
 
+            // Workspace-scoped request requires authenticated user
+            var actorUserId = _tenant.UserId
+                ?? throw new UnauthorizedAccessException("Workspace-scoped request requires authenticated user.");
+
             // Resolve workspace access from DB — single source of truth for AccountId
             var snapshot = await _workspaceAccessResolver.ResolveAsync(
-                workspaceId, _tenant.UserId ?? Guid.Empty, cancellationToken);
+                workspaceId, actorUserId, cancellationToken);
 
             if (!snapshot.CanAccess)
             {

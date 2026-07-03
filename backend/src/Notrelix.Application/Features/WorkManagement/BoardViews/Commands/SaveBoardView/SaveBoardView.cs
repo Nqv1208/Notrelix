@@ -20,15 +20,18 @@ public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand,
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ICurrentTenantContext _tenant;
 
     public SaveBoardViewCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
+        _tenant = tenant;
     }
 
     private static ViewType MapViewModeToViewType(ViewMode viewMode) => viewMode switch
@@ -61,7 +64,7 @@ public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand,
         else
         {
             view = BoardView.Create(
-                Guid.Empty,
+                _tenant.RequireAccountId(),
                 request.WorkspaceId,
                 request.BoardId,
                 viewType.ToString(),

@@ -40,9 +40,9 @@ public class N8nAutomationTests : IAsyncLifetime
     [Fact]
     public async Task CardAssignedN8nAutomationHandler_ShouldCreateExecutionAndQueueDispatchJob()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var queue = new CapturingJobQueue();
         var ownerId = Guid.NewGuid();
         var assignedUserId = Guid.NewGuid();

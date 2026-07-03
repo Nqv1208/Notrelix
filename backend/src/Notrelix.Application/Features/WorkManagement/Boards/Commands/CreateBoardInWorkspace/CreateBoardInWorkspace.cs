@@ -23,28 +23,22 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
     private readonly ICurrentUser _currentUser;
     private readonly ICurrentTenantContext _tenant;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly IWorkspaceAccessChecker _workspaceAccessChecker;
 
     public CreateBoardInWorkspaceCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
         ICurrentTenantContext tenant,
-        IDateTimeProvider dateTimeProvider,
-        IWorkspaceAccessChecker workspaceAccessChecker)
+        IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
         _tenant = tenant;
         _dateTimeProvider = dateTimeProvider;
-        _workspaceAccessChecker = workspaceAccessChecker;
     }
 
     public async Task<Result<Guid>> Handle(CreateBoardInWorkspaceCommand request, CancellationToken ct)
     {
-        var workspaceCheck = await _workspaceAccessChecker.EnsureWorkspaceIsActiveAsync(request.WorkspaceId, ct);
-        if (!workspaceCheck.Succeeded)
-            throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
-
+        // WorkspaceContextBehavior already resolved workspace access and set tenant context
         var accountId = _tenant.RequireAccountId();
         var createdAt = _dateTimeProvider.UtcNow;
         var visibility = request.Visibility ?? BoardVisibility.Workspace;

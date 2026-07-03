@@ -29,9 +29,9 @@ public class BoardVisibilityDirectTests : IAsyncLifetime
     [Fact]
     public async Task SaveAndReadPrivateVisibility()
     {
-        var workspace = new FakeCurrentWorkspace();
-        workspace.EnterSystemContext();
-        await using var ctx = _db.CreateContext(workspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var ctx = _db.CreateContext(tenant);
 
         var board = Board.Create(
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
@@ -70,12 +70,12 @@ public class BoardVisibilityDirectTests : IAsyncLifetime
     [Fact]
     public async Task SaveAndReadPrivate_FreshContext()
     {
-        var workspace = new FakeCurrentWorkspace();
-        workspace.EnterSystemContext();
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
 
         Guid boardId;
         {
-            await using var ctx1 = _db.CreateContext(workspace);
+            await using var ctx1 = _db.CreateContext(tenant);
             var board = Board.Create(
                 Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
                 "Test", null, DateTimeOffset.UtcNow,
@@ -85,7 +85,7 @@ public class BoardVisibilityDirectTests : IAsyncLifetime
             await ctx1.SaveChangesAsync();
         }
 
-        await using var ctx2 = _db.CreateContext(workspace);
+        await using var ctx2 = _db.CreateContext(tenant);
 
         var entityType = ctx2.Model.FindEntityType(typeof(Board));
         var visibilityProp = entityType!.FindProperty(nameof(Board.Visibility));

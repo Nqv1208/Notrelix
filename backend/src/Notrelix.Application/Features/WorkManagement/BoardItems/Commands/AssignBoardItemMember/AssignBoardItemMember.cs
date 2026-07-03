@@ -19,17 +19,20 @@ public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardIt
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspaceAccessResolver _workspaceAccess;
+    private readonly ICurrentTenantContext _tenant;
 
     public AssignBoardItemMemberCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
-        IWorkspaceAccessResolver workspaceAccess)
+        IWorkspaceAccessResolver workspaceAccess,
+        ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
         _workspaceAccess = workspaceAccess;
+        _tenant = tenant;
     }
 
     public async Task<Result> Handle(AssignBoardItemMemberCommand request, CancellationToken ct)
@@ -47,7 +50,7 @@ public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardIt
         if (alreadyAssigned) return Result.Success();
 
         var member = BoardItemMember.Create(
-            Guid.Empty,
+            _tenant.RequireAccountId(),
             card.WorkspaceId,
             card.BoardId,
             card.Id,

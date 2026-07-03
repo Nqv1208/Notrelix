@@ -10,12 +10,14 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _timeProvider;
+    private readonly ICurrentTenantContext _tenant;
 
-    public DuplicateBoardGroupCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider)
+    public DuplicateBoardGroupCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider, ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
         _timeProvider = timeProvider;
+        _tenant = tenant;
     }
 
     public async Task<Result<Guid>> Handle(DuplicateBoardGroupCommand request, CancellationToken ct)
@@ -41,7 +43,8 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
 
         var now = _timeProvider.UtcNow;
 
-        var duplicate = BoardGroup.Create(Guid.Empty, board.WorkspaceId, source.BoardId, $"{source.Title} copy", source.Color, nextPosition, _currentUser.UserId, now);
+        var accountId = _tenant.RequireAccountId();
+        var duplicate = BoardGroup.Create(accountId, board.WorkspaceId, source.BoardId, $"{source.Title} copy", source.Color, nextPosition, _currentUser.UserId, now);
         _context.BoardGroups.Add(duplicate);
 
         var cards = await _context.BoardItems
@@ -52,16 +55,16 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
 
         foreach (var card in cards)
         {
-            _context.BoardItems.Add(CloneCard(card, duplicate.Id, board.Id, board.WorkspaceId, _currentUser.UserId, card.Name, card.Position, now));
+            _context.BoardItems.Add(CloneCard(card, accountId, duplicate.Id, board.Id, board.WorkspaceId, _currentUser.UserId, card.Name, card.Position, now));
         }
 
         return Result<Guid>.Success(duplicate.Id);
     }
 
-    internal static BoardItem CloneCard(BoardItem source, Guid groupId, Guid boardId, Guid workspaceId, Guid createdByUserId, string name, FractionalIndex position, DateTimeOffset createdAt)
+    internal static BoardItem CloneCard(BoardItem source, Guid accountId, Guid groupId, Guid boardId, Guid workspaceId, Guid createdByUserId, string name, FractionalIndex position, DateTimeOffset createdAt)
     {
         var copy = BoardItem.Create(
-            Guid.Empty,
+            accountId,
             workspaceId,
             boardId,
             groupId,

@@ -29,9 +29,9 @@ public class UpdateBoardCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_ShouldUpdateTitle()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -58,9 +58,9 @@ public class UpdateBoardCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenBoardNotFound_ShouldThrowNotFoundException()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
 
         var handler = new UpdateBoardCommandHandler(
             context, new FakeCurrentUser(),
@@ -74,9 +74,9 @@ public class UpdateBoardCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_ShouldUpdateDescriptionAndVisibility()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 

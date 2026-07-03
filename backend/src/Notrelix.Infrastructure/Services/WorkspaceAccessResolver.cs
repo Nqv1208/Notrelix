@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Security;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Workspaces.Workspaces;
 
@@ -32,9 +33,7 @@ public sealed class WorkspaceAccessResolver : IWorkspaceAccessResolver
 
         if (workspace is null)
         {
-            return new WorkspaceAccessSnapshot(
-                Guid.Empty, workspaceId, actorUserId,
-                CanAccess: false, IsWorkspaceActive: false);
+            throw new NotFoundException(nameof(Workspace), workspaceId);
         }
 
         var isActive = workspace.Status == WorkspaceStatus.Active;

@@ -16,12 +16,14 @@ public class CreateBlockCommandHandler : IRequestHandler<CreateBlockCommand, Res
     private readonly IDocumentDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ICurrentTenantContext _tenant;
 
-    public CreateBlockCommandHandler(IDocumentDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public CreateBlockCommandHandler(IDocumentDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider, ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
+        _tenant = tenant;
     }
 
     public async Task<Result<Guid>> Handle(CreateBlockCommand request, CancellationToken ct)
@@ -33,7 +35,7 @@ public class CreateBlockCommandHandler : IRequestHandler<CreateBlockCommand, Res
         var content = BlockContent.Create(JsonValue.Create(request.Properties ?? "{}"));
         var position = FractionalIndex.Create(request.Position);
 
-        var block = Block.Create(Guid.Empty, page.WorkspaceId, request.PageId, request.Type, content, position, _currentUser.UserId, _dateTimeProvider.UtcNow, parentId: request.ParentBlockId);
+        var block = Block.Create(_tenant.RequireAccountId(), page.WorkspaceId, request.PageId, request.Type, content, position, _currentUser.UserId, _dateTimeProvider.UtcNow, parentId: request.ParentBlockId);
         _context.Blocks.Add(block);
         return Result<Guid>.Success(block.Id);
     }

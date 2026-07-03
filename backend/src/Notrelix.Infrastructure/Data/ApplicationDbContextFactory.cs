@@ -12,22 +12,23 @@ namespace Notrelix.Infrastructure.Data
                 "Host=127.0.0.1;Port=5432;Database=notrelix_dev;Username=postgres;Password=postgres"
             ).UseSnakeCaseNamingConvention();
 
-            return new ApplicationDbContext(optionsBuilder.Options, new DesignTimeCurrentWorkspace());
+            return new ApplicationDbContext(optionsBuilder.Options, new DesignTimeTenantContext());
         }
 
-        private sealed class DesignTimeCurrentWorkspace : ICurrentWorkspace
+        private sealed class DesignTimeTenantContext : ICurrentTenantContext
         {
-            public Guid AccountId => default;
-            public Guid WorkspaceId => default;
-            public bool IsSet => false;
+            public Guid? AccountId => null;
+            public Guid? WorkspaceId => null;
+            public Guid? UserId => null;
             public bool IsSystemContext => true;
-            public void SetWorkspace(Guid accountId, Guid workspaceId) { }
-            public IDisposable EnterSystemContext() => new NoopDisposable();
-        }
-
-        private sealed class NoopDisposable : IDisposable
-        {
-            public void Dispose() { }
+            public bool IsResolved => true;
+            public Guid RequireAccountId() => throw new InvalidOperationException("Design-time only.");
+            public Guid RequireWorkspaceId() => throw new InvalidOperationException("Design-time only.");
+            public Guid RequireUserId() => throw new InvalidOperationException("Design-time only.");
+            public void SetAccount(Guid accountId, Guid? userId) { }
+            public void SetWorkspace(Guid accountId, Guid workspaceId, Guid? userId) { }
+            public void SetSystem() { }
+            public void Clear() { }
         }
     }
 }

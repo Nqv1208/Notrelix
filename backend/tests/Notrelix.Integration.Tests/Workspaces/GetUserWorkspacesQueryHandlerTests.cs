@@ -28,9 +28,9 @@ public class GetUserWorkspacesQueryHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_returns_active_workspaces_for_user_with_member_counts()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var userId = Guid.NewGuid();
         var teammateId = Guid.NewGuid();
         var otherOwnerId = Guid.NewGuid();
@@ -84,9 +84,9 @@ public class GetUserWorkspacesQueryHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_rejects_empty_user_id()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var handler = new GetUserWorkspacesQueryHandler(context);
 
         var result = await handler.Handle(new GetUserWorkspacesQuery(Guid.Empty), CancellationToken.None);

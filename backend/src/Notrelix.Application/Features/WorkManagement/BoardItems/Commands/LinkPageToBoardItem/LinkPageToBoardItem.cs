@@ -12,19 +12,22 @@ public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoard
     private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _timeProvider;
     private readonly IResourceReferenceResolver _resourceResolver;
+    private readonly ICurrentTenantContext _tenant;
 
     public LinkPageToBoardItemCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IWorkspacePermissionService permissions,
         IDateTimeProvider timeProvider,
-        IResourceReferenceResolver resourceResolver)
+        IResourceReferenceResolver resourceResolver,
+        ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
         _permissions = permissions;
         _timeProvider = timeProvider;
         _resourceResolver = resourceResolver;
+        _tenant = tenant;
     }
 
     public async Task<Result> Handle(LinkPageToBoardItemCommand request, CancellationToken cancellationToken)
@@ -47,7 +50,7 @@ public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoard
         var now = _timeProvider.UtcNow;
 
         var link = BoardItemLink.Create(
-            Guid.Empty,
+            _tenant.RequireAccountId(),
             card.WorkspaceId,
             card.BoardId,
             card.Id,

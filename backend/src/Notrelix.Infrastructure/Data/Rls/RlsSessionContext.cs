@@ -6,34 +6,24 @@ namespace Notrelix.Infrastructure.Data.Rls;
 public sealed class RlsSessionContext : IRlsSessionContext
 {
     private readonly IOptions<RlsOptions> _options;
-    private readonly ICurrentUser _currentUser;
-    private readonly ICurrentWorkspace _currentWorkspace;
-    private readonly ICurrentAccount _currentAccount;
+    private readonly ICurrentTenantContext _tenant;
 
     public RlsSessionContext(
         IOptions<RlsOptions> options,
-        ICurrentUser currentUser,
-        ICurrentWorkspace currentWorkspace,
-        ICurrentAccount currentAccount)
+        ICurrentTenantContext tenant)
     {
         _options = options;
-        _currentUser = currentUser;
-        _currentWorkspace = currentWorkspace;
-        _currentAccount = currentAccount;
+        _tenant = tenant;
     }
 
     public async Task ApplyAsync(DatabaseFacade database, CancellationToken cancellationToken)
     {
         if (!_options.Value.SetSessionContext) return;
 
-        var userId = _currentUser.IsAuthenticated ? _currentUser.UserId.ToString() ?? "" : "";
-        var accountId = _currentAccount.IsSet && _currentAccount.AccountId.HasValue
-            ? _currentAccount.AccountId.Value.ToString()
-            : "";
-        var workspaceId = _currentWorkspace.IsSet
-            ? _currentWorkspace.WorkspaceId.ToString()
-            : "";
-        var scope = _currentWorkspace.IsSystemContext ? "worker" : "app";
+        var userId = _tenant.UserId?.ToString() ?? "";
+        var accountId = _tenant.AccountId?.ToString() ?? "";
+        var workspaceId = _tenant.WorkspaceId?.ToString() ?? "";
+        var scope = _tenant.IsSystemContext ? "worker" : "app";
         var correlationId = System.Diagnostics.Activity.Current?.Id ?? "";
 
         await database.ExecuteSqlInterpolatedAsync($@"

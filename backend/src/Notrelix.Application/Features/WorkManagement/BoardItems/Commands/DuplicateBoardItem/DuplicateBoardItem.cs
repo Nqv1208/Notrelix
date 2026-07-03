@@ -11,12 +11,14 @@ public class DuplicateBoardItemCommandHandler : IRequestHandler<DuplicateBoardIt
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _timeProvider;
+    private readonly ICurrentTenantContext _tenant;
 
-    public DuplicateBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider)
+    public DuplicateBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider, ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
         _timeProvider = timeProvider;
+        _tenant = tenant;
     }
 
     public async Task<Result<Guid>> Handle(DuplicateBoardItemCommand request, CancellationToken ct)
@@ -38,6 +40,7 @@ public class DuplicateBoardItemCommandHandler : IRequestHandler<DuplicateBoardIt
 
         var duplicate = DuplicateBoardGroupCommandHandler.CloneCard(
             source,
+            _tenant.RequireAccountId(),
             source.GroupId,
             source.BoardId,
             source.WorkspaceId,

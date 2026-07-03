@@ -12,13 +12,15 @@ public class CreateBoardItemAttachmentCommandHandler : IRequestHandler<CreateBoa
     private readonly IResourceReferenceResolver _resourceResolver;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ICurrentTenantContext _tenant;
 
-    public CreateBoardItemAttachmentCommandHandler(ICollaborationDbContext context, IResourceReferenceResolver resourceResolver, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public CreateBoardItemAttachmentCommandHandler(ICollaborationDbContext context, IResourceReferenceResolver resourceResolver, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider, ICurrentTenantContext tenant)
     {
         _context = context;
         _resourceResolver = resourceResolver;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
+        _tenant = tenant;
     }
 
     public async Task<Result<AttachmentDto>> Handle(CreateBoardItemAttachmentCommand request, CancellationToken ct)
@@ -32,7 +34,7 @@ public class CreateBoardItemAttachmentCommandHandler : IRequestHandler<CreateBoa
         var now = _dateTimeProvider.UtcNow;
         var target = ResourceRef.Create(ResourceType.BoardItem, request.BoardItemId, workspaceId);
         var metadata = FileMetadata.Create(request.Filename, request.SizeBytes ?? 0, request.ContentType ?? "application/octet-stream", url: request.Url);
-        var attachment = Attachment.Create(Guid.Empty, workspaceId, target, AttachmentType.Link, metadata, _currentUser.UserId, now);
+        var attachment = Attachment.Create(_tenant.RequireAccountId(), workspaceId, target, AttachmentType.Link, metadata, _currentUser.UserId, now);
 
         _context.Attachments.Add(attachment);
 

@@ -11,13 +11,15 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
     private readonly IResourceReferenceResolver _resourceResolver;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ICurrentTenantContext _tenant;
 
-    public CreateCommentCommandHandler(ICollaborationDbContext context, IResourceReferenceResolver resourceResolver, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public CreateCommentCommandHandler(ICollaborationDbContext context, IResourceReferenceResolver resourceResolver, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider, ICurrentTenantContext tenant)
     {
         _context = context;
         _resourceResolver = resourceResolver;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
+        _tenant = tenant;
     }
 
     public async Task<Result<Guid>> Handle(CreateCommentCommand request, CancellationToken ct)
@@ -26,7 +28,7 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
             ?? throw new NotFoundException(request.ResourceType.ToString(), request.ResourceId);
 
         var target = ResourceRef.Create(request.ResourceType, request.ResourceId, workspaceId);
-        var comment = Comment.Create(Guid.Empty, workspaceId, target, request.ContentMd, _currentUser.UserId, _dateTimeProvider.UtcNow, parentId: request.ParentCommentId);
+        var comment = Comment.Create(_tenant.RequireAccountId(), workspaceId, target, request.ContentMd, _currentUser.UserId, _dateTimeProvider.UtcNow, parentId: request.ParentCommentId);
 
         _context.Comments.Add(comment);
         return Result<Guid>.Success(comment.Id);

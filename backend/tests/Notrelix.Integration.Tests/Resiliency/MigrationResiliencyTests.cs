@@ -31,9 +31,9 @@ public class MigrationResiliencyTests : IAsyncLifetime
     [Fact]
     public async Task SeedAsync_WhenAlreadySeeded_IsIdempotent()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var initialiser = CreateInitialiser(context);
 
         await initialiser.SeedAsync();
@@ -58,7 +58,7 @@ public class MigrationResiliencyTests : IAsyncLifetime
                 ResetBeforeSeed = false
             }),
             new RlsPolicyApplier(context, NullLogger<RlsPolicyApplier>.Instance),
-            new FakeCurrentWorkspace(),
+            new FakeCurrentTenantContext(),
             Options.Create(new RlsOptions()));
     }
 

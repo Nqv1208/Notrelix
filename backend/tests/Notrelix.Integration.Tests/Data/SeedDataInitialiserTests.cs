@@ -42,9 +42,9 @@ public class SeedDataInitialiserTests : IAsyncLifetime
     [Fact]
     public async Task Small_profile_creates_required_records_across_major_tables()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var initialiser = CreateInitialiser(context);
 
         await initialiser.SeedAsync();
@@ -68,9 +68,9 @@ public class SeedDataInitialiserTests : IAsyncLifetime
     [Fact]
     public async Task Seed_without_reset_is_idempotent_when_sentinel_exists()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var initialiser = CreateInitialiser(context);
 
         await initialiser.SeedAsync();
@@ -85,9 +85,9 @@ public class SeedDataInitialiserTests : IAsyncLifetime
     [Fact]
     public async Task Seed_is_idempotent_and_does_not_backfill_when_sentinel_exists()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
 
         await CreateInitialiser(context).SeedAsync();
 
@@ -106,9 +106,9 @@ public class SeedDataInitialiserTests : IAsyncLifetime
     [Fact]
     public async Task Default_accounts_can_access_seed_workspaces_after_seed()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
 
         await CreateInitialiser(context).SeedAsync();
 
@@ -140,9 +140,9 @@ public class SeedDataInitialiserTests : IAsyncLifetime
     [Fact]
     public async Task Seed_with_reset_replaces_seed_owned_data_without_duplicates()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
 
         await CreateInitialiser(context).SeedAsync();
         await CreateInitialiser(context, resetBeforeSeed: true).SeedAsync();
@@ -159,9 +159,9 @@ public class SeedDataInitialiserTests : IAsyncLifetime
     [Fact]
     public async Task Seeded_group_and_item_positions_are_valid()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         await CreateInitialiser(context).SeedAsync();
 
         var boardId = await context.Boards
@@ -198,9 +198,9 @@ public class SeedDataInitialiserTests : IAsyncLifetime
     [Fact]
     public async Task Seeded_entities_with_json_value_objects_exist()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         await CreateInitialiser(context).SeedAsync();
 
         (await context.Blocks.CountAsync()).Should().Be(500);
@@ -224,7 +224,7 @@ public class SeedDataInitialiserTests : IAsyncLifetime
                 ResetBeforeSeed = resetBeforeSeed
             }),
             new RlsPolicyApplier(context, NullLogger<RlsPolicyApplier>.Instance),
-            new FakeCurrentWorkspace(),
+            new FakeCurrentTenantContext(),
             Options.Create(new RlsOptions()));
     }
 

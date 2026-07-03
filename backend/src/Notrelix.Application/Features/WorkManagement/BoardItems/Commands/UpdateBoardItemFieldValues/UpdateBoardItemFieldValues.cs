@@ -13,19 +13,22 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
     private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _timeProvider;
     private readonly IResourceReferenceResolver _resourceResolver;
+    private readonly ICurrentTenantContext _tenant;
 
     public UpdateBoardItemFieldValuesCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IWorkspacePermissionService permissions,
         IDateTimeProvider timeProvider,
-        IResourceReferenceResolver resourceResolver)
+        IResourceReferenceResolver resourceResolver,
+        ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
         _permissions = permissions;
         _timeProvider = timeProvider;
         _resourceResolver = resourceResolver;
+        _tenant = tenant;
     }
 
     public async Task<Result> Handle(UpdateBoardItemFieldValuesCommand request, CancellationToken ct)
@@ -84,7 +87,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
                         {
                             await EnsurePageCanBeLinkedAsync(pageId.Value, card.WorkspaceId, ct);
                             var link = BoardItemLink.Create(
-                                Guid.Empty,
+                                _tenant.RequireAccountId(),
                                 card.WorkspaceId, card.BoardId, card.Id,
                                 ResourceRef.Create(ResourceType.Page, pageId.Value, card.WorkspaceId),
                                 BoardItemLinkType.Reference,
@@ -153,7 +156,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
         foreach (var userId in requested.Where(userId => !existingUserIds.Contains(userId)))
         {
             var member = BoardItemMember.Create(
-                Guid.Empty,
+                _tenant.RequireAccountId(),
                 card.WorkspaceId, card.BoardId, card.Id,
                 userId, _currentUser.UserId, now);
             _context.BoardItemMembers.Add(member);

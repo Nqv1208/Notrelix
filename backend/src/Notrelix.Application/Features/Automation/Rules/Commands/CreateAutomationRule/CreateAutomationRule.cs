@@ -17,17 +17,20 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspacePermissionService _permissions;
+    private readonly ICurrentTenantContext _tenant;
 
     public CreateAutomationRuleCommandHandler(
         IAutomationDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
-        IWorkspacePermissionService permissions)
+        IWorkspacePermissionService permissions,
+        ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
         _permissions = permissions;
+        _tenant = tenant;
     }
 
     public async Task<Result<Guid>> Handle(CreateAutomationRuleCommand request, CancellationToken cancellationToken)
@@ -39,7 +42,7 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
         var config = AutomationConfiguration.Create(trigger, action);
 
         var rule = AutomationRule.Create(
-            Guid.Empty,
+            _tenant.RequireAccountId(),
             request.WorkspaceId,
             request.Name,
             config,

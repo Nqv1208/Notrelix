@@ -29,9 +29,9 @@ public class GetBoardQueryHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_ShouldReturnBoardDto()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -57,9 +57,9 @@ public class GetBoardQueryHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenBoardNotFound_ShouldThrowNotFoundException()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
 
         var handler = new GetBoardQueryHandler(context);
 

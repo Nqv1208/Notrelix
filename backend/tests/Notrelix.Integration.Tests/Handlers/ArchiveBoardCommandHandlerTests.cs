@@ -30,9 +30,9 @@ public class ArchiveBoardCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_ShouldArchiveBoard()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -61,9 +61,9 @@ public class ArchiveBoardCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenBoardNotFound_ShouldThrowNotFoundException()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        await using var context = _db.CreateContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var permissionMock = new Mock<IWorkspacePermissionService>();
 
         var handler = new ArchiveBoardCommandHandler(

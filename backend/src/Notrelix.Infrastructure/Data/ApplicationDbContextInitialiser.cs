@@ -13,7 +13,7 @@ public class ApplicationDbContextInitialiser
     private readonly SeedDataOptions _options;
     private readonly IPasswordHasher _passwordHasher;
     private readonly RlsPolicyApplier _rlsPolicyApplier;
-    private readonly ICurrentWorkspace _currentWorkspace;
+    private readonly ICurrentTenantContext _tenant;
     private readonly RlsOptions _rlsOptions;
 
     public ApplicationDbContextInitialiser(
@@ -22,7 +22,7 @@ public class ApplicationDbContextInitialiser
         IPasswordHasher passwordHasher,
         IOptions<SeedDataOptions> options,
         RlsPolicyApplier rlsPolicyApplier,
-        ICurrentWorkspace currentWorkspace,
+        ICurrentTenantContext tenant,
         IOptions<RlsOptions> rlsOptions)
     {
         _logger = logger;
@@ -30,7 +30,7 @@ public class ApplicationDbContextInitialiser
         _passwordHasher = passwordHasher;
         _options = options.Value;
         _rlsPolicyApplier = rlsPolicyApplier;
-        _currentWorkspace = currentWorkspace;
+        _tenant = tenant;
         _rlsOptions = rlsOptions.Value;
     }
 
@@ -63,7 +63,7 @@ public class ApplicationDbContextInitialiser
             return;
         }
 
-        using var systemScope = _currentWorkspace.EnterSystemContext();
+        _tenant.SetSystem();
         try
         {
             var result = await TrySeedAsync();
@@ -78,6 +78,10 @@ public class ApplicationDbContextInitialiser
         {
             _logger.LogError(ex, "An error occurred while seeding the database.");
             throw;
+        }
+        finally
+        {
+            _tenant.Clear();
         }
     }
 
