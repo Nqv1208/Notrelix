@@ -11,3 +11,9 @@ global using Notrelix.Domain.WorkManagement;
 global using Notrelix.Domain.WorkManagement.Boards;
 global using Notrelix.Domain.Workspaces.Members;
 global using Notrelix.Domain.Documents.Blocks;
+
+// Application Common (capability folders)
+global using Notrelix.Application.Common.Context;
+global using Notrelix.Application.Common.Exceptions;
+global using Notrelix.Application.Common.Messaging;
+global using Notrelix.Application.Common.Security.Auth;

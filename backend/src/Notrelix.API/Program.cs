@@ -4,7 +4,6 @@ using Notrelix.API.Endpoints;
 using Notrelix.API.Extensions;
 using Notrelix.API.Middleware;
 using Notrelix.Infrastructure;
-using Notrelix.Infrastructure.Middleware;
 using Notrelix.Infrastructure.Options;
 using Dpo = Notrelix.Infrastructure.Options.DataProtectionOptions;
 
@@ -50,34 +49,50 @@ if (await app.RunDatabaseCommandsAsync(args))
 
 await app.InitialiseDatabaseOnStartupAsync();
 
+// 1. Forwarded headers (proxy support)
 app.UseForwardedHeaders();
+
+// 2. Exception handler (global error handling)
 app.UseExceptionHandler();
+
+// 3. Correlation ID (request tracing)
 app.UseMiddleware<CorrelationIdMiddleware>();
+
+// 4. Security headers (transport security)
 app.UseMiddleware<SecurityHeadersMiddleware>();
 
+// 5. HSTS (non-dev only)
 if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
 }
 
+// 6. Swagger (dev only)
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+// 7. CORS
 app.UseCors("Frontend");
 
+// 8. HTTPS redirection (conditional)
 if (app.Configuration.GetValue<bool>("HttpsRedirection:Enabled"))
 {
     app.UseHttpsRedirection();
 }
 
+// 9. Authentication
 app.UseAuthentication();
-app.UseMiddleware<NotrelixRateLimitingMiddleware>();
-app.UseWorkspaceResolution();
+
+// 10. HTTP request context (populate IExecutionContext from JWT claims)
+app.UseMiddleware<HttpRequestContextMiddleware>();
+
+// 11. Authorization
 app.UseAuthorization();
 
+// 12. Endpoints
 app.MapEndpoints();
 
 app.Run();
