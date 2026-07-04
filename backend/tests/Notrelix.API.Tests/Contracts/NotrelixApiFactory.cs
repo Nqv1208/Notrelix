@@ -70,6 +70,10 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 ["JwtSettings:ExpireMinutes"] = "60",
                 ["JwtSettings:RefreshTokenExpireDays"] = "7",
 
+                // RLS config: enabled in Testing env per RlsOptionsValidator.
+                ["Rls:Enabled"] = "true",
+                ["Rls:SetSessionContext"] = "true",
+
                 // CORS config required by startup validation.
                 ["Cors:AllowedOrigins:0"] = "http://localhost:5173",
                 ["Cors:AllowedOrigins:1"] = "http://localhost:3000"

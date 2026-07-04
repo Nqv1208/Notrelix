@@ -22,12 +22,22 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
             return Task.FromResult(AuthenticateResult.NoResult());
         }
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, TestUserId),
-            new Claim(ClaimTypes.Name, "Test User"),
-            new Claim("sub", TestUserId),
+            new(ClaimTypes.NameIdentifier, TestUserId),
+            new(ClaimTypes.Name, "Test User"),
+            new("sub", TestUserId),
         };
+
+        // Optional: add roles via X-Test-Roles header (comma-separated)
+        if (Request.Headers.TryGetValue("X-Test-Roles", out var roleValues))
+        {
+            foreach (var role in roleValues.ToString().Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+        }
+
         var identity = new ClaimsIdentity(claims, "Test");
         var principal = new ClaimsPrincipal(identity);
         var ticket = new AuthenticationTicket(principal, "Test");

@@ -7,7 +7,7 @@ public static class OutboxDiagnosticsEndpoints
         var group = app
             .MapGroup("/admin/outbox")
             .WithTags("Admin")
-            .RequireAuthorization("admin")
+            .RequireAuthorization("SystemAdmin")
             .WithOpenApi();
 
         group.MapGet("/stats", GetStats)

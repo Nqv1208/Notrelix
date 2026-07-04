@@ -1,3 +1,5 @@
+global using MediatR;
+global using Microsoft.Extensions.Logging;
 global using Xunit;
 global using FluentAssertions;
 global using Moq;
@@ -14,4 +16,10 @@ global using Notrelix.Application.Common.Exceptions;
 global using Notrelix.Application.Common.Idempotency;
 global using Notrelix.Application.Common.PostCommit;
 global using Notrelix.Application.Common.Security;
+global using Notrelix.Application.Common.Behaviors;
+global using Notrelix.Application.Common.Caching;
+global using Notrelix.Application.Common.CQRS.Caching;
+global using Notrelix.Application.Common.CQRS.Security;
 global using Notrelix.Application.Common.Tenancy;
+global using Notrelix.Domain.SharedKernel;
+global using Notrelix.Domain.Governance.Permissions;

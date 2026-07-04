@@ -42,6 +42,8 @@ public static class PersistenceRegistration
             .Bind(configuration.GetSection("Rls"))
             .ValidateOnStart();
 
+        services.AddSingleton<IValidateOptions<RlsOptions>, RlsOptionsValidator>();
+
         // Interceptors (resolved inside AddDbContext below).
         services.AddScoped<AuditableEntityInterceptor>();
         services.AddScoped<DomainEventInterceptor>();

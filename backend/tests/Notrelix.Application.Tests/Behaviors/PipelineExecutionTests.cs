@@ -1,12 +1,7 @@
 using FluentValidation;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.Extensions.Logging;
-using Notrelix.Application.Common.Behaviors;
-using Notrelix.Domain.Governance.Permissions;
-using Notrelix.Domain.SharedKernel;
 using ValidationException = Notrelix.Application.Common.Exceptions.ValidationException;
 
 namespace Notrelix.Application.Tests.Behaviors;
@@ -130,8 +125,12 @@ public class PipelineExecutionTests
         var transactionBehavior = new DbRequestScopeBehavior<ExecutableCommand, string>(
             mockContext.Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
 
+        var mockTenant = new Mock<ICurrentTenantContext>();
+        mockTenant.Setup(x => x.AccountId).Returns(Guid.NewGuid());
+        mockTenant.Setup(x => x.WorkspaceId).Returns(Guid.NewGuid());
+
         var authorizationBehavior = new AuthorizationBehavior<ExecutableCommand, string>(
-            mockUser.Object, mockPermissionService.Object, Mock.Of<ILogger<AuthorizationBehavior<ExecutableCommand, string>>>());
+            mockUser.Object, mockTenant.Object, mockPermissionService.Object, Mock.Of<ILogger<AuthorizationBehavior<ExecutableCommand, string>>>());
 
         var workspaceBehavior = new TenantBootstrapBehavior<ExecutableCommand, string>(
             Mock.Of<ICurrentTenantContext>(), Mock.Of<IWorkspaceAccessResolver>(), Mock.Of<IAccountAccessEvaluator>(), Mock.Of<ILogger<TenantBootstrapBehavior<ExecutableCommand, string>>>());
@@ -566,8 +565,12 @@ public class PipelineExecutionTests
         mockPermissionService.Setup(x => x.EvaluateAsync(It.IsAny<PermissionContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PermissionDecision(false, "missing_permission"));
 
+        var mockTenant = new Mock<ICurrentTenantContext>();
+        mockTenant.Setup(x => x.AccountId).Returns(Guid.NewGuid());
+        mockTenant.Setup(x => x.WorkspaceId).Returns(Guid.NewGuid());
+
         var behavior = new AuthorizationBehavior<ExecutableCommand, string>(
-            mockUser.Object, mockPermissionService.Object, Mock.Of<ILogger<AuthorizationBehavior<ExecutableCommand, string>>>());
+            mockUser.Object, mockTenant.Object, mockPermissionService.Object, Mock.Of<ILogger<AuthorizationBehavior<ExecutableCommand, string>>>());
         var handlerCalled = false;
 
         RequestHandlerDelegate<string> next = ct =>
@@ -589,13 +592,13 @@ public class PipelineExecutionTests
         mockUser.Setup(x => x.UserId).Returns(Guid.Empty);
 
         var behavior = new AuthorizationBehavior<ExecutableCommand, string>(
-            mockUser.Object, Mock.Of<IPermissionService>(), Mock.Of<ILogger<AuthorizationBehavior<ExecutableCommand, string>>>());
+            mockUser.Object, Mock.Of<ICurrentTenantContext>(), Mock.Of<IPermissionService>(), Mock.Of<ILogger<AuthorizationBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("ok");
 
         Func<Task> act = () => behavior.Handle(new ExecutableCommand(), next, CancellationToken.None);
 
-        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+        await act.Should().ThrowAsync<UnauthorizedException>();
     }
 
     [Fact]

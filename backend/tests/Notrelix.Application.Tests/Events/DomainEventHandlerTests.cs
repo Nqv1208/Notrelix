@@ -1,6 +1,5 @@
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Items;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Tests.Events;
 

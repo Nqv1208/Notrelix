@@ -1,6 +1,3 @@
-using Microsoft.Extensions.Logging;
-using Notrelix.Application.Common.Behaviors;
-
 namespace Notrelix.Application.Tests.Behaviors;
 
 public class ApplicationTracingBehaviorTests
