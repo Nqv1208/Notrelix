@@ -3,7 +3,6 @@ global using FluentAssertions;
 global using Moq;
 
 // Application Common (capability folders)
-global using Notrelix.Application.Common.Abstractions;
 global using Notrelix.Application.Common.Caching;
 global using Notrelix.Application.Common.Context;
 global using Notrelix.Application.Common.Data;

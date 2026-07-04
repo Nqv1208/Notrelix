@@ -61,38 +61,41 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 // 4. Security headers (transport security)
 app.UseMiddleware<SecurityHeadersMiddleware>();
 
-// 5. HSTS (non-dev only)
+// 5. Rate limiting (before auth, after security headers)
+app.UseMiddleware<RateLimitingMiddleware>();
+
+// 6. HSTS (non-dev only)
 if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
 }
 
-// 6. Swagger (dev only)
+// 7. Swagger (dev only)
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// 7. CORS
+// 8. CORS
 app.UseCors("Frontend");
 
-// 8. HTTPS redirection (conditional)
+// 9. HTTPS redirection (conditional)
 if (app.Configuration.GetValue<bool>("HttpsRedirection:Enabled"))
 {
     app.UseHttpsRedirection();
 }
 
-// 9. Authentication
+// 10. Authentication
 app.UseAuthentication();
 
-// 10. HTTP request context (populate IExecutionContext from JWT claims)
+// 11. HTTP request context (populate IExecutionContext from JWT claims)
 app.UseMiddleware<HttpRequestContextMiddleware>();
 
-// 11. Authorization
+// 12. Authorization
 app.UseAuthorization();
 
-// 12. Endpoints
+// 13. Endpoints
 app.MapEndpoints();
 
 app.Run();

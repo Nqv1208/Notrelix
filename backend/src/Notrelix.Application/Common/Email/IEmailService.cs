@@ -1,4 +1,4 @@
-namespace Notrelix.Application.Common.Abstractions
+namespace Notrelix.Application.Common.Email
 {
     public interface IEmailService
     {

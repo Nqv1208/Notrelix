@@ -140,9 +140,6 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IJwtBlacklistService>();
             services.AddSingleton<IJwtBlacklistService>(_ => Mock.Of<IJwtBlacklistService>());
 
-            services.RemoveAll<INotificationService>();
-            services.AddScoped<INotificationService>(_ => Mock.Of<INotificationService>());
-
             // Clear health checks that depend on external infrastructure.
             services.Configure<HealthCheckServiceOptions>(options =>
             {

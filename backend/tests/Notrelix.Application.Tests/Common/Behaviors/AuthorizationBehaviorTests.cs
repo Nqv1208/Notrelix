@@ -73,13 +73,13 @@ public class AuthorizationBehaviorTests
     private static AuthorizationBehavior<T, string> CreateBehavior<T>(
         Mock<ICurrentUser>? user = null,
         Mock<ICurrentTenantContext>? tenant = null,
-        Mock<IPermissionService>? permission = null)
+        Mock<IAuthorizationDecisionStore>? permission = null)
         where T : IRequest<string>
     {
         return new AuthorizationBehavior<T, string>(
             user?.Object ?? CreateAuthenticatedUser().Object,
             tenant?.Object ?? CreateTenantContext(Guid.NewGuid(), Guid.NewGuid()).Object,
-            permission?.Object ?? Mock.Of<IPermissionService>(),
+            permission?.Object ?? Mock.Of<IAuthorizationDecisionStore>(),
             Mock.Of<ILogger<AuthorizationBehavior<T, string>>>());
     }
 
@@ -180,7 +180,7 @@ public class AuthorizationBehaviorTests
     public async Task WorkspaceRequest_WithPermissionMarker_CallsPermissionService()
     {
         var handlerCalled = false;
-        var permissionService = new Mock<IPermissionService>();
+        var permissionService = new Mock<IAuthorizationDecisionStore>();
         permissionService.Setup(x => x.EvaluateAsync(It.IsAny<PermissionContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PermissionDecision(true, null));
 
@@ -204,7 +204,7 @@ public class AuthorizationBehaviorTests
     public async Task PermissionDenied_ThrowsForbidden_DoesNotCallHandler()
     {
         var handlerCalled = false;
-        var permissionService = new Mock<IPermissionService>();
+        var permissionService = new Mock<IAuthorizationDecisionStore>();
         permissionService.Setup(x => x.EvaluateAsync(It.IsAny<PermissionContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PermissionDecision(false, "missing_permission"));
 
@@ -283,7 +283,7 @@ public class AuthorizationBehaviorTests
     {
         var handlerCalled = false;
         var tenant = CreateTenantContext(accountId: Guid.NewGuid());
-        var permissionService = new Mock<IPermissionService>();
+        var permissionService = new Mock<IAuthorizationDecisionStore>();
         permissionService.Setup(x => x.EvaluateAsync(It.IsAny<PermissionContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PermissionDecision(true, null));
 

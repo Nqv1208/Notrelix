@@ -15,14 +15,10 @@ public class CommonFolderArchitectureTests
     private static string CommonPath => Path.Combine(GetApplicationPath(), "Common");
 
     [Fact]
-    public void Abstractions_ShouldOnlyContain_INotificationService()
+    public void AbstractionsFolder_ShouldNotExist()
     {
         var absPath = Path.Combine(CommonPath, "Abstractions");
-        var files = Directory.GetFiles(absPath, "*.cs")
-            .Select(Path.GetFileName)
-            .ToArray();
-        files.Should().BeEquivalentTo(["INotificationService.cs"],
-            $"Abstractions should only contain INotificationService.cs. Found: {string.Join(", ", files)}");
+        Directory.Exists(absPath).Should().BeFalse("Abstractions/ folder should be removed; INotificationService has been deleted");
     }
 
     [Fact]

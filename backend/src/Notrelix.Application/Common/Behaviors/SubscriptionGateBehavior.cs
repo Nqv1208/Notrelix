@@ -2,22 +2,23 @@ namespace Notrelix.Application.Common.Behaviors;
 
 /// <summary>
 /// Subscription gate behavior. Runs inside DB/RLS scope, after authorization.
-/// For IRequireSubscription requests: checks that workspace has an active subscription
+/// For IRequireSubscription requests: checks that the account has an active subscription
 /// (and optionally meets a minimum tier) before handler executes.
+/// Subscriptions are account-scoped, not workspace-scoped (V2 billing model).
 /// </summary>
 public class SubscriptionGateBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
-    private readonly IEntitlementChecker _checker;
+    private readonly ISubscriptionChecker _subscriptionChecker;
     private readonly IExecutionContext _executionContext;
     private readonly ILogger<SubscriptionGateBehavior<TRequest, TResponse>> _logger;
 
     public SubscriptionGateBehavior(
-        IEntitlementChecker checker,
+        ISubscriptionChecker subscriptionChecker,
         IExecutionContext executionContext,
         ILogger<SubscriptionGateBehavior<TRequest, TResponse>> logger)
     {
-        _checker = checker;
+        _subscriptionChecker = subscriptionChecker;
         _executionContext = executionContext;
         _logger = logger;
     }
@@ -30,11 +31,11 @@ public class SubscriptionGateBehavior<TRequest, TResponse> : IPipelineBehavior<T
         if (request is not IRequireSubscription requireSubscription)
             return await next();
 
-        var workspaceId = _executionContext.WorkspaceId;
-        if (!workspaceId.HasValue || workspaceId.Value == Guid.Empty)
+        var accountId = _executionContext.AccountId;
+        if (!accountId.HasValue || accountId.Value == Guid.Empty)
         {
             _logger.LogWarning(
-                "Subscription gate skipped: no workspace context for {RequestType}",
+                "Subscription gate skipped: no account context for {RequestType}",
                 typeof(TRequest).Name);
             return await next();
         }
@@ -44,14 +45,14 @@ public class SubscriptionGateBehavior<TRequest, TResponse> : IPipelineBehavior<T
         bool hasAccess;
         if (!string.IsNullOrEmpty(minimumTier))
         {
-            hasAccess = await _checker.HasSubscriptionTierAsync(
-                workspaceId.Value, minimumTier, cancellationToken);
+            hasAccess = await _subscriptionChecker.HasMinimumTierAsync(
+                accountId.Value, minimumTier, cancellationToken);
 
             if (!hasAccess)
             {
                 _logger.LogWarning(
-                    "Subscription gate denied: WorkspaceId={WorkspaceId} RequiredTier={Tier} RequestType={RequestType}",
-                    workspaceId.Value, minimumTier, typeof(TRequest).Name);
+                    "Subscription gate denied: AccountId={AccountId} RequiredTier={Tier} RequestType={RequestType}",
+                    accountId.Value, minimumTier, typeof(TRequest).Name);
 
                 throw new ForbiddenException(
                     $"This feature requires at least the '{minimumTier}' subscription tier.");
@@ -59,14 +60,14 @@ public class SubscriptionGateBehavior<TRequest, TResponse> : IPipelineBehavior<T
         }
         else
         {
-            hasAccess = await _checker.HasActiveSubscriptionAsync(
-                workspaceId.Value, cancellationToken);
+            hasAccess = await _subscriptionChecker.HasActiveSubscriptionAsync(
+                accountId.Value, cancellationToken);
 
             if (!hasAccess)
             {
                 _logger.LogWarning(
-                    "Subscription gate denied: WorkspaceId={WorkspaceId} NoActiveSubscription RequestType={RequestType}",
-                    workspaceId.Value, typeof(TRequest).Name);
+                    "Subscription gate denied: AccountId={AccountId} NoActiveSubscription RequestType={RequestType}",
+                    accountId.Value, typeof(TRequest).Name);
 
                 throw new ForbiddenException(
                     "This feature requires an active subscription.");

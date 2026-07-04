@@ -3,7 +3,7 @@ namespace Notrelix.Application.Common.Behaviors;
 /// <summary>
 /// Authorized cache behavior. Runs inside DB/RLS scope, AFTER authorization.
 /// For IAuthorizedCacheableRequest: cache-first for private/user-scoped data.
-/// Unlike CacheBehavior (public), this runs after auth so cached data is user-specific.
+/// Unlike PublicCacheBehavior, this runs after auth so cached data is user-specific.
 /// </summary>
 public class AuthorizedCacheBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull

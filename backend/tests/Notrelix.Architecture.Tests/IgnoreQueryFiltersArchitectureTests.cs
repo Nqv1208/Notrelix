@@ -76,6 +76,9 @@ public class IgnoreQueryFiltersArchitectureTests
         ["WorkspaceAccessResolver.cs"] = new("WorkspaceAccessResolver.cs", AllowlistClassification.InfrastructureBootstrap,
             "Bootstrap resolver bypasses EF query filter to resolve tenant before RLS context is set",
             "Keep as InfrastructureBootstrap — resolver runs before RLS session is established"),
+        ["TenantBootstrapStore.cs"] = new("TenantBootstrapStore.cs", AllowlistClassification.InfrastructureBootstrap,
+            "Tenant bootstrap store bypasses EF query filter to resolve workspace before RLS context is set",
+            "Keep as InfrastructureBootstrap — store runs before RLS session is established"),
     };
 
     [Fact]

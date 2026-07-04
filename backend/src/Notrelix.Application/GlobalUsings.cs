@@ -43,7 +43,6 @@ global using Notrelix.Domain.Collaboration.Comments;
 global using Notrelix.Domain.Collaboration.Mentions;
 global using Notrelix.Domain.Collaboration.Attachments;
 global using Notrelix.Domain.Collaboration.Reactions;
-global using Notrelix.Application.Common.Abstractions;
 global using Notrelix.Application.Common.Auditing;
 global using Notrelix.Application.Common.Caching;
 global using Notrelix.Application.Common.Context;

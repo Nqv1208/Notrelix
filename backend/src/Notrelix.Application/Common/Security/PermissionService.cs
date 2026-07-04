@@ -5,7 +5,7 @@ using Notrelix.Application.Features.Governance.Abstractions;
 
 namespace Notrelix.Application.Common.Security;
 
-public class PermissionService : IPermissionService, IPermissionEvaluator
+public class PermissionService : IPermissionService, IPermissionEvaluator, IAuthorizationDecisionStore
 {
     private readonly IWorkspaceDbContext _workspaceContext;
     private readonly IWorkManagementDbContext _workContext;

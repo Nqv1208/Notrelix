@@ -4,19 +4,16 @@ public class TenantBootstrapBehavior<TRequest, TResponse> : IPipelineBehavior<TR
     where TRequest : notnull
 {
     private readonly ICurrentTenantContext _tenant;
-    private readonly IWorkspaceAccessResolver _workspaceAccessResolver;
-    private readonly IAccountAccessEvaluator _accountAccessEvaluator;
+    private readonly ITenantBootstrapStore _tenantBootstrapStore;
     private readonly ILogger<TenantBootstrapBehavior<TRequest, TResponse>> _logger;
 
     public TenantBootstrapBehavior(
         ICurrentTenantContext tenant,
-        IWorkspaceAccessResolver workspaceAccessResolver,
-        IAccountAccessEvaluator accountAccessEvaluator,
+        ITenantBootstrapStore tenantBootstrapStore,
         ILogger<TenantBootstrapBehavior<TRequest, TResponse>> logger)
     {
         _tenant = tenant;
-        _workspaceAccessResolver = workspaceAccessResolver;
-        _accountAccessEvaluator = accountAccessEvaluator;
+        _tenantBootstrapStore = tenantBootstrapStore;
         _logger = logger;
     }
 
@@ -31,11 +28,10 @@ public class TenantBootstrapBehavior<TRequest, TResponse> : IPipelineBehavior<TR
             var actorUserId = _tenant.UserId
                 ?? throw new UnauthorizedAccessException("Workspace-scoped request requires authenticated user.");
 
-            var snapshot = await _workspaceAccessResolver.ResolveAsync(workspaceId, actorUserId, cancellationToken);
+            var snapshot = await _tenantBootstrapStore.ResolveWorkspaceAccessAsync(workspaceId, actorUserId, cancellationToken);
 
             if (!snapshot.CanAccess)
             {
-                // Security audit: potential cross-tenant access attempt
                 _logger.LogWarning(
                     "Cross-tenant access denied: UserId={UserId} RequestedWorkspaceId={WorkspaceId} RequestType={RequestType}",
                     actorUserId,
@@ -53,7 +49,7 @@ public class TenantBootstrapBehavior<TRequest, TResponse> : IPipelineBehavior<TR
             if (accountId == Guid.Empty)
                 throw new ForbiddenException("Invalid account context.");
 
-            var canAccess = await _accountAccessEvaluator.HasAccountAccess(accountId, cancellationToken);
+            var canAccess = await _tenantBootstrapStore.HasAccountAccessAsync(accountId, cancellationToken);
             if (!canAccess)
             {
                 _logger.LogWarning(

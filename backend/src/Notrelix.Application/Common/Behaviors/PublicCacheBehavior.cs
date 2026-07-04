@@ -2,18 +2,18 @@ namespace Notrelix.Application.Common.Behaviors;
 
 /// <summary>
 /// Public/shared cache behavior. Runs BEFORE DB/RLS scope (outer zone).
-/// For ICacheableQuery requests: check Redis cache first, store result on cache miss.
+/// For IPublicCacheableQuery requests: check Redis cache first, store result on cache miss.
 /// This is for PUBLIC data only. Private/user-scoped cache uses AuthorizedCacheBehavior.
 /// </summary>
-public class CacheBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+public class PublicCacheBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
     private readonly IRedisCacheService _cache;
-    private readonly ILogger<CacheBehavior<TRequest, TResponse>> _logger;
+    private readonly ILogger<PublicCacheBehavior<TRequest, TResponse>> _logger;
 
-    public CacheBehavior(
+    public PublicCacheBehavior(
         IRedisCacheService cache,
-        ILogger<CacheBehavior<TRequest, TResponse>> logger)
+        ILogger<PublicCacheBehavior<TRequest, TResponse>> logger)
     {
         _cache = cache;
         _logger = logger;
@@ -24,13 +24,12 @@ public class CacheBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TR
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
-        if (request is not ICacheableQuery<TResponse> cacheable)
+        if (request is not IPublicCacheableQuery<TResponse> cacheable)
             return await next();
 
         var cacheKey = cacheable.CacheKey;
         var ttl = cacheable.Ttl;
 
-        // Try cache first
         var cached = await _cache.GetAsync<TResponse>(cacheKey);
         if (cached is not null)
         {
@@ -42,7 +41,6 @@ public class CacheBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TR
 
         var response = await next();
 
-        // Store in cache
         if (response is not null)
         {
             await _cache.SetAsync(cacheKey, response, ttl);

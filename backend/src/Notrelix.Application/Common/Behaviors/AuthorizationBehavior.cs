@@ -5,18 +5,18 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
 {
     private readonly ICurrentUser _currentUser;
     private readonly ICurrentTenantContext _tenant;
-    private readonly IPermissionService _permissionService;
+    private readonly IAuthorizationDecisionStore _authorizationDecisionStore;
     private readonly ILogger<AuthorizationBehavior<TRequest, TResponse>> _logger;
 
     public AuthorizationBehavior(
         ICurrentUser currentUser,
         ICurrentTenantContext tenant,
-        IPermissionService permissionService,
+        IAuthorizationDecisionStore authorizationDecisionStore,
         ILogger<AuthorizationBehavior<TRequest, TResponse>> logger)
     {
         _currentUser = currentUser;
         _tenant = tenant;
-        _permissionService = permissionService;
+        _authorizationDecisionStore = authorizationDecisionStore;
         _logger = logger;
     }
 
@@ -95,7 +95,7 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
         {
             var userId = _currentUser.UserId;
 
-            var decision = await _permissionService.EvaluateAsync(
+            var decision = await _authorizationDecisionStore.EvaluateAsync(
                 new PermissionContext(
                     userId,
                     requirePermission.Resource.WorkspaceId ?? Guid.Empty,

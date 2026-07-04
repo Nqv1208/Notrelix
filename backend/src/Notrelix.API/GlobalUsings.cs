@@ -16,4 +16,5 @@ global using Notrelix.Domain.Documents.Blocks;
 global using Notrelix.Application.Common.Context;
 global using Notrelix.Application.Common.Exceptions;
 global using Notrelix.Application.Common.Messaging;
+global using Notrelix.Application.Common.RateLimiting;
 global using Notrelix.Application.Common.Security.Auth;

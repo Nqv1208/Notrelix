@@ -40,6 +40,14 @@ public class PipelineExecutionTests
         public Guid WorkspaceId => Guid.Empty;
     }
 
+    private static Mock<IRlsSessionContext> CreateMockRls()
+    {
+        var rls = new Mock<IRlsSessionContext>();
+        rls.Setup(x => x.ApplyAsync(It.IsAny<DatabaseFacade>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        return rls;
+    }
+
     private static (Mock<IApplicationDbContext> Context, Mock<IDbContextTransaction> Transaction) CreateMockContextPair(bool throwOnSave = false)
     {
         var context = new Mock<IApplicationDbContext>();
@@ -72,9 +80,9 @@ public class PipelineExecutionTests
         return user;
     }
 
-    private static Mock<IPermissionService> CreateMockPermissionService(bool allowed = true)
+    private static Mock<IAuthorizationDecisionStore> CreateMockPermissionService(bool allowed = true)
     {
-        var service = new Mock<IPermissionService>();
+        var service = new Mock<IAuthorizationDecisionStore>();
         service.Setup(x => x.EvaluateAsync(It.IsAny<PermissionContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PermissionDecision(allowed, "test"));
         return service;
@@ -123,7 +131,7 @@ public class PipelineExecutionTests
         dbRls.Setup(x => x.Database).Returns(database.Object);
 
         var transactionBehavior = new DbRequestScopeBehavior<ExecutableCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
+            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
 
         var mockTenant = new Mock<ICurrentTenantContext>();
         mockTenant.Setup(x => x.AccountId).Returns(Guid.NewGuid());
@@ -133,7 +141,7 @@ public class PipelineExecutionTests
             mockUser.Object, mockTenant.Object, mockPermissionService.Object, Mock.Of<ILogger<AuthorizationBehavior<ExecutableCommand, string>>>());
 
         var workspaceBehavior = new TenantBootstrapBehavior<ExecutableCommand, string>(
-            Mock.Of<ICurrentTenantContext>(), Mock.Of<IWorkspaceAccessResolver>(), Mock.Of<IAccountAccessEvaluator>(), Mock.Of<ILogger<TenantBootstrapBehavior<ExecutableCommand, string>>>());
+            Mock.Of<ICurrentTenantContext>(), Mock.Of<ITenantBootstrapStore>(), Mock.Of<ILogger<TenantBootstrapBehavior<ExecutableCommand, string>>>());
 
         var validationBehavior = new ValidationBehavior<ExecutableCommand, string>(
             Array.Empty<IValidator<ExecutableCommand>>());
@@ -167,7 +175,7 @@ public class PipelineExecutionTests
         var executionOrder = new List<string>();
 
         var behavior = new DbRequestScopeBehavior<ExecutableCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
+            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = ct =>
         {
@@ -190,7 +198,7 @@ public class PipelineExecutionTests
     {
         var mockContext = CreateMockContext();
         var behavior = new DbRequestScopeBehavior<ExecutableCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
+            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("success");
         var result = await behavior.Handle(new ExecutableCommand(), next, CancellationToken.None);
@@ -204,7 +212,7 @@ public class PipelineExecutionTests
     {
         var mockContext = CreateMockContext();
         var behavior = new DbRequestScopeBehavior<ExecutableCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
+            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => throw new InvalidOperationException("handler failed");
 
@@ -219,7 +227,7 @@ public class PipelineExecutionTests
     {
         var mockContext = CreateMockContext(throwOnSave: true);
         var behavior = new DbRequestScopeBehavior<ExecutableCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
+            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("ok");
 
@@ -234,7 +242,7 @@ public class PipelineExecutionTests
     {
         var mockContext = CreateMockContext();
         var behavior = new DbRequestScopeBehavior<NonTransactionalCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<DbRequestScopeBehavior<NonTransactionalCommand, string>>>());
+            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<NonTransactionalCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("passthrough");
         var result = await behavior.Handle(new NonTransactionalCommand(), next, CancellationToken.None);
@@ -333,7 +341,7 @@ public class PipelineExecutionTests
         var executionOrder = new List<string>();
 
         var transactionBehavior = new DbRequestScopeBehavior<SideEffectCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
+            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
 
         var enqueueBehavior = new PostCommitEnqueueBehavior<SideEffectCommand, string>(
             mockPostCommit.Object, CreateMockExecutionContext(), Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
@@ -384,7 +392,7 @@ public class PipelineExecutionTests
         // After handler returns: Transaction(SaveChanges+Commit) → PostCommitScope(FlushAsync)
 
         var transactionBehavior = new DbRequestScopeBehavior<SideEffectCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
+            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
 
         var enqueueBehavior = new PostCommitEnqueueBehavior<SideEffectCommand, string>(
             mockPostCommit.Object, CreateMockExecutionContext(), Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
@@ -430,7 +438,7 @@ public class PipelineExecutionTests
 
         // Nesting: PostCommitScope (outer) → DbRequestScope → PostCommitEnqueue → Handler
         var transactionBehavior = new DbRequestScopeBehavior<SideEffectCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
+            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
 
         var enqueueBehavior = new PostCommitEnqueueBehavior<SideEffectCommand, string>(
             mockPostCommit.Object, CreateMockExecutionContext(), Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
@@ -561,7 +569,7 @@ public class PipelineExecutionTests
     public async Task AuthorizationBehavior_PermissionDenied_ThrowsBeforeHandler()
     {
         var mockUser = CreateMockUser();
-        var mockPermissionService = new Mock<IPermissionService>();
+        var mockPermissionService = new Mock<IAuthorizationDecisionStore>();
         mockPermissionService.Setup(x => x.EvaluateAsync(It.IsAny<PermissionContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PermissionDecision(false, "missing_permission"));
 
@@ -592,7 +600,7 @@ public class PipelineExecutionTests
         mockUser.Setup(x => x.UserId).Returns(Guid.Empty);
 
         var behavior = new AuthorizationBehavior<ExecutableCommand, string>(
-            mockUser.Object, Mock.Of<ICurrentTenantContext>(), Mock.Of<IPermissionService>(), Mock.Of<ILogger<AuthorizationBehavior<ExecutableCommand, string>>>());
+            mockUser.Object, Mock.Of<ICurrentTenantContext>(), Mock.Of<IAuthorizationDecisionStore>(), Mock.Of<ILogger<AuthorizationBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("ok");
 
@@ -605,7 +613,7 @@ public class PipelineExecutionTests
     public async Task TenantBootstrapBehavior_EmptyWorkspaceId_ThrowsForbidden()
     {
         var behavior = new TenantBootstrapBehavior<EmptyWorkspaceCommand, string>(
-            Mock.Of<ICurrentTenantContext>(), Mock.Of<IWorkspaceAccessResolver>(), Mock.Of<IAccountAccessEvaluator>(), Mock.Of<ILogger<TenantBootstrapBehavior<EmptyWorkspaceCommand, string>>>());
+            Mock.Of<ICurrentTenantContext>(), Mock.Of<ITenantBootstrapStore>(), Mock.Of<ILogger<TenantBootstrapBehavior<EmptyWorkspaceCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("ok");
 
@@ -622,7 +630,7 @@ public class PipelineExecutionTests
 
         var validationBehavior = new ValidationBehavior<ValidationFailCommand, string>(validators);
         var transactionBehavior = new DbRequestScopeBehavior<ValidationFailCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<DbRequestScopeBehavior<ValidationFailCommand, string>>>());
+            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<ValidationFailCommand, string>>>());
 
         RequestHandlerDelegate<string> txNext = _ => Task.FromResult("ok");
 

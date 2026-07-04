@@ -23,7 +23,7 @@ public static class DependencyInjection
         // Post-commit scope: wraps DB scope, flushes side effects after commit
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(PostCommitScopeBehavior<,>));
         // Public cache: cache-first for shared/public queries (before DB scope)
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CacheBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(PublicCacheBehavior<,>));
         // DB/RLS/Transaction boundary: single scope for RLS + transaction + SaveChanges
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(DbRequestScopeBehavior<,>));
         // Inner zone: inside DB/RLS scope
@@ -39,6 +39,7 @@ public static class DependencyInjection
         // FluentValidation - auto register all validators
         services.AddValidatorsFromAssembly(assembly);
 
+        services.AddScoped(typeof(IAuthorizationDecisionStore), sp => sp.GetRequiredService<IPermissionService>());
         services.AddScoped<IWorkspacePermissionService, WorkspacePermissionService>();
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<IPermissionEvaluator, PermissionService>();

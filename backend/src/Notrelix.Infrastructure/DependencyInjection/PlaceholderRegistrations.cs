@@ -23,6 +23,8 @@ public static class BillingRegistration
         this IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<IEntitlementChecker, Billing.DevNullEntitlementChecker>();
+        services.AddScoped<ISubscriptionChecker, Billing.DevNullSubscriptionChecker>();
+        services.AddScoped<IFeatureGateChecker, Billing.DevNullFeatureGateChecker>();
         return services;
     }
 }
