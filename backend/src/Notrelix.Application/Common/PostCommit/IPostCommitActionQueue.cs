@@ -5,9 +5,11 @@ public interface IPostCommitActionQueue
     void BeginScope();
     void EnqueueCacheInvalidation(CacheInvalidationAction action);
     void EnqueueRealtime(RealtimeAction action);
+    void Enqueue(IPostCommitAction action);
 
     IReadOnlyList<CacheInvalidationAction> CacheInvalidations { get; }
     IReadOnlyList<RealtimeAction> RealtimeActions { get; }
+    IReadOnlyList<IPostCommitAction> Actions { get; }
 
     Task FlushAsync(CancellationToken ct);
     void Clear();

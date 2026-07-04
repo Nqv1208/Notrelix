@@ -19,6 +19,7 @@ global using Notrelix.Application.Common.Security;
 global using Notrelix.Application.Common.Behaviors;
 global using Notrelix.Application.Common.Caching;
 global using Notrelix.Application.Common.CQRS.Caching;
+global using Notrelix.Application.Common.Entitlements;
 global using Notrelix.Application.Common.CQRS.Security;
 global using Notrelix.Application.Common.Tenancy;
 global using Notrelix.Domain.SharedKernel;

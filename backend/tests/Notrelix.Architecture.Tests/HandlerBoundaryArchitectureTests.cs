@@ -49,6 +49,42 @@ public class HandlerBoundaryArchitectureTests
     }
 
     [Fact]
+    public void InlineDomainEventHandlers_MustNotDoIO()
+    {
+        var featureFiles = Directory.GetFiles(FeaturesPath, "*.cs", SearchOption.AllDirectories);
+        var violations = new List<string>();
+
+        foreach (var file in featureFiles)
+        {
+            var content = File.ReadAllText(file);
+            var relativePath = Path.GetRelativePath(FindProjectRoot(), file);
+
+            if (!content.Contains("INotificationHandler<DomainEventNotification<"))
+                continue;
+
+            // Inline handlers must not inject IO services
+            var ioServicePatterns = new[]
+            {
+                "IApplicationDbContext", "IAutomationDbContext",
+                "DbContext", "IJobQueue",
+                "IEmailService", "IHttpClientFactory",
+                "HttpClient", "ISender"
+            };
+
+            foreach (var pattern in ioServicePatterns)
+            {
+                if (content.Contains(pattern))
+                {
+                    violations.Add($"{relativePath}: injects {pattern}");
+                }
+            }
+        }
+
+        violations.Should().BeEmpty(
+            "Inline domain event handlers must not perform IO. Use post-commit actions or outbox instead.");
+    }
+
+    [Fact]
     public void Handlers_ShouldNotUse_AccountIdEmpty_ForFactoryCalls()
     {
         var handlerFiles = Directory.GetFiles(FeaturesPath, "*.cs", SearchOption.AllDirectories);

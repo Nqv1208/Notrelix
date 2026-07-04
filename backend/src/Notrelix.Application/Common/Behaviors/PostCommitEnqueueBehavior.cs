@@ -4,12 +4,12 @@ public class PostCommitEnqueueBehavior<TRequest, TResponse> : IPipelineBehavior<
     where TRequest : notnull
 {
     private readonly IPostCommitActionQueue _queue;
-    private readonly IExecutionContext _executionContext;
+    private readonly IExecutionContextReader _executionContext;
     private readonly ILogger<PostCommitEnqueueBehavior<TRequest, TResponse>> _logger;
 
     public PostCommitEnqueueBehavior(
         IPostCommitActionQueue queue,
-        IExecutionContext executionContext,
+        IExecutionContextReader executionContext,
         ILogger<PostCommitEnqueueBehavior<TRequest, TResponse>> logger)
     {
         _queue = queue;

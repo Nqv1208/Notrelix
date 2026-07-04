@@ -208,6 +208,54 @@ public class ApiArchitectureTests
     }
 
     [Fact]
+    public void EndpointAccessAttributes_Exist()
+    {
+        var securityDir = Path.Combine(GetApiPath(), "Security");
+        var file = Directory.GetFiles(securityDir, "*.cs").FirstOrDefault();
+        file.Should().NotBeNull("Security directory must contain endpoint access attributes");
+        var content = File.ReadAllText(file!);
+
+        content.Should().Contain("class PublicEndpointAttribute", "PublicEndpoint attribute must exist");
+        content.Should().Contain("class WorkspaceScopedEndpointAttribute", "WorkspaceScopedEndpoint attribute must exist");
+        content.Should().Contain("class ResourceScopedEndpointAttribute", "ResourceScopedEndpoint attribute must exist");
+        content.Should().Contain("class AdminEndpointAttribute", "AdminEndpoint attribute must exist");
+    }
+
+    [Fact]
+    public void NoWriteAsJsonAnonymousError_InMiddleware()
+    {
+        var middlewareDir = Path.Combine(GetApiPath(), "Middleware");
+        var files = Directory.GetFiles(middlewareDir, "*.cs")
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}"));
+        var violations = new List<string>();
+
+        foreach (var file in files)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            if (content.Contains("WriteAsJsonAsync") && content.Contains("new { error"))
+                violations.Add(Path.GetFileName(file));
+        }
+
+        violations.Should().BeEmpty($"Middleware must not write anonymous error objects via WriteAsJsonAsync. Use ProblemDetailsWriter instead. Violations: {string.Join(", ", violations)}");
+    }
+
+    [Fact]
+    public void WorkspaceRoute_NoGuidEmptyFallback()
+    {
+        var endpointFiles = GetEndpointFiles();
+        var violations = new List<string>();
+
+        foreach (var file in endpointFiles)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            if (content.Contains("Guid.Empty") && content.Contains("workspaceId"))
+                violations.Add(Path.GetFileName(file));
+        }
+
+        violations.Should().BeEmpty($"Endpoint files must not use Guid.Empty as workspaceId fallback: {string.Join(", ", violations)}");
+    }
+
+    [Fact]
     public void EndpointDirectories_ShouldHaveMatchingContractDirectories()
     {
         var apiPath = GetApiPath();

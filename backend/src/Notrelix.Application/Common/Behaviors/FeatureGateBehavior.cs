@@ -10,12 +10,12 @@ public class FeatureGateBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
     where TRequest : notnull
 {
     private readonly IFeatureGateChecker _featureGateChecker;
-    private readonly IExecutionContext _executionContext;
+    private readonly IExecutionContextReader _executionContext;
     private readonly ILogger<FeatureGateBehavior<TRequest, TResponse>> _logger;
 
     public FeatureGateBehavior(
         IFeatureGateChecker featureGateChecker,
-        IExecutionContext executionContext,
+        IExecutionContextReader executionContext,
         ILogger<FeatureGateBehavior<TRequest, TResponse>> logger)
     {
         _featureGateChecker = featureGateChecker;
@@ -35,9 +35,10 @@ public class FeatureGateBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         if (!accountId.HasValue || accountId.Value == Guid.Empty)
         {
             _logger.LogWarning(
-                "Feature gate skipped: no account context for {RequestType}",
+                "Feature gate failed: no account context for {RequestType}",
                 typeof(TRequest).Name);
-            return await next();
+            throw new SecurityMisconfigurationException(
+                $"Feature gate failed: no account context for {typeof(TRequest).Name}");
         }
 
         var featureCode = requireFeature.FeatureCode;

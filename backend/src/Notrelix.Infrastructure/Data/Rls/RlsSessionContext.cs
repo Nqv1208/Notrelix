@@ -15,7 +15,25 @@ public sealed class RlsSessionContext : IRlsSessionContext
 
     public async Task ApplyAsync(DatabaseFacade database, CancellationToken cancellationToken)
     {
-        if (!_options.Value.SetSessionContext) return;
+        if (!_options.Value.SetSessionContext)
+        {
+            if (!_tenant.IsSystemContext)
+            {
+                throw new InvalidOperationException(
+                    "RLS SetSessionContext is disabled but required for non-system requests. " +
+                    "This indicates a misconfiguration. Ensure Rls:SetSessionContext is true in " +
+                    "non-development environments.");
+            }
+
+            return;
+        }
+
+        if (!_tenant.IsSystemContext && !_tenant.AccountId.HasValue)
+        {
+            throw new InvalidOperationException(
+                "AccountId is required for non-system RLS session context. " +
+                "Cannot set tenant context without an account identifier.");
+        }
 
         var userId = _tenant.UserId?.ToString() ?? "";
         var accountId = _tenant.AccountId?.ToString() ?? "";

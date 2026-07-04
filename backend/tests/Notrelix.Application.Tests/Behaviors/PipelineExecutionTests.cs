@@ -101,10 +101,11 @@ public class PipelineExecutionTests
         var queue = new Mock<IPostCommitActionQueue>();
         queue.Setup(x => x.CacheInvalidations).Returns([]);
         queue.Setup(x => x.RealtimeActions).Returns([]);
+        queue.Setup(x => x.Actions).Returns([]);
         return queue;
     }
 
-    private static IExecutionContext CreateMockExecutionContext()
+    private static IExecutionContextReader CreateMockExecutionContext()
     {
         var ctx = new Notrelix.Application.Common.Context.ExecutionContext();
         ctx.SetUser(Guid.NewGuid(), "test@test.com", "Test User");

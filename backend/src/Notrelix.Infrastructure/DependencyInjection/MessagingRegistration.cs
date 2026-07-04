@@ -38,6 +38,7 @@ public static class MessagingRegistration
 
                     cfg.UsingInMemory((ctx, mem) =>
                     {
+                        mem.UseConsumeFilter(typeof(TenantContextConsumeFilter<>), ctx);
                         mem.ConfigureEndpoints(ctx);
                     });
                 });
@@ -93,6 +94,8 @@ public static class MessagingRegistration
                             cb.ActiveThreshold = opts.CircuitBreakerActiveThreshold;
                             cb.ResetInterval = TimeSpan.FromMinutes(opts.CircuitBreakerResetIntervalMinutes);
                         });
+
+                        rbt.UseConsumeFilter(typeof(TenantContextConsumeFilter<>), ctx);
 
                         rbt.PrefetchCount = opts.PrefetchCount;
 

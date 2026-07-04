@@ -7,6 +7,7 @@ public sealed class PostCommitActionQueue : IPostCommitActionQueue
     private readonly ILogger<PostCommitActionQueue> _logger;
     private readonly List<CacheInvalidationAction> _cacheInvalidations = new();
     private readonly List<RealtimeAction> _realtimeActions = new();
+    private readonly List<IPostCommitAction> _actions = new();
     private bool _isInScope;
 
     public PostCommitActionQueue(
@@ -21,6 +22,7 @@ public sealed class PostCommitActionQueue : IPostCommitActionQueue
 
     public IReadOnlyList<CacheInvalidationAction> CacheInvalidations => _cacheInvalidations;
     public IReadOnlyList<RealtimeAction> RealtimeActions => _realtimeActions;
+    public IReadOnlyList<IPostCommitAction> Actions => _actions;
 
     public void BeginScope() => _isInScope = true;
 
@@ -32,6 +34,11 @@ public sealed class PostCommitActionQueue : IPostCommitActionQueue
     public void EnqueueRealtime(RealtimeAction action)
     {
         _realtimeActions.Add(action);
+    }
+
+    public void Enqueue(IPostCommitAction action)
+    {
+        _actions.Add(action);
     }
 
     public async Task FlushAsync(CancellationToken ct)
@@ -51,6 +58,12 @@ public sealed class PostCommitActionQueue : IPostCommitActionQueue
             await _publisher.PublishAsync(action.Topic, action.Payload, ct);
         }
 
+        foreach (var action in _actions)
+        {
+            _logger.LogTrace("Flushing post-commit action: {ActionType}", action.GetType().Name);
+            await action.ExecuteAsync(ct);
+        }
+
         Clear();
     }
 
@@ -58,6 +71,7 @@ public sealed class PostCommitActionQueue : IPostCommitActionQueue
     {
         _cacheInvalidations.Clear();
         _realtimeActions.Clear();
+        _actions.Clear();
     }
 
     public void EndScope() => _isInScope = false;

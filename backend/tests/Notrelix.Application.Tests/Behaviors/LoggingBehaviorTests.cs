@@ -5,7 +5,7 @@ public class ApplicationTracingBehaviorTests
     public sealed record TestRequest;
     public sealed record TestResponse(string Value);
 
-    private static IExecutionContext CreateMockExecutionContext()
+    private static IExecutionContextReader CreateMockExecutionContext()
     {
         var ctx = new Notrelix.Application.Common.Context.ExecutionContext();
         ctx.SetUser(Guid.NewGuid(), "test@test.com", "Test User");

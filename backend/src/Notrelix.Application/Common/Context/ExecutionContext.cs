@@ -1,10 +1,6 @@
 namespace Notrelix.Application.Common.Context;
 
-/// <summary>
-/// Scoped implementation of IExecutionContext.
-/// Stores request-scoped user, tenant, and correlation data.
-/// </summary>
-public sealed class ExecutionContext : IExecutionContext
+public sealed class ExecutionContext : IExecutionContextAccessor
 {
     // User
     public Guid? UserId { get; private set; }

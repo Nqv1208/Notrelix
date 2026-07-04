@@ -4,11 +4,11 @@ public class ApplicationTracingBehavior<TRequest, TResponse> : IPipelineBehavior
     where TRequest : notnull
 {
     private readonly ILogger<ApplicationTracingBehavior<TRequest, TResponse>> _logger;
-    private readonly IExecutionContext _executionContext;
+    private readonly IExecutionContextReader _executionContext;
 
     public ApplicationTracingBehavior(
         ILogger<ApplicationTracingBehavior<TRequest, TResponse>> logger,
-        IExecutionContext executionContext)
+        IExecutionContextReader executionContext)
     {
         _logger = logger;
         _executionContext = executionContext;

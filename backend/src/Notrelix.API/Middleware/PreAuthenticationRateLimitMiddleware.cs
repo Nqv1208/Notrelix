@@ -1,12 +1,13 @@
+using Notrelix.API.ErrorHandling;
 using Notrelix.API.RateLimiting;
 
 namespace Notrelix.API.Middleware;
 
-public sealed class RateLimitingMiddleware
+public sealed class PreAuthenticationRateLimitMiddleware
 {
     private readonly RequestDelegate _next;
 
-    public RateLimitingMiddleware(RequestDelegate next)
+    public PreAuthenticationRateLimitMiddleware(RequestDelegate next)
     {
         _next = next;
     }
@@ -25,18 +26,13 @@ public sealed class RateLimitingMiddleware
         var provider = context.RequestServices.GetRequiredService<IRateLimitPolicyProvider>();
         var policy = provider.GetPolicy(attribute.PolicyName);
 
-        if (policy is null)
+        if (policy is null || policy.PartitionBy != PartitionKey.Ip)
         {
             await _next(context);
             return;
         }
 
-        var partitionKey = policy.PartitionBy switch
-        {
-            "Ip" => context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            "UserId" => context.User.FindFirst("sub")?.Value ?? "anonymous",
-            _ => "unknown",
-        };
+        var partitionKey = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
         var rateLimitService = context.RequestServices.GetRequiredService<IRateLimitService>();
 
@@ -57,17 +53,9 @@ public sealed class RateLimitingMiddleware
 
         if (!decision.IsAllowed)
         {
-            context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-            context.Response.Headers["Retry-After"] =
-                decision.RetryAfter?.TotalSeconds.ToString("F0") ?? "60";
-            context.Response.Headers["X-RateLimit-Limit"] = decision.Limit.ToString();
-            context.Response.Headers["X-RateLimit-Remaining"] = decision.Remaining.ToString();
-            context.Response.Headers["X-RateLimit-Reset"] =
-                decision.ResetAt.ToUnixTimeSeconds().ToString();
-
-            await context.Response.WriteAsJsonAsync(
-                new { error = "Rate limit exceeded. Please try again later." },
-                context.RequestAborted);
+            var retryAfter = (int)(decision.RetryAfter?.TotalSeconds ?? 60);
+            await ProblemDetailsWriter.WriteTooManyRequestsAsync(
+                context, retryAfter, decision.Limit, decision.Remaining, decision.ResetAt, context.RequestAborted);
             return;
         }
 

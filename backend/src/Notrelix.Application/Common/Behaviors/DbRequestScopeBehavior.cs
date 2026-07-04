@@ -33,6 +33,12 @@ public class DbRequestScopeBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
         await using var transaction = await _db.Database.BeginTransactionAsync(ct);
         try
         {
+            if (!isWrite)
+            {
+                _logger.LogTrace("Setting READ ONLY for read-scope {RequestType}", typeof(TRequest).Name);
+                await _db.Database.ExecuteSqlRawAsync("SET TRANSACTION READ ONLY", ct);
+            }
+
             _logger.LogTrace("Applying RLS session for {RequestType}", typeof(TRequest).Name);
             await _rls.ApplyAsync(_db.Database, ct);
 

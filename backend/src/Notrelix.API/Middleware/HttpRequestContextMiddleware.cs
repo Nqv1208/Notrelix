@@ -22,7 +22,7 @@ public sealed class HttpRequestContextMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        var executionContext = context.RequestServices.GetRequiredService<IExecutionContext>();
+        var executionContext = context.RequestServices.GetRequiredService<IExecutionContextAccessor>();
 
         // Extract user identity from JWT claims (after UseAuthentication)
         if (context.User.Identity?.IsAuthenticated == true)

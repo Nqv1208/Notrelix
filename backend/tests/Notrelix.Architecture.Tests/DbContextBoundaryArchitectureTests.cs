@@ -38,62 +38,54 @@ public class DbContextBoundaryArchitectureTests
         ["Workspaces"] = "IWorkspaceDbContext",
         ["WorkManagement"] = "IWorkManagementDbContext",
         ["Identity"] = "IIdentityDbContext",
+        ["Documents"] = "IDocumentDbContext",
+        ["Collaboration"] = "ICollaborationDbContext",
+        ["Governance"] = "IGovernanceDbContext",
+        ["Automation"] = "IAutomationDbContext",
+        ["Integrations"] = "IIntegrationDbContext",
+        ["Billing"] = "IBillingDbContext",
+        ["Accounts"] = "IAccountDbContext",
     };
+
+    private static string[] AllForbiddenContexts => ModuleToExpectedContext.Values.ToArray();
 
     private static readonly HashSet<string> KnownCrossModuleViolations = [];
 
-    [Fact]
-    public void WorkspaceHandlers_ShouldNotInject_WorkManagementDbContext()
+    [Theory]
+    [InlineData("Workspaces", "IWorkManagementDbContext")]
+    [InlineData("Workspaces", "IIdentityDbContext")]
+    [InlineData("WorkManagement", "IWorkspaceDbContext")]
+    [InlineData("WorkManagement", "IIdentityDbContext")]
+    [InlineData("Identity", "IWorkspaceDbContext")]
+    [InlineData("Identity", "IWorkManagementDbContext")]
+    [InlineData("Documents", "IWorkManagementDbContext")]
+    [InlineData("Documents", "IWorkspaceDbContext")]
+    [InlineData("Documents", "ICollaborationDbContext")]
+    [InlineData("Documents", "IIdentityDbContext")]
+    [InlineData("Collaboration", "IWorkManagementDbContext")]
+    [InlineData("Collaboration", "IWorkspaceDbContext")]
+    [InlineData("Collaboration", "IDocumentDbContext")]
+    [InlineData("Collaboration", "IIdentityDbContext")]
+    [InlineData("Governance", "IWorkManagementDbContext")]
+    [InlineData("Governance", "IWorkspaceDbContext")]
+    [InlineData("Governance", "ICollaborationDbContext")]
+    [InlineData("Automation", "IWorkManagementDbContext")]
+    [InlineData("Automation", "IWorkspaceDbContext")]
+    [InlineData("Automation", "IBillingDbContext")]
+    [InlineData("Integrations", "IWorkManagementDbContext")]
+    [InlineData("Integrations", "IWorkspaceDbContext")]
+    [InlineData("Billing", "IWorkManagementDbContext")]
+    [InlineData("Billing", "IWorkspaceDbContext")]
+    [InlineData("Accounts", "IWorkManagementDbContext")]
+    [InlineData("Accounts", "IWorkspaceDbContext")]
+    [InlineData("Accounts", "IIdentityDbContext")]
+    public void Handlers_ShouldNotInject_CrossModuleDbContext(string module, string forbiddenContext)
     {
-        var violations = AssertModuleContextBoundaries("Workspaces", "IWorkManagementDbContext");
+        var violations = AssertModuleContextBoundaries(module, forbiddenContext);
         violations.Should().BeEmpty(
-            $"Workspace handlers should not inject IWorkManagementDbContext. " +
-            $"Use IWorkspaceDbContext instead. Violations: {string.Join(", ", violations)}");
-    }
-
-    [Fact]
-    public void WorkManagementHandlers_ShouldNotInject_WorkspaceDbContext()
-    {
-        var violations = AssertModuleContextBoundaries("WorkManagement", "IWorkspaceDbContext");
-        violations.Should().BeEmpty(
-            $"WorkManagement handlers should not inject IWorkspaceDbContext. " +
-            $"Use IWorkManagementDbContext instead. Violations: {string.Join(", ", violations)}");
-    }
-
-    [Fact]
-    public void IdentityHandlers_ShouldNotInject_WorkspaceDbContext()
-    {
-        var violations = AssertModuleContextBoundaries("Identity", "IWorkspaceDbContext");
-        violations.Should().BeEmpty(
-            $"Identity handlers should not inject IWorkspaceDbContext. " +
-            $"Use IIdentityDbContext instead. Violations: {string.Join(", ", violations)}");
-    }
-
-    [Fact]
-    public void IdentityHandlers_ShouldNotInject_WorkManagementDbContext()
-    {
-        var violations = AssertModuleContextBoundaries("Identity", "IWorkManagementDbContext");
-        violations.Should().BeEmpty(
-            $"Identity handlers should not inject IWorkManagementDbContext. " +
-            $"Use IIdentityDbContext instead. Violations: {string.Join(", ", violations)}");
-    }
-
-    [Fact]
-    public void WorkManagementHandlers_ShouldNotInject_IdentityDbContext()
-    {
-        var violations = AssertModuleContextBoundaries("WorkManagement", "IIdentityDbContext");
-        violations.Should().BeEmpty(
-            $"WorkManagement handlers should not inject IIdentityDbContext. " +
-            $"Use IWorkManagementDbContext instead. Violations: {string.Join(", ", violations)}");
-    }
-
-    [Fact]
-    public void WorkspaceHandlers_ShouldNotInject_IdentityDbContext()
-    {
-        var violations = AssertModuleContextBoundaries("Workspaces", "IIdentityDbContext");
-        violations.Should().BeEmpty(
-            $"Workspace handlers should not inject IIdentityDbContext. " +
-            $"Use IWorkspaceDbContext instead. Violations: {string.Join(", ", violations)}");
+            $"{module} handlers should not inject {forbiddenContext}. " +
+            $"Use {ModuleToExpectedContext.GetValueOrDefault(module, "the module's own DbContext")} " +
+            $"instead. Violations: {string.Join(", ", violations)}");
     }
 
     private static List<string> AssertModuleContextBoundaries(string module, string forbiddenContext)
@@ -103,7 +95,11 @@ public class DbContextBoundaryArchitectureTests
 
         foreach (var file in files)
         {
-            if (!file.Contains($"{Path.DirectorySeparatorChar}{module}{Path.DirectorySeparatorChar}"))
+            var featuresIndex = file.IndexOf("Features", StringComparison.Ordinal);
+            if (featuresIndex < 0) continue;
+
+            var relativePath = file.Substring(featuresIndex);
+            if (!relativePath.Contains($"{Path.DirectorySeparatorChar}{module}{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
                 continue;
 
             var content = RemoveComments(File.ReadAllText(file));

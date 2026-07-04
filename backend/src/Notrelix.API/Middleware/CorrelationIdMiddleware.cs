@@ -31,8 +31,8 @@ public sealed class CorrelationIdMiddleware
         var correlationContext = context.RequestServices.GetService<ICorrelationContext>();
         correlationContext?.Set(correlationId);
 
-        // Set in IExecutionContext (for application layer)
-        var executionContext = context.RequestServices.GetService<IExecutionContext>();
+        // Set in IExecutionContextAccessor (for application layer)
+        var executionContext = context.RequestServices.GetService<IExecutionContextAccessor>();
         executionContext?.SetCorrelation(correlationId);
 
         // Add to response headers

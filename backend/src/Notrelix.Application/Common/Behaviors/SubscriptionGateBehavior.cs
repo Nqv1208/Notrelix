@@ -10,12 +10,12 @@ public class SubscriptionGateBehavior<TRequest, TResponse> : IPipelineBehavior<T
     where TRequest : notnull
 {
     private readonly ISubscriptionChecker _subscriptionChecker;
-    private readonly IExecutionContext _executionContext;
+    private readonly IExecutionContextReader _executionContext;
     private readonly ILogger<SubscriptionGateBehavior<TRequest, TResponse>> _logger;
 
     public SubscriptionGateBehavior(
         ISubscriptionChecker subscriptionChecker,
-        IExecutionContext executionContext,
+        IExecutionContextReader executionContext,
         ILogger<SubscriptionGateBehavior<TRequest, TResponse>> logger)
     {
         _subscriptionChecker = subscriptionChecker;
@@ -35,9 +35,10 @@ public class SubscriptionGateBehavior<TRequest, TResponse> : IPipelineBehavior<T
         if (!accountId.HasValue || accountId.Value == Guid.Empty)
         {
             _logger.LogWarning(
-                "Subscription gate skipped: no account context for {RequestType}",
+                "Subscription gate failed: no account context for {RequestType}",
                 typeof(TRequest).Name);
-            return await next();
+            throw new SecurityMisconfigurationException(
+                $"Subscription gate failed: no account context for {typeof(TRequest).Name}");
         }
 
         var minimumTier = requireSubscription.MinimumTier;

@@ -202,7 +202,7 @@ public class CommonFolderArchitectureTests
     }
 
     [Fact]
-    public void PipelineBehaviorCount_ShouldBeFourteen()
+    public void PipelineBehaviorCount_ShouldBeThirteen()
     {
         var diFile = Path.Combine(GetApplicationPath(), "DependencyInjection.cs");
         var content = File.ReadAllText(diFile);

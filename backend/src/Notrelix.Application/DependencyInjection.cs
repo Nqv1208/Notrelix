@@ -46,7 +46,8 @@ public static class DependencyInjection
         services.AddSingleton<IN8nSignatureService, N8nSignatureService>();
 
         // Execution context (scoped per request)
-        services.AddScoped<IExecutionContext, Notrelix.Application.Common.Context.ExecutionContext>();
+        services.AddScoped<IExecutionContextAccessor, Notrelix.Application.Common.Context.ExecutionContext>();
+        services.AddScoped<IExecutionContextReader>(sp => sp.GetRequiredService<IExecutionContextAccessor>());
 
         // AutoMapper
         services.AddAutoMapper(cfg => cfg.AddMaps(assembly), assembly);

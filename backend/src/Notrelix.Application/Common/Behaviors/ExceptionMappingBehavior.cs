@@ -4,11 +4,11 @@ public class ExceptionMappingBehavior<TRequest, TResponse> : IPipelineBehavior<T
     where TRequest : notnull
 {
     private readonly ILogger<ExceptionMappingBehavior<TRequest, TResponse>> _logger;
-    private readonly IExecutionContext _executionContext;
+    private readonly IExecutionContextReader _executionContext;
 
     public ExceptionMappingBehavior(
         ILogger<ExceptionMappingBehavior<TRequest, TResponse>> logger,
-        IExecutionContext executionContext)
+        IExecutionContextReader executionContext)
     {
         _logger = logger;
         _executionContext = executionContext;

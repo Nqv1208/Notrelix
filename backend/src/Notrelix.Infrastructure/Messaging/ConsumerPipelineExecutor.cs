@@ -45,10 +45,17 @@ public sealed class ConsumerPipelineExecutor : IConsumerPipelineExecutor
         // Set tenant from message
         if (message.AccountId.HasValue)
         {
-            _tenant.SetWorkspace(
-                message.AccountId.Value,
-                message.WorkspaceId ?? message.AccountId.Value,
-                message.ActorUserId);
+            if (message.WorkspaceId.HasValue)
+            {
+                _tenant.SetWorkspace(
+                    message.AccountId.Value,
+                    message.WorkspaceId.Value,
+                    message.ActorUserId);
+            }
+            else
+            {
+                _tenant.SetAccount(message.AccountId.Value, message.ActorUserId);
+            }
         }
         else
         {

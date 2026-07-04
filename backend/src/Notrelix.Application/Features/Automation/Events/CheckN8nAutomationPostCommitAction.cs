@@ -3,24 +3,29 @@ using Notrelix.Application.Features.Automation.Jobs;
 
 namespace Notrelix.Application.Features.Automation.Events;
 
-public class CardAssignedN8nAutomationHandler : INotificationHandler<DomainEventNotification<BoardItemMemberAssignedDomainEvent>>
+public sealed class CheckN8nAutomationPostCommitAction : IPostCommitAction
 {
+    private readonly BoardItemMemberAssignedDomainEvent _domainEvent;
     private readonly IAutomationDbContext _context;
     private readonly IResourceReferenceResolver _resourceResolver;
     private readonly IJobQueue _jobQueue;
 
-    public CardAssignedN8nAutomationHandler(IAutomationDbContext context, IResourceReferenceResolver resourceResolver, IJobQueue jobQueue)
+    public CheckN8nAutomationPostCommitAction(
+        BoardItemMemberAssignedDomainEvent domainEvent,
+        IAutomationDbContext context,
+        IResourceReferenceResolver resourceResolver,
+        IJobQueue jobQueue)
     {
+        _domainEvent = domainEvent;
         _context = context;
         _resourceResolver = resourceResolver;
         _jobQueue = jobQueue;
     }
 
-    public async Task Handle(DomainEventNotification<BoardItemMemberAssignedDomainEvent> notification, CancellationToken cancellationToken)
+    public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        var domainEvent = notification.DomainEvent;
-
-        var boardItemContext = await _resourceResolver.GetAccountContextAsync(domainEvent.ItemId, ResourceTypes.BoardItem, cancellationToken);
+        var boardItemContext = await _resourceResolver.GetAccountContextAsync(
+            _domainEvent.ItemId, ResourceTypes.BoardItem, cancellationToken);
         if (boardItemContext is null) return;
 
         var rules = await _context.AutomationRules
@@ -41,7 +46,7 @@ public class CardAssignedN8nAutomationHandler : INotificationHandler<DomainEvent
                 .AsNoTracking()
                 .AnyAsync(execution =>
                     execution.RuleId == rule.Id &&
-                    execution.TriggerId == domainEvent.EventId,
+                    execution.TriggerId == _domainEvent.EventId,
                     cancellationToken);
 
             if (exists) continue;
@@ -50,8 +55,8 @@ public class CardAssignedN8nAutomationHandler : INotificationHandler<DomainEvent
                 boardItemContext.AccountId,
                 boardItemContext.WorkspaceId,
                 rule.Id,
-                domainEvent.EventId,
-                domainEvent.OccurredAt);
+                _domainEvent.EventId,
+                _domainEvent.OccurredAt);
 
             _context.AutomationExecutions.Add(execution);
             await _context.SaveChangesAsync(cancellationToken);

@@ -62,7 +62,7 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<SecurityHeadersMiddleware>();
 
 // 5. Rate limiting (before auth, after security headers)
-app.UseMiddleware<RateLimitingMiddleware>();
+app.UseMiddleware<PreAuthenticationRateLimitMiddleware>();
 
 // 6. HSTS (non-dev only)
 if (!app.Environment.IsDevelopment())
@@ -92,7 +92,10 @@ app.UseAuthentication();
 // 11. HTTP request context (populate IExecutionContext from JWT claims)
 app.UseMiddleware<HttpRequestContextMiddleware>();
 
-// 12. Authorization
+// 12. Rate limiting (authenticated)
+app.UseMiddleware<AuthenticatedRateLimitMiddleware>();
+
+// 13. Authorization
 app.UseAuthorization();
 
 // 13. Endpoints
