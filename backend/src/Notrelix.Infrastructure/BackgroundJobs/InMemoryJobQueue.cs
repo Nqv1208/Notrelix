@@ -1,5 +1,4 @@
 using System.Threading.Channels;
-using Notrelix.Application.Common.Abstractions;
 
 namespace Notrelix.Infrastructure.BackgroundJobs;
 

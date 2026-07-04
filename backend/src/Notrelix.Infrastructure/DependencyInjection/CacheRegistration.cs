@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Caching;
 
 namespace Notrelix.Infrastructure;

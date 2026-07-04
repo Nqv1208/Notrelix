@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Auth.Jwt;
 
 namespace Notrelix.Infrastructure.Auth.Cookies

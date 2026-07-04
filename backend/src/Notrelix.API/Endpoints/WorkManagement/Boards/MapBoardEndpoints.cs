@@ -59,11 +59,13 @@ public static class MapBoardEndpoints
     }
 
     private static async Task<IResult> HandleArchiveBoard(
+        HttpContext httpContext,
         Guid boardId,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new ArchiveBoardCommand(boardId), cancellationToken);
+        var workspaceId = httpContext.GetWorkspaceIdHint();
+        var result = await sender.Send(new ArchiveBoardCommand(workspaceId, boardId), cancellationToken);
         return result.ToNoContentResult();
     }
 

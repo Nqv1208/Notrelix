@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.Context;
 using Notrelix.Infrastructure.Auth.Cookies;
 using Notrelix.Infrastructure.Auth.Jwt;
 using Notrelix.Infrastructure.Auth.Passwords;

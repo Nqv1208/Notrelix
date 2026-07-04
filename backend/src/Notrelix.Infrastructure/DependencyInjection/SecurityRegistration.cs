@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.RateLimiting;
 using Notrelix.Infrastructure.Security.Encryption;
 using Notrelix.Infrastructure.Security.Otp;

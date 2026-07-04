@@ -1,5 +1,4 @@
 using Notrelix.API.Extensions;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Queries.GetBootstrap;
 
 namespace Notrelix.API.Endpoints.Identity.Auth.Queries;

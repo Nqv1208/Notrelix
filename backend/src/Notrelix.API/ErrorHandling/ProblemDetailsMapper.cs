@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Exceptions;
 using AppForbiddenException = Notrelix.Application.Common.Exceptions.ForbiddenException;
 using AppBusinessRuleException = Notrelix.Application.Common.Exceptions.BusinessRuleException;
 using AppConflictException = Notrelix.Application.Common.Exceptions.ConflictException;

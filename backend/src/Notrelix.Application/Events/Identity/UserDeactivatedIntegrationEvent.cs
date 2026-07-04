@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Events;
-
 namespace Notrelix.Application.Events.Identity;
 
 [EventName("user.deactivated", Version = 1)]

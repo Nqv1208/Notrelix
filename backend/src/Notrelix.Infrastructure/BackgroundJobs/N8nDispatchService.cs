@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Automation.Jobs;
 using Notrelix.Application.Features.Integrations;
 using Notrelix.Infrastructure.Data;

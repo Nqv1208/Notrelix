@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.Abstractions.Rls;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Data.Seed;
 

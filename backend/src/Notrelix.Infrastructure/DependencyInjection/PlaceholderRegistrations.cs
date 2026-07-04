@@ -1,4 +1,4 @@
-using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Common.Entitlements;
 using Notrelix.Infrastructure.Observability;
 using Notrelix.Infrastructure.Observability.Metrics;
 
@@ -11,7 +11,7 @@ public static class StorageRegistration
     {
         services.Configure<Storage.StorageOptions>(
             configuration.GetSection(Storage.StorageOptions.SectionName));
-        services.AddScoped<Notrelix.Application.Common.Abstractions.IStorageService,
+        services.AddScoped<IStorageService,
             Storage.Providers.LocalStorageProvider>();
         return services;
     }
@@ -32,7 +32,7 @@ public static class OperationsRegistration
     public static IServiceCollection AddOperations(
         this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddScoped<Notrelix.Application.Common.Abstractions.IIdempotencyStore,
+        services.AddScoped<IIdempotencyStore,
             Ops.DevNullIdempotencyStore>();
         return services;
     }

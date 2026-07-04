@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoard;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.Workspaces.Workspaces;

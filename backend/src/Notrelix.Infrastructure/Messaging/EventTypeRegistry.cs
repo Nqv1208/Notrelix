@@ -1,7 +1,5 @@
 using System.Collections.Concurrent;
 using System.Reflection;
-using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.Events;
 
 namespace Notrelix.Infrastructure.Messaging;
 

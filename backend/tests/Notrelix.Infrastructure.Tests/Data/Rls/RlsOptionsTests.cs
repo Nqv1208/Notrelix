@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Abstractions.Rls;
-
 namespace Notrelix.Infrastructure.Tests.Data.Rls;
 
 public class RlsOptionsTests

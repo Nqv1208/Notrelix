@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Domain.Identity.Users;
 
 namespace Notrelix.Infrastructure.Auth.Jwt;

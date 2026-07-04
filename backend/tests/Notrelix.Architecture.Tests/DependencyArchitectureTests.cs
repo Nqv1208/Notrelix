@@ -46,7 +46,7 @@ public class DependencyArchitectureTests
     [Fact]
     public void Application_ShouldNotReference_Infrastructure()
     {
-        var app = GetAssembly<Notrelix.Application.Common.Abstractions.ICurrentWorkspace>();
+        var app = GetAssembly<Notrelix.Application.Common.Context.ICurrentWorkspace>();
         var refs = GetReferencedAssemblyNames(app);
 
         refs.Should().NotContain("Notrelix.Infrastructure",
@@ -56,7 +56,7 @@ public class DependencyArchitectureTests
     [Fact]
     public void Application_ShouldNotReference_Api()
     {
-        var app = GetAssembly<Notrelix.Application.Common.Abstractions.ICurrentWorkspace>();
+        var app = GetAssembly<Notrelix.Application.Common.Context.ICurrentWorkspace>();
         var refs = GetReferencedAssemblyNames(app);
 
         refs.Should().NotContain("Notrelix.API",

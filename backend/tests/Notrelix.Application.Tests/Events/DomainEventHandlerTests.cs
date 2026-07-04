@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Events;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.SharedKernel;

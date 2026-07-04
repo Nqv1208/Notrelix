@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Context;
-
 namespace Notrelix.Infrastructure.Services;
 
 public sealed class CurrentCorrelationContext : ICorrelationContext

@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Events;
-
 namespace Notrelix.Application.Events.Billing;
 
 [EventName("subscription.canceled", Version = 1)]

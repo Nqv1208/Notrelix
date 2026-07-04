@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.ArchiveBoard;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.Workspaces.Workspaces;
@@ -43,15 +41,11 @@ public class ArchiveBoardCommandHandlerTests : IAsyncLifetime
         context.Boards.Add(board);
         await context.SaveChangesAsync();
 
-        var permissionMock = new Mock<IWorkspacePermissionService>();
-        permissionMock.Setup(p => p.EnsureCanManageBoardAsync(board.Id, userId, default))
-            .Returns(Task.CompletedTask);
-
         var handler = new ArchiveBoardCommandHandler(
             context, new FakeCurrentUser { UserId = userId },
-            permissionMock.Object, FakeDateTimeProvider.WithFixedTime(now));
+            FakeDateTimeProvider.WithFixedTime(now));
 
-        var result = await handler.Handle(new ArchiveBoardCommand(board.Id), CancellationToken.None);
+        var result = await handler.Handle(new ArchiveBoardCommand(workspace.Id, board.Id), CancellationToken.None);
         await context.SaveChangesAsync();
 
         result.Succeeded.Should().BeTrue();
@@ -64,13 +58,12 @@ public class ArchiveBoardCommandHandlerTests : IAsyncLifetime
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
         await using var context = _db.CreateContext(tenant);
-        var permissionMock = new Mock<IWorkspacePermissionService>();
 
         var handler = new ArchiveBoardCommandHandler(
             context, new FakeCurrentUser(),
-            permissionMock.Object, FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow));
+            FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow));
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
-            handler.Handle(new ArchiveBoardCommand(Guid.NewGuid()), CancellationToken.None));
+            handler.Handle(new ArchiveBoardCommand(Guid.NewGuid(), Guid.NewGuid()), CancellationToken.None));
     }
 }

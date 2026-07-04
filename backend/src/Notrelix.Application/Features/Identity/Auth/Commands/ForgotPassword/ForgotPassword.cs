@@ -1,5 +1,4 @@
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Common.Email;
 using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.ForgotPassword;

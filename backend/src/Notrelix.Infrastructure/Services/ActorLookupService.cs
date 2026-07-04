@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Infrastructure.Services;

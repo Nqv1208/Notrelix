@@ -1,6 +1,3 @@
-using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.Abstractions.Rls;
-
 namespace Notrelix.Infrastructure.Data.Rls;
 
 public sealed class RlsSessionContext : IRlsSessionContext

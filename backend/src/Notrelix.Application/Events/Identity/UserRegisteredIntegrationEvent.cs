@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Events;
-
 namespace Notrelix.Application.Events.Identity;
 
 [EventName("identity.user-registered", Version = 2)]

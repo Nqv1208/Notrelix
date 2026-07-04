@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Integration.Tests.Containers;

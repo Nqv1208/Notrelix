@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Messaging;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Provisioning.Commands.ProvisionPersonalWorkspace;

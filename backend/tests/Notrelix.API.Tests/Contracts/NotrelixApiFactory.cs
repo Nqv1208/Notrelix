@@ -11,9 +11,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Common.Security;
 using Notrelix.Application.Features.Workspaces.DTOs;
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetUserWorkspaces;
 using Notrelix.Domain.Governance.Roles;
@@ -151,7 +149,7 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             // since the test host uses In-Memory provider.
             services.RemoveAll<IHostedService>();
 
-            // WorkspaceResolutionMiddleware requires IPermissionEvaluator.
+            // Pipeline behaviors require IPermissionEvaluator.
             services.RemoveAll<IPermissionEvaluator>();
             services.AddScoped<IPermissionEvaluator>(_ =>
             {

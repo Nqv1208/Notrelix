@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Events;
-
 namespace Notrelix.Application.Events.Workspaces;
 
 [EventName("workspace.member.removed", Version = 1)]

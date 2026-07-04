@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Commands.Logout;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.Identity.Sessions;

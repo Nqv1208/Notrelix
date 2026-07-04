@@ -12,7 +12,7 @@ public class TenantContextArchitectureTests
         typeof(Notrelix.Infrastructure.Data.ApplicationDbContext).Assembly;
 
     private static readonly Assembly ApplicationAssembly =
-        typeof(Notrelix.Application.Common.Abstractions.ICurrentTenantContext).Assembly;
+        typeof(Notrelix.Application.Common.Context.ICurrentTenantContext).Assembly;
 
     [Fact]
     public void ApplicationDbContext_ShouldNotInject_ICurrentWorkspace()
@@ -78,18 +78,6 @@ public class TenantContextArchitectureTests
             "ApplicationDbContextInitialiser must use ICurrentTenantContext");
         source.Should().NotContain("EnterSystemContext",
             "ApplicationDbContextInitialiser must use _tenant.SetSystem()");
-    }
-
-    [Fact]
-    public void Middleware_ShouldNotInject_ICurrentWorkspace_Or_ICurrentAccount()
-    {
-        var source = File.ReadAllText(
-            Path.Combine(FindProjectRoot(), "src", "Notrelix.Infrastructure", "Middleware", "WorkspaceResolutionMiddleware.cs"));
-
-        source.Should().NotContain("ICurrentWorkspace",
-            "WorkspaceResolutionMiddleware must use ICurrentTenantContext");
-        source.Should().NotContain("ICurrentAccount",
-            "WorkspaceResolutionMiddleware must use ICurrentTenantContext");
     }
 
     private static string FindProjectRoot()

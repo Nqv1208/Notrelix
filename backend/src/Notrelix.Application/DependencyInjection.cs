@@ -1,7 +1,5 @@
 using System.Reflection;
 using Notrelix.Application.Common.Behaviors;
-using Notrelix.Application.Common.Pipeline;
-using Notrelix.Application.Common.Security;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -16,33 +14,27 @@ public static class DependencyInjection
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(assembly));
 
-        // MediatR Pipeline Behaviors (outermost → innermost)
-        // ExceptionMapping wraps all behaviors to catch unhandled exceptions
+        // MediatR Pipeline Behaviors (outermost -> innermost)
+        // Outer zone: pre-DB
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ExceptionMappingBehavior<,>));
-        // Logging
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
-        // Validation
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ApplicationTracingBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-        // Tenant context bootstrap
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TenantBootstrapBehavior<,>));
-        // Post-commit: dispatch cache invalidations + realtime after commit succeeds
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(PostCommitActionBehavior<,>));
-        // Cache-first for ICacheableQuery (before RLS/TXN — cache hits skip DB entirely)
+        // Post-commit scope: wraps DB scope, flushes side effects after commit
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(PostCommitScopeBehavior<,>));
+        // Public cache: cache-first for shared/public queries (before DB scope)
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CacheBehavior<,>));
-        // RLS session: set PostgreSQL session vars for DB-level security
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(RlsSessionBehavior<,>));
-        // Transactional: begin/commit transaction, SaveChanges for commands
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TransactionalBehavior<,>));
-        // Authorization (IRequirePermission only)
+        // DB/RLS/Transaction boundary: single scope for RLS + transaction + SaveChanges
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(DbRequestScopeBehavior<,>));
+        // Inner zone: inside DB/RLS scope
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
-        // Idempotency for IIdempotentRequest
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(SubscriptionGateBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(FeatureGateBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
-        // Entitlement check for IRequireEntitlement
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(EntitlementBehavior<,>));
-        // Cache invalidation after successful handler
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CacheInvalidationBehavior<,>));
-        // Realtime publish after successful handler
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(RealtimeBehavior<,>));
+        // Post-commit enqueue: enqueues side effects from within DB scope (runs after handler)
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(PostCommitEnqueueBehavior<,>));
+        // Authorized cache: runs inside DB/RLS scope, after auth, for private data
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AuthorizedCacheBehavior<,>));
 
         // FluentValidation - auto register all validators
         services.AddValidatorsFromAssembly(assembly);
@@ -51,6 +43,9 @@ public static class DependencyInjection
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<IPermissionEvaluator, PermissionService>();
         services.AddSingleton<IN8nSignatureService, N8nSignatureService>();
+
+        // Execution context (scoped per request)
+        services.AddScoped<IExecutionContext, Notrelix.Application.Common.Context.ExecutionContext>();
 
         // AutoMapper
         services.AddAutoMapper(cfg => cfg.AddMaps(assembly), assembly);

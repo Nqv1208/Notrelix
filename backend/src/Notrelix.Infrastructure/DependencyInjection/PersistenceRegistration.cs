@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.Events;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Identity.Abstractions;
@@ -15,7 +13,6 @@ using Notrelix.Infrastructure.Services;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Abstractions;
 using Notrelix.Infrastructure.Data.Interceptors;
-using Notrelix.Application.Common.Abstractions.Rls;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Events;
 using Notrelix.Infrastructure.Options;

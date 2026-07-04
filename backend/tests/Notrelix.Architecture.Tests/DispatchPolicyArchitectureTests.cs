@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Events;
 using Notrelix.Domain.Common;
 using Notrelix.Infrastructure.Events;
 

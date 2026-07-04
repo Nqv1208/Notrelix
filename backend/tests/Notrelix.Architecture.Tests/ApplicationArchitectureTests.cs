@@ -151,18 +151,18 @@ public class ApplicationArchitectureTests
         var expectedOrder = new[]
         {
             "ExceptionMappingBehavior",
-            "LoggingBehavior",
+            "ApplicationTracingBehavior",
             "ValidationBehavior",
             "TenantBootstrapBehavior",
-            "PostCommitActionBehavior",
+            "PostCommitScopeBehavior",
             "CacheBehavior",
-            "RlsSessionBehavior",
-            "TransactionalBehavior",
+            "DbRequestScopeBehavior",
             "AuthorizationBehavior",
+            "SubscriptionGateBehavior",
+            "FeatureGateBehavior",
             "IdempotencyBehavior",
-            "EntitlementBehavior",
-            "CacheInvalidationBehavior",
-            "RealtimeBehavior",
+            "PostCommitEnqueueBehavior",
+            "AuthorizedCacheBehavior",
         };
 
         for (var i = 0; i < expectedOrder.Length; i++)
@@ -201,6 +201,87 @@ public class ApplicationArchitectureTests
         }
 
         violations.Should().BeEmpty($"Command/query handlers must not call SaveChangesAsync directly. TransactionalBehavior handles it. Violations: {string.Join(", ", violations)}");
+    }
+
+    [Fact]
+    public void NoOldBehaviorFilesExist()
+    {
+        var behaviorsPath = Path.Combine(GetApplicationPath(), "Common", "Behaviors");
+        var deletedBehaviors = new[]
+        {
+            "RlsSessionBehavior.cs",
+            "TransactionalBehavior.cs",
+            "CacheInvalidationBehavior.cs",
+            "RealtimeBehavior.cs",
+            "PostCommitActionBehavior.cs",
+            "EntitlementBehavior.cs",
+        };
+
+        var violations = new List<string>();
+        foreach (var behavior in deletedBehaviors)
+        {
+            var fullPath = Path.Combine(behaviorsPath, behavior);
+            if (File.Exists(fullPath))
+                violations.Add(behavior);
+        }
+
+        violations.Should().BeEmpty($"Old behavior files must be deleted from {behaviorsPath}: {string.Join(", ", violations)}");
+    }
+
+    [Fact]
+    public void OnlyDbRequestScopeBehaviorCanCallRlsApply()
+    {
+        var behaviorsPath = Path.Combine(GetApplicationPath(), "Common", "Behaviors");
+        var files = Directory.GetFiles(behaviorsPath, "*.cs")
+            .Where(f => !f.EndsWith("DbRequestScopeBehavior.cs"))
+            .ToArray();
+
+        var violations = new List<string>();
+        foreach (var file in files)
+        {
+            var content = File.ReadAllText(file);
+            if (content.Contains("ApplyAsync") || content.Contains(".CommandText"))
+                violations.Add(Path.GetFileName(file));
+        }
+
+        violations.Should().BeEmpty($"Only DbRequestScopeBehavior should call RLS ApplyAsync. Violations: {string.Join(", ", violations)}");
+    }
+
+    [Fact]
+    public void OnlyDbRequestScopeBehaviorCanBeginTransaction()
+    {
+        var behaviorsPath = Path.Combine(GetApplicationPath(), "Common", "Behaviors");
+        var files = Directory.GetFiles(behaviorsPath, "*.cs")
+            .Where(f => !f.EndsWith("DbRequestScopeBehavior.cs"))
+            .ToArray();
+
+        var violations = new List<string>();
+        foreach (var file in files)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            if (content.Contains("BeginTransaction") || content.Contains("CommitAsync"))
+                violations.Add(Path.GetFileName(file));
+        }
+
+        violations.Should().BeEmpty($"Only DbRequestScopeBehavior should begin transactions/commits. Violations: {string.Join(", ", violations)}");
+    }
+
+    [Fact]
+    public void NoSeparatePostCommitBehaviorsExist()
+    {
+        var behaviorsPath = Path.Combine(GetApplicationPath(), "Common", "Behaviors");
+        var forbidden = new[] { "CacheInvalidation", "Realtime" };
+
+        var files = Directory.GetFiles(behaviorsPath, "*.cs");
+        var violations = new List<string>();
+        foreach (var file in files)
+        {
+            var name = Path.GetFileNameWithoutExtension(file);
+            if (forbidden.Any(f => name.StartsWith(f, StringComparison.OrdinalIgnoreCase)))
+                violations.Add(Path.GetFileName(file));
+        }
+
+        violations.Should().BeEmpty($"No separate CacheInvalidation/Realtime behaviors should exist. PostCommitEnqueueBehavior replaces both. Violations: {string.Join(", ", violations)}");
     }
 
     private static string RemoveComments(string input)

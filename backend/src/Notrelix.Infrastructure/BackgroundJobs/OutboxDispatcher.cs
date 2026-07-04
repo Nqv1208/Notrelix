@@ -1,7 +1,5 @@
 using System.Text.Json;
 using Notrelix.Infrastructure.Data;
-using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.Events;
 
 using Notrelix.Infrastructure.Data.Messaging;
 

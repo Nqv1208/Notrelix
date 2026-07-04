@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Abstractions;
-
 namespace Notrelix.API.Endpoints.Admin;
 
 public static class OutboxDiagnosticsEndpoints

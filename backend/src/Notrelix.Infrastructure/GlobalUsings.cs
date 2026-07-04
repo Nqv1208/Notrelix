@@ -8,7 +8,6 @@ global using MediatR;
 global using Microsoft.AspNetCore.Authentication.JwtBearer;
 global using Microsoft.AspNetCore.DataProtection;
 global using Microsoft.AspNetCore.Http;
-global using Microsoft.AspNetCore.Builder;
 global using Microsoft.EntityFrameworkCore;
 global using Microsoft.EntityFrameworkCore.Diagnostics;
 global using Microsoft.EntityFrameworkCore.Design;
@@ -32,3 +31,23 @@ global using StackExchange.Redis;
 // Domain
 global using Notrelix.Domain.Common;
 global using Notrelix.Domain.SharedKernel;
+
+// Application Common (capability folders)
+global using Notrelix.Application.Common.Abstractions;
+global using Notrelix.Application.Common.Auditing;
+global using Notrelix.Application.Common.Caching;
+global using Notrelix.Application.Common.Context;
+global using Notrelix.Application.Common.Data;
+global using Notrelix.Application.Common.Data.Rls;
+global using Notrelix.Application.Common.Email;
+global using Notrelix.Application.Common.Events;
+global using Notrelix.Application.Common.Idempotency;
+global using Notrelix.Application.Common.Integrations.N8n;
+global using Notrelix.Application.Common.Messaging;
+global using Notrelix.Application.Common.PostCommit;
+global using Notrelix.Application.Common.RateLimiting;
+global using Notrelix.Application.Common.Security;
+global using Notrelix.Application.Common.Security.Auth;
+global using Notrelix.Application.Common.Storage;
+global using Notrelix.Application.Common.Tenancy;
+global using Notrelix.Application.Common.Time;

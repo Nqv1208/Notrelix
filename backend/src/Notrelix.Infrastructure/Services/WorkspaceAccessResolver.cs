@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.Security;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Governance.Permissions;

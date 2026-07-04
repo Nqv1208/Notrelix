@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Email;
 using Notrelix.Infrastructure.Options;
 

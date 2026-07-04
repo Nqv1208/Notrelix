@@ -1,6 +1,3 @@
-using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.RateLimiting;
-
 namespace Notrelix.Infrastructure.RateLimiting;
 
 public sealed class RedisRateLimitService : IRateLimitService

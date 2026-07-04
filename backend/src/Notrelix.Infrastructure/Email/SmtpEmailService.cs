@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Mail;
-using Notrelix.Application.Common.Abstractions;
 
 namespace Notrelix.Infrastructure.Email
 {

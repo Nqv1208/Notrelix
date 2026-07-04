@@ -1,7 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.Abstractions.Rls;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Integration.Tests.Containers;

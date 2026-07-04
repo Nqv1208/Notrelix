@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Events;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Automation.Events;
 using Notrelix.Application.Features.Automation.Jobs;
 using Notrelix.Domain.Automation.Executions;

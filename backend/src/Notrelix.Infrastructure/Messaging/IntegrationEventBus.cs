@@ -1,6 +1,3 @@
-using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.Events;
-
 namespace Notrelix.Infrastructure.Messaging;
 
 public sealed class IntegrationEventBus : IIntegrationEventBus

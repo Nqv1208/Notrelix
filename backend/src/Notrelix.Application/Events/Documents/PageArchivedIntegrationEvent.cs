@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Events;
-
 namespace Notrelix.Application.Events.Documents;
 
 [EventName("page.archived", Version = 1)]

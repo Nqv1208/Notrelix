@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Npgsql;
 using Testcontainers.PostgreSql;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Testing.Application.Fakes;
 using Notrelix.Testing.Integration;

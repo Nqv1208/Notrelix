@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.Events;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Infrastructure.Messaging;
 using Notrelix.Infrastructure.Messaging.Options;

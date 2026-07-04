@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Events;
-
 namespace Notrelix.Application.Events.Governance;
 
 [EventName("governance.permission.revoked", Version = 1)]

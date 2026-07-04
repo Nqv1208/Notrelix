@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Events;
-
 namespace Notrelix.Application.Events.WorkManagement;
 
 [EventName("board.created", Version = 1)]

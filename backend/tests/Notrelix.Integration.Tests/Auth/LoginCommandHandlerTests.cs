@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging.Abstractions;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Commands.Login;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Integration.Tests.Containers;

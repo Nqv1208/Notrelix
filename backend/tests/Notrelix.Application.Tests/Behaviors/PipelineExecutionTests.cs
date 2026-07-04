@@ -4,14 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
-using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.Abstractions.Rls;
 using Notrelix.Application.Common.Behaviors;
-using Notrelix.Application.Common.Context;
-using Notrelix.Application.Common.Pipeline;
-using Notrelix.Application.Common.CQRS;
-using Notrelix.Application.Common.Exceptions;
-using Notrelix.Application.Common.Security;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.SharedKernel;
 using ValidationException = Notrelix.Application.Common.Exceptions.ValidationException;
@@ -32,11 +25,9 @@ public class PipelineExecutionTests
 
     public sealed record NonTransactionalCommand : IRequest<string>;
 
-    public sealed record SideEffectCommand : IRequest<string>, ITransactionalRequest, IInvalidateCacheRequest, IRealtimeRequest
+    public sealed record SideEffectCommand : IRequest<string>, ITransactionalRequest, IRealtimeRequest
     {
         public RealtimeTopic Topic => new("test", "test", Guid.NewGuid());
-        public IReadOnlyCollection<CacheInvalidationKey> GetInvalidationKeys() =>
-            [new CacheInvalidationKey("test:*")];
     }
 
     public sealed record ValidationFailCommand : IRequest<string>, ITransactionalRequest
@@ -102,15 +93,20 @@ public class PipelineExecutionTests
         return store;
     }
 
-    private static Mock<IRedisCacheService> CreateMockCacheService() => new();
-    private static Mock<IRealtimePublisher> CreateMockRealtimePublisher() => new();
-
     private static Mock<IPostCommitActionQueue> CreateMockPostCommitQueue()
     {
         var queue = new Mock<IPostCommitActionQueue>();
         queue.Setup(x => x.CacheInvalidations).Returns([]);
         queue.Setup(x => x.RealtimeActions).Returns([]);
         return queue;
+    }
+
+    private static IExecutionContext CreateMockExecutionContext()
+    {
+        var ctx = new Notrelix.Application.Common.Context.ExecutionContext();
+        ctx.SetUser(Guid.NewGuid(), "test@test.com", "Test User");
+        ctx.SetTenant(Guid.NewGuid(), Guid.NewGuid());
+        return ctx;
     }
 
     #endregion
@@ -125,28 +121,20 @@ public class PipelineExecutionTests
         var mockContext = CreateMockContext();
         var mockUser = CreateMockUser();
         var mockPermissionService = CreateMockPermissionService();
-        var mockCache = CreateMockCacheService();
-        var mockRealtime = CreateMockRealtimePublisher();
         var mockPostCommit = CreateMockPostCommitQueue();
         var rls = new Mock<IRlsSessionContext>();
         var dbRls = new Mock<IApplicationDbContext>();
         var database = new Mock<DatabaseFacade>(Mock.Of<DbContext>());
         dbRls.Setup(x => x.Database).Returns(database.Object);
 
-        var transactionBehavior = new TransactionalBehavior<ExecutableCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<TransactionalBehavior<ExecutableCommand, string>>>());
-
-        var realtimeBehavior = new RealtimeBehavior<ExecutableCommand, string>(
-            mockRealtime.Object, Mock.Of<ILogger<RealtimeBehavior<ExecutableCommand, string>>>());
-
-        var cacheInvalidationBehavior = new CacheInvalidationBehavior<ExecutableCommand, string>(
-            mockCache.Object, Mock.Of<ILogger<CacheInvalidationBehavior<ExecutableCommand, string>>>());
+        var transactionBehavior = new DbRequestScopeBehavior<ExecutableCommand, string>(
+            mockContext.Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
 
         var authorizationBehavior = new AuthorizationBehavior<ExecutableCommand, string>(
-            mockUser.Object, mockPermissionService.Object);
+            mockUser.Object, mockPermissionService.Object, Mock.Of<ILogger<AuthorizationBehavior<ExecutableCommand, string>>>());
 
         var workspaceBehavior = new TenantBootstrapBehavior<ExecutableCommand, string>(
-            Mock.Of<ICurrentTenantContext>(), Mock.Of<IWorkspaceAccessResolver>(), Mock.Of<IAccountAccessEvaluator>());
+            Mock.Of<ICurrentTenantContext>(), Mock.Of<IWorkspaceAccessResolver>(), Mock.Of<IAccountAccessEvaluator>(), Mock.Of<ILogger<TenantBootstrapBehavior<ExecutableCommand, string>>>());
 
         var validationBehavior = new ValidationBehavior<ExecutableCommand, string>(
             Array.Empty<IValidator<ExecutableCommand>>());
@@ -157,14 +145,8 @@ public class PipelineExecutionTests
             return Task.FromResult("result");
         };
 
-        RequestHandlerDelegate<string> invalidationNext = ct =>
-            transactionBehavior.Handle(new ExecutableCommand(), txNext, ct);
-
-        RequestHandlerDelegate<string> realtimeNext = ct =>
-            cacheInvalidationBehavior.Handle(new ExecutableCommand(), invalidationNext, ct);
-
         RequestHandlerDelegate<string> authNext = ct =>
-            realtimeBehavior.Handle(new ExecutableCommand(), realtimeNext, ct);
+            transactionBehavior.Handle(new ExecutableCommand(), txNext, ct);
 
         RequestHandlerDelegate<string> wsNext = ct =>
             authorizationBehavior.Handle(new ExecutableCommand(), authNext, ct);
@@ -185,8 +167,8 @@ public class PipelineExecutionTests
         var mockContext = CreateMockContext();
         var executionOrder = new List<string>();
 
-        var behavior = new TransactionalBehavior<ExecutableCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<TransactionalBehavior<ExecutableCommand, string>>>());
+        var behavior = new DbRequestScopeBehavior<ExecutableCommand, string>(
+            mockContext.Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = ct =>
         {
@@ -208,8 +190,8 @@ public class PipelineExecutionTests
     public async Task TransactionalBehavior_HandlerSucceeds_CommitsAndReturnsResponse()
     {
         var mockContext = CreateMockContext();
-        var behavior = new TransactionalBehavior<ExecutableCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<TransactionalBehavior<ExecutableCommand, string>>>());
+        var behavior = new DbRequestScopeBehavior<ExecutableCommand, string>(
+            mockContext.Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("success");
         var result = await behavior.Handle(new ExecutableCommand(), next, CancellationToken.None);
@@ -222,8 +204,8 @@ public class PipelineExecutionTests
     public async Task TransactionalBehavior_HandlerThrows_RollsBackAndDoesNotCommit()
     {
         var mockContext = CreateMockContext();
-        var behavior = new TransactionalBehavior<ExecutableCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<TransactionalBehavior<ExecutableCommand, string>>>());
+        var behavior = new DbRequestScopeBehavior<ExecutableCommand, string>(
+            mockContext.Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => throw new InvalidOperationException("handler failed");
 
@@ -237,8 +219,8 @@ public class PipelineExecutionTests
     public async Task TransactionalBehavior_SaveChangesFails_RollsBackAndDoesNotCommit()
     {
         var mockContext = CreateMockContext(throwOnSave: true);
-        var behavior = new TransactionalBehavior<ExecutableCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<TransactionalBehavior<ExecutableCommand, string>>>());
+        var behavior = new DbRequestScopeBehavior<ExecutableCommand, string>(
+            mockContext.Object, Mock.Of<ILogger<DbRequestScopeBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("ok");
 
@@ -252,8 +234,8 @@ public class PipelineExecutionTests
     public async Task TransactionalBehavior_NonTransactionalRequest_SkipsTransaction()
     {
         var mockContext = CreateMockContext();
-        var behavior = new TransactionalBehavior<NonTransactionalCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<TransactionalBehavior<NonTransactionalCommand, string>>>());
+        var behavior = new DbRequestScopeBehavior<NonTransactionalCommand, string>(
+            mockContext.Object, Mock.Of<ILogger<DbRequestScopeBehavior<NonTransactionalCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("passthrough");
         var result = await behavior.Handle(new NonTransactionalCommand(), next, CancellationToken.None);
@@ -267,86 +249,45 @@ public class PipelineExecutionTests
     #region 3. Post-commit side effect timing
 
     [Fact]
-    public async Task CacheInvalidation_AfterNext_CalledAfterHandler()
-    {
-        var mockCache = CreateMockCacheService();
-        var executionOrder = new List<string>();
-
-        var behavior = new CacheInvalidationBehavior<SideEffectCommand, string>(
-            mockCache.Object, Mock.Of<ILogger<CacheInvalidationBehavior<SideEffectCommand, string>>>());
-
-        RequestHandlerDelegate<string> next = ct =>
-        {
-            executionOrder.Add("Handler");
-            return Task.FromResult("ok");
-        };
-
-        var result = await behavior.Handle(new SideEffectCommand(), next, CancellationToken.None);
-
-        executionOrder.Should().ContainInOrder("Handler");
-        mockCache.Verify(x => x.RemoveAsync("test:*"), Times.Once);
-    }
-
-    [Fact]
-    public async Task CacheInvalidation_HandlerThrows_DoesNotInvalidateCache()
-    {
-        var mockCache = CreateMockCacheService();
-        var behavior = new CacheInvalidationBehavior<SideEffectCommand, string>(
-            mockCache.Object, Mock.Of<ILogger<CacheInvalidationBehavior<SideEffectCommand, string>>>());
-
-        RequestHandlerDelegate<string> next = _ => throw new InvalidOperationException("fail");
-
-        Func<Task> act = () => behavior.Handle(new SideEffectCommand(), next, CancellationToken.None);
-
-        await act.Should().ThrowAsync<InvalidOperationException>();
-        mockCache.Verify(x => x.RemoveAsync(It.IsAny<string>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task RealtimeBehavior_AfterNext_CalledAfterHandler()
-    {
-        var mockRealtime = CreateMockRealtimePublisher();
-        var executionOrder = new List<string>();
-
-        var behavior = new RealtimeBehavior<SideEffectCommand, string>(
-            mockRealtime.Object, Mock.Of<ILogger<RealtimeBehavior<SideEffectCommand, string>>>());
-
-        RequestHandlerDelegate<string> next = ct =>
-        {
-            executionOrder.Add("Handler");
-            return Task.FromResult("ok");
-        };
-
-        var result = await behavior.Handle(new SideEffectCommand(), next, CancellationToken.None);
-
-        executionOrder.Should().ContainInOrder("Handler");
-        mockRealtime.Verify(x => x.PublishAsync(It.IsAny<RealtimeTopic>(), It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task RealtimeBehavior_HandlerThrows_DoesNotPublish()
-    {
-        var mockRealtime = CreateMockRealtimePublisher();
-        var behavior = new RealtimeBehavior<SideEffectCommand, string>(
-            mockRealtime.Object, Mock.Of<ILogger<RealtimeBehavior<SideEffectCommand, string>>>());
-
-        RequestHandlerDelegate<string> next = _ => throw new InvalidOperationException("fail");
-
-        Func<Task> act = () => behavior.Handle(new SideEffectCommand(), next, CancellationToken.None);
-
-        await act.Should().ThrowAsync<InvalidOperationException>();
-        mockRealtime.Verify(x => x.PublishAsync(It.IsAny<RealtimeTopic>(), It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task PostCommitActionBehavior_ProcessesQueueAfterNext()
+    public async Task PostCommitEnqueue_EnqueuesRealtimeAfterHandler()
     {
         var queue = new Mock<IPostCommitActionQueue>();
-        queue.Setup(x => x.CacheInvalidations).Returns([new CacheInvalidationAction("test:*", null, null)]);
+        var executionContext = CreateMockExecutionContext();
+        var behavior = new PostCommitEnqueueBehavior<SideEffectCommand, string>(
+            queue.Object, executionContext, Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
+
+        RequestHandlerDelegate<string> next = ct => Task.FromResult("ok");
+
+        await behavior.Handle(new SideEffectCommand(), next, CancellationToken.None);
+
+        queue.Verify(x => x.EnqueueRealtime(It.IsAny<RealtimeAction>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task PostCommitEnqueue_HandlerThrows_DoesNotEnqueue()
+    {
+        var queue = new Mock<IPostCommitActionQueue>();
+        var executionContext = CreateMockExecutionContext();
+        var behavior = new PostCommitEnqueueBehavior<SideEffectCommand, string>(
+            queue.Object, executionContext, Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
+
+        RequestHandlerDelegate<string> next = _ => throw new InvalidOperationException("fail");
+
+        Func<Task> act = () => behavior.Handle(new SideEffectCommand(), next, CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        queue.Verify(x => x.EnqueueRealtime(It.IsAny<RealtimeAction>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task PostCommitScope_FlushesQueueAfterNext()
+    {
+        var queue = new Mock<IPostCommitActionQueue>();
+        queue.Setup(x => x.CacheInvalidations).Returns([]);
         queue.Setup(x => x.RealtimeActions).Returns([]);
 
-        var behavior = new PostCommitActionBehavior<SideEffectCommand, string>(
-            queue.Object, Mock.Of<ILogger<PostCommitActionBehavior<SideEffectCommand, string>>>());
+        var behavior = new PostCommitScopeBehavior<SideEffectCommand, string>(
+            queue.Object, Mock.Of<ILogger<PostCommitScopeBehavior<SideEffectCommand, string>>>());
 
         var handlerCalled = false;
         RequestHandlerDelegate<string> next = ct =>
@@ -359,79 +300,71 @@ public class PipelineExecutionTests
 
         result.Should().Be("ok");
         handlerCalled.Should().BeTrue();
-        queue.Verify(x => x.Clear(), Times.Once);
+        queue.Verify(x => x.BeginScope(), Times.Once);
+        queue.Verify(x => x.FlushAsync(It.IsAny<CancellationToken>()), Times.Once);
+        queue.Verify(x => x.EndScope(), Times.Once);
     }
 
     [Fact]
-    public async Task PostCommitActionBehavior_HandlerThrows_DoesNotClearQueue()
+    public async Task PostCommitScope_HandlerThrows_ClearsQueue()
     {
         var queue = new Mock<IPostCommitActionQueue>();
         queue.Setup(x => x.CacheInvalidations).Returns([]);
         queue.Setup(x => x.RealtimeActions).Returns([]);
 
-        var behavior = new PostCommitActionBehavior<SideEffectCommand, string>(
-            queue.Object, Mock.Of<ILogger<PostCommitActionBehavior<SideEffectCommand, string>>>());
+        var behavior = new PostCommitScopeBehavior<SideEffectCommand, string>(
+            queue.Object, Mock.Of<ILogger<PostCommitScopeBehavior<SideEffectCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => throw new InvalidOperationException("fail");
 
         Func<Task> act = () => behavior.Handle(new SideEffectCommand(), next, CancellationToken.None);
 
         await act.Should().ThrowAsync<InvalidOperationException>();
-        queue.Verify(x => x.Clear(), Times.Never);
+        queue.Verify(x => x.BeginScope(), Times.Once);
+        queue.Verify(x => x.Clear(), Times.Once);
+        queue.Verify(x => x.FlushAsync(It.IsAny<CancellationToken>()), Times.Never);
+        queue.Verify(x => x.EndScope(), Times.Once);
     }
 
     [Fact]
     public async Task FullPipeline_SideEffectsRunAfterTransaction()
     {
         var mockContext = CreateMockContext();
-        var mockCache = CreateMockCacheService();
-        var mockRealtime = CreateMockRealtimePublisher();
-        var executionOrder = new List<string>();
         var mockPostCommit = CreateMockPostCommitQueue();
+        var executionOrder = new List<string>();
 
-        var transactionBehavior = new TransactionalBehavior<SideEffectCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<TransactionalBehavior<SideEffectCommand, string>>>());
+        var transactionBehavior = new DbRequestScopeBehavior<SideEffectCommand, string>(
+            mockContext.Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
 
-        var realtimeBehavior = new RealtimeBehavior<SideEffectCommand, string>(
-            mockRealtime.Object, Mock.Of<ILogger<RealtimeBehavior<SideEffectCommand, string>>>());
+        var enqueueBehavior = new PostCommitEnqueueBehavior<SideEffectCommand, string>(
+            mockPostCommit.Object, CreateMockExecutionContext(), Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
 
-        var cacheInvalidationBehavior = new CacheInvalidationBehavior<SideEffectCommand, string>(
-            mockCache.Object, Mock.Of<ILogger<CacheInvalidationBehavior<SideEffectCommand, string>>>());
+        var postCommitBehavior = new PostCommitScopeBehavior<SideEffectCommand, string>(
+            mockPostCommit.Object, Mock.Of<ILogger<PostCommitScopeBehavior<SideEffectCommand, string>>>());
 
-        var postCommitBehavior = new PostCommitActionBehavior<SideEffectCommand, string>(
-            mockPostCommit.Object, Mock.Of<ILogger<PostCommitActionBehavior<SideEffectCommand, string>>>());
-
-        // Nesting order matches DI: CacheInvalidation (outer) → Realtime (inner) → Transactional → Handler
-        // After handler: inner runs first → PublishAsync, then outer → RemoveAsync
-
+        // Nesting: PostCommitScope (outer) → DbRequestScope (transaction) → PostCommitEnqueue (inner) → Handler
         RequestHandlerDelegate<string> txNext = ct =>
         {
             executionOrder.Add("Handler");
             return Task.FromResult("ok");
         };
 
-        RequestHandlerDelegate<string> realtimeNext = ct =>
+        RequestHandlerDelegate<string> enqueueNext = ct =>
             transactionBehavior.Handle(new SideEffectCommand(), txNext, ct);
 
-        RequestHandlerDelegate<string> invalidationNext = ct =>
-            realtimeBehavior.Handle(new SideEffectCommand(), realtimeNext, ct);
-
         RequestHandlerDelegate<string> postCommitNext = ct =>
-            cacheInvalidationBehavior.Handle(new SideEffectCommand(), invalidationNext, ct);
+            enqueueBehavior.Handle(new SideEffectCommand(), enqueueNext, ct);
 
         await postCommitBehavior.Handle(new SideEffectCommand(), postCommitNext, CancellationToken.None);
 
         mockContext.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        mockCache.Verify(x => x.RemoveAsync("test:*"), Times.Once);
-        mockRealtime.Verify(x => x.PublishAsync(It.IsAny<RealtimeTopic>(), It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Once);
+        mockPostCommit.Verify(x => x.FlushAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task Pipeline_TransactionCommitHappensBeforeSideEffects()
     {
         var (mockContext, mockTransaction) = CreateMockContextPair();
-        var mockCache = CreateMockCacheService();
-        var mockRealtime = CreateMockRealtimePublisher();
         var mockPostCommit = CreateMockPostCommitQueue();
         var callOrder = new List<string>();
 
@@ -443,25 +376,22 @@ public class PipelineExecutionTests
             .Callback(() => callOrder.Add("CommitAsync"))
             .Returns(Task.CompletedTask);
 
-        mockCache.Setup(x => x.RemoveAsync(It.IsAny<string>()))
-            .Callback(() => callOrder.Add("RemoveAsync"))
+        // Track flush order within PostCommitScope
+        mockPostCommit.Setup(x => x.FlushAsync(It.IsAny<CancellationToken>()))
+            .Callback(() => callOrder.Add("FlushAsync"))
             .Returns(Task.CompletedTask);
 
-        mockRealtime.Setup(x => x.PublishAsync(It.IsAny<RealtimeTopic>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
-            .Callback(() => callOrder.Add("PublishAsync"))
-            .Returns(Task.CompletedTask);
+        // Nesting: PostCommitScope (outer) → DbRequestScope (transaction) → PostCommitEnqueue → Handler
+        // After handler returns: Transaction(SaveChanges+Commit) → PostCommitScope(FlushAsync)
 
-        // Nesting: CacheInvalidation(outer) → Realtime(inner) → Transactional → Handler
-        // After handler returns: Transaction(SaveChanges+Commit) → Realtime(Publish) → CacheInvalidation(Remove)
+        var transactionBehavior = new DbRequestScopeBehavior<SideEffectCommand, string>(
+            mockContext.Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
 
-        var transactionBehavior = new TransactionalBehavior<SideEffectCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<TransactionalBehavior<SideEffectCommand, string>>>());
+        var enqueueBehavior = new PostCommitEnqueueBehavior<SideEffectCommand, string>(
+            mockPostCommit.Object, CreateMockExecutionContext(), Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
 
-        var realtimeBehavior = new RealtimeBehavior<SideEffectCommand, string>(
-            mockRealtime.Object, Mock.Of<ILogger<RealtimeBehavior<SideEffectCommand, string>>>());
-
-        var cacheInvalidationBehavior = new CacheInvalidationBehavior<SideEffectCommand, string>(
-            mockCache.Object, Mock.Of<ILogger<CacheInvalidationBehavior<SideEffectCommand, string>>>());
+        var postCommitBehavior = new PostCommitScopeBehavior<SideEffectCommand, string>(
+            mockPostCommit.Object, Mock.Of<ILogger<PostCommitScopeBehavior<SideEffectCommand, string>>>());
 
         RequestHandlerDelegate<string> txNext = ct =>
         {
@@ -469,23 +399,22 @@ public class PipelineExecutionTests
             return Task.FromResult("ok");
         };
 
-        RequestHandlerDelegate<string> realtimeNext = ct =>
+        RequestHandlerDelegate<string> enqueueNext = ct =>
             transactionBehavior.Handle(new SideEffectCommand(), txNext, ct);
 
-        RequestHandlerDelegate<string> invalidationNext = ct =>
-            realtimeBehavior.Handle(new SideEffectCommand(), realtimeNext, ct);
+        RequestHandlerDelegate<string> postCommitNext = ct =>
+            enqueueBehavior.Handle(new SideEffectCommand(), enqueueNext, ct);
 
-        await cacheInvalidationBehavior.Handle(new SideEffectCommand(), invalidationNext, CancellationToken.None);
+        await postCommitBehavior.Handle(new SideEffectCommand(), postCommitNext, CancellationToken.None);
 
-        callOrder.Should().ContainInOrder("Handler", "SaveChanges", "CommitAsync", "PublishAsync", "RemoveAsync");
+        callOrder.Should().ContainInOrder("Handler", "SaveChanges", "CommitAsync", "FlushAsync");
     }
 
     [Fact]
     public async Task Pipeline_SideEffectsCannotRunBeforeCommit()
     {
         var (mockContext, mockTransaction) = CreateMockContextPair();
-        var mockCache = CreateMockCacheService();
-        var mockRealtime = CreateMockRealtimePublisher();
+        var mockPostCommit = CreateMockPostCommitQueue();
         var commitHappened = false;
 
         mockContext.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
@@ -496,33 +425,29 @@ public class PipelineExecutionTests
             .Callback(() => commitHappened = true)
             .Returns(Task.CompletedTask);
 
-        mockCache.Setup(x => x.RemoveAsync(It.IsAny<string>()))
-            .Callback(() => commitHappened.Should().BeTrue("commit must happen before cache invalidation"))
+        mockPostCommit.Setup(x => x.FlushAsync(It.IsAny<CancellationToken>()))
+            .Callback(() => commitHappened.Should().BeTrue("commit must happen before flush"))
             .Returns(Task.CompletedTask);
 
-        mockRealtime.Setup(x => x.PublishAsync(It.IsAny<RealtimeTopic>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
-            .Callback(() => commitHappened.Should().BeTrue("commit must happen before realtime publish"))
-            .Returns(Task.CompletedTask);
+        // Nesting: PostCommitScope (outer) → DbRequestScope → PostCommitEnqueue → Handler
+        var transactionBehavior = new DbRequestScopeBehavior<SideEffectCommand, string>(
+            mockContext.Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
 
-        // Nesting: CacheInvalidation(outer) → Realtime(inner) → Transactional → Handler
-        var transactionBehavior = new TransactionalBehavior<SideEffectCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<TransactionalBehavior<SideEffectCommand, string>>>());
+        var enqueueBehavior = new PostCommitEnqueueBehavior<SideEffectCommand, string>(
+            mockPostCommit.Object, CreateMockExecutionContext(), Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
 
-        var realtimeBehavior = new RealtimeBehavior<SideEffectCommand, string>(
-            mockRealtime.Object, Mock.Of<ILogger<RealtimeBehavior<SideEffectCommand, string>>>());
-
-        var cacheInvalidationBehavior = new CacheInvalidationBehavior<SideEffectCommand, string>(
-            mockCache.Object, Mock.Of<ILogger<CacheInvalidationBehavior<SideEffectCommand, string>>>());
+        var postCommitBehavior = new PostCommitScopeBehavior<SideEffectCommand, string>(
+            mockPostCommit.Object, Mock.Of<ILogger<PostCommitScopeBehavior<SideEffectCommand, string>>>());
 
         RequestHandlerDelegate<string> txNext = _ => Task.FromResult("ok");
 
-        RequestHandlerDelegate<string> realtimeNext = ct =>
+        RequestHandlerDelegate<string> enqueueNext = ct =>
             transactionBehavior.Handle(new SideEffectCommand(), txNext, ct);
 
-        RequestHandlerDelegate<string> invalidationNext = ct =>
-            realtimeBehavior.Handle(new SideEffectCommand(), realtimeNext, ct);
+        RequestHandlerDelegate<string> postCommitNext = ct =>
+            enqueueBehavior.Handle(new SideEffectCommand(), enqueueNext, ct);
 
-        await cacheInvalidationBehavior.Handle(new SideEffectCommand(), invalidationNext, CancellationToken.None);
+        await postCommitBehavior.Handle(new SideEffectCommand(), postCommitNext, CancellationToken.None);
     }
 
     #endregion
@@ -642,7 +567,7 @@ public class PipelineExecutionTests
             .ReturnsAsync(new PermissionDecision(false, "missing_permission"));
 
         var behavior = new AuthorizationBehavior<ExecutableCommand, string>(
-            mockUser.Object, mockPermissionService.Object);
+            mockUser.Object, mockPermissionService.Object, Mock.Of<ILogger<AuthorizationBehavior<ExecutableCommand, string>>>());
         var handlerCalled = false;
 
         RequestHandlerDelegate<string> next = ct =>
@@ -664,7 +589,7 @@ public class PipelineExecutionTests
         mockUser.Setup(x => x.UserId).Returns(Guid.Empty);
 
         var behavior = new AuthorizationBehavior<ExecutableCommand, string>(
-            mockUser.Object, Mock.Of<IPermissionService>());
+            mockUser.Object, Mock.Of<IPermissionService>(), Mock.Of<ILogger<AuthorizationBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("ok");
 
@@ -677,7 +602,7 @@ public class PipelineExecutionTests
     public async Task TenantBootstrapBehavior_EmptyWorkspaceId_ThrowsForbidden()
     {
         var behavior = new TenantBootstrapBehavior<EmptyWorkspaceCommand, string>(
-            Mock.Of<ICurrentTenantContext>(), Mock.Of<IWorkspaceAccessResolver>(), Mock.Of<IAccountAccessEvaluator>());
+            Mock.Of<ICurrentTenantContext>(), Mock.Of<IWorkspaceAccessResolver>(), Mock.Of<IAccountAccessEvaluator>(), Mock.Of<ILogger<TenantBootstrapBehavior<EmptyWorkspaceCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("ok");
 
@@ -693,8 +618,8 @@ public class PipelineExecutionTests
         var validators = new IValidator<ValidationFailCommand>[] { new ValidationFailCommandValidator() };
 
         var validationBehavior = new ValidationBehavior<ValidationFailCommand, string>(validators);
-        var transactionBehavior = new TransactionalBehavior<ValidationFailCommand, string>(
-            mockContext.Object, Mock.Of<ILogger<TransactionalBehavior<ValidationFailCommand, string>>>());
+        var transactionBehavior = new DbRequestScopeBehavior<ValidationFailCommand, string>(
+            mockContext.Object, Mock.Of<ILogger<DbRequestScopeBehavior<ValidationFailCommand, string>>>());
 
         RequestHandlerDelegate<string> txNext = _ => Task.FromResult("ok");
 

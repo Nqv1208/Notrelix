@@ -3,7 +3,7 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetBoardItems;
 
-public record GetBoardItemsQuery(Guid WorkspaceId, Guid BoardId) : IQuery<List<BoardItemSlimDto>>, IRequirePermission, IWorkspaceRequest, ICacheableQuery<List<BoardItemSlimDto>>
+public record GetBoardItemsQuery(Guid WorkspaceId, Guid BoardId) : IQuery<List<BoardItemSlimDto>>, IRequirePermission, IWorkspaceRequest, IRlsReadRequest, ICacheableQuery<List<BoardItemSlimDto>>
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId, WorkspaceId);

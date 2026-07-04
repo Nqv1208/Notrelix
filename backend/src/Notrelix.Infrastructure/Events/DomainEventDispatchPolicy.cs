@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Events;
 using Notrelix.Domain.Accounts.Accounts.Events;
 using Notrelix.Domain.Accounts.Invitations.Events;
 using Notrelix.Domain.Accounts.Members.Events;

@@ -1,0 +1,220 @@
+namespace Notrelix.Architecture.Tests;
+
+public class CommonFolderArchitectureTests
+{
+    private static string GetApplicationPath()
+    {
+        var current = AppContext.BaseDirectory;
+        while (current != null && !File.Exists(Path.Combine(current, "backend.slnx")))
+            current = Path.GetDirectoryName(current);
+        if (current == null)
+            throw new DirectoryNotFoundException("Could not find backend.slnx root.");
+        return Path.Combine(current, "src", "Notrelix.Application");
+    }
+
+    private static string CommonPath => Path.Combine(GetApplicationPath(), "Common");
+
+    [Fact]
+    public void Abstractions_ShouldOnlyContain_INotificationService()
+    {
+        var absPath = Path.Combine(CommonPath, "Abstractions");
+        var files = Directory.GetFiles(absPath, "*.cs")
+            .Select(Path.GetFileName)
+            .ToArray();
+        files.Should().BeEquivalentTo(["INotificationService.cs"],
+            $"Abstractions should only contain INotificationService.cs. Found: {string.Join(", ", files)}");
+    }
+
+    [Fact]
+    public void PipelineFolder_ShouldNotExist()
+    {
+        var pipelinePath = Path.Combine(CommonPath, "Pipeline");
+        Directory.Exists(pipelinePath).Should().BeFalse("Pipeline/ folder was deleted; TenantBootstrapBehavior moved to Behaviors/");
+    }
+
+    [Fact]
+    public void TransactionsFolder_ShouldNotExist()
+    {
+        var path = Path.Combine(CommonPath, "Transactions");
+        Directory.Exists(path).Should().BeFalse("Transactions/ folder was deleted (empty placeholder)");
+    }
+
+    [Fact]
+    public void ExtensionsFolder_ShouldNotExist()
+    {
+        var path = Path.Combine(CommonPath, "Extensions");
+        Directory.Exists(path).Should().BeFalse("Extensions/ folder was deleted (empty placeholder)");
+    }
+
+    [Fact]
+    public void MappingFolder_ShouldNotExist()
+    {
+        var path = Path.Combine(CommonPath, "Mapping");
+        Directory.Exists(path).Should().BeFalse("Mapping/ folder was deleted (empty placeholder)");
+    }
+
+    [Fact]
+    public void ReadModelsFolder_ShouldNotExist()
+    {
+        var path = Path.Combine(CommonPath, "ReadModels");
+        Directory.Exists(path).Should().BeFalse("ReadModels/ folder was deleted (empty placeholder)");
+    }
+
+    [Fact]
+    public void ValidationFolder_ShouldNotExist()
+    {
+        var path = Path.Combine(CommonPath, "Validation");
+        Directory.Exists(path).Should().BeFalse("Validation/ folder was deleted (empty placeholder)");
+    }
+
+    [Fact]
+    public void CacheInvalidationKey_ShouldBeInCaching()
+    {
+        var cqrsPath = Path.Combine(CommonPath, "CQRS", "CacheInvalidationKey.cs");
+        var cachingPath = Path.Combine(CommonPath, "Caching", "CacheInvalidationKey.cs");
+        File.Exists(cqrsPath).Should().BeFalse("CacheInvalidationKey moved from CQRS/ to Caching/");
+        File.Exists(cachingPath).Should().BeTrue("CacheInvalidationKey should exist in Caching/");
+    }
+
+    [Fact]
+    public void RealtimeTopic_ShouldBeInPostCommit()
+    {
+        var cqrsPath = Path.Combine(CommonPath, "CQRS", "RealtimeTopic.cs");
+        var postCommitPath = Path.Combine(CommonPath, "PostCommit", "RealtimeTopic.cs");
+        File.Exists(cqrsPath).Should().BeFalse("RealtimeTopic moved from CQRS/ to PostCommit/");
+        File.Exists(postCommitPath).Should().BeTrue("RealtimeTopic should exist in PostCommit/");
+    }
+
+    [Fact]
+    public void FeatureCode_ShouldBeInEntitlements()
+    {
+        var cqrsPath = Path.Combine(CommonPath, "CQRS", "FeatureCode.cs");
+        var entitlementsPath = Path.Combine(CommonPath, "Entitlements", "FeatureCode.cs");
+        File.Exists(cqrsPath).Should().BeFalse("FeatureCode moved from CQRS/ to Entitlements/");
+        File.Exists(entitlementsPath).Should().BeTrue("FeatureCode should exist in Entitlements/");
+    }
+
+    [Fact]
+    public void IActivityRequest_ShouldBeInActivity()
+    {
+        var cqrsPath = Path.Combine(CommonPath, "CQRS", "IActivityRequest.cs");
+        var activityPath = Path.Combine(CommonPath, "Activity", "IActivityRequest.cs");
+        File.Exists(cqrsPath).Should().BeFalse("IActivityRequest moved from CQRS/ to Activity/");
+        File.Exists(activityPath).Should().BeTrue("IActivityRequest should exist in Activity/");
+    }
+
+    [Fact]
+    public void IAuditableRequest_ShouldBeInAuditing()
+    {
+        var cqrsPath = Path.Combine(CommonPath, "CQRS", "IAuditableRequest.cs");
+        var auditingPath = Path.Combine(CommonPath, "Auditing", "IAuditableRequest.cs");
+        File.Exists(cqrsPath).Should().BeFalse("IAuditableRequest moved from CQRS/ to Auditing/");
+        File.Exists(auditingPath).Should().BeTrue("IAuditableRequest should exist in Auditing/");
+    }
+
+    [Fact]
+    public void IMessageTriggeredRequest_ShouldBeInMessaging()
+    {
+        var cqrsPath = Path.Combine(CommonPath, "CQRS", "IMessageTriggeredRequest.cs");
+        var messagingPath = Path.Combine(CommonPath, "Messaging", "IMessageTriggeredRequest.cs");
+        File.Exists(cqrsPath).Should().BeFalse("IMessageTriggeredRequest moved from CQRS/ to Messaging/");
+        File.Exists(messagingPath).Should().BeTrue("IMessageTriggeredRequest should exist in Messaging/");
+    }
+
+    [Fact]
+    public void NoIRequireEntitlement_InCQRS()
+    {
+        var path = Path.Combine(CommonPath, "CQRS", "IRequireEntitlement.cs");
+        File.Exists(path).Should().BeFalse("IRequireEntitlement was deleted; superseded by IRequireSubscription + IRequireFeature");
+    }
+
+    [Fact]
+    public void NoIInvalidateCacheRequest_InCQRS()
+    {
+        var path = Path.Combine(CommonPath, "CQRS", "IInvalidateCacheRequest.cs");
+        File.Exists(path).Should().BeFalse("IInvalidateCacheRequest was deleted; cache invalidation is ad-hoc via IPostCommitActionQueue");
+    }
+
+    [Fact]
+    public void TenantBootstrapBehavior_ShouldBeInBehaviors()
+    {
+        var pipelinePath = Path.Combine(CommonPath, "Pipeline", "TenantBootstrapBehavior.cs");
+        var behaviorsPath = Path.Combine(CommonPath, "Behaviors", "TenantBootstrapBehavior.cs");
+        File.Exists(pipelinePath).Should().BeFalse("TenantBootstrapBehavior moved from Pipeline/ to Behaviors/");
+        File.Exists(behaviorsPath).Should().BeTrue("TenantBootstrapBehavior should exist in Behaviors/");
+    }
+
+    [Fact]
+    public void IPostCommitActionQueue_ShouldBeInPostCommit()
+    {
+        var contextPath = Path.Combine(CommonPath, "Context", "IPostCommitActionQueue.cs");
+        var postCommitPath = Path.Combine(CommonPath, "PostCommit", "IPostCommitActionQueue.cs");
+        File.Exists(contextPath).Should().BeFalse("IPostCommitActionQueue moved from Context/ to PostCommit/");
+        File.Exists(postCommitPath).Should().BeTrue("IPostCommitActionQueue should exist in PostCommit/");
+    }
+
+    [Fact]
+    public void N8nSignatureService_ShouldBeInIntegrations()
+    {
+        var securityPath = Path.Combine(CommonPath, "Security", "N8nSignatureService.cs");
+        var n8nPath = Path.Combine(CommonPath, "Integrations", "N8n", "N8nSignatureService.cs");
+        File.Exists(securityPath).Should().BeFalse("N8nSignatureService moved from Security/ to Integrations/N8n/");
+        File.Exists(n8nPath).Should().BeTrue("N8nSignatureService should exist in Integrations/N8n/");
+    }
+
+    [Fact]
+    public void AuthResult_ShouldBeInSecurityAuth()
+    {
+        var modelsPath = Path.Combine(CommonPath, "Models", "AuthResult.cs");
+        var authPath = Path.Combine(CommonPath, "Security", "Auth", "AuthResult.cs");
+        File.Exists(modelsPath).Should().BeFalse("AuthResult moved from Models/ to Security/Auth/");
+        File.Exists(authPath).Should().BeTrue("AuthResult should exist in Security/Auth/");
+    }
+
+    [Fact]
+    public void FileUploadResult_ShouldBeInStorage()
+    {
+        var modelsPath = Path.Combine(CommonPath, "Models", "FileUploadResult.cs");
+        var storagePath = Path.Combine(CommonPath, "Storage", "FileUploadResult.cs");
+        File.Exists(modelsPath).Should().BeFalse("FileUploadResult moved from Models/ to Storage/");
+        File.Exists(storagePath).Should().BeTrue("FileUploadResult should exist in Storage/");
+    }
+
+    [Fact]
+    public void CQRS_ShouldNotContainMovedOrDeletedFiles()
+    {
+        var cqrsPath = Path.Combine(CommonPath, "CQRS");
+        var files = Directory.GetFiles(cqrsPath, "*.cs")
+            .Select(Path.GetFileName)
+            .ToHashSet();
+
+        var forbidden = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "FeatureCode.cs",
+            "CacheInvalidationKey.cs",
+            "RealtimeTopic.cs",
+            "IActivityRequest.cs",
+            "IAuditableRequest.cs",
+            "IMessageTriggeredRequest.cs",
+            "IRequireEntitlement.cs",
+            "IInvalidateCacheRequest.cs",
+        };
+
+        var violations = files.Intersect(forbidden).ToArray();
+        violations.Should().BeEmpty(
+            $"CQRS/ should not contain moved/deleted files: {string.Join(", ", violations)}");
+    }
+
+    [Fact]
+    public void PipelineBehaviorCount_ShouldBeFourteen()
+    {
+        var diFile = Path.Combine(GetApplicationPath(), "DependencyInjection.cs");
+        var content = File.ReadAllText(diFile);
+        var lines = content.Split('\n')
+            .Select(l => l.Trim())
+            .Where(l => l.Contains("AddTransient(typeof(IPipelineBehavior<"))
+            .ToList();
+
+        lines.Should().HaveCount(13, "expected exactly 13 pipeline behaviors");
+    }
+}

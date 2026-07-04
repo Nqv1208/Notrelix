@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Events;
-
 namespace Notrelix.Application.Events.Billing;
 
 [EventName("subscription.changed", Version = 1)]

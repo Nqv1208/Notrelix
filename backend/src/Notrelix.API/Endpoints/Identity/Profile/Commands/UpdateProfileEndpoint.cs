@@ -1,5 +1,4 @@
 using Notrelix.API.Extensions;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile;
 
 namespace Notrelix.API.Endpoints.Identity.Profile.Commands;

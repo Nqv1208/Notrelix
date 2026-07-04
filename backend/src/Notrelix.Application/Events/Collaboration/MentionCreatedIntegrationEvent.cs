@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Events;
-
 namespace Notrelix.Application.Events.Collaboration;
 
 [EventName("mention.created", Version = 1)]

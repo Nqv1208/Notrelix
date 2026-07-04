@@ -1,7 +1,3 @@
-using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.Abstractions.Rls;
-using Notrelix.Application.Common.Events;
-using Notrelix.Application.Common.Messaging;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Messaging;
 

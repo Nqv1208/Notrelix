@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.RestoreWorkspace;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Integration.Tests.Containers;

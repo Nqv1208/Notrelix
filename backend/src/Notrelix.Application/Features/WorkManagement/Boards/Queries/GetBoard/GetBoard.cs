@@ -5,7 +5,7 @@ using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoard;
 
-public record GetBoardQuery(Guid WorkspaceId, Guid BoardId) : IQuery<Result<BoardDto>>, IRequirePermission, IWorkspaceRequest, ICacheableQuery<Result<BoardDto>>
+public record GetBoardQuery(Guid WorkspaceId, Guid BoardId) : IQuery<Result<BoardDto>>, IRequirePermission, IWorkspaceRequest, IRlsReadRequest, ICacheableQuery<Result<BoardDto>>
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId, WorkspaceId);

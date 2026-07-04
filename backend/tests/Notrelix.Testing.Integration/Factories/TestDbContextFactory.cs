@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Common.Context;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Projections.Search;
 

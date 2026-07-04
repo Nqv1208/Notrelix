@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.Security;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.Workspaces.Members;
