@@ -7,7 +7,7 @@ public static class ArchiveWorkspaceEndpoint
 {
     public static IEndpointRouteBuilder MapArchiveWorkspace(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/archive", HandleAsync)
+        group.MapWorkspacePost("/archive", HandleAsync)
             .WithName("Workspaces.Workspaces.ArchiveWorkspace")
             .WithTags("Workspaces.Workspaces")
             .WithSummary("Archive (soft delete) a workspace");

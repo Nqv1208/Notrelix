@@ -278,6 +278,65 @@ public class ApiArchitectureTests
             "Every bounded context with endpoints should have a Contracts directory");
     }
 
+    [Fact]
+    public void EndpointHandlerFiles_MustNotCallRawAuth()
+    {
+        var files = GetEndpointFiles();
+        var violations = new List<string>();
+
+        foreach (var file in files)
+        {
+            var fileName = Path.GetFileName(file);
+            if (fileName == "EndpointMappingExtensions.cs") continue;
+
+            // Only check *Endpoint.cs (handler files), not Map*Endpoints.cs (group files)
+            if (!fileName.EndsWith("Endpoint.cs") || fileName.StartsWith("Map")) continue;
+
+            var content = RemoveComments(File.ReadAllText(file));
+
+            // Check for direct .RequireAuthorization or .AllowAnonymous calls
+            if (content.Contains(".RequireAuthorization(") || content.Contains(".AllowAnonymous()"))
+            {
+                violations.Add(fileName);
+            }
+        }
+
+        violations.Should().BeEmpty(
+            $"Endpoint handler files must use Map{{Scope}}{{Verb}} DSL instead of raw .RequireAuthorization() or .AllowAnonymous(): " +
+            $"{string.Join(", ", violations)}");
+    }
+
+    [Fact]
+    public void MapFiles_MustNotUseTagAsScopeMetadata()
+    {
+        var apiPath = GetApiPath();
+        var mapFiles = Directory.GetFiles(Path.Combine(apiPath, "Endpoints"), "Map*Endpoints.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                     && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .ToArray();
+        var violations = new List<string>();
+
+        foreach (var file in mapFiles)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            var lines = content.Split('\n');
+
+            foreach (var line in lines)
+            {
+                if (line.Contains(".TagAsPublic(") ||
+                    line.Contains(".TagAsWorkspaceScoped(") ||
+                    line.Contains(".TagAsResourceScoped(") ||
+                    line.Contains(".TagAsAdmin("))
+                {
+                    violations.Add($"{Path.GetFileName(file)}: {line.Trim()}");
+                }
+            }
+        }
+
+        violations.Should().BeEmpty(
+            $"TagAs* calls are removed; endpoint scoping now uses Map{{Scope}}{{Verb}} DSL: {string.Join(", ", violations)}");
+    }
+
     private static string RemoveComments(string input)
     {
         var blockComments = @"/\*(.*?)\*/";

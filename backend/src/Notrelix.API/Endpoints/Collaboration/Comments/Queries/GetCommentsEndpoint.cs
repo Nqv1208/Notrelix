@@ -7,7 +7,7 @@ public static class GetCommentsEndpoint
 {
     public static IEndpointRouteBuilder MapGetBoardItemComments(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", GetBoardItemCommentsAsync)
+        group.MapResourceGet("/", GetBoardItemCommentsAsync)
             .WithName("Collaboration.Comments.GetBoardItemComments")
             .WithTags("Collaboration.Comments")
             .WithSummary("Get comments for a board item");
@@ -16,7 +16,7 @@ public static class GetCommentsEndpoint
 
     public static IEndpointRouteBuilder MapGetPageComments(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", GetPageCommentsAsync)
+        group.MapResourceGet("/", GetPageCommentsAsync)
             .WithName("Collaboration.Comments.GetPageComments")
             .WithTags("Collaboration.Comments")
             .WithSummary("Get comments for a page");

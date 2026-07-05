@@ -8,7 +8,7 @@ public static class CreateAttachmentEndpoint
 {
     public static IEndpointRouteBuilder MapCreateAttachment(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/", HandleAsync)
+        group.MapResourcePost("/", HandleAsync)
             .WithName("Collaboration.Attachments.Create")
             .WithTags("Collaboration.Attachments")
             .WithSummary("Register board item attachment metadata");

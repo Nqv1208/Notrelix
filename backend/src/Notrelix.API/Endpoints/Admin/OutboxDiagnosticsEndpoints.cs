@@ -7,22 +7,21 @@ public static class OutboxDiagnosticsEndpoints
         var group = app
             .MapGroup("/admin/outbox")
             .WithTags("Admin")
-            .RequireAuthorization("SystemAdmin")
             .WithOpenApi();
 
-        group.MapGet("/stats", GetStats)
+        group.MapAdminGet("/stats", GetStats)
             .WithName("GetOutboxStats")
             .WithSummary("Outbox message statistics by status");
 
-        group.MapGet("/pending", GetPending)
+        group.MapAdminGet("/pending", GetPending)
             .WithName("GetPendingOutboxMessages")
             .WithSummary("Recent pending/processing outbox messages");
 
-        group.MapGet("/failed", GetFailed)
+        group.MapAdminGet("/failed", GetFailed)
             .WithName("GetFailedOutboxMessages")
             .WithSummary("Failed and dead-letter outbox messages");
 
-        group.MapGet("/{id:guid}", GetById)
+        group.MapAdminGet("/{id:guid}", GetById)
             .WithName("GetOutboxMessageById")
             .WithSummary("Get a specific outbox message by ID");
 

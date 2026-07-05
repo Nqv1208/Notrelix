@@ -8,7 +8,7 @@ public static class SaveBoardViewEndpoint
 {
     public static IEndpointRouteBuilder MapSaveBoardView(this IEndpointRouteBuilder group)
     {
-        group.MapPut("/", HandleAsync)
+        group.MapResourcePut("/", HandleAsync)
             .WithName("WorkManagement.BoardViews.Save")
             .WithTags("WorkManagement.BoardViews")
             .WithSummary("Save board view preference");

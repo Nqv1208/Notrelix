@@ -8,8 +8,7 @@ public static class LoginEndpoint
 {
     public static IEndpointRouteBuilder MapLogin(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/login", HandleAsync)
-            .AllowAnonymous()
+        group.MapPublicPost("/login", HandleAsync)
             .WithName("Identity.Auth.Login")
             .WithTags("Identity.Auth")
             .WithSummary("Login with email and password")

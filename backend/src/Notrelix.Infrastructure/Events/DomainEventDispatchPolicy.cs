@@ -74,6 +74,15 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
             "Every IDomainEvent must be explicitly registered in DomainEventDispatchPolicy.");
     }
 
+    public IReadOnlyCollection<Type> GetInlineTypes()
+    {
+        return Policies
+            .Where(kvp => kvp.Value == DomainEventDispatchMode.Inline)
+            .Select(kvp => kvp.Key)
+            .ToList()
+            .AsReadOnly();
+    }
+
     private static Dictionary<Type, DomainEventDispatchMode> BuildPolicies()
     {
         var d = new Dictionary<Type, DomainEventDispatchMode>();

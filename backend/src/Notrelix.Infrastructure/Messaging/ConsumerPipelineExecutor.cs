@@ -20,14 +20,14 @@ public sealed class ConsumerPipelineExecutor : IConsumerPipelineExecutor
 {
     private readonly ApplicationDbContext _db;
     private readonly ICurrentTenantContext _tenant;
-    private readonly IRlsSessionContext? _rls;
+    private readonly IRlsSessionContext _rls;
     private readonly ILogger<ConsumerPipelineExecutor> _logger;
 
     public ConsumerPipelineExecutor(
         ApplicationDbContext db,
         ICurrentTenantContext tenant,
-        ILogger<ConsumerPipelineExecutor> logger,
-        IRlsSessionContext? rls = null)
+        IRlsSessionContext rls,
+        ILogger<ConsumerPipelineExecutor> logger)
     {
         _db = db;
         _tenant = tenant;
@@ -66,8 +66,7 @@ public sealed class ConsumerPipelineExecutor : IConsumerPipelineExecutor
         try
         {
             // Apply RLS with worker scope
-            if (_rls is not null)
-                await _rls.ApplyAsync(_db.Database, ct);
+            await _rls.ApplyAsync(_db.Database, ct);
 
             // Idempotency check
             var alreadyProcessed = await _db.MessagingProcessedEvents

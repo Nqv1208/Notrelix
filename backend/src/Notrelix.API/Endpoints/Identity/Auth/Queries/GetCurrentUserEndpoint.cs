@@ -7,8 +7,7 @@ public static class GetCurrentUserEndpoint
 {
     public static IEndpointRouteBuilder MapGetCurrentUser(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/me", HandleAsync)
-            .RequireAuthorization()
+        group.MapAuthenticatedGet("/me", HandleAsync)
             .WithName("Identity.Auth.GetCurrentUser")
             .WithTags("Identity.Auth")
             .WithSummary("Get current authenticated user");

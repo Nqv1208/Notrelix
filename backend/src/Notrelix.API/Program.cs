@@ -37,7 +37,7 @@ if (dataProtectionOptions.PersistKeys && !string.IsNullOrWhiteSpace(dataProtecti
 }
 
 builder.Services
-    .AddInfrastructure(builder.Configuration)
+    .AddInfrastructure(builder.Configuration, builder.Environment)
     .AddApiLayer(builder.Configuration, builder.Environment);
 
 var app = builder.Build();

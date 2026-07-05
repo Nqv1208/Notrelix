@@ -7,7 +7,7 @@ public static class GetBoardEndpoint
 {
     public static IEndpointRouteBuilder MapGetBoard(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", HandleAsync)
+        group.MapResourceGet("/", HandleAsync)
             .WithName("WorkManagement.Boards.Get")
             .WithTags("WorkManagement.Boards")
             .WithSummary("Get board by ID");

@@ -8,7 +8,7 @@ public static class InviteMemberEndpoint
 {
     public static IEndpointRouteBuilder MapInviteMember(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/", HandleAsync)
+        group.MapWorkspacePost("/", HandleAsync)
             .WithName("Workspaces.Members.InviteMember")
             .WithTags("Workspaces.Members")
             .WithSummary("Invite a member to workspace");

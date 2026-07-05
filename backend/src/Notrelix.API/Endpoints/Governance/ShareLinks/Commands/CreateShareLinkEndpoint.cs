@@ -8,7 +8,7 @@ public static class CreateShareLinkEndpoint
 {
     public static IEndpointRouteBuilder MapCreateShareLink(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/", HandleAsync)
+        group.MapResourcePost("/", HandleAsync)
             .WithName("Governance.ShareLinks.Create")
             .WithTags("Governance.ShareLinks")
             .WithSummary("Create a share link for a resource");

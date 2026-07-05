@@ -8,7 +8,7 @@ public static class UpdateBoardItemFieldValuesEndpoint
 {
     public static IEndpointRouteBuilder MapUpdateBoardItemFieldValues(this IEndpointRouteBuilder group)
     {
-        group.MapPatch("/field-values", HandleAsync)
+        group.MapResourcePatch("/field-values", HandleAsync)
             .WithName("WorkManagement.BoardItems.UpdateFieldValues")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Update multiple field values for a board item");

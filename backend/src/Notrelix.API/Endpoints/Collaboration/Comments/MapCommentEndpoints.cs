@@ -10,7 +10,6 @@ public static class MapCommentEndpoints
         var boardItemGroup = app
             .MapGroup("/api/v1/board-items/{boardItemId:guid}/comments")
             .WithTags("Collaboration.Comments")
-            .RequireAuthorization()
             .WithOpenApi();
 
         boardItemGroup.MapGetBoardItemComments();
@@ -19,7 +18,6 @@ public static class MapCommentEndpoints
         var pageGroup = app
             .MapGroup("/api/v1/pages/{pageId:guid}/comments")
             .WithTags("Collaboration.Comments")
-            .RequireAuthorization()
             .WithOpenApi();
 
         pageGroup.MapGetPageComments();
@@ -28,7 +26,6 @@ public static class MapCommentEndpoints
         var group = app
             .MapGroup("/api/v1/comments")
             .WithTags("Collaboration.Comments")
-            .RequireAuthorization()
             .WithOpenApi();
 
         group.MapUpdateComment();

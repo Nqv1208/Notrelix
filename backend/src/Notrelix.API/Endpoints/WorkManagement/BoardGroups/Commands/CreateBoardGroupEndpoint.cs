@@ -8,7 +8,7 @@ public static class CreateBoardGroupEndpoint
 {
     public static IEndpointRouteBuilder MapCreateBoardGroup(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/", HandleAsync)
+        group.MapResourcePost("/", HandleAsync)
             .WithName("WorkManagement.BoardGroups.Create")
             .WithTags("WorkManagement.BoardGroups")
             .WithSummary("Create a new group in board");

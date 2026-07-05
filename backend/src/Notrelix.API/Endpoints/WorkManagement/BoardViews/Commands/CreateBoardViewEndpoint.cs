@@ -7,7 +7,7 @@ public static class CreateBoardViewEndpoint
 {
     public static IEndpointRouteBuilder MapCreateBoardView(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/", HandleAsync)
+        group.MapResourcePost("/", HandleAsync)
             .WithName("WorkManagement.BoardViews.Create")
             .WithTags("WorkManagement.BoardViews")
             .WithSummary("Create a new saved view config for a board");

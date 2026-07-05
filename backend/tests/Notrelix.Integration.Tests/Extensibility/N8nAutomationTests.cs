@@ -152,15 +152,11 @@ public class N8nAutomationTests : IAsyncLifetime
         private readonly List<IPostCommitAction> _actions = [];
 
         IReadOnlyList<IPostCommitAction> IPostCommitActionQueue.Actions => _actions;
-        IReadOnlyList<CacheInvalidationAction> IPostCommitActionQueue.CacheInvalidations => [];
-        IReadOnlyList<RealtimeAction> IPostCommitActionQueue.RealtimeActions => [];
 
         public IReadOnlyList<IPostCommitAction> Actions => _actions;
 
         public void Enqueue(IPostCommitAction action) => _actions.Add(action);
 
-        public void EnqueueCacheInvalidation(CacheInvalidationAction action) { }
-        public void EnqueueRealtime(RealtimeAction action) { }
         public void BeginScope() { }
         public Task FlushAsync(CancellationToken ct) => Task.CompletedTask;
         public void Clear() { }

@@ -52,7 +52,7 @@ public class Entitlement : AggregateRoot, IAccountScoped
         };
 
         entitlement.AddDomainEvent(new EntitlementGrantedDomainEvent(
-            accountId, targetWorkspaceId ?? Guid.Empty, entitlement.Id, feature.Code, limit, null, createdAt));
+            accountId, targetWorkspaceId, entitlement.Id, feature.Code, limit, null, createdAt));
         return entitlement;
     }
 
@@ -75,7 +75,7 @@ public class Entitlement : AggregateRoot, IAccountScoped
         IncrementVersion();
 
         AddDomainEvent(new EntitlementLimitChangedDomainEvent(
-            AccountId, WorkspaceId ?? Guid.Empty, Id, Feature.Code, oldLimit, newLimit, actorUserId, occurredAt));
+            AccountId, WorkspaceId, Id, Feature.Code, oldLimit, newLimit, actorUserId, occurredAt));
     }
 
     public void Disable(Guid actorUserId, DateTimeOffset occurredAt)
@@ -93,7 +93,7 @@ public class Entitlement : AggregateRoot, IAccountScoped
         IncrementVersion();
 
         AddDomainEvent(new EntitlementDisabledDomainEvent(
-            AccountId, WorkspaceId ?? Guid.Empty, Id, Feature.Code, actorUserId, occurredAt));
+            AccountId, WorkspaceId, Id, Feature.Code, actorUserId, occurredAt));
     }
 
     public void Revoke(Guid actorUserId, DateTimeOffset occurredAt)
@@ -110,7 +110,7 @@ public class Entitlement : AggregateRoot, IAccountScoped
         IncrementVersion();
 
         AddDomainEvent(new EntitlementRevokedDomainEvent(
-            AccountId, WorkspaceId ?? Guid.Empty, Id, Feature.Code, actorUserId, occurredAt));
+            AccountId, WorkspaceId, Id, Feature.Code, actorUserId, occurredAt));
     }
 
     public void MarkExpired(DateTimeOffset occurredAt)
@@ -127,7 +127,7 @@ public class Entitlement : AggregateRoot, IAccountScoped
         IncrementVersion();
 
         AddDomainEvent(new EntitlementExpiredDomainEvent(
-            AccountId, WorkspaceId ?? Guid.Empty, Id, Feature.Code, occurredAt));
+            AccountId, WorkspaceId, Id, Feature.Code, occurredAt));
     }
 
     public bool IsActiveAt(DateTimeOffset now)
@@ -143,7 +143,7 @@ public class Entitlement : AggregateRoot, IAccountScoped
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
         IncrementVersion();
-        AddDomainEvent(new EntitlementSoftDeletedDomainEvent(AccountId, WorkspaceId ?? Guid.Empty, Id, Feature.Code, deletedBy, deletedAt));
+        AddDomainEvent(new EntitlementSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, Feature.Code, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -152,6 +152,6 @@ public class Entitlement : AggregateRoot, IAccountScoped
         base.Restore(restoredBy, restoredAt);
         Status = EntitlementStatus.Active;
         IncrementVersion();
-        AddDomainEvent(new EntitlementRestoredDomainEvent(AccountId, WorkspaceId ?? Guid.Empty, Id, Feature.Code, restoredBy, restoredAt));
+        AddDomainEvent(new EntitlementRestoredDomainEvent(AccountId, WorkspaceId, Id, Feature.Code, restoredBy, restoredAt));
     }
 }

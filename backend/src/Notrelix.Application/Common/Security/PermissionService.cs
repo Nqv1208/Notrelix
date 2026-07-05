@@ -28,6 +28,13 @@ public class PermissionService : IPermissionService, IPermissionEvaluator, IAuth
         PermissionContext context,
         CancellationToken cancellationToken = default)
     {
+        if (context.Scope is PermissionScope.Workspace or PermissionScope.Resource && !context.WorkspaceId.HasValue)
+        {
+            throw new SecurityMisconfigurationException(
+                $"Permission evaluation requires WorkspaceId for scope {context.Scope} " +
+                $"but WorkspaceId is null. ResourceType={context.ResourceType} Action={context.Action}");
+        }
+
         // 1. Check workspace membership
         var workspaceMember = await _workspaceContext.WorkspaceMembers
             .FirstOrDefaultAsync(m => m.WorkspaceId == context.WorkspaceId && m.UserId == context.UserId, cancellationToken);
@@ -227,7 +234,7 @@ public class PermissionService : IPermissionService, IPermissionEvaluator, IAuth
         PermissionAction action,
         CancellationToken cancellationToken = default)
     {
-        var decision = await EvaluateAsync(new PermissionContext(userId, workspaceId, resourceType, resourceId, action), cancellationToken);
+        var decision = await EvaluateAsync(new PermissionContext(userId, workspaceId, resourceType, resourceId, action, PermissionScope.Resource), cancellationToken);
         return decision.IsAllowed;
     }
 
@@ -237,7 +244,7 @@ public class PermissionService : IPermissionService, IPermissionEvaluator, IAuth
         PermissionAction action,
         CancellationToken cancellationToken = default)
     {
-        var decision = await EvaluateAsync(new PermissionContext(userId, workspaceId, ResourceType.Workspace, null, action), cancellationToken);
+        var decision = await EvaluateAsync(new PermissionContext(userId, workspaceId, ResourceType.Workspace, null, action, PermissionScope.Workspace), cancellationToken);
         return decision.IsAllowed;
     }
 
@@ -249,7 +256,7 @@ public class PermissionService : IPermissionService, IPermissionEvaluator, IAuth
         PermissionAction action,
         CancellationToken cancellationToken = default)
     {
-        var decision = await EvaluateAsync(new PermissionContext(userId, workspaceId, resourceType, resourceId, action), cancellationToken);
+        var decision = await EvaluateAsync(new PermissionContext(userId, workspaceId, resourceType, resourceId, action, PermissionScope.Resource), cancellationToken);
         return decision.IsAllowed;
     }
 }

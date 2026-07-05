@@ -102,15 +102,18 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
 
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         var eventTypeRegistry = new Mock<IEventTypeRegistry>();
+        eventTypeRegistry
+            .Setup(x => x.GetMessageName(It.IsAny<Type>()))
+            .Returns("test.event");
         var integrationEventMapper = new Mock<IIntegrationEventMapper>();
         integrationEventMapper
             .Setup(x => x.Map(It.IsAny<IDomainEvent>()))
             .Returns(Array.Empty<IntegrationEventMapping>());
-        var mediator = CreateMediatorRejectingNonNotifications();
         var dispatchPolicy = new Mock<IDomainEventDispatchPolicy>();
         dispatchPolicy.Setup(x => x.GetMode(It.IsAny<Type>()))
-            .Returns(DomainEventDispatchMode.Inline);
-        var interceptor = new DomainEventInterceptor(dateTimeProvider.Object, eventTypeRegistry.Object, integrationEventMapper.Object, mediator.Object, dispatchPolicy.Object);
+            .Returns(DomainEventDispatchMode.Outbox);
+        dispatchPolicy.Setup(x => x.GetInlineTypes()).Returns([]);
+        var interceptor = new DomainEventInterceptor(dateTimeProvider.Object, eventTypeRegistry.Object, integrationEventMapper.Object, dispatchPolicy.Object);
         await using var context = _db.CreateContext(tenant, interceptor);
 
         var passwordHasher = new Mock<IPasswordHasher>();
@@ -122,29 +125,22 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
         var handler = new RegisterCommandHandler(context, context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object);
 
-        AuthResult? authResult = null;
-        var act = async () =>
+        var result = await handler.Handle(new RegisterCommand
         {
-            var result = await handler.Handle(new RegisterCommand
-            {
-                Email = "interceptor@example.com",
-                Password = "Password1!",
-                Name = "New Name"
-            }, CancellationToken.None);
-            await context.SaveChangesAsync();
+            Email = "interceptor@example.com",
+            Password = "Password1!",
+            Name = "New Name"
+        }, CancellationToken.None);
 
-            result.Succeeded.Should().BeTrue();
-            authResult = result.Data;
-        };
-
-        await act.Should().NotThrowAsync<ArgumentException>();
-
-        authResult.Should().NotBeNull();
+        result.Succeeded.Should().BeTrue($"Handle Succeeded=false. Errors: {string.Join(", ", result.Errors)}");
+        var authResult = result.Data;
+        authResult.Should().NotBeNull("result.Data is null even though Succeeded=true");
         authResult!.WorkspaceProvisioning.Should().Be("pending");
+
+        await context.SaveChangesAsync();
+
         (await context.Users.CountAsync()).Should().Be(1);
         (await context.Sessions.CountAsync()).Should().Be(1);
-
-        mediator.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Exactly(4));
     }
 
     [Fact]

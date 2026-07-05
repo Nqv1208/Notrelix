@@ -8,7 +8,7 @@ public static class AssignBoardItemMemberEndpoint
 {
     public static IEndpointRouteBuilder MapAssignBoardItemMember(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/assignees", HandleAsync)
+        group.MapResourcePost("/assignees", HandleAsync)
             .WithName("WorkManagement.BoardItems.AssignMember")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Assign a member to board item");

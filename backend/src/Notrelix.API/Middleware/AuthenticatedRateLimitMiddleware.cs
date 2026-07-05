@@ -32,6 +32,13 @@ public sealed class AuthenticatedRateLimitMiddleware
             return;
         }
 
+        if (policy.PartitionBy is PartitionKey.AccountId or PartitionKey.WorkspaceId)
+        {
+            throw new InvalidOperationException(
+                $"PartitionKey.{policy.PartitionBy} rate limiting is not supported at the API middleware level. " +
+                "Account/Workspace rate limiting must be configured via TenantAwareRateLimitBehavior in the Application pipeline.");
+        }
+
         string partitionKey;
         switch (policy.PartitionBy)
         {
@@ -39,16 +46,10 @@ public sealed class AuthenticatedRateLimitMiddleware
                 partitionKey = context.User.FindFirst("sub")?.Value
                     ?? throw new UnauthorizedAccessException("User ID required for rate limiting");
                 break;
-            case PartitionKey.AccountId:
-                partitionKey = context.User.FindFirst("account_id")?.Value
-                    ?? throw new UnauthorizedAccessException("Account ID required for rate limiting");
-                break;
-            case PartitionKey.WorkspaceId:
-                partitionKey = context.User.FindFirst("workspace_id")?.Value ?? "unknown";
-                break;
             default:
-                partitionKey = "unknown";
-                break;
+                throw new InvalidOperationException(
+                    $"Unsupported PartitionKey '{policy.PartitionBy}' in authenticated rate limiting. " +
+                    "Only PartitionKey.UserId is supported at the API middleware level.");
         }
 
         var rateLimitService = context.RequestServices.GetRequiredService<IRateLimitService>();

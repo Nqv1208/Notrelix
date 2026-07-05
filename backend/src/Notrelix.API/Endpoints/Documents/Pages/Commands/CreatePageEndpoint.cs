@@ -8,7 +8,7 @@ public static class CreatePageEndpoint
 {
     public static IEndpointRouteBuilder MapCreatePage(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/", HandleAsync)
+        group.MapWorkspacePost("/", HandleAsync)
             .WithName("Documents.Pages.CreatePage")
             .WithTags("Documents.Pages")
             .WithSummary("Create a new page");

@@ -7,7 +7,7 @@ public static class DeleteBoardViewEndpoint
 {
     public static IEndpointRouteBuilder MapDeleteBoardView(this IEndpointRouteBuilder group)
     {
-        group.MapDelete("/{viewId:guid}", HandleAsync)
+        group.MapResourceDelete("/{viewId:guid}", HandleAsync)
             .WithName("WorkManagement.BoardViews.Delete")
             .WithTags("WorkManagement.BoardViews")
             .WithSummary("Delete a board view");

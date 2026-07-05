@@ -9,7 +9,6 @@ public static class MapResourcePermissionEndpoints
     {
         var group = app
             .MapGroup("/api/v1/resources/{resourceType}/{resourceId:guid}/permissions")
-            .RequireAuthorization()
             .WithTags("Governance.ResourcePermissions")
             .WithOpenApi();
 

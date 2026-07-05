@@ -8,7 +8,7 @@ public static class CreateLabelEndpoint
 {
     public static IEndpointRouteBuilder MapCreateLabel(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/", HandleAsync)
+        group.MapResourcePost("/", HandleAsync)
             .WithName("WorkManagement.Labels.Create")
             .WithTags("WorkManagement.Labels")
             .WithSummary("Create a new label");

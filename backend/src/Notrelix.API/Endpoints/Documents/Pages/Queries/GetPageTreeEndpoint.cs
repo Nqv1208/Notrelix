@@ -7,7 +7,7 @@ public static class GetPageTreeEndpoint
 {
     public static IEndpointRouteBuilder MapGetPageTree(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/tree", HandleAsync)
+        group.MapWorkspaceGet("/tree", HandleAsync)
             .WithName("Documents.Pages.GetPageTree")
             .WithTags("Documents.Pages")
             .WithSummary("Get page tree for a workspace");

@@ -8,7 +8,7 @@ public static class GrantResourcePermissionEndpoint
 {
     public static IEndpointRouteBuilder MapGrantResourcePermission(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/", HandleAsync)
+        group.MapResourcePost("/", HandleAsync)
             .WithName("Governance.ResourcePermissions.Grant")
             .WithTags("Governance.ResourcePermissions")
             .WithSummary("Grant a permission to a resource");

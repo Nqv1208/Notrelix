@@ -37,6 +37,13 @@ public sealed class TenantContextConsumeFilter<T> : IFilter<ConsumeContext<T>>
         {
             if (integrationEvent.AccountId.HasValue)
             {
+                if (integrationEvent.AccountId.Value == Guid.Empty)
+                {
+                    throw new InvalidOperationException(
+                        $"Integration event {integrationEvent.MessageName} ({integrationEvent.EventId}) " +
+                        "has an empty AccountId. Events must carry a valid account identifier.");
+                }
+
                 if (!integrationEvent.WorkspaceId.HasValue)
                 {
                     _tenant.SetAccount(integrationEvent.AccountId.Value, integrationEvent.ActorUserId);

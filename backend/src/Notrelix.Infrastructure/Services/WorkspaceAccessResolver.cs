@@ -44,7 +44,8 @@ public sealed class WorkspaceAccessResolver : IWorkspaceAccessResolver
                 workspaceId,
                 ResourceType.Workspace,
                 null,
-                PermissionAction.ViewWorkspace),
+                PermissionAction.ViewWorkspace,
+                Notrelix.Application.Common.Security.PermissionScope.Workspace),
             ct);
 
         return new WorkspaceAccessSnapshot(

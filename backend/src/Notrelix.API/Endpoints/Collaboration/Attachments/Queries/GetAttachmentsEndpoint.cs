@@ -7,7 +7,7 @@ public static class GetAttachmentsEndpoint
 {
     public static IEndpointRouteBuilder MapGetAttachments(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", HandleAsync)
+        group.MapResourceGet("/", HandleAsync)
             .WithName("Collaboration.Attachments.Get")
             .WithTags("Collaboration.Attachments")
             .WithSummary("Get board item attachments");

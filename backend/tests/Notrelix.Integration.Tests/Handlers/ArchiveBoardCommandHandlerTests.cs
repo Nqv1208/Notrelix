@@ -45,7 +45,7 @@ public class ArchiveBoardCommandHandlerTests : IAsyncLifetime
             context, new FakeCurrentUser { UserId = userId },
             FakeDateTimeProvider.WithFixedTime(now));
 
-        var result = await handler.Handle(new ArchiveBoardCommand(workspace.Id, board.Id), CancellationToken.None);
+        var result = await handler.Handle(new ArchiveBoardCommand(board.Id), CancellationToken.None);
         await context.SaveChangesAsync();
 
         result.Succeeded.Should().BeTrue();
@@ -64,6 +64,6 @@ public class ArchiveBoardCommandHandlerTests : IAsyncLifetime
             FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow));
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
-            handler.Handle(new ArchiveBoardCommand(Guid.NewGuid(), Guid.NewGuid()), CancellationToken.None));
+            handler.Handle(new ArchiveBoardCommand(Guid.NewGuid()), CancellationToken.None));
     }
 }

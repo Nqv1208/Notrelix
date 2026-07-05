@@ -174,8 +174,9 @@ public class DomainHardeningArchitectureTests
             var inheritsScoped = typeof(WorkspaceScopedDomainEvent).IsAssignableFrom(type);
             var inheritsRoot = typeof(WorkspaceRootDomainEvent).IsAssignableFrom(type);
             var inheritsGlobal = typeof(GlobalDomainEvent).IsAssignableFrom(type);
+            var inheritsBillingAccount = typeof(BillingAccountScopedDomainEvent).IsAssignableFrom(type);
 
-            if (!inheritsScoped && !inheritsRoot && !inheritsGlobal)
+            if (!inheritsScoped && !inheritsRoot && !inheritsGlobal && !inheritsBillingAccount)
             {
                 violations.Add($"{type.FullName} inherits DomainEvent directly — should use scoped base");
             }
@@ -183,7 +184,7 @@ public class DomainHardeningArchitectureTests
 
         violations.Should().BeEmpty(
             "All concrete DomainEvents must inherit from GlobalDomainEvent, WorkspaceRootDomainEvent, " +
-            "or WorkspaceScopedDomainEvent — not directly from DomainEvent. " +
+            "WorkspaceScopedDomainEvent, or BillingAccountScopedDomainEvent — not directly from DomainEvent. " +
             $"Violations: {string.Join(", ", violations)}");
     }
 

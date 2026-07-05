@@ -10,7 +10,8 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IHostEnvironment? environment = null)
     {
         services.AddPersistence(configuration);
         services.AddMessaging(configuration);
@@ -23,7 +24,7 @@ public static class DependencyInjection
         services.AddEmail(configuration);
         services.AddRealtime(configuration);
         services.AddIntegrations(configuration);
-        services.AddBilling(configuration);
+        services.AddBilling(configuration, environment);
         services.AddOperations(configuration);
         services.AddObservability(configuration);
 

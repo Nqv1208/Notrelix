@@ -9,7 +9,6 @@ public static class MapActivityEndpoints
         var group = app
             .MapGroup("/api/v1/board-items/{boardItemId:guid}/activity")
             .WithTags("Collaboration.Activity")
-            .RequireAuthorization()
             .WithOpenApi();
 
         group.MapGetBoardItemActivity();

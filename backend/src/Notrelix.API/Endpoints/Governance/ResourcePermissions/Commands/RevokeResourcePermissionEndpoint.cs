@@ -7,7 +7,7 @@ public static class RevokeResourcePermissionEndpoint
 {
     public static IEndpointRouteBuilder MapRevokeResourcePermission(this IEndpointRouteBuilder group)
     {
-        group.MapDelete("/{permissionId:guid}", HandleAsync)
+        group.MapResourceDelete("/{permissionId:guid}", HandleAsync)
             .WithName("Governance.ResourcePermissions.Revoke")
             .WithTags("Governance.ResourcePermissions")
             .WithSummary("Revoke a permission from a resource");

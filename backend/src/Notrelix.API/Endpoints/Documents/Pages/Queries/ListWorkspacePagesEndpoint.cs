@@ -7,7 +7,7 @@ public static class ListWorkspacePagesEndpoint
 {
     public static IEndpointRouteBuilder MapListWorkspacePages(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", HandleAsync)
+        group.MapWorkspaceGet("/", HandleAsync)
             .WithName("Documents.Pages.ListWorkspacePages")
             .WithTags("Documents.Pages")
             .WithSummary("List all pages in a workspace");

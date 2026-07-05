@@ -7,7 +7,7 @@ public static class ListPageBlocksEndpoint
 {
     public static IEndpointRouteBuilder MapListPageBlocks(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", HandleAsync)
+        group.MapResourceGet("/", HandleAsync)
             .WithName("Documents.Blocks.ListPageBlocks")
             .WithTags("Documents.Blocks")
             .WithSummary("List blocks for a page");

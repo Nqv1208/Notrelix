@@ -7,7 +7,7 @@ public static class LogoutEndpoint
 {
     public static IEndpointRouteBuilder MapLogout(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/logout", HandleAsync)
+        group.MapAuthenticatedPost("/logout", HandleAsync)
             .WithName("Identity.Auth.Logout")
             .WithTags("Identity.Auth")
             .WithSummary("Logout and revoke refresh token");

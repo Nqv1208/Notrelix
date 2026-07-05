@@ -8,7 +8,7 @@ public static class UpdatePageEndpoint
 {
     public static IEndpointRouteBuilder MapUpdatePage(this IEndpointRouteBuilder group)
     {
-        group.MapPatch("/", HandleAsync)
+        group.MapResourcePatch("/", HandleAsync)
             .WithName("Documents.Pages.UpdatePage")
             .WithTags("Documents.Pages")
             .WithSummary("Update a page");

@@ -7,7 +7,7 @@ public static class UnassignBoardItemMemberEndpoint
 {
     public static IEndpointRouteBuilder MapUnassignBoardItemMember(this IEndpointRouteBuilder group)
     {
-        group.MapDelete("/assignees/{userId:guid}", HandleAsync)
+        group.MapResourceDelete("/assignees/{userId:guid}", HandleAsync)
             .WithName("WorkManagement.BoardItems.UnassignMember")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Unassign a member from board item");

@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Billing.Entitlements.Events;
 
 public sealed record EntitlementChangedDomainEvent(
     Guid AccountId,
-    Guid WorkspaceId,
+    Guid? WorkspaceId,
     string FeatureCode,
     int NewLimit,
     DateTimeOffset OccurredAt

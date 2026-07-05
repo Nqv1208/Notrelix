@@ -10,7 +10,6 @@ public static class MapAttachmentEndpoints
         var group = app
             .MapGroup("/api/v1/board-items/{boardItemId:guid}/attachments")
             .WithTags("Collaboration.Attachments")
-            .RequireAuthorization()
             .WithOpenApi();
 
         group.MapGetAttachments();

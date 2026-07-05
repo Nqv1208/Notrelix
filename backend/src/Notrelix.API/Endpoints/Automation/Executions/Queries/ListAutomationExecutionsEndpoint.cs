@@ -7,7 +7,7 @@ public static class ListAutomationExecutionsEndpoint
 {
     public static IEndpointRouteBuilder MapListAutomationExecutions(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/{automationId:guid}/executions", HandleAsync)
+        group.MapResourceGet("/{automationId:guid}/executions", HandleAsync)
             .WithName("Automation.Executions.List")
             .WithTags("Automation.Executions")
             .WithSummary("Get automation execution history");

@@ -7,7 +7,7 @@ public static class MoveBoardItemEndpoint
 {
     public static IEndpointRouteBuilder MapMoveBoardItem(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/move", HandleAsync)
+        group.MapResourcePost("/move", HandleAsync)
             .WithName("WorkManagement.BoardItems.Move")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Move board item to another group or change position");

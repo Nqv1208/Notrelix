@@ -8,7 +8,7 @@ public static class UpdateMemberRoleEndpoint
 {
     public static IEndpointRouteBuilder MapUpdateMemberRole(this IEndpointRouteBuilder group)
     {
-        group.MapPatch("/{userId:guid}", HandleAsync)
+        group.MapWorkspacePatch("/{userId:guid}", HandleAsync)
             .WithName("Workspaces.Members.UpdateMemberRole")
             .WithTags("Workspaces.Members")
             .WithSummary("Update a member's role");

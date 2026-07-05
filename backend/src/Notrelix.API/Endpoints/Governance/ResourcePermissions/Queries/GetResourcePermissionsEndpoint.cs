@@ -7,7 +7,7 @@ public static class GetResourcePermissionsEndpoint
 {
     public static IEndpointRouteBuilder MapGetResourcePermissions(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", HandleAsync)
+        group.MapResourceGet("/", HandleAsync)
             .WithName("Governance.ResourcePermissions.Get")
             .WithTags("Governance.ResourcePermissions")
             .WithSummary("Get permissions for a resource");

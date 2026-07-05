@@ -12,7 +12,6 @@ public static class MapChecklistEndpoints
     {
         var itemGroup = app
             .MapGroup("/api/v1/board-items/{itemId:guid}/checklists")
-            .RequireAuthorization()
             .WithTags("WorkManagement.Checklists")
             .WithOpenApi();
 
@@ -21,19 +20,17 @@ public static class MapChecklistEndpoints
 
         var clGroup = app
             .MapGroup("/api/v1/checklists/{checklistId:guid}")
-            .RequireAuthorization()
             .WithTags("WorkManagement.Checklists")
             .WithOpenApi();
 
         clGroup.MapUpdateChecklist();
         clGroup.MapDeleteChecklist();
-        clGroup.MapPost("/items", HandleCreateChecklistItem)
+        clGroup.MapResourcePost("/items", HandleCreateChecklistItem)
             .WithName("WorkManagement.Checklists.CreateItem")
             .WithSummary("Create a checklist item");
 
         var clItemGroup = app
             .MapGroup("/api/v1/checklist-items/{itemId:guid}")
-            .RequireAuthorization()
             .WithTags("WorkManagement.Checklists")
             .WithOpenApi();
 

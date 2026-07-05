@@ -7,7 +7,7 @@ public static class UpdateBoardViewConfigEndpoint
 {
     public static IEndpointRouteBuilder MapUpdateBoardViewConfig(this IEndpointRouteBuilder group)
     {
-        group.MapPatch("/{viewId:guid}", HandleAsync)
+        group.MapResourcePatch("/{viewId:guid}", HandleAsync)
             .WithName("WorkManagement.BoardViews.UpdateConfig")
             .WithTags("WorkManagement.BoardViews")
             .WithSummary("Update configuration of a board view");

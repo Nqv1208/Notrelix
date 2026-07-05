@@ -8,7 +8,7 @@ public static class CreateBlockEndpoint
 {
     public static IEndpointRouteBuilder MapCreateBlock(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/", HandleAsync)
+        group.MapResourcePost("/", HandleAsync)
             .WithName("Documents.Blocks.CreateBlock")
             .WithTags("Documents.Blocks")
             .WithSummary("Create a new block");

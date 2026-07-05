@@ -7,7 +7,7 @@ public static class GetBoardViewEndpoint
 {
     public static IEndpointRouteBuilder MapGetBoardView(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", HandleAsync)
+        group.MapResourceGet("/", HandleAsync)
             .WithName("WorkManagement.BoardViews.Get")
             .WithTags("WorkManagement.BoardViews")
             .WithSummary("Get current user's board view preference");

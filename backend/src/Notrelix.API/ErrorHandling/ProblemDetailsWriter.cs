@@ -8,7 +8,7 @@ public static class ProblemDetailsWriter
     {
         var problemDetails = new ProblemDetails
         {
-            Type = "https://tools.ietf.org/html/rfc6585#section-4",
+            Type = "https://docs.notrelix.com/problems/rate-limit-exceeded",
             Title = "Too Many Requests",
             Detail = "Rate limit exceeded. Please try again later.",
             Status = StatusCodes.Status429TooManyRequests,
@@ -23,6 +23,7 @@ public static class ProblemDetailsWriter
         problemDetails.Extensions["resetAt"] = resetAt.ToUnixTimeSeconds();
 
         context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        context.Response.ContentType = "application/problem+json";
         context.Response.Headers["Retry-After"] = retryAfterSeconds.ToString();
         context.Response.Headers["X-RateLimit-Limit"] = limit.ToString();
         context.Response.Headers["X-RateLimit-Remaining"] = remaining.ToString();

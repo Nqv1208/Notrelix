@@ -7,7 +7,7 @@ public static class DeleteBlockEndpoint
 {
     public static IEndpointRouteBuilder MapDeleteBlock(this IEndpointRouteBuilder group)
     {
-        group.MapDelete("/", HandleAsync)
+        group.MapResourceDelete("/", HandleAsync)
             .WithName("Documents.Blocks.DeleteBlock")
             .WithTags("Documents.Blocks")
             .WithSummary("Delete a block");

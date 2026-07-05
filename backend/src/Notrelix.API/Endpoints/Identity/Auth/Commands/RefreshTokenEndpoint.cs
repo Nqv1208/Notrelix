@@ -8,8 +8,7 @@ public static class RefreshTokenEndpoint
 {
     public static IEndpointRouteBuilder MapRefreshToken(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/refresh", HandleAsync)
-            .AllowAnonymous()
+        group.MapPublicPost("/refresh", HandleAsync)
             .WithName("Identity.Auth.RefreshToken")
             .WithTags("Identity.Auth")
             .WithSummary("Refresh the access token")

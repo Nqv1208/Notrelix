@@ -23,7 +23,7 @@ public sealed class SubscriptionEventMapper :
     {
         return new SubscriptionCanceledIntegrationEvent(
             domainEvent.SubscriptionId,
-            ((IDomainEvent)domainEvent).WorkspaceId ?? Guid.Empty,
+            domainEvent.WorkspaceId,
             domainEvent.OccurredAt,
             default,
             null,

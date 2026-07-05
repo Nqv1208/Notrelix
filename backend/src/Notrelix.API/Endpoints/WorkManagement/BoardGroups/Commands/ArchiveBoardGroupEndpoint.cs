@@ -7,7 +7,7 @@ public static class ArchiveBoardGroupEndpoint
 {
     public static IEndpointRouteBuilder MapArchiveBoardGroup(this IEndpointRouteBuilder group)
     {
-        group.MapDelete("/", HandleAsync)
+        group.MapResourceDelete("/", HandleAsync)
             .WithName("WorkManagement.BoardGroups.Archive")
             .WithTags("WorkManagement.BoardGroups")
             .WithSummary("Archive a group");

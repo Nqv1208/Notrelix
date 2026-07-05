@@ -7,7 +7,7 @@ public static class UpdateProfileEndpoint
 {
     public static IEndpointRouteBuilder MapUpdateProfile(this IEndpointRouteBuilder group)
     {
-        group.MapPatch("/", HandleAsync)
+        group.MapAuthenticatedPatch("/", HandleAsync)
             .WithName("Identity.Profile.UpdateProfile")
             .WithTags("Identity.Profile")
             .WithSummary("Update current user profile");

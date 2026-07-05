@@ -7,7 +7,7 @@ public static class GetResourceActivityEndpoint
 {
     public static IEndpointRouteBuilder MapGetBoardItemActivity(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", HandleAsync)
+        group.MapResourceGet("/", HandleAsync)
             .WithName("Collaboration.Activity.GetBoardItemActivity")
             .WithTags("Collaboration.Activity")
             .WithSummary("Get activity log for a board item");

@@ -9,7 +9,6 @@ public static class MapActivityEndpoints
         var group = app
             .MapGroup("/api/v1/workspaces/{workspaceId:guid}/activity")
             .WithTags("Workspaces.Activity")
-            .RequireAuthorization()
             .WithOpenApi();
 
         group.MapGetWorkspaceActivity();

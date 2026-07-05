@@ -7,7 +7,7 @@ public static class GetPageBreadcrumbEndpoint
 {
     public static IEndpointRouteBuilder MapGetPageBreadcrumb(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/breadcrumb", HandleAsync)
+        group.MapResourceGet("/breadcrumb", HandleAsync)
             .WithName("Documents.Pages.GetPageBreadcrumb")
             .WithTags("Documents.Pages")
             .WithSummary("Get breadcrumb for a page");

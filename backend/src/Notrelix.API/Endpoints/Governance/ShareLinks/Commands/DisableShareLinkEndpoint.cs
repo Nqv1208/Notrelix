@@ -7,7 +7,7 @@ public static class DisableShareLinkEndpoint
 {
     public static IEndpointRouteBuilder MapDisableShareLink(this IEndpointRouteBuilder group)
     {
-        group.MapDelete("/{shareLinkId:guid}", HandleAsync)
+        group.MapResourceDelete("/{shareLinkId:guid}", HandleAsync)
             .WithName("Governance.ShareLinks.Disable")
             .WithTags("Governance.ShareLinks")
             .WithSummary("Disable a share link");

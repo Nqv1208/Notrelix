@@ -35,31 +35,34 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
             throw new UnauthorizedException("Authentication required.");
         }
 
-        // Rule 3 & 4: Workspace-scoped requests require tenant context + permission
-        if (request is IWorkspaceRequest)
+        // Rule 3 & 4: Workspace-scoped and resource-scoped requests require tenant context + permission
+        if (request is IWorkspaceRequest or IResourceScopedRequest)
         {
             if (_tenant.AccountId is null || _tenant.AccountId == Guid.Empty)
             {
                 _logger.LogError(
-                    "Security misconfiguration: Workspace request {RequestType} has no AccountId in tenant context",
+                    "Security misconfiguration: {Scope} request {RequestType} has no AccountId in tenant context",
+                    request is IWorkspaceRequest ? "Workspace" : "Resource",
                     typeof(TRequest).Name);
                 throw new SecurityMisconfigurationException(
-                    $"{typeof(TRequest).Name} is workspace-scoped but AccountId is not set in tenant context.");
+                    $"{typeof(TRequest).Name} requires workspace context but AccountId is not set in tenant context.");
             }
 
             if (_tenant.WorkspaceId is null || _tenant.WorkspaceId == Guid.Empty)
             {
                 _logger.LogError(
-                    "Security misconfiguration: Workspace request {RequestType} has no WorkspaceId in tenant context",
+                    "Security misconfiguration: {Scope} request {RequestType} has no WorkspaceId in tenant context",
+                    request is IWorkspaceRequest ? "Workspace" : "Resource",
                     typeof(TRequest).Name);
                 throw new SecurityMisconfigurationException(
-                    $"{typeof(TRequest).Name} is workspace-scoped but WorkspaceId is not set in tenant context.");
+                    $"{typeof(TRequest).Name} requires workspace context but WorkspaceId is not set in tenant context.");
             }
 
             if (request is not IRequirePermission and not ISystemInternalRequest)
             {
                 _logger.LogError(
-                    "Security misconfiguration: Workspace request {RequestType} does not implement IRequirePermission or ISystemInternalRequest",
+                    "Security misconfiguration: {Scope} request {RequestType} does not implement IRequirePermission or ISystemInternalRequest",
+                    request is IWorkspaceRequest ? "Workspace" : "Resource",
                     typeof(TRequest).Name);
                 throw new SecurityMisconfigurationException(
                     $"{typeof(TRequest).Name} is workspace-scoped without IRequirePermission or ISystemInternalRequest. " +
@@ -94,14 +97,30 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
         if (request is IRequirePermission requirePermission)
         {
             var userId = _currentUser.UserId;
+            var workspaceId = requirePermission.Resource.WorkspaceId ?? _tenant.WorkspaceId;
+
+            var scope = request switch
+            {
+                IWorkspaceRequest => Security.PermissionScope.Workspace,
+                IAccountRequest => Security.PermissionScope.Account,
+                _ => Security.PermissionScope.Resource,
+            };
+
+            if (scope is Security.PermissionScope.Workspace or Security.PermissionScope.Resource && workspaceId is null)
+            {
+                throw new SecurityMisconfigurationException(
+                    $"{typeof(TRequest).Name} requires workspace context for permission evaluation " +
+                    $"but Resource.WorkspaceId is null.");
+            }
 
             var decision = await _authorizationDecisionStore.EvaluateAsync(
                 new PermissionContext(
                     userId,
-                    requirePermission.Resource.WorkspaceId ?? Guid.Empty,
+                    workspaceId,
                     requirePermission.Resource.ResourceType,
                     requirePermission.Resource.ResourceId,
-                    requirePermission.Action),
+                    requirePermission.Action,
+                    scope),
                 cancellationToken);
 
             if (!decision.IsAllowed)

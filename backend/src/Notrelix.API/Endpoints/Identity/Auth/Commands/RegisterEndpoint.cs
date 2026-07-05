@@ -8,8 +8,7 @@ public static class RegisterEndpoint
 {
     public static IEndpointRouteBuilder MapRegister(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/register", HandleAsync)
-            .AllowAnonymous()
+        group.MapPublicPost("/register", HandleAsync)
             .WithName("Identity.Auth.Register")
             .WithTags("Identity.Auth")
             .WithSummary("Register a new account")

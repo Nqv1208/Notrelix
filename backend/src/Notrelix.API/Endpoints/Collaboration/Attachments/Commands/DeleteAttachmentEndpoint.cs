@@ -7,7 +7,7 @@ public static class DeleteAttachmentEndpoint
 {
     public static IEndpointRouteBuilder MapDeleteAttachment(this IEndpointRouteBuilder group)
     {
-        group.MapDelete("/{attachmentId:guid}", HandleAsync)
+        group.MapResourceDelete("/{attachmentId:guid}", HandleAsync)
             .WithName("Collaboration.Attachments.Delete")
             .WithTags("Collaboration.Attachments")
             .WithSummary("Delete an attachment");

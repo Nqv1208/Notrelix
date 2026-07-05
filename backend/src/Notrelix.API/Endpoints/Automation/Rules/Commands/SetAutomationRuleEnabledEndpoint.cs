@@ -7,7 +7,7 @@ public static class SetAutomationRuleEnabledEndpoint
 {
     public static IEndpointRouteBuilder MapSetAutomationRuleEnabled(this IEndpointRouteBuilder group)
     {
-        group.MapPatch("/{automationId:guid}/enabled", HandleAsync)
+        group.MapWorkspacePatch("/{automationId:guid}/enabled", HandleAsync)
             .WithName("Automation.Rules.SetEnabled")
             .WithTags("Automation.Rules")
             .WithSummary("Enable or disable an automation rule");

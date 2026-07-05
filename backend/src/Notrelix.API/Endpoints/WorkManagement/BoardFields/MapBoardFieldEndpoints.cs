@@ -14,30 +14,28 @@ public static class MapBoardFieldEndpoints
     {
         var group = app
             .MapGroup("/api/v1/boards/{boardId:guid}/fields")
-            .RequireAuthorization()
             .WithTags("WorkManagement.BoardFields")
             .WithOpenApi();
 
-        group.MapPost("/", HandleCreateBoardField)
+        group.MapResourcePost("/", HandleCreateBoardField)
             .WithName("WorkManagement.BoardFields.Create")
             .WithSummary("Create a new field in a board");
-        group.MapPatch("/{fieldId:guid}", HandleUpdateBoardField)
+        group.MapResourcePatch("/{fieldId:guid}", HandleUpdateBoardField)
             .WithName("WorkManagement.BoardFields.Update")
             .WithSummary("Update details or settings of a board field");
-        group.MapDelete("/{fieldId:guid}", HandleDeleteBoardField)
+        group.MapResourceDelete("/{fieldId:guid}", HandleDeleteBoardField)
             .WithName("WorkManagement.BoardFields.Delete")
             .WithSummary("Delete a field from a board");
-        group.MapPost("/reorder", HandleReorderBoardFields)
+        group.MapResourcePost("/reorder", HandleReorderBoardFields)
             .WithName("WorkManagement.BoardFields.Reorder")
             .WithSummary("Reorder board fields");
 
         var schemaGroup = app
             .MapGroup("/api/v1/boards/{boardId:guid}")
-            .RequireAuthorization()
             .WithTags("WorkManagement.BoardFields")
             .WithOpenApi();
 
-        schemaGroup.MapGet("/schema", HandleGetBoardSchema)
+        schemaGroup.MapResourceGet("/schema", HandleGetBoardSchema)
             .WithName("WorkManagement.BoardFields.GetSchema")
             .WithSummary("Get schema (fields, groups) of a board");
 

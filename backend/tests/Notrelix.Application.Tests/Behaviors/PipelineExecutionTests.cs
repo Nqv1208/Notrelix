@@ -12,9 +12,10 @@ public class PipelineExecutionTests
 
     public sealed record ExecutableCommand : IRequest<string>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission, IIdempotentRequest
     {
-        public Guid WorkspaceId => Guid.NewGuid();
+        private static readonly Guid Wsid = Guid.NewGuid();
+        public Guid WorkspaceId => Wsid;
         public PermissionAction Action => PermissionAction.ViewWorkspace;
-        public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, Guid.NewGuid());
+        public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, Wsid, Wsid);
         public string IdempotencyKey => "test-key";
     }
 
@@ -99,8 +100,6 @@ public class PipelineExecutionTests
     private static Mock<IPostCommitActionQueue> CreateMockPostCommitQueue()
     {
         var queue = new Mock<IPostCommitActionQueue>();
-        queue.Setup(x => x.CacheInvalidations).Returns([]);
-        queue.Setup(x => x.RealtimeActions).Returns([]);
         queue.Setup(x => x.Actions).Returns([]);
         return queue;
     }
@@ -260,39 +259,40 @@ public class PipelineExecutionTests
     public async Task PostCommitEnqueue_EnqueuesRealtimeAfterHandler()
     {
         var queue = new Mock<IPostCommitActionQueue>();
+        var publisher = new Mock<IRealtimePublisher>();
         var executionContext = CreateMockExecutionContext();
         var behavior = new PostCommitEnqueueBehavior<SideEffectCommand, string>(
-            queue.Object, executionContext, Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
+            queue.Object, publisher.Object, executionContext, Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
 
         RequestHandlerDelegate<string> next = ct => Task.FromResult("ok");
 
         await behavior.Handle(new SideEffectCommand(), next, CancellationToken.None);
 
-        queue.Verify(x => x.EnqueueRealtime(It.IsAny<RealtimeAction>()), Times.Once);
+        queue.Verify(x => x.Enqueue(It.IsAny<IPostCommitAction>()), Times.Once);
     }
 
     [Fact]
     public async Task PostCommitEnqueue_HandlerThrows_DoesNotEnqueue()
     {
         var queue = new Mock<IPostCommitActionQueue>();
+        var publisher = new Mock<IRealtimePublisher>();
         var executionContext = CreateMockExecutionContext();
         var behavior = new PostCommitEnqueueBehavior<SideEffectCommand, string>(
-            queue.Object, executionContext, Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
+            queue.Object, publisher.Object, executionContext, Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => throw new InvalidOperationException("fail");
 
         Func<Task> act = () => behavior.Handle(new SideEffectCommand(), next, CancellationToken.None);
 
         await act.Should().ThrowAsync<InvalidOperationException>();
-        queue.Verify(x => x.EnqueueRealtime(It.IsAny<RealtimeAction>()), Times.Never);
+        queue.Verify(x => x.Enqueue(It.IsAny<IPostCommitAction>()), Times.Never);
     }
 
     [Fact]
     public async Task PostCommitScope_FlushesQueueAfterNext()
     {
         var queue = new Mock<IPostCommitActionQueue>();
-        queue.Setup(x => x.CacheInvalidations).Returns([]);
-        queue.Setup(x => x.RealtimeActions).Returns([]);
+        queue.Setup(x => x.Actions).Returns([]);
 
         var behavior = new PostCommitScopeBehavior<SideEffectCommand, string>(
             queue.Object, Mock.Of<ILogger<PostCommitScopeBehavior<SideEffectCommand, string>>>());
@@ -317,8 +317,7 @@ public class PipelineExecutionTests
     public async Task PostCommitScope_HandlerThrows_ClearsQueue()
     {
         var queue = new Mock<IPostCommitActionQueue>();
-        queue.Setup(x => x.CacheInvalidations).Returns([]);
-        queue.Setup(x => x.RealtimeActions).Returns([]);
+        queue.Setup(x => x.Actions).Returns([]);
 
         var behavior = new PostCommitScopeBehavior<SideEffectCommand, string>(
             queue.Object, Mock.Of<ILogger<PostCommitScopeBehavior<SideEffectCommand, string>>>());
@@ -345,7 +344,7 @@ public class PipelineExecutionTests
             mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
 
         var enqueueBehavior = new PostCommitEnqueueBehavior<SideEffectCommand, string>(
-            mockPostCommit.Object, CreateMockExecutionContext(), Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
+            mockPostCommit.Object, Mock.Of<IRealtimePublisher>(), CreateMockExecutionContext(), Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
 
         var postCommitBehavior = new PostCommitScopeBehavior<SideEffectCommand, string>(
             mockPostCommit.Object, Mock.Of<ILogger<PostCommitScopeBehavior<SideEffectCommand, string>>>());
@@ -396,7 +395,7 @@ public class PipelineExecutionTests
             mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
 
         var enqueueBehavior = new PostCommitEnqueueBehavior<SideEffectCommand, string>(
-            mockPostCommit.Object, CreateMockExecutionContext(), Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
+            mockPostCommit.Object, Mock.Of<IRealtimePublisher>(), CreateMockExecutionContext(), Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
 
         var postCommitBehavior = new PostCommitScopeBehavior<SideEffectCommand, string>(
             mockPostCommit.Object, Mock.Of<ILogger<PostCommitScopeBehavior<SideEffectCommand, string>>>());
@@ -442,7 +441,7 @@ public class PipelineExecutionTests
             mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
 
         var enqueueBehavior = new PostCommitEnqueueBehavior<SideEffectCommand, string>(
-            mockPostCommit.Object, CreateMockExecutionContext(), Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
+            mockPostCommit.Object, Mock.Of<IRealtimePublisher>(), CreateMockExecutionContext(), Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
 
         var postCommitBehavior = new PostCommitScopeBehavior<SideEffectCommand, string>(
             mockPostCommit.Object, Mock.Of<ILogger<PostCommitScopeBehavior<SideEffectCommand, string>>>());

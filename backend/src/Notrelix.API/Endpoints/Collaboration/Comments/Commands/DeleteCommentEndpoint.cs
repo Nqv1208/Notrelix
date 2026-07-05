@@ -7,7 +7,7 @@ public static class DeleteCommentEndpoint
 {
     public static IEndpointRouteBuilder MapDeleteComment(this IEndpointRouteBuilder group)
     {
-        group.MapDelete("/{commentId:guid}", HandleAsync)
+        group.MapResourceDelete("/{commentId:guid}", HandleAsync)
             .WithName("Collaboration.Comments.Delete")
             .WithTags("Collaboration.Comments")
             .WithSummary("Delete a comment");

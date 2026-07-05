@@ -10,7 +10,6 @@ public static class MapWorkspaceEndpoints
         var group = app
             .MapGroup("/api/v1/workspaces")
             .WithTags("Workspaces.Workspaces")
-            .RequireAuthorization()
             .WithOpenApi();
 
         group.MapListUserWorkspaces();
@@ -19,7 +18,6 @@ public static class MapWorkspaceEndpoints
         var byIdGroup = app
             .MapGroup("/api/v1/workspaces/{workspaceId:guid}")
             .WithTags("Workspaces.Workspaces")
-            .RequireAuthorization()
             .WithOpenApi();
 
         byIdGroup.MapGetWorkspace();
@@ -30,7 +28,6 @@ public static class MapWorkspaceEndpoints
         var bySlugGroup = app
             .MapGroup("/api/v1/workspaces/by-slug/{slug}")
             .WithTags("Workspaces.Workspaces")
-            .RequireAuthorization()
             .WithOpenApi();
 
         bySlugGroup.MapGetWorkspaceBySlug();
