@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
+
 namespace Notrelix.Application.Features.Automation.Events;
 
 public class CardAssignedN8nAutomationHandler
