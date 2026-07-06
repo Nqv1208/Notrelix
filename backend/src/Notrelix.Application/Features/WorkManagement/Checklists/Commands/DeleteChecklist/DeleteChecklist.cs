@@ -3,8 +3,9 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.DeleteChecklist;
 
-public record DeleteChecklistCommand(Guid ChecklistId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest
+public record DeleteChecklistCommand(Guid ChecklistId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
+    public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Checklist, ChecklistId);
 }
 

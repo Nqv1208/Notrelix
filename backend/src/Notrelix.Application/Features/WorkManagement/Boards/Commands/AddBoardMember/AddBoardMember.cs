@@ -15,20 +15,17 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
 {
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
-    private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspaceAccessResolver _workspaceAccess;
 
     public AddBoardMemberCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions,
         IDateTimeProvider dateTimeProvider,
         IWorkspaceAccessResolver workspaceAccess)
     {
         _context = context;
         _currentUser = currentUser;
-        _permissions = permissions;
         _dateTimeProvider = dateTimeProvider;
         _workspaceAccess = workspaceAccess;
     }
@@ -39,8 +36,6 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
             .FirstOrDefaultAsync(b => b.Id == request.BoardId, ct);
 
         if (board is null) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
-
-        await _permissions.EnsureCanManageBoardAsync(board.Id, _currentUser.UserId, ct);
 
         var access = await _workspaceAccess.ResolveAsync(board.WorkspaceId, request.UserId, ct);
         if (!access.CanAccess)

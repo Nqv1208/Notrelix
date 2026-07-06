@@ -33,24 +33,6 @@ public class UpdateBoardItemFieldValuesCommandHandlerTests : IAsyncLifetime
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
-    public async Task Handle_ShouldRejectUserWithoutBoardEditPermission()
-    {
-        var tenant = new FakeCurrentTenantContext();
-        tenant.SetSystem();
-        await using var context = _db.CreateContext(tenant);
-        var ownerId = Guid.NewGuid();
-        var guestId = Guid.NewGuid();
-        var (boardItem, statusField, doneOption) = await SeedBoardAsync(context, ownerId, guestId, WorkspaceRole.Guest);
-        var handler = CreateHandler(context, guestId);
-
-        var act = () => handler.Handle(
-            new UpdateBoardItemFieldValuesCommand(boardItem.Id, new Dictionary<Guid, object?> { [statusField.Id] = doneOption.Id.ToString() }),
-            CancellationToken.None);
-
-        await act.Should().ThrowAsync<ForbiddenException>();
-    }
-
-    [Fact]
     public async Task Handle_ShouldUseDomainBehaviorWhenUpdatingStatusField()
     {
         var tenant = new FakeCurrentTenantContext();
@@ -106,9 +88,7 @@ public class UpdateBoardItemFieldValuesCommandHandlerTests : IAsyncLifetime
         currentUser.SetupGet(item => item.UserId).Returns(userId);
         var timeProvider = new Mock<IDateTimeProvider>();
         timeProvider.Setup(t => t.UtcNow).Returns(DateTimeOffset.UtcNow);
-        var evaluator = new PermissionService(context, context, context, timeProvider.Object);
-        var permissions = new WorkspacePermissionService(evaluator, context);
 
-        return new UpdateBoardItemFieldValuesCommandHandler(context, currentUser.Object, permissions, timeProvider.Object, Mock.Of<IResourceReferenceResolver>(), Mock.Of<ICurrentTenantContext>());
+        return new UpdateBoardItemFieldValuesCommandHandler(context, currentUser.Object, timeProvider.Object, Mock.Of<IResourceReferenceResolver>(), Mock.Of<ICurrentTenantContext>());
     }
 }

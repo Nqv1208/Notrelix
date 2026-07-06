@@ -3,8 +3,9 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ArchiveBoardItem;
 
-public record ArchiveBoardItemCommand(Guid BoardItemId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest
+public record ArchiveBoardItemCommand(Guid BoardItemId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
+    public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
 }
 
@@ -12,18 +13,15 @@ public class ArchiveBoardItemCommandHandler : IRequestHandler<ArchiveBoardItemCo
 {
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
-    private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _timeProvider;
 
     public ArchiveBoardItemCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions,
         IDateTimeProvider timeProvider)
     {
         _context = context;
         _currentUser = currentUser;
-        _permissions = permissions;
         _timeProvider = timeProvider;
     }
 
@@ -32,8 +30,6 @@ public class ArchiveBoardItemCommandHandler : IRequestHandler<ArchiveBoardItemCo
         var card = await _context.BoardItems
             .FirstOrDefaultAsync(c => c.Id == request.BoardItemId, ct);
         if (card is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
-
-        await _permissions.EnsureCanEditBoardAsync(card.BoardId, _currentUser.UserId, ct);
 
         var now = _timeProvider.UtcNow;
         card.SoftDelete(_currentUser.UserId, now);

@@ -3,8 +3,9 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.LinkPageToBoardItem;
 
-public record LinkPageToBoardItemCommand(Guid BoardItemId, Guid PageId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest
+public record LinkPageToBoardItemCommand(Guid BoardItemId, Guid PageId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
+    public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
 }
 
@@ -12,7 +13,6 @@ public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoard
 {
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
-    private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _timeProvider;
     private readonly IResourceReferenceResolver _resourceResolver;
     private readonly ICurrentTenantContext _tenant;
@@ -20,14 +20,12 @@ public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoard
     public LinkPageToBoardItemCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions,
         IDateTimeProvider timeProvider,
         IResourceReferenceResolver resourceResolver,
         ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
-        _permissions = permissions;
         _timeProvider = timeProvider;
         _resourceResolver = resourceResolver;
         _tenant = tenant;
@@ -44,8 +42,6 @@ public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoard
         var pageWorkspaceId = await _resourceResolver.GetWorkspaceIdAsync(request.PageId, ResourceTypes.Page, cancellationToken);
         if (!pageWorkspaceId.HasValue)
             throw new NotFoundException(nameof(Page), request.PageId);
-
-        await _permissions.EnsureCanEditBoardAsync(card.BoardId, _currentUser.UserId, cancellationToken);
 
         if (card.WorkspaceId != pageWorkspaceId.Value)
             throw new Notrelix.Domain.Common.Exceptions.BusinessRuleViolationException("CardPageWorkspaceMismatch", "BoardItem chỉ được link với page cùng workspace.");

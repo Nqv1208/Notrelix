@@ -4,8 +4,9 @@ using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Pages.Queries.GetPageHistory;
 
-public record GetPageHistoryQuery(Guid PageId) : IQuery<Result<List<PageHistoryDto>>>, IResourceScopedRequest
+public record GetPageHistoryQuery(Guid PageId) : IQuery<Result<List<PageHistoryDto>>>, IResourceScopedRequest, IRequirePermission
 {
+    public PermissionAction Action => PermissionAction.ViewPage;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Page, PageId);
 }
 

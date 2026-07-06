@@ -37,6 +37,6 @@ public static class DependencyInjection
     /// </summary>
     public static void AddInfrastructureServices(this IHostApplicationBuilder builder)
     {
-        builder.Services.AddInfrastructure(builder.Configuration);
+        builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
     }
 }

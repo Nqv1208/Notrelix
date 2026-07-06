@@ -3,8 +3,9 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UnarchiveBoardGroup;
 
-public record UnarchiveBoardGroupCommand(Guid GroupId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest
+public record UnarchiveBoardGroupCommand(Guid GroupId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
+    public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardGroup, GroupId);
 }
 
@@ -13,25 +14,21 @@ public class UnarchiveBoardGroupCommandHandler : IRequestHandler<UnarchiveBoardG
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly IWorkspacePermissionService _permissions;
 
     public UnarchiveBoardGroupCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider,
-        IWorkspacePermissionService permissions)
+        IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
-        _permissions = permissions;
     }
 
     public async Task<Result> Handle(UnarchiveBoardGroupCommand request, CancellationToken ct)
     {
         var list = await _context.BoardGroups.FirstOrDefaultAsync(l => l.Id == request.GroupId, ct);
         if (list is null) throw new NotFoundException(nameof(BoardGroup), request.GroupId);
-        await _permissions.EnsureCanEditBoardAsync(list.BoardId, _currentUser.UserId, ct);
         list.Restore(_currentUser.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }

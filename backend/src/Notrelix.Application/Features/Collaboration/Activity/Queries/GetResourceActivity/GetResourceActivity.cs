@@ -4,8 +4,9 @@ using global::Notrelix.Application.Features.Collaboration.Activity.DTOs;
 namespace Notrelix.Application.Features.Collaboration.Activity.Queries.GetResourceActivity;
 
 public record GetResourceActivityQuery(ResourceType ResourceType, Guid ResourceId, int Page = 1, int PageSize = 20)
-    : IQuery<Result<object>>, IResourceScopedRequest
+    : IQuery<Result<object>>, IResourceScopedRequest, IRequirePermission
 {
+    public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType, ResourceId);
 }
 

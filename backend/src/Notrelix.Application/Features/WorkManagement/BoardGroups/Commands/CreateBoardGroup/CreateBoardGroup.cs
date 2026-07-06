@@ -3,8 +3,9 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.CreateBoardGroup;
 
-public record CreateBoardGroupCommand(Guid BoardId, string Title, string? Position, string? Color = null) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest
+public record CreateBoardGroupCommand(Guid BoardId, string Title, string? Position, string? Color = null) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
+    public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
 }
 
@@ -13,20 +14,17 @@ public class CreateBoardGroupCommandHandler : IRequestHandler<CreateBoardGroupCo
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly IWorkspacePermissionService _permissions;
     private readonly ICurrentTenantContext _tenant;
 
     public CreateBoardGroupCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
-        IWorkspacePermissionService permissions,
         ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
-        _permissions = permissions;
         _tenant = tenant;
     }
 
@@ -35,8 +33,6 @@ public class CreateBoardGroupCommandHandler : IRequestHandler<CreateBoardGroupCo
         var board = await _context.Boards
             .FirstOrDefaultAsync(board => board.Id == request.BoardId && !board.IsArchived, ct);
         if (board is null) throw new NotFoundException("Board", request.BoardId);
-
-        await _permissions.EnsureCanEditBoardAsync(request.BoardId, _currentUser.UserId, ct);
 
         var position = request.Position is not null
             ? FractionalIndex.Create(request.Position)

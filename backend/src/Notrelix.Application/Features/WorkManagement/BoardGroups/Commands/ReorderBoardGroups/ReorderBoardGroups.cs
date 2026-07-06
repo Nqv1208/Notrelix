@@ -4,8 +4,9 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ReorderBoardGroups;
 
-public record ReorderBoardGroupsCommand(Guid BoardId, List<ReorderItem> Items) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest
+public record ReorderBoardGroupsCommand(Guid BoardId, List<ReorderItem> Items) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
+    public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
 }
 
@@ -13,25 +14,20 @@ public class ReorderBoardGroupsCommandHandler : IRequestHandler<ReorderBoardGrou
 {
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
-    private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public ReorderBoardGroupsCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions,
         IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
-        _permissions = permissions;
         _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(ReorderBoardGroupsCommand request, CancellationToken ct)
     {
-        await _permissions.EnsureCanEditBoardAsync(request.BoardId, _currentUser.UserId, ct);
-
         var itemIds = request.Items.Select(item => item.Id).ToHashSet();
         var lists = await _context.BoardGroups
             .Where(list => itemIds.Contains(list.Id))

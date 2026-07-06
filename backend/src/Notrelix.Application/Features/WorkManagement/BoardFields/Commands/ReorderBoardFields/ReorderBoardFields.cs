@@ -4,8 +4,9 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderBoardFields;
 
-public record ReorderBoardFieldsCommand(Guid BoardId, List<ReorderItem> Items) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest
+public record ReorderBoardFieldsCommand(Guid BoardId, List<ReorderItem> Items) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
+    public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
 }
 
@@ -13,25 +14,20 @@ public class ReorderBoardFieldsCommandHandler : IRequestHandler<ReorderBoardFiel
 {
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
-    private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public ReorderBoardFieldsCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions,
         IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
-        _permissions = permissions;
         _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(ReorderBoardFieldsCommand request, CancellationToken ct)
     {
-        await _permissions.EnsureCanEditBoardAsync(request.BoardId, _currentUser.UserId, ct);
-
         var now = _dateTimeProvider.UtcNow;
         foreach (var item in request.Items)
         {

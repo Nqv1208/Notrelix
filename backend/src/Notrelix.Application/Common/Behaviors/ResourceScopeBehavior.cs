@@ -24,8 +24,9 @@ public class ResourceScopeBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
         if (request is not IResourceScopedRequest resourceRequest)
             return await next();
 
-        var actorUserId = _tenant.UserId;
-        var snapshot = await _resolver.ResolveAsync(resourceRequest.Resource, actorUserId ?? Guid.Empty, ct);
+        var actorUserId = _tenant.UserId
+            ?? throw new UnauthorizedException("Resource-scoped request requires authenticated user.");
+        var snapshot = await _resolver.ResolveAsync(resourceRequest.Resource, actorUserId, ct);
 
         if (snapshot is null)
         {

@@ -9,18 +9,15 @@ public class UpdateBoardItemStatusCommandHandler : IRequestHandler<UpdateBoardIt
 {
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
-    private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _timeProvider;
 
     public UpdateBoardItemStatusCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions,
         IDateTimeProvider timeProvider)
     {
         _context = context;
         _currentUser = currentUser;
-        _permissions = permissions;
         _timeProvider = timeProvider;
     }
 
@@ -29,8 +26,6 @@ public class UpdateBoardItemStatusCommandHandler : IRequestHandler<UpdateBoardIt
         var card = await _context.BoardItems
             .FirstOrDefaultAsync(c => c.Id == request.BoardItemId, ct);
         if (card is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
-
-        await _permissions.EnsureCanEditBoardAsync(card.BoardId, _currentUser.UserId, ct);
 
         var statusFields = await _context.BoardFields
             .Where(f => f.BoardId == card.BoardId && f.Type == FieldType.Status && !f.IsDeleted)

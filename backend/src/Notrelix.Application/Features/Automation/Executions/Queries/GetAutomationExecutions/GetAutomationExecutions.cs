@@ -5,9 +5,10 @@ using Notrelix.Application.Features.Automation.DTOs;
 namespace Notrelix.Application.Features.Automation.Executions.Queries.GetAutomationExecutions;
 
 public record GetAutomationExecutionsQuery(Guid AutomationRuleId, int Page = 1, int PageSize = 20)
-    : IQuery<Result<IReadOnlyList<AutomationExecutionDto>>>, IResourceScopedRequest
+    : IQuery<Result<IReadOnlyList<AutomationExecutionDto>>>, IResourceScopedRequest, IRequirePermission
 {
-    ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(ResourceType.AutomationRule, AutomationRuleId);
+    public PermissionAction Action => PermissionAction.ViewBoard;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.AutomationRule, AutomationRuleId);
 }
 
 public class GetAutomationExecutionsQueryHandler : IRequestHandler<GetAutomationExecutionsQuery, Result<IReadOnlyList<AutomationExecutionDto>>>

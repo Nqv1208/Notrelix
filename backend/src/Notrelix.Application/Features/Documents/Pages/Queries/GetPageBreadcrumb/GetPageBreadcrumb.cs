@@ -4,8 +4,9 @@ using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Pages.Queries.GetPageBreadcrumb;
 
-public record GetPageBreadcrumbQuery(Guid PageId) : IQuery<Result<List<PageBreadcrumbDto>>>, IResourceScopedRequest
+public record GetPageBreadcrumbQuery(Guid PageId) : IQuery<Result<List<PageBreadcrumbDto>>>, IResourceScopedRequest, IRequirePermission
 {
+    public PermissionAction Action => PermissionAction.ViewPage;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Page, PageId);
 }
 

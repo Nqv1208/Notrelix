@@ -16,27 +16,22 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
     private readonly IAutomationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly IWorkspacePermissionService _permissions;
     private readonly ICurrentTenantContext _tenant;
 
     public CreateAutomationRuleCommandHandler(
         IAutomationDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
-        IWorkspacePermissionService permissions,
         ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
-        _permissions = permissions;
         _tenant = tenant;
     }
 
     public async Task<Result<Guid>> Handle(CreateAutomationRuleCommand request, CancellationToken cancellationToken)
     {
-        await _permissions.EnsureCanManageWorkspaceAsync(request.WorkspaceId, _currentUser.UserId, cancellationToken);
-
         var trigger = AutomationTriggerDefinition.Create(request.TriggerEvent, request.Configuration);
         var action = AutomationActionDefinition.Create(request.ActionType, request.Configuration);
         var config = AutomationConfiguration.Create(trigger, action);

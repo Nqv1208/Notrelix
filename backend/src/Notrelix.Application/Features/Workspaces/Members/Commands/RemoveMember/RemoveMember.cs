@@ -13,18 +13,15 @@ public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, R
     private readonly IWorkspaceDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly IWorkspacePermissionService _permissions;
 
     public RemoveMemberCommandHandler(
         IWorkspaceDbContext context,
         ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider,
-        IWorkspacePermissionService permissions)
+        IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
-        _permissions = permissions;
     }
 
     public async Task<Result> Handle(RemoveMemberCommand request, CancellationToken ct)
@@ -34,8 +31,6 @@ public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, R
 
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
-
-        await _permissions.EnsureCanManageWorkspaceAsync(request.WorkspaceId, _currentUser.UserId, ct);
 
         var member = await _context.WorkspaceMembers
             .FirstOrDefaultAsync(m => m.WorkspaceId == workspace.Id && m.UserId == request.UserId, ct);

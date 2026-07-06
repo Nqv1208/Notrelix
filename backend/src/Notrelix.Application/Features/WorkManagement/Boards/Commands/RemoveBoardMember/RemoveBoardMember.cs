@@ -14,16 +14,13 @@ public class RemoveBoardMemberCommandHandler : IRequestHandler<RemoveBoardMember
 {
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
-    private readonly IWorkspacePermissionService _permissions;
 
     public RemoveBoardMemberCommandHandler(
         IWorkManagementDbContext context,
-        ICurrentUser currentUser,
-        IWorkspacePermissionService permissions)
+        ICurrentUser currentUser)
     {
         _context = context;
         _currentUser = currentUser;
-        _permissions = permissions;
     }
 
     public async Task<Result> Handle(RemoveBoardMemberCommand request, CancellationToken ct)
@@ -32,8 +29,6 @@ public class RemoveBoardMemberCommandHandler : IRequestHandler<RemoveBoardMember
             .FirstOrDefaultAsync(b => b.Id == request.BoardId, ct);
 
         if (board is null) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
-
-        await _permissions.EnsureCanManageBoardAsync(board.Id, _currentUser.UserId, ct);
 
         var member = await _context.BoardMembers
             .FirstOrDefaultAsync(m => m.BoardId == board.Id && m.UserId == request.UserId, ct);

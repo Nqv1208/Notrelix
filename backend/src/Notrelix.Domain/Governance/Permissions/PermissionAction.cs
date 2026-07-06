@@ -20,5 +20,8 @@ public enum PermissionAction
     MoveItem,
     AssignItem,
     SharePage,
-    ManageBoard
+    ManageBoard,
+    ViewPage,
+    UpdatePage,
+    DeletePage
 }

@@ -3,8 +3,9 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
 
-public record UpdateBoardFieldCommand(Guid BoardId, Guid ColumnId, string? Name, string? FieldType, string? Settings) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest
+public record UpdateBoardFieldCommand(Guid BoardId, Guid ColumnId, string? Name, string? FieldType, string? Settings) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
+    public PermissionAction Action => PermissionAction.UpdateField;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardField, ColumnId);
 }
 
@@ -12,25 +13,20 @@ public class UpdateBoardFieldCommandHandler : IRequestHandler<UpdateBoardFieldCo
 {
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
-    private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public UpdateBoardFieldCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions,
         IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
-        _permissions = permissions;
         _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(UpdateBoardFieldCommand request, CancellationToken ct)
     {
-        await _permissions.EnsureCanEditBoardAsync(request.BoardId, _currentUser.UserId, ct);
-
         var column = await _context.BoardFields
             .FirstOrDefaultAsync(item => item.Id == request.ColumnId && item.BoardId == request.BoardId, ct);
         if (column is null) throw new NotFoundException(nameof(BoardField), request.ColumnId);

@@ -42,13 +42,9 @@ public class UnarchiveBoardCommandHandlerTests : IAsyncLifetime
         context.Boards.Add(board);
         await context.SaveChangesAsync();
 
-        var permissionMock = new Mock<IWorkspacePermissionService>();
-        permissionMock.Setup(p => p.EnsureCanManageBoardAsync(board.Id, userId, default))
-            .Returns(Task.CompletedTask);
-
         var handler = new UnarchiveBoardCommandHandler(
             context, new FakeCurrentUser { UserId = userId },
-            permissionMock.Object, FakeDateTimeProvider.WithFixedTime(now));
+            FakeDateTimeProvider.WithFixedTime(now));
 
         var result = await handler.Handle(new UnarchiveBoardCommand(board.Id), CancellationToken.None);
         await context.SaveChangesAsync();
@@ -63,11 +59,10 @@ public class UnarchiveBoardCommandHandlerTests : IAsyncLifetime
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
         await using var context = _db.CreateContext(tenant);
-        var permissionMock = new Mock<IWorkspacePermissionService>();
 
         var handler = new UnarchiveBoardCommandHandler(
             context, new FakeCurrentUser(),
-            permissionMock.Object, FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow));
+            FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow));
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
             handler.Handle(new UnarchiveBoardCommand(Guid.NewGuid()), CancellationToken.None));

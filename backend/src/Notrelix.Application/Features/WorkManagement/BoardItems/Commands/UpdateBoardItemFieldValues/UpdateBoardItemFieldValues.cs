@@ -4,8 +4,9 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValues;
 
-public record UpdateBoardItemFieldValuesCommand(Guid BoardItemId, Dictionary<Guid, object?> Values) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest
+public record UpdateBoardItemFieldValuesCommand(Guid BoardItemId, Dictionary<Guid, object?> Values) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
+    public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
 }
 
@@ -13,7 +14,6 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
 {
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
-    private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _timeProvider;
     private readonly IResourceReferenceResolver _resourceResolver;
     private readonly ICurrentTenantContext _tenant;
@@ -21,14 +21,12 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
     public UpdateBoardItemFieldValuesCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions,
         IDateTimeProvider timeProvider,
         IResourceReferenceResolver resourceResolver,
         ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
-        _permissions = permissions;
         _timeProvider = timeProvider;
         _resourceResolver = resourceResolver;
         _tenant = tenant;
@@ -39,8 +37,6 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
         var card = await _context.BoardItems
             .FirstOrDefaultAsync(c => c.Id == request.BoardItemId && c.DeletedAt == null, ct);
         if (card is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
-
-        await _permissions.EnsureCanEditBoardAsync(card.BoardId, _currentUser.UserId, ct);
 
         var now = _timeProvider.UtcNow;
 

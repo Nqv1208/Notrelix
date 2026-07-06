@@ -3,8 +3,9 @@ using Notrelix.Application.Features.Collaboration.Abstractions;
 
 namespace Notrelix.Application.Features.Collaboration.Attachments.Commands.DeleteAttachment;
 
-public record DeleteAttachmentCommand(Guid AttachmentId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest
+public record DeleteAttachmentCommand(Guid AttachmentId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
+    public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Attachment, AttachmentId);
 }
 

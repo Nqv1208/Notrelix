@@ -3,8 +3,9 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.ToggleChecklistItem;
 
-public record ToggleChecklistItemCommand(Guid ChecklistItemId) : ICommand<Result>, IResourceScopedRequest
+public record ToggleChecklistItemCommand(Guid ChecklistItemId) : ICommand<Result>, IResourceScopedRequest, IRequirePermission
 {
+    public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.ChecklistItem, ChecklistItemId);
 }
 

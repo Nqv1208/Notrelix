@@ -4,8 +4,9 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.DeleteBoardView;
 
 public record DeleteBoardViewCommand(Guid BoardId, Guid ViewId)
-    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest
+    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
+    public PermissionAction Action => PermissionAction.UpdateBoardView;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardView, ViewId);
 }
 

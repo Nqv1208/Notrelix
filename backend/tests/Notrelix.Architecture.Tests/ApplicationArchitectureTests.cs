@@ -324,47 +324,16 @@ public class ApplicationArchitectureTests
             .ToArray();
         var violations = new List<string>();
 
-        var allowedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "CreateBoardField.cs",
-            "UpdateBoardField.cs",
-            "ReorderBoardFields.cs",
-            "DeleteBoardField.cs",
-            "UpdateMemberRole.cs",
-            "RemoveMember.cs",
-            "AddBoardMember.cs",
-            "RemoveBoardMember.cs",
-            "CreateAutomationRule.cs",
-            "SetAutomationRuleEnabled.cs",
-            "GetWorkspaceAutomations.cs",
-            "GetAutomationExecutions.cs",
-            "UnarchiveBoard.cs",
-            "ArchiveBoardGroup.cs",
-            "ReorderBoardGroups.cs",
-            "UnarchiveBoardGroup.cs",
-            "CreateBoardGroup.cs",
-            "UpdateBoardGroup.cs",
-            "UpdateBoardItemFieldValues.cs",
-            "SetBoardItemDueDate.cs",
-            "UpdateBoardItemStatus.cs",
-            "UpdateBoardItem.cs",
-            "LinkPageToBoardItem.cs",
-            "ArchiveBoardItem.cs",
-            "UnlinkPageFromBoardItem.cs",
-            "WorkspacePermissionService.cs",
-        };
-
         foreach (var file in handlerFiles)
         {
             var fileName = Path.GetFileName(file);
-            if (allowedFiles.Contains(fileName)) continue;
 
             var content = RemoveComments(File.ReadAllText(file));
             if (content.Contains("WorkspacePermissionService") || content.Contains("IWorkspacePermissionService"))
                 violations.Add(fileName);
         }
 
-        violations.Should().BeEmpty("No new handlers should inject IWorkspacePermissionService. Use pipeline authorization (IRequirePermission) instead. Violations: " + string.Join(", ", violations));
+        violations.Should().BeEmpty("No handlers should inject IWorkspacePermissionService. Use pipeline authorization (IRequirePermission) instead. Violations: " + string.Join(", ", violations));
     }
 
     [Fact]

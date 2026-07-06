@@ -306,4 +306,164 @@ public class Phase4ArchitectureTests
         cleaned = Regex.Replace(cleaned, lineComments, "\n");
         return cleaned;
     }
+
+    [Fact]
+    public void NoGuidEmptyActorFallback()
+    {
+        var content = File.ReadAllText(Path.Combine(GetApplicationPath(), "Common", "Behaviors", "ResourceScopeBehavior.cs"));
+        content.Should().NotContain("Guid.Empty", "ResourceScopeBehavior must not fallback to Guid.Empty for missing actor");
+    }
+
+    [Fact]
+    public void AllResourceScopedRequestsHavePermissionOrSystemInternalMarker()
+    {
+        var srcPath = GetApplicationPath();
+        var files = Directory.GetFiles(Path.Combine(srcPath, "Features"), "*.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                     && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .ToArray();
+
+        var violations = new List<string>();
+
+        foreach (var file in files)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            if (!content.Contains("IResourceScopedRequest")) continue;
+
+            if (!content.Contains("IRequirePermission") && !content.Contains("ISystemInternalRequest"))
+                violations.Add(Path.GetFileName(file));
+        }
+
+        violations.Should().BeEmpty(
+            "All IResourceScopedRequest implementations must also implement IRequirePermission or ISystemInternalRequest. " +
+            "Violations: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void MapResourceSendsResourceScopedRequest()
+    {
+        var mapFiles = Directory.GetFiles(Path.Combine(GetApiPath(), "Endpoints"), "Map*Endpoints.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                     && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .ToArray();
+
+        var violations = new List<string>();
+
+        foreach (var file in mapFiles)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+
+            var lines = content.Split('\n');
+            foreach (var line in lines)
+            {
+                var trimmed = line.Trim();
+                if (!trimmed.StartsWith("MapResourceGet") && !trimmed.StartsWith("MapResourcePost")
+                    && !trimmed.StartsWith("MapResourcePut") && !trimmed.StartsWith("MapResourcePatch")
+                    && !trimmed.StartsWith("MapResourceDelete"))
+                    continue;
+
+                // Each MapResource* call should pass a request that implements IResourceScopedRequest
+                // We check the endpoint handler file references IResourceScopedRequest
+                var handlerMatch = System.Text.RegularExpressions.Regex.Match(trimmed, @"<([A-Za-z]+(Command|Query))>");
+                if (handlerMatch.Success)
+                {
+                    var requestType = handlerMatch.Groups[1].Value;
+                    var handlerFile = Directory.GetFiles(
+                        Path.Combine(GetApplicationPath(), "Features"),
+                        requestType + ".cs",
+                        SearchOption.AllDirectories)
+                        .FirstOrDefault();
+                    if (handlerFile != null)
+                    {
+                        var handlerContent = RemoveComments(File.ReadAllText(handlerFile));
+                        if (!handlerContent.Contains("IResourceScopedRequest"))
+                            violations.Add($"{Path.GetFileName(file)}: {trimmed} sends {requestType} which is not IResourceScopedRequest");
+                    }
+                }
+            }
+        }
+
+        violations.Should().BeEmpty(
+            "Every MapResource* endpoint must send a request that implements IResourceScopedRequest. " +
+            "Violations: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void NoXWorkspaceIdInEndpointHandlers()
+    {
+        var resourceScopedEndpointFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        var mapFiles = Directory.GetFiles(Path.Combine(GetApiPath(), "Endpoints"), "Map*Endpoints.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                     && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .ToArray();
+
+        foreach (var mapFile in mapFiles)
+        {
+            var content = File.ReadAllText(mapFile);
+            if (!content.Contains("MapResourceGet") && !content.Contains("MapResourcePost")
+                && !content.Contains("MapResourcePut") && !content.Contains("MapResourcePatch")
+                && !content.Contains("MapResourceDelete"))
+                continue;
+
+            var mapDir = Path.GetDirectoryName(mapFile);
+            if (mapDir == null) continue;
+
+            var handlerFiles = Directory.GetFiles(mapDir, "*Endpoint.cs", SearchOption.AllDirectories)
+                .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                         && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+                .ToArray();
+
+            foreach (var hf in handlerFiles)
+                resourceScopedEndpointFiles.Add(Path.GetFileName(hf));
+        }
+
+        var violations = new List<string>();
+
+        foreach (var file in Directory.GetFiles(Path.Combine(GetApiPath(), "Endpoints"), "*Endpoint.cs", SearchOption.AllDirectories))
+        {
+            var fileName = Path.GetFileName(file);
+            if (!resourceScopedEndpointFiles.Contains(fileName)) continue;
+
+            var content = RemoveComments(File.ReadAllText(file));
+            if (content.Contains("X-Workspace-Id") || content.Contains("TryGetWorkspaceIdHint") || content.Contains("TryGetValue(\"X-Workspace-Id\""))
+                violations.Add(fileName);
+        }
+
+        violations.Should().BeEmpty(
+            "MapResource* endpoint handlers must not reference X-Workspace-Id or TryGetWorkspaceIdHint. " +
+            "Violations: " + string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void ResourceScopeResolverCoversAllResourceTypes()
+    {
+        var resolverContent = File.ReadAllText(Path.Combine(GetInfrastructurePath(), "Services", "ResourceScopeResolver.cs"));
+
+        // Collect all ResourceType values used by MapResource* endpoints
+        var mapFiles = Directory.GetFiles(Path.Combine(GetApiPath(), "Endpoints"), "Map*Endpoints.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                     && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .ToArray();
+
+        var resourceTypesFromMapEndpoints = new HashSet<string>();
+
+        foreach (var mapFile in mapFiles)
+        {
+            var content = File.ReadAllText(mapFile);
+            var matches = System.Text.RegularExpressions.Regex.Matches(content, @"ResourceType\.(\w+)");
+            foreach (System.Text.RegularExpressions.Match match in matches)
+            {
+                if (match.Success)
+                    resourceTypesFromMapEndpoints.Add(match.Groups[1].Value);
+            }
+        }
+
+        // Each must be handled by the resolver
+        foreach (var rt in resourceTypesFromMapEndpoints)
+        {
+            resolverContent.Should().Contain($"ResourceType.{rt}",
+                $"ResourceScopeResolver must handle ResourceType.{rt} used by MapResource* endpoints");
+        }
+    }
 }
