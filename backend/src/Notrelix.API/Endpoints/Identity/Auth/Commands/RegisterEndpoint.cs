@@ -17,10 +17,24 @@ public static class RegisterEndpoint
     }
 
     private static async Task<IResult> HandleAsync(
-        RegisterCommand command,
-        ISender sender)
+        RegisterRequest request,
+        ISender sender,
+        ICookieService cookieService)
     {
+        var command = new RegisterCommand
+        {
+            Email = request.Email,
+            Password = request.Password,
+            Name = request.Name
+        };
+
         var result = await sender.Send(command);
+
+        if (result.Succeeded && result.Data is not null)
+        {
+            cookieService.SetTokenCookie(result.Data.AccessToken, result.Data.RefreshToken);
+        }
+
         return result.ToApiResult();
     }
 }

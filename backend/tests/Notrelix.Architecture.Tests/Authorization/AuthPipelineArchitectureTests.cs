@@ -1,7 +1,42 @@
+using Notrelix.Application.Common.CQRS;
+using Notrelix.Application.Common.CQRS.Scoping;
+using Notrelix.Application.Common.CQRS.Security;
+using Notrelix.Application.Features.Identity.Auth.Commands.Login;
+using Notrelix.Application.Features.Identity.Registration.Commands.Register;
+
 namespace Notrelix.Architecture.Tests;
 
 public class AuthPipelineArchitectureTests : ArchitectureTestBase
 {
+    [Fact]
+    public void RegisterCommand_Must_Be_Anonymous_Global_Transactional()
+    {
+        var type = typeof(RegisterCommand);
+
+        typeof(IAnonymousRequest).IsAssignableFrom(type).Should().BeTrue();
+        typeof(IGlobalRequest).IsAssignableFrom(type).Should().BeTrue();
+        typeof(ITransactionalRequest).IsAssignableFrom(type).Should().BeTrue();
+
+        typeof(IRequirePermission).IsAssignableFrom(type).Should().BeFalse();
+        typeof(IWorkspaceRequest).IsAssignableFrom(type).Should().BeFalse();
+        typeof(IAccountRequest).IsAssignableFrom(type).Should().BeFalse();
+        typeof(IResourceScopedRequest).IsAssignableFrom(type).Should().BeFalse();
+    }
+
+    [Fact]
+    public void LoginCommand_Must_Be_Anonymous_Global_Transactional()
+    {
+        var type = typeof(LoginCommand);
+
+        typeof(IAnonymousRequest).IsAssignableFrom(type).Should().BeTrue();
+        typeof(IGlobalRequest).IsAssignableFrom(type).Should().BeTrue();
+        typeof(ITransactionalRequest).IsAssignableFrom(type).Should().BeTrue();
+
+        typeof(IRequirePermission).IsAssignableFrom(type).Should().BeFalse();
+        typeof(IWorkspaceRequest).IsAssignableFrom(type).Should().BeFalse();
+        typeof(IAccountRequest).IsAssignableFrom(type).Should().BeFalse();
+        typeof(IResourceScopedRequest).IsAssignableFrom(type).Should().BeFalse();
+    }
     [Fact]
     public void NoGuidEmptyActorFallback()
     {

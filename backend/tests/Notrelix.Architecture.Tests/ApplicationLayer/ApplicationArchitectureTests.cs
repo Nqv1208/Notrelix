@@ -146,13 +146,14 @@ public class ApplicationArchitectureTests
             .Where(l => l.Contains("AddTransient(typeof(IPipelineBehavior<"))
             .ToList();
 
-        lines.Should().HaveCount(14, "expected exactly 14 pipeline behaviors");
+        lines.Should().HaveCount(15, "expected exactly 15 pipeline behaviors");
 
         var expectedOrder = new[]
         {
             "ExceptionMappingBehavior",
             "ApplicationTracingBehavior",
             "ValidationBehavior",
+            "RequestContractGuardBehavior",
             "TenantBootstrapBehavior",
             "ResourceScopeBehavior",
             "PostCommitScopeBehavior",

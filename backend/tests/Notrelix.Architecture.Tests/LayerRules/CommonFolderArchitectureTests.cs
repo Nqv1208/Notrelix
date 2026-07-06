@@ -202,7 +202,7 @@ public class CommonFolderArchitectureTests
     }
 
     [Fact]
-    public void PipelineBehaviorCount_ShouldBeThirteen()
+    public void PipelineBehaviorCount_ShouldBeFifteen()
     {
         var diFile = Path.Combine(GetApplicationPath(), "DependencyInjection.cs");
         var content = File.ReadAllText(diFile);
@@ -211,6 +211,6 @@ public class CommonFolderArchitectureTests
             .Where(l => l.Contains("AddTransient(typeof(IPipelineBehavior<"))
             .ToList();
 
-        lines.Should().HaveCount(14, "expected exactly 14 pipeline behaviors");
+        lines.Should().HaveCount(15, "expected exactly 15 pipeline behaviors");
     }
 }

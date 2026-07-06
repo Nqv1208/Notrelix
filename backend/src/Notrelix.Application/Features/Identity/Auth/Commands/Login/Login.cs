@@ -1,9 +1,14 @@
+using Notrelix.Application.Common.CQRS.Scoping;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.Login;
 
-public record LoginCommand : ICommand<Result<AuthResult>>, ITransactionalRequest
+public record LoginCommand
+    : ICommand<Result<AuthResult>>,
+      IAnonymousRequest,
+      IGlobalRequest,
+      ITransactionalRequest
 {
     public required string Email { get; init; }
     public required string Password { get; init; }

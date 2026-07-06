@@ -1,3 +1,5 @@
+using Notrelix.Application.Common.CQRS.Scoping;
+
 namespace Notrelix.Application.Common.Behaviors;
 
 public class DbRequestScopeBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
@@ -20,15 +22,33 @@ public class DbRequestScopeBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken ct)
     {
         var isWrite = request is ITransactionalRequest;
+        var isGlobal = request is IGlobalRequest;
+
         var requiresRls = request is IRlsReadRequest
+            or IAccountRequest
+            or IWorkspaceRequest
+            or IResourceScopedRequest
             or IRequirePermission
             or IRequireSubscription
             or IRequireFeature;
 
-        if (!isWrite && !requiresRls)
+        if (isGlobal && requiresRls)
+        {
+            throw new SecurityMisconfigurationException(
+                $"{typeof(TRequest).Name} is global but requires tenant RLS.");
+        }
+
+        var needsDbScope = isWrite || requiresRls;
+
+        if (!needsDbScope)
             return await next();
 
-        _logger.LogTrace("Opening DB/RLS scope for {RequestType} (write={IsWrite})", typeof(TRequest).Name, isWrite);
+        _logger.LogTrace(
+            "Opening DB scope for {RequestType} (write={IsWrite}, rls={RequiresRls}, global={IsGlobal})",
+            typeof(TRequest).Name,
+            isWrite,
+            requiresRls,
+            isGlobal);
 
         await using var transaction = await _db.Database.BeginTransactionAsync(ct);
         try
@@ -39,8 +59,11 @@ public class DbRequestScopeBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
                 await _db.Database.ExecuteSqlRawAsync("SET TRANSACTION READ ONLY", ct);
             }
 
-            _logger.LogTrace("Applying RLS session for {RequestType}", typeof(TRequest).Name);
-            await _rls.ApplyAsync(_db.Database, ct);
+            if (requiresRls)
+            {
+                _logger.LogTrace("Applying RLS session for {RequestType}", typeof(TRequest).Name);
+                await _rls.ApplyAsync(_db.Database, ct);
+            }
 
             var response = await next();
 
@@ -51,13 +74,13 @@ public class DbRequestScopeBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
             }
 
             await transaction.CommitAsync(ct);
-            _logger.LogTrace("Committed DB/RLS scope for {RequestType}", typeof(TRequest).Name);
+            _logger.LogTrace("Committed DB scope for {RequestType}", typeof(TRequest).Name);
 
             return response;
         }
         catch
         {
-            _logger.LogWarning("Rolling back DB/RLS scope for {RequestType}", typeof(TRequest).Name);
+            _logger.LogWarning("Rolling back DB scope for {RequestType}", typeof(TRequest).Name);
             await transaction.RollbackAsync(ct);
             throw;
         }
