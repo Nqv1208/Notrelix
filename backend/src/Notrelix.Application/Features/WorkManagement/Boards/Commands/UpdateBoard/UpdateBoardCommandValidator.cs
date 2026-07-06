@@ -6,9 +6,6 @@ public class UpdateBoardCommandValidator : AbstractValidator<UpdateBoardCommand>
 {
     public UpdateBoardCommandValidator()
     {
-        RuleFor(x => x.WorkspaceId)
-            .NotEmpty();
-
         RuleFor(x => x.BoardId)
             .NotEmpty();
 

@@ -53,7 +53,7 @@ public class PermissionServiceTests : IAsyncLifetime
         context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
         await context.SaveChangesAsync();
 
-        var permissionContext = new PermissionContext(ownerId, workspace.Id, ResourceType.Workspace, null, PermissionAction.DeleteWorkspace, AppPermissionScope.Workspace);
+        var permissionContext = new PermissionContext(ownerId, workspace.AccountId, workspace.Id, ResourceType.Workspace, null, PermissionAction.DeleteWorkspace, AppPermissionScope.Workspace);
 
         var decision = await service.EvaluateAsync(permissionContext);
 
@@ -69,7 +69,7 @@ public class PermissionServiceTests : IAsyncLifetime
         context.Workspaces.Add(workspace);
         await context.SaveChangesAsync();
 
-        var permissionContext = new PermissionContext(Guid.NewGuid(), workspace.Id, ResourceType.Workspace, null, PermissionAction.ViewWorkspace, AppPermissionScope.Workspace);
+        var permissionContext = new PermissionContext(Guid.NewGuid(), workspace.AccountId, workspace.Id, ResourceType.Workspace, null, PermissionAction.ViewWorkspace, AppPermissionScope.Workspace);
 
         var decision = await service.EvaluateAsync(permissionContext);
 
@@ -92,7 +92,7 @@ public class PermissionServiceTests : IAsyncLifetime
         context.Boards.Add(board);
         await context.SaveChangesAsync();
 
-        var permissionContext = new PermissionContext(memberId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.ViewBoard, AppPermissionScope.Resource);
+        var permissionContext = new PermissionContext(memberId, workspace.AccountId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.ViewBoard, AppPermissionScope.Resource);
 
         var decision = await service.EvaluateAsync(permissionContext);
 
@@ -115,7 +115,7 @@ public class PermissionServiceTests : IAsyncLifetime
         context.Boards.Add(board);
         await context.SaveChangesAsync();
 
-        var permissionContext = new PermissionContext(memberId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.ViewBoard, AppPermissionScope.Resource);
+        var permissionContext = new PermissionContext(memberId, workspace.AccountId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.ViewBoard, AppPermissionScope.Resource);
 
         var decision = await service.EvaluateAsync(permissionContext);
 
@@ -152,7 +152,7 @@ public class PermissionServiceTests : IAsyncLifetime
         context.BoardMembers.Add(BoardMember.Create(board.Id, viewerId, BoardRole.Observer, Now));
         await context.SaveChangesAsync();
 
-        var permissionContext = new PermissionContext(viewerId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.UpdateItem, AppPermissionScope.Resource);
+        var permissionContext = new PermissionContext(viewerId, workspace.AccountId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.UpdateItem, AppPermissionScope.Resource);
 
         var decision = await service.EvaluateAsync(permissionContext);
 
@@ -176,7 +176,7 @@ public class PermissionServiceTests : IAsyncLifetime
         context.BoardMembers.Add(BoardMember.Create(board.Id, editorId, BoardRole.Member, Now));
         await context.SaveChangesAsync();
 
-        var permissionContext = new PermissionContext(editorId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.UpdateItem, AppPermissionScope.Resource);
+        var permissionContext = new PermissionContext(editorId, workspace.AccountId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.UpdateItem, AppPermissionScope.Resource);
 
         var decision = await service.EvaluateAsync(permissionContext);
 
@@ -198,7 +198,7 @@ public class PermissionServiceTests : IAsyncLifetime
         context.Boards.Add(board);
         await context.SaveChangesAsync();
 
-        var permissionContext = new PermissionContext(guestId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.ViewBoard, AppPermissionScope.Resource);
+        var permissionContext = new PermissionContext(guestId, workspace.AccountId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.ViewBoard, AppPermissionScope.Resource);
 
         var decision = await service.EvaluateAsync(permissionContext);
 
@@ -226,7 +226,7 @@ public class PermissionServiceTests : IAsyncLifetime
         context.ResourcePermissions.Add(permission);
         await context.SaveChangesAsync();
 
-        var permissionContext = new PermissionContext(memberId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.ViewBoard, AppPermissionScope.Resource);
+        var permissionContext = new PermissionContext(memberId, workspace.AccountId, workspace.Id, ResourceType.Board, board.Id, PermissionAction.ViewBoard, AppPermissionScope.Resource);
 
         var decision = await service.EvaluateAsync(permissionContext);
 

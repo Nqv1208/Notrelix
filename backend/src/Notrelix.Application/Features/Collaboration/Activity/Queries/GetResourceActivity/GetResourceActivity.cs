@@ -4,7 +4,10 @@ using global::Notrelix.Application.Features.Collaboration.Activity.DTOs;
 namespace Notrelix.Application.Features.Collaboration.Activity.Queries.GetResourceActivity;
 
 public record GetResourceActivityQuery(ResourceType ResourceType, Guid ResourceId, int Page = 1, int PageSize = 20)
-    : IQuery<Result<object>>;
+    : IQuery<Result<object>>, IResourceScopedRequest
+{
+    public ResourceRef Resource => ResourceRef.Create(ResourceType, ResourceId);
+}
 
 public class GetResourceActivityQueryHandler : IRequestHandler<GetResourceActivityQuery, Result<object>>
 {

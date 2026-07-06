@@ -4,7 +4,10 @@ using Notrelix.Application.Features.Collaboration.Abstractions;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments;
 
-public record GetCommentsQuery(ResourceType ResourceType, Guid ResourceId) : IQuery<Result<List<CommentDto>>>;
+public record GetCommentsQuery(ResourceType ResourceType, Guid ResourceId) : IQuery<Result<List<CommentDto>>>, IResourceScopedRequest
+{
+    public ResourceRef Resource => ResourceRef.Create(ResourceType, ResourceId);
+}
 
 public class GetCommentsQueryHandler : IRequestHandler<GetCommentsQuery, Result<List<CommentDto>>>
 {

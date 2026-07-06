@@ -46,7 +46,7 @@ public class UpdateBoardCommandHandlerTests : IAsyncLifetime
             FakeDateTimeProvider.WithFixedTime(now));
 
         var result = await handler.Handle(
-            new UpdateBoardCommand(workspace.Id, board.Id, "New Title", null, null, null, null),
+            new UpdateBoardCommand(board.Id, "New Title", null, null, null, null),
             CancellationToken.None);
         await context.SaveChangesAsync();
 
@@ -66,7 +66,7 @@ public class UpdateBoardCommandHandlerTests : IAsyncLifetime
             FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow));
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
-            handler.Handle(new UpdateBoardCommand(Guid.NewGuid(), Guid.NewGuid(), "Title", null, null, null, null),
+            handler.Handle(new UpdateBoardCommand(Guid.NewGuid(), "Title", null, null, null, null),
                 CancellationToken.None));
     }
 
@@ -91,7 +91,7 @@ public class UpdateBoardCommandHandlerTests : IAsyncLifetime
             FakeDateTimeProvider.WithFixedTime(now));
 
         var result = await handler.Handle(
-            new UpdateBoardCommand(workspace.Id, board.Id, null, "new desc", "{\"type\":\"color\",\"value\":\"blue\"}", BoardVisibility.Workspace, null),
+            new UpdateBoardCommand(board.Id, null, "new desc", "{\"type\":\"color\",\"value\":\"blue\"}", BoardVisibility.Workspace, null),
             CancellationToken.None);
         await context.SaveChangesAsync();
 

@@ -3,7 +3,10 @@ using Notrelix.Application.Features.Collaboration.Abstractions;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Commands.DeleteComment;
 
-public record DeleteCommentCommand(Guid CommentId) : ICommand<Result>, ITransactionalRequest;
+public record DeleteCommentCommand(Guid CommentId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest
+{
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Comment, CommentId);
+}
 
 public class DeleteCommentCommandHandler : IRequestHandler<DeleteCommentCommand, Result>
 {

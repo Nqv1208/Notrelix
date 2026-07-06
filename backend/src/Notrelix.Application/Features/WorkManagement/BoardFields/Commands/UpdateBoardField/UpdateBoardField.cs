@@ -3,7 +3,10 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
 
-public record UpdateBoardFieldCommand(Guid BoardId, Guid ColumnId, string? Name, string? FieldType, string? Settings) : ICommand<Result>, ITransactionalRequest;
+public record UpdateBoardFieldCommand(Guid BoardId, Guid ColumnId, string? Name, string? FieldType, string? Settings) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest
+{
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardField, ColumnId);
+}
 
 public class UpdateBoardFieldCommandHandler : IRequestHandler<UpdateBoardFieldCommand, Result>
 {

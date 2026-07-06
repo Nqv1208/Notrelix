@@ -4,7 +4,10 @@ using Notrelix.Application.Features.Collaboration.Abstractions;
 
 namespace Notrelix.Application.Features.Collaboration.Attachments.Queries.GetBoardItemAttachments;
 
-public record GetBoardItemAttachmentsQuery(Guid BoardItemId) : IQuery<Result<List<AttachmentDto>>>;
+public record GetBoardItemAttachmentsQuery(Guid BoardItemId) : IQuery<Result<List<AttachmentDto>>>, IResourceScopedRequest
+{
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+}
 
 public class GetBoardItemAttachmentsQueryHandler : IRequestHandler<GetBoardItemAttachmentsQuery, Result<List<AttachmentDto>>>
 {

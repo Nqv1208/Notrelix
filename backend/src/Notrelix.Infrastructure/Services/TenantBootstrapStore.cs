@@ -1,6 +1,5 @@
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
-using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Workspaces.Workspaces;
@@ -11,18 +10,15 @@ public sealed class TenantBootstrapStore : ITenantBootstrapStore
 {
     private readonly IWorkspaceDbContext _workspaceContext;
     private readonly IAccountDbContext _accountContext;
-    private readonly IWorkManagementDbContext _workContext;
     private readonly IPermissionEvaluator _permissionEvaluator;
 
     public TenantBootstrapStore(
         IWorkspaceDbContext workspaceContext,
         IAccountDbContext accountContext,
-        IWorkManagementDbContext workContext,
         IPermissionEvaluator permissionEvaluator)
     {
         _workspaceContext = workspaceContext;
         _accountContext = accountContext;
-        _workContext = workContext;
         _permissionEvaluator = permissionEvaluator;
     }
 
@@ -45,7 +41,7 @@ public sealed class TenantBootstrapStore : ITenantBootstrapStore
         var isActive = workspace.Status == WorkspaceStatus.Active;
 
         var decision = await _permissionEvaluator.EvaluateAsync(
-            new PermissionContext(actorUserId, workspaceId, ResourceType.Workspace, null, PermissionAction.ViewWorkspace, Notrelix.Application.Common.Security.PermissionScope.Workspace),
+            new PermissionContext(actorUserId, workspace.AccountId, workspaceId, ResourceType.Workspace, null, PermissionAction.ViewWorkspace, Notrelix.Application.Common.Security.PermissionScope.Workspace),
             ct);
 
         return new WorkspaceAccessSnapshot(
@@ -60,19 +56,5 @@ public sealed class TenantBootstrapStore : ITenantBootstrapStore
     {
         return await _accountContext.Accounts
             .AnyAsync(a => a.Id == accountId, cancellationToken);
-    }
-
-    public async Task<AccountContextSnapshot?> ResolveResourceContextAsync(Guid resourceId, string resourceType, CancellationToken ct)
-    {
-        return resourceType switch
-        {
-            ResourceTypes.Board => await _workContext.Boards
-                .IgnoreQueryFilters()
-                .Where(b => b.Id == resourceId)
-                .Select(b => new AccountContextSnapshot(b.AccountId, b.WorkspaceId))
-                .FirstOrDefaultAsync(ct),
-
-            _ => null
-        };
     }
 }

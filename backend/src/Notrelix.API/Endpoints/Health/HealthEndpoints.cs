@@ -11,7 +11,7 @@ public static class HealthEndpoints
             .WithTags("Health")
             .WithOpenApi();
 
-        group.MapPublicGet("/", GetHealth)
+        group.MapInternalGet("/", GetHealth)
             .WithName("GetHealth")
             .WithSummary("Full health check with service status");
 

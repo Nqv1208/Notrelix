@@ -3,10 +3,10 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Queries.GetBoardView;
 
-public record GetBoardViewQuery(Guid WorkspaceId, Guid BoardId) : IQuery<Result<object>>, IRequirePermission, IWorkspaceRequest
+public record GetBoardViewQuery(Guid BoardId) : IQuery<Result<object>>, IRequirePermission, IResourceScopedRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId, WorkspaceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
 }
 
 public class GetBoardViewQueryHandler : IRequestHandler<GetBoardViewQuery, Result<object>>

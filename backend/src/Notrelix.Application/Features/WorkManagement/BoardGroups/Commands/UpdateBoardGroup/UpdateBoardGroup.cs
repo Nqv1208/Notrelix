@@ -3,7 +3,10 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UpdateBoardGroup;
 
-public record UpdateBoardGroupCommand(Guid GroupId, string? Title, string? Color = null) : ICommand<Result>, ITransactionalRequest;
+public record UpdateBoardGroupCommand(Guid GroupId, string? Title, string? Color = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest
+{
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardGroup, GroupId);
+}
 
 public class UpdateBoardGroupCommandHandler : IRequestHandler<UpdateBoardGroupCommand, Result>
 {

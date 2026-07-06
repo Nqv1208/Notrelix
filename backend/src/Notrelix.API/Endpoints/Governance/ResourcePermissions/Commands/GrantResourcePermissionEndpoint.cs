@@ -16,7 +16,6 @@ public static class GrantResourcePermissionEndpoint
     }
 
     private static async Task<IResult> HandleAsync(
-        Guid workspaceId,
         string resourceType,
         Guid resourceId,
         GrantPermissionRequest body,
@@ -24,7 +23,7 @@ public static class GrantResourcePermissionEndpoint
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new GrantResourcePermissionCommand(workspaceId, Enum.Parse<ResourceType>(resourceType, ignoreCase: true), resourceId, body.SubjectType, body.SubjectId, body.Level, body.ExpiresAt),
+            new GrantResourcePermissionCommand(Enum.Parse<ResourceType>(resourceType, ignoreCase: true), resourceId, body.SubjectType, body.SubjectId, body.Level, body.ExpiresAt),
             cancellationToken);
         return result.ToCreatedResult();
     }

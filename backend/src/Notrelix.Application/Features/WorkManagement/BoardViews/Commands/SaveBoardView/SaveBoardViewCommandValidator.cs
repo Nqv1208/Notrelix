@@ -4,9 +4,6 @@ public class SaveBoardViewCommandValidator : AbstractValidator<SaveBoardViewComm
 {
     public SaveBoardViewCommandValidator()
     {
-        RuleFor(x => x.WorkspaceId)
-            .NotEmpty();
-
         RuleFor(x => x.BoardId)
             .NotEmpty();
 

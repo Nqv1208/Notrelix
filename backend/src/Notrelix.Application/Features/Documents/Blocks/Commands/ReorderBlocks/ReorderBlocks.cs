@@ -6,7 +6,10 @@ namespace Notrelix.Application.Features.Documents.Blocks.Commands.ReorderBlocks;
 public record ReorderBlocksCommand(
     Guid PageId,
     List<ReorderBlockItem> Items
-) : ICommand<Result>, ITransactionalRequest;
+) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest
+{
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Page, PageId);
+}
 
 public record ReorderBlockItem(Guid BlockId, string NewPosition, Guid? NewParentBlockId);
 

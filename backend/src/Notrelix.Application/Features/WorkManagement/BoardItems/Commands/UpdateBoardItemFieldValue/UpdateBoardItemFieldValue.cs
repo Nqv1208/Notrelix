@@ -4,15 +4,13 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
 
 public record UpdateBoardItemFieldValueCommand(
-    Guid WorkspaceId,
-    Guid BoardId,
     Guid ItemId,
     Guid FieldId,
-    object? Value) : ICommand<BoardItemSlimDto>, ITransactionalRequest, IRequirePermission, IWorkspaceRequest, IRealtimeRequest
+    object? Value) : ICommand<BoardItemSlimDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId, WorkspaceId);
-    public RealtimeTopic Topic => new("board", "Board", BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, ItemId);
+    public RealtimeTopic Topic => new("board", "BoardItem", ItemId);
 }
 
 public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoardItemFieldValueCommand, BoardItemSlimDto>
@@ -37,7 +35,7 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
             throw new NotFoundException("BoardItem", request.ItemId);
 
         var field = await _context.BoardFields
-            .FirstOrDefaultAsync(f => f.Id == request.FieldId && f.BoardId == request.BoardId, cancellationToken);
+            .FirstOrDefaultAsync(f => f.Id == request.FieldId && f.BoardId == item.BoardId, cancellationToken);
 
         if (field == null)
             throw new NotFoundException("BoardField", request.FieldId);

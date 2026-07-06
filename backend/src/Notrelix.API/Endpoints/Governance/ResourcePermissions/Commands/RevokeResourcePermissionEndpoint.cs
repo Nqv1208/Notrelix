@@ -15,7 +15,6 @@ public static class RevokeResourcePermissionEndpoint
     }
 
     private static async Task<IResult> HandleAsync(
-        Guid workspaceId,
         string resourceType,
         Guid resourceId,
         Guid permissionId,
@@ -23,7 +22,7 @@ public static class RevokeResourcePermissionEndpoint
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new RevokeResourcePermissionCommand(workspaceId, Enum.Parse<ResourceType>(resourceType, ignoreCase: true), resourceId, permissionId),
+            new RevokeResourcePermissionCommand(Enum.Parse<ResourceType>(resourceType, ignoreCase: true), resourceId, permissionId),
             cancellationToken);
         return result.ToNoContentResult();
     }

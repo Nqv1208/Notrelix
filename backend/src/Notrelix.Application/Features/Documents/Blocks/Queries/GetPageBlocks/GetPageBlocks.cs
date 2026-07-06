@@ -5,7 +5,10 @@ using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Blocks.Queries.GetPageBlocks;
 
-public record GetPageBlocksQuery(Guid PageId) : IQuery<Result<List<BlockDto>>>;
+public record GetPageBlocksQuery(Guid PageId) : IQuery<Result<List<BlockDto>>>, IResourceScopedRequest
+{
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Page, PageId);
+}
 
 public class GetPageBlocksQueryHandler : IRequestHandler<GetPageBlocksQuery, Result<List<BlockDto>>>
 {

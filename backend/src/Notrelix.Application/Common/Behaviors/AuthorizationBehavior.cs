@@ -116,6 +116,7 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
             var decision = await _authorizationDecisionStore.EvaluateAsync(
                 new PermissionContext(
                     userId,
+                    _tenant.RequireAccountId(),
                     workspaceId,
                     requirePermission.Resource.ResourceType,
                     requirePermission.Resource.ResourceId,

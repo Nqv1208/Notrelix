@@ -3,12 +3,10 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetBoardItems;
 
-public record GetBoardItemsQuery(Guid WorkspaceId, Guid BoardId) : IQuery<List<BoardItemSlimDto>>, IRequirePermission, IWorkspaceRequest, IRlsReadRequest, IAuthorizedCacheableRequest
+public record GetBoardItemsQuery(Guid BoardId) : IQuery<List<BoardItemSlimDto>>, IRequirePermission, IResourceScopedRequest, IRlsReadRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId, WorkspaceId);
-    public string AuthorizedCacheKey => $"board-items:{WorkspaceId}:{BoardId}";
-    public TimeSpan AuthorizedCacheTtl => TimeSpan.FromMinutes(5);
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
 }
 
 public class GetBoardItemsQueryHandler : IRequestHandler<GetBoardItemsQuery, List<BoardItemSlimDto>>

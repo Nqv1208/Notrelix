@@ -17,12 +17,11 @@ public static class AssignBoardItemMemberEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid itemId,
-        [FromHeader(Name = "X-Workspace-Id")] Guid workspaceId,
         AssignBoardItemMemberRequest body,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new AssignBoardItemMemberCommand(workspaceId, itemId, body.UserId), cancellationToken);
+        var result = await sender.Send(new AssignBoardItemMemberCommand(itemId, body.UserId), cancellationToken);
         return result.ToNoContentResult();
     }
 }

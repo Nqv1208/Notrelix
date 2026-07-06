@@ -4,14 +4,13 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.CreateBoardView;
 
 public record CreateBoardViewCommand(
-    Guid WorkspaceId,
     Guid BoardId,
     string Name,
     string ViewMode,
-    string ConfigJson) : ICommand<BoardViewDto>, ITransactionalRequest, IRequirePermission, IWorkspaceRequest, IRealtimeRequest
+    string ConfigJson) : ICommand<BoardViewDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest
 {
     public PermissionAction Action => PermissionAction.CreateBoardView;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId, WorkspaceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
     public RealtimeTopic Topic => new("board", "Board", BoardId);
 }
 
@@ -45,7 +44,7 @@ public class CreateBoardViewCommandHandler : IRequestHandler<CreateBoardViewComm
 
         var configData = JsonValue.Create(request.ConfigJson);
         var config = BoardViewConfig.Create(configData);
-        var view = BoardView.Create(_tenant.RequireAccountId(), request.WorkspaceId, request.BoardId, request.Name, type, config, _currentUser.UserId, _dateTimeProvider.UtcNow);
+        var view = BoardView.Create(_tenant.RequireAccountId(), _tenant.RequireWorkspaceId(), request.BoardId, request.Name, type, config, _currentUser.UserId, _dateTimeProvider.UtcNow);
 
         _context.BoardViews.Add(view);
 

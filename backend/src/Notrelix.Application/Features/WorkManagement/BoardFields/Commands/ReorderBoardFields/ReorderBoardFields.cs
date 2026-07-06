@@ -4,7 +4,10 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderBoardFields;
 
-public record ReorderBoardFieldsCommand(Guid BoardId, List<ReorderItem> Items) : ICommand<Result>, ITransactionalRequest;
+public record ReorderBoardFieldsCommand(Guid BoardId, List<ReorderItem> Items) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest
+{
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+}
 
 public class ReorderBoardFieldsCommandHandler : IRequestHandler<ReorderBoardFieldsCommand, Result>
 {

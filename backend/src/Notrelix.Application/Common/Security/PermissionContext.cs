@@ -3,6 +3,7 @@ namespace Notrelix.Application.Common.Security;
 
 public sealed record PermissionContext(
     Guid UserId,
+    Guid AccountId,
     Guid? WorkspaceId,
     ResourceType ResourceType,
     Guid? ResourceId,

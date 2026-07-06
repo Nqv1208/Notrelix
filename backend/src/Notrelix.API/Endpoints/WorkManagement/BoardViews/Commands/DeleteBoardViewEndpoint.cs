@@ -17,11 +17,10 @@ public static class DeleteBoardViewEndpoint
     private static async Task<IResult> HandleAsync(
         Guid boardId,
         Guid viewId,
-        [FromHeader(Name = "X-Workspace-Id")] Guid workspaceId,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new DeleteBoardViewCommand(workspaceId, boardId, viewId), cancellationToken);
+        var result = await sender.Send(new DeleteBoardViewCommand(boardId, viewId), cancellationToken);
         return result.ToNoContentResult();
     }
 }

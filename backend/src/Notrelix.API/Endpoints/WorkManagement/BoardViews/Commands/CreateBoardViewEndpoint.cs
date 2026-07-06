@@ -16,13 +16,11 @@ public static class CreateBoardViewEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid boardId,
-        [FromHeader(Name = "X-Workspace-Id")] Guid workspaceId,
         CreateBoardViewRequest body,
         ISender sender,
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(new CreateBoardViewCommand(
-            workspaceId,
             boardId,
             body.Name,
             body.ViewMode,

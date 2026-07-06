@@ -1,7 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Governance.DTOs;
-using SharedKernel = Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.Governance.ShareLinks.Commands.CreateShareLink;
 
@@ -11,19 +10,19 @@ public record CreateShareLinkResponse(
 );
 
 public record CreateShareLinkCommand(
-    Guid WorkspaceId,
-    SharedKernel.ResourceType ResourceType,
+    ResourceType ResourceType,
     Guid ResourceId,
     string Level,
-    DateTime? ExpiresAt = null) : ICommand<Result<CreateShareLinkResponse>>, IRequirePermission, ITransactionalRequest
+    DateTime? ExpiresAt = null) : ICommand<Result<CreateShareLinkResponse>>, IResourceScopedRequest, IRequirePermission, ITransactionalRequest
 {
     PermissionAction IRequirePermission.Action => ResourceType switch
     {
-        SharedKernel.ResourceType.Board => PermissionAction.ShareBoardView,
-        SharedKernel.ResourceType.Page => PermissionAction.SharePage,
+        ResourceType.Board => PermissionAction.ShareBoardView,
+        ResourceType.Page => PermissionAction.SharePage,
         _ => PermissionAction.ManageWorkspace
     };
-    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType, ResourceId, WorkspaceId);
+    ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(ResourceType, ResourceId);
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType, ResourceId);
 }
 
 public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkCommand, Result<CreateShareLinkResponse>>
@@ -50,14 +49,14 @@ public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkComm
         CancellationToken cancellationToken)
     {
         var actorId = _currentUser.UserId;
+        var workspaceId = _tenant.RequireWorkspaceId();
 
-        // Generate raw secure token
         var rawToken = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
         var tokenHash = ShareLinkTokenHash.Create(rawToken);
 
         var shareLink = ShareLink.Create(
             _tenant.RequireAccountId(),
-            request.WorkspaceId,
+            workspaceId,
             request.ResourceType,
             request.ResourceId,
             tokenHash,

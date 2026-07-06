@@ -3,7 +3,10 @@ using Notrelix.Application.Features.Collaboration.Abstractions;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Commands.UpdateComment;
 
-public record UpdateCommentCommand(Guid CommentId, string ContentMd) : ICommand<Result>, ITransactionalRequest;
+public record UpdateCommentCommand(Guid CommentId, string ContentMd) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest
+{
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Comment, CommentId);
+}
 
 public class UpdateCommentCommandHandler : IRequestHandler<UpdateCommentCommand, Result>
 {

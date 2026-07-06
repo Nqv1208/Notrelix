@@ -41,6 +41,7 @@ public sealed class WorkspaceAccessResolver : IWorkspaceAccessResolver
         var decision = await _permissionEvaluator.EvaluateAsync(
             new PermissionContext(
                 actorUserId,
+                workspace.AccountId,
                 workspaceId,
                 ResourceType.Workspace,
                 null,

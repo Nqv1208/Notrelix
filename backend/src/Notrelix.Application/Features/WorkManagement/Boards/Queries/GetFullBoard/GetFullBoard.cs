@@ -6,7 +6,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetFullBoard;
 
-public record GetFullBoardQuery(Guid BoardId) : IQuery<Result<FullBoardDto>>;
+public record GetFullBoardQuery(Guid BoardId) : IQuery<Result<FullBoardDto>>, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.ViewBoard;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+}
 
 public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Result<FullBoardDto>>
 {

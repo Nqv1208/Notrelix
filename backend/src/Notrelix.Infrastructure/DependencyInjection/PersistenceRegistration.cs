@@ -92,6 +92,7 @@ public static class PersistenceRegistration
         services.AddScoped<IWorkspaceAccessResolver, WorkspaceAccessResolver>();
         services.AddScoped<IAccountAccessEvaluator, AccountAccessEvaluator>();
         services.AddScoped<ITenantBootstrapStore, TenantBootstrapStore>();
+        services.AddScoped<IResourceScopeResolver, ResourceScopeResolver>();
         services.AddScoped<IActorLookupService, ActorLookupService>();
         services.AddScoped<IResourceReferenceResolver, ResourceReferenceResolver>();
         services.AddScoped<ApplicationDbContextInitialiser>();

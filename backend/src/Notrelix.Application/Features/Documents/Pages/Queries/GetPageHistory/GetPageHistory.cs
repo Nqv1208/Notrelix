@@ -4,7 +4,10 @@ using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Pages.Queries.GetPageHistory;
 
-public record GetPageHistoryQuery(Guid PageId) : IQuery<Result<List<PageHistoryDto>>>;
+public record GetPageHistoryQuery(Guid PageId) : IQuery<Result<List<PageHistoryDto>>>, IResourceScopedRequest
+{
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Page, PageId);
+}
 
 public class GetPageHistoryQueryHandler : IRequestHandler<GetPageHistoryQuery, Result<List<PageHistoryDto>>>
 {

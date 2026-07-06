@@ -4,13 +4,12 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.UpdateBoardViewConfig;
 
 public record UpdateBoardViewConfigCommand(
-    Guid WorkspaceId,
     Guid BoardId,
     Guid ViewId,
-    string ConfigJson) : ICommand<BoardViewDto>, ITransactionalRequest, IRequirePermission, IWorkspaceRequest, IRealtimeRequest
+    string ConfigJson) : ICommand<BoardViewDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest
 {
     public PermissionAction Action => PermissionAction.UpdateBoardView;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId, WorkspaceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardView, ViewId);
     public RealtimeTopic Topic => new("board", "Board", BoardId);
 }
 

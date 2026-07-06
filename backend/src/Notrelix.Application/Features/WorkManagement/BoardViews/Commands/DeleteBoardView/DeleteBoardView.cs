@@ -3,8 +3,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.DeleteBoardView;
 
-public record DeleteBoardViewCommand(Guid WorkspaceId, Guid BoardId, Guid ViewId)
-    : ICommand<Result>, ITransactionalRequest;
+public record DeleteBoardViewCommand(Guid BoardId, Guid ViewId)
+    : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest
+{
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardView, ViewId);
+}
 
 public class DeleteBoardViewCommandHandler : IRequestHandler<DeleteBoardViewCommand, Result>
 {

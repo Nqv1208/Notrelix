@@ -161,6 +161,22 @@ public class WorkspaceNamespaceArchitectureTests
             "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
         ["DeleteBoardViewCommand"] = new("DeleteBoardViewCommand", AllowlistClassification.LegacyGap,
             "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
+        ["CreateBoardViewCommand"] = new("CreateBoardViewCommand", AllowlistClassification.MigrationPending,
+            "Uses IResourceScopedRequest (new pattern) instead of IWorkspaceRequest", "Migrated to IResourceScopedRequest"),
+        ["SaveBoardViewCommand"] = new("SaveBoardViewCommand", AllowlistClassification.MigrationPending,
+            "Uses IResourceScopedRequest (new pattern) instead of IWorkspaceRequest", "Migrated to IResourceScopedRequest"),
+        ["UpdateBoardViewConfigCommand"] = new("UpdateBoardViewConfigCommand", AllowlistClassification.MigrationPending,
+            "Uses IResourceScopedRequest (new pattern) instead of IWorkspaceRequest", "Migrated to IResourceScopedRequest"),
+        ["UpdateBoardItemFieldValueCommand"] = new("UpdateBoardItemFieldValueCommand", AllowlistClassification.MigrationPending,
+            "Uses IResourceScopedRequest (new pattern) instead of IWorkspaceRequest", "Migrated to IResourceScopedRequest"),
+        ["CreateBoardItemCommand"] = new("CreateBoardItemCommand", AllowlistClassification.MigrationPending,
+            "Uses IResourceScopedRequest (new pattern) instead of IWorkspaceRequest", "Migrated to IResourceScopedRequest"),
+        ["MoveBoardItemCommand"] = new("MoveBoardItemCommand", AllowlistClassification.MigrationPending,
+            "Uses IResourceScopedRequest (new pattern) instead of IWorkspaceRequest", "Migrated to IResourceScopedRequest"),
+        ["AssignBoardItemMemberCommand"] = new("AssignBoardItemMemberCommand", AllowlistClassification.MigrationPending,
+            "Uses IResourceScopedRequest (new pattern) instead of IWorkspaceRequest", "Migrated to IResourceScopedRequest"),
+        ["UpdateBoardCommand"] = new("UpdateBoardCommand", AllowlistClassification.MigrationPending,
+            "Uses IResourceScopedRequest (new pattern) instead of IWorkspaceRequest", "Migrated to IResourceScopedRequest"),
     };
 
     private static readonly Dictionary<string, AllowlistEntry> DocumentsMissingWorkspaceRequest = new()

@@ -9,7 +9,11 @@ public record CreateBlockCommand(
     string Properties,
     string Position,
     Guid? ParentBlockId
-) : ICommand<Result<Guid>>, ITransactionalRequest;
+) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.ManageBoard;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Page, PageId);
+}
 
 public class CreateBlockCommandHandler : IRequestHandler<CreateBlockCommand, Result<Guid>>
 {

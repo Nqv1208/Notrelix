@@ -5,10 +5,10 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMembers;
 
-public record GetBoardMembersQuery(Guid WorkspaceId, Guid BoardId) : IQuery<Result<List<BoardMemberDto>>>, IRequirePermission, IWorkspaceRequest
+public record GetBoardMembersQuery(Guid BoardId) : IQuery<Result<List<BoardMemberDto>>>, IRequirePermission, IResourceScopedRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId, WorkspaceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
 }
 
 public class GetBoardMembersQueryHandler : IRequestHandler<GetBoardMembersQuery, Result<List<BoardMemberDto>>>

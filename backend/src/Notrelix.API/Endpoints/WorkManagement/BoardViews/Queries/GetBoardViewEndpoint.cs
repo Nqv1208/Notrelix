@@ -16,11 +16,10 @@ public static class GetBoardViewEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid boardId,
-        [FromHeader(Name = "X-Workspace-Id")] Guid workspaceId,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new GetBoardViewQuery(workspaceId, boardId), cancellationToken);
+        var result = await sender.Send(new GetBoardViewQuery(boardId), cancellationToken);
         return result.ToApiResult();
     }
 }

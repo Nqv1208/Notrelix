@@ -6,7 +6,11 @@ namespace Notrelix.Application.Features.Documents.Pages.Commands.UpdatePage;
 public record UpdatePageCommand(
     Guid PageId,
     string? Title
-) : ICommand<Result>, ITransactionalRequest;
+) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.ManageBoard;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Page, PageId);
+}
 
 public class UpdatePageCommandHandler : IRequestHandler<UpdatePageCommand, Result>
 {

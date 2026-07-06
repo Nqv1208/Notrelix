@@ -70,11 +70,10 @@ public static class MapBoardEndpoints
 
     private static async Task<IResult> HandleGetBoardMembers(
         Guid boardId,
-        [FromHeader(Name = "X-Workspace-Id")] Guid workspaceId,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new GetBoardMembersQuery(workspaceId, boardId), cancellationToken);
+        var result = await sender.Send(new GetBoardMembersQuery(boardId), cancellationToken);
         return result.ToApiResult();
     }
 

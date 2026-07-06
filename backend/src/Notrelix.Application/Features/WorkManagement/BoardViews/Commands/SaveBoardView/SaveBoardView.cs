@@ -5,13 +5,12 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SaveBoardView;
 
 public record SaveBoardViewCommand(
-    Guid WorkspaceId,
     Guid BoardId,
     ViewMode ViewMode,
-    string? Filters) : ICommand<Result>, ITransactionalRequest, IRequirePermission, IWorkspaceRequest, IRealtimeRequest
+    string? Filters) : ICommand<Result>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId, WorkspaceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
     public RealtimeTopic Topic => new("board", "Board", BoardId);
 }
 
@@ -45,10 +44,10 @@ public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand,
 
     public async Task<Result> Handle(SaveBoardViewCommand request, CancellationToken ct)
     {
-        var boardExists = await _context.Boards
+        var board = await _context.Boards
             .AsNoTracking()
-            .AnyAsync(board => board.Id == request.BoardId && !board.IsArchived, ct);
-        if (!boardExists) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
+            .FirstOrDefaultAsync(board => board.Id == request.BoardId && !board.IsArchived, ct);
+        if (board is null) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
 
         var viewType = MapViewModeToViewType(request.ViewMode);
         var now = _dateTimeProvider.UtcNow;
@@ -65,7 +64,7 @@ public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand,
         {
             view = BoardView.Create(
                 _tenant.RequireAccountId(),
-                request.WorkspaceId,
+                board.WorkspaceId,
                 request.BoardId,
                 viewType.ToString(),
                 viewType,

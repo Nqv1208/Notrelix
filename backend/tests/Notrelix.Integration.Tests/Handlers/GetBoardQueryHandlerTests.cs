@@ -44,7 +44,7 @@ public class GetBoardQueryHandlerTests : IAsyncLifetime
         var handler = new GetBoardQueryHandler(context);
 
         var result = await handler.Handle(
-            new GetBoardQuery(workspace.Id, board.Id), CancellationToken.None);
+            new GetBoardQuery(board.Id), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         result.Data.Should().NotBeNull();
@@ -63,6 +63,6 @@ public class GetBoardQueryHandlerTests : IAsyncLifetime
         var handler = new GetBoardQueryHandler(context);
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
-            handler.Handle(new GetBoardQuery(Guid.NewGuid(), Guid.NewGuid()), CancellationToken.None));
+            handler.Handle(new GetBoardQuery(Guid.NewGuid()), CancellationToken.None));
     }
 }

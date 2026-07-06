@@ -44,7 +44,6 @@ public static class MapBoardFieldEndpoints
 
     private static async Task<IResult> HandleCreateBoardField(
         Guid boardId,
-        [FromHeader(Name = "X-Workspace-Id")] Guid workspaceId,
         CreateBoardFieldRequest body,
         ISender sender,
         CancellationToken cancellationToken)
@@ -61,7 +60,6 @@ public static class MapBoardFieldEndpoints
     private static async Task<IResult> HandleUpdateBoardField(
         Guid boardId,
         Guid fieldId,
-        [FromHeader(Name = "X-Workspace-Id")] Guid workspaceId,
         UpdateBoardFieldRequest body,
         ISender sender,
         CancellationToken cancellationToken)
@@ -78,7 +76,6 @@ public static class MapBoardFieldEndpoints
     private static async Task<IResult> HandleDeleteBoardField(
         Guid boardId,
         Guid fieldId,
-        [FromHeader(Name = "X-Workspace-Id")] Guid workspaceId,
         ISender sender,
         CancellationToken cancellationToken)
     {
@@ -98,11 +95,10 @@ public static class MapBoardFieldEndpoints
 
     private static async Task<IResult> HandleGetBoardSchema(
         Guid boardId,
-        [FromHeader(Name = "X-Workspace-Id")] Guid workspaceId,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new GetBoardSchemaQuery(workspaceId, boardId), cancellationToken);
+        var result = await sender.Send(new GetBoardSchemaQuery(boardId), cancellationToken);
         return Results.Ok(result);
     }
 }

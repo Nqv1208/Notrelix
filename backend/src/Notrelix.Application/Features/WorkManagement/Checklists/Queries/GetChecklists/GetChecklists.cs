@@ -4,7 +4,10 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Checklists.Queries.GetChecklists;
 
-public record GetChecklistsQuery(Guid BoardItemId) : IQuery<Result<List<ChecklistDto>>>;
+public record GetChecklistsQuery(Guid BoardItemId) : IQuery<Result<List<ChecklistDto>>>, IResourceScopedRequest
+{
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+}
 
 public class GetChecklistsQueryHandler : IRequestHandler<GetChecklistsQuery, Result<List<ChecklistDto>>>
 {

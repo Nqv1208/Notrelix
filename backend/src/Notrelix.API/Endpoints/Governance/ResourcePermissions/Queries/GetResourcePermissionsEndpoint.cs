@@ -15,13 +15,12 @@ public static class GetResourcePermissionsEndpoint
     }
 
     private static async Task<IResult> HandleAsync(
-        Guid workspaceId,
         string resourceType,
         Guid resourceId,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new GetResourcePermissionsQuery(workspaceId, Enum.Parse<ResourceType>(resourceType, ignoreCase: true), resourceId), cancellationToken);
+        var result = await sender.Send(new GetResourcePermissionsQuery(Enum.Parse<ResourceType>(resourceType, ignoreCase: true), resourceId), cancellationToken);
         return result.ToApiResult();
     }
 }

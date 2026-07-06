@@ -16,13 +16,11 @@ public static class MoveBoardItemEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid itemId,
-        [FromHeader(Name = "X-Workspace-Id")] Guid workspaceId,
-        [FromHeader(Name = "X-Board-Id")] Guid boardId,
         MoveBoardItemRequest body,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new MoveBoardItemCommand(workspaceId, boardId, itemId, body.GroupId, body.Position), cancellationToken);
+        var result = await sender.Send(new MoveBoardItemCommand(itemId, body.GroupId, body.Position), cancellationToken);
         return Results.Ok(result);
     }
 }

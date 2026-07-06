@@ -3,7 +3,11 @@ using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Pages.Commands.DeletePage;
 
-public record DeletePageCommand(Guid PageId) : ICommand<Result>, ITransactionalRequest;
+public record DeletePageCommand(Guid PageId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.ManageBoard;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Page, PageId);
+}
 
 public class DeletePageCommandHandler : IRequestHandler<DeletePageCommand, Result>
 {

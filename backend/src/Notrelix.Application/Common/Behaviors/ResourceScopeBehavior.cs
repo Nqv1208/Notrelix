@@ -1,19 +1,21 @@
+using AppNotFoundException = Notrelix.Application.Common.Exceptions.NotFoundException;
+
 namespace Notrelix.Application.Common.Behaviors;
 
 public class ResourceScopeBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
     private readonly ICurrentTenantContext _tenant;
-    private readonly ITenantBootstrapStore _bootstrapStore;
+    private readonly IResourceScopeResolver _resolver;
     private readonly ILogger<ResourceScopeBehavior<TRequest, TResponse>> _logger;
 
     public ResourceScopeBehavior(
         ICurrentTenantContext tenant,
-        ITenantBootstrapStore bootstrapStore,
+        IResourceScopeResolver resolver,
         ILogger<ResourceScopeBehavior<TRequest, TResponse>> logger)
     {
         _tenant = tenant;
-        _bootstrapStore = bootstrapStore;
+        _resolver = resolver;
         _logger = logger;
     }
 
@@ -22,29 +24,28 @@ public class ResourceScopeBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
         if (request is not IResourceScopedRequest resourceRequest)
             return await next();
 
-        var snapshot = await _bootstrapStore.ResolveResourceContextAsync(
-            resourceRequest.ResourceId, resourceRequest.ResourceType, ct);
+        var actorUserId = _tenant.UserId;
+        var snapshot = await _resolver.ResolveAsync(resourceRequest.Resource, actorUserId ?? Guid.Empty, ct);
 
         if (snapshot is null)
         {
             _logger.LogWarning(
                 "Resource not found: Type={ResourceType} Id={ResourceId} RequestType={RequestType}",
-                resourceRequest.ResourceType,
-                resourceRequest.ResourceId,
+                resourceRequest.Resource.ResourceType,
+                resourceRequest.Resource.ResourceId,
                 typeof(TRequest).Name);
 
-            throw new NotFoundException(resourceRequest.ResourceType, resourceRequest.ResourceId);
+            throw new AppNotFoundException(resourceRequest.Resource.ResourceType.ToString(), resourceRequest.Resource.ResourceId);
         }
 
-        var userId = _tenant.UserId;
         _logger.LogTrace(
             "Resolved resource scope: AccountId={AccountId} WorkspaceId={WorkspaceId} ResourceType={ResourceType} ResourceId={ResourceId}",
             snapshot.AccountId,
             snapshot.WorkspaceId,
-            resourceRequest.ResourceType,
-            resourceRequest.ResourceId);
+            snapshot.ResourceType,
+            snapshot.ResourceId);
 
-        _tenant.SetWorkspace(snapshot.AccountId, snapshot.WorkspaceId, userId);
+        _tenant.SetWorkspace(snapshot.AccountId, snapshot.WorkspaceId, actorUserId);
 
         return await next();
     }

@@ -4,15 +4,13 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem;
 
 public record MoveBoardItemCommand(
-    Guid WorkspaceId,
-    Guid BoardId,
     Guid ItemId,
     Guid NewGroupId,
-    double Position) : ICommand<BoardItemSlimDto>, ITransactionalRequest, IRequirePermission, IWorkspaceRequest, IRealtimeRequest
+    double Position) : ICommand<BoardItemSlimDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest
 {
     public PermissionAction Action => PermissionAction.MoveItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId, WorkspaceId);
-    public RealtimeTopic Topic => new("board", "Board", BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, ItemId);
+    public RealtimeTopic Topic => new("board", "Board", ItemId);
 }
 
 public class MoveBoardItemCommandHandler : IRequestHandler<MoveBoardItemCommand, BoardItemSlimDto>
@@ -37,7 +35,7 @@ public class MoveBoardItemCommandHandler : IRequestHandler<MoveBoardItemCommand,
             throw new NotFoundException("BoardItem", request.ItemId);
 
         var group = await _context.BoardGroups
-            .FirstOrDefaultAsync(g => g.Id == request.NewGroupId && g.BoardId == request.BoardId, cancellationToken);
+            .FirstOrDefaultAsync(g => g.Id == request.NewGroupId && g.BoardId == item.BoardId, cancellationToken);
 
         if (group == null)
             throw new NotFoundException("BoardGroup", request.NewGroupId);

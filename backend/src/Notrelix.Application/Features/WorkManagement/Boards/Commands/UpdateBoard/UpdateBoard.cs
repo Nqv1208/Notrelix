@@ -5,13 +5,12 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoard;
 
 public record UpdateBoardCommand(
-    Guid WorkspaceId,
     Guid BoardId,
     string? Title,
     string? Description,
     string? Background,
     BoardVisibility? Visibility,
-    long? ExpectedVersion) : ICommand<Result>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
+    long? ExpectedVersion) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);

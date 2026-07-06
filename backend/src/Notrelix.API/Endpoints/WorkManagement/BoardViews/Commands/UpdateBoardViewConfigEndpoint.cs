@@ -17,13 +17,11 @@ public static class UpdateBoardViewConfigEndpoint
     private static async Task<IResult> HandleAsync(
         Guid boardId,
         Guid viewId,
-        [FromHeader(Name = "X-Workspace-Id")] Guid workspaceId,
         UpdateBoardViewConfigRequest body,
         ISender sender,
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(new UpdateBoardViewConfigCommand(
-            workspaceId,
             boardId,
             viewId,
             body.ConfigJson), cancellationToken);

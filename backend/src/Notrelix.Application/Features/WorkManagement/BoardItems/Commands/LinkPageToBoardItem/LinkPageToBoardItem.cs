@@ -3,7 +3,10 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.LinkPageToBoardItem;
 
-public record LinkPageToBoardItemCommand(Guid BoardItemId, Guid PageId) : ICommand<Result>, ITransactionalRequest;
+public record LinkPageToBoardItemCommand(Guid BoardItemId, Guid PageId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest
+{
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+}
 
 public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoardItemCommand, Result>
 {

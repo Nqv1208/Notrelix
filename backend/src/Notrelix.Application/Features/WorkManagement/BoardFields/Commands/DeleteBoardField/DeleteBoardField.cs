@@ -3,7 +3,10 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.DeleteBoardField;
 
-public record DeleteBoardFieldCommand(Guid BoardId, Guid ColumnId) : ICommand<Result>, ITransactionalRequest;
+public record DeleteBoardFieldCommand(Guid BoardId, Guid ColumnId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest
+{
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardField, ColumnId);
+}
 
 public class DeleteBoardFieldCommandHandler : IRequestHandler<DeleteBoardFieldCommand, Result>
 {

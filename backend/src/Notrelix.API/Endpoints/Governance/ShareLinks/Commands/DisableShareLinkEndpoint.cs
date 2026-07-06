@@ -15,7 +15,6 @@ public static class DisableShareLinkEndpoint
     }
 
     private static async Task<IResult> HandleAsync(
-        Guid workspaceId,
         string resourceType,
         Guid resourceId,
         Guid shareLinkId,
@@ -23,7 +22,7 @@ public static class DisableShareLinkEndpoint
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new DisableShareLinkCommand(workspaceId, Enum.Parse<ResourceType>(resourceType, ignoreCase: true), resourceId, shareLinkId),
+            new DisableShareLinkCommand(shareLinkId),
             cancellationToken);
         return result.ToNoContentResult();
     }

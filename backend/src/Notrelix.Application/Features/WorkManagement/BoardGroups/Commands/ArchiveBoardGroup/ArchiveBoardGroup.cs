@@ -3,7 +3,10 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ArchiveBoardGroup;
 
-public record ArchiveBoardGroupCommand(Guid GroupId) : ICommand<Result>, ITransactionalRequest;
+public record ArchiveBoardGroupCommand(Guid GroupId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest
+{
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardGroup, GroupId);
+}
 
 public class ArchiveBoardGroupCommandHandler : IRequestHandler<ArchiveBoardGroupCommand, Result>
 {

@@ -58,6 +58,7 @@ public enum ResourceType
     SecurityEvent,
     WorkspaceInvitation,
     ItemTemplate,
+    Label,
     Plan,
     UsageMetric,
     WorkspaceFeatureUsage,

@@ -3,7 +3,10 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DuplicateBoardGroup;
 
-public record DuplicateBoardGroupCommand(Guid GroupId) : ICommand<Result<Guid>>, ITransactionalRequest;
+public record DuplicateBoardGroupCommand(Guid GroupId) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest
+{
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardGroup, GroupId);
+}
 
 public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardGroupCommand, Result<Guid>>
 {

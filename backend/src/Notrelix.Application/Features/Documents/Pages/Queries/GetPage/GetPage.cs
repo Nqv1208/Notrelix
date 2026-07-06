@@ -5,7 +5,11 @@ using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Pages.Queries.GetPage;
 
-public record GetPageQuery(Guid PageId) : IQuery<Result<PageDto>>;
+public record GetPageQuery(Guid PageId) : IQuery<Result<PageDto>>, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.ViewBoard;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Page, PageId);
+}
 
 public class GetPageQueryHandler : IRequestHandler<GetPageQuery, Result<PageDto>>
 {

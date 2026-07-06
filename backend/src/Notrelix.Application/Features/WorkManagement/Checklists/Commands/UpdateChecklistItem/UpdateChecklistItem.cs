@@ -3,7 +3,10 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.UpdateChecklistItem;
 
-public record UpdateChecklistItemCommand(Guid ItemId, bool? IsChecked) : ICommand<Result>, ITransactionalRequest;
+public record UpdateChecklistItemCommand(Guid ItemId, bool? IsChecked) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest
+{
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.ChecklistItem, ItemId);
+}
 
 public class UpdateChecklistItemCommandHandler : IRequestHandler<UpdateChecklistItemCommand, Result>
 {

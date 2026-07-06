@@ -24,6 +24,7 @@ public class SystemContextUsageTests
         "WorkspaceAccessResolver.cs",
         "RestoreWorkspace.cs",
         "TenantBootstrapStore.cs",
+        "ResourceScopeResolver.cs",
     ];
 
     [Fact]

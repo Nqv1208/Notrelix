@@ -16,13 +16,11 @@ public static class CreateBoardItemEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid boardId,
-        [FromHeader(Name = "X-Workspace-Id")] Guid workspaceId,
         CreateBoardItemRequest body,
         ISender sender,
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(new CreateBoardItemCommand(
-            workspaceId,
             boardId,
             body.GroupId,
             body.Title,

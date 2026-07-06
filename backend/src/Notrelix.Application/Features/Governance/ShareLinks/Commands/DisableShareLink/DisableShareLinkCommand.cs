@@ -1,22 +1,14 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Abstractions;
-using SharedKernel = Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.Governance.ShareLinks.Commands.DisableShareLink;
 
 public record DisableShareLinkCommand(
-    Guid WorkspaceId,
-    SharedKernel.ResourceType ResourceType,
-    Guid ResourceId,
-    Guid ShareLinkId) : ICommand<Result>, IRequirePermission, ITransactionalRequest
+    Guid ShareLinkId) : ICommand<Result>, IResourceScopedRequest, IRequirePermission, ITransactionalRequest
 {
-    PermissionAction IRequirePermission.Action => ResourceType switch
-    {
-        SharedKernel.ResourceType.Board => PermissionAction.ShareBoardView,
-        SharedKernel.ResourceType.Page => PermissionAction.SharePage,
-        _ => PermissionAction.ManageWorkspace
-    };
-    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType, ResourceId, WorkspaceId);
+    PermissionAction IRequirePermission.Action => PermissionAction.ManageWorkspace;
+    ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(ResourceType.ShareLink, ShareLinkId);
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType.ShareLink, ShareLinkId);
 }
 
 public class DisableShareLinkCommandHandler : IRequestHandler<DisableShareLinkCommand, Result>

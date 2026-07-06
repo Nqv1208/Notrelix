@@ -4,14 +4,13 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CreateBoardItem;
 
 public record CreateBoardItemCommand(
-    Guid WorkspaceId,
     Guid BoardId,
     Guid GroupId,
     string Title,
-    double Position) : ICommand<BoardItemSlimDto>, ITransactionalRequest, IRequirePermission, IWorkspaceRequest, IRealtimeRequest
+    double Position) : ICommand<BoardItemSlimDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest
 {
     public PermissionAction Action => PermissionAction.CreateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId, WorkspaceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
     public RealtimeTopic Topic => new("board", "Board", BoardId);
 }
 
@@ -43,7 +42,7 @@ public class CreateBoardItemCommandHandler : IRequestHandler<CreateBoardItemComm
 
         var item = BoardItem.Create(
             _tenant.RequireAccountId(),
-            request.WorkspaceId,
+            _tenant.RequireWorkspaceId(),
             request.BoardId,
             request.GroupId,
             request.Title,

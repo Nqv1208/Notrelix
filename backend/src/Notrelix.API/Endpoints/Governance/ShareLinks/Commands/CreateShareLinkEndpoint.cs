@@ -16,7 +16,6 @@ public static class CreateShareLinkEndpoint
     }
 
     private static async Task<IResult> HandleAsync(
-        Guid workspaceId,
         string resourceType,
         Guid resourceId,
         CreateShareLinkRequest body,
@@ -24,7 +23,7 @@ public static class CreateShareLinkEndpoint
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new CreateShareLinkCommand(workspaceId, Enum.Parse<ResourceType>(resourceType, ignoreCase: true), resourceId, body.Level, body.ExpiresAt),
+            new CreateShareLinkCommand(Enum.Parse<ResourceType>(resourceType, ignoreCase: true), resourceId, body.Level, body.ExpiresAt),
             cancellationToken);
         return result.ToCreatedResult();
     }

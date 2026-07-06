@@ -4,7 +4,10 @@ using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.Duplicat
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.DuplicateBoardItem;
 
-public record DuplicateBoardItemCommand(Guid BoardItemId) : ICommand<Result<Guid>>, ITransactionalRequest;
+public record DuplicateBoardItemCommand(Guid BoardItemId) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest
+{
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+}
 
 public class DuplicateBoardItemCommandHandler : IRequestHandler<DuplicateBoardItemCommand, Result<Guid>>
 {

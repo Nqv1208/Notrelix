@@ -4,7 +4,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Labels.Queries.GetLabels;
 
-public record GetLabelsQuery(Guid BoardId) : IQuery<Result<List<BoardItemLabelDto>>>;
+public record GetLabelsQuery(Guid BoardId)
+    : IQuery<Result<List<BoardItemLabelDto>>>, IResourceScopedRequest
+{
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+}
 
 public class GetLabelsQueryHandler : IRequestHandler<GetLabelsQuery, Result<List<BoardItemLabelDto>>>
 {

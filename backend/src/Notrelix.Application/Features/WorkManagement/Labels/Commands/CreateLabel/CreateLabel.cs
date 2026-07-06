@@ -3,7 +3,12 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Labels.Commands.CreateLabel;
 
-public record CreateLabelCommand(Guid BoardId, string Color, string? Name) : ICommand<Result<Guid>>, ITransactionalRequest;
+public record CreateLabelCommand(Guid BoardId, string Color, string? Name)
+    : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.ManageBoard;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+}
 
 public class CreateLabelCommandHandler : IRequestHandler<CreateLabelCommand, Result<Guid>>
 {
