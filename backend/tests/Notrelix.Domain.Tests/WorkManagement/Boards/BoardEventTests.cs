@@ -12,7 +12,7 @@ public class BoardEventTests
     [Fact]
     public void Board_UpdateDescription_ShouldRaiseEvent()
     {
-        var board = Board.Create(WsA, Actor, "Board", null, Now);
+        var board = Board.Create(Guid.NewGuid(), WsA, Actor, "Board", null, Now);
         board.ClearDomainEvents();
         var version = board.Version;
 
@@ -30,7 +30,7 @@ public class BoardEventTests
     [Fact]
     public void Board_UpdateDescription_WhenSameValue_ShouldNotRaiseEvent()
     {
-        var board = Board.Create(WsA, Actor, "Board", "desc", Now);
+        var board = Board.Create(Guid.NewGuid(), WsA, Actor, "Board", "desc", Now);
         board.ClearDomainEvents();
         var version = board.Version;
 
@@ -43,7 +43,7 @@ public class BoardEventTests
     [Fact]
     public void Board_UpdateBackground_ShouldRaiseEvent()
     {
-        var board = Board.Create(WsA, Actor, "Board", null, Now);
+        var board = Board.Create(Guid.NewGuid(), WsA, Actor, "Board", null, Now);
         board.ClearDomainEvents();
         var version = board.Version;
 
@@ -60,7 +60,7 @@ public class BoardEventTests
     [Fact]
     public void Board_SetDefaultGroup_ShouldRaiseEvent()
     {
-        var board = Board.Create(WsA, Actor, "Board", null, Now);
+        var board = Board.Create(Guid.NewGuid(), WsA, Actor, "Board", null, Now);
         board.ClearDomainEvents();
         var version = board.Version;
         var groupId = Guid.NewGuid();

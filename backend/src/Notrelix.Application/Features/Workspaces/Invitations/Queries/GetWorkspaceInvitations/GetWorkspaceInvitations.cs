@@ -1,7 +1,6 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Workspaces.DTOs;
+using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Queries.GetWorkspaceInvitations;
 
@@ -13,9 +12,9 @@ public record GetWorkspaceInvitationsQuery(Guid WorkspaceId) : IQuery<Result<Lis
 
 public class GetWorkspaceInvitationsQueryHandler : IRequestHandler<GetWorkspaceInvitationsQuery, Result<List<WorkspaceInvitationDto>>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkspaceDbContext _context;
 
-    public GetWorkspaceInvitationsQueryHandler(IApplicationDbContext context)
+    public GetWorkspaceInvitationsQueryHandler(IWorkspaceDbContext context)
     {
         _context = context;
     }

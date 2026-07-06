@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.WorkManagement.Checklists;
 
 namespace Notrelix.Infrastructure.Data.Configurations.WorkManagement;

@@ -2,6 +2,7 @@ namespace Notrelix.Domain.Documents.Blocks;
 
 public class Block : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid PageId { get; private set; }
     public Guid? ParentId { get; private set; }
@@ -13,6 +14,7 @@ public class Block : AggregateRoot, IWorkspaceScoped
     private Block() : base() { }
 
     public static Block Create(
+        Guid accountId,
         Guid workspaceId,
         Guid pageId,
         BlockType type,
@@ -23,6 +25,7 @@ public class Block : AggregateRoot, IWorkspaceScoped
         Guid? parentId = null,
         BlockProperties? properties = null)
     {
+        Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(pageId);
         Guard.NotEmpty(createdBy);
@@ -33,6 +36,7 @@ public class Block : AggregateRoot, IWorkspaceScoped
 
         var block = new Block
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             PageId = pageId,
             ParentId = parentId,
@@ -43,7 +47,7 @@ public class Block : AggregateRoot, IWorkspaceScoped
         };
 
         block.SetAuditOnCreate(createdBy, createdAt);
-        block.AddDomainEvent(new BlockCreatedDomainEvent(workspaceId, pageId, block.Id, type, createdBy, createdAt));
+        block.AddDomainEvent(new BlockCreatedDomainEvent(accountId, workspaceId, pageId, block.Id, type, createdBy, createdAt));
 
         return block;
     }
@@ -59,7 +63,7 @@ public class Block : AggregateRoot, IWorkspaceScoped
         Content = newContent;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BlockContentUpdatedDomainEvent(WorkspaceId, Id, PageId, updatedBy, updatedAt));
+        AddDomainEvent(new BlockContentUpdatedDomainEvent(AccountId, WorkspaceId, Id, PageId, updatedBy, updatedAt));
     }
 
     public void UpdateProperties(BlockProperties newProperties, Guid updatedBy, DateTimeOffset updatedAt)
@@ -72,7 +76,7 @@ public class Block : AggregateRoot, IWorkspaceScoped
         Properties = newProperties;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BlockPropertiesUpdatedDomainEvent(WorkspaceId, Id, PageId, updatedBy, updatedAt));
+        AddDomainEvent(new BlockPropertiesUpdatedDomainEvent(AccountId, WorkspaceId, Id, PageId, updatedBy, updatedAt));
     }
 
     public void Move(Guid? newParentId, FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt, Func<Guid, Guid?>? getParentId = null)
@@ -90,7 +94,7 @@ public class Block : AggregateRoot, IWorkspaceScoped
         Position = newPosition;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BlockMovedDomainEvent(WorkspaceId, Id, PageId, oldParentId, newParentId, newPosition.Value, updatedBy, updatedAt));
+        AddDomainEvent(new BlockMovedDomainEvent(AccountId, WorkspaceId, Id, PageId, oldParentId, newParentId, newPosition.Value, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -99,7 +103,7 @@ public class Block : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new BlockSoftDeletedDomainEvent(WorkspaceId, Id, PageId, deletedBy, deletedAt));
+        AddDomainEvent(new BlockSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, PageId, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -108,6 +112,6 @@ public class Block : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new BlockRestoredDomainEvent(WorkspaceId, Id, PageId, restoredBy, restoredAt));
+        AddDomainEvent(new BlockRestoredDomainEvent(AccountId, WorkspaceId, Id, PageId, restoredBy, restoredAt));
     }
 }

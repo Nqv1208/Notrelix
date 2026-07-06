@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace Notrelix.Application.Features.WorkManagement.Labels.Commands.AddLabelToBoardItem;
 
 public class AddLabelToBoardItemCommandValidator : AbstractValidator<AddLabelToBoardItemCommand>

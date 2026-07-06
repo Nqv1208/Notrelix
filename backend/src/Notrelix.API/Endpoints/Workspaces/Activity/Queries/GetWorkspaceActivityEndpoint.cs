@@ -7,7 +7,7 @@ public static class GetWorkspaceActivityEndpoint
 {
     public static IEndpointRouteBuilder MapGetWorkspaceActivity(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", HandleAsync)
+        group.MapWorkspaceGet("/", HandleAsync)
             .WithName("Workspaces.Activity.GetWorkspaceActivity")
             .WithTags("Workspaces.Activity")
             .WithSummary("Get workspace activity log");

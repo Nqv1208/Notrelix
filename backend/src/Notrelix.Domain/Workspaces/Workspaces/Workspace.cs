@@ -8,12 +8,13 @@ public class Workspace : AggregateRoot
     public WorkspaceStatus Status { get; private set; }
     public WorkspaceSettings Settings { get; private set; } = null!;
     public bool IsPersonal { get; private set; }
-    public Guid? AccountId { get; private set; }
+    public Guid AccountId { get; private set; }
 
     private Workspace() : base() { }
 
-    public static Workspace Create(Guid ownerId, string name, string slug, DateTimeOffset createdAt, string? description = null, bool isPersonal = false, Guid? accountId = null)
+    public static Workspace Create(Guid accountId, Guid ownerId, string name, string slug, DateTimeOffset createdAt, string? description = null, bool isPersonal = false)
     {
+        Guard.NotEmpty(accountId);
         Guard.NotEmpty(ownerId);
         Guard.NotNullOrWhiteSpace(name);
         Guard.NotNullOrWhiteSpace(slug);
@@ -23,29 +24,29 @@ public class Workspace : AggregateRoot
 
         var workspace = new Workspace
         {
+            AccountId = accountId,
             Name = name.Trim(),
             Slug = slugValue.Value,
             Description = description?.Trim(),
             Status = WorkspaceStatus.Active,
             Settings = WorkspaceSettings.Create(),
-            IsPersonal = isPersonal,
-            AccountId = accountId
+            IsPersonal = isPersonal
         };
 
         workspace.SetAuditOnCreate(ownerId, createdAt);
-        workspace.AddDomainEvent(new WorkspaceCreatedDomainEvent(workspace.Id, workspace.Name, workspace.Slug, ownerId, createdAt));
+        workspace.AddDomainEvent(new WorkspaceCreatedDomainEvent(workspace.AccountId, workspace.Id, workspace.Name, workspace.Slug, ownerId, createdAt));
 
         return workspace;
     }
 
-    public void AssignToAccount(Guid accountId, Guid updatedBy, DateTimeOffset updatedAt)
+    public void UpdateAccountId(Guid newAccountId, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        Guard.NotEmpty(accountId);
+        Guard.NotEmpty(newAccountId);
 
-        if (AccountId == accountId) return;
+        if (AccountId == newAccountId) return;
 
-        AccountId = accountId;
+        AccountId = newAccountId;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
     }

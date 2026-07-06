@@ -10,7 +10,6 @@ public static class MapPageEndpoints
         var workspaceGroup = app
             .MapGroup("/api/v1/workspaces/{workspaceId:guid}/pages")
             .WithTags("Documents.Pages")
-            .RequireAuthorization()
             .WithOpenApi();
 
         workspaceGroup.MapListWorkspacePages();
@@ -21,7 +20,6 @@ public static class MapPageEndpoints
         var pageGroup = app
             .MapGroup("/api/v1/pages/{pageId:guid}")
             .WithTags("Documents.Pages")
-            .RequireAuthorization()
             .WithOpenApi();
 
         pageGroup.MapGetPage();

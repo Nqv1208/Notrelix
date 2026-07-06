@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Billing.Usage;
 
 public sealed class UsageMetricKey : ValueObject
 {
-    public string Value { get; }
+    public string Value { get; private set; } = null!;
 
     private UsageMetricKey() { }
     private UsageMetricKey(string value)

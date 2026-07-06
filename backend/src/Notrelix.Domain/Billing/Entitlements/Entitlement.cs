@@ -1,8 +1,11 @@
 namespace Notrelix.Domain.Billing.Entitlements;
 
-public class Entitlement : AggregateRoot, IWorkspaceScoped
+public class Entitlement : AggregateRoot, IAccountScoped
 {
-    public Guid WorkspaceId { get; private set; }
+    public Guid AccountId { get; private set; }
+    public Guid? WorkspaceId { get; private set; }
+    public EntitlementTargetScope TargetScope { get; private set; } = EntitlementTargetScope.Account;
+    public Guid? TargetWorkspaceId { get; private set; }
     public FeatureCode Feature { get; private set; } = null!;
     public int Limit { get; private set; }
     public EntitlementSource Source { get; private set; }
@@ -13,17 +16,34 @@ public class Entitlement : AggregateRoot, IWorkspaceScoped
 
     private Entitlement() : base() { }
 
-    public static Entitlement Create(Guid workspaceId, FeatureCode feature, int limit, EntitlementSource source, DateTimeOffset createdAt, DateTimeOffset? expiresAt = null)
+    public static Entitlement Create(
+        Guid accountId,
+        FeatureCode feature,
+        int limit,
+        EntitlementSource source,
+        DateTimeOffset createdAt,
+        EntitlementTargetScope targetScope = EntitlementTargetScope.Account,
+        Guid? targetWorkspaceId = null,
+        DateTimeOffset? expiresAt = null)
     {
-        Guard.NotEmpty(workspaceId);
+        Guard.NotEmpty(accountId);
         Guard.NotNull(feature);
 
         if (limit < 0)
             throw new BusinessRuleException("Entitlement limit cannot be negative.");
 
+        if (targetScope == EntitlementTargetScope.Workspace && targetWorkspaceId is null)
+            throw new BusinessRuleException("Workspace-scoped entitlement requires a target workspace id.");
+
+        if (targetScope == EntitlementTargetScope.Account && targetWorkspaceId is not null)
+            throw new BusinessRuleException("Account-scoped entitlement must not specify a target workspace id.");
+
         var entitlement = new Entitlement
         {
-            WorkspaceId = workspaceId,
+            AccountId = accountId,
+            WorkspaceId = targetWorkspaceId,
+            TargetScope = targetScope,
+            TargetWorkspaceId = targetWorkspaceId,
             Feature = feature,
             Limit = limit,
             Source = source,
@@ -32,7 +52,7 @@ public class Entitlement : AggregateRoot, IWorkspaceScoped
         };
 
         entitlement.AddDomainEvent(new EntitlementGrantedDomainEvent(
-            workspaceId, entitlement.Id, feature.Code, limit, null, createdAt));
+            accountId, targetWorkspaceId, entitlement.Id, feature.Code, limit, null, createdAt));
         return entitlement;
     }
 
@@ -55,7 +75,7 @@ public class Entitlement : AggregateRoot, IWorkspaceScoped
         IncrementVersion();
 
         AddDomainEvent(new EntitlementLimitChangedDomainEvent(
-            WorkspaceId, Id, Feature.Code, oldLimit, newLimit, actorUserId, occurredAt));
+            AccountId, WorkspaceId, Id, Feature.Code, oldLimit, newLimit, actorUserId, occurredAt));
     }
 
     public void Disable(Guid actorUserId, DateTimeOffset occurredAt)
@@ -73,7 +93,7 @@ public class Entitlement : AggregateRoot, IWorkspaceScoped
         IncrementVersion();
 
         AddDomainEvent(new EntitlementDisabledDomainEvent(
-            WorkspaceId, Id, Feature.Code, actorUserId, occurredAt));
+            AccountId, WorkspaceId, Id, Feature.Code, actorUserId, occurredAt));
     }
 
     public void Revoke(Guid actorUserId, DateTimeOffset occurredAt)
@@ -90,7 +110,7 @@ public class Entitlement : AggregateRoot, IWorkspaceScoped
         IncrementVersion();
 
         AddDomainEvent(new EntitlementRevokedDomainEvent(
-            WorkspaceId, Id, Feature.Code, actorUserId, occurredAt));
+            AccountId, WorkspaceId, Id, Feature.Code, actorUserId, occurredAt));
     }
 
     public void MarkExpired(DateTimeOffset occurredAt)
@@ -107,7 +127,7 @@ public class Entitlement : AggregateRoot, IWorkspaceScoped
         IncrementVersion();
 
         AddDomainEvent(new EntitlementExpiredDomainEvent(
-            WorkspaceId, Id, Feature.Code, occurredAt));
+            AccountId, WorkspaceId, Id, Feature.Code, occurredAt));
     }
 
     public bool IsActiveAt(DateTimeOffset now)
@@ -123,7 +143,7 @@ public class Entitlement : AggregateRoot, IWorkspaceScoped
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
         IncrementVersion();
-        AddDomainEvent(new EntitlementSoftDeletedDomainEvent(WorkspaceId, Id, Feature.Code, deletedBy, deletedAt));
+        AddDomainEvent(new EntitlementSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, Feature.Code, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -132,6 +152,6 @@ public class Entitlement : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         Status = EntitlementStatus.Active;
         IncrementVersion();
-        AddDomainEvent(new EntitlementRestoredDomainEvent(WorkspaceId, Id, Feature.Code, restoredBy, restoredAt));
+        AddDomainEvent(new EntitlementRestoredDomainEvent(AccountId, WorkspaceId, Id, Feature.Code, restoredBy, restoredAt));
     }
 }

@@ -12,7 +12,7 @@ public class BoardIdempotencyTests
     [Fact]
     public void Rename_ShouldNotIncrementVersion_WhenTitleIsSame()
     {
-        var board = Board.Create(_workspaceId, _actorId, "Same Title", null, _now);
+        var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Same Title", null, _now);
         var version = board.Version;
 
         board.Rename("Same Title", _actorId, _now);
@@ -24,7 +24,7 @@ public class BoardIdempotencyTests
     [Fact]
     public void UpdateDescription_ShouldNotIncrementVersion_WhenDescriptionIsSame()
     {
-        var board = Board.Create(_workspaceId, _actorId, "Board", "Same Desc", _now);
+        var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", "Same Desc", _now);
         board.ClearDomainEvents();
         var version = board.Version;
 
@@ -36,7 +36,7 @@ public class BoardIdempotencyTests
     [Fact]
     public void ChangeVisibility_ShouldNotIncrementVersion_WhenVisibilityIsSame()
     {
-        var board = Board.Create(_workspaceId, _actorId, "Board", null, _now);
+        var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
         board.ClearDomainEvents();
         var version = board.Version;
 
@@ -48,7 +48,7 @@ public class BoardIdempotencyTests
     [Fact]
     public void Archive_ShouldNotIncrementVersion_WhenAlreadyArchived()
     {
-        var board = Board.Create(_workspaceId, _actorId, "Board", null, _now);
+        var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
         board.Archive(_actorId, _now);
         var version = board.Version;
 
@@ -60,7 +60,7 @@ public class BoardIdempotencyTests
     [Fact]
     public void Unarchive_ShouldNotIncrementVersion_WhenNotArchived()
     {
-        var board = Board.Create(_workspaceId, _actorId, "Board", null, _now);
+        var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
         board.ClearDomainEvents();
         var version = board.Version;
 
@@ -72,7 +72,7 @@ public class BoardIdempotencyTests
     [Fact]
     public void SoftDelete_ShouldIncrementVersion_AndRaiseEvent()
     {
-        var board = Board.Create(_workspaceId, _actorId, "Board", null, _now);
+        var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
         var version = board.Version;
 
         board.SoftDelete(_actorId, _now);
@@ -85,7 +85,7 @@ public class BoardIdempotencyTests
     [Fact]
     public void Restore_ShouldIncrementVersion_AndRaiseEvent()
     {
-        var board = Board.Create(_workspaceId, _actorId, "Board", null, _now);
+        var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
         board.SoftDelete(_actorId, _now);
         board.ClearDomainEvents();
         var version = board.Version;
@@ -100,7 +100,7 @@ public class BoardIdempotencyTests
     [Fact]
     public void SoftDelete_ShouldNotIncrementOrRaiseEvent_WhenAlreadyDeleted()
     {
-        var board = Board.Create(_workspaceId, _actorId, "Board", null, _now);
+        var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
         board.SoftDelete(_actorId, _now);
         board.ClearDomainEvents();
         var version = board.Version;
@@ -114,7 +114,7 @@ public class BoardIdempotencyTests
     [Fact]
     public void Restore_ShouldNotIncrementOrRaiseEvent_WhenNotDeleted()
     {
-        var board = Board.Create(_workspaceId, _actorId, "Board", null, _now);
+        var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
         board.ClearDomainEvents();
         var version = board.Version;
 
@@ -127,7 +127,7 @@ public class BoardIdempotencyTests
     [Fact]
     public void DomainEvent_ShouldCarryActorUserId_WhenAggregateMethodProvidesActor()
     {
-        var board = Board.Create(_workspaceId, _actorId, "Board", null, _now);
+        var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
         board.ClearDomainEvents();
 
         board.Rename("Renamed", _actorId, _now);
@@ -139,7 +139,7 @@ public class BoardIdempotencyTests
     [Fact]
     public void DomainEvent_ShouldCarryActorUserId_ForSoftDelete()
     {
-        var board = Board.Create(_workspaceId, _actorId, "Board", null, _now);
+        var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
         board.ClearDomainEvents();
 
         board.SoftDelete(_actorId, _now);
@@ -151,7 +151,7 @@ public class BoardIdempotencyTests
     [Fact]
     public void DomainEvent_ShouldCarryActorUserId_ForRestore()
     {
-        var board = Board.Create(_workspaceId, _actorId, "Board", null, _now);
+        var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
         board.SoftDelete(_actorId, _now);
         board.ClearDomainEvents();
 
@@ -164,7 +164,7 @@ public class BoardIdempotencyTests
     [Fact]
     public void DomainEvent_ShouldCarryCorrectWorkspaceId()
     {
-        var board = Board.Create(_workspaceId, _actorId, "Board", null, _now);
+        var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
 
         var evt = (IDomainEvent)board.DomainEvents.Single(e => e is BoardCreatedDomainEvent);
         evt.WorkspaceId.Should().Be(_workspaceId);
@@ -173,7 +173,7 @@ public class BoardIdempotencyTests
     [Fact]
     public void DomainEvent_ShouldCarryCorrectWorkspaceId_AfterMutation()
     {
-        var board = Board.Create(_workspaceId, _actorId, "Board", null, _now);
+        var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
         board.ClearDomainEvents();
 
         board.Rename("Renamed", _actorId, _now);
@@ -187,7 +187,7 @@ public class BoardIdempotencyTests
     {
         var explicitTime = new DateTimeOffset(2026, 6, 1, 12, 0, 0, TimeSpan.Zero);
 
-        var board = Board.Create(_workspaceId, _actorId, "Board", null, explicitTime);
+        var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, explicitTime);
 
         board.CreatedAt.Should().Be(explicitTime);
     }

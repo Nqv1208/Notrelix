@@ -1,7 +1,6 @@
 using Notrelix.API.Contracts.Workspaces.Members.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember;
-using Notrelix.Domain.Workspaces.Members;
 
 namespace Notrelix.API.Endpoints.Workspaces.Members.Commands;
 
@@ -9,7 +8,7 @@ public static class InviteMemberEndpoint
 {
     public static IEndpointRouteBuilder MapInviteMember(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/", HandleAsync)
+        group.MapWorkspacePost("/", HandleAsync)
             .WithName("Workspaces.Members.InviteMember")
             .WithTags("Workspaces.Members")
             .WithSummary("Invite a member to workspace");

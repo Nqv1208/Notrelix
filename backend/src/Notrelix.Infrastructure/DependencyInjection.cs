@@ -1,7 +1,3 @@
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-
 namespace Notrelix.Infrastructure;
 
 /// <summary>
@@ -14,10 +10,10 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IHostEnvironment? environment = null)
     {
         services.AddPersistence(configuration);
-        services.AddReadModels(configuration);
         services.AddMessaging(configuration);
         services.AddBackgroundJobs(configuration);
         services.AddCaching(configuration);
@@ -28,9 +24,7 @@ public static class DependencyInjection
         services.AddEmail(configuration);
         services.AddRealtime(configuration);
         services.AddIntegrations(configuration);
-        services.AddBilling(configuration);
-        services.AddSearch(configuration);
-        services.AddReporting(configuration);
+        services.AddBilling(configuration, environment);
         services.AddOperations(configuration);
         services.AddObservability(configuration);
 
@@ -43,6 +37,6 @@ public static class DependencyInjection
     /// </summary>
     public static void AddInfrastructureServices(this IHostApplicationBuilder builder)
     {
-        builder.Services.AddInfrastructure(builder.Configuration);
+        builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
     }
 }

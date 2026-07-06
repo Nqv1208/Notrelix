@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.Workspaces.Workspaces.Events;
 
 public sealed record WorkspaceCreatedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     string Name,
     string Slug,

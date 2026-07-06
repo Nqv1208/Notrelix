@@ -8,7 +8,7 @@ public static class UpdateChecklistEndpoint
 {
     public static IEndpointRouteBuilder MapUpdateChecklist(this IEndpointRouteBuilder group)
     {
-        group.MapPatch("/", HandleAsync)
+        group.MapResourcePatch("/", HandleAsync)
             .WithName("WorkManagement.Checklists.Update")
             .WithTags("WorkManagement.Checklists")
             .WithSummary("Update a checklist");
@@ -21,7 +21,7 @@ public static class UpdateChecklistEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new UpdateChecklistCommand(checklistId), cancellationToken);
+        var result = await sender.Send(new UpdateChecklistCommand(checklistId, body.Title, body.Position), cancellationToken);
         return result.ToApiResult();
     }
 }

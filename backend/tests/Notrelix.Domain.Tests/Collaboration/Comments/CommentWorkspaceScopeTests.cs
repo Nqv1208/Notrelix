@@ -12,7 +12,7 @@ public class CommentWorkspaceScopeTests
     public void Create_WithMatchingWorkspace_ShouldSucceed()
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsA);
-        var comment = Comment.Create(WsA, target, "ok", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var comment = Comment.Create(Guid.NewGuid(), WsA, target, "ok", Guid.NewGuid(), DateTimeOffset.UtcNow);
         comment.WorkspaceId.Should().Be(WsA);
     }
 
@@ -20,7 +20,7 @@ public class CommentWorkspaceScopeTests
     public void Create_WithMismatchedWorkspace_ShouldThrow()
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsB);
-        var act = () => Comment.Create(WsA, target, "bad", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var act = () => Comment.Create(Guid.NewGuid(), WsA, target, "bad", Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<WorkspaceMismatchException>();
     }
 
@@ -28,7 +28,7 @@ public class CommentWorkspaceScopeTests
     public void Create_WithUnscopedResourceRef_ShouldSucceed()
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid());
-        var comment = Comment.Create(WsA, target, "ok", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var comment = Comment.Create(Guid.NewGuid(), WsA, target, "ok", Guid.NewGuid(), DateTimeOffset.UtcNow);
         comment.WorkspaceId.Should().Be(WsA);
     }
 }

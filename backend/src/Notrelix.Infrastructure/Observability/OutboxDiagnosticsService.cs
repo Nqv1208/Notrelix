@@ -1,7 +1,5 @@
-using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Data;
-using Notrelix.Infrastructure.Data.Outbox;
+using Notrelix.Infrastructure.Data.Messaging;
 
 namespace Notrelix.Infrastructure.Observability;
 
@@ -16,14 +14,14 @@ internal sealed class OutboxDiagnosticsService : IOutboxDiagnosticsService
 
     public async Task<OutboxStatsResult> GetStatsAsync(CancellationToken cancellationToken = default)
     {
-        var counts = await _context.Set<OutboxMessage>()
+        var counts = await _context.Set<MessagingOutboxMessage>()
             .GroupBy(m => m.Status)
-            .Select(g => new { status = g.Key.ToString(), count = g.Count() })
+            .Select(g => new { status = g.Key, count = g.Count() })
             .ToListAsync(cancellationToken);
 
         var total = counts.Sum(c => c.count);
-        var oldestPending = await _context.Set<OutboxMessage>()
-            .Where(m => m.Status == OutboxStatus.Pending)
+        var oldestPending = await _context.Set<MessagingOutboxMessage>()
+            .Where(m => m.Status == "Pending")
             .OrderBy(m => m.CreatedAt)
             .Select(m => m.CreatedAt)
             .FirstOrDefaultAsync(cancellationToken);
@@ -36,15 +34,15 @@ internal sealed class OutboxDiagnosticsService : IOutboxDiagnosticsService
 
     public async Task<List<OutboxMessageResult>> GetPendingAsync(int limit = 50, CancellationToken cancellationToken = default)
     {
-        return await _context.Set<OutboxMessage>()
-            .Where(m => m.Status == OutboxStatus.Pending || m.Status == OutboxStatus.Processing)
+        return await _context.Set<MessagingOutboxMessage>()
+            .Where(m => m.Status == "Pending" || m.Status == "Processing")
             .OrderBy(m => m.CreatedAt)
             .Take(Math.Min(limit, 200))
             .Select(m => new OutboxMessageResult(
                 m.Id,
                 m.MessageName,
-                m.MessageType.ToString(),
-                m.Status.ToString(),
+                m.SourceContext,
+                m.Status,
                 m.RetryCount,
                 m.CreatedAt,
                 m.NextAttemptAt,
@@ -55,15 +53,15 @@ internal sealed class OutboxDiagnosticsService : IOutboxDiagnosticsService
 
     public async Task<List<OutboxMessageResult>> GetFailedAsync(int limit = 50, CancellationToken cancellationToken = default)
     {
-        return await _context.Set<OutboxMessage>()
-            .Where(m => m.Status == OutboxStatus.Failed || m.Status == OutboxStatus.DeadLetter)
+        return await _context.Set<MessagingOutboxMessage>()
+            .Where(m => m.Status == "Failed" || m.Status == "DeadLetter")
             .OrderByDescending(m => m.CreatedAt)
             .Take(Math.Min(limit, 200))
             .Select(m => new OutboxMessageResult(
                 m.Id,
                 m.MessageName,
-                m.MessageType.ToString(),
-                m.Status.ToString(),
+                m.SourceContext,
+                m.Status,
                 m.RetryCount,
                 m.CreatedAt,
                 m.NextAttemptAt,
@@ -74,7 +72,7 @@ internal sealed class OutboxDiagnosticsService : IOutboxDiagnosticsService
 
     public async Task<OutboxMessageDetailResult?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _context.Set<OutboxMessage>()
+        return await _context.Set<MessagingOutboxMessage>()
             .Where(m => m.Id == id)
             .Select(m => new OutboxMessageDetailResult(
                 m.Id,
@@ -82,21 +80,21 @@ internal sealed class OutboxDiagnosticsService : IOutboxDiagnosticsService
                 m.SourceEventId,
                 m.MessageName,
                 m.SchemaVersion,
-                m.MessageType.ToString(),
-                m.EventVersion,
-                m.Status.ToString(),
+                m.SourceContext,
+                null,
+                m.Status,
                 m.RetryCount,
                 m.MaxRetries,
                 m.CreatedAt,
                 m.NextAttemptAt,
                 m.ProcessingStartedAt,
                 m.ProcessedAt,
-                m.Error,
+                m.ErrorMessage,
                 m.WorkspaceId,
                 m.ActorUserId,
                 m.CorrelationId,
                 m.CausationId,
-                m.PayloadJson))
+                m.PayloadJson.RootElement.GetRawText()))
             .FirstOrDefaultAsync(cancellationToken);
     }
 }

@@ -1,28 +1,34 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.LinkPageToBoardItem;
 
-public record LinkPageToBoardItemCommand(Guid BoardItemId, Guid PageId) : ICommand<Result>, ITransactionalRequest;
+public record LinkPageToBoardItemCommand(Guid BoardItemId, Guid PageId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.UpdateItem;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+}
 
 public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoardItemCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
-    private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _timeProvider;
+    private readonly IResourceReferenceResolver _resourceResolver;
+    private readonly ICurrentTenantContext _tenant;
 
     public LinkPageToBoardItemCommandHandler(
-        IApplicationDbContext context,
+        IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions,
-        IDateTimeProvider timeProvider)
+        IDateTimeProvider timeProvider,
+        IResourceReferenceResolver resourceResolver,
+        ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
-        _permissions = permissions;
         _timeProvider = timeProvider;
+        _resourceResolver = resourceResolver;
+        _tenant = tenant;
     }
 
     public async Task<Result> Handle(LinkPageToBoardItemCommand request, CancellationToken cancellationToken)
@@ -33,20 +39,17 @@ public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoard
         if (card == null)
             throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
-        var page = await _context.Pages
-            .FirstOrDefaultAsync(x => x.Id == request.PageId, cancellationToken);
-
-        if (page == null)
+        var pageWorkspaceId = await _resourceResolver.GetWorkspaceIdAsync(request.PageId, ResourceTypes.Page, cancellationToken);
+        if (!pageWorkspaceId.HasValue)
             throw new NotFoundException(nameof(Page), request.PageId);
 
-        await _permissions.EnsureCanEditBoardAsync(card.BoardId, _currentUser.UserId, cancellationToken);
-
-        if (card.WorkspaceId != page.WorkspaceId)
+        if (card.WorkspaceId != pageWorkspaceId.Value)
             throw new Notrelix.Domain.Common.Exceptions.BusinessRuleViolationException("CardPageWorkspaceMismatch", "BoardItem chỉ được link với page cùng workspace.");
 
         var now = _timeProvider.UtcNow;
 
         var link = BoardItemLink.Create(
+            _tenant.RequireAccountId(),
             card.WorkspaceId,
             card.BoardId,
             card.Id,

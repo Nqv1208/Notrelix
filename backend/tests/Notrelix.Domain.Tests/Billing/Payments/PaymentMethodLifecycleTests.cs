@@ -12,7 +12,7 @@ public class PaymentMethodLifecycleTests
     [Fact]
     public void PaymentMethod_Create_ShouldRaiseEvent()
     {
-        var method = PaymentMethod.Create(WsA, PaymentProvider.Stripe, "pm_123", "4242", "Visa", Actor, Now);
+        var method = PaymentMethod.Create(Guid.NewGuid(), WsA, PaymentProvider.Stripe, "pm_123", "4242", "Visa", Actor, Now);
 
         method.DomainEvents.Should().ContainSingle(e => e is PaymentMethodAddedDomainEvent);
         var evt = (PaymentMethodAddedDomainEvent)method.DomainEvents.Single(e => e is PaymentMethodAddedDomainEvent);
@@ -26,7 +26,7 @@ public class PaymentMethodLifecycleTests
     [Fact]
     public void PaymentMethod_SoftDelete_ShouldIncrementVersion()
     {
-        var method = PaymentMethod.Create(WsA, PaymentProvider.Stripe, "pm_123", "4242", "Visa", Actor, Now);
+        var method = PaymentMethod.Create(Guid.NewGuid(), WsA, PaymentProvider.Stripe, "pm_123", "4242", "Visa", Actor, Now);
         method.ClearDomainEvents();
         var version = method.Version;
 
@@ -39,7 +39,7 @@ public class PaymentMethodLifecycleTests
     [Fact]
     public void PaymentMethod_Restore_ShouldIncrementVersion()
     {
-        var method = PaymentMethod.Create(WsA, PaymentProvider.Stripe, "pm_123", "4242", "Visa", Actor, Now);
+        var method = PaymentMethod.Create(Guid.NewGuid(), WsA, PaymentProvider.Stripe, "pm_123", "4242", "Visa", Actor, Now);
         method.SoftDelete(Actor, Now);
         method.ClearDomainEvents();
         var version = method.Version;
@@ -53,7 +53,7 @@ public class PaymentMethodLifecycleTests
     [Fact]
     public void PaymentMethod_SoftDelete_WhenAlreadyDeleted_ShouldNotIncrement()
     {
-        var method = PaymentMethod.Create(WsA, PaymentProvider.Stripe, "pm_123", "4242", "Visa", Actor, Now);
+        var method = PaymentMethod.Create(Guid.NewGuid(), WsA, PaymentProvider.Stripe, "pm_123", "4242", "Visa", Actor, Now);
         method.SoftDelete(Actor, Now);
         method.ClearDomainEvents();
         var version = method.Version;
@@ -66,7 +66,7 @@ public class PaymentMethodLifecycleTests
     [Fact]
     public void PaymentMethod_Restore_WhenNotDeleted_ShouldNotIncrement()
     {
-        var method = PaymentMethod.Create(WsA, PaymentProvider.Stripe, "pm_123", "4242", "Visa", Actor, Now);
+        var method = PaymentMethod.Create(Guid.NewGuid(), WsA, PaymentProvider.Stripe, "pm_123", "4242", "Visa", Actor, Now);
         method.ClearDomainEvents();
         var version = method.Version;
 

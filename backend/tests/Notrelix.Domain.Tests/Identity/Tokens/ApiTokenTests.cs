@@ -14,7 +14,7 @@ public class ApiTokenTests
     {
         var scopes = ApiTokenScopes.FromJson("[\"read\"]");
 
-        var token = ApiToken.Create(WorkspaceId, UserId, "My Token", "hash123", scopes, CreatedBy, Now);
+        var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, UserId, "My Token", "hash123", scopes, CreatedBy, Now);
 
         token.WorkspaceId.Should().Be(WorkspaceId);
         token.UserId.Should().Be(UserId);
@@ -28,7 +28,7 @@ public class ApiTokenTests
     [Fact]
     public void Create_ShouldTrimName()
     {
-        var token = ApiToken.Create(WorkspaceId, UserId, "  My Token  ", "hash", null, CreatedBy, Now);
+        var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, UserId, "  My Token  ", "hash", null, CreatedBy, Now);
 
         token.Name.Should().Be("My Token");
     }
@@ -36,7 +36,7 @@ public class ApiTokenTests
     [Fact]
     public void Create_WithoutUserId_ShouldSucceed()
     {
-        var token = ApiToken.Create(WorkspaceId, null, "Token", "hash", null, CreatedBy, Now);
+        var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, null, "Token", "hash", null, CreatedBy, Now);
 
         token.UserId.Should().BeNull();
     }
@@ -44,7 +44,7 @@ public class ApiTokenTests
     [Fact]
     public void Create_WithEmptyWorkspaceId_ShouldThrow()
     {
-        var act = () => ApiToken.Create(Guid.Empty, UserId, "Token", "hash", null, CreatedBy, Now);
+        var act = () => ApiToken.Create(Guid.NewGuid(), Guid.Empty, UserId, "Token", "hash", null, CreatedBy, Now);
 
         act.Should().Throw<BusinessRuleException>();
     }
@@ -52,7 +52,7 @@ public class ApiTokenTests
     [Fact]
     public void Revoke_ShouldTransitionToRevokedAndRaiseEvent()
     {
-        var token = ApiToken.Create(WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
+        var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
         token.ClearDomainEvents();
 
         token.Revoke(UserId, Now);
@@ -66,7 +66,7 @@ public class ApiTokenTests
     [Fact]
     public void Revoke_AlreadyRevoked_ShouldBeIdempotent()
     {
-        var token = ApiToken.Create(WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
+        var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
         token.Revoke(UserId, Now);
         token.ClearDomainEvents();
 
@@ -78,7 +78,7 @@ public class ApiTokenTests
     [Fact]
     public void RecordUse_ShouldUpdateLastUsedAt()
     {
-        var token = ApiToken.Create(WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
+        var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
         token.ClearDomainEvents();
         var useTime = Now.AddHours(1);
 
@@ -91,7 +91,7 @@ public class ApiTokenTests
     public void RecordUse_ExpiredToken_ShouldThrow()
     {
         var expiresAt = Now.AddHours(1);
-        var token = ApiToken.Create(WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now, expiresAt);
+        var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now, expiresAt);
 
         var act = () => token.RecordUse(expiresAt.AddHours(1));
 
@@ -101,7 +101,7 @@ public class ApiTokenTests
     [Fact]
     public void RecordUse_RevokedToken_ShouldThrow()
     {
-        var token = ApiToken.Create(WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
+        var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
         token.Revoke(UserId, Now);
 
         var act = () => token.RecordUse(Now);
@@ -112,7 +112,7 @@ public class ApiTokenTests
     [Fact]
     public void SoftDelete_ShouldMarkAsDeleted()
     {
-        var token = ApiToken.Create(WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
+        var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
 
         token.SoftDelete(UserId, Now);
 
@@ -123,7 +123,7 @@ public class ApiTokenTests
     [Fact]
     public void Restore_AfterSoftDelete_ShouldSucceed()
     {
-        var token = ApiToken.Create(WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
+        var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
         token.SoftDelete(UserId, Now);
         token.ClearDomainEvents();
 

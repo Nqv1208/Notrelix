@@ -1,7 +1,8 @@
 namespace Notrelix.Domain.Integrations.Calendar.Events;
 
 public sealed record CalendarConflictDetectedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid IntegrationId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);

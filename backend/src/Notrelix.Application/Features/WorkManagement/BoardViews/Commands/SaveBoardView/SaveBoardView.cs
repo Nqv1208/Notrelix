@@ -1,35 +1,36 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SaveBoardView;
 
 public record SaveBoardViewCommand(
-    Guid WorkspaceId,
     Guid BoardId,
     ViewMode ViewMode,
-    string? Filters) : ICommand<Result>, ITransactionalRequest, IRequirePermission, IWorkspaceRequest, IRealtimeRequest
+    string? Filters) : ICommand<Result>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId, WorkspaceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
     public RealtimeTopic Topic => new("board", "Board", BoardId);
 }
 
 public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ICurrentTenantContext _tenant;
 
     public SaveBoardViewCommandHandler(
-        IApplicationDbContext context,
+        IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
+        _tenant = tenant;
     }
 
     private static ViewType MapViewModeToViewType(ViewMode viewMode) => viewMode switch
@@ -43,10 +44,10 @@ public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand,
 
     public async Task<Result> Handle(SaveBoardViewCommand request, CancellationToken ct)
     {
-        var boardExists = await _context.Boards
+        var board = await _context.Boards
             .AsNoTracking()
-            .AnyAsync(board => board.Id == request.BoardId && !board.IsArchived, ct);
-        if (!boardExists) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
+            .FirstOrDefaultAsync(board => board.Id == request.BoardId && !board.IsArchived, ct);
+        if (board is null) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
 
         var viewType = MapViewModeToViewType(request.ViewMode);
         var now = _dateTimeProvider.UtcNow;
@@ -62,7 +63,8 @@ public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand,
         else
         {
             view = BoardView.Create(
-                request.WorkspaceId,
+                _tenant.RequireAccountId(),
+                board.WorkspaceId,
                 request.BoardId,
                 viewType.ToString(),
                 viewType,

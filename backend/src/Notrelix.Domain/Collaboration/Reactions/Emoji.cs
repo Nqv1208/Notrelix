@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Collaboration.Reactions;
 
 public sealed class Emoji : ValueObject
 {
-    public string Code { get; }
+    public string Code { get; private set; } = null!;
 
     private Emoji() { }
     private Emoji(string code)

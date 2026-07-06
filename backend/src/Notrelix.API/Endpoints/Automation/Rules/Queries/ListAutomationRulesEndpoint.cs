@@ -7,7 +7,7 @@ public static class ListAutomationRulesEndpoint
 {
     public static IEndpointRouteBuilder MapListAutomationRules(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", HandleAsync)
+        group.MapWorkspaceGet("/", HandleAsync)
             .WithName("Automation.Rules.List")
             .WithTags("Automation.Rules")
             .WithSummary("Get workspace automation rules");

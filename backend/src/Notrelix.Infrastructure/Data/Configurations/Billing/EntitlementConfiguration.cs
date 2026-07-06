@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Billing.Entitlements;
 using Notrelix.Domain.Billing.Plans;
 
@@ -14,7 +12,10 @@ public class EntitlementConfiguration : IEntityTypeConfiguration<Entitlement>
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
 
-        builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
+        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
+        builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id");
+        builder.Property(x => x.TargetScope).HasColumnName("target_scope").HasConversion<string>().IsRequired().HasMaxLength(40).HasDefaultValue(EntitlementTargetScope.Account);
+        builder.Property(x => x.TargetWorkspaceId).HasColumnName("target_workspace_id");
         builder.Property(x => x.Feature).HasColumnName("feature_code").HasConversion(v => v.Code, v => FeatureCode.Create(v)).IsRequired().HasMaxLength(128);
         builder.Property(x => x.Limit).HasColumnName("limit_value").IsRequired();
         builder.Property(x => x.Source).HasColumnName("source").HasConversion<string>().IsRequired().HasMaxLength(50);
@@ -34,6 +35,7 @@ public class EntitlementConfiguration : IEntityTypeConfiguration<Entitlement>
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => x.WorkspaceId).HasDatabaseName("idx_entitlements_workspace_id");
+        builder.HasIndex(x => x.AccountId).HasDatabaseName("idx_entitlements_account_id");
+        builder.HasIndex(x => new { x.TargetScope, x.TargetWorkspaceId }).HasDatabaseName("idx_entitlements_target");
     }
 }

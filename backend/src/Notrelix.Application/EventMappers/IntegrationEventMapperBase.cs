@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Events;
-
 namespace Notrelix.Application.EventMappers;
 
 public abstract class IntegrationEventMapperBase<TDomainEvent, TIntegrationEvent> : IIntegrationEventMapper<TDomainEvent, TIntegrationEvent>

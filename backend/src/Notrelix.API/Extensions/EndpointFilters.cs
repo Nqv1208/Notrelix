@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace Notrelix.API.Extensions;
 
 /// <summary>

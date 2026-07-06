@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Automation.Agents;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Automation;
@@ -13,6 +11,7 @@ public class AiAgentRunConfiguration : IEntityTypeConfiguration<AiAgentRun>
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
 
+        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.AiAgentId).HasColumnName("ai_agent_id").IsRequired();
         builder.Property(x => x.TriggerType).HasColumnName("trigger_type").IsRequired().HasMaxLength(50);

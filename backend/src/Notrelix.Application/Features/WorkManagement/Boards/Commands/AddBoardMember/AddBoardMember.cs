@@ -1,30 +1,33 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using BoardMemberEntity = global::Notrelix.Domain.WorkManagement.Boards.BoardMember;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.AddBoardMember;
 
-public record AddBoardMemberCommand(Guid BoardId, Guid UserId, BoardRole? Role) : ICommand<Result>, ITransactionalRequest;
+public record AddBoardMemberCommand(Guid BoardId, Guid UserId, BoardRole? Role) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.ManageBoard;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+}
 
 public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
-    private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IWorkspaceAccessResolver _workspaceAccess;
 
     public AddBoardMemberCommandHandler(
-        IApplicationDbContext context,
+        IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IWorkspaceAccessResolver workspaceAccess)
     {
         _context = context;
         _currentUser = currentUser;
-        _permissions = permissions;
         _dateTimeProvider = dateTimeProvider;
+        _workspaceAccess = workspaceAccess;
     }
 
     public async Task<Result> Handle(AddBoardMemberCommand request, CancellationToken ct)
@@ -34,12 +37,8 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
 
         if (board is null) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
 
-        await _permissions.EnsureCanManageBoardAsync(board.Id, _currentUser.UserId, ct);
-
-        var isWorkspaceMember = await _context.WorkspaceMembers
-            .AsNoTracking()
-            .AnyAsync(member => member.WorkspaceId == board.WorkspaceId && member.UserId == request.UserId, ct);
-        if (!isWorkspaceMember)
+        var access = await _workspaceAccess.ResolveAsync(board.WorkspaceId, request.UserId, ct);
+        if (!access.CanAccess)
         {
             throw new Notrelix.Domain.Common.Exceptions.BusinessRuleViolationException(
                 "BoardMemberMustBelongToWorkspace",

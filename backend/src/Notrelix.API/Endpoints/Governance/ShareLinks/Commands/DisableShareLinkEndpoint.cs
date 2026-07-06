@@ -1,6 +1,5 @@
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Governance.ShareLinks.Commands.DisableShareLink;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.API.Endpoints.Governance.ShareLinks.Commands;
 
@@ -8,7 +7,7 @@ public static class DisableShareLinkEndpoint
 {
     public static IEndpointRouteBuilder MapDisableShareLink(this IEndpointRouteBuilder group)
     {
-        group.MapDelete("/{shareLinkId:guid}", HandleAsync)
+        group.MapResourceDelete("/{shareLinkId:guid}", HandleAsync)
             .WithName("Governance.ShareLinks.Disable")
             .WithTags("Governance.ShareLinks")
             .WithSummary("Disable a share link");
@@ -16,7 +15,6 @@ public static class DisableShareLinkEndpoint
     }
 
     private static async Task<IResult> HandleAsync(
-        Guid workspaceId,
         string resourceType,
         Guid resourceId,
         Guid shareLinkId,
@@ -24,7 +22,7 @@ public static class DisableShareLinkEndpoint
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new DisableShareLinkCommand(workspaceId, Enum.Parse<ResourceType>(resourceType, ignoreCase: true), resourceId, shareLinkId),
+            new DisableShareLinkCommand(shareLinkId),
             cancellationToken);
         return result.ToNoContentResult();
     }

@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure;
 
 namespace Notrelix.Integration.Tests.Messaging;
@@ -66,21 +65,26 @@ public class MessagingRegistrationTests
     }
 
     [Fact]
-    public void AddMessaging_WhenTransportIsRabbitMQ_ShouldThrowNotImplemented()
+    public void AddMessaging_WhenTransportIsRabbitMQ_ShouldSucceed()
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["Messaging:Transport"] = "RabbitMQ"
+                ["Messaging:Transport"] = "RabbitMQ",
+                ["Messaging:RabbitMQ:Host"] = "localhost",
+                ["Messaging:RabbitMQ:Username"] = "guest",
+                ["Messaging:RabbitMQ:Password"] = "guest"
             })
             .Build();
 
         var services = new ServiceCollection();
 
-        var act = () => services.AddMessaging(configuration);
+        // Should not throw — RabbitMQ transport is now fully implemented.
+        services.AddMessaging(configuration);
 
-        act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*not implemented yet*");
+        var provider = services.BuildServiceProvider();
+        var bus = provider.GetRequiredService<IIntegrationEventBus>();
+        bus.Should().NotBeNull();
     }
 
     [Fact]

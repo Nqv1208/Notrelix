@@ -1,16 +1,10 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.CQRS;
-using Notrelix.Application.Common.Messaging;
 using Notrelix.Application.Features.Workspaces.Abstractions;
-using Notrelix.Domain.SharedKernel;
-using Notrelix.Domain.Workspaces.Workspaces;
 
 namespace Notrelix.Application.Features.Workspaces.Provisioning.Commands.ProvisionPersonalWorkspace;
 
 public sealed record ProvisionPersonalWorkspaceCommand(
     Guid UserId,
+    Guid AccountId,
     string Email,
     Guid MessageId,
     Guid? SourceEventId,
@@ -86,7 +80,7 @@ public sealed class ProvisionPersonalWorkspaceCommandHandler
                 request.SourceMessageName,
                 request.SourceMessageVersion,
                 sourceEventId: request.SourceEventId,
-                workspaceId: request.WorkspaceId,
+                workspaceId: existingWorkspace.Id,
                 processedAt: now);
 
             return new ProvisionPersonalWorkspaceResult(
@@ -95,6 +89,7 @@ public sealed class ProvisionPersonalWorkspaceCommandHandler
 
         var slug = Slug.GenerateFromName($"{request.Email}'s Workspace");
         var workspace = WorkspaceFactory.CreateWithOwner(
+            request.AccountId,
             request.UserId,
             $"{request.Email}'s Workspace",
             slug.Value,
@@ -110,7 +105,7 @@ public sealed class ProvisionPersonalWorkspaceCommandHandler
             request.SourceMessageName,
             request.SourceMessageVersion,
             sourceEventId: request.SourceEventId,
-            workspaceId: request.WorkspaceId,
+            workspaceId: workspace.Workspace.Id,
             processedAt: now);
 
         return new ProvisionPersonalWorkspaceResult(

@@ -6,7 +6,7 @@ namespace Notrelix.Domain.Tests.Billing.Entitlements;
 
 public class EntitlementLifecycleTests
 {
-    private static readonly Guid WsA = Guid.NewGuid();
+    private static readonly Guid AccountId = Guid.NewGuid();
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
@@ -14,7 +14,7 @@ public class EntitlementLifecycleTests
     public void Entitlement_Create_ShouldRaiseEvent()
     {
         var feature = FeatureCode.Create("boards");
-        var entitlement = Entitlement.Create(WsA, feature, 10, EntitlementSource.Subscription, Now);
+        var entitlement = Entitlement.Create(AccountId, feature, 10, EntitlementSource.Subscription, Now);
 
         entitlement.DomainEvents.Should().ContainSingle(e => e is EntitlementGrantedDomainEvent);
         var evt = (EntitlementGrantedDomainEvent)entitlement.DomainEvents.Single(e => e is EntitlementGrantedDomainEvent);
@@ -27,7 +27,7 @@ public class EntitlementLifecycleTests
     public void Entitlement_SoftDelete_ShouldRaiseEvent()
     {
         var feature = FeatureCode.Create("boards");
-        var entitlement = Entitlement.Create(WsA, feature, 10, EntitlementSource.Subscription, Now);
+        var entitlement = Entitlement.Create(AccountId, feature, 10, EntitlementSource.Subscription, Now);
         entitlement.ClearDomainEvents();
         var version = entitlement.Version;
 
@@ -37,7 +37,7 @@ public class EntitlementLifecycleTests
         entitlement.Version.Should().Be(version + 1);
         entitlement.DomainEvents.Should().ContainSingle(e => e is EntitlementSoftDeletedDomainEvent);
         var evt = (EntitlementSoftDeletedDomainEvent)entitlement.DomainEvents.Single(e => e is EntitlementSoftDeletedDomainEvent);
-        evt.WorkspaceId.Should().Be(WsA);
+        evt.AccountId.Should().Be(AccountId);
         evt.EntitlementId.Should().Be(entitlement.Id);
         evt.FeatureCode.Should().Be("BOARDS");
     }
@@ -46,7 +46,7 @@ public class EntitlementLifecycleTests
     public void Entitlement_Restore_ShouldRaiseEvent()
     {
         var feature = FeatureCode.Create("boards");
-        var entitlement = Entitlement.Create(WsA, feature, 10, EntitlementSource.Subscription, Now);
+        var entitlement = Entitlement.Create(AccountId, feature, 10, EntitlementSource.Subscription, Now);
         entitlement.SoftDelete(Actor, Now);
         entitlement.ClearDomainEvents();
         var version = entitlement.Version;
@@ -57,7 +57,7 @@ public class EntitlementLifecycleTests
         entitlement.Version.Should().Be(version + 1);
         entitlement.DomainEvents.Should().ContainSingle(e => e is EntitlementRestoredDomainEvent);
         var evt = (EntitlementRestoredDomainEvent)entitlement.DomainEvents.Single(e => e is EntitlementRestoredDomainEvent);
-        evt.WorkspaceId.Should().Be(WsA);
+        evt.AccountId.Should().Be(AccountId);
         evt.EntitlementId.Should().Be(entitlement.Id);
     }
 
@@ -65,7 +65,7 @@ public class EntitlementLifecycleTests
     public void Entitlement_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
         var feature = FeatureCode.Create("boards");
-        var entitlement = Entitlement.Create(WsA, feature, 10, EntitlementSource.Subscription, Now);
+        var entitlement = Entitlement.Create(AccountId, feature, 10, EntitlementSource.Subscription, Now);
         entitlement.SoftDelete(Actor, Now);
         entitlement.ClearDomainEvents();
         var version = entitlement.Version;
@@ -80,7 +80,7 @@ public class EntitlementLifecycleTests
     public void Entitlement_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
         var feature = FeatureCode.Create("boards");
-        var entitlement = Entitlement.Create(WsA, feature, 10, EntitlementSource.Subscription, Now);
+        var entitlement = Entitlement.Create(AccountId, feature, 10, EntitlementSource.Subscription, Now);
         entitlement.ClearDomainEvents();
         var version = entitlement.Version;
 

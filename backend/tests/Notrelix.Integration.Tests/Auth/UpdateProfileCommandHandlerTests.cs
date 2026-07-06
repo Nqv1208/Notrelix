@@ -1,16 +1,32 @@
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile;
 using Notrelix.Domain.Identity.Users;
-using Notrelix.Testing.Integration.Factories;
+using Notrelix.Integration.Tests.Containers;
 
 namespace Notrelix.Integration.Tests.Auth;
 
-public class UpdateProfileCommandHandlerTests
+[Collection("Database")]
+public class UpdateProfileCommandHandlerTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public UpdateProfileCommandHandlerTests(PostgresTestContainer db)
+    {
+        _db = db;
+    }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public async Task Handle_WhenUserExists_ShouldUpdateNameAndAvatar()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        await using var context = _db.CreateContext();
 
         var user = User.Create("avatar@example.com", "Old Name", "hashed", DateTimeOffset.UtcNow);
         context.Users.Add(user);
@@ -39,7 +55,7 @@ public class UpdateProfileCommandHandlerTests
     [Fact]
     public async Task Handle_WhenUserNotFound_ShouldReturnFailure()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        await using var context = _db.CreateContext();
 
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         var handler = new UpdateProfileCommandHandler(context, dateTimeProvider.Object);

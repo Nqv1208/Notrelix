@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValues;
 
 public class UpdateBoardItemFieldValuesCommandValidator : AbstractValidator<UpdateBoardItemFieldValuesCommand>

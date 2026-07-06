@@ -5,6 +5,7 @@ namespace Notrelix.Testing.Domain.Builders;
 
 public class BoardBuilder
 {
+    private Guid _accountId = Guid.NewGuid();
     private Guid _workspaceId = TestIds.NewWorkspaceId();
     private Guid _createdBy = TestIds.NewUserId();
     private string _title = "Test Board";
@@ -16,6 +17,7 @@ public class BoardBuilder
     private string? _itemKeyPrefix;
     private Guid? _spaceId;
 
+    public BoardBuilder WithAccountId(Guid accountId) { _accountId = accountId; return this; }
     public BoardBuilder WithWorkspaceId(Guid workspaceId) { _workspaceId = workspaceId; return this; }
     public BoardBuilder WithCreatedBy(Guid createdBy) { _createdBy = createdBy; return this; }
     public BoardBuilder WithTitle(string title) { _title = title; return this; }
@@ -27,7 +29,7 @@ public class BoardBuilder
     public Board Build()
     {
         return Board.Create(
-            _workspaceId, _createdBy, _title, _description, _createdAt,
+            _accountId, _workspaceId, _createdBy, _title, _description, _createdAt,
             _visibility, _type, _family, _itemKeyPrefix, _spaceId);
     }
 }

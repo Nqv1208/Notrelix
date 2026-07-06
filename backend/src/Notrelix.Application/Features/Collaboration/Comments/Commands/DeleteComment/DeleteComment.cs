@@ -1,17 +1,20 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Collaboration.Abstractions;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Commands.DeleteComment;
 
-public record DeleteCommentCommand(Guid CommentId) : ICommand<Result>, ITransactionalRequest;
+public record DeleteCommentCommand(Guid CommentId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.UpdateItem;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Comment, CommentId);
+}
 
 public class DeleteCommentCommandHandler : IRequestHandler<DeleteCommentCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly ICollaborationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
-    public DeleteCommentCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public DeleteCommentCommandHandler(ICollaborationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;

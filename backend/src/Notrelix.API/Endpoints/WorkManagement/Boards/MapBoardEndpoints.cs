@@ -1,5 +1,5 @@
-using Notrelix.API.Contracts.WorkManagement.Boards.Requests;
 using Notrelix.API.Extensions;
+using Notrelix.API.Contracts.WorkManagement.Boards.Requests;
 using Notrelix.API.Endpoints.WorkManagement.Boards.Commands;
 using Notrelix.API.Endpoints.WorkManagement.Boards.Queries;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.AddBoardMember;
@@ -7,7 +7,6 @@ using Notrelix.Application.Features.WorkManagement.Boards.Commands.ArchiveBoard;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.UnarchiveBoard;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.RemoveBoardMember;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMembers;
-using Notrelix.Domain.WorkManagement.Boards;
 
 namespace Notrelix.API.Endpoints.WorkManagement.Boards;
 
@@ -17,7 +16,6 @@ public static class MapBoardEndpoints
     {
         var wsGroup = app
             .MapGroup("/api/v1/workspaces/{workspaceId:guid}/boards")
-            .RequireAuthorization()
             .WithTags("WorkManagement.Boards")
             .WithOpenApi();
 
@@ -26,35 +24,28 @@ public static class MapBoardEndpoints
 
         var boardGroup = app
             .MapGroup("/api/v1/boards/{boardId:guid}")
-            .RequireAuthorization()
             .WithTags("WorkManagement.Boards")
             .WithOpenApi();
 
         boardGroup.MapGetBoard();
         boardGroup.MapRenameBoard();
         boardGroup.MapGetBoardOverview();
-        boardGroup.MapPost("/archive", HandleArchiveBoard)
-            .WithName("WorkManagement.Boards.Archive")
-            .WithSummary("Archive a board");
-        boardGroup.MapPost("/unarchive", HandleUnarchiveBoard)
-            .WithName("WorkManagement.Boards.Unarchive")
-            .WithSummary("Unarchive a board");
+        boardGroup.MapResourcePost("/archive", HandleArchiveBoard)
+            .WithName("WorkManagement.Boards.Archive");
+        boardGroup.MapResourcePost("/unarchive", HandleUnarchiveBoard)
+            .WithName("WorkManagement.Boards.Unarchive");
 
         var members = app
             .MapGroup("/api/v1/boards/{boardId:guid}/members")
-            .RequireAuthorization()
             .WithTags("WorkManagement.Boards")
             .WithOpenApi();
 
-        members.MapGet("/", HandleGetBoardMembers)
-            .WithName("WorkManagement.Boards.GetMembers")
-            .WithSummary("Get board members");
-        members.MapPost("/", HandleAddBoardMember)
-            .WithName("WorkManagement.Boards.AddMember")
-            .WithSummary("Add a member to board");
-        members.MapDelete("/{userId:guid}", HandleRemoveBoardMember)
-            .WithName("WorkManagement.Boards.RemoveMember")
-            .WithSummary("Remove a member from board");
+        members.MapResourceGet("/", HandleGetBoardMembers)
+            .WithName("WorkManagement.Boards.GetMembers");
+        members.MapResourcePost("/", HandleAddBoardMember)
+            .WithName("WorkManagement.Boards.AddMember");
+        members.MapResourceDelete("/{userId:guid}", HandleRemoveBoardMember)
+            .WithName("WorkManagement.Boards.RemoveMember");
 
         return app;
     }
@@ -79,11 +70,10 @@ public static class MapBoardEndpoints
 
     private static async Task<IResult> HandleGetBoardMembers(
         Guid boardId,
-        [FromHeader(Name = "X-Workspace-Id")] Guid workspaceId,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new GetBoardMembersQuery(workspaceId, boardId), cancellationToken);
+        var result = await sender.Send(new GetBoardMembersQuery(boardId), cancellationToken);
         return result.ToApiResult();
     }
 

@@ -1,6 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
-
 namespace Notrelix.Infrastructure.Auth.Jwt;
 
 /// <summary>

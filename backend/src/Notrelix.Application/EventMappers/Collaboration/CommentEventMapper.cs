@@ -16,7 +16,7 @@ public sealed class CommentEventMapper :
             domainEvent.CreatedBy,
             string.Empty,
             ((IDomainEvent)domainEvent).ActorUserId,
-            null,
+            default,
             null,
             domainEvent.OccurredAt
         );
@@ -32,7 +32,7 @@ public sealed class CommentEventMapper :
             domainEvent.MentionedId,
             default,
             ((IDomainEvent)domainEvent).ActorUserId,
-            null,
+            default,
             null,
             domainEvent.OccurredAt
         );

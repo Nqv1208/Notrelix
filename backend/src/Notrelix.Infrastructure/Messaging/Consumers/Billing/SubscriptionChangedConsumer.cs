@@ -1,5 +1,3 @@
-using MassTransit;
-using Microsoft.Extensions.Logging;
 using Notrelix.Application.Events.Billing;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Billing;

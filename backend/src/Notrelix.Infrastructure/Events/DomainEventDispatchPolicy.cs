@@ -1,4 +1,6 @@
-using Notrelix.Application.Common.Events;
+using Notrelix.Domain.Accounts.Accounts.Events;
+using Notrelix.Domain.Accounts.Invitations.Events;
+using Notrelix.Domain.Accounts.Members.Events;
 using Notrelix.Domain.Analytics.Dashboards.Events;
 using Notrelix.Domain.Automation.Rules.Events;
 using Notrelix.Domain.Automation.Executions.Events;
@@ -11,11 +13,9 @@ using Notrelix.Domain.Billing.Payments.Events;
 using Notrelix.Domain.Billing.Plans.Events;
 using Notrelix.Domain.Billing.Subscriptions.Events;
 using Notrelix.Domain.Billing.Usage.Events;
-using Notrelix.Domain.Collaboration.Activity.Events;
 using Notrelix.Domain.Collaboration.Attachments.Events;
 using Notrelix.Domain.Collaboration.Comments.Events;
 using Notrelix.Domain.Collaboration.Mentions.Events;
-using Notrelix.Domain.Collaboration.Notifications.Events;
 using Notrelix.Domain.Collaboration.Presence.Events;
 using Notrelix.Domain.Collaboration.Reactions.Events;
 using Notrelix.Domain.Collaboration.Watchers.Events;
@@ -24,11 +24,9 @@ using Notrelix.Domain.Documents.Pages.Events;
 using Notrelix.Domain.Documents.ResourceLinks.Events;
 using Notrelix.Domain.Documents.Templates.Events;
 using Notrelix.Domain.Documents.Versions.Events;
-using Notrelix.Domain.Governance.Audit.Events;
 using Notrelix.Domain.Governance.Policies.Events;
 using Notrelix.Domain.Governance.Permissions.Events;
 using Notrelix.Domain.Governance.Roles.Events;
-using Notrelix.Domain.Governance.Security.Events;
 using Notrelix.Domain.Governance.ShareLinks.Events;
 using Notrelix.Domain.Governance.Templates.Events;
 using Notrelix.Domain.Identity.Mfa.Events;
@@ -76,10 +74,20 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
             "Every IDomainEvent must be explicitly registered in DomainEventDispatchPolicy.");
     }
 
+    public IReadOnlyCollection<Type> GetInlineTypes()
+    {
+        return Policies
+            .Where(kvp => kvp.Value == DomainEventDispatchMode.Inline)
+            .Select(kvp => kvp.Key)
+            .ToList()
+            .AsReadOnly();
+    }
+
     private static Dictionary<Type, DomainEventDispatchMode> BuildPolicies()
     {
         var d = new Dictionary<Type, DomainEventDispatchMode>();
 
+        RegisterAccounts(d);
         RegisterAnalytics(d);
         RegisterAutomation(d);
         RegisterBilling(d);
@@ -92,6 +100,26 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
         RegisterWorkspaces(d);
 
         return d;
+    }
+
+    private static void RegisterAccounts(Dictionary<Type, DomainEventDispatchMode> d)
+    {
+        Add<AccountCreatedDomainEvent>(d);
+        Add<AccountArchivedDomainEvent>(d);
+        Add<AccountRenamedDomainEvent>(d);
+        Add<AccountRestoredDomainEvent>(d);
+        Add<AccountSoftDeletedDomainEvent>(d);
+        Add<AccountSuspendedDomainEvent>(d);
+        Add<AccountMemberActivatedDomainEvent>(d);
+        Add<AccountMemberAddedDomainEvent>(d);
+        Add<AccountMemberRemovedDomainEvent>(d);
+        Add<AccountMemberRestoredDomainEvent>(d);
+        Add<AccountMemberRoleChangedDomainEvent>(d);
+        Add<AccountMemberSuspendedDomainEvent>(d);
+        Add<AccountInvitationAcceptedDomainEvent>(d);
+        Add<AccountInvitationCreatedDomainEvent>(d);
+        Add<AccountInvitationExpiredDomainEvent>(d);
+        Add<AccountInvitationRevokedDomainEvent>(d);
     }
 
     private static void RegisterAnalytics(Dictionary<Type, DomainEventDispatchMode> d)
@@ -200,7 +228,6 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
 
     private static void RegisterCollaboration(Dictionary<Type, DomainEventDispatchMode> d)
     {
-        Add<ActivityLoggedDomainEvent>(d);
         Add<AttachmentCreatedDomainEvent>(d);
         Add<AttachmentDeletedDomainEvent>(d);
         Add<AttachmentRestoredDomainEvent>(d);
@@ -210,9 +237,6 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
         Add<CommentSoftDeletedDomainEvent>(d);
         Add<CommentUpdatedDomainEvent>(d);
         Add<MentionCreatedDomainEvent>(d);
-        Add<NotificationArchivedDomainEvent>(d);
-        Add<NotificationCreatedDomainEvent>(d);
-        Add<NotificationReadDomainEvent>(d);
         Add<PresenceUpdatedDomainEvent>(d);
         Add<ReactionCreatedDomainEvent>(d);
         Add<ReactionRemovedDomainEvent>(d);
@@ -244,7 +268,6 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
 
     private static void RegisterGovernance(Dictionary<Type, DomainEventDispatchMode> d)
     {
-        Add<AuditLogRecordedDomainEvent>(d);
         Add<WorkspacePolicyUpdatedEvent>(d);
         Add<FieldPermissionGrantedDomainEvent>(d);
         Add<FieldPermissionRevokedDomainEvent>(d);
@@ -265,7 +288,6 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
         Add<CustomRoleRevokedDomainEvent>(d);
         Add<CustomRoleSoftDeletedDomainEvent>(d);
         Add<CustomRoleUpdatedDomainEvent>(d);
-        Add<SecurityEventRecordedEvent>(d);
         Add<ShareLinkCreatedEvent>(d);
         Add<ShareLinkDisabledEvent>(d);
         Add<ShareLinkExpiredEvent>(d);
@@ -292,17 +314,6 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
         Add<UserProfileUpdatedDomainEvent>(d);
         Add<LoginAttemptRecordedDomainEvent>(d);
         Add<PasswordChangeRequiredDomainEvent>(d);
-        Add<ScimDirectorySyncCompletedDomainEvent>(d);
-        Add<ScimDirectorySyncCreatedDomainEvent>(d);
-        Add<ScimDirectorySyncPausedDomainEvent>(d);
-        Add<ScimDirectorySyncResumedDomainEvent>(d);
-        Add<ScimDirectorySyncRestoredDomainEvent>(d);
-        Add<ScimDirectorySyncSoftDeletedDomainEvent>(d);
-        Add<SsoProviderCreatedDomainEvent>(d);
-        Add<SsoProviderDisabledDomainEvent>(d);
-        Add<SsoProviderEnabledDomainEvent>(d);
-        Add<SsoProviderRestoredDomainEvent>(d);
-        Add<SsoProviderSoftDeletedDomainEvent>(d);
         Add<UserMfaRequirementDisabledDomainEvent>(d);
         Add<UserMfaRequirementEnabledDomainEvent>(d);
         Add<UserSecurityPasswordChangedDomainEvent>(d);

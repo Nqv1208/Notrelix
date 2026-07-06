@@ -1,7 +1,4 @@
 using System.Net.Http.Headers;
-using System.Text;
-using Microsoft.Extensions.Options;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Options;
 
 namespace Notrelix.Infrastructure.Integrations.Providers;

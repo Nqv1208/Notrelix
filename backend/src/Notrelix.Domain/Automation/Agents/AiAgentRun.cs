@@ -13,6 +13,7 @@ public enum AiAgentRunStatus
 
 public class AiAgentRun : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid AiAgentId { get; private set; }
     public string TriggerType { get; private set; } = null!;
@@ -30,6 +31,7 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
     private AiAgentRun() : base() { }
 
     public static AiAgentRun Create(
+        Guid accountId,
         Guid workspaceId,
         Guid aiAgentId,
         string triggerType,
@@ -40,6 +42,7 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
         Guid? correlationId,
         DateTimeOffset createdAt)
     {
+        Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(aiAgentId);
         Guard.NotNullOrWhiteSpace(triggerType);
@@ -47,6 +50,7 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
 
         var run = new AiAgentRun
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             AiAgentId = aiAgentId,
             TriggerType = triggerType,
@@ -60,7 +64,7 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
         };
 
         run.SetAuditOnCreate(actorUserId, createdAt);
-        run.AddDomainEvent(new AiAgentRunQueuedDomainEvent(workspaceId, run.Id, aiAgentId, createdAt));
+        run.AddDomainEvent(new AiAgentRunQueuedDomainEvent(accountId, workspaceId, run.Id, aiAgentId, createdAt));
         return run;
     }
 
@@ -74,7 +78,7 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
         StartedAt = startedAt;
         SetAuditOnUpdate(ActorUserId, startedAt);
         IncrementVersion();
-        AddDomainEvent(new AiAgentRunStartedDomainEvent(WorkspaceId, Id, AiAgentId, startedAt));
+        AddDomainEvent(new AiAgentRunStartedDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, startedAt));
     }
 
     public void Succeed(JsonValue output, DateTimeOffset finishedAt)
@@ -89,7 +93,7 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
         FinishedAt = finishedAt;
         SetAuditOnUpdate(ActorUserId, finishedAt);
         IncrementVersion();
-        AddDomainEvent(new AiAgentRunSucceededDomainEvent(WorkspaceId, Id, AiAgentId, finishedAt));
+        AddDomainEvent(new AiAgentRunSucceededDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, finishedAt));
     }
 
     public void Fail(JsonValue error, DateTimeOffset finishedAt)
@@ -104,7 +108,7 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
         FinishedAt = finishedAt;
         SetAuditOnUpdate(ActorUserId, finishedAt);
         IncrementVersion();
-        AddDomainEvent(new AiAgentRunFailedDomainEvent(WorkspaceId, Id, AiAgentId, error.ToString(), finishedAt));
+        AddDomainEvent(new AiAgentRunFailedDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, error.ToString(), finishedAt));
     }
 
     public void Cancel(Guid? cancelledBy, DateTimeOffset cancelledAt)
@@ -117,6 +121,6 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
         FinishedAt = cancelledAt;
         SetAuditOnUpdate(cancelledBy, cancelledAt);
         IncrementVersion();
-        AddDomainEvent(new AiAgentRunCancelledDomainEvent(WorkspaceId, Id, AiAgentId, cancelledBy, cancelledAt));
+        AddDomainEvent(new AiAgentRunCancelledDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, cancelledBy, cancelledAt));
     }
 }

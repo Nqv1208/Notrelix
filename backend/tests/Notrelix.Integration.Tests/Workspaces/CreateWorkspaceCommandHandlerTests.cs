@@ -1,30 +1,45 @@
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace;
 using Notrelix.Domain.Workspaces.Workspaces;
-using Notrelix.Testing.Integration.Factories;
+using Notrelix.Integration.Tests.Containers;
+using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Workspaces;
 
-public class CreateWorkspaceCommandHandlerTests
+[Collection("Database")]
+public class CreateWorkspaceCommandHandlerTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
     private readonly Mock<ICurrentUser> _currentUserMock;
+    private readonly FakeCurrentTenantContext _tenant;
     private readonly Mock<IDateTimeProvider> _dateTimeMock;
 
-    public CreateWorkspaceCommandHandlerTests()
+    public CreateWorkspaceCommandHandlerTests(PostgresTestContainer db)
     {
+        _db = db;
         _currentUserMock = new Mock<ICurrentUser>();
+        _tenant = new FakeCurrentTenantContext();
+        _tenant.SetAccount(Guid.NewGuid(), null);
         _dateTimeMock = new Mock<IDateTimeProvider>();
         _dateTimeMock.Setup(d => d.UtcNow).Returns(DateTimeOffset.UtcNow);
     }
 
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public async Task Handle_WhenCreatingTeamWorkspace_ShouldSucceed()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        await using var context = _db.CreateContext();
         var userId = Guid.NewGuid();
         _currentUserMock.Setup(u => u.UserId).Returns(userId);
 
-        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object, _dateTimeMock.Object);
+        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object, _tenant, _dateTimeMock.Object);
         var command = new CreateWorkspaceCommand("Awesome Project", "A great software project", false);
 
         var result = await handler.Handle(command, CancellationToken.None);
@@ -47,11 +62,11 @@ public class CreateWorkspaceCommandHandlerTests
     [Fact]
     public async Task Handle_WhenCreatingPersonalWorkspace_ShouldSucceed()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        await using var context = _db.CreateContext();
         var userId = Guid.NewGuid();
         _currentUserMock.Setup(u => u.UserId).Returns(userId);
 
-        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object, _dateTimeMock.Object);
+        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object, _tenant, _dateTimeMock.Object);
         var command = new CreateWorkspaceCommand("My Personal Tasks", null, true);
 
         var result = await handler.Handle(command, CancellationToken.None);
@@ -72,17 +87,17 @@ public class CreateWorkspaceCommandHandlerTests
     [Fact]
     public async Task Handle_WhenSlugAlreadyExists_ShouldAppendUniqueSuffix()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        await using var context = _db.CreateContext();
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
         _currentUserMock.Setup(u => u.UserId).Returns(userId);
         _dateTimeMock.Setup(d => d.UtcNow).Returns(now);
 
-        var existingWorkspace = Workspace.Create(userId, "Awesome Project", "awesome-project", now);
+        var existingWorkspace = Workspace.Create(Guid.NewGuid(), userId, "Awesome Project", "awesome-project", now);
         context.Workspaces.Add(existingWorkspace);
         await context.SaveChangesAsync();
 
-        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object, _dateTimeMock.Object);
+        var handler = new CreateWorkspaceCommandHandler(context, _currentUserMock.Object, _tenant, _dateTimeMock.Object);
         var command = new CreateWorkspaceCommand("Awesome Project", "A duplicate project name", false);
 
         var result = await handler.Handle(command, CancellationToken.None);

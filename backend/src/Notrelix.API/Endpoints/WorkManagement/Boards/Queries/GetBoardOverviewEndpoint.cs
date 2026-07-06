@@ -7,7 +7,7 @@ public static class GetBoardOverviewEndpoint
 {
     public static IEndpointRouteBuilder MapGetBoardOverview(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/full", HandleAsync)
+        group.MapResourceGet("/full", HandleAsync)
             .WithName("WorkManagement.Boards.GetOverview")
             .WithTags("WorkManagement.Boards")
             .WithSummary("Get full board with lists and cards");

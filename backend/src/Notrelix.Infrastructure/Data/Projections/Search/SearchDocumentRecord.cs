@@ -3,6 +3,7 @@ namespace Notrelix.Infrastructure.Data.Projections.Search;
 public sealed class SearchDocumentRecord
 {
     public Guid Id { get; private set; }
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public string ResourceType { get; private set; } = null!;
     public Guid ResourceId { get; private set; }
@@ -10,7 +11,7 @@ public sealed class SearchDocumentRecord
     public string? Content { get; private set; }
     public string[] Tags { get; private set; } = [];
     public string MetadataJson { get; private set; } = null!;
-    public string? SearchVector { get; private set; }
+    public NpgsqlTsVector? SearchVector { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset? UpdatedAt { get; private set; }
 
@@ -18,6 +19,7 @@ public sealed class SearchDocumentRecord
 
     public static SearchDocumentRecord Create(
         Guid id,
+        Guid accountId,
         Guid workspaceId,
         string resourceType,
         Guid resourceId,
@@ -30,6 +32,7 @@ public sealed class SearchDocumentRecord
         return new SearchDocumentRecord
         {
             Id = id,
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             ResourceType = resourceType,
             ResourceId = resourceId,

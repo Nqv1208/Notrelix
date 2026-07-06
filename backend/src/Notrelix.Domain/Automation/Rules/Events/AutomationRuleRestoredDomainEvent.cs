@@ -1,9 +1,10 @@
 namespace Notrelix.Domain.Automation.Rules.Events;
 
 public sealed record AutomationRuleRestoredDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid RuleId,
     string Name,
     Guid RestoredBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, RestoredBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, RestoredBy);

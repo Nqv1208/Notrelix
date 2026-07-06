@@ -1,6 +1,5 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile;
 
@@ -15,10 +14,10 @@ public record UpdateProfileCommand : ICommand<Result<UserDto>>, ITransactionalRe
 
 public class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileCommand, Result<UserDto>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IIdentityDbContext _context;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public UpdateProfileCommandHandler(IApplicationDbContext context, IDateTimeProvider dateTimeProvider)
+    public UpdateProfileCommandHandler(IIdentityDbContext context, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _dateTimeProvider = dateTimeProvider;

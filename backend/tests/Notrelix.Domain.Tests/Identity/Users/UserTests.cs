@@ -17,7 +17,7 @@ public class UserTests
         user.DomainEvents.Should().ContainSingle(e => e is UserRegisteredDomainEvent);
         var evt = (UserRegisteredDomainEvent)user.DomainEvents.First(e => e is UserRegisteredDomainEvent);
         evt.UserId.Should().Be(user.Id);
-        evt.Email.Value.Should().Be("test@example.com");
+        evt.Email.Should().Be("test@example.com");
         user.CreatedBy.Should().BeNull();
     }
 

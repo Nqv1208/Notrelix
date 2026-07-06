@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Billing.Plans;
 
 public sealed class FeatureCode : ValueObject
 {
-    public string Code { get; }
+    public string Code { get; private set; } = null!;
 
     private FeatureCode() { }
     private FeatureCode(string code)

@@ -13,7 +13,7 @@ public class ReactionTests
         var userId = Guid.NewGuid();
         var emoji = Emoji.Create("+1");
 
-        var reaction = Reaction.Create(workspaceId, target, userId, emoji, DateTimeOffset.UtcNow);
+        var reaction = Reaction.Create(Guid.NewGuid(), workspaceId, target, userId, emoji, DateTimeOffset.UtcNow);
 
         reaction.WorkspaceId.Should().Be(workspaceId);
         reaction.Target.Should().Be(target);
@@ -28,7 +28,7 @@ public class ReactionTests
         var workspaceId = Guid.NewGuid();
         var target = ResourceRef.Create(ResourceType.Comment, Guid.NewGuid(), Guid.NewGuid());
 
-        var act = () => Reaction.Create(workspaceId, target, Guid.NewGuid(), Emoji.Create("heart"), DateTimeOffset.UtcNow);
+        var act = () => Reaction.Create(Guid.NewGuid(), workspaceId, target, Guid.NewGuid(), Emoji.Create("heart"), DateTimeOffset.UtcNow);
         act.Should().Throw<WorkspaceMismatchException>();
     }
 
@@ -46,6 +46,6 @@ public class ReactionTests
     private static Reaction CreateReaction()
     {
         var workspaceId = Guid.NewGuid();
-        return Reaction.Create(workspaceId, ResourceRef.Create(ResourceType.Comment, Guid.NewGuid(), workspaceId), Guid.NewGuid(), Emoji.Create("rocket"), DateTimeOffset.UtcNow);
+        return Reaction.Create(Guid.NewGuid(), workspaceId, ResourceRef.Create(ResourceType.Comment, Guid.NewGuid(), workspaceId), Guid.NewGuid(), Emoji.Create("rocket"), DateTimeOffset.UtcNow);
     }
 }

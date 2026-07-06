@@ -7,7 +7,7 @@ public static class DeletePageEndpoint
 {
     public static IEndpointRouteBuilder MapDeletePage(this IEndpointRouteBuilder group)
     {
-        group.MapDelete("/", HandleAsync)
+        group.MapResourceDelete("/", HandleAsync)
             .WithName("Documents.Pages.DeletePage")
             .WithTags("Documents.Pages")
             .WithSummary("Delete a page");

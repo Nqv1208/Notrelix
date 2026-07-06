@@ -27,6 +27,7 @@ public class ApprovalStep : Entity
 
 public class ApprovalRequest : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public ResourceRef Target { get; private set; } = null!;
     public string Title { get; private set; } = null!;
@@ -39,7 +40,7 @@ public class ApprovalRequest : AggregateRoot, IWorkspaceScoped
 
     private ApprovalRequest() : base() { }
 
-    public static ApprovalRequest Create(Guid workspaceId, ResourceRef target, string title, Guid requestedBy, DateTimeOffset createdAt)
+    public static ApprovalRequest Create(Guid accountId, Guid workspaceId, ResourceRef target, string title, Guid requestedBy, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(target);
@@ -48,8 +49,11 @@ public class ApprovalRequest : AggregateRoot, IWorkspaceScoped
         if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
             throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
 
+        Guard.NotEmpty(accountId);
+
         var request = new ApprovalRequest
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             Target = target,
             Title = title.Trim(),
@@ -58,7 +62,7 @@ public class ApprovalRequest : AggregateRoot, IWorkspaceScoped
         };
 
         request.SetAuditOnCreate(requestedBy, createdAt);
-        request.AddDomainEvent(new ApprovalRequestCreatedDomainEvent(request.Id, workspaceId, target, createdAt));
+        request.AddDomainEvent(new ApprovalRequestCreatedDomainEvent(accountId, workspaceId, request.Id, target, createdAt));
 
         return request;
     }
@@ -69,7 +73,7 @@ public class ApprovalRequest : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new ApprovalRequestSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new ApprovalRequestSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -78,6 +82,6 @@ public class ApprovalRequest : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new ApprovalRequestRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new ApprovalRequestRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

@@ -8,7 +8,7 @@ public static class AddLabelToBoardItemEndpoint
 {
     public static IEndpointRouteBuilder MapAddLabelToBoardItem(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/labels", HandleAsync)
+        group.MapResourcePost("/labels", HandleAsync)
             .WithName("WorkManagement.BoardItems.AddLabel")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Add a label to board item");

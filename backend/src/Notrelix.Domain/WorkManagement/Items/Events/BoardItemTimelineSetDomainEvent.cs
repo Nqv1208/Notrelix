@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.WorkManagement.Items.Events;
 
 public sealed record BoardItemTimelineSetDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid BoardId,
     Guid ItemId,
@@ -8,4 +9,4 @@ public sealed record BoardItemTimelineSetDomainEvent(
     DateTimeOffset? DueAt,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, UpdatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, UpdatedBy);

@@ -1,34 +1,24 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
-using SharedKernel = Notrelix.Domain.SharedKernel;
-using System.Text.Json;
+using Notrelix.Application.Features.Governance.Abstractions;
 
 namespace Notrelix.Application.Features.Governance.ShareLinks.Commands.DisableShareLink;
 
 public record DisableShareLinkCommand(
-    Guid WorkspaceId,
-    SharedKernel.ResourceType ResourceType,
-    Guid ResourceId,
-    Guid ShareLinkId) : ICommand<Result>, IRequirePermission, ITransactionalRequest
+    Guid ShareLinkId) : ICommand<Result>, IResourceScopedRequest, IRequirePermission, ITransactionalRequest
 {
-    PermissionAction IRequirePermission.Action => ResourceType switch
-    {
-        SharedKernel.ResourceType.Board => PermissionAction.ShareBoardView,
-        SharedKernel.ResourceType.Page => PermissionAction.SharePage,
-        _ => PermissionAction.ManageWorkspace
-    };
-    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType, ResourceId, WorkspaceId);
+    PermissionAction IRequirePermission.Action => PermissionAction.ManageWorkspace;
+    ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(ResourceType.ShareLink, ShareLinkId);
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType.ShareLink, ShareLinkId);
 }
 
 public class DisableShareLinkCommandHandler : IRequestHandler<DisableShareLinkCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IGovernanceDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public DisableShareLinkCommandHandler(
-        IApplicationDbContext context,
+        IGovernanceDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider)
     {
@@ -52,22 +42,6 @@ public class DisableShareLinkCommandHandler : IRequestHandler<DisableShareLinkCo
         var userId = _currentUser.UserId;
 
         shareLink.Disable(userId, _dateTimeProvider.UtcNow);
-
-        // Write Audit Log
-        var metadata = JsonSerializer.Serialize(new
-        {
-            shareLinkId = shareLink.Id,
-            level = shareLink.AccessMode.ToString()
-        });
-
-        var auditLog = ActivityLog.Record(
-            shareLink.WorkspaceId,
-            userId,
-            ActivityType.Updated,
-            ResourceRef.Create(shareLink.ResourceType, shareLink.ResourceId),
-            _dateTimeProvider.UtcNow
-        );
-        _context.ActivityLogs.Add(auditLog);
 
         return Result.Success();
     }

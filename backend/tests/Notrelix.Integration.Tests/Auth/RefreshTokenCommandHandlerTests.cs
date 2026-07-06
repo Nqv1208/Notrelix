@@ -1,17 +1,33 @@
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Commands.RefreshToken;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.Identity.Sessions;
-using Notrelix.Testing.Integration.Factories;
+using Notrelix.Integration.Tests.Containers;
 
 namespace Notrelix.Integration.Tests.Auth;
 
-public class RefreshTokenCommandHandlerTests
+[Collection("Database")]
+public class RefreshTokenCommandHandlerTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public RefreshTokenCommandHandlerTests(PostgresTestContainer db)
+    {
+        _db = db;
+    }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public async Task Handle_WhenSessionNotFound_ShouldReturnFailure()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        await using var context = _db.CreateContext();
 
         var jwtService = new Mock<IJwtService>();
         var dateTimeProvider = new Mock<IDateTimeProvider>();
@@ -30,7 +46,7 @@ public class RefreshTokenCommandHandlerTests
     [Fact]
     public async Task Handle_WhenValid_ShouldRevokeOldSessionAndIssueNewTokens()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        await using var context = _db.CreateContext();
 
         var user = User.Create("refresh@example.com", "Refresh User", "hashed", DateTimeOffset.UtcNow);
         context.Users.Add(user);

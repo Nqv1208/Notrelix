@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Governance.Roles;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Governance;
@@ -16,6 +14,7 @@ public class CustomRoleConfiguration : IEntityTypeConfiguration<CustomRole>
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(128);
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(512);
+        builder.Property(x => x.IsSystem).HasColumnName("is_system").IsRequired();
 
         builder.HasMany(x => x.Permissions)
             .WithOne()

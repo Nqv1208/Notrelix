@@ -1,6 +1,5 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Blocks.Commands.UpdateBlock;
 
@@ -8,13 +7,17 @@ public record UpdateBlockCommand(
     Guid BlockId,
     string? Type,
     string? Properties
-) : ICommand<Result>, ITransactionalRequest;
+) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.ManageBoard;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Block, BlockId);
+}
 
 public class UpdateBlockCommandHandler : IRequestHandler<UpdateBlockCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IDocumentDbContext _context;
     private readonly ICurrentUser _currentUser;
-    public UpdateBlockCommandHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public UpdateBlockCommandHandler(IDocumentDbContext context, ICurrentUser currentUser)
     {
         _context = context;
         _currentUser = currentUser;

@@ -1,7 +1,4 @@
-using Notrelix.Application.Common.Abstractions;
-using Notrelix.Application.Common.Security;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValues;
-using Notrelix.Application.Common.Exceptions;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.WorkManagement.Items.Events;
@@ -11,32 +8,36 @@ using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Boards;
 
-public class UpdateBoardItemFieldValuesCommandHandlerTests
+[Collection("Database")]
+public class UpdateBoardItemFieldValuesCommandHandlerTests : IAsyncLifetime
 {
-    [Fact]
-    public async Task Handle_ShouldRejectUserWithoutBoardEditPermission()
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public UpdateBoardItemFieldValuesCommandHandlerTests(PostgresTestContainer db)
     {
-        await using var context = CreateContext();
-        var ownerId = Guid.NewGuid();
-        var guestId = Guid.NewGuid();
-        var (boardItem, statusField, doneOption) = await SeedBoardAsync(context, ownerId, guestId, WorkspaceRole.Guest);
-        var handler = CreateHandler(context, guestId);
-
-        var act = () => handler.Handle(
-            new UpdateBoardItemFieldValuesCommand(boardItem.Id, new Dictionary<Guid, object?> { [statusField.Id] = doneOption.Id.ToString() }),
-            CancellationToken.None);
-
-        await act.Should().ThrowAsync<ForbiddenException>();
+        _db = db;
     }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
     public async Task Handle_ShouldUseDomainBehaviorWhenUpdatingStatusField()
     {
-        await using var context = CreateContext();
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var ownerId = Guid.NewGuid();
         var memberId = Guid.NewGuid();
         var (boardItem, statusField, doneOption) = await SeedBoardAsync(context, ownerId, memberId, WorkspaceRole.Member);
@@ -57,12 +58,12 @@ public class UpdateBoardItemFieldValuesCommandHandlerTests
         WorkspaceRole userRole)
     {
         var now = DateTimeOffset.UtcNow;
-        var workspace = Workspace.Create(ownerId, "Workspace", "workspace", now);
-        var workspaceMember = WorkspaceMember.Create(workspace.Id, userId, userRole, ownerId, now);
-        var board = Board.Create(workspace.Id, ownerId, "Board", null, now);
-        var group = BoardGroup.Create(workspace.Id, board.Id, "Todo", Color.Create("#808080"), FractionalIndex.Create("a0"), ownerId, now);
-        var boardItem = BoardItem.Create(workspace.Id, board.Id, group.Id, "Task", FractionalIndex.Create("a0"), ownerId, now);
-        var statusField = BoardField.Create(workspace.Id, board.Id, "Status", FieldType.Status, FieldSettings.Empty(), FractionalIndex.Create("a0"), ownerId, now);
+        var workspace = Workspace.Create(Guid.NewGuid(), ownerId, "Workspace", "workspace", now);
+        var workspaceMember = WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, userId, userRole, ownerId, now);
+        var board = Board.Create(Guid.NewGuid(), workspace.Id, ownerId, "Board", null, now);
+        var group = BoardGroup.Create(Guid.NewGuid(), workspace.Id, board.Id, "Todo", Color.Create("#808080"), FractionalIndex.Create("a0"), ownerId, now);
+        var boardItem = BoardItem.Create(Guid.NewGuid(), workspace.Id, board.Id, group.Id, "Task", FractionalIndex.Create("a0"), ownerId, now);
+        var statusField = BoardField.Create(Guid.NewGuid(), workspace.Id, board.Id, "Status", FieldType.Status, FieldSettings.Empty(), FractionalIndex.Create("a0"), ownerId, now);
 
         context.Workspaces.Add(workspace);
         context.WorkspaceMembers.Add(workspaceMember);
@@ -81,26 +82,13 @@ public class UpdateBoardItemFieldValuesCommandHandlerTests
         return (boardItem, statusField, doneOption);
     }
 
-    private static UpdateBoardItemFieldValuesCommandHandler CreateHandler(ApplicationDbContext context, Guid userId)
+    private UpdateBoardItemFieldValuesCommandHandler CreateHandler(ApplicationDbContext context, Guid userId)
     {
         var currentUser = new Mock<ICurrentUser>();
         currentUser.SetupGet(item => item.UserId).Returns(userId);
         var timeProvider = new Mock<IDateTimeProvider>();
         timeProvider.Setup(t => t.UtcNow).Returns(DateTimeOffset.UtcNow);
-        var evaluator = new PermissionService(context, timeProvider.Object);
-        var permissions = new WorkspacePermissionService(evaluator, context);
 
-        return new UpdateBoardItemFieldValuesCommandHandler(context, currentUser.Object, permissions, timeProvider.Object);
-    }
-
-    private static ApplicationDbContext CreateContext()
-    {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase($"Notrelix-card-fields-{Guid.NewGuid():N}")
-            .Options;
-
-        return new ApplicationDbContext(options, currentWorkspace);
+        return new UpdateBoardItemFieldValuesCommandHandler(context, currentUser.Object, timeProvider.Object, Mock.Of<IResourceReferenceResolver>(), Mock.Of<ICurrentTenantContext>());
     }
 }

@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
 
 public class CreateBoardFieldCommandValidator : AbstractValidator<CreateBoardFieldCommand>

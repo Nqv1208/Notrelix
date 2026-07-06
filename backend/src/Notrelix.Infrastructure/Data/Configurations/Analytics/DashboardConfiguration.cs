@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Analytics.Dashboards;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Analytics;
@@ -13,6 +11,7 @@ public class DashboardConfiguration : IEntityTypeConfiguration<Dashboard>
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
 
+        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
         builder.Property(x => x.Visibility).HasColumnName("visibility").HasConversion<string>().IsRequired().HasMaxLength(50);

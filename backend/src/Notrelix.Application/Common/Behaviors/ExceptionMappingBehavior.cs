@@ -1,16 +1,17 @@
-using MediatR;
-using Microsoft.Extensions.Logging;
-
 namespace Notrelix.Application.Common.Behaviors;
 
 public class ExceptionMappingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
     private readonly ILogger<ExceptionMappingBehavior<TRequest, TResponse>> _logger;
+    private readonly IExecutionContextReader _executionContext;
 
-    public ExceptionMappingBehavior(ILogger<ExceptionMappingBehavior<TRequest, TResponse>> logger)
+    public ExceptionMappingBehavior(
+        ILogger<ExceptionMappingBehavior<TRequest, TResponse>> logger,
+        IExecutionContextReader executionContext)
     {
         _logger = logger;
+        _executionContext = executionContext;
     }
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
@@ -27,8 +28,14 @@ public class ExceptionMappingBehavior<TRequest, TResponse> : IPipelineBehavior<T
         {
             throw;
         }
-        catch (Exceptions.ForbiddenException)
+        catch (Exceptions.ForbiddenException ex)
         {
+            _logger.LogWarning(
+                "Forbidden: {RequestType} CorrelationId={CorrelationId} UserId={UserId} Message={Message}",
+                typeof(TRequest).Name,
+                _executionContext.CorrelationId,
+                _executionContext.UserId,
+                ex.Message);
             throw;
         }
         catch (Exceptions.ConflictException)
@@ -37,11 +44,18 @@ public class ExceptionMappingBehavior<TRequest, TResponse> : IPipelineBehavior<T
         }
         catch (UnauthorizedAccessException)
         {
+            _logger.LogWarning(
+                "Unauthorized: {RequestType} CorrelationId={CorrelationId}",
+                typeof(TRequest).Name,
+                _executionContext.CorrelationId);
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception processing {RequestType}", typeof(TRequest).Name);
+            _logger.LogError(ex,
+                "Unhandled exception processing {RequestType} CorrelationId={CorrelationId}",
+                typeof(TRequest).Name,
+                _executionContext.CorrelationId);
             throw;
         }
     }

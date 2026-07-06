@@ -2,9 +2,9 @@ namespace Notrelix.Domain.Collaboration.Attachments;
 
 public sealed class FileMetadata : ValueObject
 {
-    public string FileName { get; }
+    public string FileName { get; private set; } = null!;
     public long Size { get; }
-    public string ContentType { get; }
+    public string ContentType { get; private set; } = null!;
     public string? StorageKey { get; }
     public string? Url { get; }
 

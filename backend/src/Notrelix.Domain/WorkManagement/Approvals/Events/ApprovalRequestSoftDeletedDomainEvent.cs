@@ -1,8 +1,9 @@
 namespace Notrelix.Domain.WorkManagement.Approvals.Events;
 
 public sealed record ApprovalRequestSoftDeletedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid RequestId,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, DeletedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, DeletedBy);

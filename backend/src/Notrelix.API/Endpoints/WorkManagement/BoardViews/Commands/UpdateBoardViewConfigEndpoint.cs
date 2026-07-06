@@ -7,7 +7,7 @@ public static class UpdateBoardViewConfigEndpoint
 {
     public static IEndpointRouteBuilder MapUpdateBoardViewConfig(this IEndpointRouteBuilder group)
     {
-        group.MapPatch("/{viewId:guid}", HandleAsync)
+        group.MapResourcePatch("/{viewId:guid}", HandleAsync)
             .WithName("WorkManagement.BoardViews.UpdateConfig")
             .WithTags("WorkManagement.BoardViews")
             .WithSummary("Update configuration of a board view");
@@ -17,13 +17,11 @@ public static class UpdateBoardViewConfigEndpoint
     private static async Task<IResult> HandleAsync(
         Guid boardId,
         Guid viewId,
-        [FromHeader(Name = "X-Workspace-Id")] Guid workspaceId,
         UpdateBoardViewConfigRequest body,
         ISender sender,
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(new UpdateBoardViewConfigCommand(
-            workspaceId,
             boardId,
             viewId,
             body.ConfigJson), cancellationToken);

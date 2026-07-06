@@ -2,6 +2,7 @@ namespace Notrelix.Domain.Governance.ShareLinks;
 
 public class ShareLink : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public ResourceType ResourceType { get; private set; }
     public Guid ResourceId { get; private set; }
@@ -13,6 +14,7 @@ public class ShareLink : AggregateRoot, IWorkspaceScoped
     private ShareLink() : base() { }
 
     public static ShareLink Create(
+        Guid accountId,
         Guid workspaceId,
         ResourceType resourceType,
         Guid resourceId,
@@ -25,12 +27,14 @@ public class ShareLink : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(resourceId);
         Guard.NotNull(tokenHash);
+        Guard.NotEmpty(accountId);
 
         if (accessMode == ShareLinkAccessMode.Public && !expiresAt.HasValue)
             throw new BusinessRuleException("Public share links must have an expiration date.");
 
         var link = new ShareLink
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             ResourceType = resourceType,
             ResourceId = resourceId,
@@ -41,7 +45,7 @@ public class ShareLink : AggregateRoot, IWorkspaceScoped
         };
 
         link.SetAuditOnCreate(createdBy, createdAt);
-        link.AddDomainEvent(new ShareLinkCreatedEvent(workspaceId, link.Id, resourceType, resourceId, createdBy, createdAt));
+        link.AddDomainEvent(new ShareLinkCreatedEvent(accountId, workspaceId, link.Id, resourceType, resourceId, createdBy, createdAt));
 
         return link;
     }
@@ -61,7 +65,7 @@ public class ShareLink : AggregateRoot, IWorkspaceScoped
         Status = ShareLinkStatus.Disabled;
         SetAuditOnUpdate(disabledBy, disabledAt);
         IncrementVersion();
-        AddDomainEvent(new ShareLinkDisabledEvent(WorkspaceId, Id, disabledBy, disabledAt));
+        AddDomainEvent(new ShareLinkDisabledEvent(AccountId, WorkspaceId, Id, disabledBy, disabledAt));
     }
 
     public void RotateTokenHash(ShareLinkTokenHash newHash, Guid rotatedBy, DateTimeOffset rotatedAt)
@@ -73,7 +77,7 @@ public class ShareLink : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(rotatedBy, rotatedAt);
         IncrementVersion();
 
-        AddDomainEvent(new ShareLinkRotatedEvent(WorkspaceId, Id, rotatedBy, rotatedAt));
+        AddDomainEvent(new ShareLinkRotatedEvent(AccountId, WorkspaceId, Id, rotatedBy, rotatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -82,7 +86,7 @@ public class ShareLink : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new ShareLinkSoftDeletedEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new ShareLinkSoftDeletedEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -91,7 +95,7 @@ public class ShareLink : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new ShareLinkRestoredEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new ShareLinkRestoredEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 
     public void Expire(DateTimeOffset expiredAt)
@@ -101,6 +105,6 @@ public class ShareLink : AggregateRoot, IWorkspaceScoped
         Status = ShareLinkStatus.Expired;
         SetAuditOnUpdate(null, expiredAt);
         IncrementVersion();
-        AddDomainEvent(new ShareLinkExpiredEvent(WorkspaceId, Id, expiredAt));
+        AddDomainEvent(new ShareLinkExpiredEvent(AccountId, WorkspaceId, Id, expiredAt));
     }
 }

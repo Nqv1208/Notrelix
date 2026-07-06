@@ -10,7 +10,7 @@ public sealed class AutomationActionDefinition : ValueObject
         "NotifyMember", "Webhook", "SlackMessage"
     };
 
-    public string Type { get; private set; }
+    public string Type { get; private set; } = null!;
     public string? Configuration { get; private set; }
 
     private AutomationActionDefinition() { }

@@ -8,7 +8,7 @@ public static class BatchUpdateBlocksEndpoint
 {
     public static IEndpointRouteBuilder MapBatchUpdateBlocks(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/batch", HandleAsync)
+        group.MapResourcePost("/batch", HandleAsync)
             .WithName("Documents.Blocks.BatchUpdateBlocks")
             .WithTags("Documents.Blocks")
             .WithSummary("Batch update blocks");

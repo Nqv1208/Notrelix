@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Billing.Usage;
 using Notrelix.Domain.Billing.Plans;
 
@@ -14,6 +12,7 @@ public class WorkspaceFeatureUsageConfiguration : IEntityTypeConfiguration<Works
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
 
+        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.Feature).HasColumnName("feature_code").HasConversion(v => v.Code, v => FeatureCode.Create(v)).IsRequired().HasMaxLength(128);
         builder.Property(x => x.CurrentUsage).HasColumnName("current_usage").HasColumnType("decimal(18,2)").IsRequired();

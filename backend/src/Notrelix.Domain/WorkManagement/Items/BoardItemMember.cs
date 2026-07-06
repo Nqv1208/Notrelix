@@ -2,6 +2,7 @@ namespace Notrelix.Domain.WorkManagement.Items;
 
 public class BoardItemMember : Entity, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid BoardId { get; private set; }
     public Guid ItemId { get; private set; }
@@ -12,6 +13,7 @@ public class BoardItemMember : Entity, IWorkspaceScoped
     private BoardItemMember() : base() { }
 
     public static BoardItemMember Create(
+        Guid accountId,
         Guid workspaceId,
         Guid boardId,
         Guid itemId,
@@ -23,9 +25,11 @@ public class BoardItemMember : Entity, IWorkspaceScoped
         Guard.NotEmpty(boardId);
         Guard.NotEmpty(itemId);
         Guard.NotEmpty(userId);
+        Guard.NotEmpty(accountId);
 
         return new BoardItemMember
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             BoardId = boardId,
             ItemId = itemId,

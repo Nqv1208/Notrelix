@@ -1,15 +1,18 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.DeleteChecklistItem;
 
-public record DeleteChecklistItemCommand(Guid ItemId) : ICommand<Result>, ITransactionalRequest;
+public record DeleteChecklistItemCommand(Guid ItemId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.UpdateItem;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.ChecklistItem, ItemId);
+}
 
 public class DeleteChecklistItemCommandHandler : IRequestHandler<DeleteChecklistItemCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
-    public DeleteChecklistItemCommandHandler(IApplicationDbContext context) => _context = context;
+    private readonly IWorkManagementDbContext _context;
+    public DeleteChecklistItemCommandHandler(IWorkManagementDbContext context) => _context = context;
 
     public async Task<Result> Handle(DeleteChecklistItemCommand request, CancellationToken ct)
     {

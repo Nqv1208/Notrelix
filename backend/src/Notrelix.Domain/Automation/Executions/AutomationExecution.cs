@@ -49,6 +49,7 @@ public class AutomationExecutionStep : Entity
 
 public class AutomationExecution : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid RuleId { get; private set; }
     public Guid TriggerId { get; private set; }
@@ -65,14 +66,16 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
 
     private AutomationExecution() : base() { }
 
-    public static AutomationExecution Create(Guid workspaceId, Guid ruleId, Guid triggerId, DateTimeOffset startedAt)
+    public static AutomationExecution Create(Guid accountId, Guid workspaceId, Guid ruleId, Guid triggerId, DateTimeOffset startedAt)
     {
+        Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(ruleId);
         Guard.NotEmpty(triggerId);
 
         var execution = new AutomationExecution
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             RuleId = ruleId,
             TriggerId = triggerId,
@@ -81,7 +84,7 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
             AttemptCount = 0
         };
 
-        execution.AddDomainEvent(new AutomationExecutionQueuedDomainEvent(workspaceId, execution.Id, ruleId, startedAt));
+        execution.AddDomainEvent(new AutomationExecutionQueuedDomainEvent(accountId, workspaceId, execution.Id, ruleId, startedAt));
         return execution;
     }
 
@@ -98,7 +101,7 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
         Status = AutomationExecutionStatus.Running;
         StartedAt = startedAt;
         IncrementVersion();
-        AddDomainEvent(new AutomationExecutionStartedDomainEvent(WorkspaceId, Id, RuleId, startedAt));
+        AddDomainEvent(new AutomationExecutionStartedDomainEvent(AccountId, WorkspaceId, Id, RuleId, startedAt));
     }
 
     public void Succeed(DateTimeOffset finishedAt)
@@ -108,7 +111,7 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
         Status = AutomationExecutionStatus.Succeeded;
         FinishedAt = finishedAt;
         IncrementVersion();
-        AddDomainEvent(new AutomationExecutionSucceededDomainEvent(WorkspaceId, Id, RuleId, finishedAt));
+        AddDomainEvent(new AutomationExecutionSucceededDomainEvent(AccountId, WorkspaceId, Id, RuleId, finishedAt));
     }
 
     public void Fail(string error, DateTimeOffset finishedAt)
@@ -122,7 +125,7 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
         Error = error;
         FinishedAt = finishedAt;
         IncrementVersion();
-        AddDomainEvent(new AutomationExecutionFailedDomainEvent(WorkspaceId, Id, RuleId, error, finishedAt));
+        AddDomainEvent(new AutomationExecutionFailedDomainEvent(AccountId, WorkspaceId, Id, RuleId, error, finishedAt));
     }
 
     public void Cancel(Guid cancelledBy, DateTimeOffset cancelledAt)
@@ -133,6 +136,6 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
         Status = AutomationExecutionStatus.Cancelled;
         FinishedAt = cancelledAt;
         IncrementVersion();
-        AddDomainEvent(new AutomationExecutionCancelledDomainEvent(WorkspaceId, Id, RuleId, cancelledBy, cancelledAt));
+        AddDomainEvent(new AutomationExecutionCancelledDomainEvent(AccountId, WorkspaceId, Id, RuleId, cancelledBy, cancelledAt));
     }
 }

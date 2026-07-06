@@ -1,8 +1,6 @@
-using MediatR;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Governance.DTOs;
-using SharedKernel = Notrelix.Domain.SharedKernel;
-using System.Text.Json;
 
 namespace Notrelix.Application.Features.Governance.ShareLinks.Commands.CreateShareLink;
 
@@ -12,35 +10,38 @@ public record CreateShareLinkResponse(
 );
 
 public record CreateShareLinkCommand(
-    Guid WorkspaceId,
-    SharedKernel.ResourceType ResourceType,
+    ResourceType ResourceType,
     Guid ResourceId,
     string Level,
-    DateTime? ExpiresAt = null) : ICommand<Result<CreateShareLinkResponse>>, IRequirePermission, ITransactionalRequest
+    DateTime? ExpiresAt = null) : ICommand<Result<CreateShareLinkResponse>>, IResourceScopedRequest, IRequirePermission, ITransactionalRequest
 {
     PermissionAction IRequirePermission.Action => ResourceType switch
     {
-        SharedKernel.ResourceType.Board => PermissionAction.ShareBoardView,
-        SharedKernel.ResourceType.Page => PermissionAction.SharePage,
+        ResourceType.Board => PermissionAction.ShareBoardView,
+        ResourceType.Page => PermissionAction.SharePage,
         _ => PermissionAction.ManageWorkspace
     };
-    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType, ResourceId, WorkspaceId);
+    ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(ResourceType, ResourceId);
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType, ResourceId);
 }
 
 public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkCommand, Result<CreateShareLinkResponse>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IGovernanceDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ICurrentTenantContext _tenant;
 
     public CreateShareLinkCommandHandler(
-        IApplicationDbContext context,
+        IGovernanceDbContext context,
         ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
+        _tenant = tenant;
     }
 
     public async Task<Result<CreateShareLinkResponse>> Handle(
@@ -48,13 +49,14 @@ public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkComm
         CancellationToken cancellationToken)
     {
         var actorId = _currentUser.UserId;
+        var workspaceId = _tenant.RequireWorkspaceId();
 
-        // Generate raw secure token
         var rawToken = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
         var tokenHash = ShareLinkTokenHash.Create(rawToken);
 
         var shareLink = ShareLink.Create(
-            request.WorkspaceId,
+            _tenant.RequireAccountId(),
+            workspaceId,
             request.ResourceType,
             request.ResourceId,
             tokenHash,
@@ -65,24 +67,6 @@ public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkComm
         );
 
         _context.ShareLinks.Add(shareLink);
-
-        // Write Audit Log
-        var metadata = JsonSerializer.Serialize(new
-        {
-            level = request.Level,
-            expiresAt = request.ExpiresAt,
-            shareLinkId = shareLink.Id
-        });
-
-        var auditLog = ActivityLog.Record(
-            request.WorkspaceId,
-            actorId,
-            ActivityType.Created,
-            SharedKernel.ResourceRef.Create(request.ResourceType, request.ResourceId),
-            _dateTimeProvider.UtcNow,
-            ActivityMetadata.Create(SharedKernel.JsonValue.Create(metadata))
-        );
-        _context.ActivityLogs.Add(auditLog);
 
         var dto = new ShareLinkDto(
             shareLink.Id,

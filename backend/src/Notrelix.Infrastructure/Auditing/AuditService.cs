@@ -1,6 +1,4 @@
-using Notrelix.Application.Common.Abstractions;
-using Notrelix.Domain.Governance.Audit;
-using Notrelix.Domain.SharedKernel;
+using Notrelix.Domain.Common.Auditing;
 using Notrelix.Infrastructure.Data;
 
 namespace Notrelix.Infrastructure.Auditing;
@@ -27,18 +25,29 @@ internal sealed class AuditService : IAuditService
         string userAgent = "",
         CancellationToken cancellationToken = default)
     {
-        var auditLog = AuditLog.Record(
-            workspaceId,
-            actorId,
-            action,
-            target,
-            metadata,
-            severity,
-            ipAddress,
-            userAgent,
-            _dateTimeProvider.UtcNow);
+        var now = _dateTimeProvider.UtcNow;
+        var auditLog = new Data.Audit.AuditLog(
+            workspaceId: workspaceId,
+            actorUserId: actorId,
+            actorType: "User",
+            action: action,
+            resourceType: target.ResourceType.ToString(),
+            resourceId: target.ResourceId,
+            subjectType: null,
+            subjectId: null,
+            severity: severity.ToString(),
+            outcome: "Succeeded",
+            ipAddress: string.IsNullOrEmpty(ipAddress) ? metadata.IpAddress : ipAddress,
+            userAgent: string.IsNullOrEmpty(userAgent) ? metadata.UserAgent : userAgent,
+            requestId: metadata.TraceId,
+            correlationId: null,
+            causationId: null,
+            beforeJson: null,
+            afterJson: null,
+            metadataJson: null,
+            occurredAt: now);
 
-        _context.AuditLogs.Add(auditLog);
+        _context.EnterpriseAuditLogs.Add(auditLog);
         await Task.CompletedTask;
     }
 }

@@ -1,6 +1,5 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Integrations.Abstractions;
 
 namespace Notrelix.Application.Features.Integrations.Inbound.Commands.HandleN8nCallback;
 
@@ -12,10 +11,10 @@ public record HandleN8nCallbackCommand(
 
 public class HandleN8nCallbackCommandHandler : IRequestHandler<HandleN8nCallbackCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IIntegrationDbContext _context;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public HandleN8nCallbackCommandHandler(IApplicationDbContext context, IDateTimeProvider dateTimeProvider)
+    public HandleN8nCallbackCommandHandler(IIntegrationDbContext context, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _dateTimeProvider = dateTimeProvider;

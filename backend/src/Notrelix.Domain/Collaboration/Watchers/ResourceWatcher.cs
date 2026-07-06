@@ -9,6 +9,7 @@ public enum WatchLevel
 
 public class ResourceWatcher : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public ResourceRef Target { get; private set; } = null!;
     public Guid UserId { get; private set; }
@@ -16,8 +17,9 @@ public class ResourceWatcher : AggregateRoot, IWorkspaceScoped
 
     private ResourceWatcher() : base() { }
 
-    public static ResourceWatcher Create(Guid workspaceId, ResourceRef target, Guid userId, Guid createdBy, DateTimeOffset createdAt, WatchLevel level = WatchLevel.All)
+    public static ResourceWatcher Create(Guid accountId, Guid workspaceId, ResourceRef target, Guid userId, Guid createdBy, DateTimeOffset createdAt, WatchLevel level = WatchLevel.All)
     {
+        Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(target);
         Guard.NotEmpty(userId);
@@ -28,6 +30,7 @@ public class ResourceWatcher : AggregateRoot, IWorkspaceScoped
 
         var watcher = new ResourceWatcher
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             Target = target,
             UserId = userId,
@@ -35,7 +38,7 @@ public class ResourceWatcher : AggregateRoot, IWorkspaceScoped
         };
 
         watcher.SetAuditOnCreate(createdBy, createdAt);
-        watcher.AddDomainEvent(new ResourceWatchedDomainEvent(workspaceId, watcher.Id, target, userId, createdAt));
+        watcher.AddDomainEvent(new ResourceWatchedDomainEvent(accountId, workspaceId, watcher.Id, target, userId, createdAt));
         return watcher;
     }
 
@@ -47,6 +50,6 @@ public class ResourceWatcher : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(unwatchedBy, removedAt);
         SetAuditOnUpdate(unwatchedBy, removedAt);
         IncrementVersion();
-        AddDomainEvent(new ResourceUnwatchedDomainEvent(WorkspaceId, Id, removedAt));
+        AddDomainEvent(new ResourceUnwatchedDomainEvent(AccountId, WorkspaceId, Id, removedAt));
     }
 }

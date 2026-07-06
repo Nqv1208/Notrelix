@@ -7,7 +7,7 @@ public static class GetWorkspaceBySlugEndpoint
 {
     public static IEndpointRouteBuilder MapGetWorkspaceBySlug(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", HandleAsync)
+        group.MapWorkspaceGet("/", HandleAsync)
             .WithName("Workspaces.Workspaces.GetWorkspaceBySlug")
             .WithTags("Workspaces.Workspaces")
             .WithSummary("Resolve a workspace by slug for legacy/deep-link migration");

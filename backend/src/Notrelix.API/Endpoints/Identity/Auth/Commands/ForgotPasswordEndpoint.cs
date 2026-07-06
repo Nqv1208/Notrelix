@@ -8,8 +8,7 @@ public static class ForgotPasswordEndpoint
 {
     public static IEndpointRouteBuilder MapForgotPassword(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/forgot-password", HandleAsync)
-            .AllowAnonymous()
+        group.MapPublicPost("/forgot-password", HandleAsync)
             .WithName("Identity.Auth.ForgotPassword")
             .WithTags("Identity.Auth")
             .WithSummary("Request a password reset email")

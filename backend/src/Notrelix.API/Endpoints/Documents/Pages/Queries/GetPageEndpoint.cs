@@ -7,7 +7,7 @@ public static class GetPageEndpoint
 {
     public static IEndpointRouteBuilder MapGetPage(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", HandleAsync)
+        group.MapResourceGet("/", HandleAsync)
             .WithName("Documents.Pages.GetPage")
             .WithTags("Documents.Pages")
             .WithSummary("Get a page by ID");

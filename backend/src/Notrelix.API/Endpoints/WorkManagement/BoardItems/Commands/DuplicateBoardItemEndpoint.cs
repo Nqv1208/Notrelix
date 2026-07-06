@@ -7,7 +7,7 @@ public static class DuplicateBoardItemEndpoint
 {
     public static IEndpointRouteBuilder MapDuplicateBoardItem(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/duplicate", HandleAsync)
+        group.MapResourcePost("/duplicate", HandleAsync)
             .WithName("WorkManagement.BoardItems.Duplicate")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Duplicate a board item in its current group");

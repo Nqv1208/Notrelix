@@ -1,16 +1,27 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
+using Notrelix.Application.Features.Collaboration.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetBoardItem;
 
-public record GetBoardItemQuery(Guid BoardItemId) : IQuery<Result<BoardItemDto>>;
+public record GetBoardItemQuery(Guid BoardItemId) : IQuery<Result<BoardItemDto>>, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.ViewBoard;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+}
 
 public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Result<BoardItemDto>>
 {
-    private readonly IApplicationDbContext _context;
-    public GetBoardItemQueryHandler(IApplicationDbContext context) => _context = context;
+    private readonly IWorkManagementDbContext _context;
+    private readonly IActorLookupService _actorLookup;
+    private readonly ICollaborationDbContext _collabContext;
+    public GetBoardItemQueryHandler(IWorkManagementDbContext context, IActorLookupService actorLookup, ICollaborationDbContext collabContext)
+    {
+        _context = context;
+        _actorLookup = actorLookup;
+        _collabContext = collabContext;
+    }
 
     public async Task<Result<BoardItemDto>> Handle(GetBoardItemQuery request, CancellationToken ct)
     {
@@ -19,11 +30,22 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
 
         if (card is null) throw new NotFoundException("BoardItem", request.BoardItemId);
 
-        var members = await _context.BoardItemMembers.AsNoTracking()
+        // Load member entities, then batch lookup actors
+        var memberEntities = await _context.BoardItemMembers.AsNoTracking()
             .Where(m => m.ItemId == card.Id)
-            .Join(_context.Users.AsNoTracking(), m => m.UserId, u => u.Id,
-                (m, u) => new BoardItemMemberDto(m.UserId, u.Name, u.AvatarUrl, m.AssignedAt))
             .ToListAsync(ct);
+
+        var memberUserIds = memberEntities.Select(m => m.UserId).Distinct().ToList();
+        var actors = await _actorLookup.FindManyAsync(memberUserIds, ct);
+        var actorMap = actors.ToDictionary(a => a.UserId);
+
+        var members = memberEntities
+            .Select(m => new BoardItemMemberDto(
+                m.UserId,
+                actorMap.TryGetValue(m.UserId, out var actor) ? actor.Name : "Unknown",
+                actorMap.TryGetValue(m.UserId, out var a) ? a.AvatarUrl : null,
+                m.AssignedAt))
+            .ToList();
 
         var labels = await _context.BoardItemLabels.AsNoTracking()
             .Where(cl => cl.ItemId == card.Id)
@@ -53,9 +75,9 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
 
         if (listContext is null) throw new NotFoundException("List", card.GroupId);
 
-        var commentCount = await _context.Comments.AsNoTracking()
+        var commentCount = await _collabContext.Comments.AsNoTracking()
             .CountAsync(comment => comment.Target.ResourceId == card.Id && !comment.IsDeleted, ct);
-        var attachmentCount = await _context.Attachments.AsNoTracking()
+        var attachmentCount = await _collabContext.Attachments.AsNoTracking()
             .CountAsync(attachment => attachment.Target.ResourceId == card.Id, ct);
 
         return Result<BoardItemDto>.Success(new BoardItemDto(

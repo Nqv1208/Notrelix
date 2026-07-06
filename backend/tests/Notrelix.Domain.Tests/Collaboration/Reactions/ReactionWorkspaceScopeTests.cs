@@ -12,7 +12,7 @@ public class ReactionWorkspaceScopeTests
     public void Create_WithMatchingWorkspace_ShouldSucceed()
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsA);
-        var reaction = Reaction.Create(WsA, target, Guid.NewGuid(), Emoji.Create("+1"), DateTimeOffset.UtcNow);
+        var reaction = Reaction.Create(Guid.NewGuid(), WsA, target, Guid.NewGuid(), Emoji.Create("+1"), DateTimeOffset.UtcNow);
         reaction.WorkspaceId.Should().Be(WsA);
     }
 
@@ -20,7 +20,7 @@ public class ReactionWorkspaceScopeTests
     public void Create_WithMismatchedWorkspace_ShouldThrow()
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsB);
-        var act = () => Reaction.Create(WsA, target, Guid.NewGuid(), Emoji.Create("+1"), DateTimeOffset.UtcNow);
+        var act = () => Reaction.Create(Guid.NewGuid(), WsA, target, Guid.NewGuid(), Emoji.Create("+1"), DateTimeOffset.UtcNow);
         act.Should().Throw<WorkspaceMismatchException>();
     }
 
@@ -28,7 +28,7 @@ public class ReactionWorkspaceScopeTests
     public void Create_WithUnscopedResourceRef_ShouldSucceed()
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid());
-        var reaction = Reaction.Create(WsA, target, Guid.NewGuid(), Emoji.Create("+1"), DateTimeOffset.UtcNow);
+        var reaction = Reaction.Create(Guid.NewGuid(), WsA, target, Guid.NewGuid(), Emoji.Create("+1"), DateTimeOffset.UtcNow);
         reaction.WorkspaceId.Should().Be(WsA);
     }
 }

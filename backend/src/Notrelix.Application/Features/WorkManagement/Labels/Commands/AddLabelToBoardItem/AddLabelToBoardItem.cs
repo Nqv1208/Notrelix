@@ -1,22 +1,27 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Labels.Commands.AddLabelToBoardItem;
 
-public record AddLabelToBoardItemCommand(Guid BoardItemId, Guid LabelId) : ICommand<Result>, ITransactionalRequest;
+public record AddLabelToBoardItemCommand(Guid BoardItemId, Guid LabelId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.UpdateItem;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+}
 
 public class AddLabelToBoardItemCommandHandler : IRequestHandler<AddLabelToBoardItemCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ICurrentTenantContext _tenant;
 
-    public AddLabelToBoardItemCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public AddLabelToBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider, ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
+        _tenant = tenant;
     }
 
     public async Task<Result> Handle(AddLabelToBoardItemCommand request, CancellationToken ct)
@@ -34,6 +39,7 @@ public class AddLabelToBoardItemCommandHandler : IRequestHandler<AddLabelToBoard
         if (exists) return Result.Success();
 
         var link = BoardItemLabel.Create(
+            _tenant.RequireAccountId(),
             card.WorkspaceId, label.BoardId, request.BoardItemId, request.LabelId,
             _currentUser.UserId, _dateTimeProvider.UtcNow);
         _context.BoardItemLabels.Add(link);

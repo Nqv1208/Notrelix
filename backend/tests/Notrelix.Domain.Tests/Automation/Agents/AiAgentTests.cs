@@ -21,7 +21,7 @@ public class AiAgentTests
     public void Create_WithBoardScope_RequiresResourceId()
     {
         var act = () => AiAgent.Create(
-            Guid.NewGuid(), "Agent", null, AiAgentScopeType.Board, null,
+            Guid.NewGuid(), Guid.NewGuid(), "Agent", null, AiAgentScopeType.Board, null,
             JsonValue.EmptyObject(), JsonValue.EmptyObject(), JsonValue.EmptyObject(),
             Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -150,7 +150,7 @@ public class AiAgentTests
     private static AiAgent CreateAgent()
     {
         return AiAgent.Create(
-            Guid.NewGuid(), "Test Agent", null, AiAgentScopeType.Workspace, null,
+            Guid.NewGuid(), Guid.NewGuid(), "Test Agent", null, AiAgentScopeType.Workspace, null,
             JsonValue.EmptyObject(), JsonValue.EmptyObject(), JsonValue.EmptyObject(),
             Guid.NewGuid(), DateTimeOffset.UtcNow);
     }

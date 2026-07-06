@@ -8,7 +8,7 @@ public class ConcurrencyTests
     [Fact]
     public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
-        var workspace = Workspace.Create(Guid.NewGuid(), "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
+        var workspace = Workspace.Create(Guid.NewGuid(), Guid.NewGuid(), "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
         workspace.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         workspace.ClearDomainEvents();
 
@@ -21,7 +21,7 @@ public class ConcurrencyTests
     [Fact]
     public void Restore_WhenAlreadyActive_ShouldBeNoOp()
     {
-        var workspace = Workspace.Create(Guid.NewGuid(), "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
+        var workspace = Workspace.Create(Guid.NewGuid(), Guid.NewGuid(), "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
 
         workspace.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -32,7 +32,7 @@ public class ConcurrencyTests
     [Fact]
     public void Rename_AfterSoftDelete_ShouldThrow()
     {
-        var workspace = Workspace.Create(Guid.NewGuid(), "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
+        var workspace = Workspace.Create(Guid.NewGuid(), Guid.NewGuid(), "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
         workspace.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => workspace.Rename("New Name", Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -44,7 +44,7 @@ public class ConcurrencyTests
     [Fact]
     public void UpdateSettings_AfterSoftDelete_ShouldThrow()
     {
-        var workspace = Workspace.Create(Guid.NewGuid(), "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
+        var workspace = Workspace.Create(Guid.NewGuid(), Guid.NewGuid(), "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
         workspace.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => workspace.UpdateSettings(WorkspaceSettings.Create(), Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -55,7 +55,7 @@ public class ConcurrencyTests
     [Fact]
     public void Archive_AfterSoftDelete_ShouldThrow()
     {
-        var workspace = Workspace.Create(Guid.NewGuid(), "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
+        var workspace = Workspace.Create(Guid.NewGuid(), Guid.NewGuid(), "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
         workspace.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => workspace.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);

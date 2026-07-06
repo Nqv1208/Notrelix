@@ -7,19 +7,17 @@ public static class MapCommentEndpoints
 {
     public static IEndpointRouteBuilder MapCommentsEndpoints(this IEndpointRouteBuilder app)
     {
-        var cardGroup = app
-            .MapGroup("/api/v1/cards/{cardId:guid}/comments")
+        var boardItemGroup = app
+            .MapGroup("/api/v1/board-items/{boardItemId:guid}/comments")
             .WithTags("Collaboration.Comments")
-            .RequireAuthorization()
             .WithOpenApi();
 
-        cardGroup.MapGetCardComments();
-        cardGroup.MapCreateCardComment();
+        boardItemGroup.MapGetBoardItemComments();
+        boardItemGroup.MapCreateBoardItemComment();
 
         var pageGroup = app
             .MapGroup("/api/v1/pages/{pageId:guid}/comments")
             .WithTags("Collaboration.Comments")
-            .RequireAuthorization()
             .WithOpenApi();
 
         pageGroup.MapGetPageComments();
@@ -28,7 +26,6 @@ public static class MapCommentEndpoints
         var group = app
             .MapGroup("/api/v1/comments")
             .WithTags("Collaboration.Comments")
-            .RequireAuthorization()
             .WithOpenApi();
 
         group.MapUpdateComment();

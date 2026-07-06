@@ -1,7 +1,5 @@
-using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Data;
-using Notrelix.Infrastructure.Data.Outbox;
+using Notrelix.Infrastructure.Data.Messaging;
 
 namespace Notrelix.Infrastructure.Messaging;
 
@@ -14,7 +12,7 @@ public sealed class MessageDeduplicationStore : IMessageDeduplicationStore
 
     public async Task<bool> IsProcessedAsync(
         Guid messageId, string consumerName, CancellationToken ct)
-        => await _context.Set<ProcessedEvent>()
+        => await _context.Set<MessagingProcessedEvent>()
             .AnyAsync(e => e.EventId == messageId
                 && e.ConsumerName == consumerName, ct);
 
@@ -24,11 +22,20 @@ public sealed class MessageDeduplicationStore : IMessageDeduplicationStore
         Guid? sourceEventId, Guid? workspaceId,
         DateTimeOffset processedAt)
     {
-        _context.Set<ProcessedEvent>().Add(
-            ProcessedEvent.Create(
-                messageId, consumerName,
-                messageName, messageVersion,
-                sourceEventId, workspaceId,
-                processedAt));
+        _context.Set<MessagingProcessedEvent>().Add(
+            new MessagingProcessedEvent(
+                eventId: messageId,
+                consumerName: consumerName,
+                sourceContext: null,
+                messageName: messageName,
+                messageVersion: messageVersion,
+                sourceEventId: sourceEventId,
+                subjectType: null,
+                subjectId: null,
+                workspaceId: workspaceId,
+                actorUserId: null,
+                correlationId: null,
+                causationId: null,
+                processedAt: processedAt));
     }
 }

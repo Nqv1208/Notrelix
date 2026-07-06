@@ -1,44 +1,58 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Collaboration.Attachments.DTOs;
+using Notrelix.Application.Features.Collaboration.Abstractions;
 
 namespace Notrelix.Application.Features.Collaboration.Attachments.Queries.GetBoardItemAttachments;
 
-public record GetBoardItemAttachmentsQuery(Guid BoardItemId) : IQuery<Result<List<AttachmentDto>>>;
+public record GetBoardItemAttachmentsQuery(Guid BoardItemId) : IQuery<Result<List<AttachmentDto>>>, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.ViewBoard;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+}
 
 public class GetBoardItemAttachmentsQueryHandler : IRequestHandler<GetBoardItemAttachmentsQuery, Result<List<AttachmentDto>>>
 {
-    private readonly IApplicationDbContext _context;
-    public GetBoardItemAttachmentsQueryHandler(IApplicationDbContext context) => _context = context;
+    private readonly ICollaborationDbContext _context;
+    private readonly IResourceReferenceResolver _resourceResolver;
+    private readonly IActorLookupService _actorLookup;
+    public GetBoardItemAttachmentsQueryHandler(ICollaborationDbContext context, IResourceReferenceResolver resourceResolver, IActorLookupService actorLookup)
+    {
+        _context = context;
+        _resourceResolver = resourceResolver;
+        _actorLookup = actorLookup;
+    }
 
     public async Task<Result<List<AttachmentDto>>> Handle(GetBoardItemAttachmentsQuery request, CancellationToken ct)
     {
-        var cardExists = await _context.BoardItems.AsNoTracking()
-            .AnyAsync(card => card.Id == request.BoardItemId && !card.IsDeleted, ct);
-        if (!cardExists) throw new NotFoundException("BoardItem", request.BoardItemId);
+        var boardItemExists = await _resourceResolver.ExistsAsync(request.BoardItemId, ResourceTypes.BoardItem, ct);
+        if (!boardItemExists) throw new NotFoundException("BoardItem", request.BoardItemId);
 
         var attachments = await _context.Attachments.AsNoTracking()
             .Where(attachment => attachment.Target.ResourceType == ResourceType.BoardItem && attachment.Target.ResourceId == request.BoardItemId)
             .OrderByDescending(attachment => attachment.CreatedAt)
-            .GroupJoin(_context.Users.AsNoTracking(),
-                attachment => attachment.CreatedBy,
-                user => (Guid?)user.Id,
-                (attachment, users) => new { attachment, user = users.FirstOrDefault() })
-            .Select(item => new AttachmentDto(
-                item.attachment.Id,
-                item.attachment.Target.ResourceId,
-                item.attachment.Metadata.FileName,
-                item.attachment.Metadata.Url ?? "",
-                item.attachment.Metadata.Size,
-                item.attachment.Metadata.ContentType,
-                item.attachment.Type.ToString(),
-                item.attachment.CreatedBy!.Value,
-                item.user != null ? item.user.Name : null,
-                item.attachment.CreatedAt.DateTime
-            ))
             .ToListAsync(ct);
 
-        return Result<List<AttachmentDto>>.Success(attachments);
+        var userIds = attachments.Where(a => a.CreatedBy.HasValue).Select(a => a.CreatedBy!.Value).Distinct().ToList();
+        var actors = await _actorLookup.FindManyAsync(userIds, ct);
+        var actorMap = actors.ToDictionary(a => a.UserId);
+
+        var result = attachments.Select(item =>
+        {
+            actorMap.TryGetValue(item.CreatedBy ?? Guid.Empty, out var actor);
+            return new AttachmentDto(
+                item.Id,
+                item.Target.ResourceId,
+                item.Metadata.FileName,
+                item.Metadata.Url ?? "",
+                item.Metadata.Size,
+                item.Metadata.ContentType,
+                item.Type.ToString(),
+                item.CreatedBy!.Value,
+                actor?.Name,
+                item.CreatedAt.DateTime
+            );
+        }).ToList();
+
+        return Result<List<AttachmentDto>>.Success(result);
     }
 }

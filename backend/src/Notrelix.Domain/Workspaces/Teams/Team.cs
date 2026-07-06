@@ -2,6 +2,7 @@ namespace Notrelix.Domain.Workspaces.Teams;
 
 public class Team : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
@@ -12,8 +13,9 @@ public class Team : AggregateRoot, IWorkspaceScoped
 
     private Team() : base() { }
 
-    public static Team Create(Guid workspaceId, string name, Guid createdBy, DateTimeOffset createdAt)
+    public static Team Create(Guid accountId, Guid workspaceId, string name, Guid createdBy, DateTimeOffset createdAt)
     {
+        Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(name);
         Guard.MaxLength(name, 160);
@@ -21,13 +23,14 @@ public class Team : AggregateRoot, IWorkspaceScoped
 
         var team = new Team
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             Name = name.Trim(),
             Status = TeamStatus.Active
         };
 
         team.SetAuditOnCreate(createdBy, createdAt);
-        team.AddDomainEvent(new TeamCreatedDomainEvent(team.Id, workspaceId, team.Name, createdBy, createdAt));
+        team.AddDomainEvent(new TeamCreatedDomainEvent(team.Id, accountId, workspaceId, team.Name, createdBy, createdAt));
 
         return team;
     }
@@ -49,7 +52,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
         Name = normalizedName;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new TeamRenamedDomainEvent(WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
+        AddDomainEvent(new TeamRenamedDomainEvent(AccountId, WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
@@ -61,7 +64,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
         Status = TeamStatus.Archived;
         SetAuditOnUpdate(archivedBy, archivedAt);
         IncrementVersion();
-        AddDomainEvent(new TeamArchivedDomainEvent(WorkspaceId, Id, archivedBy, archivedAt));
+        AddDomainEvent(new TeamArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
     }
 
     public void AddMember(Guid userId, TeamMemberRole role, Guid addedBy, DateTimeOffset addedAt, Guid? workspaceMemberId = null)
@@ -82,13 +85,13 @@ public class Team : AggregateRoot, IWorkspaceScoped
         }
         else
         {
-            var member = TeamMember.Create(WorkspaceId, Id, userId, role, addedBy, addedAt, workspaceMemberId);
+            var member = TeamMember.Create(AccountId, WorkspaceId, Id, userId, role, addedBy, addedAt, workspaceMemberId);
             _members.Add(member);
         }
 
         SetAuditOnUpdate(addedBy, addedAt);
         IncrementVersion();
-        AddDomainEvent(new TeamMemberAddedDomainEvent(WorkspaceId, Id, userId, role, addedBy, addedAt));
+        AddDomainEvent(new TeamMemberAddedDomainEvent(AccountId, WorkspaceId, Id, userId, role, addedBy, addedAt));
     }
 
     public void RemoveMember(Guid userId, Guid removedBy, DateTimeOffset removedAt)
@@ -105,7 +108,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
         member.Remove(removedBy, removedAt);
         SetAuditOnUpdate(removedBy, removedAt);
         IncrementVersion();
-        AddDomainEvent(new TeamMemberRemovedDomainEvent(WorkspaceId, Id, userId, removedBy, removedAt));
+        AddDomainEvent(new TeamMemberRemovedDomainEvent(AccountId, WorkspaceId, Id, userId, removedBy, removedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -116,7 +119,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new TeamSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new TeamSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -127,6 +130,6 @@ public class Team : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new TeamRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new TeamRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

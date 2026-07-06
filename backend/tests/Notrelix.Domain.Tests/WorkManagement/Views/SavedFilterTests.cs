@@ -14,7 +14,7 @@ public class SavedFilterTests
         var rules = new[] { FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "value") };
         var createdBy = Guid.NewGuid();
 
-        var filter = SavedFilter.Create(workspaceId, boardId, name, rules, createdBy, DateTimeOffset.UtcNow);
+        var filter = SavedFilter.Create(Guid.NewGuid(), workspaceId, boardId, name, rules, createdBy, DateTimeOffset.UtcNow);
 
         filter.WorkspaceId.Should().Be(workspaceId);
         filter.BoardId.Should().Be(boardId);
@@ -26,7 +26,7 @@ public class SavedFilterTests
     [Fact]
     public void Create_ShouldThrow_WhenNameEmpty()
     {
-        Action act = () => SavedFilter.Create(Guid.NewGuid(), Guid.NewGuid(), "", new[] { FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "v") }, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        Action act = () => SavedFilter.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "", new[] { FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "v") }, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         act.Should().Throw<BusinessRuleException>();
     }

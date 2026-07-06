@@ -1,10 +1,25 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Common.Context;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Infrastructure.Data.Projections.Search;
 
 namespace Notrelix.Testing.Integration.Factories;
+
+internal sealed class TestDbContext : ApplicationDbContext
+{
+    public TestDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentTenantContext? tenant = null)
+        : base(options, tenant)
+    {
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<SearchDocumentRecord>().Ignore(x => x.SearchVector);
+    }
+}
 
 public static class TestDbContextFactory
 {
@@ -19,10 +34,10 @@ public static class TestDbContextFactory
             optionsBuilder.AddInterceptors(interceptors);
         }
 
-        return new ApplicationDbContext(optionsBuilder.Options);
+        return new TestDbContext(optionsBuilder.Options);
     }
 
-    public static ApplicationDbContext CreateInMemoryContext(ICurrentWorkspace currentWorkspace, params IInterceptor[] interceptors)
+    public static ApplicationDbContext CreateInMemoryContext(ICurrentTenantContext tenant, params IInterceptor[] interceptors)
     {
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(databaseName: $"Notrelix-test-{Guid.NewGuid():N}")
@@ -33,6 +48,6 @@ public static class TestDbContextFactory
             optionsBuilder.AddInterceptors(interceptors);
         }
 
-        return new ApplicationDbContext(optionsBuilder.Options, currentWorkspace);
+        return new TestDbContext(optionsBuilder.Options, tenant);
     }
 }

@@ -1,7 +1,6 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardsBySlug;
 
@@ -13,28 +12,43 @@ public record GetBoardsBySlugQuery(Guid WorkspaceId, string Slug) : IQuery<Resul
 
 public class GetBoardsBySlugQueryHandler : IRequestHandler<GetBoardsBySlugQuery, Result<List<BoardDto>>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
+    private readonly IWorkspaceAccessResolver _workspaceAccess;
 
-    public GetBoardsBySlugQueryHandler(IApplicationDbContext context)
+    public GetBoardsBySlugQueryHandler(IWorkManagementDbContext context, IWorkspaceAccessResolver workspaceAccess)
     {
         _context = context;
+        _workspaceAccess = workspaceAccess;
     }
 
     public async Task<Result<List<BoardDto>>> Handle(GetBoardsBySlugQuery request, CancellationToken ct)
     {
-        var workspace = await _context.Workspaces.AsNoTracking()
-            .FirstOrDefaultAsync(w => w.Slug == request.Slug, ct);
+        var workspace = await _workspaceAccess.ResolveBySlugAsync(request.Slug, ct);
         if (workspace is null) throw new NotFoundException(nameof(Workspace), request.Slug);
 
         var boards = await _context.Boards.AsNoTracking()
             .Where(b => b.WorkspaceId == workspace.Id && !b.IsArchived)
             .ToListAsync(ct);
 
+        var boardIds = boards.Select(b => b.Id).ToList();
+
+        var memberCounts = await _context.BoardMembers.AsNoTracking()
+            .Where(m => boardIds.Contains(m.BoardId))
+            .GroupBy(m => m.BoardId)
+            .Select(g => new { BoardId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.BoardId, x => x.Count, ct);
+
+        var groupCounts = await _context.BoardGroups.AsNoTracking()
+            .Where(l => boardIds.Contains(l.BoardId) && !l.IsDeleted)
+            .GroupBy(l => l.BoardId)
+            .Select(g => new { BoardId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.BoardId, x => x.Count, ct);
+
         var result = boards.Select(b => new BoardDto(
             b.Id, b.WorkspaceId, b.Title, b.Description,
             b.Background, b.Visibility.ToString(), b.IsArchived,
-            _context.BoardMembers.Count(m => m.BoardId == b.Id),
-            _context.BoardGroups.Count(l => l.BoardId == b.Id && !l.IsDeleted),
+            memberCounts.GetValueOrDefault(b.Id),
+            groupCounts.GetValueOrDefault(b.Id),
             b.CreatedAt.DateTime
         )).ToList();
 

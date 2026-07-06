@@ -2,6 +2,7 @@ namespace Notrelix.Domain.Workspaces.Invitations;
 
 public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public string Email { get; private set; } = null!;
     public WorkspaceRole Role { get; private set; }
@@ -13,6 +14,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
     private WorkspaceInvitation() : base() { }
 
     public static WorkspaceInvitation Create(
+        Guid accountId,
         Guid workspaceId,
         string email,
         WorkspaceRole role,
@@ -33,6 +35,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
 
         var invitation = new WorkspaceInvitation
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             Email = emailValue.Value,
             Role = role,
@@ -44,7 +47,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
 
         invitation.SetAuditOnCreate(invitedBy, createdAt);
         invitation.AddDomainEvent(new WorkspaceInvitationCreatedDomainEvent(
-            invitation.Id, workspaceId, invitation.Email, role, invitedBy, createdAt));
+            accountId, invitation.Id, workspaceId, invitation.Email, role, invitedBy, createdAt));
 
         return invitation;
     }
@@ -64,7 +67,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(acceptedUserId, acceptedAt);
 
         AddDomainEvent(new WorkspaceInvitationAcceptedDomainEvent(
-            Id, WorkspaceId, acceptedUserId, acceptedUserId, acceptedAt));
+            AccountId, Id, WorkspaceId, acceptedUserId, acceptedUserId, acceptedAt));
     }
 
     public void Expire(DateTimeOffset expiredAt)
@@ -77,7 +80,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(null, expiredAt);
 
         AddDomainEvent(new WorkspaceInvitationExpiredDomainEvent(
-            Id, WorkspaceId, expiredAt));
+            AccountId, Id, WorkspaceId, expiredAt));
     }
 
     public void Revoke(Guid revokedBy, DateTimeOffset revokedAt)
@@ -94,6 +97,6 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(revokedBy, revokedAt);
 
         AddDomainEvent(new WorkspaceInvitationRevokedDomainEvent(
-            Id, WorkspaceId, revokedBy, revokedAt));
+            AccountId, Id, WorkspaceId, revokedBy, revokedAt));
     }
 }

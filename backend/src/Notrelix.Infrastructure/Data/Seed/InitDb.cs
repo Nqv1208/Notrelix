@@ -1,13 +1,12 @@
-using Microsoft.EntityFrameworkCore;
-using Notrelix.Application.Common.Abstractions;
+using Notrelix.Domain.Accounts.Accounts;
+using Notrelix.Domain.Accounts.Members;
 using Notrelix.Domain.Collaboration.Comments;
-using Notrelix.Domain.Collaboration.Notifications;
 using Notrelix.Domain.Documents.Blocks;
 using Notrelix.Domain.Documents.Pages;
 using Notrelix.Domain.Identity.Profiles;
 using Notrelix.Domain.Identity.Sessions;
 using Notrelix.Domain.Identity.Users;
-using Notrelix.Domain.SharedKernel;
+using Notrelix.Infrastructure.Data.Notifications;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Fields;
@@ -16,6 +15,7 @@ using Notrelix.Domain.WorkManagement.Labels;
 using Notrelix.Domain.WorkManagement.Views;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Infrastructure.Data.Authz;
 
 namespace Notrelix.Infrastructure.Data.Seed;
 
@@ -64,25 +64,48 @@ internal static class InitDb
             return result;
         }
 
-        var workspaces = await CreateWorkspacesAsync(context, targets, users, ct);
+        var account = await CreateAccountAsync(context, users, ct);
+
+        var workspaces = await CreateWorkspacesAsync(context, targets, account, users, ct);
         result = result with { WorkspacesCreated = workspaces.Count };
 
-        var boardData = await CreateBoardStructuresAsync(context, targets, workspaces, users, ct);
+        await SeedAuthzGrantsAsync(context, ct);
+
+        var boardData = await CreateBoardStructuresAsync(context, targets, account, workspaces, users, ct);
         result = result with { BoardsCreated = boardData.Count };
 
-        var itemsCreated = await CreateBoardItemsAsync(context, targets, boardData, users, ct);
+        var itemsCreated = await CreateBoardItemsAsync(context, targets, account, boardData, users, ct);
         result = result with { BoardItemsCreated = itemsCreated };
 
-        var pagesCreated = await CreatePagesAsync(context, targets, workspaces, users, ct);
+        var pagesCreated = await CreatePagesAsync(context, targets, account, workspaces, users, ct);
         result = result with { PagesCreated = pagesCreated };
 
-        var commentsCreated = await CreateCommentsAsync(context, boardData, users, ct);
+        var commentsCreated = await CreateCommentsAsync(context, account, boardData, users, ct);
         result = result with { CommentsCreated = commentsCreated };
 
-        var notificationsCreated = await CreateNotificationsAsync(context, targets, users, ct);
+        var notificationsCreated = await CreateNotificationsAsync(context, targets, account, users, ct);
         result = result with { NotificationsCreated = notificationsCreated };
 
         return result;
+    }
+
+    private static async Task<Account> CreateAccountAsync(
+        ApplicationDbContext context, List<User> users, CancellationToken ct)
+    {
+        if (await context.Accounts.AnyAsync(ct))
+        {
+            return await context.Accounts.FirstAsync(ct);
+        }
+
+        var owner = users[0];
+        var account = Account.Create("Notrelix", "notrelix", AccountType.Team, owner.Id, Epoch);
+        context.Accounts.Add(account);
+
+        var accountMember = AccountMember.Create(account.Id, owner.Id, AccountRole.Owner, owner.Id, Epoch);
+        context.AccountMembers.Add(accountMember);
+
+        await ClearAndSaveAsync(context, ct);
+        return account;
     }
 
     private static async Task ClearAndSaveAsync(ApplicationDbContext context, CancellationToken ct)
@@ -137,7 +160,7 @@ internal static class InitDb
     }
 
     private static async Task<List<Workspace>> CreateWorkspacesAsync(
-        ApplicationDbContext context, SeedTargets targets, List<User> users, CancellationToken ct)
+        ApplicationDbContext context, SeedTargets targets, Account account, List<User> users, CancellationToken ct)
     {
         if (await context.Workspaces.AnyAsync(ct))
         {
@@ -151,6 +174,7 @@ internal static class InitDb
         {
             var owner = users[i % users.Count];
             var ws = Workspace.Create(
+                account.Id,
                 owner.Id,
                 $"Workspace {i + 1}",
                 $"workspace-{i + 1}",
@@ -164,7 +188,7 @@ internal static class InitDb
             {
                 if (!addedUserIds.Add(uid)) continue;
                 var member = WorkspaceMember.Create(
-                    ws.Id, uid, WorkspaceRole.Member, owner.Id, Epoch.AddDays(i));
+                    account.Id, ws.Id, uid, WorkspaceRole.Member, owner.Id, Epoch.AddDays(i));
                 context.WorkspaceMembers.Add(member);
             }
 
@@ -177,7 +201,7 @@ internal static class InitDb
                     : m == 1 ? WorkspaceRole.Member
                     : WorkspaceRole.Guest;
                 var member = WorkspaceMember.Create(
-                    ws.Id, mid, role, owner.Id, Epoch.AddDays(i));
+                    account.Id, ws.Id, mid, role, owner.Id, Epoch.AddDays(i));
                 context.WorkspaceMembers.Add(member);
             }
         }
@@ -185,6 +209,35 @@ internal static class InitDb
         context.Workspaces.AddRange(workspaces);
         await ClearAndSaveAsync(context, ct);
         return workspaces;
+    }
+
+    private static async Task SeedAuthzGrantsAsync(ApplicationDbContext context, CancellationToken ct)
+    {
+        if (await context.Set<AccessGrant>().AnyAsync(ct)) return;
+
+        var members = await context.WorkspaceMembers
+            .Where(m => m.Status == WorkspaceMemberStatus.Active)
+            .ToListAsync(ct);
+
+        var grants = new List<AccessGrant>(members.Count);
+        foreach (var member in members)
+        {
+            var isAdmin = member.Role == WorkspaceRole.Owner || member.Role == WorkspaceRole.Admin;
+            grants.Add(new AccessGrant(
+                member.AccountId,
+                member.WorkspaceId,
+                member.UserId,
+                "Workspace",
+                "Active",
+                [member.Role.ToString()],
+                [],
+                false,
+                isAdmin,
+                member.CreatedAt));
+        }
+
+        context.Set<AccessGrant>().AddRange(grants);
+        await ClearAndSaveAsync(context, ct);
     }
 
     private sealed record BoardStructure(
@@ -195,7 +248,7 @@ internal static class InitDb
         List<Label> Labels);
 
     private static async Task<List<BoardStructure>> CreateBoardStructuresAsync(
-        ApplicationDbContext context, SeedTargets targets, List<Workspace> workspaces, List<User> users, CancellationToken ct)
+        ApplicationDbContext context, SeedTargets targets, Account account, List<Workspace> workspaces, List<User> users, CancellationToken ct)
     {
         if (await context.Boards.AnyAsync(ct))
         {
@@ -227,7 +280,7 @@ internal static class InitDb
                 var wsSuffix = ws.Id.ToString()[..4];
 
                 var board = Board.Create(
-                    ws.Id, creator.Id, $"{boardName} ({wsSuffix})", null,
+                    account.Id, ws.Id, creator.Id, $"{boardName} ({wsSuffix})", null,
                     Epoch.AddDays(boardIndex), BoardVisibility.Workspace);
                 context.Boards.Add(board);
 
@@ -246,7 +299,7 @@ internal static class InitDb
                     };
 
                     var field = BoardField.Create(
-                        ws.Id, board.Id, fName, fType, fSettings,
+                        account.Id, ws.Id, board.Id, fName, fType, fSettings,
                         FractionalIndex.Create($"a{f}"), creator.Id, Epoch.AddDays(boardIndex),
                         isSystem: fIsSystem);
                     context.BoardFields.Add(field);
@@ -270,7 +323,7 @@ internal static class InitDb
                 for (int g = 0; g < groupNames.Length; g++)
                 {
                     var group = BoardGroup.Create(
-                        ws.Id, board.Id, groupNames[g], Color.Create(StatusOptions[g].Color),
+                        account.Id, ws.Id, board.Id, groupNames[g], Color.Create(StatusOptions[g].Color),
                         FractionalIndex.Create($"a{g}"), creator.Id, Epoch.AddDays(boardIndex));
                     context.BoardGroups.Add(group);
                     groups.Add(group);
@@ -281,7 +334,7 @@ internal static class InitDb
                 {
                     var (lName, lColor) = LabelTemplates[l];
                     var label = Label.Create(
-                        ws.Id, board.Id, lName, LabelColor.Create(lColor),
+                        account.Id, ws.Id, board.Id, lName, LabelColor.Create(lColor),
                         creator.Id, Epoch.AddDays(boardIndex));
                     context.Labels.Add(label);
                     labels.Add(label);
@@ -289,14 +342,14 @@ internal static class InitDb
 
                 var views = new List<BoardView>();
                 var tableView = BoardView.Create(
-                    ws.Id, board.Id, "Table", ViewType.Table,
+                    account.Id, ws.Id, board.Id, "Table", ViewType.Table,
                     BoardViewConfig.Create(JsonValue.EmptyObject()), creator.Id,
                     Epoch.AddDays(boardIndex), isDefault: true);
                 context.BoardViews.Add(tableView);
                 views.Add(tableView);
 
                 var kanbanView = BoardView.Create(
-                    ws.Id, board.Id, "Kanban", ViewType.Kanban,
+                    account.Id, ws.Id, board.Id, "Kanban", ViewType.Kanban,
                     BoardViewConfig.Create(JsonValue.EmptyObject()), creator.Id,
                     Epoch.AddDays(boardIndex));
                 context.BoardViews.Add(kanbanView);
@@ -311,7 +364,7 @@ internal static class InitDb
     }
 
     private static async Task<int> CreateBoardItemsAsync(
-        ApplicationDbContext context, SeedTargets targets,
+        ApplicationDbContext context, SeedTargets targets, Account account,
         List<BoardStructure> structures, List<User> users, CancellationToken ct)
     {
         if (await context.BoardItems.AnyAsync(ct) || structures.Count == 0)
@@ -359,7 +412,7 @@ internal static class InitDb
                     };
 
                     var item = BoardItem.Create(
-                        bs.Board.WorkspaceId, bs.Board.Id, group.Id,
+                        account.Id, bs.Board.WorkspaceId, bs.Board.Id, group.Id,
                         itemName, FractionalIndex.Create($"a{i}"),
                         creator.Id, Epoch.AddDays(itemIndex));
 
@@ -392,7 +445,7 @@ internal static class InitDb
                     {
                         var label = bs.Labels[i % bs.Labels.Count];
                         var itemLabel = BoardItemLabel.Create(
-                            bs.Board.WorkspaceId, bs.Board.Id, item.Id, label.Id,
+                            account.Id, bs.Board.WorkspaceId, bs.Board.Id, item.Id, label.Id,
                             creator.Id, Epoch.AddDays(itemIndex));
                         context.BoardItemLabels.Add(itemLabel);
                     }
@@ -401,7 +454,7 @@ internal static class InitDb
                     {
                         var assignee = boardUsers[(i + 1) % boardUsers.Count];
                         var itemMember = BoardItemMember.Create(
-                            bs.Board.WorkspaceId, bs.Board.Id, item.Id, assignee.Id,
+                            account.Id, bs.Board.WorkspaceId, bs.Board.Id, item.Id, assignee.Id,
                             creator.Id, Epoch.AddDays(itemIndex));
                         context.BoardItemMembers.Add(itemMember);
                     }
@@ -425,7 +478,7 @@ internal static class InitDb
     }
 
     private static async Task<int> CreatePagesAsync(
-        ApplicationDbContext context, SeedTargets targets,
+        ApplicationDbContext context, SeedTargets targets, Account account,
         List<Workspace> workspaces, List<User> users, CancellationToken ct)
     {
         if (await context.Pages.AnyAsync(ct) || workspaces.Count == 0)
@@ -447,6 +500,7 @@ internal static class InitDb
                 var creator = users[pageIndex % users.Count];
 
                 var page = Page.Create(
+                    account.Id,
                     ws.Id,
                     $"Page {pageIndex + 1}",
                     creator.Id,
@@ -457,7 +511,7 @@ internal static class InitDb
                 for (int b = 0; b < blocksPerPage; b++)
                 {
                     var block = Block.Create(
-                        ws.Id, page.Id, BlockType.Text,
+                        account.Id, ws.Id, page.Id, BlockType.Text,
                         BlockContent.Create(JsonValue.Create($"\"Content block {b + 1} for page {pageIndex + 1}\"")),
                         FractionalIndex.Create($"a{b}"),
                         creator.Id, Epoch.AddDays(pageIndex).AddMinutes(b));
@@ -471,7 +525,7 @@ internal static class InitDb
     }
 
     private static async Task<int> CreateCommentsAsync(
-        ApplicationDbContext context, List<BoardStructure> structures,
+        ApplicationDbContext context, Account account, List<BoardStructure> structures,
         List<User> users, CancellationToken ct)
     {
         if (await context.Comments.AnyAsync(ct) || structures.Count == 0)
@@ -505,6 +559,7 @@ internal static class InitDb
             var text = commentTexts[Math.Abs(item.GetHashCode() * 7) % commentTexts.Length];
 
             var comment = Comment.Create(
+                account.Id,
                 item.WorkspaceId,
                 ResourceRef.Create(ResourceType.BoardItem, item.Id),
                 text, author.Id, Epoch.AddDays(1));
@@ -516,10 +571,10 @@ internal static class InitDb
     }
 
     private static async Task<int> CreateNotificationsAsync(
-        ApplicationDbContext context, SeedTargets targets,
+        ApplicationDbContext context, SeedTargets targets, Account account,
         List<User> users, CancellationToken ct)
     {
-        if (await context.Notifications.AnyAsync(ct) || users.Count == 0)
+        if (await context.NotificationItems.AnyAsync(ct) || users.Count == 0)
         {
             return 0;
         }
@@ -537,20 +592,26 @@ internal static class InitDb
             for (int i = 0; i < count; i++)
             {
                 var wsId = workspaceIds[i % workspaceIds.Count];
-                var nType = (NotificationType)(i % Enum.GetValues<NotificationType>().Length);
                 var createdAt = Epoch.AddDays(i);
 
-                var notification = Notification.Create(
-                    user.Id, wsId, nType,
+                var item = NotificationItemRecord.Create(
+                    account.Id,
+                    wsId,
+                    "System",
+                    "General",
+                    NotificationSeverity.Info,
                     $"Notification {i + 1} for {user.Email.Value}",
-                    $"This is a {nType} notification body.",
-                    createdAt);
-                context.Notifications.Add(notification);
+                    createdAt,
+                    body: $"This is a general notification body.",
+                    actorUserId: user.Id);
+                context.NotificationItems.Add(item);
 
-                var delivery = NotificationDelivery.Create(
-                    notification.Id, wsId, user.Id,
-                    NotificationChannel.InApp, createdAt);
-                context.NotificationDeliveries.Add(delivery);
+                var recipient = NotificationRecipientRecord.Create(
+                    account.Id,
+                    item.Id, wsId, user.Id, createdAt,
+                    recipientEmail: user.Email.Value,
+                    recipientName: user.Name);
+                context.NotificationRecipients.Add(recipient);
             }
         }
 

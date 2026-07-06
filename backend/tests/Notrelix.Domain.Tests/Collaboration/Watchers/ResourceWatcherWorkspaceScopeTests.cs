@@ -12,7 +12,7 @@ public class ResourceWatcherWorkspaceScopeTests
     public void Create_WithMatchingWorkspace_ShouldSucceed()
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsA);
-        var watcher = ResourceWatcher.Create(WsA, target, Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var watcher = ResourceWatcher.Create(Guid.NewGuid(), WsA, target, Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
         watcher.WorkspaceId.Should().Be(WsA);
     }
 
@@ -20,7 +20,7 @@ public class ResourceWatcherWorkspaceScopeTests
     public void Create_WithMismatchedWorkspace_ShouldThrow()
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsB);
-        var act = () => ResourceWatcher.Create(WsA, target, Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var act = () => ResourceWatcher.Create(Guid.NewGuid(), WsA, target, Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<WorkspaceMismatchException>();
     }
 
@@ -28,7 +28,7 @@ public class ResourceWatcherWorkspaceScopeTests
     public void Create_WithUnscopedResourceRef_ShouldSucceed()
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid());
-        var watcher = ResourceWatcher.Create(WsA, target, Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var watcher = ResourceWatcher.Create(Guid.NewGuid(), WsA, target, Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
         watcher.WorkspaceId.Should().Be(WsA);
     }
 }

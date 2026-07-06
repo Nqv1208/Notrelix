@@ -10,7 +10,6 @@ public static class MapMemberEndpoints
         var group = app
             .MapGroup("/api/v1/workspaces/{workspaceId:guid}/members")
             .WithTags("Workspaces.Members")
-            .RequireAuthorization()
             .WithOpenApi();
 
         group.MapListMembers();

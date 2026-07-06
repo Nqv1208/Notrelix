@@ -2,6 +2,7 @@ namespace Notrelix.Domain.Collaboration.Reactions;
 
 public class Reaction : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public ResourceRef Target { get; private set; } = null!;
     public Guid UserId { get; private set; }
@@ -9,8 +10,9 @@ public class Reaction : AggregateRoot, IWorkspaceScoped
 
     private Reaction() : base() { }
 
-    public static Reaction Create(Guid workspaceId, ResourceRef target, Guid userId, Emoji emoji, DateTimeOffset createdAt, Func<Guid, bool>? checkDuplicate = null)
+    public static Reaction Create(Guid accountId, Guid workspaceId, ResourceRef target, Guid userId, Emoji emoji, DateTimeOffset createdAt, Func<Guid, bool>? checkDuplicate = null)
     {
+        Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(target);
         Guard.NotEmpty(userId);
@@ -24,6 +26,7 @@ public class Reaction : AggregateRoot, IWorkspaceScoped
 
         var reaction = new Reaction
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             Target = target,
             UserId = userId,
@@ -31,12 +34,12 @@ public class Reaction : AggregateRoot, IWorkspaceScoped
         };
 
         reaction.SetAuditOnCreate(userId, createdAt);
-        reaction.AddDomainEvent(new ReactionCreatedDomainEvent(workspaceId, reaction.Id, target, userId, emoji, createdAt));
+        reaction.AddDomainEvent(new ReactionCreatedDomainEvent(accountId, workspaceId, reaction.Id, target, userId, emoji, createdAt));
         return reaction;
     }
 
     public void Remove(DateTimeOffset removedAt)
     {
-        AddDomainEvent(new ReactionRemovedDomainEvent(WorkspaceId, Id, Target, UserId, Emoji, removedAt));
+        AddDomainEvent(new ReactionRemovedDomainEvent(AccountId, WorkspaceId, Id, Target, UserId, Emoji, removedAt));
     }
 }

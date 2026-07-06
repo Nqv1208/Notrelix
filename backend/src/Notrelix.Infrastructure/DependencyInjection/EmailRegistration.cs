@@ -1,6 +1,3 @@
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Email;
 using Notrelix.Infrastructure.Options;
 
@@ -56,6 +53,8 @@ public static class EmailRegistration
         {
             services.AddTransient<IEmailService, NoopEmailService>();
         }
+
+        services.AddScoped<IEmailOutboxWriter, EmailOutboxWriter>();
 
         return services;
     }

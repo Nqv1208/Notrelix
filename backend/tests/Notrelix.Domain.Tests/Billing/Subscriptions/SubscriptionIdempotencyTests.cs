@@ -12,7 +12,7 @@ public class SubscriptionIdempotencyTests
     [Fact]
     public void CancelImmediately_ShouldNotIncrementVersion_WhenAlreadyCanceled()
     {
-        var sub = Subscription.Create(_workspaceId, Guid.NewGuid(), SubscriptionTier.Pro, _now, _now.AddDays(30), _actorId, _now);
+        var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, _now, _now.AddDays(30), _actorId, _now);
         sub.CancelImmediately(_actorId, _now);
         var version = sub.Version;
 
@@ -24,7 +24,7 @@ public class SubscriptionIdempotencyTests
     [Fact]
     public void ScheduleCancellation_ShouldNotIncrementVersion_WhenAlreadyScheduled()
     {
-        var sub = Subscription.Create(_workspaceId, Guid.NewGuid(), SubscriptionTier.Pro, _now, _now.AddDays(30), _actorId, _now);
+        var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, _now, _now.AddDays(30), _actorId, _now);
         sub.ScheduleCancellation(_actorId, _now);
         var version = sub.Version;
 
@@ -36,7 +36,7 @@ public class SubscriptionIdempotencyTests
     [Fact]
     public void Expire_ShouldNotIncrementVersion_WhenAlreadyExpired()
     {
-        var sub = Subscription.Create(_workspaceId, Guid.NewGuid(), SubscriptionTier.Pro, _now, _now.AddDays(30), _actorId, _now);
+        var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, _now, _now.AddDays(30), _actorId, _now);
         sub.Expire(_actorId, _now);
         var version = sub.Version;
 
@@ -48,7 +48,7 @@ public class SubscriptionIdempotencyTests
     [Fact]
     public void MarkPastDue_ShouldNotIncrementVersion_WhenAlreadyPastDue()
     {
-        var sub = Subscription.Create(_workspaceId, Guid.NewGuid(), SubscriptionTier.Pro, _now, _now.AddDays(30), _actorId, _now);
+        var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, _now, _now.AddDays(30), _actorId, _now);
         sub.MarkPastDue(_actorId, _now);
         var version = sub.Version;
 
@@ -61,7 +61,7 @@ public class SubscriptionIdempotencyTests
     public void DomainEvent_ShouldCarryNullActor_WhenCreatedBySystem()
     {
         var subscription = Subscription.Create(
-            _workspaceId,
+            Guid.NewGuid(),
             Guid.NewGuid(),
             SubscriptionTier.Pro,
             _now,

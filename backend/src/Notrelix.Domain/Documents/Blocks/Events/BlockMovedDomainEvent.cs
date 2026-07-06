@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.Documents.Blocks.Events;
 
 public sealed record BlockMovedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid BlockId,
     Guid PageId,
@@ -9,4 +10,4 @@ public sealed record BlockMovedDomainEvent(
     string NewPosition,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, UpdatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, UpdatedBy);

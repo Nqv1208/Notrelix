@@ -7,7 +7,7 @@ public static class CancelInvitationEndpoint
 {
     public static IEndpointRouteBuilder MapCancelInvitation(this IEndpointRouteBuilder group)
     {
-        group.MapDelete("/{invitationId:guid}", HandleAsync)
+        group.MapWorkspaceDelete("/{invitationId:guid}", HandleAsync)
             .WithName("Workspaces.Invitations.CancelInvitation")
             .WithTags("Workspaces.Invitations")
             .WithSummary("Cancel a workspace invitation");

@@ -2,6 +2,7 @@ namespace Notrelix.Domain.Workspaces.Spaces;
 
 public class Space : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
@@ -12,6 +13,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
     private Space() : base() { }
 
     public static Space Create(
+        Guid accountId,
         Guid workspaceId,
         string name,
         SpaceVisibility visibility,
@@ -20,6 +22,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
         SpaceType spaceType = SpaceType.Folder,
         string? description = null)
     {
+        Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(name);
         Guard.MaxLength(name, 160);
@@ -27,6 +30,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
 
         var space = new Space
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             Name = name.Trim(),
             Description = description?.Trim(),
@@ -36,7 +40,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
         };
 
         space.SetAuditOnCreate(createdBy, createdAt);
-        space.AddDomainEvent(new SpaceCreatedDomainEvent(space.Id, workspaceId, space.Name, createdBy, createdAt));
+        space.AddDomainEvent(new SpaceCreatedDomainEvent(space.Id, accountId, workspaceId, space.Name, createdBy, createdAt));
 
         return space;
     }
@@ -57,7 +61,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
         Name = normalizedName;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new SpaceRenamedDomainEvent(WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
+        AddDomainEvent(new SpaceRenamedDomainEvent(AccountId, WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
     }
 
     public void Move(Guid newWorkspaceId, Guid movedBy, DateTimeOffset movedAt)
@@ -81,7 +85,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
         Status = SpaceStatus.Archived;
         SetAuditOnUpdate(archivedBy, archivedAt);
         IncrementVersion();
-        AddDomainEvent(new SpaceArchivedDomainEvent(WorkspaceId, Id, archivedBy, archivedAt));
+        AddDomainEvent(new SpaceArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -92,7 +96,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new SpaceSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new SpaceSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -103,6 +107,6 @@ public class Space : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new SpaceRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new SpaceRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

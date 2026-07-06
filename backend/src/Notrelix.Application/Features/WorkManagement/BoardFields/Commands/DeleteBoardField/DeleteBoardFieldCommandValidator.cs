@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.DeleteBoardField;
 
 public class DeleteBoardFieldCommandValidator : AbstractValidator<DeleteBoardFieldCommand>

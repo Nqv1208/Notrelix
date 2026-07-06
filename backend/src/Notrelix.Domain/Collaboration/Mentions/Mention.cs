@@ -2,6 +2,7 @@ namespace Notrelix.Domain.Collaboration.Mentions;
 
 public class Mention : Entity, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public ResourceRef Source { get; private set; } = null!;
     public MentionType Type { get; private set; }
@@ -10,8 +11,9 @@ public class Mention : Entity, IWorkspaceScoped
 
     private Mention() : base() { }
 
-    public static Mention Create(Guid workspaceId, ResourceRef source, MentionType type, Guid mentionedId, DateTimeOffset createdAt)
+    public static Mention Create(Guid accountId, Guid workspaceId, ResourceRef source, MentionType type, Guid mentionedId, DateTimeOffset createdAt)
     {
+        Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(source);
         Guard.NotEmpty(mentionedId);
@@ -21,6 +23,7 @@ public class Mention : Entity, IWorkspaceScoped
 
         return new Mention
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             Source = source,
             Type = type,

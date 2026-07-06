@@ -1,5 +1,4 @@
 using System.Data;
-using Npgsql;
 
 namespace Notrelix.Infrastructure.Data.Ops.Stores;
 

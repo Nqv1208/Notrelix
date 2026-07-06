@@ -13,7 +13,7 @@ public class ShareLinkBoundaryTests
     public void ShareLink_Create_WithPublicAccessAndNoExpiry_ShouldThrow()
     {
         var tokenHash = ShareLinkTokenHash.Create("test-hash");
-        var act = () => ShareLink.Create(WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.Public, Actor, Now);
+        var act = () => ShareLink.Create(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.Public, Actor, Now);
         act.Should().Throw<BusinessRuleException>().WithMessage("*expiration*");
     }
 
@@ -21,7 +21,7 @@ public class ShareLinkBoundaryTests
     public void ShareLink_Create_WithPublicAccessAndExpiry_ShouldSucceed()
     {
         var tokenHash = ShareLinkTokenHash.Create("test-hash");
-        var link = ShareLink.Create(WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.Public, Actor, Now, Now.AddDays(7));
+        var link = ShareLink.Create(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.Public, Actor, Now, Now.AddDays(7));
         link.Should().NotBeNull();
         link.AccessMode.Should().Be(ShareLinkAccessMode.Public);
         link.ExpiresAt.Should().Be(Now.AddDays(7));
@@ -31,7 +31,7 @@ public class ShareLinkBoundaryTests
     public void ShareLink_Create_WithWorkspaceOnlyAccess_ShouldAllowNoExpiry()
     {
         var tokenHash = ShareLinkTokenHash.Create("test-hash");
-        var link = ShareLink.Create(WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.WorkspaceOnly, Actor, Now);
+        var link = ShareLink.Create(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.WorkspaceOnly, Actor, Now);
         link.Should().NotBeNull();
         link.ExpiresAt.Should().BeNull();
     }
@@ -40,7 +40,7 @@ public class ShareLinkBoundaryTests
     public void ShareLink_Expire_ShouldUseNullActor()
     {
         var tokenHash = ShareLinkTokenHash.Create("test-hash");
-        var link = ShareLink.Create(WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.WorkspaceOnly, Actor, Now);
+        var link = ShareLink.Create(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.WorkspaceOnly, Actor, Now);
         link.Expire(Now);
         link.Status.Should().Be(ShareLinkStatus.Expired);
     }
@@ -49,7 +49,7 @@ public class ShareLinkBoundaryTests
     public void ShareLink_IsExpired_WhenExpired_ShouldReturnTrue()
     {
         var tokenHash = ShareLinkTokenHash.Create("test-hash");
-        var link = ShareLink.Create(WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.WorkspaceOnly, Actor, Now);
+        var link = ShareLink.Create(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.WorkspaceOnly, Actor, Now);
         link.Expire(Now);
         link.IsExpired(Now).Should().BeTrue();
     }
@@ -58,7 +58,7 @@ public class ShareLinkBoundaryTests
     public void ShareLink_IsExpired_WhenPastExpiry_ShouldReturnTrue()
     {
         var tokenHash = ShareLinkTokenHash.Create("test-hash");
-        var link = ShareLink.Create(WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.WorkspaceOnly, Actor, Now, Now.AddDays(-1));
+        var link = ShareLink.Create(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.WorkspaceOnly, Actor, Now, Now.AddDays(-1));
         link.IsExpired(Now).Should().BeTrue();
     }
 }

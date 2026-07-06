@@ -1,5 +1,4 @@
 using Notrelix.API.Extensions;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile;
 
 namespace Notrelix.API.Endpoints.Identity.Profile.Commands;
@@ -8,7 +7,7 @@ public static class UpdateProfileEndpoint
 {
     public static IEndpointRouteBuilder MapUpdateProfile(this IEndpointRouteBuilder group)
     {
-        group.MapPatch("/", HandleAsync)
+        group.MapAuthenticatedPatch("/", HandleAsync)
             .WithName("Identity.Profile.UpdateProfile")
             .WithTags("Identity.Profile")
             .WithSummary("Update current user profile");

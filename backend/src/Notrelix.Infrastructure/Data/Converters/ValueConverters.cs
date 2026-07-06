@@ -1,11 +1,8 @@
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using System.Text.Json;
 using Notrelix.Domain.Billing.Usage;
-using Notrelix.Domain.Collaboration.Activity;
 using Notrelix.Domain.Documents.Versions;
-using Notrelix.Domain.Governance.Security.Events;
 using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Domain.Integrations.Sync;
-using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.WorkManagement.Views;
 
 namespace Notrelix.Infrastructure.Data.Converters;
@@ -84,18 +81,14 @@ public class ApiTokenScopesConverter : ValueConverter<ApiTokenScopes, string>
     }
 }
 
-public class ActivityMetadataConverter : ValueConverter<ActivityMetadata, string>
+public class JsonDocumentConverter : ValueConverter<JsonDocument, string>
 {
-    public ActivityMetadataConverter()
-        : base(v => v.Data.Value, v => ActivityMetadata.Create(JsonValue.Create(v)))
+    public JsonDocumentConverter()
+        : base(
+            d => d.RootElement.GetRawText(),
+            s => JsonDocument.Parse(s, default))
     {
     }
 }
 
-public class SecurityEventMetadataConverter : ValueConverter<SecurityEventMetadata, string>
-{
-    public SecurityEventMetadataConverter()
-        : base(v => v.Data.Value, v => SecurityEventMetadata.Create(JsonValue.Create(v)))
-    {
-    }
-}
+

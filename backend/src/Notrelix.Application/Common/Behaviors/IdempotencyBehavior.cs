@@ -1,6 +1,3 @@
-using MediatR;
-using Microsoft.Extensions.Logging;
-
 namespace Notrelix.Application.Common.Behaviors;
 
 public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>

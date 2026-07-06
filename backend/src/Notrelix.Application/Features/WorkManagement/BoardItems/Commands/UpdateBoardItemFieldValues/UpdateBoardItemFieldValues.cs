@@ -1,29 +1,35 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValues;
 
-public record UpdateBoardItemFieldValuesCommand(Guid BoardItemId, Dictionary<Guid, object?> Values) : ICommand<Result>, ITransactionalRequest;
+public record UpdateBoardItemFieldValuesCommand(Guid BoardItemId, Dictionary<Guid, object?> Values) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.UpdateItem;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+}
 
 public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBoardItemFieldValuesCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
-    private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _timeProvider;
+    private readonly IResourceReferenceResolver _resourceResolver;
+    private readonly ICurrentTenantContext _tenant;
 
     public UpdateBoardItemFieldValuesCommandHandler(
-        IApplicationDbContext context,
+        IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions,
-        IDateTimeProvider timeProvider)
+        IDateTimeProvider timeProvider,
+        IResourceReferenceResolver resourceResolver,
+        ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
-        _permissions = permissions;
         _timeProvider = timeProvider;
+        _resourceResolver = resourceResolver;
+        _tenant = tenant;
     }
 
     public async Task<Result> Handle(UpdateBoardItemFieldValuesCommand request, CancellationToken ct)
@@ -31,8 +37,6 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
         var card = await _context.BoardItems
             .FirstOrDefaultAsync(c => c.Id == request.BoardItemId && c.DeletedAt == null, ct);
         if (card is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
-
-        await _permissions.EnsureCanEditBoardAsync(card.BoardId, _currentUser.UserId, ct);
 
         var now = _timeProvider.UtcNow;
 
@@ -82,6 +86,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
                         {
                             await EnsurePageCanBeLinkedAsync(pageId.Value, card.WorkspaceId, ct);
                             var link = BoardItemLink.Create(
+                                _tenant.RequireAccountId(),
                                 card.WorkspaceId, card.BoardId, card.Id,
                                 ResourceRef.Create(ResourceType.Page, pageId.Value, card.WorkspaceId),
                                 BoardItemLinkType.Reference,
@@ -123,16 +128,12 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
 
     private async Task EnsurePageCanBeLinkedAsync(Guid pageId, Guid boardWorkspaceId, CancellationToken ct)
     {
-        var pageWorkspaceId = await _context.Pages
-            .AsNoTracking()
-            .Where(page => page.Id == pageId && !page.IsDeleted)
-            .Select(page => page.WorkspaceId)
-            .FirstOrDefaultAsync(ct);
+        var pageWorkspaceId = await _resourceResolver.GetWorkspaceIdAsync(pageId, ResourceTypes.Page, ct);
 
-        if (pageWorkspaceId == Guid.Empty)
+        if (!pageWorkspaceId.HasValue)
             throw new NotFoundException(nameof(Page), pageId);
 
-        if (pageWorkspaceId != boardWorkspaceId)
+        if (pageWorkspaceId.Value != boardWorkspaceId)
             throw new Notrelix.Domain.Common.Exceptions.BusinessRuleViolationException(
                 "CardPageSameWorkspace",
                 "BoardItem can only be linked to a page in the same workspace.");
@@ -154,6 +155,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
         foreach (var userId in requested.Where(userId => !existingUserIds.Contains(userId)))
         {
             var member = BoardItemMember.Create(
+                _tenant.RequireAccountId(),
                 card.WorkspaceId, card.BoardId, card.Id,
                 userId, _currentUser.UserId, now);
             _context.BoardItemMembers.Add(member);

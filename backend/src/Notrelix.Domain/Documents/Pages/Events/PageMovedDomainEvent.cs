@@ -1,10 +1,11 @@
 namespace Notrelix.Domain.Documents.Pages.Events;
 
 public sealed record PageMovedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid PageId,
     Guid? OldParentId,
     Guid? NewParentId,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, UpdatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, UpdatedBy);

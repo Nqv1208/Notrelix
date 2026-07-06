@@ -1,43 +1,27 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Automation.DTOs;
 
 namespace Notrelix.Application.Features.Automation.Executions.Queries.GetAutomationExecutions;
 
 public record GetAutomationExecutionsQuery(Guid AutomationRuleId, int Page = 1, int PageSize = 20)
-    : IQuery<Result<IReadOnlyList<AutomationExecutionDto>>>;
+    : IQuery<Result<IReadOnlyList<AutomationExecutionDto>>>, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.ViewBoard;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.AutomationRule, AutomationRuleId);
+}
 
 public class GetAutomationExecutionsQueryHandler : IRequestHandler<GetAutomationExecutionsQuery, Result<IReadOnlyList<AutomationExecutionDto>>>
 {
-    private readonly IApplicationDbContext _context;
-    private readonly ICurrentUser _currentUser;
-    private readonly IWorkspacePermissionService _permissions;
+    private readonly IAutomationDbContext _context;
 
-    public GetAutomationExecutionsQueryHandler(
-        IApplicationDbContext context,
-        ICurrentUser currentUser,
-        IWorkspacePermissionService permissions)
+    public GetAutomationExecutionsQueryHandler(IAutomationDbContext context)
     {
         _context = context;
-        _currentUser = currentUser;
-        _permissions = permissions;
     }
 
     public async Task<Result<IReadOnlyList<AutomationExecutionDto>>> Handle(GetAutomationExecutionsQuery request, CancellationToken cancellationToken)
     {
-        var workspaceId = await _context.AutomationRules
-            .AsNoTracking()
-            .Where(item => item.Id == request.AutomationRuleId)
-            .Select(item => item.WorkspaceId)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (workspaceId == Guid.Empty ||
-            !await _permissions.CanViewWorkspaceAsync(workspaceId, _currentUser.UserId, cancellationToken))
-        {
-            return Result<IReadOnlyList<AutomationExecutionDto>>.Failure("Automation not found or access denied.");
-        }
-
         var page = Math.Max(1, request.Page);
         var pageSize = Math.Clamp(request.PageSize, 1, 100);
 

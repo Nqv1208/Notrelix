@@ -2,6 +2,7 @@ namespace Notrelix.Domain.Governance.Policies;
 
 public class WorkspacePolicy : AuditableEntity, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public GuestAccessPolicy GuestPolicy { get; private set; } = null!;
     public ResourcePolicy ResourcePolicy { get; private set; } = null!;
@@ -9,12 +10,14 @@ public class WorkspacePolicy : AuditableEntity, IWorkspaceScoped
 
     private WorkspacePolicy() : base() { }
 
-    public static WorkspacePolicy Create(Guid workspaceId, Guid createdBy, DateTimeOffset createdAt)
+    public static WorkspacePolicy Create(Guid accountId, Guid workspaceId, Guid createdBy, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
+        Guard.NotEmpty(accountId);
 
         var policy = new WorkspacePolicy
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             GuestPolicy = GuestAccessPolicy.Create(true),
             ResourcePolicy = ResourcePolicy.Create(false),
@@ -37,6 +40,6 @@ public class WorkspacePolicy : AuditableEntity, IWorkspaceScoped
         if (sharingPolicy != null) SharingPolicy = sharingPolicy;
 
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new WorkspacePolicyUpdatedEvent(WorkspaceId, updatedBy, updatedAt));
+        AddDomainEvent(new WorkspacePolicyUpdatedEvent(AccountId, WorkspaceId, updatedBy, updatedAt));
     }
 }

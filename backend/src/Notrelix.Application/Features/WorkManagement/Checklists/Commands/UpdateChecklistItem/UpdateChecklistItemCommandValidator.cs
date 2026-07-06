@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.UpdateChecklistItem;
 
 public class UpdateChecklistItemCommandValidator : AbstractValidator<UpdateChecklistItemCommand>

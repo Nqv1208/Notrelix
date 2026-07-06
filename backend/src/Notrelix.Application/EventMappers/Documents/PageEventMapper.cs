@@ -14,7 +14,7 @@ public sealed class PageEventMapper :
             domainEvent.Title,
             null,
             ((IDomainEvent)domainEvent).ActorUserId,
-            null,
+            default,
             null,
             domainEvent.OccurredAt
         );
@@ -26,7 +26,7 @@ public sealed class PageEventMapper :
             domainEvent.PageId,
             domainEvent.WorkspaceId,
             ((IDomainEvent)domainEvent).ActorUserId,
-            null,
+            default,
             null,
             domainEvent.OccurredAt
         );

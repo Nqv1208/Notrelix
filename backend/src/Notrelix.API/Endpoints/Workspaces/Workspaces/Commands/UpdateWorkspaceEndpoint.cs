@@ -7,7 +7,7 @@ public static class UpdateWorkspaceEndpoint
 {
     public static IEndpointRouteBuilder MapUpdateWorkspace(this IEndpointRouteBuilder group)
     {
-        group.MapPatch("/", HandleAsync)
+        group.MapWorkspacePatch("/", HandleAsync)
             .WithName("Workspaces.Workspaces.UpdateWorkspace")
             .WithTags("Workspaces.Workspaces")
             .WithSummary("Update workspace settings");

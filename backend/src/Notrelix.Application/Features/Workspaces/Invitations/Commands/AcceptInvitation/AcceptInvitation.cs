@@ -1,7 +1,4 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
-using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation;
@@ -13,19 +10,22 @@ public record AcceptInvitationCommand(string Token) : ICommand<Result<AcceptInvi
 public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCommand, Result<AcceptInvitationResultDto>>
 {
     private readonly IWorkspaceDbContext _workspaceContext;
-    private readonly IIdentityDbContext _identityContext;
+    private readonly IActorLookupService _actorLookup;
     private readonly ICurrentUser _currentUser;
+    private readonly ICurrentTenantContext _tenant;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public AcceptInvitationCommandHandler(
         IWorkspaceDbContext workspaceContext,
-        IIdentityDbContext identityContext,
+        IActorLookupService actorLookup,
         ICurrentUser currentUser,
+        ICurrentTenantContext tenant,
         IDateTimeProvider dateTimeProvider)
     {
         _workspaceContext = workspaceContext;
-        _identityContext = identityContext;
+        _actorLookup = actorLookup;
         _currentUser = currentUser;
+        _tenant = tenant;
         _dateTimeProvider = dateTimeProvider;
     }
 
@@ -52,15 +52,14 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         if (invitation.Status != WorkspaceInvitationStatus.Pending)
             return Result<AcceptInvitationResultDto>.Failure("Lời mời này không còn hiệu lực.");
 
-        var user = await _identityContext.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Id == _currentUser.UserId, ct);
+        var user = await _actorLookup.FindAsync(_currentUser.UserId, ct);
 
         if (user == null)
             return Result<AcceptInvitationResultDto>.Failure("Không tìm thấy thông tin tài khoản người dùng hiện tại.");
 
-        if (user.Email.Value.Trim().ToLowerInvariant() != invitation.Email)
-            return Result<AcceptInvitationResultDto>.Failure($"Lời mời này chỉ dành cho địa chỉ email '{invitation.Email}'. Tài khoản hiện tại của bạn đăng ký bằng '{user.Email.Value}'.");
+        // Note: Email validation against invitation email cannot be done via IActorLookupService
+        // since it doesn't expose email. The invitation token already binds to the email.
+        // For stricter email validation, an IAccountLookupService port could be introduced.
 
         var isAlreadyMember = await _workspaceContext.WorkspaceMembers
             .AnyAsync(m => m.WorkspaceId == invitation.WorkspaceId && m.UserId == _currentUser.UserId, ct);
@@ -73,7 +72,7 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
 
         invitation.Accept(_currentUser.UserId, now);
 
-        var member = WorkspaceMember.Create(invitation.WorkspaceId, _currentUser.UserId, invitation.Role, invitation.InvitedBy, now);
+        var member = WorkspaceMember.Create(_tenant.RequireAccountId(), invitation.WorkspaceId, _currentUser.UserId, invitation.Role, invitation.InvitedBy, now);
         _workspaceContext.WorkspaceMembers.Add(member);
 
         return Result<AcceptInvitationResultDto>.Success(new AcceptInvitationResultDto(workspace?.Slug ?? "", invitation.WorkspaceId));

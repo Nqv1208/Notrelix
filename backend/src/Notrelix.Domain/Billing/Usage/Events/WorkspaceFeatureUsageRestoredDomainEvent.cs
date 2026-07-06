@@ -1,8 +1,9 @@
 namespace Notrelix.Domain.Billing.Usage.Events;
 
 public sealed record WorkspaceFeatureUsageRestoredDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     FeatureCode Feature,
     Guid RestoredBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, RestoredBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, RestoredBy);

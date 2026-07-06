@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.WorkManagement.Fields.Events;
 
 public sealed record BoardFieldRenamedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid FieldId,
     Guid BoardId,
@@ -8,4 +9,4 @@ public sealed record BoardFieldRenamedDomainEvent(
     string NewName,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, UpdatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, UpdatedBy);

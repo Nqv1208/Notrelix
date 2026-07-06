@@ -1,6 +1,5 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.CancelInvitation;
 
@@ -11,9 +10,9 @@ public record CancelInvitationCommand(
 
 public class CancelInvitationCommandHandler : IRequestHandler<CancelInvitationCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkspaceDbContext _context;
 
-    public CancelInvitationCommandHandler(IApplicationDbContext context) => _context = context;
+    public CancelInvitationCommandHandler(IWorkspaceDbContext context) => _context = context;
 
     public async Task<Result> Handle(CancelInvitationCommand request, CancellationToken ct)
     {

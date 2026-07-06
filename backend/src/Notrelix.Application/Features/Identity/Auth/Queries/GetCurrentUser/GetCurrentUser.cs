@@ -1,6 +1,5 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Queries.GetCurrentUser;
 
@@ -13,9 +12,9 @@ public record GetCurrentUserQuery : IQuery<Result<UserDto>>
 // Handler cho GetCurrentUserQuery
 public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, Result<UserDto>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IIdentityDbContext _context;
 
-    public GetCurrentUserQueryHandler(IApplicationDbContext context)
+    public GetCurrentUserQueryHandler(IIdentityDbContext context)
     {
         _context = context;
     }

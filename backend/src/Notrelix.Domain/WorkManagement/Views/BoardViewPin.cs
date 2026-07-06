@@ -8,6 +8,7 @@ public enum BoardViewPinScope
 
 public class BoardViewPin : Entity, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid BoardId { get; private set; }
     public Guid BoardViewId { get; private set; }
@@ -20,6 +21,7 @@ public class BoardViewPin : Entity, IWorkspaceScoped
     private BoardViewPin() : base() { }
 
     public static BoardViewPin Create(
+        Guid accountId,
         Guid workspaceId,
         Guid boardId,
         Guid boardViewId,
@@ -33,9 +35,11 @@ public class BoardViewPin : Entity, IWorkspaceScoped
         Guard.NotEmpty(boardId);
         Guard.NotEmpty(boardViewId);
         Guard.NotNull(position);
+        Guard.NotEmpty(accountId);
 
         return new BoardViewPin
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             BoardId = boardId,
             BoardViewId = boardViewId,

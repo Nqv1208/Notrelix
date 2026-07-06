@@ -6,12 +6,13 @@ public record FeatureUsageReleasedDomainEvent : WorkspaceScopedDomainEvent
     public decimal Amount { get; }
 
     public FeatureUsageReleasedDomainEvent(
+        Guid accountId,
         Guid workspaceId,
         string featureCode,
         decimal amount,
         Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(workspaceId, occurredAt, actorUserId)
+        : base(accountId, workspaceId, occurredAt, actorUserId)
     {
         FeatureCode = featureCode;
         Amount = amount;

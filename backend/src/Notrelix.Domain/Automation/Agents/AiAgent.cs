@@ -21,6 +21,7 @@ public enum AiAgentStatus
 
 public class AiAgent : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
@@ -34,6 +35,7 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
     private AiAgent() : base() { }
 
     public static AiAgent Create(
+        Guid accountId,
         Guid workspaceId,
         string name,
         string? description,
@@ -45,6 +47,7 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
         Guid createdBy,
         DateTimeOffset createdAt)
     {
+        Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(name);
         Guard.NotNull(modelPolicy);
@@ -58,6 +61,7 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
 
         var agent = new AiAgent
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             Name = name.Trim(),
             Description = description?.Trim(),
@@ -70,7 +74,7 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
         };
 
         agent.SetAuditOnCreate(createdBy, createdAt);
-        agent.AddDomainEvent(new AiAgentCreatedDomainEvent(workspaceId, agent.Id, name, createdBy, createdAt));
+        agent.AddDomainEvent(new AiAgentCreatedDomainEvent(accountId, workspaceId, agent.Id, name, createdBy, createdAt));
         return agent;
     }
 
@@ -97,7 +101,7 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
 
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new AiAgentUpdatedDomainEvent(WorkspaceId, Id, Name, updatedBy, updatedAt));
+        AddDomainEvent(new AiAgentUpdatedDomainEvent(AccountId, WorkspaceId, Id, Name, updatedBy, updatedAt));
     }
 
     public void ChangeStatus(AiAgentStatus newStatus, Guid updatedBy, DateTimeOffset updatedAt)
@@ -126,7 +130,7 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
         Status = newStatus;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new AiAgentStatusChangedDomainEvent(WorkspaceId, Id, Status, updatedBy, updatedAt));
+        AddDomainEvent(new AiAgentStatusChangedDomainEvent(AccountId, WorkspaceId, Id, Status, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -136,7 +140,7 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new AiAgentStatusChangedDomainEvent(WorkspaceId, Id, Status, deletedBy, deletedAt));
+        AddDomainEvent(new AiAgentStatusChangedDomainEvent(AccountId, WorkspaceId, Id, Status, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -146,6 +150,6 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new AiAgentStatusChangedDomainEvent(WorkspaceId, Id, Status, restoredBy, restoredAt));
+        AddDomainEvent(new AiAgentStatusChangedDomainEvent(AccountId, WorkspaceId, Id, Status, restoredBy, restoredAt));
     }
 }

@@ -7,7 +7,7 @@ public static class DeleteChecklistEndpoint
 {
     public static IEndpointRouteBuilder MapDeleteChecklist(this IEndpointRouteBuilder group)
     {
-        group.MapDelete("/", HandleAsync)
+        group.MapResourceDelete("/", HandleAsync)
             .WithName("WorkManagement.Checklists.Delete")
             .WithTags("WorkManagement.Checklists")
             .WithSummary("Delete a checklist");

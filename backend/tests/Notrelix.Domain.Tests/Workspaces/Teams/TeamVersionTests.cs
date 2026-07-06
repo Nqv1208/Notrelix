@@ -5,6 +5,7 @@ namespace Notrelix.Domain.Tests.Workspaces;
 
 public class TeamVersionTests
 {
+    private readonly Guid _accountId = Guid.NewGuid();
     private readonly Guid _workspaceId = Guid.NewGuid();
     private readonly Guid _actorId = Guid.NewGuid();
     private readonly Guid _userId = Guid.NewGuid();
@@ -13,7 +14,7 @@ public class TeamVersionTests
     [Fact]
     public void Rename_ShouldIncrementVersion()
     {
-        var team = Team.Create(_workspaceId, "Original", _actorId, _now);
+        var team = Team.Create(_accountId, _workspaceId, "Original", _actorId, _now);
         team.ClearDomainEvents();
         var version = team.Version;
 
@@ -26,7 +27,7 @@ public class TeamVersionTests
     [Fact]
     public void Archive_ShouldIncrementVersion()
     {
-        var team = Team.Create(_workspaceId, "Team", _actorId, _now);
+        var team = Team.Create(_accountId, _workspaceId, "Team", _actorId, _now);
         team.ClearDomainEvents();
         var version = team.Version;
 
@@ -39,7 +40,7 @@ public class TeamVersionTests
     [Fact]
     public void AddMember_ShouldIncrementVersion()
     {
-        var team = Team.Create(_workspaceId, "Team", _actorId, _now);
+        var team = Team.Create(_accountId, _workspaceId, "Team", _actorId, _now);
         team.ClearDomainEvents();
         var version = team.Version;
 
@@ -52,7 +53,7 @@ public class TeamVersionTests
     [Fact]
     public void RemoveMember_ShouldIncrementVersion()
     {
-        var team = Team.Create(_workspaceId, "Team", _actorId, _now);
+        var team = Team.Create(_accountId, _workspaceId, "Team", _actorId, _now);
         team.AddMember(_userId, TeamMemberRole.Member, _actorId, _now);
         team.ClearDomainEvents();
         var version = team.Version;
@@ -66,7 +67,7 @@ public class TeamVersionTests
     [Fact]
     public void SoftDelete_ShouldIncrementVersion()
     {
-        var team = Team.Create(_workspaceId, "Team", _actorId, _now);
+        var team = Team.Create(_accountId, _workspaceId, "Team", _actorId, _now);
         team.ClearDomainEvents();
         var version = team.Version;
 
@@ -80,7 +81,7 @@ public class TeamVersionTests
     [Fact]
     public void Restore_ShouldIncrementVersion()
     {
-        var team = Team.Create(_workspaceId, "Team", _actorId, _now);
+        var team = Team.Create(_accountId, _workspaceId, "Team", _actorId, _now);
         team.SoftDelete(_actorId, _now);
         team.ClearDomainEvents();
         var version = team.Version;

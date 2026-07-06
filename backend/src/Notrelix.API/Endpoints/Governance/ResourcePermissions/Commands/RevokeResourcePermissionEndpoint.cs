@@ -1,6 +1,5 @@
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Governance.ResourcePermissions.Commands.RevokeResourcePermission;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.API.Endpoints.Governance.ResourcePermissions.Commands;
 
@@ -8,7 +7,7 @@ public static class RevokeResourcePermissionEndpoint
 {
     public static IEndpointRouteBuilder MapRevokeResourcePermission(this IEndpointRouteBuilder group)
     {
-        group.MapDelete("/{permissionId:guid}", HandleAsync)
+        group.MapResourceDelete("/{permissionId:guid}", HandleAsync)
             .WithName("Governance.ResourcePermissions.Revoke")
             .WithTags("Governance.ResourcePermissions")
             .WithSummary("Revoke a permission from a resource");
@@ -16,7 +15,6 @@ public static class RevokeResourcePermissionEndpoint
     }
 
     private static async Task<IResult> HandleAsync(
-        Guid workspaceId,
         string resourceType,
         Guid resourceId,
         Guid permissionId,
@@ -24,7 +22,7 @@ public static class RevokeResourcePermissionEndpoint
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new RevokeResourcePermissionCommand(workspaceId, Enum.Parse<ResourceType>(resourceType, ignoreCase: true), resourceId, permissionId),
+            new RevokeResourcePermissionCommand(Enum.Parse<ResourceType>(resourceType, ignoreCase: true), resourceId, permissionId),
             cancellationToken);
         return result.ToNoContentResult();
     }

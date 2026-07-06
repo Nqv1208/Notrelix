@@ -1,4 +1,3 @@
-using FluentValidation;
 using Notrelix.Domain.Automation.RulesEngine;
 
 namespace Notrelix.Application.Features.Automation.Rules.Commands.CreateAutomationRule;

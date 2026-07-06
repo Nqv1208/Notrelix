@@ -1,7 +1,3 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Auth.Jwt;
 
 namespace Notrelix.Infrastructure.Auth.Cookies

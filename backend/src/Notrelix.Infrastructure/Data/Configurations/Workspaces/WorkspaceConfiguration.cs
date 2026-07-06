@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Workspaces.Workspaces;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Workspaces;
@@ -18,7 +16,7 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(1024);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.IsPersonal).HasColumnName("is_personal");
-        builder.Property(x => x.AccountId).HasColumnName("account_id");
+        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
 
         builder.OwnsOne(x => x.Settings, settings =>
         {

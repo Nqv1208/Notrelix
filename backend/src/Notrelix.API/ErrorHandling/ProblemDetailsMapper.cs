@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Exceptions;
 using AppForbiddenException = Notrelix.Application.Common.Exceptions.ForbiddenException;
 using AppBusinessRuleException = Notrelix.Application.Common.Exceptions.BusinessRuleException;
 using AppConflictException = Notrelix.Application.Common.Exceptions.ConflictException;
@@ -17,7 +16,14 @@ public static class ProblemDetailsMapper
     {
         (int StatusCode, string ErrorCode, string Title, string Detail, IReadOnlyDictionary<string, string[]>? Errors) mapped = exception switch
         {
-            ValidationException ex => (
+            FluentValidation.ValidationException ex => (
+                StatusCodes.Status400BadRequest,
+                ErrorCodes.ValidationFailed,
+                "Validation failed",
+                "One or more validation errors occurred.",
+                (IReadOnlyDictionary<string, string[]>)ex.Errors
+            ),
+            Notrelix.Application.Common.Exceptions.ValidationException ex => (
                 StatusCodes.Status400BadRequest,
                 ErrorCodes.ValidationFailed,
                 "Validation failed",

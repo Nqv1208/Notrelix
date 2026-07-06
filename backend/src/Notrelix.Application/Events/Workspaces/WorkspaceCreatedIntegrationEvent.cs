@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Events;
-
 namespace Notrelix.Application.Events.Workspaces;
 
 [EventName("workspace.created", Version = 1)]
@@ -9,13 +7,14 @@ public sealed record WorkspaceCreatedIntegrationEvent(
     string Slug,
     Guid OwnerId,
     Guid? ActorUserId = null,
-    string? CorrelationId = null,
-    string? CausationId = null,
+    Guid CorrelationId = default,
+    Guid? CausationId = null,
     DateTimeOffset OccurredAt = default
 ) : IntegrationEvent(
     "workspace.created",
     1,
     sourceEventId: null,
+    accountId: null,
     WorkspaceId,
     ActorUserId,
     CorrelationId,

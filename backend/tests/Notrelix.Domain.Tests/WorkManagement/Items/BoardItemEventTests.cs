@@ -5,15 +5,17 @@ namespace Notrelix.Domain.Tests.WorkManagement.Items;
 
 public class BoardItemEventTests
 {
+    private static readonly Guid AccountId = Guid.NewGuid();
     private static readonly Guid WsA = Guid.NewGuid();
     private static readonly Guid BoardA = Guid.NewGuid();
+    private static readonly Guid GroupA = Guid.NewGuid();
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
     [Fact]
     public void BoardItem_Complete_ShouldRaiseEvent()
     {
-        var item = BoardItem.Create(WsA, BoardA, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Actor, Now);
+        var item = BoardItem.Create(AccountId, WsA, BoardA, GroupA, "Item", FractionalIndex.Create("a0"), Actor, Now);
         item.ClearDomainEvents();
         var version = item.Version;
 
@@ -29,7 +31,7 @@ public class BoardItemEventTests
     [Fact]
     public void BoardItem_Complete_WhenSameValue_ShouldNotRaiseEvent()
     {
-        var item = BoardItem.Create(WsA, BoardA, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Actor, Now);
+        var item = BoardItem.Create(AccountId, WsA, BoardA, GroupA, "Item", FractionalIndex.Create("a0"), Actor, Now);
         item.Complete(Now, Actor, Now);
         item.ClearDomainEvents();
         var version = item.Version;
@@ -43,7 +45,7 @@ public class BoardItemEventTests
     [Fact]
     public void BoardItem_SetTimeline_ShouldRaiseEvent()
     {
-        var item = BoardItem.Create(WsA, BoardA, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Actor, Now);
+        var item = BoardItem.Create(AccountId, WsA, BoardA, GroupA, "Item", FractionalIndex.Create("a0"), Actor, Now);
         item.ClearDomainEvents();
         var version = item.Version;
 
@@ -59,7 +61,7 @@ public class BoardItemEventTests
     [Fact]
     public void BoardItem_SetTimeline_WhenSameValue_ShouldNotRaiseEvent()
     {
-        var item = BoardItem.Create(WsA, BoardA, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Actor, Now, startedAt: Now, dueAt: Now.AddDays(7));
+        var item = BoardItem.Create(AccountId, WsA, BoardA, GroupA, "Item", FractionalIndex.Create("a0"), Actor, Now, startedAt: Now, dueAt: Now.AddDays(7));
         item.ClearDomainEvents();
         var version = item.Version;
 
@@ -72,7 +74,7 @@ public class BoardItemEventTests
     [Fact]
     public void BoardItem_AssignParentItem_ShouldRaiseEvent()
     {
-        var item = BoardItem.Create(WsA, BoardA, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Actor, Now);
+        var item = BoardItem.Create(AccountId, WsA, BoardA, GroupA, "Item", FractionalIndex.Create("a0"), Actor, Now);
         item.ClearDomainEvents();
         var version = item.Version;
         var parentId = Guid.NewGuid();
@@ -91,7 +93,7 @@ public class BoardItemEventTests
     [Fact]
     public void BoardItem_AssignParentItem_WithOwnId_ShouldThrow()
     {
-        var item = BoardItem.Create(WsA, BoardA, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Actor, Now);
+        var item = BoardItem.Create(AccountId, WsA, BoardA, GroupA, "Item", FractionalIndex.Create("a0"), Actor, Now);
 
         var act = () => item.AssignParentItem(item.Id, 0, _ => (BoardA, (Guid?)null), Actor, Now);
         act.Should().Throw<BusinessRuleException>().WithMessage("*own parent*");
@@ -100,7 +102,7 @@ public class BoardItemEventTests
     [Fact]
     public void BoardItem_AssignParentItem_WithCycle_ShouldThrow()
     {
-        var item = BoardItem.Create(WsA, BoardA, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Actor, Now);
+        var item = BoardItem.Create(AccountId, WsA, BoardA, GroupA, "Item", FractionalIndex.Create("a0"), Actor, Now);
 
         // Simulate: item → parent → grandparent → item (cycle back to item)
         var grandparent = Guid.NewGuid();
@@ -118,7 +120,7 @@ public class BoardItemEventTests
     [Fact]
     public void BoardItem_AssignParentItem_WithNull_ShouldClearParent()
     {
-        var item = BoardItem.Create(WsA, BoardA, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Actor, Now);
+        var item = BoardItem.Create(AccountId, WsA, BoardA, GroupA, "Item", FractionalIndex.Create("a0"), Actor, Now);
         item.AssignParentItem(Guid.NewGuid(), 1, _ => (BoardA, (Guid?)null), Actor, Now);
         item.ClearDomainEvents();
         var version = item.Version;

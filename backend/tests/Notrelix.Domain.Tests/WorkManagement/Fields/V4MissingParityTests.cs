@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Automation.Agents;
 using Notrelix.Domain.Automation.Agents.Events;
-using Notrelix.Domain.Collaboration.Notifications;
 using Notrelix.Domain.Analytics.Dashboards;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
@@ -16,7 +15,7 @@ public class V4MissingParityTests
     [Fact]
     public void AiAgent_Create_ShouldSucceed_AndRaiseEvent()
     {
-        var agent = AiAgent.Create(
+        var agent = AiAgent.Create(Guid.NewGuid(),
             _workspaceId,
             "Translation Bot",
             "Translates items automatically",
@@ -48,7 +47,7 @@ public class V4MissingParityTests
     [Fact]
     public void AiAgent_Update_ShouldModifyFields_AndRaiseEvent()
     {
-        var agent = AiAgent.Create(
+        var agent = AiAgent.Create(Guid.NewGuid(),
             _workspaceId,
             "Agent",
             null,
@@ -79,7 +78,7 @@ public class V4MissingParityTests
     [Fact]
     public void AiAgent_ChangeStatus_ShouldTransitionStatus()
     {
-        var agent = AiAgent.Create(
+        var agent = AiAgent.Create(Guid.NewGuid(),
             _workspaceId,
             "Agent",
             null,
@@ -104,7 +103,7 @@ public class V4MissingParityTests
     public void AiAgentRun_CreateAndTransition_ShouldManageLifecycle()
     {
         var agentId = Guid.NewGuid();
-        var run = AiAgentRun.Create(
+        var run = AiAgentRun.Create(Guid.NewGuid(),
             _workspaceId,
             agentId,
             "ItemCreated",
@@ -132,55 +131,12 @@ public class V4MissingParityTests
     }
 
     [Fact]
-    public void NotificationDelivery_Lifecycle_ShouldSucceed()
-    {
-        var notificationId = Guid.NewGuid();
-        var recipientUserId = Guid.NewGuid();
-
-        var delivery = NotificationDelivery.Create(
-            notificationId,
-            _workspaceId,
-            recipientUserId,
-            NotificationChannel.Email,
-            _now);
-
-        delivery.Status.Should().Be(NotificationDeliveryStatus.Pending);
-        delivery.WorkspaceId.Should().Be(_workspaceId);
-        delivery.RecipientUserId.Should().Be(recipientUserId);
-
-        delivery.MarkSent("msg-12345", _now.AddSeconds(2));
-        delivery.Status.Should().Be(NotificationDeliveryStatus.Sent);
-        delivery.ProviderMessageId.Should().Be("msg-12345");
-    }
-
-    [Fact]
-    public void UnreadCounter_ShouldIncrementAndReset()
-    {
-        var userId = Guid.NewGuid();
-        var counter = UnreadCounter.Create(_workspaceId, userId, UnreadCounterType.Mention, _now);
-
-        counter.CounterValue.Should().Be(0);
-
-        counter.Increment(_now.AddSeconds(1));
-        counter.CounterValue.Should().Be(1);
-
-        counter.Increment(_now.AddSeconds(2));
-        counter.CounterValue.Should().Be(2);
-
-        counter.Decrement(_now.AddSeconds(3));
-        counter.CounterValue.Should().Be(1);
-
-        counter.Reset(_now.AddSeconds(4));
-        counter.CounterValue.Should().Be(0);
-    }
-
-    [Fact]
     public void DashboardSource_Create_ShouldSucceed()
     {
         var dashboardId = Guid.NewGuid();
         var filter = JsonValue.Create("{\"status\":\"Done\"}");
 
-        var source = DashboardSource.Create(
+        var source = DashboardSource.Create(Guid.NewGuid(),
             _workspaceId,
             dashboardId,
             DashboardSourceType.BoardView,

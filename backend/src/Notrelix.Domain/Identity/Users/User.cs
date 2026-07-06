@@ -47,7 +47,7 @@ public class User : AggregateRoot
         };
 
         user.SetAuditOnCreate(null, createdAt);
-        user.AddDomainEvent(new UserRegisteredDomainEvent(user.Id, user.Email, createdAt));
+        user.AddDomainEvent(new UserRegisteredDomainEvent(user.Id, user.Email.Value, user.Name, createdAt));
         return user;
     }
 

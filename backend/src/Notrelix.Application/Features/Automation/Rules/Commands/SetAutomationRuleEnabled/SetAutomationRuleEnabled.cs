@@ -1,6 +1,5 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Automation.Abstractions;
 
 namespace Notrelix.Application.Features.Automation.Rules.Commands.SetAutomationRuleEnabled;
 
@@ -8,21 +7,18 @@ public record SetAutomationRuleEnabledCommand(Guid AutomationRuleId, bool IsEnab
 
 public class SetAutomationRuleEnabledCommandHandler : IRequestHandler<SetAutomationRuleEnabledCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IAutomationDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly IWorkspacePermissionService _permissions;
 
     public SetAutomationRuleEnabledCommandHandler(
-        IApplicationDbContext context,
+        IAutomationDbContext context,
         ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider,
-        IWorkspacePermissionService permissions)
+        IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
-        _permissions = permissions;
     }
 
     public async Task<Result> Handle(SetAutomationRuleEnabledCommand request, CancellationToken cancellationToken)
@@ -30,8 +26,6 @@ public class SetAutomationRuleEnabledCommandHandler : IRequestHandler<SetAutomat
         var rule = await _context.AutomationRules
             .FirstOrDefaultAsync(item => item.Id == request.AutomationRuleId, cancellationToken);
         if (rule is null) throw new NotFoundException(nameof(AutomationRule), request.AutomationRuleId);
-
-        await _permissions.EnsureCanManageWorkspaceAsync(rule.WorkspaceId, _currentUser.UserId, cancellationToken);
 
         if (request.IsEnabled) rule.Enable(_currentUser.UserId, _dateTimeProvider.UtcNow);
         else rule.Disable(_currentUser.UserId, _dateTimeProvider.UtcNow);

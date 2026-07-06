@@ -13,7 +13,7 @@ public class ShareLinkLifecycleTests
     public void ShareLink_SoftDelete_ShouldRaiseEvent()
     {
         var tokenHash = ShareLinkTokenHash.Create("test-hash");
-        var link = ShareLink.Create(WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.WorkspaceOnly, Actor, Now);
+        var link = ShareLink.Create(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.WorkspaceOnly, Actor, Now);
         link.ClearDomainEvents();
         var version = link.Version;
 
@@ -31,7 +31,7 @@ public class ShareLinkLifecycleTests
     public void ShareLink_Restore_ShouldRaiseEvent()
     {
         var tokenHash = ShareLinkTokenHash.Create("test-hash");
-        var link = ShareLink.Create(WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.WorkspaceOnly, Actor, Now);
+        var link = ShareLink.Create(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.WorkspaceOnly, Actor, Now);
         link.SoftDelete(Actor, Now);
         link.ClearDomainEvents();
         var version = link.Version;
@@ -50,7 +50,7 @@ public class ShareLinkLifecycleTests
     public void ShareLink_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
         var tokenHash = ShareLinkTokenHash.Create("test-hash");
-        var link = ShareLink.Create(WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.WorkspaceOnly, Actor, Now);
+        var link = ShareLink.Create(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.WorkspaceOnly, Actor, Now);
         link.SoftDelete(Actor, Now);
         link.ClearDomainEvents();
         var version = link.Version;
@@ -65,7 +65,7 @@ public class ShareLinkLifecycleTests
     public void ShareLink_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
         var tokenHash = ShareLinkTokenHash.Create("test-hash");
-        var link = ShareLink.Create(WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.WorkspaceOnly, Actor, Now);
+        var link = ShareLink.Create(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.WorkspaceOnly, Actor, Now);
         link.ClearDomainEvents();
         var version = link.Version;
 

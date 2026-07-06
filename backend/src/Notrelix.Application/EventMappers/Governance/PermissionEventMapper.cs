@@ -18,7 +18,7 @@ public sealed class PermissionEventMapper :
             domainEvent.SubjectId,
             domainEvent.Level.ToString(),
             ((IDomainEvent)domainEvent).ActorUserId,
-            null,
+            default,
             null,
             domainEvent.OccurredAt
         );
@@ -34,7 +34,7 @@ public sealed class PermissionEventMapper :
             domainEvent.SubjectType.ToString(),
             domainEvent.SubjectId,
             ((IDomainEvent)domainEvent).ActorUserId,
-            null,
+            default,
             null,
             domainEvent.OccurredAt
         );
@@ -48,7 +48,7 @@ public sealed class PermissionEventMapper :
             string.Empty,
             domainEvent.MemberId,
             ((IDomainEvent)domainEvent).ActorUserId,
-            null,
+            default,
             null,
             domainEvent.OccurredAt
         );

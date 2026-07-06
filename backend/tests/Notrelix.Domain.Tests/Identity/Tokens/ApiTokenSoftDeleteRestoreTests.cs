@@ -11,7 +11,7 @@ public class ApiTokenSoftDeleteRestoreTests
     public void SoftDelete_ShouldIncrementVersion_AndRaiseEvent()
     {
         var workspaceId = Guid.NewGuid();
-        var token = ApiToken.Create(workspaceId, _actorId, "My Token", "hash", null, _actorId, _now);
+        var token = ApiToken.Create(Guid.NewGuid(), workspaceId, _actorId, "My Token", "hash", null, _actorId, _now);
         var version = token.Version;
 
         token.SoftDelete(_actorId, _now);
@@ -27,7 +27,7 @@ public class ApiTokenSoftDeleteRestoreTests
     public void Restore_ShouldIncrementVersion_AndRaiseEvent()
     {
         var workspaceId = Guid.NewGuid();
-        var token = ApiToken.Create(workspaceId, _actorId, "My Token", "hash", null, _actorId, _now);
+        var token = ApiToken.Create(Guid.NewGuid(), workspaceId, _actorId, "My Token", "hash", null, _actorId, _now);
         token.SoftDelete(_actorId, _now);
         token.ClearDomainEvents();
         var version = token.Version;

@@ -1,13 +1,31 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Infrastructure.Data.Rls;
+using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Data;
 
-public class SeedDataInitialiserTests
+[Collection("Database")]
+public class SeedDataInitialiserTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public SeedDataInitialiserTests(PostgresTestContainer db)
+    {
+        _db = db;
+    }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public void Seed_profile_mapping_uses_exact_top_level_targets()
     {
@@ -22,7 +40,9 @@ public class SeedDataInitialiserTests
     [Fact]
     public async Task Small_profile_creates_required_records_across_major_tables()
     {
-        await using var context = CreateContext();
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var initialiser = CreateInitialiser(context);
 
         await initialiser.SeedAsync();
@@ -41,13 +61,14 @@ public class SeedDataInitialiserTests
         (await context.Labels.CountAsync()).Should().Be(60);
         (await context.BoardItems.CountAsync()).Should().Be(400);
         (await context.Comments.CountAsync()).Should().Be(400);
-        (await context.Notifications.CountAsync()).Should().Be(30);
     }
 
     [Fact]
     public async Task Seed_without_reset_is_idempotent_when_sentinel_exists()
     {
-        await using var context = CreateContext();
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var initialiser = CreateInitialiser(context);
 
         await initialiser.SeedAsync();
@@ -62,7 +83,9 @@ public class SeedDataInitialiserTests
     [Fact]
     public async Task Seed_is_idempotent_and_does_not_backfill_when_sentinel_exists()
     {
-        await using var context = CreateContext();
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
 
         await CreateInitialiser(context).SeedAsync();
 
@@ -81,7 +104,9 @@ public class SeedDataInitialiserTests
     [Fact]
     public async Task Default_accounts_can_access_seed_workspaces_after_seed()
     {
-        await using var context = CreateContext();
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
 
         await CreateInitialiser(context).SeedAsync();
 
@@ -113,7 +138,9 @@ public class SeedDataInitialiserTests
     [Fact]
     public async Task Seed_with_reset_replaces_seed_owned_data_without_duplicates()
     {
-        await using var context = CreateContext();
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
 
         await CreateInitialiser(context).SeedAsync();
         await CreateInitialiser(context, resetBeforeSeed: true).SeedAsync();
@@ -130,7 +157,9 @@ public class SeedDataInitialiserTests
     [Fact]
     public async Task Seeded_group_and_item_positions_are_valid()
     {
-        await using var context = CreateContext();
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         await CreateInitialiser(context).SeedAsync();
 
         var boardId = await context.Boards
@@ -140,58 +169,41 @@ public class SeedDataInitialiserTests
 
         var groups = await context.BoardGroups
             .Where(g => g.BoardId == boardId)
-            .OrderBy(g => g.Position.Value)
             .ToListAsync();
 
         groups.Should().OnlyContain(g => g.Position != null);
+        groups = groups.OrderBy(g => g.Position.Value).ToList();
         groups.Select(g => g.Position.Value).Should().BeInAscendingOrder();
 
         var groupIds = groups.Select(g => g.Id).ToList();
         var items = await context.BoardItems
             .Where(item => groupIds.Contains(item.GroupId))
-            .OrderBy(item => item.Position.Value)
             .ToListAsync();
 
         items.Should().OnlyContain(item => item.Position != null);
+        items = items.OrderBy(item => item.Position.Value).ToList();
         items.Select(item => item.Position.Value).Should().BeInAscendingOrder();
 
         var blocks = await context.Blocks
-            .OrderBy(b => b.Position.Value)
             .Take(20)
             .ToListAsync();
 
         blocks.Should().OnlyContain(block => block.Position != null);
+        blocks = blocks.OrderBy(b => b.Position.Value).ToList();
         blocks.Select(b => b.Position.Value).Should().BeInAscendingOrder();
     }
 
     [Fact]
     public async Task Seeded_entities_with_json_value_objects_exist()
     {
-        await using var context = CreateContext();
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         await CreateInitialiser(context).SeedAsync();
 
         (await context.Blocks.CountAsync()).Should().Be(500);
         (await context.BoardFields.CountAsync()).Should().Be(120);
         (await context.BoardViews.CountAsync()).Should().Be(40);
-        (await context.Notifications.CountAsync()).Should().Be(30);
-        (await context.Notifications.CountAsync(n => !string.IsNullOrWhiteSpace(n.Content))).Should().Be(30);
-    }
-
-    private static ApplicationDbContext CreateContext()
-    {
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase($"Notrelix-seed-{Guid.NewGuid():N}")
-            .Options;
-
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        return new TestApplicationDbContext(options, currentWorkspace);
-    }
-
-    private class TestApplicationDbContext : ApplicationDbContext
-    {
-        public TestApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentWorkspace currentWorkspace)
-            : base(options, currentWorkspace) { }
     }
 
     private static ApplicationDbContextInitialiser CreateInitialiser(
@@ -208,7 +220,10 @@ public class SeedDataInitialiserTests
                 Enabled = true,
                 Profile = profile,
                 ResetBeforeSeed = resetBeforeSeed
-            }));
+            }),
+            new RlsPolicyApplier(context, NullLogger<RlsPolicyApplier>.Instance),
+            new FakeCurrentTenantContext(),
+            Options.Create(new RlsOptions()));
     }
 
     private static async Task<SeedCountSnapshot> SnapshotCountsAsync(ApplicationDbContext context)

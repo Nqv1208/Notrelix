@@ -5,6 +5,7 @@ public class BoardViewUserPreference : AggregateRoot, IWorkspaceScoped
     private readonly List<FilterRule> _filterRules = new();
     private readonly List<SortRule> _sortRules = new();
 
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid BoardId { get; private set; }
     public Guid ViewId { get; private set; }
@@ -17,6 +18,7 @@ public class BoardViewUserPreference : AggregateRoot, IWorkspaceScoped
     private BoardViewUserPreference() : base() { }
 
     public static BoardViewUserPreference Create(
+        Guid accountId,
         Guid workspaceId,
         Guid boardId,
         Guid viewId,
@@ -27,9 +29,11 @@ public class BoardViewUserPreference : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(boardId);
         Guard.NotEmpty(viewId);
         Guard.NotEmpty(userId);
+        Guard.NotEmpty(accountId);
 
         var pref = new BoardViewUserPreference
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             BoardId = boardId,
             ViewId = viewId,
@@ -39,6 +43,7 @@ public class BoardViewUserPreference : AggregateRoot, IWorkspaceScoped
         pref.SetAuditOnCreate(userId, createdAt);
 
         pref.AddDomainEvent(new BoardViewUserPreferenceCreatedDomainEvent(
+            accountId,
             workspaceId,
             boardId,
             viewId,
@@ -66,6 +71,7 @@ public class BoardViewUserPreference : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(UserId, updatedAt);
 
         AddDomainEvent(new BoardViewUserPreferenceFilterChangedDomainEvent(
+            AccountId,
             WorkspaceId,
             BoardId,
             ViewId,
@@ -91,6 +97,7 @@ public class BoardViewUserPreference : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(UserId, updatedAt);
 
         AddDomainEvent(new BoardViewUserPreferenceSortChangedDomainEvent(
+            AccountId,
             WorkspaceId,
             BoardId,
             ViewId,
@@ -113,6 +120,7 @@ public class BoardViewUserPreference : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(UserId, updatedAt);
 
         AddDomainEvent(new BoardViewUserPreferenceGroupChangedDomainEvent(
+            AccountId,
             WorkspaceId,
             BoardId,
             ViewId,

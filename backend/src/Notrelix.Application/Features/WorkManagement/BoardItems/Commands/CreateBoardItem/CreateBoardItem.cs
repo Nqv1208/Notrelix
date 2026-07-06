@@ -1,32 +1,32 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CreateBoardItem;
 
 public record CreateBoardItemCommand(
-    Guid WorkspaceId,
     Guid BoardId,
     Guid GroupId,
     string Title,
-    double Position) : ICommand<BoardItemSlimDto>, ITransactionalRequest, IRequirePermission, IWorkspaceRequest, IRealtimeRequest
+    double Position) : ICommand<BoardItemSlimDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest
 {
     public PermissionAction Action => PermissionAction.CreateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId, WorkspaceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
     public RealtimeTopic Topic => new("board", "Board", BoardId);
 }
 
 public class CreateBoardItemCommandHandler : IRequestHandler<CreateBoardItemCommand, BoardItemSlimDto>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _timeProvider;
+    private readonly ICurrentTenantContext _tenant;
 
-    public CreateBoardItemCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider)
+    public CreateBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider, ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
         _timeProvider = timeProvider;
+        _tenant = tenant;
     }
 
     public async Task<BoardItemSlimDto> Handle(CreateBoardItemCommand request, CancellationToken cancellationToken)
@@ -41,7 +41,8 @@ public class CreateBoardItemCommandHandler : IRequestHandler<CreateBoardItemComm
         var position = FractionalIndex.Create(request.Position.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
         var item = BoardItem.Create(
-            request.WorkspaceId,
+            _tenant.RequireAccountId(),
+            _tenant.RequireWorkspaceId(),
             request.BoardId,
             request.GroupId,
             request.Title,

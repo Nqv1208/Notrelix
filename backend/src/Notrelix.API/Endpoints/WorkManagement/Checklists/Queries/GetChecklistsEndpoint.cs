@@ -7,7 +7,7 @@ public static class GetChecklistsEndpoint
 {
     public static IEndpointRouteBuilder MapGetChecklists(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", HandleAsync)
+        group.MapResourceGet("/", HandleAsync)
             .WithName("WorkManagement.Checklists.List")
             .WithTags("WorkManagement.Checklists")
             .WithSummary("Get checklists for a board item");

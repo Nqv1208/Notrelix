@@ -1,35 +1,33 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderBoardFields;
 
-public record ReorderBoardFieldsCommand(Guid BoardId, List<ReorderItem> Items) : ICommand<Result>, ITransactionalRequest;
+public record ReorderBoardFieldsCommand(Guid BoardId, List<ReorderItem> Items) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.ManageBoard;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+}
 
 public class ReorderBoardFieldsCommandHandler : IRequestHandler<ReorderBoardFieldsCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
-    private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public ReorderBoardFieldsCommandHandler(
-        IApplicationDbContext context,
+        IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions,
         IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
-        _permissions = permissions;
         _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result> Handle(ReorderBoardFieldsCommand request, CancellationToken ct)
     {
-        await _permissions.EnsureCanEditBoardAsync(request.BoardId, _currentUser.UserId, ct);
-
         var now = _dateTimeProvider.UtcNow;
         foreach (var item in request.Items)
         {
@@ -37,7 +35,7 @@ public class ReorderBoardFieldsCommandHandler : IRequestHandler<ReorderBoardFiel
                 .FirstOrDefaultAsync(value => value.Id == item.Id && value.BoardId == request.BoardId, ct);
             if (column is not null)
             {
-                column.UpdateSettings(column.Settings, _currentUser.UserId, now);
+                column.UpdatePosition(FractionalIndex.Create(item.NewPosition.ToString("F0")), _currentUser.UserId, now);
             }
         }
 

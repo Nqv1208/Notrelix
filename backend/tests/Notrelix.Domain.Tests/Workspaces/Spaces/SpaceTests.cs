@@ -10,7 +10,7 @@ public class SpaceTests
     {
         var workspaceId = Guid.NewGuid();
         var createdBy = Guid.NewGuid();
-        var space = Space.Create(workspaceId, "Marketing", SpaceVisibility.Workspace, createdBy, DateTimeOffset.UtcNow);
+        var space = Space.Create(Guid.NewGuid(), workspaceId, "Marketing", SpaceVisibility.Workspace, createdBy, DateTimeOffset.UtcNow);
 
         space.WorkspaceId.Should().Be(workspaceId);
         space.Name.Should().Be("Marketing");
@@ -22,7 +22,7 @@ public class SpaceTests
     [Fact]
     public void Rename_ShouldSucceed()
     {
-        var space = Space.Create(Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
         var updatedBy = Guid.NewGuid();
 
         space.Rename("Sales", updatedBy, DateTimeOffset.UtcNow);
@@ -35,7 +35,7 @@ public class SpaceTests
     {
         var oldWorkspaceId = Guid.NewGuid();
         var newWorkspaceId = Guid.NewGuid();
-        var space = Space.Create(oldWorkspaceId, "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var space = Space.Create(Guid.NewGuid(), oldWorkspaceId, "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => space.Move(newWorkspaceId, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -46,7 +46,7 @@ public class SpaceTests
     public void Move_SameWorkspace_ShouldBeNoOp()
     {
         var workspaceId = Guid.NewGuid();
-        var space = Space.Create(workspaceId, "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var space = Space.Create(Guid.NewGuid(), workspaceId, "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
         space.ClearDomainEvents();
 
         space.Move(workspaceId, Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -58,7 +58,7 @@ public class SpaceTests
     [Fact]
     public void Rename_ShouldThrow_WhenArchived()
     {
-        var space = Space.Create(Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
         space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => space.Rename("Sales", Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -69,7 +69,7 @@ public class SpaceTests
     [Fact]
     public void Move_ShouldThrow_WhenArchived()
     {
-        var space = Space.Create(Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
         var newWorkspaceId = Guid.NewGuid();
         space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -81,7 +81,7 @@ public class SpaceTests
     [Fact]
     public void SoftDelete_ShouldSetStatusToSoftDeleted_AndRaiseEvent()
     {
-        var space = Space.Create(Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         space.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -93,7 +93,7 @@ public class SpaceTests
     [Fact]
     public void Restore_ShouldSetStatusToActive_AndRaiseEvent()
     {
-        var space = Space.Create(Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
         space.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         space.ClearDomainEvents();
 
@@ -107,7 +107,7 @@ public class SpaceTests
     [Fact]
     public void Rename_OnDeletedSpace_ShouldThrow()
     {
-        var space = Space.Create(Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
         space.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => space.Rename("Sales", Guid.NewGuid(), DateTimeOffset.UtcNow);

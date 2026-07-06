@@ -4,6 +4,7 @@ namespace Notrelix.Domain.Identity.Tokens;
 
 public class ApiToken : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid? UserId { get; private set; }
     public string Name { get; private set; } = null!;
@@ -18,6 +19,7 @@ public class ApiToken : AggregateRoot, IWorkspaceScoped
     private ApiToken() : base() { }
 
     public static ApiToken Create(
+        Guid accountId,
         Guid workspaceId,
         Guid? userId,
         string name,
@@ -30,9 +32,11 @@ public class ApiToken : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(name);
         Guard.NotNullOrWhiteSpace(tokenHash);
+        Guard.NotEmpty(accountId);
 
         var token = new ApiToken
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             UserId = userId,
             Name = name.Trim(),
@@ -43,7 +47,7 @@ public class ApiToken : AggregateRoot, IWorkspaceScoped
         };
 
         token.SetAuditOnCreate(createdBy, createdAt);
-        token.AddDomainEvent(new ApiTokenCreatedDomainEvent(workspaceId, token.Id, name, createdBy, createdAt));
+        token.AddDomainEvent(new ApiTokenCreatedDomainEvent(accountId, workspaceId, token.Id, name, createdBy, createdAt));
         return token;
     }
 
@@ -56,7 +60,7 @@ public class ApiToken : AggregateRoot, IWorkspaceScoped
         RevokedAt = revokedAt;
         RevokedBy = revokedBy;
         SetAuditOnUpdate(revokedBy, revokedAt);
-        AddDomainEvent(new ApiTokenRevokedDomainEvent(WorkspaceId, Id, revokedBy, revokedAt));
+        AddDomainEvent(new ApiTokenRevokedDomainEvent(AccountId, WorkspaceId, Id, revokedBy, revokedAt));
         IncrementVersion();
     }
 
@@ -82,7 +86,7 @@ public class ApiToken : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new ApiTokenSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new ApiTokenSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -91,6 +95,6 @@ public class ApiToken : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new ApiTokenRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new ApiTokenRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

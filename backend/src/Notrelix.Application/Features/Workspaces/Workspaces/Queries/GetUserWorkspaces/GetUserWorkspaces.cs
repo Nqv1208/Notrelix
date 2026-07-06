@@ -1,7 +1,6 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Workspaces.DTOs;
+using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetUserWorkspaces;
 
@@ -9,9 +8,9 @@ public record GetUserWorkspacesQuery(Guid UserId) : IQuery<Result<List<Workspace
 
 public class GetUserWorkspacesQueryHandler : IRequestHandler<GetUserWorkspacesQuery, Result<List<WorkspaceDto>>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkspaceDbContext _context;
 
-    public GetUserWorkspacesQueryHandler(IApplicationDbContext context) => _context = context;
+    public GetUserWorkspacesQueryHandler(IWorkspaceDbContext context) => _context = context;
 
     public async Task<Result<List<WorkspaceDto>>> Handle(GetUserWorkspacesQuery request, CancellationToken ct)
     {

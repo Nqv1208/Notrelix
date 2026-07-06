@@ -2,19 +2,36 @@ using Notrelix.Application.Features.Identity.Auth.Queries.GetBootstrap;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
-using Notrelix.Testing.Integration.Factories;
 
 namespace Notrelix.Integration.Tests.Handlers.Identity;
 
-public class GetBootstrapQueryHandlerTests
+[Collection("Database")]
+public class GetBootstrapQueryHandlerTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public GetBootstrapQueryHandlerTests(PostgresTestContainer db)
+    {
+        _db = db;
+    }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public async Task Handle_WhenUserNotFound_ReturnsFailure()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var handler = new GetBootstrapQueryHandler(context, context);
 
         var result = await handler.Handle(new GetBootstrapQuery(Guid.NewGuid()), CancellationToken.None);
@@ -26,9 +43,9 @@ public class GetBootstrapQueryHandlerTests
     [Fact]
     public async Task Handle_WhenUserExists_ReturnsUserInfo()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hashedpassword", now);
         context.Users.Add(user);
@@ -47,18 +64,18 @@ public class GetBootstrapQueryHandlerTests
     [Fact]
     public async Task Handle_WhenUserHasWorkspaceMembers_ReturnsWorkspaces()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var now = DateTimeOffset.UtcNow;
 
         var user = User.Create("test@example.com", "Test User", "hashedpassword", now);
         context.Users.Add(user);
 
-        var workspace = Workspace.Create(user.Id, "My Workspace", "my-workspace", now);
+        var workspace = Workspace.Create(Guid.NewGuid(), user.Id, "My Workspace", "my-workspace", now);
         context.Workspaces.Add(workspace);
 
-        var member = WorkspaceMember.Create(workspace.Id, user.Id, WorkspaceRole.Admin, user.Id, now);
+        var member = WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, user.Id, WorkspaceRole.Admin, user.Id, now);
         context.WorkspaceMembers.Add(member);
         await context.SaveChangesAsync();
 
@@ -77,15 +94,15 @@ public class GetBootstrapQueryHandlerTests
     [Fact]
     public async Task Handle_WhenPersonalWorkspaceExists_ReturnsReadyStatus()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var now = DateTimeOffset.UtcNow;
 
         var user = User.Create("test@example.com", "Test User", "hashedpassword", now);
         context.Users.Add(user);
 
-        var personalWorkspace = Workspace.Create(user.Id, "Personal", "personal", now, isPersonal: true);
+        var personalWorkspace = Workspace.Create(Guid.NewGuid(), user.Id, "Personal", "personal", now, isPersonal: true);
         context.Workspaces.Add(personalWorkspace);
         await context.SaveChangesAsync();
 
@@ -101,9 +118,9 @@ public class GetBootstrapQueryHandlerTests
     [Fact]
     public async Task Handle_WhenPersonalWorkspaceMissing_ReturnsPendingStatus()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var now = DateTimeOffset.UtcNow;
 
         var user = User.Create("test@example.com", "Test User", "hashedpassword", now);

@@ -1,16 +1,19 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Checklists.Queries.GetChecklists;
 
-public record GetChecklistsQuery(Guid BoardItemId) : IQuery<Result<List<ChecklistDto>>>;
+public record GetChecklistsQuery(Guid BoardItemId) : IQuery<Result<List<ChecklistDto>>>, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.ViewBoard;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+}
 
 public class GetChecklistsQueryHandler : IRequestHandler<GetChecklistsQuery, Result<List<ChecklistDto>>>
 {
-    private readonly IApplicationDbContext _context;
-    public GetChecklistsQueryHandler(IApplicationDbContext context) => _context = context;
+    private readonly IWorkManagementDbContext _context;
+    public GetChecklistsQueryHandler(IWorkManagementDbContext context) => _context = context;
 
     public async Task<Result<List<ChecklistDto>>> Handle(GetChecklistsQuery request, CancellationToken ct)
     {

@@ -1,9 +1,10 @@
 namespace Notrelix.Domain.Billing.Subscriptions.Events;
 
 public sealed record SubscriptionChangedDomainEvent(
-    Guid WorkspaceId,
+    Guid AccountId,
+    Guid? WorkspaceId,
     Guid SubscriptionId,
     Guid OldPlanId,
     Guid NewPlanId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);
+) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);

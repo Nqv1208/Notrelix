@@ -12,7 +12,7 @@ public class UsageMetricLifecycleTests
     [Fact]
     public void UsageMetric_Create_ShouldRaiseEvent()
     {
-        var metric = UsageMetric.Create(WsA, UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(Now, Now.AddDays(30)), Now);
+        var metric = UsageMetric.Create(Guid.NewGuid(), WsA, UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(Now, Now.AddDays(30)), Now);
 
         metric.DomainEvents.Should().ContainSingle(e => e is UsageMetricCreatedDomainEvent);
         var evt = (UsageMetricCreatedDomainEvent)metric.DomainEvents.Single(e => e is UsageMetricCreatedDomainEvent);
@@ -23,7 +23,7 @@ public class UsageMetricLifecycleTests
     [Fact]
     public void UsageMetric_Decrease_ShouldRaiseEvent()
     {
-        var metric = UsageMetric.Create(WsA, UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(Now, Now.AddDays(30)), Now);
+        var metric = UsageMetric.Create(Guid.NewGuid(), WsA, UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(Now, Now.AddDays(30)), Now);
         metric.ClearDomainEvents();
         metric.Increase(5, 10, isHardLimit: true, Now);
         metric.ClearDomainEvents();
@@ -41,7 +41,7 @@ public class UsageMetricLifecycleTests
     [Fact]
     public void UsageMetric_Reset_ShouldRaiseEvent()
     {
-        var metric = UsageMetric.Create(WsA, UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(Now, Now.AddDays(30)), Now);
+        var metric = UsageMetric.Create(Guid.NewGuid(), WsA, UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(Now, Now.AddDays(30)), Now);
         metric.Increase(5, 10, isHardLimit: true, Now);
         metric.ClearDomainEvents();
         var version = metric.Version;
@@ -57,7 +57,7 @@ public class UsageMetricLifecycleTests
     [Fact]
     public void UsageMetric_SoftDelete_ShouldRaiseEvent()
     {
-        var metric = UsageMetric.Create(WsA, UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(Now, Now.AddDays(30)), Now);
+        var metric = UsageMetric.Create(Guid.NewGuid(), WsA, UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(Now, Now.AddDays(30)), Now);
         metric.ClearDomainEvents();
         var version = metric.Version;
 
@@ -74,7 +74,7 @@ public class UsageMetricLifecycleTests
     [Fact]
     public void UsageMetric_Restore_ShouldRaiseEvent()
     {
-        var metric = UsageMetric.Create(WsA, UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(Now, Now.AddDays(30)), Now);
+        var metric = UsageMetric.Create(Guid.NewGuid(), WsA, UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(Now, Now.AddDays(30)), Now);
         metric.SoftDelete(Actor, Now);
         metric.ClearDomainEvents();
         var version = metric.Version;
@@ -92,7 +92,7 @@ public class UsageMetricLifecycleTests
     [Fact]
     public void UsageMetric_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
-        var metric = UsageMetric.Create(WsA, UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(Now, Now.AddDays(30)), Now);
+        var metric = UsageMetric.Create(Guid.NewGuid(), WsA, UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(Now, Now.AddDays(30)), Now);
         metric.SoftDelete(Actor, Now);
         metric.ClearDomainEvents();
         var version = metric.Version;
@@ -106,7 +106,7 @@ public class UsageMetricLifecycleTests
     [Fact]
     public void UsageMetric_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
-        var metric = UsageMetric.Create(WsA, UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(Now, Now.AddDays(30)), Now);
+        var metric = UsageMetric.Create(Guid.NewGuid(), WsA, UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(Now, Now.AddDays(30)), Now);
         metric.ClearDomainEvents();
         var version = metric.Version;
 

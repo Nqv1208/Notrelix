@@ -7,7 +7,7 @@ public static class GetBoardItemEndpoint
 {
     public static IEndpointRouteBuilder MapGetBoardItem(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", HandleAsync)
+        group.MapResourceGet("/", HandleAsync)
             .WithName("WorkManagement.BoardItems.Get")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Get board item detail with members, labels, checklists");

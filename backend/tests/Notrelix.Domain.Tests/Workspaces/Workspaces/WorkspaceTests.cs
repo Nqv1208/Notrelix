@@ -6,30 +6,34 @@ namespace Notrelix.Domain.Tests.Workspaces;
 
 public class WorkspaceTests
 {
+    private static readonly Guid AccountId = Guid.NewGuid();
+    private static readonly Guid OwnerId = Guid.NewGuid();
+    private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
+
     [Fact]
     public void Create_ShouldSucceed()
     {
-        var ownerId = Guid.NewGuid();
-        var workspace = Workspace.Create(ownerId, "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
 
         workspace.Name.Should().Be("My Workspace");
         workspace.Slug.Should().Be("my-workspace");
+        workspace.AccountId.Should().Be(AccountId);
         workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceCreatedDomainEvent);
     }
 
     [Fact]
     public void CreateWithOwner_ShouldCreateWorkspaceAndOwnerMember()
     {
-        var ownerId = Guid.NewGuid();
-        var result = WorkspaceFactory.CreateWithOwner(ownerId, "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
+        var result = WorkspaceFactory.CreateWithOwner(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
 
         result.Workspace.Should().NotBeNull();
         result.Workspace.Name.Should().Be("My Workspace");
         result.Workspace.Slug.Should().Be("my-workspace");
+        result.Workspace.AccountId.Should().Be(AccountId);
 
         result.OwnerMember.Should().NotBeNull();
         result.OwnerMember.WorkspaceId.Should().Be(result.Workspace.Id);
-        result.OwnerMember.UserId.Should().Be(ownerId);
+        result.OwnerMember.UserId.Should().Be(OwnerId);
         result.OwnerMember.Role.Should().Be(WorkspaceRole.Owner);
         result.OwnerMember.Status.Should().Be(WorkspaceMemberStatus.Active);
     }
@@ -37,12 +41,11 @@ public class WorkspaceTests
     [Fact]
     public void Rename_ShouldSucceed_AndRaiseEvent()
     {
-        var workspace = Workspace.Create(Guid.NewGuid(), "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
         workspace.ClearDomainEvents();
         var actor = Guid.NewGuid();
-        var now = DateTimeOffset.UtcNow;
 
-        workspace.Rename("New Name", actor, now);
+        workspace.Rename("New Name", actor, Now);
 
         workspace.Name.Should().Be("New Name");
         workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceRenamedDomainEvent);
@@ -51,22 +54,21 @@ public class WorkspaceTests
     [Fact]
     public void Rename_ArchivedWorkspace_ShouldThrow()
     {
-        var workspace = Workspace.Create(Guid.NewGuid(), "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
-        workspace.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
+        workspace.Archive(Guid.NewGuid(), Now);
 
-        var act = () => workspace.Rename("New Name", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var act = () => workspace.Rename("New Name", Guid.NewGuid(), Now);
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot rename an archived workspace.");
     }
 
     [Fact]
     public void UpdateSettings_ShouldSucceed()
     {
-        var workspace = Workspace.Create(Guid.NewGuid(), "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
         var settings = WorkspaceSettings.Create(allowPublicSharing: true, enforceMfa: true);
         var actor = Guid.NewGuid();
-        var now = DateTimeOffset.UtcNow;
 
-        workspace.UpdateSettings(settings, actor, now);
+        workspace.UpdateSettings(settings, actor, Now);
 
         workspace.Settings.AllowPublicSharing.Should().BeTrue();
         workspace.Settings.EnforceMfa.Should().BeTrue();
@@ -75,23 +77,22 @@ public class WorkspaceTests
     [Fact]
     public void UpdateSettings_ArchivedWorkspace_ShouldThrow()
     {
-        var workspace = Workspace.Create(Guid.NewGuid(), "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
-        workspace.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
+        workspace.Archive(Guid.NewGuid(), Now);
 
         var settings = WorkspaceSettings.Create(allowPublicSharing: true, enforceMfa: true);
-        var act = () => workspace.UpdateSettings(settings, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var act = () => workspace.UpdateSettings(settings, Guid.NewGuid(), Now);
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot update settings of an archived workspace.");
     }
 
     [Fact]
     public void SoftDelete_ShouldSetStatusToSoftDeleted_AndRaiseEvent()
     {
-        var workspace = Workspace.Create(Guid.NewGuid(), "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
         workspace.ClearDomainEvents();
         var actor = Guid.NewGuid();
-        var now = DateTimeOffset.UtcNow;
 
-        workspace.SoftDelete(actor, now);
+        workspace.SoftDelete(actor, Now);
 
         workspace.Status.Should().Be(WorkspaceStatus.SoftDeleted);
         workspace.IsDeleted.Should().BeTrue();
@@ -101,13 +102,12 @@ public class WorkspaceTests
     [Fact]
     public void Restore_ShouldSetStatusToActive_AndRaiseEvent()
     {
-        var workspace = Workspace.Create(Guid.NewGuid(), "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
-        workspace.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
+        workspace.SoftDelete(Guid.NewGuid(), Now);
         workspace.ClearDomainEvents();
 
         var actor = Guid.NewGuid();
-        var now = DateTimeOffset.UtcNow;
-        workspace.Restore(actor, now);
+        workspace.Restore(actor, Now);
 
         workspace.Status.Should().Be(WorkspaceStatus.Active);
         workspace.IsDeleted.Should().BeFalse();
@@ -117,10 +117,10 @@ public class WorkspaceTests
     [Fact]
     public void Archive_ShouldSetStatusToArchived_AndRaiseEvent()
     {
-        var workspace = Workspace.Create(Guid.NewGuid(), "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
         workspace.ClearDomainEvents();
 
-        workspace.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        workspace.Archive(Guid.NewGuid(), Now);
 
         workspace.Status.Should().Be(WorkspaceStatus.Archived);
         workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceArchivedDomainEvent);
@@ -129,45 +129,22 @@ public class WorkspaceTests
     [Fact]
     public void Archive_WhenAlreadyArchived_ShouldBeNoOp()
     {
-        var workspace = Workspace.Create(Guid.NewGuid(), "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
-        workspace.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
+        workspace.Archive(Guid.NewGuid(), Now);
         workspace.ClearDomainEvents();
 
-        workspace.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        workspace.Archive(Guid.NewGuid(), Now);
 
         workspace.Status.Should().Be(WorkspaceStatus.Archived);
         workspace.DomainEvents.Should().BeEmpty();
     }
 
     [Fact]
-    public void AssignToAccount_ShouldSetAccountId()
+    public void Create_PersonalWorkspace_ShouldHaveAccountId()
     {
-        var workspace = Workspace.Create(Guid.NewGuid(), "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
-        var accountId = Guid.NewGuid();
+        var workspace = Workspace.Create(AccountId, OwnerId, "Personal", "personal", Now, isPersonal: true);
 
-        workspace.AssignToAccount(accountId, Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        workspace.AccountId.Should().Be(accountId);
-    }
-
-    [Fact]
-    public void AssignToAccount_WhenAlreadyAssigned_ShouldBeNoOp()
-    {
-        var accountId = Guid.NewGuid();
-        var workspace = Workspace.Create(Guid.NewGuid(), "My Workspace", "my-workspace", DateTimeOffset.UtcNow, accountId: accountId);
-
-        workspace.AssignToAccount(accountId, Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        workspace.AccountId.Should().Be(accountId);
-    }
-
-    [Fact]
-    public void AssignToAccount_DeletedWorkspace_ShouldThrow()
-    {
-        var workspace = Workspace.Create(Guid.NewGuid(), "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
-        workspace.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        var act = () => workspace.AssignToAccount(Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        act.Should().Throw<DomainException>().WithMessage("*deleted*");
+        workspace.AccountId.Should().Be(AccountId);
+        workspace.IsPersonal.Should().BeTrue();
     }
 }

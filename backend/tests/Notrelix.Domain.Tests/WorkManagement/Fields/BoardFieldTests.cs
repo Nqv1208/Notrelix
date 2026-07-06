@@ -8,13 +8,14 @@ public class BoardFieldTests
     [Fact]
     public void Create_ShouldSucceed_AndRaiseEvent()
     {
+        var accountId = Guid.NewGuid();
         var workspaceId = Guid.NewGuid();
         var boardId = Guid.NewGuid();
         var createdBy = Guid.NewGuid();
         var settings = FieldSettings.Create(JsonValue.Create("{\"required\":true}"));
         var position = FractionalIndex.Create("a0");
 
-        var field = BoardField.Create(workspaceId, boardId, "Due Date", FieldType.Date, settings, position, createdBy, DateTimeOffset.UtcNow);
+        var field = BoardField.Create(accountId, workspaceId, boardId, "Due Date", FieldType.Date, settings, position, createdBy, DateTimeOffset.UtcNow);
 
         field.Name.Should().Be("Due Date");
         field.Type.Should().Be(FieldType.Date);
@@ -27,7 +28,7 @@ public class BoardFieldTests
     {
         var settings = FieldSettings.Create(JsonValue.EmptyObject());
         var position = FractionalIndex.Create("a0");
-        var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Select, settings, position, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Select, settings, position, Guid.NewGuid(), DateTimeOffset.UtcNow);
         field.ClearDomainEvents();
 
         field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("b0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -40,7 +41,7 @@ public class BoardFieldTests
     [Fact]
     public void AddOption_ShouldThrow_WhenDuplicateName()
     {
-        var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("b0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         Action act = () => field.AddOption("Done", Color.Create("#FF0000"), FractionalIndex.Create("c0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -51,7 +52,7 @@ public class BoardFieldTests
     [Fact]
     public void AddOption_ShouldAllow_WhenSameNameDifferentCase()
     {
-        var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("b0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         Action act = () => field.AddOption("done", Color.Create("#FF0000"), FractionalIndex.Create("c0"), Guid.NewGuid(), DateTimeOffset.UtcNow);

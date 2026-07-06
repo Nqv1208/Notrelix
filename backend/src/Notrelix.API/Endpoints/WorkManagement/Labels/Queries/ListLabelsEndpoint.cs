@@ -7,7 +7,7 @@ public static class ListLabelsEndpoint
 {
     public static IEndpointRouteBuilder MapListLabels(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", HandleAsync)
+        group.MapResourceGet("/", HandleAsync)
             .WithName("WorkManagement.Labels.List")
             .WithTags("WorkManagement.Labels")
             .WithSummary("Get all labels for a board");

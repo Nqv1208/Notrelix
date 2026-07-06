@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderBoardFields;
 
 public class ReorderBoardFieldsCommandValidator : AbstractValidator<ReorderBoardFieldsCommand>

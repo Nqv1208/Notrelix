@@ -8,7 +8,7 @@ public static class ReorderBlocksEndpoint
 {
     public static IEndpointRouteBuilder MapReorderBlocks(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/reorder", HandleAsync)
+        group.MapResourcePost("/reorder", HandleAsync)
             .WithName("Documents.Blocks.ReorderBlocks")
             .WithTags("Documents.Blocks")
             .WithSummary("Reorder blocks");

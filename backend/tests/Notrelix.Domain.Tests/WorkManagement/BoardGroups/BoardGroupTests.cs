@@ -8,9 +8,10 @@ public class BoardGroupTests
     [Fact]
     public void UpdateColor_ShouldRaiseColorChangedEvent()
     {
+        var accountId = Guid.NewGuid();
         var workspaceId = Guid.NewGuid();
         var boardId = Guid.NewGuid();
-        var group = BoardGroup.Create(workspaceId, boardId, "Group", Color.Create("#000000"), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var group = BoardGroup.Create(accountId, workspaceId, boardId, "Group", Color.Create("#000000"), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         group.ClearDomainEvents();
 
         group.UpdateColor(Color.Create("#FF0000"), Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -22,9 +23,10 @@ public class BoardGroupTests
     [Fact]
     public void SoftDelete_ShouldRaiseEvent_WithBoardId()
     {
+        var accountId = Guid.NewGuid();
         var workspaceId = Guid.NewGuid();
         var boardId = Guid.NewGuid();
-        var group = BoardGroup.Create(workspaceId, boardId, "Group", Color.Create("#000000"), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var group = BoardGroup.Create(accountId, workspaceId, boardId, "Group", Color.Create("#000000"), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         group.ClearDomainEvents();
 
         group.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -37,7 +39,7 @@ public class BoardGroupTests
     [Fact]
     public void Restore_ShouldClearIsDeleted_AndRaiseEvent()
     {
-        var group = BoardGroup.Create(Guid.NewGuid(), Guid.NewGuid(), "Group", Color.Create("#000000"), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var group = BoardGroup.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Group", Color.Create("#000000"), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         group.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         group.IsDeleted.Should().BeTrue();
         group.ClearDomainEvents();

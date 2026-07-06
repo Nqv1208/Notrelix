@@ -5,6 +5,7 @@ namespace Notrelix.Domain.Tests.Workspaces;
 
 public class SpaceVersionTests
 {
+    private readonly Guid _accountId = Guid.NewGuid();
     private readonly Guid _workspaceId = Guid.NewGuid();
     private readonly Guid _actorId = Guid.NewGuid();
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
@@ -12,7 +13,7 @@ public class SpaceVersionTests
     [Fact]
     public void Rename_ShouldIncrementVersion()
     {
-        var space = Space.Create(_workspaceId, "Original", SpaceVisibility.Private, _actorId, _now);
+        var space = Space.Create(_accountId, _workspaceId, "Original", SpaceVisibility.Private, _actorId, _now);
         space.ClearDomainEvents();
         var version = space.Version;
 
@@ -25,7 +26,7 @@ public class SpaceVersionTests
     [Fact]
     public void Archive_ShouldIncrementVersion()
     {
-        var space = Space.Create(_workspaceId, "Space", SpaceVisibility.Private, _actorId, _now);
+        var space = Space.Create(_accountId, _workspaceId, "Space", SpaceVisibility.Private, _actorId, _now);
         space.ClearDomainEvents();
         var version = space.Version;
 
@@ -38,7 +39,7 @@ public class SpaceVersionTests
     [Fact]
     public void SoftDelete_ShouldIncrementVersion()
     {
-        var space = Space.Create(_workspaceId, "Space", SpaceVisibility.Private, _actorId, _now);
+        var space = Space.Create(_accountId, _workspaceId, "Space", SpaceVisibility.Private, _actorId, _now);
         space.ClearDomainEvents();
         var version = space.Version;
 
@@ -52,7 +53,7 @@ public class SpaceVersionTests
     [Fact]
     public void Restore_ShouldIncrementVersion()
     {
-        var space = Space.Create(_workspaceId, "Space", SpaceVisibility.Private, _actorId, _now);
+        var space = Space.Create(_accountId, _workspaceId, "Space", SpaceVisibility.Private, _actorId, _now);
         space.SoftDelete(_actorId, _now);
         space.ClearDomainEvents();
         var version = space.Version;

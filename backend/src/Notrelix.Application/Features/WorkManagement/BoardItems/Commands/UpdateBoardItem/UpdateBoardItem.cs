@@ -1,27 +1,27 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItem;
 
-public record UpdateBoardItemCommand(Guid BoardItemId, string? Title, string? DescriptionMd, string? Priority, string? Cover, DateTime? DueDate, DateTime? StartDate) : ICommand<Result>, ITransactionalRequest;
+public record UpdateBoardItemCommand(Guid BoardItemId, string? Title, string? DescriptionMd, string? Priority, string? Cover, DateTime? DueDate, DateTime? StartDate) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.UpdateItem;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+}
 
 public class UpdateBoardItemCommandHandler : IRequestHandler<UpdateBoardItemCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
-    private readonly IWorkspacePermissionService _permissions;
     private readonly IDateTimeProvider _timeProvider;
 
     public UpdateBoardItemCommandHandler(
-        IApplicationDbContext context,
+        IWorkManagementDbContext context,
         ICurrentUser currentUser,
-        IWorkspacePermissionService permissions,
         IDateTimeProvider timeProvider)
     {
         _context = context;
         _currentUser = currentUser;
-        _permissions = permissions;
         _timeProvider = timeProvider;
     }
 
@@ -30,8 +30,6 @@ public class UpdateBoardItemCommandHandler : IRequestHandler<UpdateBoardItemComm
         var card = await _context.BoardItems
             .FirstOrDefaultAsync(c => c.Id == request.BoardItemId && !c.IsDeleted, ct);
         if (card is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
-
-        await _permissions.EnsureCanEditBoardAsync(card.BoardId, _currentUser.UserId, ct);
 
         var now = _timeProvider.UtcNow;
 

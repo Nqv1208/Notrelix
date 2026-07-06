@@ -21,7 +21,6 @@ public static class MapAuthEndpoints
         var authGroup = app
             .MapGroup("/api/v1/auth")
             .WithTags("Identity.Auth")
-            .RequireAuthorization()
             .WithOpenApi();
 
         authGroup.MapLogout();

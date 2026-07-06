@@ -9,7 +9,6 @@ public static class MapBoardItemEndpoints
     {
         var boardItems = app
             .MapGroup("/api/v1/boards/{boardId:guid}/items")
-            .RequireAuthorization()
             .WithTags("WorkManagement.BoardItems")
             .WithOpenApi();
 
@@ -18,7 +17,6 @@ public static class MapBoardItemEndpoints
 
         var itemGroup = app
             .MapGroup("/api/v1/board-items/{itemId:guid}")
-            .RequireAuthorization()
             .WithTags("WorkManagement.BoardItems")
             .WithOpenApi();
 

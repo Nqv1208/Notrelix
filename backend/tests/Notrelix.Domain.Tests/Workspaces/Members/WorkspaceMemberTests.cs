@@ -13,7 +13,7 @@ public class WorkspaceMemberTests
         var addedBy = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
-        var member = WorkspaceMember.Create(workspaceId, userId, WorkspaceRole.Member, addedBy, now);
+        var member = WorkspaceMember.Create(Guid.NewGuid(), workspaceId, userId, WorkspaceRole.Member, addedBy, now);
 
         member.WorkspaceId.Should().Be(workspaceId);
         member.UserId.Should().Be(userId);
@@ -32,7 +32,7 @@ public class WorkspaceMemberTests
     [Fact]
     public void ChangeMemberRole_ShouldChangeRole_AndRaiseEvent()
     {
-        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
         member.ClearDomainEvents();
         var actor = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
@@ -50,7 +50,7 @@ public class WorkspaceMemberTests
     [Fact]
     public void ChangeMemberRole_OnLastOwner_ShouldThrow()
     {
-        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Owner, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Owner, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => member.ChangeRole(WorkspaceRole.Admin, Guid.NewGuid(), 1, DateTimeOffset.UtcNow);
 
@@ -60,7 +60,7 @@ public class WorkspaceMemberTests
     [Fact]
     public void Suspend_ShouldSetStatusToSuspended_AndRaiseEvent()
     {
-        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
         member.ClearDomainEvents();
         var actor = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
@@ -77,7 +77,7 @@ public class WorkspaceMemberTests
     [Fact]
     public void Suspend_OnLastOwner_ShouldThrow()
     {
-        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Owner, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Owner, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => member.Suspend(Guid.NewGuid(), DateTimeOffset.UtcNow, 1);
 
@@ -87,7 +87,7 @@ public class WorkspaceMemberTests
     [Fact]
     public void Activate_FromSuspended_ShouldSetStatusToActive_AndRaiseEvent()
     {
-        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
         member.Suspend(Guid.NewGuid(), DateTimeOffset.UtcNow, 2);
         member.ClearDomainEvents();
         var actor = Guid.NewGuid();
@@ -102,7 +102,7 @@ public class WorkspaceMemberTests
     [Fact]
     public void Activate_FromRemoved_ShouldThrow()
     {
-        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
         member.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => member.Activate(Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -112,7 +112,7 @@ public class WorkspaceMemberTests
     [Fact]
     public void RemoveMember_ShouldSetIsDeleted_AndRaiseEvent()
     {
-        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
         member.ClearDomainEvents();
         var actor = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
@@ -127,7 +127,7 @@ public class WorkspaceMemberTests
     [Fact]
     public void RemoveMember_OnLastOwner_ShouldThrow()
     {
-        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Owner, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Owner, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => member.Remove(1, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -137,7 +137,7 @@ public class WorkspaceMemberTests
     [Fact]
     public void Restore_ShouldSetStatusToActive_AndRaiseEvent()
     {
-        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
         member.Remove(2, Guid.NewGuid(), DateTimeOffset.UtcNow);
         member.ClearDomainEvents();
         var actor = Guid.NewGuid();
@@ -153,7 +153,7 @@ public class WorkspaceMemberTests
     [Fact]
     public void ChangeRole_OnDeletedMember_ShouldThrow()
     {
-        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
         member.Remove(2, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => member.ChangeRole(WorkspaceRole.Admin, Guid.NewGuid(), 2, DateTimeOffset.UtcNow);
@@ -163,7 +163,7 @@ public class WorkspaceMemberTests
     [Fact]
     public void Suspend_OnDeletedMember_ShouldThrow()
     {
-        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
         member.Remove(2, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => member.Suspend(Guid.NewGuid(), DateTimeOffset.UtcNow, 2);

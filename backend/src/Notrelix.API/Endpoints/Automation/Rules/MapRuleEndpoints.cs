@@ -10,7 +10,6 @@ public static class MapRuleEndpoints
         var group = app
             .MapGroup("/api/v1/workspaces/{workspaceId:guid}/automations")
             .WithTags("Automation.Rules")
-            .RequireAuthorization()
             .WithOpenApi();
 
         group.MapListAutomationRules();
