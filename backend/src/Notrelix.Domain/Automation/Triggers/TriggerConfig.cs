@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Automation.Triggers;
 
 public sealed class TriggerConfig : ValueObject
 {
-    public JsonValue Data { get; }
+    public JsonValue Data { get; private set; } = null!;
 
     private TriggerConfig() { }
     private TriggerConfig(JsonValue data)

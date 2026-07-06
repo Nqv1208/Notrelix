@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Billing.BillingEvents;
 
 public sealed class ProviderEventId : ValueObject
 {
-    public string Value { get; }
+    public string Value { get; private set; } = null!;
 
     private ProviderEventId() { }
     private ProviderEventId(string value)

@@ -7,7 +7,7 @@ public static class ResolveCommentEndpoint
 {
     public static IEndpointRouteBuilder MapResolveComment(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/{commentId:guid}/resolve", HandleAsync)
+        group.MapResourcePost("/{commentId:guid}/resolve", HandleAsync)
             .WithName("Collaboration.Comments.Resolve")
             .WithTags("Collaboration.Comments")
             .WithSummary("Resolve a comment thread");

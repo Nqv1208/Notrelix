@@ -25,5 +25,5 @@ public sealed class RateLimitPolicy
     public int WindowSeconds { get; init; }
     public string Algorithm { get; init; } = "SlidingWindow";
     public string FailMode { get; init; } = "Open";
-    public string PartitionBy { get; init; } = "Ip";
+    public PartitionKey PartitionBy { get; init; } = PartitionKey.Ip;
 }

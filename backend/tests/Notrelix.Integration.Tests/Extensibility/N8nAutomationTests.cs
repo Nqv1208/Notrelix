@@ -1,5 +1,5 @@
-using Notrelix.Application.Common.Events;
-using Notrelix.Application.Common.Abstractions;
+using Notrelix.Application.Common.PostCommit;
+using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Automation.Events;
 using Notrelix.Application.Features.Automation.Jobs;
 using Notrelix.Domain.Automation.Executions;
@@ -11,52 +11,83 @@ using Notrelix.Domain.WorkManagement.Items.Events;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Extensibility;
 
-public class N8nAutomationTests
+[Collection("Database")]
+public class N8nAutomationTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public N8nAutomationTests(PostgresTestContainer db)
+    {
+        _db = db;
+    }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
     [Fact]
     public async Task CardAssignedN8nAutomationHandler_ShouldCreateExecutionAndQueueDispatchJob()
     {
-        await using var context = CreateContext();
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var queue = new CapturingJobQueue();
         var ownerId = Guid.NewGuid();
         var assignedUserId = Guid.NewGuid();
-        var workspace = Workspace.Create(ownerId, "Workspace", "workspace", Now);
+        var workspace = Workspace.Create(Guid.NewGuid(), ownerId, "Workspace", "workspace", Now);
         context.Workspaces.Add(workspace);
 
-        var ownerMember = WorkspaceMember.Create(workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now);
-        var assignedMember = WorkspaceMember.Create(workspace.Id, assignedUserId, WorkspaceRole.Member, ownerId, Now);
+        var ownerMember = WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now);
+        var assignedMember = WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, assignedUserId, WorkspaceRole.Member, ownerId, Now);
         context.WorkspaceMembers.Add(ownerMember);
         context.WorkspaceMembers.Add(assignedMember);
 
-        var board = Board.Create(workspace.Id, ownerId, "Board", null, Now);
+        var board = Board.Create(Guid.NewGuid(), workspace.Id, ownerId, "Board", null, Now);
         context.Boards.Add(board);
 
-        var groupId = Guid.NewGuid();
-        var item = BoardItem.Create(workspace.Id, board.Id, groupId, "Task", Notrelix.Domain.SharedKernel.FractionalIndex.Initial(), ownerId, Now);
+        var group = Notrelix.Domain.WorkManagement.BoardGroups.BoardGroup.Create(Guid.NewGuid(), workspace.Id, board.Id, "Todo", Notrelix.Domain.SharedKernel.Color.Create("#808080"), Notrelix.Domain.SharedKernel.FractionalIndex.Initial(), ownerId, Now);
+        context.BoardGroups.Add(group);
+
+        var item = BoardItem.Create(Guid.NewGuid(), workspace.Id, board.Id, group.Id, "Task", Notrelix.Domain.SharedKernel.FractionalIndex.Initial(), ownerId, Now);
         context.BoardItems.Add(item);
 
         var trigger = AutomationTriggerDefinition.Create("ItemAssigned");
         var action = AutomationActionDefinition.Create("Webhook", """{"webhookPath":"notrelix-card-assigned"}""");
         var config = AutomationConfiguration.Create(trigger, action);
-        var rule = AutomationRule.Create(workspace.Id, "Card assigned alert", config, ownerId, Now);
+        var rule = AutomationRule.Create(Guid.NewGuid(), workspace.Id, "Card assigned alert", config, ownerId, Now);
         rule.Enable(ownerId, Now);
         context.AutomationRules.Add(rule);
 
         await context.SaveChangesAsync();
 
-        var handler = new CardAssignedN8nAutomationHandler(context, queue);
+        var resourceResolver = new TestResourceReferenceResolver(context);
+        var serviceProvider = new TestServiceProvider(context, resourceResolver, queue);
+        var postCommit = new CapturingPostCommitActionQueue();
+        var handler = new CardAssignedN8nAutomationHandler(postCommit, serviceProvider);
         var domainEvent = new BoardItemMemberAssignedDomainEvent(
-            workspace.Id, item.Id, assignedUserId, ownerId, Now);
+            Guid.NewGuid(), workspace.Id, item.Id, assignedUserId, ownerId, Now);
 
         await handler.Handle(
             new DomainEventNotification<BoardItemMemberAssignedDomainEvent>(domainEvent),
             CancellationToken.None);
+
+        // Execute the deferred post-commit action
+        foreach (var pendingAction in postCommit.Actions)
+        {
+            await pendingAction.ExecuteAsync(CancellationToken.None);
+        }
 
         var execution = await context.AutomationExecutions.SingleAsync();
         execution.WorkspaceId.Should().Be(workspace.Id);
@@ -69,16 +100,34 @@ public class N8nAutomationTests
         job.AutomationRuleId.Should().Be(rule.Id);
     }
 
-    private static ApplicationDbContext CreateContext()
+    private sealed class TestResourceReferenceResolver : IResourceReferenceResolver
     {
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase($"Notrelix-n8n-{Guid.NewGuid():N}")
-            .Options;
+        private readonly ApplicationDbContext _context;
+        public TestResourceReferenceResolver(ApplicationDbContext context) => _context = context;
 
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
+        public async Task<Guid?> GetWorkspaceIdAsync(Guid resourceId, string resourceType, CancellationToken ct)
+        {
+            if (resourceType == ResourceTypes.BoardItem)
+            {
+                var item = await _context.BoardItems.FindAsync([resourceId], ct);
+                return item?.WorkspaceId;
+            }
+            return null;
+        }
 
-        return new ApplicationDbContext(options, currentWorkspace);
+        public async Task<bool> ExistsAsync(Guid resourceId, string resourceType, CancellationToken ct)
+            => (await GetWorkspaceIdAsync(resourceId, resourceType, ct)).HasValue;
+
+        public async Task<AccountContextSnapshot?> GetAccountContextAsync(Guid resourceId, string resourceType, CancellationToken ct)
+        {
+            if (resourceType == ResourceTypes.BoardItem)
+            {
+                var item = await _context.BoardItems.FindAsync([resourceId], ct);
+                if (item is null) return null;
+                return new AccountContextSnapshot(item.AccountId, item.WorkspaceId);
+            }
+            return null;
+        }
     }
 
     private sealed class CapturingJobQueue : IJobQueue
@@ -95,6 +144,44 @@ public class N8nAutomationTests
         {
             Jobs.Add(job);
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class CapturingPostCommitActionQueue : IPostCommitActionQueue
+    {
+        private readonly List<IPostCommitAction> _actions = [];
+
+        IReadOnlyList<IPostCommitAction> IPostCommitActionQueue.Actions => _actions;
+
+        public IReadOnlyList<IPostCommitAction> Actions => _actions;
+
+        public void Enqueue(IPostCommitAction action) => _actions.Add(action);
+
+        public void BeginScope() { }
+        public Task FlushAsync(CancellationToken ct) => Task.CompletedTask;
+        public void Clear() { }
+        public void EndScope() { }
+    }
+
+    private sealed class TestServiceProvider : IServiceProvider
+    {
+        private readonly IAutomationDbContext _context;
+        private readonly IResourceReferenceResolver _resolver;
+        private readonly IJobQueue _queue;
+
+        public TestServiceProvider(IAutomationDbContext context, IResourceReferenceResolver resolver, IJobQueue queue)
+        {
+            _context = context;
+            _resolver = resolver;
+            _queue = queue;
+        }
+
+        public object? GetService(Type serviceType)
+        {
+            if (serviceType == typeof(IAutomationDbContext)) return _context;
+            if (serviceType == typeof(IResourceReferenceResolver)) return _resolver;
+            if (serviceType == typeof(IJobQueue)) return _queue;
+            return null;
         }
     }
 }

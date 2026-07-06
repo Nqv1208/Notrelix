@@ -1,5 +1,3 @@
-using FluentValidation.Results;
-
 namespace Notrelix.Application.Common.Exceptions;
 
 // Exception khi validation thất bại

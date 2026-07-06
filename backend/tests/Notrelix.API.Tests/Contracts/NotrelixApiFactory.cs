@@ -9,14 +9,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Common.Security;
 using Notrelix.Application.Features.Workspaces.DTOs;
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetUserWorkspaces;
 using Notrelix.Domain.Governance.Roles;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Infrastructure.Data.Projections.Search;
 using Notrelix.Testing.Application.Fakes;
 using StackExchange.Redis;
 
@@ -28,8 +28,8 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
     {
         public TestApplicationDbContext(
             DbContextOptions<ApplicationDbContext> options,
-            ICurrentWorkspace? currentWorkspace)
-            : base(options, currentWorkspace)
+            ICurrentTenantContext? tenant)
+            : base(options, tenant)
         {
         }
 
@@ -42,6 +42,8 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             // Workspace.IsDeleted is ignored in the base config and is a
             // read-only computed property (=> DeletedAt.HasValue). It can't be
             // remapped. See handler mock below for the workaround.
+
+            modelBuilder.Entity<SearchDocumentRecord>().Ignore(x => x.SearchVector);
         }
     }
 
@@ -67,6 +69,10 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 ["JwtSettings:Audience"] = "Notrelix.Tests",
                 ["JwtSettings:ExpireMinutes"] = "60",
                 ["JwtSettings:RefreshTokenExpireDays"] = "7",
+
+                // RLS config: enabled in Testing env per RlsOptionsValidator.
+                ["Rls:Enabled"] = "true",
+                ["Rls:SetSessionContext"] = "true",
 
                 // CORS config required by startup validation.
                 ["Cors:AllowedOrigins:0"] = "http://localhost:5173",
@@ -99,19 +105,19 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                     .UseLoggerFactory(sp.GetRequiredService<ILoggerFactory>())
                     .Options);
 
-            services.AddScoped<ICurrentWorkspace>(_ =>
+            services.AddScoped<ICurrentTenantContext>(_ =>
             {
-                var workspace = new FakeCurrentWorkspace();
-                workspace.SetWorkspace(Guid.Parse("A0000000-0000-0000-0000-000000000001"));
-                return workspace;
+                var tenant = new FakeCurrentTenantContext();
+                tenant.SetWorkspace(Guid.Parse("A0000000-0000-0000-0000-000000000001"), Guid.Parse("A0000000-0000-0000-0000-000000000001"), null);
+                return tenant;
             });
 
             services.AddScoped<ApplicationDbContext>(sp =>
             {
                 var options = sp.GetRequiredService<DbContextOptions<ApplicationDbContext>>();
-                var currentWorkspace = sp.GetRequiredService<ICurrentWorkspace>();
+                var tenant = sp.GetRequiredService<ICurrentTenantContext>();
 
-                return new TestApplicationDbContext(options, currentWorkspace);
+                return new TestApplicationDbContext(options, tenant);
             });
 
             services.AddScoped<IApplicationDbContext>(sp =>
@@ -134,16 +140,17 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IJwtBlacklistService>();
             services.AddSingleton<IJwtBlacklistService>(_ => Mock.Of<IJwtBlacklistService>());
 
-            services.RemoveAll<INotificationService>();
-            services.AddScoped<INotificationService>(_ => Mock.Of<INotificationService>());
-
             // Clear health checks that depend on external infrastructure.
             services.Configure<HealthCheckServiceOptions>(options =>
             {
                 options.Registrations.Clear();
             });
 
-            // WorkspaceResolutionMiddleware requires IPermissionEvaluator.
+            // Remove background dispatchers that use FromSqlRaw (PostgreSQL-specific)
+            // since the test host uses In-Memory provider.
+            services.RemoveAll<IHostedService>();
+
+            // Pipeline behaviors require IPermissionEvaluator.
             services.RemoveAll<IPermissionEvaluator>();
             services.AddScoped<IPermissionEvaluator>(_ =>
             {

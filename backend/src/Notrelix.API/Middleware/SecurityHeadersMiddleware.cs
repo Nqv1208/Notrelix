@@ -3,29 +3,53 @@ using Notrelix.API.Options;
 
 namespace Notrelix.API.Middleware;
 
+/// <summary>
+/// Adds security headers to all HTTP responses.
+/// Transport-level security only — no business authorization.
+/// </summary>
 public sealed class SecurityHeadersMiddleware
 {
     private readonly RequestDelegate _next;
-    private readonly SecurityHeaderOptions _options;
 
-    public SecurityHeadersMiddleware(RequestDelegate next, IOptions<SecurityHeaderOptions> options)
+    public SecurityHeadersMiddleware(RequestDelegate next)
     {
         _next = next;
-        _options = options.Value;
     }
 
-    public async Task InvokeAsync(HttpContext context)
+    public async Task InvokeAsync(HttpContext context, IOptions<SecurityHeaderOptions> options)
     {
-        context.Response.Headers["X-Content-Type-Options"] = "nosniff";
-        context.Response.Headers["X-Frame-Options"] = "DENY";
-        context.Response.Headers["Referrer-Policy"] = "no-referrer";
-        context.Response.Headers["Permissions-Policy"] =
-            "camera=(), microphone=(), geolocation=()";
+        var securityHeaders = options.Value;
 
-        if (_options.EnableCsp)
+        context.Response.OnStarting(() =>
         {
-            context.Response.Headers["Content-Security-Policy"] = _options.ContentSecurityPolicy;
-        }
+            var headers = context.Response.Headers;
+
+            // Prevent MIME type sniffing
+            headers["X-Content-Type-Options"] = "nosniff";
+
+            // Prevent clickjacking
+            headers["X-Frame-Options"] = "DENY";
+
+            // Disable XSS filter (modern browsers use CSP instead)
+            headers["X-XSS-Protection"] = "0";
+
+            // Control referrer information
+            headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+
+            // Prevent DNS prefetching
+            headers["X-DNS-Prefetch-Control"] = "off";
+
+            // Remove server header
+            headers["X-Powered-By"] = "";
+
+            // Content Security Policy (if enabled)
+            if (securityHeaders.EnableCsp && !string.IsNullOrWhiteSpace(securityHeaders.ContentSecurityPolicy))
+            {
+                headers["Content-Security-Policy"] = securityHeaders.ContentSecurityPolicy;
+            }
+
+            return Task.CompletedTask;
+        });
 
         await _next(context);
     }

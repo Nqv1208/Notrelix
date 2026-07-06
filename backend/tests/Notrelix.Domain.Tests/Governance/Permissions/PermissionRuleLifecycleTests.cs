@@ -12,7 +12,7 @@ public class PermissionRuleLifecycleTests
     [Fact]
     public void PermissionRule_Create_ShouldSucceed()
     {
-        var rule = PermissionRule.Create(WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
+        var rule = PermissionRule.Create(Guid.NewGuid(), WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
         rule.Should().NotBeNull();
         rule.WorkspaceId.Should().Be(WsA);
         rule.Status.Should().Be(PermissionRuleStatus.Active);
@@ -22,7 +22,7 @@ public class PermissionRuleLifecycleTests
     [Fact]
     public void PermissionRule_Disable_ShouldUpdateStatus()
     {
-        var rule = PermissionRule.Create(WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
+        var rule = PermissionRule.Create(Guid.NewGuid(), WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
         rule.ClearDomainEvents();
 
         rule.Disable(Actor, Now);
@@ -34,14 +34,14 @@ public class PermissionRuleLifecycleTests
     [Fact]
     public void PermissionRule_IsActive_WhenActive_ShouldReturnTrue()
     {
-        var rule = PermissionRule.Create(WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
+        var rule = PermissionRule.Create(Guid.NewGuid(), WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
         rule.IsActive(Now).Should().BeTrue();
     }
 
     [Fact]
     public void PermissionRule_IsActive_WhenDisabled_ShouldReturnFalse()
     {
-        var rule = PermissionRule.Create(WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
+        var rule = PermissionRule.Create(Guid.NewGuid(), WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
         rule.Disable(Actor, Now);
         rule.IsActive(Now).Should().BeFalse();
     }
@@ -49,21 +49,21 @@ public class PermissionRuleLifecycleTests
     [Fact]
     public void PermissionRule_IsActive_WhenExpired_ShouldReturnFalse()
     {
-        var rule = PermissionRule.Create(WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now, expiresAt: Now.AddDays(-1));
+        var rule = PermissionRule.Create(Guid.NewGuid(), WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now, expiresAt: Now.AddDays(-1));
         rule.IsActive(Now).Should().BeFalse();
     }
 
     [Fact]
     public void PermissionRule_IsActive_WhenNotYetStarted_ShouldReturnFalse()
     {
-        var rule = PermissionRule.Create(WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now, startsAt: Now.AddDays(1));
+        var rule = PermissionRule.Create(Guid.NewGuid(), WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now, startsAt: Now.AddDays(1));
         rule.IsActive(Now).Should().BeFalse();
     }
 
     [Fact]
     public void PermissionRule_SoftDelete_ShouldRaiseEvent()
     {
-        var rule = PermissionRule.Create(WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
+        var rule = PermissionRule.Create(Guid.NewGuid(), WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
         rule.ClearDomainEvents();
         var version = rule.Version;
 
@@ -79,7 +79,7 @@ public class PermissionRuleLifecycleTests
     [Fact]
     public void PermissionRule_Restore_ShouldRaiseEvent()
     {
-        var rule = PermissionRule.Create(WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
+        var rule = PermissionRule.Create(Guid.NewGuid(), WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
         rule.SoftDelete(Actor, Now);
         rule.ClearDomainEvents();
         var version = rule.Version;
@@ -96,7 +96,7 @@ public class PermissionRuleLifecycleTests
     [Fact]
     public void PermissionRule_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
-        var rule = PermissionRule.Create(WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
+        var rule = PermissionRule.Create(Guid.NewGuid(), WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
         rule.SoftDelete(Actor, Now);
         rule.ClearDomainEvents();
         var version = rule.Version;
@@ -110,7 +110,7 @@ public class PermissionRuleLifecycleTests
     [Fact]
     public void PermissionRule_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
-        var rule = PermissionRule.Create(WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
+        var rule = PermissionRule.Create(Guid.NewGuid(), WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
         rule.ClearDomainEvents();
         var version = rule.Version;
 

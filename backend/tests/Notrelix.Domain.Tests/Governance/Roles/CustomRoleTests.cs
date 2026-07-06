@@ -11,7 +11,7 @@ public class CustomRoleTests
         var workspaceId = Guid.NewGuid();
         var createdBy = Guid.NewGuid();
 
-        var role = CustomRole.Create(workspaceId, "Project Manager", "Manages projects", createdBy, DateTimeOffset.UtcNow);
+        var role = CustomRole.Create(Guid.NewGuid(), workspaceId, "Project Manager", "Manages projects", createdBy, DateTimeOffset.UtcNow);
 
         role.Name.Should().Be("Project Manager");
         role.WorkspaceId.Should().Be(workspaceId);
@@ -22,7 +22,7 @@ public class CustomRoleTests
     [Fact]
     public void AddPermission_ShouldAddToList_AndRaiseEvent()
     {
-        var role = CustomRole.Create(Guid.NewGuid(), "Role", null, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var role = CustomRole.Create(Guid.NewGuid(), Guid.NewGuid(), "Role", null, Guid.NewGuid(), DateTimeOffset.UtcNow);
         role.ClearDomainEvents();
 
         var updatedBy = Guid.NewGuid();
@@ -36,7 +36,7 @@ public class CustomRoleTests
     [Fact]
     public void RemovePermission_ShouldRemoveFromList_AndRaiseEvent()
     {
-        var role = CustomRole.Create(Guid.NewGuid(), "Role", null, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var role = CustomRole.Create(Guid.NewGuid(), Guid.NewGuid(), "Role", null, Guid.NewGuid(), DateTimeOffset.UtcNow);
         role.AddPermission("CreateBoard", Guid.NewGuid(), DateTimeOffset.UtcNow);
         role.ClearDomainEvents();
 

@@ -47,6 +47,7 @@ public class IntegrationSecretVersion : Entity
 
 public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public IntegrationProvider Provider { get; private set; }
     public IntegrationConnectionStatus Status { get; private set; }
@@ -62,6 +63,7 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
     private IntegrationConnection() : base() { }
 
     public static IntegrationConnection Create(
+        Guid accountId,
         Guid workspaceId,
         IntegrationProvider provider,
         Guid createdBy,
@@ -69,6 +71,7 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
         string? providerAccountId = null,
         DateTimeOffset? expiresAt = null)
     {
+        Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(createdBy);
 
@@ -79,6 +82,7 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
 
         var connection = new IntegrationConnection
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             Provider = provider,
             Status = IntegrationConnectionStatus.Active,
@@ -87,7 +91,7 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
         };
 
         connection.SetAuditOnCreate(createdBy, createdAt);
-        connection.AddDomainEvent(new IntegrationConnectionCreatedDomainEvent(workspaceId, connection.Id, provider, createdBy, createdAt));
+        connection.AddDomainEvent(new IntegrationConnectionCreatedDomainEvent(accountId, workspaceId, connection.Id, provider, createdBy, createdAt));
 
         return connection;
     }
@@ -100,7 +104,7 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
         Status = IntegrationConnectionStatus.Revoked;
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
-        AddDomainEvent(new IntegrationConnectionRevokedDomainEvent(WorkspaceId, Id, updatedBy, occurredAt));
+        AddDomainEvent(new IntegrationConnectionRevokedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
     }
 
     public void Reconnect(string? providerAccountId, DateTimeOffset? expiresAt, Guid updatedBy, DateTimeOffset occurredAt)
@@ -116,7 +120,7 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
         ExpiresAt = expiresAt;
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
-        AddDomainEvent(new IntegrationConnectionReauthorizedDomainEvent(WorkspaceId, Id, updatedBy, occurredAt));
+        AddDomainEvent(new IntegrationConnectionReauthorizedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
     }
 
     public void MarkExpired(Guid updatedBy, DateTimeOffset occurredAt)
@@ -127,7 +131,7 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
         Status = IntegrationConnectionStatus.Expired;
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
-        AddDomainEvent(new IntegrationConnectionExpiredDomainEvent(WorkspaceId, Id, updatedBy, occurredAt));
+        AddDomainEvent(new IntegrationConnectionExpiredDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
     }
 
     public void MarkError(string error, Guid updatedBy, DateTimeOffset occurredAt)
@@ -156,7 +160,7 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
 
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
-        AddDomainEvent(new IntegrationSecretRotatedDomainEvent(WorkspaceId, Id, version, updatedBy, occurredAt));
+        AddDomainEvent(new IntegrationSecretRotatedDomainEvent(AccountId, WorkspaceId, Id, version, updatedBy, occurredAt));
     }
 
     public void AddScope(string scope, Guid addedBy, DateTimeOffset occurredAt)
@@ -168,7 +172,7 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
         _scopes.Add(IntegrationScope.Create(Id, scope));
         SetAuditOnUpdate(addedBy, occurredAt);
         IncrementVersion();
-        AddDomainEvent(new IntegrationScopeAddedDomainEvent(WorkspaceId, Id, scope, addedBy, occurredAt));
+        AddDomainEvent(new IntegrationScopeAddedDomainEvent(AccountId, WorkspaceId, Id, scope, addedBy, occurredAt));
     }
 
     public void RemoveScope(string scope, Guid removedBy, DateTimeOffset occurredAt)
@@ -181,6 +185,6 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
         _scopes.Remove(scopeObj);
         SetAuditOnUpdate(removedBy, occurredAt);
         IncrementVersion();
-        AddDomainEvent(new IntegrationScopeRemovedDomainEvent(WorkspaceId, Id, scope, removedBy, occurredAt));
+        AddDomainEvent(new IntegrationScopeRemovedDomainEvent(AccountId, WorkspaceId, Id, scope, removedBy, occurredAt));
     }
 }

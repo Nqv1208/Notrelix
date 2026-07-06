@@ -2,6 +2,7 @@ namespace Notrelix.Domain.WorkManagement.Forms;
 
 public class FormQuestion : Entity, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid FormId { get; private set; }
     public Guid? BoardFieldId { get; private set; }
@@ -16,6 +17,7 @@ public class FormQuestion : Entity, IWorkspaceScoped
     private FormQuestion() : base() { }
 
     public static FormQuestion Create(
+        Guid accountId,
         Guid workspaceId,
         Guid formId,
         Guid? boardFieldId,
@@ -31,9 +33,11 @@ public class FormQuestion : Entity, IWorkspaceScoped
         Guard.NotNullOrWhiteSpace(questionKey);
         Guard.NotNullOrWhiteSpace(label);
         Guard.NotNull(position);
+        Guard.NotEmpty(accountId);
 
         return new FormQuestion
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             FormId = formId,
             BoardFieldId = boardFieldId,

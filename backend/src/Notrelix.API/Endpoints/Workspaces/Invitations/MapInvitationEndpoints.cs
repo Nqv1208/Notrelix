@@ -10,7 +10,6 @@ public static class MapInvitationEndpoints
         var wsGroup = app
             .MapGroup("/api/v1/workspaces/{workspaceId:guid}/invitations")
             .WithTags("Workspaces.Invitations")
-            .RequireAuthorization()
             .WithOpenApi();
 
         wsGroup.MapListWorkspaceInvitations();

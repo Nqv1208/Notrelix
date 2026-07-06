@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.WorkManagement.Views.Events;
 
 public sealed record BoardViewCreatedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid BoardId,
     Guid ViewId,
@@ -8,4 +9,4 @@ public sealed record BoardViewCreatedDomainEvent(
     ViewType Type,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, CreatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, CreatedBy);

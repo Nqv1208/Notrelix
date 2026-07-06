@@ -12,7 +12,7 @@ public class AutomationExecutionVersionTests
     [Fact]
     public void SetPayload_ShouldIncrementVersion()
     {
-        var execution = AutomationExecution.Create(_workspaceId, Guid.NewGuid(), Guid.NewGuid(), _now);
+        var execution = AutomationExecution.Create(Guid.NewGuid(), _workspaceId, Guid.NewGuid(), Guid.NewGuid(), _now);
         execution.ClearDomainEvents();
         var version = execution.Version;
 
@@ -24,7 +24,7 @@ public class AutomationExecutionVersionTests
     [Fact]
     public void Start_ShouldIncrementVersion()
     {
-        var execution = AutomationExecution.Create(_workspaceId, Guid.NewGuid(), Guid.NewGuid(), _now);
+        var execution = AutomationExecution.Create(Guid.NewGuid(), _workspaceId, Guid.NewGuid(), Guid.NewGuid(), _now);
         execution.ClearDomainEvents();
         var version = execution.Version;
 
@@ -37,7 +37,7 @@ public class AutomationExecutionVersionTests
     [Fact]
     public void Succeed_ShouldIncrementVersion()
     {
-        var execution = AutomationExecution.Create(_workspaceId, Guid.NewGuid(), Guid.NewGuid(), _now);
+        var execution = AutomationExecution.Create(Guid.NewGuid(), _workspaceId, Guid.NewGuid(), Guid.NewGuid(), _now);
         execution.Start(_now);
         execution.ClearDomainEvents();
         var version = execution.Version;
@@ -51,7 +51,7 @@ public class AutomationExecutionVersionTests
     [Fact]
     public void Fail_ShouldIncrementVersion()
     {
-        var execution = AutomationExecution.Create(_workspaceId, Guid.NewGuid(), Guid.NewGuid(), _now);
+        var execution = AutomationExecution.Create(Guid.NewGuid(), _workspaceId, Guid.NewGuid(), Guid.NewGuid(), _now);
         execution.Start(_now);
         execution.ClearDomainEvents();
         var version = execution.Version;
@@ -65,7 +65,7 @@ public class AutomationExecutionVersionTests
     [Fact]
     public void Cancel_ShouldIncrementVersion()
     {
-        var execution = AutomationExecution.Create(_workspaceId, Guid.NewGuid(), Guid.NewGuid(), _now);
+        var execution = AutomationExecution.Create(Guid.NewGuid(), _workspaceId, Guid.NewGuid(), Guid.NewGuid(), _now);
         execution.ClearDomainEvents();
         var version = execution.Version;
 

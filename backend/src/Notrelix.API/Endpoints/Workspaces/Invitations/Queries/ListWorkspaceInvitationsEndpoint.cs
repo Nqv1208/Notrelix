@@ -7,7 +7,7 @@ public static class ListWorkspaceInvitationsEndpoint
 {
     public static IEndpointRouteBuilder MapListWorkspaceInvitations(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", HandleAsync)
+        group.MapWorkspaceGet("/", HandleAsync)
             .WithName("Workspaces.Invitations.ListWorkspaceInvitations")
             .WithTags("Workspaces.Invitations")
             .WithSummary("Get workspace invitations");

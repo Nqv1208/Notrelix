@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Models;
-
 namespace Notrelix.Application.Features.Identity.Auth.GetBootstrap;
 
 public record BootstrapResult

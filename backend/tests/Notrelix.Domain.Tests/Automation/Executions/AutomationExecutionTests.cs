@@ -8,7 +8,7 @@ public class AutomationExecutionTests
     [Fact]
     public void Create_ShouldSucceed_AndRaiseEvent()
     {
-        var execution = AutomationExecution.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var execution = AutomationExecution.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         execution.Status.Should().Be(AutomationExecutionStatus.Queued);
         execution.AttemptCount.Should().Be(0);
@@ -207,6 +207,6 @@ public class AutomationExecutionTests
 
     private static AutomationExecution CreateExecution()
     {
-        return AutomationExecution.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        return AutomationExecution.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
     }
 }

@@ -9,7 +9,6 @@ public static class MapProfileEndpoints
         var group = app
             .MapGroup("/api/v1/profile")
             .WithTags("Identity.Profile")
-            .RequireAuthorization()
             .WithOpenApi();
 
         group.MapUpdateProfile();

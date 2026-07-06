@@ -5,10 +5,15 @@ namespace Notrelix.Domain.Tests.Integrations;
 
 public class WebhookDeliveryTests
 {
+    private static readonly Guid AccountId = Guid.NewGuid();
+    private static readonly Guid WorkspaceId = Guid.NewGuid();
+    private static readonly Guid SubscriptionId = Guid.NewGuid();
+    private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
+
     [Fact]
     public void Create_ShouldSucceed_AndRaiseEvent()
     {
-        var delivery = WebhookDelivery.Create(Guid.NewGuid(), Guid.NewGuid(), WebhookEventType.BoardCreated, JsonValue.Create("{}"), DateTimeOffset.UtcNow);
+        var delivery = WebhookDelivery.Create(AccountId, WorkspaceId, SubscriptionId, WebhookEventType.BoardCreated, JsonValue.Create("{}"), Now);
 
         delivery.Status.Should().Be(WebhookDeliveryStatus.Pending);
         delivery.RetryCount.Should().Be(0);
@@ -22,7 +27,7 @@ public class WebhookDeliveryTests
         var delivery = CreateDelivery();
         delivery.ClearDomainEvents();
 
-        delivery.MarkDelivered(200, "{\"ok\":true}", DateTimeOffset.UtcNow);
+        delivery.MarkDelivered(200, "{\"ok\":true}", Now);
 
         delivery.Status.Should().Be(WebhookDeliveryStatus.Sent);
         delivery.ResponseStatusCode.Should().Be(200);
@@ -34,9 +39,9 @@ public class WebhookDeliveryTests
     public void MarkDelivered_WhenAlreadySent_ShouldThrow()
     {
         var delivery = CreateDelivery();
-        delivery.MarkDelivered(200, null, DateTimeOffset.UtcNow);
+        delivery.MarkDelivered(200, null, Now);
 
-        var act = () => delivery.MarkDelivered(200, null, DateTimeOffset.UtcNow);
+        var act = () => delivery.MarkDelivered(200, null, Now);
         act.Should().Throw<BusinessRuleException>().WithMessage("*status*");
     }
 
@@ -46,7 +51,7 @@ public class WebhookDeliveryTests
         var delivery = CreateDelivery();
         delivery.ClearDomainEvents();
 
-        delivery.MarkFailed(500, "Internal Error", DateTimeOffset.UtcNow, "Server error");
+        delivery.MarkFailed(500, "Internal Error", Now, "Server error");
 
         delivery.Status.Should().Be(WebhookDeliveryStatus.Failed);
         delivery.FailureReason.Should().Be("Server error");
@@ -57,9 +62,9 @@ public class WebhookDeliveryTests
     public void MarkFailed_WhenAlreadySent_ShouldThrow()
     {
         var delivery = CreateDelivery();
-        delivery.MarkDelivered(200, null, DateTimeOffset.UtcNow);
+        delivery.MarkDelivered(200, null, Now);
 
-        var act = () => delivery.MarkFailed(500, null, DateTimeOffset.UtcNow);
+        var act = () => delivery.MarkFailed(500, null, Now);
         act.Should().Throw<BusinessRuleException>().WithMessage("*status*");
     }
 
@@ -67,9 +72,9 @@ public class WebhookDeliveryTests
     public void ScheduleRetry_ShouldTransition_AndIncrementCount()
     {
         var delivery = CreateDelivery();
-        delivery.MarkFailed(500, null, DateTimeOffset.UtcNow);
+        delivery.MarkFailed(500, null, Now);
 
-        delivery.ScheduleRetry(DateTimeOffset.UtcNow.AddMinutes(5));
+        delivery.ScheduleRetry(Now.AddMinutes(5));
 
         delivery.Status.Should().Be(WebhookDeliveryStatus.Retrying);
         delivery.RetryCount.Should().Be(1);
@@ -81,20 +86,20 @@ public class WebhookDeliveryTests
     {
         var delivery = CreateDelivery();
 
-        var act = () => delivery.ScheduleRetry(DateTimeOffset.UtcNow);
+        var act = () => delivery.ScheduleRetry(Now);
         act.Should().Throw<BusinessRuleException>().WithMessage("*failed*");
     }
 
     [Fact]
     public void ScheduleRetry_WhenMaxRetriesReached_ShouldThrow()
     {
-        var delivery = WebhookDelivery.Create(Guid.NewGuid(), Guid.NewGuid(), WebhookEventType.ItemUpdated, JsonValue.EmptyObject(), DateTimeOffset.UtcNow, maxRetries: 1);
-        delivery.MarkFailed(500, null, DateTimeOffset.UtcNow);
-        delivery.ScheduleRetry(DateTimeOffset.UtcNow.AddMinutes(5));
+        var delivery = WebhookDelivery.Create(AccountId, WorkspaceId, SubscriptionId, WebhookEventType.ItemUpdated, JsonValue.EmptyObject(), Now, maxRetries: 1);
+        delivery.MarkFailed(500, null, Now);
+        delivery.ScheduleRetry(Now.AddMinutes(5));
 
-        delivery.MarkFailed(500, null, DateTimeOffset.UtcNow);
+        delivery.MarkFailed(500, null, Now);
 
-        var act = () => delivery.ScheduleRetry(DateTimeOffset.UtcNow.AddMinutes(10));
+        var act = () => delivery.ScheduleRetry(Now.AddMinutes(10));
         act.Should().Throw<BusinessRuleException>().WithMessage("*retry count*");
     }
 
@@ -102,16 +107,16 @@ public class WebhookDeliveryTests
     public void FullLifecycle_MarkDeliveredAfterRetry_ShouldSucceed()
     {
         var delivery = CreateDelivery();
-        delivery.MarkFailed(500, null, DateTimeOffset.UtcNow);
-        delivery.ScheduleRetry(DateTimeOffset.UtcNow.AddMinutes(1));
+        delivery.MarkFailed(500, null, Now);
+        delivery.ScheduleRetry(Now.AddMinutes(1));
 
-        delivery.MarkDelivered(200, "{}", DateTimeOffset.UtcNow);
+        delivery.MarkDelivered(200, "{}", Now);
 
         delivery.Status.Should().Be(WebhookDeliveryStatus.Sent);
     }
 
     private static WebhookDelivery CreateDelivery()
     {
-        return WebhookDelivery.Create(Guid.NewGuid(), Guid.NewGuid(), WebhookEventType.BoardCreated, JsonValue.Create("{}"), DateTimeOffset.UtcNow);
+        return WebhookDelivery.Create(AccountId, WorkspaceId, SubscriptionId, WebhookEventType.BoardCreated, JsonValue.Create("{}"), Now);
     }
 }

@@ -11,7 +11,7 @@ public class ResourceWatcherTests
         var workspaceId = Guid.NewGuid();
         var target = ResourceRef.Create(ResourceType.Board, Guid.NewGuid(), workspaceId);
 
-        var watcher = ResourceWatcher.Create(workspaceId, target, Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var watcher = ResourceWatcher.Create(Guid.NewGuid(), workspaceId, target, Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         watcher.WorkspaceId.Should().Be(workspaceId);
         watcher.Target.Should().Be(target);
@@ -22,7 +22,7 @@ public class ResourceWatcherTests
     [Fact]
     public void Create_WithSpecificLevel_ShouldSetLevel()
     {
-        var watcher = ResourceWatcher.Create(Guid.NewGuid(), ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid()), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow, WatchLevel.MentionsOnly);
+        var watcher = ResourceWatcher.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid()), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow, WatchLevel.MentionsOnly);
 
         watcher.Level.Should().Be(WatchLevel.MentionsOnly);
     }
@@ -33,7 +33,7 @@ public class ResourceWatcherTests
         var workspaceId = Guid.NewGuid();
         var target = ResourceRef.Create(ResourceType.Board, Guid.NewGuid(), Guid.NewGuid());
 
-        var act = () => ResourceWatcher.Create(workspaceId, target, Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var act = () => ResourceWatcher.Create(Guid.NewGuid(), workspaceId, target, Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<WorkspaceMismatchException>();
     }
 
@@ -62,6 +62,6 @@ public class ResourceWatcherTests
     private static ResourceWatcher CreateWatcher()
     {
         var workspaceId = Guid.NewGuid();
-        return ResourceWatcher.Create(workspaceId, ResourceRef.Create(ResourceType.Board, Guid.NewGuid(), workspaceId), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        return ResourceWatcher.Create(Guid.NewGuid(), workspaceId, ResourceRef.Create(ResourceType.Board, Guid.NewGuid(), workspaceId), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
     }
 }

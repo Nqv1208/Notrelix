@@ -12,7 +12,7 @@ public class ChecklistEventTests
     [Fact]
     public void Checklist_SoftDelete_ShouldRaiseEvent()
     {
-        var checklist = Checklist.Create(WsA, Guid.NewGuid(), "Checklist", FractionalIndex.Create("a0"), Actor, Now);
+        var checklist = Checklist.Create(Guid.NewGuid(), WsA, Guid.NewGuid(), "Checklist", FractionalIndex.Create("a0"), Actor, Now);
         checklist.ClearDomainEvents();
         var version = checklist.Version;
 
@@ -26,7 +26,7 @@ public class ChecklistEventTests
     [Fact]
     public void Checklist_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
-        var checklist = Checklist.Create(WsA, Guid.NewGuid(), "Checklist", FractionalIndex.Create("a0"), Actor, Now);
+        var checklist = Checklist.Create(Guid.NewGuid(), WsA, Guid.NewGuid(), "Checklist", FractionalIndex.Create("a0"), Actor, Now);
         checklist.SoftDelete(Actor, Now);
         checklist.ClearDomainEvents();
         var version = checklist.Version;
@@ -40,7 +40,7 @@ public class ChecklistEventTests
     [Fact]
     public void Checklist_Restore_ShouldRaiseEvent()
     {
-        var checklist = Checklist.Create(WsA, Guid.NewGuid(), "Checklist", FractionalIndex.Create("a0"), Actor, Now);
+        var checklist = Checklist.Create(Guid.NewGuid(), WsA, Guid.NewGuid(), "Checklist", FractionalIndex.Create("a0"), Actor, Now);
         checklist.SoftDelete(Actor, Now);
         checklist.ClearDomainEvents();
         var version = checklist.Version;
@@ -55,7 +55,7 @@ public class ChecklistEventTests
     [Fact]
     public void Checklist_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
-        var checklist = Checklist.Create(WsA, Guid.NewGuid(), "Checklist", FractionalIndex.Create("a0"), Actor, Now);
+        var checklist = Checklist.Create(Guid.NewGuid(), WsA, Guid.NewGuid(), "Checklist", FractionalIndex.Create("a0"), Actor, Now);
         checklist.ClearDomainEvents();
         var version = checklist.Version;
 

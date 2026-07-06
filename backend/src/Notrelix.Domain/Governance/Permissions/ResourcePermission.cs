@@ -4,6 +4,7 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
 {
     private bool _suppressSoftDeleteEvent;
 
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public ResourceType ResourceType { get; private set; }
     public Guid ResourceId { get; private set; }
@@ -17,6 +18,7 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
     private ResourcePermission() : base() { }
 
     public static ResourcePermission Grant(
+        Guid accountId,
         Guid workspaceId,
         ResourceType resourceType,
         Guid resourceId,
@@ -33,12 +35,14 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(resourceId);
         Guard.NotEmpty(subjectId);
+        Guard.NotEmpty(accountId);
 
         if (!PermissionRules.CanGrant(granterLevel, level))
             throw new BusinessRuleException("Cannot grant a permission level higher than the granter's own level.");
 
         var permission = new ResourcePermission
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             ResourceType = resourceType,
             ResourceId = resourceId,
@@ -52,7 +56,7 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
 
         permission.SetAuditOnCreate(grantedBy, grantedAt);
         permission.AddDomainEvent(new ResourcePermissionGrantedDomainEvent(
-            workspaceId, permission.Id, resourceType, resourceId, subjectType, subjectId, level, grantedBy, grantedAt));
+            accountId, workspaceId, permission.Id, resourceType, resourceId, subjectType, subjectId, level, grantedBy, grantedAt));
 
         return permission;
     }
@@ -66,7 +70,7 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         Level = newLevel;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new ResourcePermissionLevelChangedDomainEvent(WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, oldLevel, newLevel, updatedBy, updatedAt));
+        AddDomainEvent(new ResourcePermissionLevelChangedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, oldLevel, newLevel, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -76,7 +80,7 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
         if (!_suppressSoftDeleteEvent)
-            AddDomainEvent(new ResourcePermissionSoftDeletedDomainEvent(WorkspaceId, Id, ResourceType, ResourceId, deletedBy, deletedAt));
+            AddDomainEvent(new ResourcePermissionSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, deletedBy, deletedAt));
     }
 
     public void Revoke(Guid revokedBy, DateTimeOffset revokedAt)
@@ -86,7 +90,7 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         _suppressSoftDeleteEvent = true;
         SoftDelete(revokedBy, revokedAt);
         _suppressSoftDeleteEvent = false;
-        AddDomainEvent(new ResourcePermissionRevokedDomainEvent(WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, revokedBy, revokedAt));
+        AddDomainEvent(new ResourcePermissionRevokedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, revokedBy, revokedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -95,6 +99,6 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new ResourcePermissionRestoredDomainEvent(WorkspaceId, Id, ResourceType, ResourceId, restoredBy, restoredAt));
+        AddDomainEvent(new ResourcePermissionRestoredDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, restoredBy, restoredAt));
     }
 }

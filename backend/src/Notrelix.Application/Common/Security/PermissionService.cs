@@ -1,16 +1,26 @@
-using Microsoft.EntityFrameworkCore;
 using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
+using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.Governance.Abstractions;
 
 namespace Notrelix.Application.Common.Security;
 
-public class PermissionService : IPermissionService, IPermissionEvaluator
+public class PermissionService : IPermissionService, IPermissionEvaluator, IAuthorizationDecisionStore
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkspaceDbContext _workspaceContext;
+    private readonly IWorkManagementDbContext _workContext;
+    private readonly IGovernanceDbContext _governanceContext;
     private readonly IDateTimeProvider _clock;
 
-    public PermissionService(IApplicationDbContext context, IDateTimeProvider clock)
+    public PermissionService(
+        IWorkspaceDbContext workspaceContext,
+        IWorkManagementDbContext workContext,
+        IGovernanceDbContext governanceContext,
+        IDateTimeProvider clock)
     {
-        _context = context;
+        _workspaceContext = workspaceContext;
+        _workContext = workContext;
+        _governanceContext = governanceContext;
         _clock = clock;
     }
 
@@ -18,8 +28,29 @@ public class PermissionService : IPermissionService, IPermissionEvaluator
         PermissionContext context,
         CancellationToken cancellationToken = default)
     {
+        if (context.Scope is PermissionScope.Workspace or PermissionScope.Resource && !context.WorkspaceId.HasValue)
+        {
+            throw new SecurityMisconfigurationException(
+                $"Permission evaluation requires WorkspaceId for scope {context.Scope} " +
+                $"but WorkspaceId is null. ResourceType={context.ResourceType} Action={context.Action}");
+        }
+
+        // Resolve AccountId from workspace if not provided
+        if (context.AccountId == Guid.Empty && context.WorkspaceId.HasValue)
+        {
+            var accountId = await _workspaceContext.Workspaces
+                .Where(w => w.Id == context.WorkspaceId.Value)
+                .Select(w => (Guid?)w.AccountId)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (accountId.HasValue)
+            {
+                context = context with { AccountId = accountId.Value };
+            }
+        }
+
         // 1. Check workspace membership
-        var workspaceMember = await _context.WorkspaceMembers
+        var workspaceMember = await _workspaceContext.WorkspaceMembers
             .FirstOrDefaultAsync(m => m.WorkspaceId == context.WorkspaceId && m.UserId == context.UserId, cancellationToken);
 
         if (workspaceMember is null)
@@ -49,7 +80,7 @@ public class PermissionService : IPermissionService, IPermissionEvaluator
         // 5. Resource specific permissions (legacy fallback)
         if (context.ResourceType == ResourceType.Board && context.ResourceId.HasValue)
         {
-            var board = await _context.Boards
+            var board = await _workContext.Boards
                 .FirstOrDefaultAsync(b => b.Id == context.ResourceId.Value && b.WorkspaceId == context.WorkspaceId, cancellationToken);
 
             if (board is null || board.IsArchived)
@@ -61,10 +92,10 @@ public class PermissionService : IPermissionService, IPermissionEvaluator
             if (board.Visibility == BoardVisibility.Private)
             {
                 // Must be a board member or have explicit resource permission
-                var boardMember = await _context.BoardMembers
+                var boardMember = await _workContext.BoardMembers
                     .FirstOrDefaultAsync(m => m.BoardId == board.Id && m.UserId == context.UserId, cancellationToken);
 
-                var hasExplicitPermission = await _context.ResourcePermissions
+                var hasExplicitPermission = await _governanceContext.ResourcePermissions
                     .AnyAsync(p => p.WorkspaceId == context.WorkspaceId &&
                                    p.ResourceType == ResourceType.Board &&
                                    p.ResourceId == board.Id &&
@@ -94,7 +125,7 @@ public class PermissionService : IPermissionService, IPermissionEvaluator
             {
                 if (workspaceMember.Role == WorkspaceRole.Guest)
                 {
-                    var boardMember = await _context.BoardMembers
+                    var boardMember = await _workContext.BoardMembers
                         .FirstOrDefaultAsync(m => m.BoardId == board.Id && m.UserId == context.UserId, cancellationToken);
 
                     if (boardMember is null)
@@ -103,7 +134,7 @@ public class PermissionService : IPermissionService, IPermissionEvaluator
                     }
                 }
 
-                var boardMemberCheck = await _context.BoardMembers
+                var boardMemberCheck = await _workContext.BoardMembers
                     .FirstOrDefaultAsync(m => m.BoardId == board.Id && m.UserId == context.UserId, cancellationToken);
 
                 if (boardMemberCheck is not null)
@@ -133,7 +164,7 @@ public class PermissionService : IPermissionService, IPermissionEvaluator
     {
         var now = _clock.UtcNow;
 
-        var rules = await _context.PermissionRules
+        var rules = await _governanceContext.PermissionRules
             .Where(r => r.WorkspaceId == context.WorkspaceId
                 && r.Status == PermissionRuleStatus.Active
                 && r.DeletedAt == null
@@ -217,7 +248,7 @@ public class PermissionService : IPermissionService, IPermissionEvaluator
         PermissionAction action,
         CancellationToken cancellationToken = default)
     {
-        var decision = await EvaluateAsync(new PermissionContext(userId, workspaceId, resourceType, resourceId, action), cancellationToken);
+        var decision = await EvaluateAsync(new PermissionContext(userId, Guid.Empty, workspaceId, resourceType, resourceId, action, PermissionScope.Resource), cancellationToken);
         return decision.IsAllowed;
     }
 
@@ -227,7 +258,7 @@ public class PermissionService : IPermissionService, IPermissionEvaluator
         PermissionAction action,
         CancellationToken cancellationToken = default)
     {
-        var decision = await EvaluateAsync(new PermissionContext(userId, workspaceId, ResourceType.Workspace, null, action), cancellationToken);
+        var decision = await EvaluateAsync(new PermissionContext(userId, Guid.Empty, workspaceId, ResourceType.Workspace, null, action, PermissionScope.Workspace), cancellationToken);
         return decision.IsAllowed;
     }
 
@@ -239,7 +270,7 @@ public class PermissionService : IPermissionService, IPermissionEvaluator
         PermissionAction action,
         CancellationToken cancellationToken = default)
     {
-        var decision = await EvaluateAsync(new PermissionContext(userId, workspaceId, resourceType, resourceId, action), cancellationToken);
+        var decision = await EvaluateAsync(new PermissionContext(userId, Guid.Empty, workspaceId, resourceType, resourceId, action, PermissionScope.Resource), cancellationToken);
         return decision.IsAllowed;
     }
 }

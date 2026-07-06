@@ -15,7 +15,7 @@ public class BoardItemConnectionTests
         var targetBoardId = Guid.NewGuid();
         var targetItemId = Guid.NewGuid();
 
-        var connection = BoardItemConnection.Create(workspaceId, relationId, sourceBoardId, sourceItemId, targetBoardId, targetItemId, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var connection = BoardItemConnection.Create(Guid.NewGuid(), workspaceId, relationId, sourceBoardId, sourceItemId, targetBoardId, targetItemId, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         connection.WorkspaceId.Should().Be(workspaceId);
         connection.RelationId.Should().Be(relationId);
@@ -29,7 +29,7 @@ public class BoardItemConnectionTests
     [Fact]
     public void Create_WithCustomSyncStatus_ShouldSetStatus()
     {
-        var connection = BoardItemConnection.Create(
+        var connection = BoardItemConnection.Create(Guid.NewGuid(),
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow,
             syncStatus: BoardItemSyncStatus.Pending);
@@ -42,7 +42,7 @@ public class BoardItemConnectionTests
     {
         var itemId = Guid.NewGuid();
 
-        var act = () => BoardItemConnection.Create(
+        var act = () => BoardItemConnection.Create(Guid.NewGuid(),
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), itemId,
             Guid.NewGuid(), itemId, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -52,21 +52,21 @@ public class BoardItemConnectionTests
     [Fact]
     public void Create_WithEmptyWorkspaceId_ShouldThrow()
     {
-        var act = () => BoardItemConnection.Create(Guid.Empty, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var act = () => BoardItemConnection.Create(Guid.NewGuid(), Guid.Empty, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
     public void Create_WithEmptyRelationId_ShouldThrow()
     {
-        var act = () => BoardItemConnection.Create(Guid.NewGuid(), Guid.Empty, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var act = () => BoardItemConnection.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.Empty, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
     public void Create_WithEmptySourceBoardId_ShouldThrow()
     {
-        var act = () => BoardItemConnection.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.Empty, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var act = () => BoardItemConnection.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.Empty, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>();
     }
 
@@ -83,7 +83,7 @@ public class BoardItemConnectionTests
 
     private static BoardItemConnection CreateConnection()
     {
-        return BoardItemConnection.Create(
+        return BoardItemConnection.Create(Guid.NewGuid(),
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
     }

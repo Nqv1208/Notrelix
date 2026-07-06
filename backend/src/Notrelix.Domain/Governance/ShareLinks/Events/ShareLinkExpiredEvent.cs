@@ -1,7 +1,8 @@
 namespace Notrelix.Domain.Governance.ShareLinks.Events;
 
 public sealed record ShareLinkExpiredEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid LinkId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);

@@ -1,6 +1,5 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Members.Commands.UpdateMemberRole;
 
@@ -12,21 +11,18 @@ public record UpdateMemberRoleCommand(
 
 public class UpdateMemberRoleCommandHandler : IRequestHandler<UpdateMemberRoleCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkspaceDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly IWorkspacePermissionService _permissions;
 
     public UpdateMemberRoleCommandHandler(
-        IApplicationDbContext context,
+        IWorkspaceDbContext context,
         ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider,
-        IWorkspacePermissionService permissions)
+        IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
-        _permissions = permissions;
     }
 
     public async Task<Result> Handle(UpdateMemberRoleCommand request, CancellationToken ct)
@@ -36,8 +32,6 @@ public class UpdateMemberRoleCommandHandler : IRequestHandler<UpdateMemberRoleCo
 
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
-
-        await _permissions.EnsureCanManageWorkspaceAsync(request.WorkspaceId, _currentUser.UserId, ct);
 
         var member = await _context.WorkspaceMembers
             .FirstOrDefaultAsync(m => m.WorkspaceId == workspace.Id && m.UserId == request.UserId, ct);

@@ -2,13 +2,14 @@ namespace Notrelix.Domain.WorkManagement.Relations;
 
 public class BoardRelation : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid SourceBoardId { get; private set; }
     public Guid TargetBoardId { get; private set; }
     public Guid? SourceFieldId { get; private set; }
     public Guid? TargetFieldId { get; private set; }
     public BoardRelationType RelationType { get; private set; } = BoardRelationType.ConnectBoards;
-    public BoardRelationDirection Direction { get; private set; } = BoardRelationDirection.TwoWay;
+    public RelationDirection Direction { get; private set; } = RelationDirection.TwoWay;
     public BoardRelationSyncMode SyncMode { get; private set; } = BoardRelationSyncMode.Manual;
     public BoardRelationStatus Status { get; private set; } = BoardRelationStatus.Active;
     public string ConfigJson { get; private set; } = "{}";
@@ -16,6 +17,7 @@ public class BoardRelation : AggregateRoot, IWorkspaceScoped
     private BoardRelation() : base() { }
 
     public static BoardRelation Create(
+        Guid accountId,
         Guid workspaceId,
         Guid sourceBoardId,
         Guid targetBoardId,
@@ -24,7 +26,7 @@ public class BoardRelation : AggregateRoot, IWorkspaceScoped
         Guid createdBy,
         DateTimeOffset createdAt,
         BoardRelationType relationType = BoardRelationType.ConnectBoards,
-        BoardRelationDirection direction = BoardRelationDirection.TwoWay,
+        RelationDirection direction = RelationDirection.TwoWay,
         BoardRelationSyncMode syncMode = BoardRelationSyncMode.Manual,
         string? configJson = null)
     {
@@ -35,8 +37,11 @@ public class BoardRelation : AggregateRoot, IWorkspaceScoped
         if (sourceBoardId == targetBoardId)
             throw new BusinessRuleException("Cannot create a relation from a board to itself.");
 
+        Guard.NotEmpty(accountId);
+
         var relation = new BoardRelation
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             SourceBoardId = sourceBoardId,
             TargetBoardId = targetBoardId,
@@ -50,7 +55,7 @@ public class BoardRelation : AggregateRoot, IWorkspaceScoped
         };
 
         relation.SetAuditOnCreate(createdBy, createdAt);
-        relation.AddDomainEvent(new BoardRelationCreatedDomainEvent(workspaceId, relation.Id, sourceBoardId, targetBoardId, createdBy, createdAt));
+        relation.AddDomainEvent(new BoardRelationCreatedDomainEvent(accountId, workspaceId, relation.Id, sourceBoardId, targetBoardId, createdBy, createdAt));
         return relation;
     }
 
@@ -61,7 +66,7 @@ public class BoardRelation : AggregateRoot, IWorkspaceScoped
         Status = BoardRelationStatus.Paused;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardRelationPausedDomainEvent(WorkspaceId, Id, updatedBy, updatedAt));
+        AddDomainEvent(new BoardRelationPausedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void Resume(Guid updatedBy, DateTimeOffset updatedAt)
@@ -71,7 +76,7 @@ public class BoardRelation : AggregateRoot, IWorkspaceScoped
         Status = BoardRelationStatus.Active;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardRelationResumedDomainEvent(WorkspaceId, Id, updatedBy, updatedAt));
+        AddDomainEvent(new BoardRelationResumedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void MarkBroken(Guid updatedBy, DateTimeOffset updatedAt)
@@ -81,7 +86,7 @@ public class BoardRelation : AggregateRoot, IWorkspaceScoped
         Status = BoardRelationStatus.Broken;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardRelationMarkedBrokenDomainEvent(WorkspaceId, Id, updatedBy, updatedAt));
+        AddDomainEvent(new BoardRelationMarkedBrokenDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -91,7 +96,7 @@ public class BoardRelation : AggregateRoot, IWorkspaceScoped
         Status = BoardRelationStatus.Deleted;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardRelationDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new BoardRelationDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -101,6 +106,6 @@ public class BoardRelation : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new BoardRelationRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new BoardRelationRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

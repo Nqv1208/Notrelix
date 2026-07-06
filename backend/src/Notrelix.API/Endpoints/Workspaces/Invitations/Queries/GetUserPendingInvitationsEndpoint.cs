@@ -7,7 +7,7 @@ public static class GetUserPendingInvitationsEndpoint
 {
     public static IEndpointRouteBuilder MapGetUserPendingInvitations(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/pending", HandleAsync)
+        group.MapAuthenticatedGet("/pending", HandleAsync)
             .WithName("Workspaces.Invitations.GetUserPendingInvitations")
             .WithTags("Workspaces.Invitations")
             .WithSummary("Get pending invitations for the current logged-in user");

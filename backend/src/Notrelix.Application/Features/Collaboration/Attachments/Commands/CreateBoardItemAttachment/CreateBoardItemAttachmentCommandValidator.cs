@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace Notrelix.Application.Features.Collaboration.Attachments.Commands.CreateBoardItemAttachment;
 
 public class CreateBoardItemAttachmentCommandValidator : AbstractValidator<CreateBoardItemAttachmentCommand>

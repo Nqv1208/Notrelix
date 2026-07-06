@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.WorkManagement.Relations;
 
 namespace Notrelix.Infrastructure.Data.Configurations.WorkManagement;
@@ -13,6 +11,7 @@ public class BoardItemConnectionConfiguration : IEntityTypeConfiguration<BoardIt
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
 
+        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.RelationId).HasColumnName("relation_id").IsRequired();
         builder.Property(x => x.SourceBoardId).HasColumnName("source_board_id").IsRequired();

@@ -13,7 +13,7 @@ public class FormSubmissionTests
         var boardId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
-        var submission = FormSubmission.Create(workspaceId, formId, boardId, null, null, null, "{}", null, null, now);
+        var submission = FormSubmission.Create(Guid.NewGuid(), workspaceId, formId, boardId, null, null, null, "{}", null, null, now);
 
         submission.WorkspaceId.Should().Be(workspaceId);
         submission.FormId.Should().Be(formId);
@@ -26,7 +26,7 @@ public class FormSubmissionTests
     [Fact]
     public void Create_ShouldDefaultPayloadToEmptyObject()
     {
-        var submission = FormSubmission.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null, null, null, null!, null, null, DateTimeOffset.UtcNow);
+        var submission = FormSubmission.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null, null, null, null!, null, null, DateTimeOffset.UtcNow);
 
         submission.PayloadJson.Should().Be("{}");
     }
@@ -34,21 +34,21 @@ public class FormSubmissionTests
     [Fact]
     public void Create_WithEmptyWorkspaceId_ShouldThrow()
     {
-        var act = () => FormSubmission.Create(Guid.Empty, Guid.NewGuid(), Guid.NewGuid(), null, null, null, "{}", null, null, DateTimeOffset.UtcNow);
+        var act = () => FormSubmission.Create(Guid.NewGuid(), Guid.Empty, Guid.NewGuid(), Guid.NewGuid(), null, null, null, "{}", null, null, DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
     public void Create_WithEmptyFormId_ShouldThrow()
     {
-        var act = () => FormSubmission.Create(Guid.NewGuid(), Guid.Empty, Guid.NewGuid(), null, null, null, "{}", null, null, DateTimeOffset.UtcNow);
+        var act = () => FormSubmission.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.Empty, Guid.NewGuid(), null, null, null, "{}", null, null, DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
     public void Create_WithEmptyBoardId_ShouldThrow()
     {
-        var act = () => FormSubmission.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.Empty, null, null, null, "{}", null, null, DateTimeOffset.UtcNow);
+        var act = () => FormSubmission.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.Empty, null, null, null, "{}", null, null, DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>();
     }
 
@@ -107,6 +107,6 @@ public class FormSubmissionTests
 
     private static FormSubmission CreateSubmission()
     {
-        return FormSubmission.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null, null, null, "{}", null, null, DateTimeOffset.UtcNow);
+        return FormSubmission.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null, null, null, "{}", null, null, DateTimeOffset.UtcNow);
     }
 }

@@ -1,8 +1,9 @@
 namespace Notrelix.Domain.WorkManagement.Labels.Events;
 
 public sealed record LabelSoftDeletedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid LabelId,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, DeletedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, DeletedBy);

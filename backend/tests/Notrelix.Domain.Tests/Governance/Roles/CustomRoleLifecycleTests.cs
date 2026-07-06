@@ -12,7 +12,7 @@ public class CustomRoleLifecycleTests
     [Fact]
     public void CustomRole_Archive_ShouldRaiseEvent()
     {
-        var role = CustomRole.Create(WsA, "Admin", null, Actor, Now);
+        var role = CustomRole.Create(Guid.NewGuid(), WsA, "Admin", null, Actor, Now);
         role.ClearDomainEvents();
         var version = role.Version;
 
@@ -29,7 +29,7 @@ public class CustomRoleLifecycleTests
     [Fact]
     public void CustomRole_Archive_WhenAlreadyArchived_ShouldNotRaiseEvent()
     {
-        var role = CustomRole.Create(WsA, "Admin", null, Actor, Now);
+        var role = CustomRole.Create(Guid.NewGuid(), WsA, "Admin", null, Actor, Now);
         role.Archive(Actor, Now);
         role.ClearDomainEvents();
         var version = role.Version;
@@ -43,7 +43,7 @@ public class CustomRoleLifecycleTests
     [Fact]
     public void CustomRole_Activate_ShouldRaiseEvent()
     {
-        var role = CustomRole.Create(WsA, "Admin", null, Actor, Now);
+        var role = CustomRole.Create(Guid.NewGuid(), WsA, "Admin", null, Actor, Now);
         role.Archive(Actor, Now);
         role.ClearDomainEvents();
         var version = role.Version;
@@ -61,7 +61,7 @@ public class CustomRoleLifecycleTests
     [Fact]
     public void CustomRole_Activate_WhenNotArchived_ShouldNotRaiseEvent()
     {
-        var role = CustomRole.Create(WsA, "Admin", null, Actor, Now);
+        var role = CustomRole.Create(Guid.NewGuid(), WsA, "Admin", null, Actor, Now);
         role.ClearDomainEvents();
         var version = role.Version;
 
@@ -74,7 +74,7 @@ public class CustomRoleLifecycleTests
     [Fact]
     public void CustomRole_SoftDelete_ShouldRaiseDedicatedEvent()
     {
-        var role = CustomRole.Create(WsA, "Admin", null, Actor, Now);
+        var role = CustomRole.Create(Guid.NewGuid(), WsA, "Admin", null, Actor, Now);
         role.ClearDomainEvents();
         var version = role.Version;
 
@@ -92,7 +92,7 @@ public class CustomRoleLifecycleTests
     [Fact]
     public void CustomRole_Restore_ShouldRaiseDedicatedEvent()
     {
-        var role = CustomRole.Create(WsA, "Admin", null, Actor, Now);
+        var role = CustomRole.Create(Guid.NewGuid(), WsA, "Admin", null, Actor, Now);
         role.SoftDelete(Actor, Now);
         role.ClearDomainEvents();
         var version = role.Version;
@@ -111,7 +111,7 @@ public class CustomRoleLifecycleTests
     [Fact]
     public void CustomRole_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
-        var role = CustomRole.Create(WsA, "Admin", null, Actor, Now);
+        var role = CustomRole.Create(Guid.NewGuid(), WsA, "Admin", null, Actor, Now);
         role.SoftDelete(Actor, Now);
         role.ClearDomainEvents();
         var version = role.Version;
@@ -125,7 +125,7 @@ public class CustomRoleLifecycleTests
     [Fact]
     public void CustomRole_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
-        var role = CustomRole.Create(WsA, "Admin", null, Actor, Now);
+        var role = CustomRole.Create(Guid.NewGuid(), WsA, "Admin", null, Actor, Now);
         role.ClearDomainEvents();
         var version = role.Version;
 

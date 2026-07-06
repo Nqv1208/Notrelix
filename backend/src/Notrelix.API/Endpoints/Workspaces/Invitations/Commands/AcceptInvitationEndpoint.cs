@@ -7,7 +7,7 @@ public static class AcceptInvitationEndpoint
 {
     public static IEndpointRouteBuilder MapAcceptInvitation(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/accept/{token}", HandleAsync)
+        group.MapPublicPost("/accept/{token}", HandleAsync)
             .WithName("Workspaces.Invitations.AcceptInvitation")
             .WithTags("Workspaces.Invitations")
             .WithSummary("Accept a workspace invitation by token");

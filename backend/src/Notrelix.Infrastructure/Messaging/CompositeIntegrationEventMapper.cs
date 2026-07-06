@@ -1,5 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
-using Notrelix.Application.Common.Abstractions;
 
 namespace Notrelix.Infrastructure.Messaging;
 

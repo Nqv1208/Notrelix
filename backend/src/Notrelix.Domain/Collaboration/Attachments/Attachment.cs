@@ -2,6 +2,7 @@ namespace Notrelix.Domain.Collaboration.Attachments;
 
 public class Attachment : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public ResourceRef Target { get; private set; } = null!;
     public AttachmentType Type { get; private set; }
@@ -9,8 +10,9 @@ public class Attachment : AggregateRoot, IWorkspaceScoped
 
     private Attachment() : base() { }
 
-    public static Attachment Create(Guid workspaceId, ResourceRef target, AttachmentType type, FileMetadata metadata, Guid createdBy, DateTimeOffset createdAt)
+    public static Attachment Create(Guid accountId, Guid workspaceId, ResourceRef target, AttachmentType type, FileMetadata metadata, Guid createdBy, DateTimeOffset createdAt)
     {
+        Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(target);
         Guard.NotNull(metadata);
@@ -20,6 +22,7 @@ public class Attachment : AggregateRoot, IWorkspaceScoped
 
         var attachment = new Attachment
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             Target = target,
             Type = type,
@@ -27,7 +30,7 @@ public class Attachment : AggregateRoot, IWorkspaceScoped
         };
 
         attachment.SetAuditOnCreate(createdBy, createdAt);
-        attachment.AddDomainEvent(new AttachmentCreatedDomainEvent(workspaceId, attachment.Id, target, createdAt));
+        attachment.AddDomainEvent(new AttachmentCreatedDomainEvent(accountId, workspaceId, attachment.Id, target, createdAt));
         return attachment;
     }
 
@@ -37,7 +40,7 @@ public class Attachment : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new AttachmentDeletedDomainEvent(WorkspaceId, Id, deletedAt));
+        AddDomainEvent(new AttachmentDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -46,6 +49,6 @@ public class Attachment : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new AttachmentRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new AttachmentRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

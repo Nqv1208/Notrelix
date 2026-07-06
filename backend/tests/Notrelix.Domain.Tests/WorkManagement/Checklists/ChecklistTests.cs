@@ -8,7 +8,7 @@ public class ChecklistTests
     [Fact]
     public void Create_ShouldUseFractionalIndex()
     {
-        var checklist = Checklist.Create(Guid.NewGuid(), Guid.NewGuid(), "Checklist", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var checklist = Checklist.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Checklist", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         checklist.Position.Should().Be(FractionalIndex.Create("a0"));
     }
@@ -16,7 +16,7 @@ public class ChecklistTests
     [Fact]
     public void AddItem_ShouldUseFractionalIndex()
     {
-        var checklist = Checklist.Create(Guid.NewGuid(), Guid.NewGuid(), "Checklist", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var checklist = Checklist.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Checklist", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         checklist.AddItem("Item 1", FractionalIndex.Create("b0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -28,7 +28,7 @@ public class ChecklistTests
     [Fact]
     public void AddItem_ShouldMaintainPositionOrder_WithFractionalIndex()
     {
-        var checklist = Checklist.Create(Guid.NewGuid(), Guid.NewGuid(), "Checklist", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var checklist = Checklist.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Checklist", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         checklist.AddItem("First", FractionalIndex.Create("b0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         checklist.AddItem("Between", FractionalIndex.Create("b1"), Guid.NewGuid(), DateTimeOffset.UtcNow);

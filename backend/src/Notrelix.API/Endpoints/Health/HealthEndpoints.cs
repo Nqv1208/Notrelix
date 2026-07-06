@@ -9,18 +9,17 @@ public static class HealthEndpoints
         var group = app
             .MapGroup("/health")
             .WithTags("Health")
-            .AllowAnonymous()
             .WithOpenApi();
 
-        group.MapGet("/", GetHealth)
+        group.MapInternalGet("/", GetHealth)
             .WithName("GetHealth")
             .WithSummary("Full health check with service status");
 
-        group.MapGet("/live", Live)
+        group.MapPublicGet("/live", Live)
             .WithName("LivenessProbe")
             .WithSummary("Liveness probe");
 
-        group.MapGet("/ready", Ready)
+        group.MapInternalGet("/ready", Ready)
             .WithName("ReadinessProbe")
             .WithSummary("Readiness probe — checks database connectivity");
 

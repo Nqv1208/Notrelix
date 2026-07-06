@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.WorkManagement.Fields.Events;
 
 public sealed record BoardFieldClassificationUpdatedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid BoardId,
     Guid FieldId,
@@ -8,4 +9,4 @@ public sealed record BoardFieldClassificationUpdatedDomainEvent(
     bool IsSensitive,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, UpdatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, UpdatedBy);

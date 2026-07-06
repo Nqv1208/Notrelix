@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace Notrelix.Application.Features.Identity.Auth.Commands.ForgotPassword;
 
 public class ForgotPasswordCommandValidator : AbstractValidator<ForgotPasswordCommand>

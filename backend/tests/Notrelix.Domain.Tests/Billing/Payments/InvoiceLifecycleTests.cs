@@ -12,7 +12,7 @@ public class InvoiceLifecycleTests
     [Fact]
     public void Invoice_Create_ShouldRaiseEvent()
     {
-        var invoice = Invoice.Create(WsA, Guid.NewGuid(), "INV-001", Money.Create(100, "USD"), Now.AddDays(30), Now);
+        var invoice = Invoice.Create(Guid.NewGuid(), Guid.NewGuid(), "INV-001", Money.Create(100, "USD"), Now.AddDays(30), Now, WsA);
 
         invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceCreatedDomainEvent);
         var evt = (InvoiceCreatedDomainEvent)invoice.DomainEvents.Single(e => e is InvoiceCreatedDomainEvent);
@@ -24,7 +24,7 @@ public class InvoiceLifecycleTests
     [Fact]
     public void Invoice_Void_ShouldRaiseEvent()
     {
-        var invoice = Invoice.Create(WsA, Guid.NewGuid(), "INV-001", Money.Create(100, "USD"), Now.AddDays(30), Now);
+        var invoice = Invoice.Create(Guid.NewGuid(), Guid.NewGuid(), "INV-001", Money.Create(100, "USD"), Now.AddDays(30), Now, WsA);
         invoice.ClearDomainEvents();
         var version = invoice.Version;
 
@@ -40,7 +40,7 @@ public class InvoiceLifecycleTests
     [Fact]
     public void Invoice_Void_WhenAlreadyVoided_ShouldNotRaiseEvent()
     {
-        var invoice = Invoice.Create(WsA, Guid.NewGuid(), "INV-001", Money.Create(100, "USD"), Now.AddDays(30), Now);
+        var invoice = Invoice.Create(Guid.NewGuid(), Guid.NewGuid(), "INV-001", Money.Create(100, "USD"), Now.AddDays(30), Now, WsA);
         invoice.Void(Now);
         invoice.ClearDomainEvents();
         var version = invoice.Version;
@@ -54,7 +54,7 @@ public class InvoiceLifecycleTests
     [Fact]
     public void Invoice_SoftDelete_ShouldRaiseEvent()
     {
-        var invoice = Invoice.Create(WsA, Guid.NewGuid(), "INV-001", Money.Create(100, "USD"), Now.AddDays(30), Now);
+        var invoice = Invoice.Create(Guid.NewGuid(), Guid.NewGuid(), "INV-001", Money.Create(100, "USD"), Now.AddDays(30), Now, WsA);
         invoice.ClearDomainEvents();
         var version = invoice.Version;
 
@@ -72,7 +72,7 @@ public class InvoiceLifecycleTests
     [Fact]
     public void Invoice_Restore_ShouldRaiseEvent()
     {
-        var invoice = Invoice.Create(WsA, Guid.NewGuid(), "INV-001", Money.Create(100, "USD"), Now.AddDays(30), Now);
+        var invoice = Invoice.Create(Guid.NewGuid(), Guid.NewGuid(), "INV-001", Money.Create(100, "USD"), Now.AddDays(30), Now, WsA);
         invoice.SoftDelete(Actor, Now);
         invoice.ClearDomainEvents();
         var version = invoice.Version;
@@ -91,7 +91,7 @@ public class InvoiceLifecycleTests
     [Fact]
     public void Invoice_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
-        var invoice = Invoice.Create(WsA, Guid.NewGuid(), "INV-001", Money.Create(100, "USD"), Now.AddDays(30), Now);
+        var invoice = Invoice.Create(Guid.NewGuid(), Guid.NewGuid(), "INV-001", Money.Create(100, "USD"), Now.AddDays(30), Now, WsA);
         invoice.SoftDelete(Actor, Now);
         invoice.ClearDomainEvents();
         var version = invoice.Version;
@@ -105,7 +105,7 @@ public class InvoiceLifecycleTests
     [Fact]
     public void Invoice_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
-        var invoice = Invoice.Create(WsA, Guid.NewGuid(), "INV-001", Money.Create(100, "USD"), Now.AddDays(30), Now);
+        var invoice = Invoice.Create(Guid.NewGuid(), Guid.NewGuid(), "INV-001", Money.Create(100, "USD"), Now.AddDays(30), Now, WsA);
         invoice.ClearDomainEvents();
         var version = invoice.Version;
 

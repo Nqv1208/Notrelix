@@ -1,23 +1,28 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DuplicateBoardGroup;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.DuplicateBoardItem;
 
-public record DuplicateBoardItemCommand(Guid BoardItemId) : ICommand<Result<Guid>>, ITransactionalRequest;
+public record DuplicateBoardItemCommand(Guid BoardItemId) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.CreateItem;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+}
 
 public class DuplicateBoardItemCommandHandler : IRequestHandler<DuplicateBoardItemCommand, Result<Guid>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _timeProvider;
+    private readonly ICurrentTenantContext _tenant;
 
-    public DuplicateBoardItemCommandHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider)
+    public DuplicateBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider, ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
         _timeProvider = timeProvider;
+        _tenant = tenant;
     }
 
     public async Task<Result<Guid>> Handle(DuplicateBoardItemCommand request, CancellationToken ct)
@@ -39,6 +44,7 @@ public class DuplicateBoardItemCommandHandler : IRequestHandler<DuplicateBoardIt
 
         var duplicate = DuplicateBoardGroupCommandHandler.CloneCard(
             source,
+            _tenant.RequireAccountId(),
             source.GroupId,
             source.BoardId,
             source.WorkspaceId,

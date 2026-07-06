@@ -1,5 +1,3 @@
-using FluentValidation;
-using MediatR;
 using ValidationException = Notrelix.Application.Common.Exceptions.ValidationException;
 
 namespace Notrelix.Application.Common.Behaviors;

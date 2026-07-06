@@ -14,7 +14,7 @@ public class WorkspaceFeatureUsageLifecycleTests
     public void WorkspaceFeatureUsage_Create_ShouldRaiseEvent()
     {
         var feature = FeatureCode.Create("storage");
-        var usage = WorkspaceFeatureUsage.Create(WsA, feature, 0, 100, null, Now);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), WsA, feature, 0, 100, null, Now);
 
         usage.DomainEvents.Should().ContainSingle(e => e is WorkspaceFeatureUsageInitializedDomainEvent);
         var evt = (WorkspaceFeatureUsageInitializedDomainEvent)usage.DomainEvents.Single(e => e is WorkspaceFeatureUsageInitializedDomainEvent);
@@ -27,7 +27,7 @@ public class WorkspaceFeatureUsageLifecycleTests
     public void WorkspaceFeatureUsage_Reset_ShouldRaiseEvent()
     {
         var feature = FeatureCode.Create("storage");
-        var usage = WorkspaceFeatureUsage.Create(WsA, feature, 50, 100, null, Now);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), WsA, feature, 50, 100, null, Now);
         usage.ClearDomainEvents();
         var version = usage.Version;
 
@@ -43,7 +43,7 @@ public class WorkspaceFeatureUsageLifecycleTests
     public void WorkspaceFeatureUsage_SoftDelete_ShouldRaiseEvent()
     {
         var feature = FeatureCode.Create("storage");
-        var usage = WorkspaceFeatureUsage.Create(WsA, feature, 0, 100, null, Now);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), WsA, feature, 0, 100, null, Now);
         usage.ClearDomainEvents();
         var version = usage.Version;
 
@@ -61,7 +61,7 @@ public class WorkspaceFeatureUsageLifecycleTests
     public void WorkspaceFeatureUsage_Restore_ShouldRaiseEvent()
     {
         var feature = FeatureCode.Create("storage");
-        var usage = WorkspaceFeatureUsage.Create(WsA, feature, 0, 100, null, Now);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), WsA, feature, 0, 100, null, Now);
         usage.SoftDelete(Actor, Now);
         usage.ClearDomainEvents();
         var version = usage.Version;
@@ -80,7 +80,7 @@ public class WorkspaceFeatureUsageLifecycleTests
     public void WorkspaceFeatureUsage_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
         var feature = FeatureCode.Create("storage");
-        var usage = WorkspaceFeatureUsage.Create(WsA, feature, 0, 100, null, Now);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), WsA, feature, 0, 100, null, Now);
         usage.SoftDelete(Actor, Now);
         usage.ClearDomainEvents();
         var version = usage.Version;
@@ -95,7 +95,7 @@ public class WorkspaceFeatureUsageLifecycleTests
     public void WorkspaceFeatureUsage_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
         var feature = FeatureCode.Create("storage");
-        var usage = WorkspaceFeatureUsage.Create(WsA, feature, 0, 100, null, Now);
+        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), WsA, feature, 0, 100, null, Now);
         usage.ClearDomainEvents();
         var version = usage.Version;
 

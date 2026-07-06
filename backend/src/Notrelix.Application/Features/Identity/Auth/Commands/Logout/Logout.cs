@@ -1,7 +1,6 @@
 using System.Text.Json;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.Logout;
 
@@ -13,11 +12,11 @@ public record LogoutCommand : ICommand<Result>, ITransactionalRequest
 
 public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IIdentityDbContext _context;
     private readonly IJwtBlacklistService _jwtBlacklist;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public LogoutCommandHandler(IApplicationDbContext context, IJwtBlacklistService jwtBlacklist, IDateTimeProvider dateTimeProvider)
+    public LogoutCommandHandler(IIdentityDbContext context, IJwtBlacklistService jwtBlacklist, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _jwtBlacklist = jwtBlacklist;

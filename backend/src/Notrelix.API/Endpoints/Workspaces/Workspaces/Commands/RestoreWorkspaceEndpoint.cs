@@ -7,7 +7,7 @@ public static class RestoreWorkspaceEndpoint
 {
     public static IEndpointRouteBuilder MapRestoreWorkspace(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/restore", HandleAsync)
+        group.MapWorkspacePost("/restore", HandleAsync)
             .WithName("Workspaces.Workspaces.RestoreWorkspace")
             .WithTags("Workspaces.Workspaces")
             .WithSummary("Restore a soft-deleted workspace");

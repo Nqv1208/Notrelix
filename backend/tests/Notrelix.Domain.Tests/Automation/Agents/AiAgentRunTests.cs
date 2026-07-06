@@ -159,7 +159,7 @@ public class AiAgentRunTests
     private static AiAgentRun CreateRun()
     {
         return AiAgentRun.Create(
-            Guid.NewGuid(), Guid.NewGuid(), "manual", "board", Guid.NewGuid(),
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "manual", "board", Guid.NewGuid(),
             SampleInput, Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
     }
 }

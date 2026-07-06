@@ -7,7 +7,7 @@ public static class CreateAutomationRuleEndpoint
 {
     public static IEndpointRouteBuilder MapCreateAutomationRule(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/", HandleAsync)
+        group.MapWorkspacePost("/", HandleAsync)
             .WithName("Automation.Rules.Create")
             .WithTags("Automation.Rules")
             .WithSummary("Create a workspace automation rule");

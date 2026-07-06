@@ -13,7 +13,7 @@ public class LabelEventTests
     [Fact]
     public void Label_Restore_ShouldRaiseEvent()
     {
-        var label = Label.Create(WsA, BoardA, "Bug", LabelColor.Create("#FF0000"), Actor, Now);
+        var label = Label.Create(Guid.NewGuid(), WsA, BoardA, "Bug", LabelColor.Create("#FF0000"), Actor, Now);
         label.SoftDelete(Actor, Now);
         label.ClearDomainEvents();
         var version = label.Version;
@@ -28,7 +28,7 @@ public class LabelEventTests
     [Fact]
     public void Label_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
-        var label = Label.Create(WsA, BoardA, "Bug", LabelColor.Create("#FF0000"), Actor, Now);
+        var label = Label.Create(Guid.NewGuid(), WsA, BoardA, "Bug", LabelColor.Create("#FF0000"), Actor, Now);
         label.ClearDomainEvents();
         var version = label.Version;
 

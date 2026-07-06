@@ -12,7 +12,7 @@ public class ResourceLinkTests
         var source = ResourceRef.Create(ResourceType.Page, Guid.NewGuid(), workspaceId);
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), workspaceId);
 
-        var link = ResourceLink.Create(workspaceId, source, target, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var link = ResourceLink.Create(Guid.NewGuid(), workspaceId, source, target, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         link.WorkspaceId.Should().Be(workspaceId);
         link.Source.Should().Be(source);
@@ -27,7 +27,7 @@ public class ResourceLinkTests
         var workspaceId = Guid.NewGuid();
         var source = ResourceRef.Create(ResourceType.Page, Guid.NewGuid(), workspaceId);
 
-        var act = () => ResourceLink.Create(workspaceId, source, source, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var act = () => ResourceLink.Create(Guid.NewGuid(), workspaceId, source, source, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         act.Should().Throw<BusinessRuleException>().WithMessage("*self-referencing*");
     }
@@ -39,7 +39,7 @@ public class ResourceLinkTests
         var source = ResourceRef.Create(ResourceType.Page, Guid.NewGuid(), workspaceId);
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), Guid.NewGuid());
 
-        var act = () => ResourceLink.Create(workspaceId, source, target, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var act = () => ResourceLink.Create(Guid.NewGuid(), workspaceId, source, target, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         act.Should().Throw<BusinessRuleException>().WithMessage("*same workspace*");
     }
@@ -50,7 +50,7 @@ public class ResourceLinkTests
         var source = ResourceRef.Create(ResourceType.Page, Guid.NewGuid(), Guid.NewGuid());
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), Guid.NewGuid());
 
-        var act = () => ResourceLink.Create(Guid.Empty, source, target, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var act = () => ResourceLink.Create(Guid.NewGuid(), Guid.Empty, source, target, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         act.Should().Throw<BusinessRuleException>();
     }
@@ -84,6 +84,6 @@ public class ResourceLinkTests
         var workspaceId = Guid.NewGuid();
         var source = ResourceRef.Create(ResourceType.Page, Guid.NewGuid(), workspaceId);
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), workspaceId);
-        return ResourceLink.Create(workspaceId, source, target, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        return ResourceLink.Create(Guid.NewGuid(), workspaceId, source, target, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
     }
 }

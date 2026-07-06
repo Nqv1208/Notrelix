@@ -1,8 +1,4 @@
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Options;
-using Resend;
 
 namespace Notrelix.Infrastructure.Email;
 

@@ -30,6 +30,7 @@ public class BoardTemplate : AggregateRoot
 
 public class ItemTemplate : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid BoardId { get; private set; }
     public string Name { get; private set; } = null!;
@@ -38,15 +39,17 @@ public class ItemTemplate : AggregateRoot, IWorkspaceScoped
 
     private ItemTemplate() : base() { }
 
-    public static ItemTemplate Create(Guid workspaceId, Guid boardId, string name, JsonValue values, DateTimeOffset createdAt)
+    public static ItemTemplate Create(Guid accountId, Guid workspaceId, Guid boardId, string name, JsonValue values, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(boardId);
         Guard.NotNullOrWhiteSpace(name);
         Guard.NotNull(values);
+        Guard.NotEmpty(accountId);
 
         var template = new ItemTemplate
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             BoardId = boardId,
             Name = name.Trim(),
@@ -54,7 +57,7 @@ public class ItemTemplate : AggregateRoot, IWorkspaceScoped
             Status = TemplateStatus.Published
         };
 
-        template.AddDomainEvent(new ItemTemplateCreatedDomainEvent(workspaceId, template.Id, template.Name, createdAt));
+        template.AddDomainEvent(new ItemTemplateCreatedDomainEvent(accountId, workspaceId, template.Id, template.Name, createdAt));
         return template;
     }
 }

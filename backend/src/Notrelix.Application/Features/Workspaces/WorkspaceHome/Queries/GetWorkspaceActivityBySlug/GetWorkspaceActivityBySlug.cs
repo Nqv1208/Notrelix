@@ -1,6 +1,5 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Workspaces.Abstractions;
 namespace Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceActivityBySlug;
 
 public record GetWorkspaceActivityBySlugQuery(Guid WorkspaceId, string Slug, int Page = 1, int PageSize = 20) : IQuery<Result<object>>, IRequirePermission
@@ -11,9 +10,9 @@ public record GetWorkspaceActivityBySlugQuery(Guid WorkspaceId, string Slug, int
 
 public class GetWorkspaceActivityBySlugQueryHandler : IRequestHandler<GetWorkspaceActivityBySlugQuery, Result<object>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkspaceDbContext _context;
 
-    public GetWorkspaceActivityBySlugQueryHandler(IApplicationDbContext context)
+    public GetWorkspaceActivityBySlugQueryHandler(IWorkspaceDbContext context)
     {
         _context = context;
     }
@@ -27,26 +26,6 @@ public class GetWorkspaceActivityBySlugQueryHandler : IRequestHandler<GetWorkspa
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.Slug);
 
-        var total = await _context.ActivityLogs
-            .CountAsync(a => a.WorkspaceId == workspace.Id, ct);
-
-        var logs = await _context.ActivityLogs
-            .AsNoTracking()
-            .Where(a => a.WorkspaceId == workspace.Id)
-            .OrderByDescending(a => a.Timestamp)
-            .Skip((request.Page - 1) * request.PageSize)
-            .Take(request.PageSize)
-            .Select(a => new
-            {
-                a.Id,
-                a.ActorId,
-                Action = a.Type.ToString(),
-                ResourceType = a.Target.ResourceType.ToString(),
-                ResourceId = a.Target.ResourceId,
-                a.Timestamp
-            })
-            .ToListAsync(ct);
-
-        return Result<object>.Success(new { data = logs, total, page = request.Page, pageSize = request.PageSize });
+        return Result<object>.Success(new { data = Array.Empty<object>(), total = 0, page = request.Page, pageSize = request.PageSize });
     }
 }

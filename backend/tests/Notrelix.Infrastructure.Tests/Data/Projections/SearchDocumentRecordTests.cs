@@ -8,16 +8,18 @@ public class SearchDocumentRecordTests
     public void Create_sets_all_properties()
     {
         var id = Guid.NewGuid();
+        var accountId = Guid.NewGuid();
         var workspaceId = Guid.NewGuid();
         var resourceId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
         var record = SearchDocumentRecord.Create(
-            id, workspaceId, "BoardItem", resourceId,
+            id, accountId, workspaceId, "BoardItem", resourceId,
             "Test Title", "Test content",
             ["tag1", "tag2"], "{\"key\":\"value\"}", now);
 
         record.Id.Should().Be(id);
+        record.AccountId.Should().Be(accountId);
         record.WorkspaceId.Should().Be(workspaceId);
         record.ResourceType.Should().Be("BoardItem");
         record.ResourceId.Should().Be(resourceId);
@@ -34,7 +36,7 @@ public class SearchDocumentRecordTests
     public void Create_with_null_content_sets_null()
     {
         var record = SearchDocumentRecord.Create(
-            Guid.NewGuid(), Guid.NewGuid(), "Page", Guid.NewGuid(),
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Page", Guid.NewGuid(),
             "Title", null, [], "{}", DateTimeOffset.UtcNow);
 
         record.Content.Should().BeNull();
@@ -44,7 +46,7 @@ public class SearchDocumentRecordTests
     public void Create_with_empty_tags_creates_empty_array()
     {
         var record = SearchDocumentRecord.Create(
-            Guid.NewGuid(), Guid.NewGuid(), "Page", Guid.NewGuid(),
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Page", Guid.NewGuid(),
             "Title", null, [], "{}", DateTimeOffset.UtcNow);
 
         record.Tags.Should().BeEmpty();

@@ -2,6 +2,7 @@ namespace Notrelix.Domain.Integrations.Webhooks;
 
 public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Url TargetUrl { get; private set; } = null!;
     public bool IsActive { get; private set; }
@@ -9,14 +10,16 @@ public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
 
     private WebhookSubscription() : base() { }
 
-    public static WebhookSubscription Create(Guid workspaceId, Url targetUrl, Guid createdBy, DateTimeOffset createdAt, WebhookSecretHash? secretHash = null)
+    public static WebhookSubscription Create(Guid accountId, Guid workspaceId, Url targetUrl, Guid createdBy, DateTimeOffset createdAt, WebhookSecretHash? secretHash = null)
     {
+        Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(targetUrl);
         Guard.NotEmpty(createdBy);
 
         var subscription = new WebhookSubscription
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             TargetUrl = targetUrl,
             IsActive = true,
@@ -24,7 +27,7 @@ public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
         };
 
         subscription.SetAuditOnCreate(createdBy, createdAt);
-        subscription.AddDomainEvent(new WebhookSubscriptionCreatedDomainEvent(subscription.Id, workspaceId, subscription.TargetUrl.Value, createdAt));
+        subscription.AddDomainEvent(new WebhookSubscriptionCreatedDomainEvent(accountId, subscription.Id, workspaceId, subscription.TargetUrl.Value, createdAt));
 
         return subscription;
     }
@@ -37,7 +40,7 @@ public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
         IsActive = true;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new WebhookSubscriptionEnabledDomainEvent(Id, WorkspaceId, updatedAt));
+        AddDomainEvent(new WebhookSubscriptionEnabledDomainEvent(AccountId, Id, WorkspaceId, updatedAt));
     }
 
     public void Disable(Guid updatedBy, DateTimeOffset updatedAt)
@@ -48,7 +51,7 @@ public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
         IsActive = false;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new WebhookSubscriptionDisabledDomainEvent(Id, WorkspaceId, updatedAt));
+        AddDomainEvent(new WebhookSubscriptionDisabledDomainEvent(AccountId, Id, WorkspaceId, updatedAt));
     }
 
     public void RotateSecret(WebhookSecretHash newHash, Guid updatedBy, DateTimeOffset updatedAt)
@@ -59,7 +62,7 @@ public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
         SecretHash = newHash;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new WebhookSubscriptionSecretRotatedDomainEvent(Id, WorkspaceId, updatedAt));
+        AddDomainEvent(new WebhookSubscriptionSecretRotatedDomainEvent(AccountId, Id, WorkspaceId, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)

@@ -8,7 +8,7 @@ public static class LinkPageToBoardItemEndpoint
 {
     public static IEndpointRouteBuilder MapLinkPageToBoardItem(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/link-page", HandleAsync)
+        group.MapResourcePost("/link-page", HandleAsync)
             .WithName("WorkManagement.BoardItems.LinkPage")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Link a page to this board item");

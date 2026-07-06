@@ -1,7 +1,6 @@
 using Notrelix.API.Contracts.Governance.ShareLinks.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Governance.ShareLinks.Commands.CreateShareLink;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.API.Endpoints.Governance.ShareLinks.Commands;
 
@@ -9,7 +8,7 @@ public static class CreateShareLinkEndpoint
 {
     public static IEndpointRouteBuilder MapCreateShareLink(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/", HandleAsync)
+        group.MapResourcePost("/", HandleAsync)
             .WithName("Governance.ShareLinks.Create")
             .WithTags("Governance.ShareLinks")
             .WithSummary("Create a share link for a resource");
@@ -17,7 +16,6 @@ public static class CreateShareLinkEndpoint
     }
 
     private static async Task<IResult> HandleAsync(
-        Guid workspaceId,
         string resourceType,
         Guid resourceId,
         CreateShareLinkRequest body,
@@ -25,7 +23,7 @@ public static class CreateShareLinkEndpoint
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new CreateShareLinkCommand(workspaceId, Enum.Parse<ResourceType>(resourceType, ignoreCase: true), resourceId, body.Level, body.ExpiresAt),
+            new CreateShareLinkCommand(Enum.Parse<ResourceType>(resourceType, ignoreCase: true), resourceId, body.Level, body.ExpiresAt),
             cancellationToken);
         return result.ToCreatedResult();
     }

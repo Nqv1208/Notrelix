@@ -7,7 +7,7 @@ public static class ListMembersEndpoint
 {
     public static IEndpointRouteBuilder MapListMembers(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", HandleAsync)
+        group.MapWorkspaceGet("/", HandleAsync)
             .WithName("Workspaces.Members.ListMembers")
             .WithTags("Workspaces.Members")
             .WithSummary("Get workspace members");

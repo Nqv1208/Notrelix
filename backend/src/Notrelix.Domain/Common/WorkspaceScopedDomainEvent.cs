@@ -7,9 +7,11 @@ namespace Notrelix.Domain.Common;
 /// </summary>
 public abstract record WorkspaceScopedDomainEvent : DomainEvent, IWorkspaceScoped
 {
+    public Guid AccountId { get; }
     public Guid WorkspaceId { get; }
 
     protected WorkspaceScopedDomainEvent(
+        Guid accountId,
         Guid workspaceId,
         DateTimeOffset occurredAt,
         Guid? actorUserId = null,
@@ -17,6 +19,7 @@ public abstract record WorkspaceScopedDomainEvent : DomainEvent, IWorkspaceScope
         string? causationId = null)
         : base(occurredAt, workspaceId, actorUserId)
     {
+        AccountId = accountId;
         WorkspaceId = workspaceId;
         CorrelationId = correlationId;
         CausationId = causationId;

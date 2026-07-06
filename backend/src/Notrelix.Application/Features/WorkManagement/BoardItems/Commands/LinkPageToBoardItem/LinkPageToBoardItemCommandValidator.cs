@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.LinkPageToBoardItem;
 
 public class LinkPageToBoardItemCommandValidator : AbstractValidator<LinkPageToBoardItemCommand>

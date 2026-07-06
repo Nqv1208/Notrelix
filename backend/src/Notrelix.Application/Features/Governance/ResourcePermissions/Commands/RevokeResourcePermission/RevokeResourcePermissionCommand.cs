@@ -1,52 +1,54 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
-using SharedKernel = Notrelix.Domain.SharedKernel;
-using System.Text.Json;
+using Notrelix.Application.Features.Governance.Abstractions;
 
 namespace Notrelix.Application.Features.Governance.ResourcePermissions.Commands.RevokeResourcePermission;
 
 public record RevokeResourcePermissionCommand(
-    Guid WorkspaceId,
-    SharedKernel.ResourceType ResourceType,
+    ResourceType ResourceType,
     Guid ResourceId,
-    Guid PermissionId) : ICommand<Result>, IRequirePermission, ITransactionalRequest
+    Guid PermissionId) : ICommand<Result>, IResourceScopedRequest, IRequirePermission, ITransactionalRequest
 {
     PermissionAction IRequirePermission.Action => ResourceType switch
     {
-        SharedKernel.ResourceType.Board => PermissionAction.ManageBoardPermission,
-        SharedKernel.ResourceType.Page => PermissionAction.SharePage,
+        ResourceType.Board => PermissionAction.ManageBoardPermission,
+        ResourceType.Page => PermissionAction.SharePage,
         _ => PermissionAction.ManageWorkspace
     };
-    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType, ResourceId, WorkspaceId);
+    ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(ResourceType, ResourceId);
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType, ResourceId);
 }
 
 public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeResourcePermissionCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IGovernanceDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IAuditService _auditService;
+    private readonly ICurrentTenantContext _tenant;
 
     public RevokeResourcePermissionCommandHandler(
-        IApplicationDbContext context,
+        IGovernanceDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
-        IAuditService auditService)
+        IAuditService auditService,
+        ICurrentTenantContext tenant)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
         _auditService = auditService;
+        _tenant = tenant;
     }
 
     public async Task<Result> Handle(
         RevokeResourcePermissionCommand request,
         CancellationToken cancellationToken)
     {
+        var workspaceId = _tenant.RequireWorkspaceId();
+
         var permission = await _context.ResourcePermissions
             .FirstOrDefaultAsync(p => p.Id == request.PermissionId &&
-                                      p.WorkspaceId == request.WorkspaceId &&
+                                      p.WorkspaceId == workspaceId &&
                                       p.ResourceType == request.ResourceType &&
                                       p.ResourceId == request.ResourceId, cancellationToken);
 
@@ -57,35 +59,16 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
 
         var actorId = _currentUser.UserId;
 
-        // We can completely delete it to prevent unique index conflicts on re-grants
         _context.ResourcePermissions.Remove(permission);
 
         await _auditService.RecordAsync(
-            request.WorkspaceId,
+            workspaceId,
             actorId,
             "RevokeResourcePermission",
-            SharedKernel.ResourceRef.Create(request.ResourceType, request.ResourceId),
+            ResourceRef.Create(request.ResourceType, request.ResourceId),
             AuditMetadata.Create(),
             AuditSeverity.Info,
             cancellationToken: cancellationToken);
-
-        // Keep ActivityLog for user feed
-        var metadata = JsonSerializer.Serialize(new
-        {
-            subjectType = permission.SubjectType.ToString(),
-            subjectId = permission.SubjectId,
-            level = permission.Level.ToString()
-        });
-
-        var activityLog = ActivityLog.Record(
-            request.WorkspaceId,
-            actorId,
-            ActivityType.Deleted,
-            SharedKernel.ResourceRef.Create(request.ResourceType, request.ResourceId),
-            _dateTimeProvider.UtcNow,
-            ActivityMetadata.Create(SharedKernel.JsonValue.Create(metadata))
-        );
-        _context.ActivityLogs.Add(activityLog);
 
         return Result.Success();
     }

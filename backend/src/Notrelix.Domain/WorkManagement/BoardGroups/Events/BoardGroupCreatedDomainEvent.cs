@@ -1,10 +1,11 @@
 namespace Notrelix.Domain.WorkManagement.BoardGroups.Events;
 
 public sealed record BoardGroupCreatedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid BoardId,
     Guid GroupId,
     string Title,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, CreatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, CreatedBy);

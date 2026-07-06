@@ -1,5 +1,4 @@
 using Notrelix.API.Extensions;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Commands.Logout;
 
 namespace Notrelix.API.Endpoints.Identity.Auth.Commands;
@@ -8,7 +7,7 @@ public static class LogoutEndpoint
 {
     public static IEndpointRouteBuilder MapLogout(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/logout", HandleAsync)
+        group.MapAuthenticatedPost("/logout", HandleAsync)
             .WithName("Identity.Auth.Logout")
             .WithTags("Identity.Auth")
             .WithSummary("Logout and revoke refresh token");

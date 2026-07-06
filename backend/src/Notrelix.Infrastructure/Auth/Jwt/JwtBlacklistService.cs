@@ -1,5 +1,3 @@
-using StackExchange.Redis;
-using Notrelix.Application.Common.Abstractions;
 
 namespace Notrelix.Infrastructure.Auth.Jwt;
 

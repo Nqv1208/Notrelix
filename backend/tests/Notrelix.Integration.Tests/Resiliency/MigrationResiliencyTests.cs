@@ -1,18 +1,37 @@
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Data;
-using Notrelix.Testing.Integration;
+using Notrelix.Infrastructure.Data.Rls;
+using Notrelix.Integration.Tests.Containers;
+using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Resiliency;
 
-public class MigrationResiliencyTests
+[Collection("Database")]
+public class MigrationResiliencyTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public MigrationResiliencyTests(PostgresTestContainer db)
+    {
+        _db = db;
+    }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public async Task SeedAsync_WhenAlreadySeeded_IsIdempotent()
     {
-        await using var context = CreateContext();
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var initialiser = CreateInitialiser(context);
 
         await initialiser.SeedAsync();
@@ -22,15 +41,6 @@ public class MigrationResiliencyTests
         var secondCount = await context.Users.CountAsync();
 
         secondCount.Should().Be(firstCount);
-    }
-
-    private static ApplicationDbContext CreateContext()
-    {
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase($"Notrelix-migration-{Guid.NewGuid():N}")
-            .ReplaceService<IModelCacheKeyFactory, WorkspaceAwareModelCacheKeyFactory>()
-            .Options;
-        return new TestApplicationDbContext(options);
     }
 
     private static ApplicationDbContextInitialiser CreateInitialiser(ApplicationDbContext context)
@@ -44,17 +54,15 @@ public class MigrationResiliencyTests
                 Enabled = true,
                 Profile = SeedProfile.Small,
                 ResetBeforeSeed = false
-            }));
+            }),
+            new RlsPolicyApplier(context, NullLogger<RlsPolicyApplier>.Instance),
+            new FakeCurrentTenantContext(),
+            Options.Create(new RlsOptions()));
     }
 
     private sealed class DeterministicPasswordHasher : IPasswordHasher
     {
         public string HashPassword(string password) => "hashed-" + password;
         public bool VerifyPassword(string password, string hashedPassword) => hashedPassword == HashPassword(password);
-    }
-
-    private sealed class TestApplicationDbContext : ApplicationDbContext
-    {
-        public TestApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
     }
 }

@@ -2,6 +2,7 @@ namespace Notrelix.Domain.WorkManagement.Items;
 
 public class ItemDependency : SoftDeletableEntity, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid BoardId { get; private set; }
     public Guid PredecessorItemId { get; private set; }
@@ -13,6 +14,7 @@ public class ItemDependency : SoftDeletableEntity, IWorkspaceScoped
     private ItemDependency() : base() { }
 
     public static ItemDependency Create(
+        Guid accountId,
         Guid workspaceId,
         Guid boardId,
         Guid predecessorItemId,
@@ -30,8 +32,11 @@ public class ItemDependency : SoftDeletableEntity, IWorkspaceScoped
         if (predecessorItemId == successorItemId)
             throw new BusinessRuleException("An item cannot depend on itself.");
 
+        Guard.NotEmpty(accountId);
+
         var dependency = new ItemDependency
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             BoardId = boardId,
             PredecessorItemId = predecessorItemId,

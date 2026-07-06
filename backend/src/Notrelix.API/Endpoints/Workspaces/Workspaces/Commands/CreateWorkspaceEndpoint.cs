@@ -7,7 +7,7 @@ public static class CreateWorkspaceEndpoint
 {
     public static IEndpointRouteBuilder MapCreateWorkspace(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/", HandleAsync)
+        group.MapAuthenticatedPost("/", HandleAsync)
             .WithName("Workspaces.Workspaces.CreateWorkspace")
             .WithTags("Workspaces.Workspaces")
             .WithSummary("Create a new workspace");

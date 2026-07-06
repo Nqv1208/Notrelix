@@ -1,13 +1,8 @@
-using System.IdentityModel.Tokens.Jwt;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.IdentityModel.Tokens;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Auth.Cookies;
 using Notrelix.Infrastructure.Auth.Jwt;
 using Notrelix.Infrastructure.Auth.Passwords;
 using Notrelix.Infrastructure.Identity.Services;
+using Notrelix.Infrastructure.Services;
 
 namespace Notrelix.Infrastructure;
 
@@ -24,10 +19,18 @@ public static class AuthRegistration
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IJwtBlacklistService, JwtBlacklistService>();
 
-        // Current-user / current-workspace context resolved from the HTTP request.
+        // Current-user / current-workspace / current-account context resolved from the HTTP request.
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, CurrentUser>();
         services.AddScoped<ICurrentWorkspace, CurrentWorkspace>();
+        services.AddScoped<ICurrentAccount, CurrentAccount>();
+        services.AddScoped<ICurrentTenantContext, CurrentTenantContext>();
+
+        // Correlation context for events/outbox/logs.
+        services.AddScoped<ICorrelationContext, CurrentCorrelationContext>();
+
+        // Post-commit action queue for cache invalidation and realtime dispatch.
+        services.AddScoped<IPostCommitActionQueue, PostCommitActionQueue>();
 
         services.AddJwtBearer(configuration);
 

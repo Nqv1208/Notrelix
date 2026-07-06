@@ -2,6 +2,7 @@ namespace Notrelix.Domain.WorkManagement.Boards;
 
 public class Board : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid? SpaceId { get; private set; }
     public string Title { get; private set; } = null!;
@@ -18,6 +19,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
     private Board() : base() { }
 
     public static Board Create(
+        Guid accountId,
         Guid workspaceId,
         Guid createdBy,
         string title,
@@ -35,9 +37,11 @@ public class Board : AggregateRoot, IWorkspaceScoped
         Guard.MaxLength(title, 255);
         Guard.MaxLength(description, 5000);
         Guard.MaxLength(itemKeyPrefix, 10);
+        Guard.NotEmpty(accountId);
 
         var board = new Board
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             SpaceId = spaceId,
             Title = title.Trim(),
@@ -51,7 +55,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
         };
 
         board.SetAuditOnCreate(createdBy, createdAt);
-        board.AddDomainEvent(new BoardCreatedDomainEvent(workspaceId, board.Id, board.Title, createdBy, createdAt));
+        board.AddDomainEvent(new BoardCreatedDomainEvent(accountId, workspaceId, board.Id, board.Title, createdBy, createdAt));
         return board;
     }
 
@@ -71,7 +75,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
         Title = normalizedTitle;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardRenamedDomainEvent(WorkspaceId, Id, oldTitle, Title, updatedBy, updatedAt));
+        AddDomainEvent(new BoardRenamedDomainEvent(AccountId, WorkspaceId, Id, oldTitle, Title, updatedBy, updatedAt));
     }
 
     public void UpdateDescription(string? description, Guid updatedBy, DateTimeOffset updatedAt)
@@ -87,18 +91,20 @@ public class Board : AggregateRoot, IWorkspaceScoped
         Description = normalized;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardDescriptionUpdatedDomainEvent(WorkspaceId, Id, oldDescription, Description, updatedBy, updatedAt));
+        AddDomainEvent(new BoardDescriptionUpdatedDomainEvent(AccountId, WorkspaceId, Id, oldDescription, Description, updatedBy, updatedAt));
     }
 
     public void UpdateBackground(string background, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (IsArchived)
+            throw new BusinessRuleException("Cannot update background of an archived board.");
         if (string.IsNullOrWhiteSpace(background) || Background == background) return;
         var oldBackground = Background;
         Background = background;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardBackgroundUpdatedDomainEvent(WorkspaceId, Id, oldBackground, Background, updatedBy, updatedAt));
+        AddDomainEvent(new BoardBackgroundUpdatedDomainEvent(AccountId, WorkspaceId, Id, oldBackground, Background, updatedBy, updatedAt));
     }
 
     public void ChangeVisibility(BoardVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
@@ -113,7 +119,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
         Visibility = visibility;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardVisibilityChangedDomainEvent(WorkspaceId, Id, oldVisibility, Visibility, updatedBy, updatedAt));
+        AddDomainEvent(new BoardVisibilityChangedDomainEvent(AccountId, WorkspaceId, Id, oldVisibility, Visibility, updatedBy, updatedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
@@ -123,7 +129,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
         IsArchived = true;
         SetAuditOnUpdate(archivedBy, archivedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardArchivedDomainEvent(WorkspaceId, Id, archivedBy, archivedAt));
+        AddDomainEvent(new BoardArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
     }
 
     public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
@@ -133,7 +139,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
         IsArchived = false;
         SetAuditOnUpdate(unarchivedBy, unarchivedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardUnarchivedDomainEvent(WorkspaceId, Id, unarchivedBy, unarchivedAt));
+        AddDomainEvent(new BoardUnarchivedDomainEvent(AccountId, WorkspaceId, Id, unarchivedBy, unarchivedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -142,7 +148,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new BoardSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public void SetDefaultGroup(Guid groupId, Guid updatedBy, DateTimeOffset updatedAt)
@@ -152,19 +158,21 @@ public class Board : AggregateRoot, IWorkspaceScoped
         DefaultItemGroupId = groupId;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardDefaultGroupSetDomainEvent(WorkspaceId, Id, groupId, updatedBy, updatedAt));
+        AddDomainEvent(new BoardDefaultGroupSetDomainEvent(AccountId, WorkspaceId, Id, groupId, updatedBy, updatedAt));
     }
 
     public (long Sequence, string Key) GenerateNextItemIdentity(Guid actorUserId, DateTimeOffset now)
     {
         EnsureNotDeleted();
+        if (IsArchived)
+            throw new BusinessRuleException("Cannot generate item identity for an archived board.");
         ItemSequence++;
         var key = string.IsNullOrWhiteSpace(ItemKeyPrefix)
             ? ItemSequence.ToString()
             : $"{ItemKeyPrefix}-{ItemSequence}";
         SetAuditOnUpdate(actorUserId, now);
         IncrementVersion();
-        AddDomainEvent(new BoardItemIdentityGeneratedDomainEvent(WorkspaceId, Id, ItemSequence, key, actorUserId, now));
+        AddDomainEvent(new BoardItemIdentityGeneratedDomainEvent(AccountId, WorkspaceId, Id, ItemSequence, key, actorUserId, now));
         return (ItemSequence, key);
     }
 
@@ -174,6 +182,6 @@ public class Board : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new BoardRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new BoardRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

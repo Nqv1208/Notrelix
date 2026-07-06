@@ -7,7 +7,7 @@ public static class GetPageHistoryEndpoint
 {
     public static IEndpointRouteBuilder MapGetPageHistory(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/history", HandleAsync)
+        group.MapResourceGet("/history", HandleAsync)
             .WithName("Documents.Pages.GetPageHistory")
             .WithTags("Documents.Pages")
             .WithSummary("Get page history");

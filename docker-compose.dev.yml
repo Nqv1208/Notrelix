@@ -68,6 +68,9 @@ services:
     profiles: ["messaging"]
     image: rabbitmq:3.13-management-alpine
     restart: unless-stopped
+    ports:
+      - "0.0.0.0:5672:5672"
+      - "0.0.0.0:15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-rabbitmq}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-rabbitmq_local_only}
@@ -115,6 +118,10 @@ services:
       Smtp__FromEmail: ${SMTP_FROM_EMAIL:-}
       Smtp__FromName: ${SMTP_FROM_NAME:-Notrelix}
       Smtp__EnableSsl: ${SMTP_ENABLE_SSL:-true}
+      Messaging__RabbitMQ__Host: rabbitmq
+      Messaging__RabbitMQ__Port: "5672"
+      Messaging__RabbitMQ__Username: ${RABBITMQ_USER:-rabbitmq}
+      Messaging__RabbitMQ__Password: ${RABBITMQ_PASSWORD:-rabbitmq_local_only}
       DOTNET_USE_POLLING_FILE_WATCHER: "true"
       DOTNET_WATCH_RESTART_ON_RUDE_EDIT: "true"
     volumes:

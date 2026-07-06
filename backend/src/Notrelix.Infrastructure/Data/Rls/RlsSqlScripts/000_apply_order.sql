@@ -1,0 +1,11 @@
+\i 001_roles.sql
+\i 002_context_helpers.sql
+\i 003_authz_access_helpers.sql
+\i 004_policy_runtime.sql
+\i 005_grants.sql
+\i 006_policies_identity.sql
+\i 007_policies_platform.sql
+\i 008_policies_workspace_scoped_domain.sql
+\i 009_policies_notifications_activity_search.sql
+\i 010_policies_events_messaging_audit_ops.sql
+\i 011_verification.sql

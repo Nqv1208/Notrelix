@@ -1,9 +1,3 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Domain.Identity.Users;
 
 namespace Notrelix.Infrastructure.Auth.Jwt;

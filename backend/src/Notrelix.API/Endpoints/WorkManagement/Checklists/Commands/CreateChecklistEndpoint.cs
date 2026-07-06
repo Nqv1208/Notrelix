@@ -8,7 +8,7 @@ public static class CreateChecklistEndpoint
 {
     public static IEndpointRouteBuilder MapCreateChecklist(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/", HandleAsync)
+        group.MapResourcePost("/", HandleAsync)
             .WithName("WorkManagement.Checklists.Create")
             .WithTags("WorkManagement.Checklists")
             .WithSummary("Create a new checklist");

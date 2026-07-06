@@ -7,11 +7,15 @@ namespace Notrelix.Domain.Tests.Integrations;
 
 public class IntegrationConnectionTests
 {
+    private static readonly Guid AccountId = Guid.NewGuid();
+    private static readonly Guid WorkspaceId = Guid.NewGuid();
+    private static readonly Guid Actor = Guid.NewGuid();
+    private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
+
     [Fact]
     public void Create_ShouldSucceed_AndRaiseEvent()
     {
-        var workspaceId = Guid.NewGuid();
-        var connection = IntegrationConnection.Create(workspaceId, IntegrationProvider.Slack, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now);
 
         connection.Provider.Should().Be(IntegrationProvider.Slack);
         connection.Status.Should().Be(IntegrationConnectionStatus.Active);
@@ -21,15 +25,14 @@ public class IntegrationConnectionTests
     [Fact]
     public void Create_WithInvalidExpiration_ShouldThrowDomainException()
     {
-        var workspaceId = Guid.NewGuid();
-        var createdAt = DateTimeOffset.UtcNow;
-        var expiresAt = createdAt.AddMinutes(-5);
+        var expiresAt = Now.AddMinutes(-5);
 
         var act = () => IntegrationConnection.Create(
-            workspaceId,
+            AccountId,
+            WorkspaceId,
             IntegrationProvider.Slack,
-            Guid.NewGuid(),
-            createdAt,
+            Actor,
+            Now,
             expiresAt: expiresAt);
 
         act.Should().Throw<DomainException>().WithMessage("Expiration time must be in the future.");
@@ -38,11 +41,9 @@ public class IntegrationConnectionTests
     [Fact]
     public void Disconnect_ShouldSetRevokedStatus_AndRaiseEvent()
     {
-        var connection = IntegrationConnection.Create(Guid.NewGuid(), IntegrationProvider.Slack, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        var actor = Guid.NewGuid();
-        var now = DateTimeOffset.UtcNow;
+        var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now);
 
-        connection.Disconnect(actor, now);
+        connection.Disconnect(Actor, Now);
 
         connection.Status.Should().Be(IntegrationConnectionStatus.Revoked);
         connection.DomainEvents.Should().Contain(e => e is IntegrationConnectionRevokedDomainEvent);
@@ -51,26 +52,24 @@ public class IntegrationConnectionTests
     [Fact]
     public void Reconnect_ShouldSetActiveStatus_AndValidateExpiration()
     {
-        var connection = IntegrationConnection.Create(Guid.NewGuid(), IntegrationProvider.Slack, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        var actor = Guid.NewGuid();
-        var now = DateTimeOffset.UtcNow;
+        var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now);
 
-        connection.Disconnect(actor, now);
-        connection.Reconnect("provider-acc-1", now.AddDays(1), actor, now);
+        connection.Disconnect(Actor, Now);
+        connection.Reconnect("provider-acc-1", Now.AddDays(1), Actor, Now);
 
         connection.Status.Should().Be(IntegrationConnectionStatus.Active);
         connection.ProviderAccountId.Should().Be("provider-acc-1");
         connection.DomainEvents.Should().Contain(e => e is IntegrationConnectionReauthorizedDomainEvent);
 
-        var act = () => connection.Reconnect("provider-acc-1", now.AddDays(-1), actor, now);
+        var act = () => connection.Reconnect("provider-acc-1", Now.AddDays(-1), Actor, Now);
         act.Should().Throw<DomainException>().WithMessage("Expiration time must be in the future.");
     }
 
     [Fact]
     public void MarkExpired_ShouldSetExpiredStatus()
     {
-        var connection = IntegrationConnection.Create(Guid.NewGuid(), IntegrationProvider.Slack, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        connection.MarkExpired(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now);
+        connection.MarkExpired(Actor, Now);
 
         connection.Status.Should().Be(IntegrationConnectionStatus.Expired);
     }
@@ -78,36 +77,32 @@ public class IntegrationConnectionTests
     [Fact]
     public void RotateSecret_ShouldAddVersion_AndNotAllowDuplicates()
     {
-        var connection = IntegrationConnection.Create(Guid.NewGuid(), IntegrationProvider.Slack, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now);
         var secretRef1 = SecretRef.Create("secret-key-1");
         var secretRef2 = SecretRef.Create("secret-key-2");
-        var actor = Guid.NewGuid();
-        var now = DateTimeOffset.UtcNow;
 
-        connection.RotateSecret("v1", secretRef1, actor, now);
+        connection.RotateSecret("v1", secretRef1, Actor, Now);
         connection.SecretVersions.Should().ContainSingle(v => v.Version == "v1" && v.SecretReference.Value == "secret-key-1");
         connection.DomainEvents.Should().Contain(e => e is IntegrationSecretRotatedDomainEvent);
 
-        var act = () => connection.RotateSecret("v1", secretRef2, actor, now);
+        var act = () => connection.RotateSecret("v1", secretRef2, Actor, Now);
         act.Should().Throw<DomainException>().WithMessage("Secret version 'v1' already exists for this connection.");
     }
 
     [Fact]
     public void AddAndRemoveScope_ShouldManageScopes_AndRaiseEvents()
     {
-        var connection = IntegrationConnection.Create(Guid.NewGuid(), IntegrationProvider.Slack, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        var actor = Guid.NewGuid();
-        var now = DateTimeOffset.UtcNow;
+        var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now);
 
-        connection.AddScope("read", actor, now);
+        connection.AddScope("read", Actor, Now);
         connection.Scopes.Should().ContainSingle(s => s.Scope == "read");
         connection.DomainEvents.Should().Contain(e => e is IntegrationScopeAddedDomainEvent);
 
         // duplicate add ignored
-        connection.AddScope("read", actor, now);
+        connection.AddScope("read", Actor, Now);
         connection.Scopes.Should().HaveCount(1);
 
-        connection.RemoveScope("read", actor, now);
+        connection.RemoveScope("read", Actor, Now);
         connection.Scopes.Should().BeEmpty();
         connection.DomainEvents.Should().Contain(e => e is IntegrationScopeRemovedDomainEvent);
     }
@@ -115,25 +110,22 @@ public class IntegrationConnectionTests
     [Fact]
     public void CalendarIntegration_Lifecycle_ShouldWork()
     {
-        var workspaceId = Guid.NewGuid();
         var connectionId = Guid.NewGuid();
-        var actor = Guid.NewGuid();
-        var now = DateTimeOffset.UtcNow;
 
-        var calendar = CalendarIntegration.Create(workspaceId, connectionId, CalendarProvider.Google, CalendarSyncDirection.Both, actor, now);
+        var calendar = CalendarIntegration.Create(AccountId, WorkspaceId, connectionId, CalendarProvider.Google, CalendarSyncDirection.Both, Actor, Now);
         calendar.IsActive.Should().BeTrue();
         calendar.SyncDirection.Should().Be(CalendarSyncDirection.Both);
         calendar.DomainEvents.Should().Contain(e => e is CalendarIntegrationConnectedDomainEvent);
 
-        calendar.Deactivate(actor, now);
+        calendar.Deactivate(Actor, Now);
         calendar.IsActive.Should().BeFalse();
         calendar.DomainEvents.Should().Contain(e => e is CalendarIntegrationDeactivatedDomainEvent);
 
-        calendar.Activate(actor, now);
+        calendar.Activate(Actor, Now);
         calendar.IsActive.Should().BeTrue();
         calendar.DomainEvents.Should().Contain(e => e is CalendarIntegrationActivatedDomainEvent);
 
-        calendar.ChangeSyncDirection(CalendarSyncDirection.Push, actor, now);
+        calendar.ChangeSyncDirection(CalendarSyncDirection.Push, Actor, Now);
         calendar.SyncDirection.Should().Be(CalendarSyncDirection.Push);
         calendar.DomainEvents.Should().Contain(e => e is CalendarIntegrationSyncDirectionChangedDomainEvent);
     }
@@ -141,9 +133,8 @@ public class IntegrationConnectionTests
     [Fact]
     public void CalendarIntegration_LinkEvent_ShouldEnforceUniqueness()
     {
-        var workspaceId = Guid.NewGuid();
         var connectionId = Guid.NewGuid();
-        var calendar = CalendarIntegration.Create(workspaceId, connectionId, CalendarProvider.Google, CalendarSyncDirection.Both, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var calendar = CalendarIntegration.Create(AccountId, WorkspaceId, connectionId, CalendarProvider.Google, CalendarSyncDirection.Both, Actor, Now);
 
         var internalId = Guid.NewGuid();
         var externalId = "ext-event-123";

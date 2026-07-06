@@ -4,7 +4,7 @@ namespace Notrelix.Domain.Analytics.Dashboards;
 
 public static class WidgetConfigValidator
 {
-    public static (bool IsValid, string? Error) Validate(WidgetType type, JsonValue config)
+    public static (bool IsValid, string? Error) Validate(DashboardWidgetType type, JsonValue config)
     {
         JsonElement root;
         try
@@ -19,12 +19,12 @@ public static class WidgetConfigValidator
 
         return type switch
         {
-            WidgetType.BoardWidget => ValidateBoardWidget(root),
-            WidgetType.BoardFieldWidget => ValidateBoardFieldWidget(root),
-            WidgetType.DocumentWidget => ValidateDocumentWidget(root),
-            WidgetType.ReportWidget => ValidateReportWidget(root),
-            WidgetType.TextWidget => ValidateTextWidget(root),
-            WidgetType.ChartWidget => ValidateChartWidget(root),
+            DashboardWidgetType.BoardWidget => ValidateBoardWidget(root),
+            DashboardWidgetType.BoardFieldWidget => ValidateBoardFieldWidget(root),
+            DashboardWidgetType.DocumentWidget => ValidateDocumentWidget(root),
+            DashboardWidgetType.ReportWidget => ValidateReportWidget(root),
+            DashboardWidgetType.TextWidget => ValidateTextWidget(root),
+            DashboardWidgetType.ChartWidget => ValidateChartWidget(root),
             _ => (false, $"Unknown widget type '{type}'.")
         };
     }

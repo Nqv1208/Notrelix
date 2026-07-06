@@ -1,9 +1,10 @@
 namespace Notrelix.Domain.Workspaces.Teams.Events;
 
 public sealed record TeamMemberRemovedDomainEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid TeamId,
     Guid UserId,
     Guid RemovedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, RemovedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, RemovedBy);

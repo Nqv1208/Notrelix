@@ -1,8 +1,7 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Documents.Common;
 using global::Notrelix.Application.Features.Documents.DTOs;
+using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Pages.Queries.SearchPages;
 
@@ -10,8 +9,8 @@ public record SearchPagesQuery(Guid WorkspaceId, string Query) : IQuery<Result<L
 
 public class SearchPagesQueryHandler : IRequestHandler<SearchPagesQuery, Result<List<PageDto>>>
 {
-    private readonly IApplicationDbContext _context;
-    public SearchPagesQueryHandler(IApplicationDbContext context) => _context = context;
+    private readonly IDocumentDbContext _context;
+    public SearchPagesQueryHandler(IDocumentDbContext context) => _context = context;
 
     public async Task<Result<List<PageDto>>> Handle(SearchPagesQuery request, CancellationToken ct)
     {

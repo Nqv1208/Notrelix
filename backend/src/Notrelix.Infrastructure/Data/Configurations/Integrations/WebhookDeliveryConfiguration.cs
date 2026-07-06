@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Integrations.Webhooks;
 using Notrelix.Infrastructure.Data.Converters;
 
@@ -14,6 +12,7 @@ public class WebhookDeliveryConfiguration : IEntityTypeConfiguration<WebhookDeli
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
 
+        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.WebhookSubscriptionId).HasColumnName("webhook_subscription_id").IsRequired();
         builder.Property(x => x.EventType).HasColumnName("event_type").HasConversion<string>().IsRequired().HasMaxLength(100);

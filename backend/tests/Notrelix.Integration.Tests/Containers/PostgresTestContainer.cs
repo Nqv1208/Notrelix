@@ -1,7 +1,7 @@
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Npgsql;
 using Testcontainers.PostgreSql;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Testing.Application.Fakes;
 using Notrelix.Testing.Integration;
@@ -20,7 +20,7 @@ public sealed class PostgresTestContainer : IAsyncLifetime
 
     public string ConnectionString =>
         string.IsNullOrEmpty(Environment.GetEnvironmentVariable("NO_DOCKER"))
-            ? _container.GetConnectionString()
+            ? $"{_container.GetConnectionString()};Include Error Detail=true"
             : throw new InvalidOperationException(
                 "Docker is not available (NO_DOCKER env var is set). Use --filter \"Category!=RequiresDocker\" to skip Docker-dependent tests.");
 
@@ -30,16 +30,9 @@ public sealed class PostgresTestContainer : IAsyncLifetime
         {
             await _container.StartAsync();
 
-            // Migrations must build the EF Core model with a workspace context that
-            // produces a real workspace filter (not `false` and not empty/no-op).
-            // Using a dedicated migration workspace ID ensures the model has a
-            // proper e.WorkspaceId == @ws filter expression. Test contexts with
-            // different workspace IDs get their own cached model via the custom
-            // IModelCacheKeyFactory, and EF Core re-evaluates the filter with
-            // the test context's _currentWorkspace at query time.
-            var workspace = new FakeCurrentWorkspace();
-            workspace.SetWorkspace(Guid.Parse("00000000-0000-0000-0000-000000000001"));
-            await using var context = CreateContext(workspace);
+            var tenant = new FakeCurrentTenantContext();
+            tenant.SetWorkspace(Guid.Parse("00000000-0000-0000-0000-000000000001"), Guid.Parse("00000000-0000-0000-0000-000000000001"), null);
+            await using var context = CreateContext(tenant);
             await context.Database.MigrateAsync();
         }
     }
@@ -51,18 +44,25 @@ public sealed class PostgresTestContainer : IAsyncLifetime
         await _container.DisposeAsync();
     }
 
-    public ApplicationDbContext CreateContext(ICurrentWorkspace? currentWorkspace = null)
+    public ApplicationDbContext CreateContext(ICurrentTenantContext? tenant = null, params IInterceptor[] interceptors)
     {
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+        var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseNpgsql(ConnectionString, npgOptions =>
             {
                 npgOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
                 npgOptions.MigrationsHistoryTable("__EFMigrationsHistory", "ops");
             })
-            .ReplaceService<IModelCacheKeyFactory, WorkspaceAwareModelCacheKeyFactory>()
-            .Options;
-        return currentWorkspace is not null
-            ? new ApplicationDbContext(options, currentWorkspace)
+            .UseSnakeCaseNamingConvention()
+            .ReplaceService<IModelCacheKeyFactory, WorkspaceAwareModelCacheKeyFactory>();
+
+        if (interceptors.Length > 0)
+        {
+            optionsBuilder.AddInterceptors(interceptors);
+        }
+
+        var options = optionsBuilder.Options;
+        return tenant is not null
+            ? new ApplicationDbContext(options, tenant)
             : new ApplicationDbContext(options);
     }
 

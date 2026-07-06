@@ -1,6 +1,5 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Queries.GetUserPendingInvitations;
 
@@ -19,13 +18,15 @@ public record GetUserPendingInvitationsQuery : IQuery<Result<List<UserPendingInv
 
 public class GetUserPendingInvitationsQueryHandler : IRequestHandler<GetUserPendingInvitationsQuery, Result<List<UserPendingInvitationDto>>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkspaceDbContext _context;
+    private readonly IActorLookupService _actorLookup;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public GetUserPendingInvitationsQueryHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public GetUserPendingInvitationsQueryHandler(IWorkspaceDbContext context, IActorLookupService actorLookup, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
+        _actorLookup = actorLookup;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
     }
@@ -53,14 +54,11 @@ public class GetUserPendingInvitationsQueryHandler : IRequestHandler<GetUserPend
             var workspace = await _context.Workspaces.AsNoTracking()
                 .FirstOrDefaultAsync(w => w.Id == i.WorkspaceId, ct);
 
-            var inviter = await _context.Users
-                .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Id == i.InvitedBy, ct);
-
+            var inviter = await _actorLookup.FindAsync(i.InvitedBy, ct);
             var inviterName = inviter?.Name ?? "Ai đó";
             if (string.IsNullOrWhiteSpace(inviterName))
             {
-                inviterName = inviter?.Email?.Value ?? "Người dùng Workspace";
+                inviterName = "Người dùng Workspace";
             }
 
             result.Add(new UserPendingInvitationDto(

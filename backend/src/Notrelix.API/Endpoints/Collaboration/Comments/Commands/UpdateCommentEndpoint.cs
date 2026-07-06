@@ -8,7 +8,7 @@ public static class UpdateCommentEndpoint
 {
     public static IEndpointRouteBuilder MapUpdateComment(this IEndpointRouteBuilder group)
     {
-        group.MapPatch("/{commentId:guid}", HandleAsync)
+        group.MapResourcePatch("/{commentId:guid}", HandleAsync)
             .WithName("Collaboration.Comments.Update")
             .WithTags("Collaboration.Comments")
             .WithSummary("Update a comment");

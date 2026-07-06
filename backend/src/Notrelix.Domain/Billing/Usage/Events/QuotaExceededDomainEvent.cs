@@ -6,11 +6,12 @@ public record QuotaExceededDomainEvent : WorkspaceScopedDomainEvent
     public decimal Limit { get; }
 
     public QuotaExceededDomainEvent(
+        Guid accountId,
         Guid workspaceId,
         string featureCode,
         decimal limit,
         DateTimeOffset occurredAt)
-        : base(workspaceId, occurredAt, null)
+        : base(accountId, workspaceId, occurredAt, null)
     {
         FeatureCode = featureCode;
         Limit = limit;

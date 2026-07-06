@@ -9,7 +9,6 @@ public static class MapLabelEndpoints
     {
         var boardGroup = app
             .MapGroup("/api/v1/boards/{boardId:guid}/labels")
-            .RequireAuthorization()
             .WithTags("WorkManagement.Labels")
             .WithOpenApi();
 
@@ -18,7 +17,6 @@ public static class MapLabelEndpoints
 
         var group = app
             .MapGroup("/api/v1/labels/{labelId:guid}")
-            .RequireAuthorization()
             .WithTags("WorkManagement.Labels")
             .WithOpenApi();
 

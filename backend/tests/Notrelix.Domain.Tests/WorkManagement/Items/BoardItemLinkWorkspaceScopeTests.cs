@@ -12,7 +12,7 @@ public class BoardItemLinkWorkspaceScopeTests
     public void Create_WithMatchingWorkspace_ShouldSucceed()
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsA);
-        var link = BoardItemLink.Create(WsA, Guid.NewGuid(), Guid.NewGuid(), target, BoardItemLinkType.Reference, null, DateTimeOffset.UtcNow);
+        var link = BoardItemLink.Create(Guid.NewGuid(), WsA, Guid.NewGuid(), Guid.NewGuid(), target, BoardItemLinkType.Reference, null, DateTimeOffset.UtcNow);
         link.WorkspaceId.Should().Be(WsA);
     }
 
@@ -20,7 +20,7 @@ public class BoardItemLinkWorkspaceScopeTests
     public void Create_WithMismatchedWorkspace_ShouldThrow()
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsB);
-        var act = () => BoardItemLink.Create(WsA, Guid.NewGuid(), Guid.NewGuid(), target, BoardItemLinkType.Reference, null, DateTimeOffset.UtcNow);
+        var act = () => BoardItemLink.Create(Guid.NewGuid(), WsA, Guid.NewGuid(), Guid.NewGuid(), target, BoardItemLinkType.Reference, null, DateTimeOffset.UtcNow);
         act.Should().Throw<WorkspaceMismatchException>();
     }
 
@@ -28,7 +28,7 @@ public class BoardItemLinkWorkspaceScopeTests
     public void Create_WithUnscopedResourceRef_ShouldSucceed()
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid());
-        var link = BoardItemLink.Create(WsA, Guid.NewGuid(), Guid.NewGuid(), target, BoardItemLinkType.Reference, null, DateTimeOffset.UtcNow);
+        var link = BoardItemLink.Create(Guid.NewGuid(), WsA, Guid.NewGuid(), Guid.NewGuid(), target, BoardItemLinkType.Reference, null, DateTimeOffset.UtcNow);
         link.WorkspaceId.Should().Be(WsA);
     }
 }

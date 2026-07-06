@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 
 namespace Notrelix.API.Tests.Contracts;
 
@@ -13,12 +12,10 @@ public class HealthEndpointTests : IClassFixture<NotrelixApiFactory>
     }
 
     [Fact]
-    public async Task GetHealth_ReturnsOk()
+    public async Task GetHealth_WhenNotAuthenticated_ShouldReturnUnauthorized()
     {
         var response = await _client.GetAsync("/health");
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
-        body.Should().ContainKey("status");
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }

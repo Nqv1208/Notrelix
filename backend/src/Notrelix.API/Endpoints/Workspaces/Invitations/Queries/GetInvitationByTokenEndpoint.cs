@@ -7,8 +7,7 @@ public static class GetInvitationByTokenEndpoint
 {
     public static IEndpointRouteBuilder MapGetInvitationByToken(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/by-token/{token}", HandleAsync)
-            .AllowAnonymous()
+        group.MapPublicGet("/by-token/{token}", HandleAsync)
             .WithName("Workspaces.Invitations.GetInvitationByToken")
             .WithTags("Workspaces.Invitations")
             .WithSummary("Get workspace invitation details by token");

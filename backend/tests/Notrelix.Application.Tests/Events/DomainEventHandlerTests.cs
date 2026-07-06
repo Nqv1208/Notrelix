@@ -1,7 +1,5 @@
-using Notrelix.Application.Common.Events;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Items;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Tests.Events;
 
@@ -15,7 +13,7 @@ public class DomainEventHandlerTests
         var createdBy = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
-        var domainEvent = new BoardCreatedDomainEvent(workspaceId, boardId, "Roadmap", createdBy, now);
+        var domainEvent = new BoardCreatedDomainEvent(Guid.NewGuid(), workspaceId, boardId, "Roadmap", createdBy, now);
         var notification = new DomainEventNotification<BoardCreatedDomainEvent>(domainEvent);
 
         notification.DomainEvent.Should().Be(domainEvent);
@@ -32,7 +30,7 @@ public class DomainEventHandlerTests
         var now = DateTimeOffset.UtcNow;
 
         var domainEvent = new BoardItemMemberAssignedDomainEvent(
-            workspaceId, itemId, userId, assignedBy, now);
+            Guid.NewGuid(), workspaceId, itemId, userId, assignedBy, now);
 
         domainEvent.WorkspaceId.Should().Be(workspaceId);
         domainEvent.ItemId.Should().Be(itemId);
@@ -47,7 +45,7 @@ public class DomainEventHandlerTests
         var createdBy = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
-        var board = Board.Create(workspaceId, createdBy, "Test Board", null, now);
+        var board = Board.Create(Guid.NewGuid(), workspaceId, createdBy, "Test Board", null, now);
 
         var domainEvents = board.DomainEvents;
         domainEvents.Should().ContainSingle(e => e is BoardCreatedDomainEvent);
@@ -66,7 +64,7 @@ public class DomainEventHandlerTests
         var now = DateTimeOffset.UtcNow;
         var position = FractionalIndex.Initial();
 
-        var item = BoardItem.Create(workspaceId, boardId, groupId, "Task", position, createdBy, now);
+        var item = BoardItem.Create(Guid.NewGuid(), workspaceId, boardId, groupId, "Task", position, createdBy, now);
 
         var domainEvents = item.DomainEvents;
         domainEvents.Should().ContainSingle(e => e is BoardItemCreatedDomainEvent);

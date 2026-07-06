@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Testing.Core;
 
 namespace Notrelix.Testing.Application.Fakes;

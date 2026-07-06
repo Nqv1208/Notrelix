@@ -7,13 +7,14 @@ public record FormCreatedDomainEvent : WorkspaceScopedDomainEvent
     public string Name { get; }
 
     public FormCreatedDomainEvent(
+        Guid accountId,
         Guid workspaceId,
         Guid formId,
         Guid boardId,
         string name,
         Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(workspaceId, occurredAt, actorUserId)
+        : base(accountId, workspaceId, occurredAt, actorUserId)
     {
         FormId = formId;
         BoardId = boardId;

@@ -8,13 +8,13 @@ public static class MapAttachmentEndpoints
     public static IEndpointRouteBuilder MapAttachmentsEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app
-            .MapGroup("/api/v1/cards/{cardId:guid}/attachments")
+            .MapGroup("/api/v1/board-items/{boardItemId:guid}/attachments")
             .WithTags("Collaboration.Attachments")
-            .RequireAuthorization()
             .WithOpenApi();
 
         group.MapGetAttachments();
         group.MapCreateAttachment();
+        group.MapDeleteAttachment();
 
         return app;
     }

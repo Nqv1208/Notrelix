@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Identity.Security;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Identity;

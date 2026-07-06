@@ -1,32 +1,48 @@
-using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoards;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
-using Notrelix.Testing.Integration.Factories;
 
 namespace Notrelix.Integration.Tests.Handlers;
 
-public class GetBoardsQueryHandlerTests
+[Collection("Database")]
+public class GetBoardsQueryHandlerTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public GetBoardsQueryHandlerTests(PostgresTestContainer db)
+    {
+        _db = db;
+    }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public async Task Handle_ShouldReturnActiveBoards()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
-        var workspace = Workspace.Create(userId, "Test", "test", now);
+        var workspace = Workspace.Create(Guid.NewGuid(), userId, "Test", "test", now);
         context.Workspaces.Add(workspace);
 
-        var board1 = Board.Create(workspace.Id, userId, "Board 1", null, now, BoardVisibility.Workspace);
-        var board2 = Board.Create(workspace.Id, userId, "Board 2", null, now, BoardVisibility.Workspace);
+        var board1 = Board.Create(Guid.NewGuid(), workspace.Id, userId, "Board 1", null, now, BoardVisibility.Workspace);
+        var board2 = Board.Create(Guid.NewGuid(), workspace.Id, userId, "Board 2", null, now, BoardVisibility.Workspace);
         context.Boards.AddRange(board1, board2);
         await context.SaveChangesAsync();
 
-        var handler = new GetBoardsQueryHandler(context, new TestWorkspaceAccessCheckerStub(true));
+        var handler = new GetBoardsQueryHandler(context);
 
         var result = await handler.Handle(new GetBoardsQuery(workspace.Id), CancellationToken.None);
 
@@ -37,22 +53,22 @@ public class GetBoardsQueryHandlerTests
     [Fact]
     public async Task Handle_ShouldExcludeArchivedBoards()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
-        var workspace = Workspace.Create(userId, "Test", "test", now);
+        var workspace = Workspace.Create(Guid.NewGuid(), userId, "Test", "test", now);
         context.Workspaces.Add(workspace);
 
-        var active = Board.Create(workspace.Id, userId, "Active", null, now, BoardVisibility.Workspace);
-        var archived = Board.Create(workspace.Id, userId, "Archived", null, now, BoardVisibility.Workspace);
+        var active = Board.Create(Guid.NewGuid(), workspace.Id, userId, "Active", null, now, BoardVisibility.Workspace);
+        var archived = Board.Create(Guid.NewGuid(), workspace.Id, userId, "Archived", null, now, BoardVisibility.Workspace);
         archived.Archive(userId, now);
         context.Boards.AddRange(active, archived);
         await context.SaveChangesAsync();
 
-        var handler = new GetBoardsQueryHandler(context, new TestWorkspaceAccessCheckerStub(true));
+        var handler = new GetBoardsQueryHandler(context);
 
         var result = await handler.Handle(new GetBoardsQuery(workspace.Id), CancellationToken.None);
 
@@ -61,15 +77,18 @@ public class GetBoardsQueryHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenWorkspaceNotFound_ShouldThrowNotFoundException()
+    public async Task Handle_WhenWorkspaceNotFound_ShouldReturnEmpty()
     {
-        var currentWorkspace = new FakeCurrentWorkspace();
-        currentWorkspace.EnterSystemContext();
-        using var context = TestDbContextFactory.CreateInMemoryContext(currentWorkspace);
+        // Workspace existence is now validated by WorkspaceContextBehavior, not the handler.
+        // Handler just queries boards for the given workspace ID.
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = _db.CreateContext(tenant);
 
-        var handler = new GetBoardsQueryHandler(context, new TestWorkspaceAccessCheckerStub(false));
+        var handler = new GetBoardsQueryHandler(context);
 
-        await Assert.ThrowsAsync<NotFoundException>(() =>
-            handler.Handle(new GetBoardsQuery(Guid.NewGuid()), CancellationToken.None));
+        var result = await handler.Handle(new GetBoardsQuery(Guid.NewGuid()), CancellationToken.None);
+        result.Succeeded.Should().BeTrue();
+        result.Data.Should().BeEmpty();
     }
 }

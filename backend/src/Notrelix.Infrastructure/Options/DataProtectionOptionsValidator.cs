@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Options;
-
 namespace Notrelix.Infrastructure.Options;
 
 public sealed class DataProtectionOptionsValidator : IValidateOptions<DataProtectionOptions>

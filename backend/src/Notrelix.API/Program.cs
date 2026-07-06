@@ -4,7 +4,6 @@ using Notrelix.API.Endpoints;
 using Notrelix.API.Extensions;
 using Notrelix.API.Middleware;
 using Notrelix.Infrastructure;
-using Notrelix.Infrastructure.Middleware;
 using Notrelix.Infrastructure.Options;
 using Dpo = Notrelix.Infrastructure.Options.DataProtectionOptions;
 
@@ -38,7 +37,7 @@ if (dataProtectionOptions.PersistKeys && !string.IsNullOrWhiteSpace(dataProtecti
 }
 
 builder.Services
-    .AddInfrastructure(builder.Configuration)
+    .AddInfrastructure(builder.Configuration, builder.Environment)
     .AddApiLayer(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
@@ -50,34 +49,56 @@ if (await app.RunDatabaseCommandsAsync(args))
 
 await app.InitialiseDatabaseOnStartupAsync();
 
+// 1. Forwarded headers (proxy support)
 app.UseForwardedHeaders();
+
+// 2. Exception handler (global error handling)
 app.UseExceptionHandler();
+
+// 3. Correlation ID (request tracing)
 app.UseMiddleware<CorrelationIdMiddleware>();
+
+// 4. Security headers (transport security)
 app.UseMiddleware<SecurityHeadersMiddleware>();
 
+// 5. Rate limiting (before auth, after security headers)
+app.UseMiddleware<PreAuthenticationRateLimitMiddleware>();
+
+// 6. HSTS (non-dev only)
 if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
 }
 
+// 7. Swagger (dev only)
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+// 8. CORS
 app.UseCors("Frontend");
 
+// 9. HTTPS redirection (conditional)
 if (app.Configuration.GetValue<bool>("HttpsRedirection:Enabled"))
 {
     app.UseHttpsRedirection();
 }
 
+// 10. Authentication
 app.UseAuthentication();
-app.UseMiddleware<NotrelixRateLimitingMiddleware>();
-app.UseWorkspaceResolution();
+
+// 11. HTTP request context (populate IExecutionContext from JWT claims)
+app.UseMiddleware<HttpRequestContextMiddleware>();
+
+// 12. Rate limiting (authenticated)
+app.UseMiddleware<AuthenticatedRateLimitMiddleware>();
+
+// 13. Authorization
 app.UseAuthorization();
 
+// 13. Endpoints
 app.MapEndpoints();
 
 app.Run();

@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Events;
-
 namespace Notrelix.Application.Events.Governance;
 
 [EventName("governance.role.assigned", Version = 1)]
@@ -9,13 +7,14 @@ public sealed record CustomRoleAssignedIntegrationEvent(
     string RoleName,
     Guid UserId,
     Guid? ActorUserId = null,
-    string? CorrelationId = null,
-    string? CausationId = null,
+    Guid CorrelationId = default,
+    Guid? CausationId = null,
     DateTimeOffset OccurredAt = default
 ) : IntegrationEvent(
     "governance.role.assigned",
     1,
     sourceEventId: null,
+    accountId: null,
     WorkspaceId,
     ActorUserId,
     CorrelationId,

@@ -14,7 +14,7 @@ public class BoardFieldEventTests
     public void BoardField_UpdateClassification_ShouldRaiseEvent()
     {
         var position = FractionalIndex.Create("a0");
-        var field = BoardField.Create(WsA, BoardA, "Field", FieldType.Text, FieldSettings.Empty(), position, Actor, Now);
+        var field = BoardField.Create(Guid.NewGuid(), WsA, BoardA, "Field", FieldType.Text, FieldSettings.Empty(), position, Actor, Now);
         field.ClearDomainEvents();
         var version = field.Version;
 
@@ -31,7 +31,7 @@ public class BoardFieldEventTests
     public void BoardField_UpdateClassification_WhenSameValue_ShouldNotRaiseEvent()
     {
         var position = FractionalIndex.Create("a0");
-        var field = BoardField.Create(WsA, BoardA, "Field", FieldType.Text, FieldSettings.Empty(), position, Actor, Now,
+        var field = BoardField.Create(Guid.NewGuid(), WsA, BoardA, "Field", FieldType.Text, FieldSettings.Empty(), position, Actor, Now,
             dataClassification: DataClassification.Confidential, isSensitive: true);
         field.ClearDomainEvents();
         var version = field.Version;
@@ -46,7 +46,7 @@ public class BoardFieldEventTests
     public void BoardField_UpdateFormula_ShouldRaiseEvent()
     {
         var position = FractionalIndex.Create("a0");
-        var field = BoardField.Create(WsA, BoardA, "Field", FieldType.Text, FieldSettings.Empty(), position, Actor, Now);
+        var field = BoardField.Create(Guid.NewGuid(), WsA, BoardA, "Field", FieldType.Text, FieldSettings.Empty(), position, Actor, Now);
         field.ClearDomainEvents();
         var version = field.Version;
 
@@ -63,7 +63,7 @@ public class BoardFieldEventTests
     public void BoardField_Restore_ShouldRaiseEvent()
     {
         var position = FractionalIndex.Create("a0");
-        var field = BoardField.Create(WsA, BoardA, "Field", FieldType.Text, FieldSettings.Empty(), position, Actor, Now);
+        var field = BoardField.Create(Guid.NewGuid(), WsA, BoardA, "Field", FieldType.Text, FieldSettings.Empty(), position, Actor, Now);
         field.SoftDelete(Actor, Now);
         field.ClearDomainEvents();
         var version = field.Version;
@@ -79,7 +79,7 @@ public class BoardFieldEventTests
     public void BoardField_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
         var position = FractionalIndex.Create("a0");
-        var field = BoardField.Create(WsA, BoardA, "Field", FieldType.Text, FieldSettings.Empty(), position, Actor, Now);
+        var field = BoardField.Create(Guid.NewGuid(), WsA, BoardA, "Field", FieldType.Text, FieldSettings.Empty(), position, Actor, Now);
         field.ClearDomainEvents();
         var version = field.Version;
 

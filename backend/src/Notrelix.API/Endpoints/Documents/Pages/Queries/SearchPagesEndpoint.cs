@@ -7,7 +7,7 @@ public static class SearchPagesEndpoint
 {
     public static IEndpointRouteBuilder MapSearchPages(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/search", HandleAsync)
+        group.MapWorkspaceGet("/search", HandleAsync)
             .WithName("Documents.Pages.SearchPages")
             .WithTags("Documents.Pages")
             .WithSummary("Search pages in a workspace");

@@ -1,5 +1,3 @@
-using MassTransit;
-using Microsoft.Extensions.Logging;
 using Notrelix.Application.Events.Workspaces;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Workspaces;

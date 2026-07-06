@@ -1,8 +1,9 @@
 namespace Notrelix.Domain.Billing.Entitlements.Events;
 
 public sealed record EntitlementChangedDomainEvent(
-    Guid WorkspaceId,
+    Guid AccountId,
+    Guid? WorkspaceId,
     string FeatureCode,
     int NewLimit,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, null);
+) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);

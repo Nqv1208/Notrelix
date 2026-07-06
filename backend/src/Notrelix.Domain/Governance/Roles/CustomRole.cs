@@ -2,6 +2,7 @@ namespace Notrelix.Domain.Governance.Roles;
 
 public class CustomRole : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
@@ -13,15 +14,17 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
 
     private CustomRole() : base() { }
 
-    public static CustomRole Create(Guid workspaceId, string name, string? description, Guid createdBy, DateTimeOffset createdAt)
+    public static CustomRole Create(Guid accountId, Guid workspaceId, string name, string? description, Guid createdBy, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(name);
         Guard.MaxLength(name, 100);
         Guard.MaxLength(description, 500);
+        Guard.NotEmpty(accountId);
 
         var role = new CustomRole
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             Name = name.Trim(),
             Description = description?.Trim(),
@@ -29,7 +32,7 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
         };
 
         role.SetAuditOnCreate(createdBy, createdAt);
-        role.AddDomainEvent(new CustomRoleCreatedDomainEvent(role.Id, workspaceId, role.Name, createdBy, createdAt));
+        role.AddDomainEvent(new CustomRoleCreatedDomainEvent(accountId, role.Id, workspaceId, role.Name, createdBy, createdAt));
 
         return role;
     }
@@ -48,7 +51,7 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
         Name = newName;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new CustomRoleUpdatedDomainEvent(WorkspaceId, Id, updatedBy, updatedAt));
+        AddDomainEvent(new CustomRoleUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void AddPermission(string action, Guid updatedBy, DateTimeOffset updatedAt)
@@ -61,7 +64,7 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
         _permissions.Add(CustomRolePermission.Create(Id, action));
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new CustomRoleUpdatedDomainEvent(WorkspaceId, Id, updatedBy, updatedAt));
+        AddDomainEvent(new CustomRoleUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void RemovePermission(string action, Guid updatedBy, DateTimeOffset updatedAt)
@@ -74,7 +77,7 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
         _permissions.Remove(permission);
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new CustomRoleUpdatedDomainEvent(WorkspaceId, Id, updatedBy, updatedAt));
+        AddDomainEvent(new CustomRoleUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void AssignToMember(Guid memberId, Guid assignedBy, DateTimeOffset assignedAt)
@@ -82,7 +85,7 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         SetAuditOnUpdate(assignedBy, assignedAt);
         IncrementVersion();
-        AddDomainEvent(new CustomRoleAssignedDomainEvent(WorkspaceId, Id, memberId, assignedBy, assignedAt));
+        AddDomainEvent(new CustomRoleAssignedDomainEvent(AccountId, WorkspaceId, Id, memberId, assignedBy, assignedAt));
     }
 
     public void RevokeFromMember(Guid memberId, Guid revokedBy, DateTimeOffset revokedAt)
@@ -90,7 +93,7 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         SetAuditOnUpdate(revokedBy, revokedAt);
         IncrementVersion();
-        AddDomainEvent(new CustomRoleRevokedDomainEvent(WorkspaceId, Id, memberId, revokedBy, revokedAt));
+        AddDomainEvent(new CustomRoleRevokedDomainEvent(AccountId, WorkspaceId, Id, memberId, revokedBy, revokedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
@@ -101,7 +104,7 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
         Status = CustomRoleStatus.Archived;
         SetAuditOnUpdate(archivedBy, archivedAt);
         IncrementVersion();
-        AddDomainEvent(new CustomRoleArchivedDomainEvent(WorkspaceId, Id, archivedBy, archivedAt));
+        AddDomainEvent(new CustomRoleArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
     }
 
     public void Activate(Guid activatedBy, DateTimeOffset activatedAt)
@@ -111,7 +114,7 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
         Status = CustomRoleStatus.Active;
         SetAuditOnUpdate(activatedBy, activatedAt);
         IncrementVersion();
-        AddDomainEvent(new CustomRoleActivatedDomainEvent(WorkspaceId, Id, activatedBy, activatedAt));
+        AddDomainEvent(new CustomRoleActivatedDomainEvent(AccountId, WorkspaceId, Id, activatedBy, activatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -123,7 +126,7 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new CustomRoleSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new CustomRoleSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -133,6 +136,6 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new CustomRoleRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new CustomRoleRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

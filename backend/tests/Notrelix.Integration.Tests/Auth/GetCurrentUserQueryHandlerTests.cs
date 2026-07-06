@@ -1,15 +1,32 @@
 using Notrelix.Application.Features.Identity.Auth.Queries.GetCurrentUser;
 using Notrelix.Domain.Identity.Users;
-using Notrelix.Testing.Integration.Factories;
+using Notrelix.Integration.Tests.Containers;
 
 namespace Notrelix.Integration.Tests.Auth;
 
-public class GetCurrentUserQueryHandlerTests
+[Collection("Database")]
+public class GetCurrentUserQueryHandlerTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public GetCurrentUserQueryHandlerTests(PostgresTestContainer db)
+    {
+        _db = db;
+    }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public async Task Handle_WhenUserNotFound_ShouldReturnFailure()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        await using var context = _db.CreateContext();
 
         var handler = new GetCurrentUserQueryHandler(context);
 
@@ -25,7 +42,7 @@ public class GetCurrentUserQueryHandlerTests
     [Fact]
     public async Task Handle_WhenUserExists_ShouldReturnUserDto()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        await using var context = _db.CreateContext();
 
         var user = User.Create("me@example.com", "Me", "hashed", DateTimeOffset.UtcNow);
         context.Users.Add(user);

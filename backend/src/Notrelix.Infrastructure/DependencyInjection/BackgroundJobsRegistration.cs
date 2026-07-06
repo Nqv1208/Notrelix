@@ -1,6 +1,3 @@
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Infrastructure.BackgroundJobs;
 
 namespace Notrelix.Infrastructure;
@@ -21,6 +18,7 @@ public static class BackgroundJobsRegistration
 
         services.AddHostedService<QueuedJobWorker>();
         services.AddHostedService<OutboxDispatcher>();
+        services.AddHostedService<EmailDispatcher>();
 
         return services;
     }

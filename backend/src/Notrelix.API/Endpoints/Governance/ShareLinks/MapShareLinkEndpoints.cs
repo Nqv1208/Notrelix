@@ -8,7 +8,6 @@ public static class MapShareLinkEndpoints
     {
         var group = app
             .MapGroup("/api/v1/resources/{resourceType}/{resourceId:guid}/share-links")
-            .RequireAuthorization()
             .WithTags("Governance.ShareLinks")
             .WithOpenApi();
 

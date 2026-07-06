@@ -1,7 +1,6 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Workspaces.DTOs;
+using Notrelix.Application.Features.Workspaces.Abstractions;
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspaceBySlug;
 
 public record GetWorkspaceBySlugQuery(Guid WorkspaceId, string Slug) : IQuery<Result<WorkspaceDto>>, IRequirePermission
@@ -12,9 +11,9 @@ public record GetWorkspaceBySlugQuery(Guid WorkspaceId, string Slug) : IQuery<Re
 
 public class GetWorkspaceBySlugQueryHandler : IRequestHandler<GetWorkspaceBySlugQuery, Result<WorkspaceDto>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkspaceDbContext _context;
 
-    public GetWorkspaceBySlugQueryHandler(IApplicationDbContext context)
+    public GetWorkspaceBySlugQueryHandler(IWorkspaceDbContext context)
     {
         _context = context;
     }

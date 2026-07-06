@@ -14,7 +14,7 @@ public sealed class BoardEventMapper :
             domainEvent.WorkspaceId,
             domainEvent.Title,
             ((IDomainEvent)domainEvent).ActorUserId,
-            null,
+            default,
             null,
             domainEvent.OccurredAt
         );
@@ -28,7 +28,7 @@ public sealed class BoardEventMapper :
             domainEvent.WorkspaceId,
             domainEvent.Name,
             ((IDomainEvent)domainEvent).ActorUserId,
-            null,
+            default,
             null,
             domainEvent.OccurredAt
         );
@@ -44,7 +44,7 @@ public sealed class BoardEventMapper :
             domainEvent.OldValue.ToString(),
             domainEvent.NewValue.ToString(),
             ((IDomainEvent)domainEvent).ActorUserId,
-            null,
+            default,
             null,
             domainEvent.OccurredAt
         );

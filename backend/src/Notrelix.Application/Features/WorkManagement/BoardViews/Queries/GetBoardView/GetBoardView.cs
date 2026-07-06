@@ -1,21 +1,20 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Queries.GetBoardView;
 
-public record GetBoardViewQuery(Guid WorkspaceId, Guid BoardId) : IQuery<Result<object>>, IRequirePermission, IWorkspaceRequest
+public record GetBoardViewQuery(Guid BoardId) : IQuery<Result<object>>, IRequirePermission, IResourceScopedRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId, WorkspaceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
 }
 
 public class GetBoardViewQueryHandler : IRequestHandler<GetBoardViewQuery, Result<object>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
 
-    public GetBoardViewQueryHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public GetBoardViewQueryHandler(IWorkManagementDbContext context, ICurrentUser currentUser)
     {
         _context = context;
         _currentUser = currentUser;

@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.WorkManagement.Workload;
 
 namespace Notrelix.Infrastructure.Data.Configurations.WorkManagement;
@@ -13,6 +11,7 @@ public class WorkloadAllocationConfiguration : IEntityTypeConfiguration<Workload
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
 
+        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.BoardId).HasColumnName("board_id");
         builder.Property(x => x.ItemId).HasColumnName("item_id");

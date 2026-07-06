@@ -9,7 +9,6 @@ public static class MapExecutionEndpoints
         var group = app
             .MapGroup("/api/v1/automations")
             .WithTags("Automation.Executions")
-            .RequireAuthorization()
             .WithOpenApi();
 
         group.MapListAutomationExecutions();

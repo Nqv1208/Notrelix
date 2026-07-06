@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Events;
-
 namespace Notrelix.Application.Events.Collaboration;
 
 [EventName("mention.created", Version = 1)]
@@ -11,13 +9,14 @@ public sealed record MentionCreatedIntegrationEvent(
     Guid MentionedUserId,
     Guid MentionedByUserId,
     Guid? ActorUserId = null,
-    string? CorrelationId = null,
-    string? CausationId = null,
+    Guid CorrelationId = default,
+    Guid? CausationId = null,
     DateTimeOffset OccurredAt = default
 ) : IntegrationEvent(
     "mention.created",
     1,
     sourceEventId: null,
+    accountId: null,
     WorkspaceId,
     ActorUserId,
     CorrelationId,

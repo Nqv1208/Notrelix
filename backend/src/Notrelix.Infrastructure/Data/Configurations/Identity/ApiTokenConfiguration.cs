@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Identity.Tokens;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Identity;
@@ -13,6 +11,7 @@ public class ApiTokenConfiguration : IEntityTypeConfiguration<ApiToken>
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
 
+        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.UserId).HasColumnName("user_id");
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);

@@ -1,7 +1,6 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Documents.DTOs;
+using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Pages.Queries.GetPageTree;
 
@@ -9,8 +8,8 @@ public record GetPageTreeQuery(Guid WorkspaceId) : IQuery<Result<List<PageTreeIt
 
 public class GetPageTreeQueryHandler : IRequestHandler<GetPageTreeQuery, Result<List<PageTreeItemDto>>>
 {
-    private readonly IApplicationDbContext _context;
-    public GetPageTreeQueryHandler(IApplicationDbContext context) => _context = context;
+    private readonly IDocumentDbContext _context;
+    public GetPageTreeQueryHandler(IDocumentDbContext context) => _context = context;
 
     public async Task<Result<List<PageTreeItemDto>>> Handle(GetPageTreeQuery request, CancellationToken ct)
     {

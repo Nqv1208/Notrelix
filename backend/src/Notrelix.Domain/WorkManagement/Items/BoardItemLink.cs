@@ -2,6 +2,7 @@ namespace Notrelix.Domain.WorkManagement.Items;
 
 public class BoardItemLink : Entity, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid BoardId { get; private set; }
     public Guid SourceItemId { get; private set; }
@@ -13,6 +14,7 @@ public class BoardItemLink : Entity, IWorkspaceScoped
     private BoardItemLink() : base() { }
 
     public static BoardItemLink Create(
+        Guid accountId,
         Guid workspaceId,
         Guid boardId,
         Guid sourceItemId,
@@ -29,8 +31,11 @@ public class BoardItemLink : Entity, IWorkspaceScoped
         if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
             throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
 
+        Guard.NotEmpty(accountId);
+
         return new BoardItemLink
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             BoardId = boardId,
             SourceItemId = sourceItemId,

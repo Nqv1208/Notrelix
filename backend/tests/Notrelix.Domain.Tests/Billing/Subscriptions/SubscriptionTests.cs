@@ -13,7 +13,7 @@ public class SubscriptionTests
         var now = DateTimeOffset.UtcNow;
         var actor = Guid.NewGuid();
 
-        var subscription = Subscription.Create(workspaceId, planId, SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
+        var subscription = Subscription.Create(Guid.NewGuid(), planId, SubscriptionTier.Pro, now, now.AddDays(30), actor, now, workspaceId);
 
         subscription.WorkspaceId.Should().Be(workspaceId);
         subscription.PlanId.Should().Be(planId);
@@ -29,7 +29,7 @@ public class SubscriptionTests
         var planId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
-        var act = () => Subscription.Create(workspaceId, planId, SubscriptionTier.Pro, now, now.AddMinutes(-5), Guid.NewGuid(), now);
+        var act = () => Subscription.Create(Guid.NewGuid(), planId, SubscriptionTier.Pro, now, now.AddMinutes(-5), Guid.NewGuid(), now);
         act.Should().Throw<BusinessRuleException>().WithMessage("Subscription period start must be before end.");
     }
 

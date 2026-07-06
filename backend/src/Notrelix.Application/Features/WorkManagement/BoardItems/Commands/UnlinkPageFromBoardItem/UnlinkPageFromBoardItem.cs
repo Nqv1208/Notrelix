@@ -1,25 +1,25 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UnlinkPageFromBoardItem;
 
-public record UnlinkPageFromBoardItemCommand(Guid BoardItemId) : ICommand<Result>, ITransactionalRequest;
+public record UnlinkPageFromBoardItemCommand(Guid BoardItemId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.UpdateItem;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+}
 
 public class UnlinkPageFromBoardItemCommandHandler : IRequestHandler<UnlinkPageFromBoardItemCommand, Result>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
     private readonly ICurrentUser _currentUser;
-    private readonly IWorkspacePermissionService _permissions;
 
     public UnlinkPageFromBoardItemCommandHandler(
-        IApplicationDbContext context,
-        ICurrentUser currentUser,
-        IWorkspacePermissionService permissions)
+        IWorkManagementDbContext context,
+        ICurrentUser currentUser)
     {
         _context = context;
         _currentUser = currentUser;
-        _permissions = permissions;
     }
 
     public async Task<Result> Handle(UnlinkPageFromBoardItemCommand request, CancellationToken ct)
@@ -27,8 +27,6 @@ public class UnlinkPageFromBoardItemCommandHandler : IRequestHandler<UnlinkPageF
         var card = await _context.BoardItems
             .FirstOrDefaultAsync(c => c.Id == request.BoardItemId, ct);
         if (card is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
-
-        await _permissions.EnsureCanEditBoardAsync(card.BoardId, _currentUser.UserId, ct);
 
         var existingLinks = await _context.BoardItemLinks
             .Where(l => l.SourceItemId == card.Id)

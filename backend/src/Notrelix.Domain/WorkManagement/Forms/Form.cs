@@ -4,6 +4,7 @@ namespace Notrelix.Domain.WorkManagement.Forms;
 
 public class Form : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid BoardId { get; private set; }
     public string Name { get; private set; } = null!;
@@ -19,6 +20,7 @@ public class Form : AggregateRoot, IWorkspaceScoped
     private Form() : base() { }
 
     public static Form Create(
+        Guid accountId,
         Guid workspaceId,
         Guid boardId,
         string name,
@@ -33,9 +35,11 @@ public class Form : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(boardId);
         Guard.NotNullOrWhiteSpace(name);
         Guard.NotNullOrWhiteSpace(slug);
+        Guard.NotEmpty(accountId);
 
         var form = new Form
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             BoardId = boardId,
             Name = name.Trim(),
@@ -47,7 +51,7 @@ public class Form : AggregateRoot, IWorkspaceScoped
         };
 
         form.SetAuditOnCreate(createdBy, createdAt);
-        form.AddDomainEvent(new FormCreatedDomainEvent(workspaceId, form.Id, boardId, form.Name, createdBy, createdAt));
+        form.AddDomainEvent(new FormCreatedDomainEvent(accountId, workspaceId, form.Id, boardId, form.Name, createdBy, createdAt));
         return form;
     }
 
@@ -63,7 +67,7 @@ public class Form : AggregateRoot, IWorkspaceScoped
 
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new FormDetailsUpdatedDomainEvent(WorkspaceId, Id, BoardId, Name, SettingsJson, SubmitterPolicyJson, updatedBy, updatedAt));
+        AddDomainEvent(new FormDetailsUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, Name, SettingsJson, SubmitterPolicyJson, updatedBy, updatedAt));
     }
 
     public void Publish(Guid updatedBy, DateTimeOffset updatedAt)
@@ -79,7 +83,7 @@ public class Form : AggregateRoot, IWorkspaceScoped
         Status = FormStatus.Published;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new FormPublishedDomainEvent(WorkspaceId, Id, updatedBy, updatedAt));
+        AddDomainEvent(new FormPublishedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void Close(Guid updatedBy, DateTimeOffset updatedAt)
@@ -90,7 +94,7 @@ public class Form : AggregateRoot, IWorkspaceScoped
         Status = FormStatus.Closed;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new FormClosedDomainEvent(WorkspaceId, Id, updatedBy, updatedAt));
+        AddDomainEvent(new FormClosedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void EnsureAcceptsSubmissions()
@@ -119,7 +123,7 @@ public class Form : AggregateRoot, IWorkspaceScoped
         _questions.Add(question);
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new FormQuestionAddedDomainEvent(WorkspaceId, Id, question.QuestionKey, updatedBy, updatedAt));
+        AddDomainEvent(new FormQuestionAddedDomainEvent(AccountId, WorkspaceId, Id, question.QuestionKey, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -128,7 +132,7 @@ public class Form : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new FormSoftDeletedDomainEvent(WorkspaceId, Id, BoardId, deletedBy, deletedAt));
+        AddDomainEvent(new FormSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -137,6 +141,6 @@ public class Form : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new FormRestoredDomainEvent(WorkspaceId, Id, BoardId, restoredBy, restoredAt));
+        AddDomainEvent(new FormRestoredDomainEvent(AccountId, WorkspaceId, Id, BoardId, restoredBy, restoredAt));
     }
 }

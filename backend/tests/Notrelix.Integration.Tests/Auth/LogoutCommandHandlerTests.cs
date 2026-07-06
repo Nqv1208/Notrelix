@@ -1,17 +1,33 @@
-using Notrelix.Application.Common.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Commands.Logout;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.Identity.Sessions;
-using Notrelix.Testing.Integration.Factories;
+using Notrelix.Integration.Tests.Containers;
 
 namespace Notrelix.Integration.Tests.Auth;
 
-public class LogoutCommandHandlerTests
+[Collection("Database")]
+public class LogoutCommandHandlerTests : IAsyncLifetime
 {
+    private readonly PostgresTestContainer _db;
+    private DatabaseReset _reset = null!;
+
+    public LogoutCommandHandlerTests(PostgresTestContainer db)
+    {
+        _db = db;
+    }
+
+    public async Task InitializeAsync()
+    {
+        _reset = new DatabaseReset(_db.ConnectionString);
+        await _reset.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact]
     public async Task Handle_WhenSessionExists_ShouldRevokeRefreshToken()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        await using var context = _db.CreateContext();
 
         var user = User.Create("logout@example.com", "Logout User", "hashed", DateTimeOffset.UtcNow);
         context.Users.Add(user);
@@ -38,7 +54,7 @@ public class LogoutCommandHandlerTests
     [Fact]
     public async Task Handle_WhenSessionDoesNotExist_ShouldStillSucceed()
     {
-        using var context = TestDbContextFactory.CreateInMemoryContext();
+        await using var context = _db.CreateContext();
 
         var jwtBlacklist = new Mock<IJwtBlacklistService>();
         var dateTimeProvider = new Mock<IDateTimeProvider>();

@@ -24,6 +24,7 @@ public sealed class LabelColor : ValueObject
 
 public class Label : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid BoardId { get; private set; }
     public string Name { get; private set; } = null!;
@@ -32,15 +33,17 @@ public class Label : AggregateRoot, IWorkspaceScoped
 
     private Label() : base() { }
 
-    public static Label Create(Guid workspaceId, Guid boardId, string name, LabelColor color, Guid createdBy, DateTimeOffset createdAt)
+    public static Label Create(Guid accountId, Guid workspaceId, Guid boardId, string name, LabelColor color, Guid createdBy, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(boardId);
         Guard.NotNullOrWhiteSpace(name);
         Guard.NotNull(color);
+        Guard.NotEmpty(accountId);
 
         var label = new Label
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             BoardId = boardId,
             Name = name.Trim(),
@@ -49,7 +52,7 @@ public class Label : AggregateRoot, IWorkspaceScoped
         };
 
         label.SetAuditOnCreate(createdBy, createdAt);
-        label.AddDomainEvent(new LabelCreatedDomainEvent(workspaceId, boardId, label.Id, label.Name, createdAt));
+        label.AddDomainEvent(new LabelCreatedDomainEvent(accountId, workspaceId, boardId, label.Id, label.Name, createdAt));
 
         return label;
     }
@@ -59,14 +62,14 @@ public class Label : AggregateRoot, IWorkspaceScoped
         Name = name.Trim();
         Color = color;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new LabelUpdatedDomainEvent(WorkspaceId, Id, updatedBy, updatedAt));
+        AddDomainEvent(new LabelUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new LabelSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new LabelSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -75,6 +78,6 @@ public class Label : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new LabelRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new LabelRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

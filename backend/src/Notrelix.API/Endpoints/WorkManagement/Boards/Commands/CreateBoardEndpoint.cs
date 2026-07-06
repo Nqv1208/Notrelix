@@ -1,7 +1,6 @@
 using Notrelix.API.Contracts.WorkManagement.Boards.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace;
-using Notrelix.Domain.WorkManagement.Boards;
 
 namespace Notrelix.API.Endpoints.WorkManagement.Boards.Commands;
 
@@ -9,7 +8,7 @@ public static class CreateBoardEndpoint
 {
     public static IEndpointRouteBuilder MapCreateBoard(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/", HandleAsync)
+        group.MapWorkspacePost("/", HandleAsync)
             .WithName("WorkManagement.Boards.Create")
             .WithTags("WorkManagement.Boards")
             .WithSummary("Create a new board in workspace");

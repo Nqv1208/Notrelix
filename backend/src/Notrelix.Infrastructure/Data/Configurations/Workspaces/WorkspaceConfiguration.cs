@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Notrelix.Domain.Workspaces.Workspaces;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Workspaces;
@@ -18,7 +16,7 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(1024);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.IsPersonal).HasColumnName("is_personal");
-        builder.Property(x => x.AccountId).HasColumnName("account_id");
+        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
 
         builder.OwnsOne(x => x.Settings, settings =>
         {
@@ -39,5 +37,11 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
 
         builder.HasIndex(x => x.Slug).IsUnique().HasDatabaseName("idx_workspaces_slug");
         builder.HasIndex(x => x.Name).HasDatabaseName("idx_workspaces_name");
+
+        // One personal workspace per user (soft-delete aware)
+        builder.HasIndex(x => x.CreatedBy)
+            .IsUnique()
+            .HasFilter("is_personal = true AND deleted_at IS NULL")
+            .HasDatabaseName("idx_workspaces_personal_per_user");
     }
 }

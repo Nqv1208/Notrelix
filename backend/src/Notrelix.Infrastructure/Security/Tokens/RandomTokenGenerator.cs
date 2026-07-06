@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-
 namespace Notrelix.Infrastructure.Security.Tokens;
 
 /// <summary>

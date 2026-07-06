@@ -9,7 +9,6 @@ public static class MapBoardViewEndpoints
     {
         var group = app
             .MapGroup("/api/v1/boards/{boardId:guid}/views")
-            .RequireAuthorization()
             .WithTags("WorkManagement.BoardViews")
             .WithOpenApi();
 
@@ -17,6 +16,7 @@ public static class MapBoardViewEndpoints
         group.MapSaveBoardView();
         group.MapCreateBoardView();
         group.MapUpdateBoardViewConfig();
+        group.MapDeleteBoardView();
 
         return app;
     }

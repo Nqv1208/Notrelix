@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Events;
-
 namespace Notrelix.Application.Events.Governance;
 
 [EventName("governance.permission.granted", Version = 1)]
@@ -12,13 +10,14 @@ public sealed record ResourcePermissionGrantedIntegrationEvent(
     Guid SubjectId,
     string PermissionLevel,
     Guid? ActorUserId = null,
-    string? CorrelationId = null,
-    string? CausationId = null,
+    Guid CorrelationId = default,
+    Guid? CausationId = null,
     DateTimeOffset OccurredAt = default
 ) : IntegrationEvent(
     "governance.permission.granted",
     1,
     sourceEventId: null,
+    accountId: null,
     WorkspaceId,
     ActorUserId,
     CorrelationId,

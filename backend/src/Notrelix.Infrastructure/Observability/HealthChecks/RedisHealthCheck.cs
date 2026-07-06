@@ -1,6 +1,3 @@
-using Microsoft.Extensions.Diagnostics.HealthChecks;
-using StackExchange.Redis;
-
 namespace Notrelix.Infrastructure.Observability.HealthChecks;
 
 public sealed class RedisHealthCheck : IHealthCheck

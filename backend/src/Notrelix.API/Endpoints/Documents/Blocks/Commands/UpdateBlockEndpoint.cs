@@ -8,7 +8,7 @@ public static class UpdateBlockEndpoint
 {
     public static IEndpointRouteBuilder MapUpdateBlock(this IEndpointRouteBuilder group)
     {
-        group.MapPatch("/", HandleAsync)
+        group.MapResourcePatch("/", HandleAsync)
             .WithName("Documents.Blocks.UpdateBlock")
             .WithTags("Documents.Blocks")
             .WithSummary("Update a block");

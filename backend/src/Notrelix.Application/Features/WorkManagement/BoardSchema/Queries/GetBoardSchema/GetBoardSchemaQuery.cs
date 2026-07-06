@@ -1,22 +1,21 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardSchema.Queries.GetBoardSchema;
 
-public record GetBoardSchemaQuery(Guid WorkspaceId, Guid BoardId) : IQuery<BoardSchemaDto>, IRequirePermission, IWorkspaceRequest, ICacheableQuery<BoardSchemaDto>
+public record GetBoardSchemaQuery(Guid BoardId) : IQuery<BoardSchemaDto>, IRequirePermission, IResourceScopedRequest, IAuthorizedCacheableRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId, WorkspaceId);
-    public string CacheKey => $"board-schema:{BoardId}";
-    public TimeSpan? Ttl => null;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public string AuthorizedCacheKey => $"board-schema:{BoardId}";
+    public TimeSpan AuthorizedCacheTtl => TimeSpan.FromMinutes(5);
 }
 
 public class GetBoardSchemaQueryHandler : IRequestHandler<GetBoardSchemaQuery, BoardSchemaDto>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkManagementDbContext _context;
 
-    public GetBoardSchemaQueryHandler(IApplicationDbContext context)
+    public GetBoardSchemaQueryHandler(IWorkManagementDbContext context)
     {
         _context = context;
     }

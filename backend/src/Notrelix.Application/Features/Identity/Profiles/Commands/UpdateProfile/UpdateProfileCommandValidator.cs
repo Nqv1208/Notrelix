@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile;
 
 public class UpdateProfileCommandValidator : AbstractValidator<UpdateProfileCommand>

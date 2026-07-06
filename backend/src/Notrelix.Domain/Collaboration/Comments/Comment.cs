@@ -2,6 +2,7 @@ namespace Notrelix.Domain.Collaboration.Comments;
 
 public class Comment : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public ResourceRef Target { get; private set; } = null!;
     public Guid? ParentId { get; private set; }
@@ -12,6 +13,7 @@ public class Comment : AggregateRoot, IWorkspaceScoped
     private Comment() : base() { }
 
     public static Comment Create(
+        Guid accountId,
         Guid workspaceId,
         ResourceRef target,
         string content,
@@ -21,6 +23,7 @@ public class Comment : AggregateRoot, IWorkspaceScoped
         CommentAnchor? anchor = null,
         Func<Guid, ResourceRef?>? getParentTarget = null)
     {
+        Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(target);
         Guard.NotNullOrWhiteSpace(content);
@@ -37,6 +40,7 @@ public class Comment : AggregateRoot, IWorkspaceScoped
 
         var comment = new Comment
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             Target = target,
             ParentId = parentId,
@@ -46,7 +50,7 @@ public class Comment : AggregateRoot, IWorkspaceScoped
         };
 
         comment.SetAuditOnCreate(createdBy, createdAt);
-        comment.AddDomainEvent(new CommentCreatedDomainEvent(workspaceId, comment.Id, target, createdBy, createdAt));
+        comment.AddDomainEvent(new CommentCreatedDomainEvent(accountId, workspaceId, comment.Id, target, createdBy, createdAt));
 
         return comment;
     }
@@ -62,7 +66,7 @@ public class Comment : AggregateRoot, IWorkspaceScoped
         Content = newContent.Trim();
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new CommentUpdatedDomainEvent(WorkspaceId, Id, updatedBy, updatedAt));
+        AddDomainEvent(new CommentUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void Resolve(Guid resolvedBy, DateTimeOffset resolvedAt)
@@ -73,7 +77,7 @@ public class Comment : AggregateRoot, IWorkspaceScoped
         CommentStatus = CommentStatus.Resolved;
         SetAuditOnUpdate(resolvedBy, resolvedAt);
         IncrementVersion();
-        AddDomainEvent(new CommentResolvedDomainEvent(WorkspaceId, Id, resolvedBy, resolvedAt));
+        AddDomainEvent(new CommentResolvedDomainEvent(AccountId, WorkspaceId, Id, resolvedBy, resolvedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -83,7 +87,7 @@ public class Comment : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new CommentSoftDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new CommentSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -93,6 +97,6 @@ public class Comment : AggregateRoot, IWorkspaceScoped
         CommentStatus = CommentStatus.Active;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new CommentRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new CommentRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

@@ -7,7 +7,7 @@ public static class GetWorkspaceEndpoint
 {
     public static IEndpointRouteBuilder MapGetWorkspace(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", HandleAsync)
+        group.MapWorkspaceGet("/", HandleAsync)
             .WithName("Workspaces.Workspaces.GetWorkspace")
             .WithTags("Workspaces.Workspaces")
             .WithSummary("Get workspace by ID");

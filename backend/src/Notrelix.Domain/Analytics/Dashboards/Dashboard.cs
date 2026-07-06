@@ -3,53 +3,9 @@ using Notrelix.Domain.Analytics.Widgets;
 
 namespace Notrelix.Domain.Analytics.Dashboards;
 
-public class DashboardWidget : Entity
-{
-    public Guid DashboardId { get; private set; }
-    public string Title { get; private set; } = null!;
-    public WidgetType Type { get; private set; }
-    public JsonValue Config { get; private set; } = null!;
-    public WidgetPosition Position { get; private set; } = null!;
-
-    private DashboardWidget() : base() { }
-
-    public static DashboardWidget Create(Guid dashboardId, string title, WidgetType type, JsonValue config, WidgetPosition position)
-    {
-        Guard.NotEmpty(dashboardId);
-        Guard.NotNullOrWhiteSpace(title);
-        Guard.NotNull(config);
-
-        var (isValid, error) = WidgetConfigValidator.Validate(type, config);
-        if (!isValid)
-            throw new BusinessRuleException($"Invalid widget config: {error}");
-
-        WidgetRules.ValidatePosition(position);
-
-        return new DashboardWidget
-        {
-            DashboardId = dashboardId,
-            Title = title,
-            Type = type,
-            Config = config,
-            Position = position
-        };
-    }
-
-    public void UpdatePosition(WidgetPosition newPosition)
-    {
-        WidgetRules.ValidatePosition(newPosition);
-        Position = newPosition;
-    }
-
-    public void UpdateTitle(string title, Guid updatedBy, DateTimeOffset updatedAt)
-    {
-        Guard.NotNullOrWhiteSpace(title);
-        Title = title.Trim();
-    }
-}
-
 public class Dashboard : AggregateRoot, IWorkspaceScoped
 {
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public string Name { get; private set; } = null!;
     public DashboardVisibility Visibility { get; private set; }
@@ -62,13 +18,15 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
 
     private Dashboard() : base() { }
 
-    public static Dashboard Create(Guid workspaceId, string name, Guid createdBy, DateTimeOffset createdAt)
+    public static Dashboard Create(Guid accountId, Guid workspaceId, string name, Guid createdBy, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(name);
+        Guard.NotEmpty(accountId);
 
         var dashboard = new Dashboard
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             Name = name.Trim(),
             Visibility = DashboardVisibility.Private,
@@ -76,7 +34,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         };
 
         dashboard.SetAuditOnCreate(createdBy, createdAt);
-        dashboard.AddDomainEvent(new DashboardCreatedDomainEvent(workspaceId, dashboard.Id, createdBy, createdAt));
+        dashboard.AddDomainEvent(new DashboardCreatedDomainEvent(accountId, workspaceId, dashboard.Id, createdBy, createdAt));
         return dashboard;
     }
 
@@ -91,7 +49,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         Name = normalizedName;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardRenamedDomainEvent(WorkspaceId, Id, Name, updatedBy, updatedAt));
+        AddDomainEvent(new DashboardRenamedDomainEvent(AccountId, WorkspaceId, Id, Name, updatedBy, updatedAt));
     }
 
     public void ChangeVisibility(DashboardVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
@@ -102,10 +60,10 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         Visibility = visibility;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardVisibilityChangedDomainEvent(WorkspaceId, Id, Visibility, updatedBy, updatedAt));
+        AddDomainEvent(new DashboardVisibilityChangedDomainEvent(AccountId, WorkspaceId, Id, Visibility, updatedBy, updatedAt));
     }
 
-    public void AddWidget(string title, WidgetType type, JsonValue config, WidgetPosition position, Guid updatedBy, DateTimeOffset updatedAt)
+    public void AddWidget(string title, DashboardWidgetType type, JsonValue config, WidgetPosition position, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(title);
@@ -118,7 +76,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         _widgets.Add(widget);
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardWidgetAddedDomainEvent(WorkspaceId, Id, widget.Id, updatedBy, updatedAt));
+        AddDomainEvent(new DashboardWidgetAddedDomainEvent(AccountId, WorkspaceId, Id, widget.Id, updatedBy, updatedAt));
     }
 
     public void RemoveWidget(Guid widgetId, Guid updatedBy, DateTimeOffset updatedAt)
@@ -130,7 +88,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         _widgets.Remove(widget);
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardWidgetRemovedDomainEvent(WorkspaceId, Id, widgetId, updatedBy, updatedAt));
+        AddDomainEvent(new DashboardWidgetRemovedDomainEvent(AccountId, WorkspaceId, Id, widgetId, updatedBy, updatedAt));
     }
 
     public void MoveWidget(Guid widgetId, WidgetPosition newPosition, Guid updatedBy, DateTimeOffset updatedAt)
@@ -145,7 +103,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         widget.UpdatePosition(newPosition);
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardWidgetMovedDomainEvent(WorkspaceId, Id, widgetId, newPosition, updatedBy, updatedAt));
+        AddDomainEvent(new DashboardWidgetMovedDomainEvent(AccountId, WorkspaceId, Id, widgetId, newPosition, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -155,7 +113,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardDeletedDomainEvent(WorkspaceId, Id, deletedBy, deletedAt));
+        AddDomainEvent(new DashboardDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -165,6 +123,6 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardRestoredDomainEvent(WorkspaceId, Id, restoredBy, restoredAt));
+        AddDomainEvent(new DashboardRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

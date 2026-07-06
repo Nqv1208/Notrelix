@@ -8,8 +8,7 @@ public static class ResetPasswordEndpoint
 {
     public static IEndpointRouteBuilder MapResetPassword(this IEndpointRouteBuilder group)
     {
-        group.MapPost("/reset-password", HandleAsync)
-            .AllowAnonymous()
+        group.MapPublicPost("/reset-password", HandleAsync)
             .WithName("Identity.Auth.ResetPassword")
             .WithTags("Identity.Auth")
             .WithSummary("Reset password with token")

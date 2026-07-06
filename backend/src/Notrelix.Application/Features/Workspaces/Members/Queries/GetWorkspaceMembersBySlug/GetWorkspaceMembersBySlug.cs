@@ -1,7 +1,6 @@
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Workspaces.DTOs;
+using Notrelix.Application.Features.Workspaces.Abstractions;
 namespace Notrelix.Application.Features.Workspaces.Members.Queries.GetWorkspaceMembersBySlug;
 
 public record GetWorkspaceMembersBySlugQuery(Guid WorkspaceId, string Slug) : IQuery<Result<List<WorkspaceMemberDto>>>, IRequirePermission
@@ -12,11 +11,13 @@ public record GetWorkspaceMembersBySlugQuery(Guid WorkspaceId, string Slug) : IQ
 
 public class GetWorkspaceMembersBySlugQueryHandler : IRequestHandler<GetWorkspaceMembersBySlugQuery, Result<List<WorkspaceMemberDto>>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IWorkspaceDbContext _context;
+    private readonly IActorLookupService _actorLookup;
 
-    public GetWorkspaceMembersBySlugQueryHandler(IApplicationDbContext context)
+    public GetWorkspaceMembersBySlugQueryHandler(IWorkspaceDbContext context, IActorLookupService actorLookup)
     {
         _context = context;
+        _actorLookup = actorLookup;
     }
 
     public async Task<Result<List<WorkspaceMemberDto>>> Handle(GetWorkspaceMembersBySlugQuery request, CancellationToken ct)
@@ -31,18 +32,24 @@ public class GetWorkspaceMembersBySlugQueryHandler : IRequestHandler<GetWorkspac
         var members = await _context.WorkspaceMembers
             .AsNoTracking()
             .Where(m => m.WorkspaceId == workspace.Id)
-            .Join(_context.Users.AsNoTracking(),
-                m => m.UserId,
-                u => u.Id,
-                (m, u) => new WorkspaceMemberDto(
-                    m.UserId,
-                    u.Name,
-                    u.AvatarUrl,
-                    m.Role.ToString(),
-                    m.CreatedAt.DateTime
-                ))
             .ToListAsync(ct);
 
-        return Result<List<WorkspaceMemberDto>>.Success(members);
+        var userIds = members.Select(m => m.UserId).Distinct().ToList();
+        var actors = await _actorLookup.FindManyAsync(userIds, ct);
+        var actorMap = actors.ToDictionary(a => a.UserId);
+
+        var result = members.Select(m =>
+        {
+            actorMap.TryGetValue(m.UserId, out var actor);
+            return new WorkspaceMemberDto(
+                m.UserId,
+                actor?.Name ?? "Unknown",
+                actor?.AvatarUrl,
+                m.Role.ToString(),
+                m.CreatedAt.DateTime
+            );
+        }).ToList();
+
+        return Result<List<WorkspaceMemberDto>>.Success(result);
     }
 }

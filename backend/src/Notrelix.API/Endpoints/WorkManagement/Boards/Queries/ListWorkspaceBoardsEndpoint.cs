@@ -7,7 +7,7 @@ public static class ListWorkspaceBoardsEndpoint
 {
     public static IEndpointRouteBuilder MapListWorkspaceBoards(this IEndpointRouteBuilder group)
     {
-        group.MapGet("/", HandleAsync)
+        group.MapWorkspaceGet("/", HandleAsync)
             .WithName("WorkManagement.Boards.ListWorkspaceBoards")
             .WithTags("WorkManagement.Boards")
             .WithSummary("Get all boards in a workspace by workspace ID");

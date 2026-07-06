@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-
 namespace Notrelix.Application.Features.Identity.Abstractions;
 
 public interface IIdentityDbContext

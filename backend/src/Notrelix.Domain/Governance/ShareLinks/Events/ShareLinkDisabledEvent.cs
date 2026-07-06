@@ -1,8 +1,9 @@
 namespace Notrelix.Domain.Governance.ShareLinks.Events;
 
 public sealed record ShareLinkDisabledEvent(
+    Guid AccountId,
     Guid WorkspaceId,
     Guid LinkId,
     Guid DisabledBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(WorkspaceId, OccurredAt, DisabledBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, DisabledBy);

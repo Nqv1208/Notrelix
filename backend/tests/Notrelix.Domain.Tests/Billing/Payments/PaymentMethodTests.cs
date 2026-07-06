@@ -10,6 +10,7 @@ public class PaymentMethodTests
     {
         var method = PaymentMethod.Create(
             Guid.NewGuid(),
+            Guid.NewGuid(),
             PaymentProvider.Stripe,
             "pm_123",
             "4242",
@@ -31,6 +32,7 @@ public class PaymentMethodTests
     {
         var act = () => PaymentMethod.Create(
             Guid.NewGuid(),
+            Guid.NewGuid(),
             PaymentProvider.PayPal,
             "",
             "0000",
@@ -44,6 +46,7 @@ public class PaymentMethodTests
     public void SoftDelete_ShouldMarkDeleted()
     {
         var method = PaymentMethod.Create(
+            Guid.NewGuid(),
             Guid.NewGuid(),
             PaymentProvider.Stripe,
             "pm_456",
@@ -61,6 +64,7 @@ public class PaymentMethodTests
     public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
         var method = PaymentMethod.Create(
+            Guid.NewGuid(),
             Guid.NewGuid(),
             PaymentProvider.Manual,
             "manual_1",
@@ -80,6 +84,7 @@ public class PaymentMethodTests
     {
         var method = PaymentMethod.Create(
             Guid.NewGuid(),
+            Guid.NewGuid(),
             PaymentProvider.Stripe,
             "pm_789",
             "5555",
@@ -97,6 +102,7 @@ public class PaymentMethodTests
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {
         var method = PaymentMethod.Create(
+            Guid.NewGuid(),
             Guid.NewGuid(),
             PaymentProvider.Stripe,
             "pm_000",

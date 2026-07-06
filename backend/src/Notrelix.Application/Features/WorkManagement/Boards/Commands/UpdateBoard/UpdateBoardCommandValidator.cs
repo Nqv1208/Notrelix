@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoard;
 
 using Notrelix.Domain.WorkManagement.Boards;
@@ -8,9 +6,6 @@ public class UpdateBoardCommandValidator : AbstractValidator<UpdateBoardCommand>
 {
     public UpdateBoardCommandValidator()
     {
-        RuleFor(x => x.WorkspaceId)
-            .NotEmpty();
-
         RuleFor(x => x.BoardId)
             .NotEmpty();
 

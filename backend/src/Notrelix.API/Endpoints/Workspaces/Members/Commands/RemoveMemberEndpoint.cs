@@ -7,7 +7,7 @@ public static class RemoveMemberEndpoint
 {
     public static IEndpointRouteBuilder MapRemoveMember(this IEndpointRouteBuilder group)
     {
-        group.MapDelete("/{userId:guid}", HandleAsync)
+        group.MapWorkspaceDelete("/{userId:guid}", HandleAsync)
             .WithName("Workspaces.Members.RemoveMember")
             .WithTags("Workspaces.Members")
             .WithSummary("Remove a member from workspace");
