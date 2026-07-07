@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Options;
-using Notrelix.Application.Common.Caching;
 using Notrelix.Infrastructure.Caching;
 using Notrelix.Infrastructure.Options;
 

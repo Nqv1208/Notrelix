@@ -1,6 +1,5 @@
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
-using Notrelix.Application.Common.CQRS.Caching;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardSchema.Queries.GetBoardSchema;
 

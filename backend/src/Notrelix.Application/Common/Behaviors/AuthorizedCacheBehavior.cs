@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.CQRS.Caching;
-
 namespace Notrelix.Application.Common.Behaviors;
 
 public class AuthorizedCacheBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>

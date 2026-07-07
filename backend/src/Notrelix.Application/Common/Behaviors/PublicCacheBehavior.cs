@@ -1,4 +1,4 @@
-using Notrelix.Application.Common.CQRS.Execution;
+using Notrelix.Application.Common.Requests.Execution;
 
 namespace Notrelix.Application.Common.Behaviors;
 

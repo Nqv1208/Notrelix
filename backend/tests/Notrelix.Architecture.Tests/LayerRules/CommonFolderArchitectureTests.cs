@@ -66,68 +66,68 @@ public class CommonFolderArchitectureTests
     [Fact]
     public void CacheInvalidationKey_ShouldBeInCaching()
     {
-        var cqrsPath = Path.Combine(CommonPath, "CQRS", "CacheInvalidationKey.cs");
+        var cqrsPath = Path.Combine(CommonPath, "Requests", "CacheInvalidationKey.cs");
         var cachingPath = Path.Combine(CommonPath, "Caching", "CacheInvalidationKey.cs");
-        File.Exists(cqrsPath).Should().BeFalse("CacheInvalidationKey moved from CQRS/ to Caching/");
+        File.Exists(cqrsPath).Should().BeFalse("CacheInvalidationKey moved from Requests/ to Caching/");
         File.Exists(cachingPath).Should().BeTrue("CacheInvalidationKey should exist in Caching/");
     }
 
     [Fact]
     public void RealtimeTopic_ShouldBeInPostCommit()
     {
-        var cqrsPath = Path.Combine(CommonPath, "CQRS", "RealtimeTopic.cs");
+        var cqrsPath = Path.Combine(CommonPath, "Requests", "RealtimeTopic.cs");
         var postCommitPath = Path.Combine(CommonPath, "PostCommit", "RealtimeTopic.cs");
-        File.Exists(cqrsPath).Should().BeFalse("RealtimeTopic moved from CQRS/ to PostCommit/");
+        File.Exists(cqrsPath).Should().BeFalse("RealtimeTopic moved from Requests/ to PostCommit/");
         File.Exists(postCommitPath).Should().BeTrue("RealtimeTopic should exist in PostCommit/");
     }
 
     [Fact]
     public void FeatureCode_ShouldBeInEntitlements()
     {
-        var cqrsPath = Path.Combine(CommonPath, "CQRS", "FeatureCode.cs");
+        var cqrsPath = Path.Combine(CommonPath, "Requests", "FeatureCode.cs");
         var entitlementsPath = Path.Combine(CommonPath, "Entitlements", "FeatureCode.cs");
-        File.Exists(cqrsPath).Should().BeFalse("FeatureCode moved from CQRS/ to Entitlements/");
+        File.Exists(cqrsPath).Should().BeFalse("FeatureCode moved from Requests/ to Entitlements/");
         File.Exists(entitlementsPath).Should().BeTrue("FeatureCode should exist in Entitlements/");
     }
 
     [Fact]
     public void IActivityRequest_ShouldBeInActivity()
     {
-        var cqrsPath = Path.Combine(CommonPath, "CQRS", "IActivityRequest.cs");
+        var cqrsPath = Path.Combine(CommonPath, "Requests", "IActivityRequest.cs");
         var activityPath = Path.Combine(CommonPath, "Activity", "IActivityRequest.cs");
-        File.Exists(cqrsPath).Should().BeFalse("IActivityRequest moved from CQRS/ to Activity/");
+        File.Exists(cqrsPath).Should().BeFalse("IActivityRequest moved from Requests/ to Activity/");
         File.Exists(activityPath).Should().BeTrue("IActivityRequest should exist in Activity/");
     }
 
     [Fact]
     public void IAuditableRequest_ShouldBeInAuditing()
     {
-        var cqrsPath = Path.Combine(CommonPath, "CQRS", "IAuditableRequest.cs");
+        var cqrsPath = Path.Combine(CommonPath, "Requests", "IAuditableRequest.cs");
         var auditingPath = Path.Combine(CommonPath, "Auditing", "IAuditableRequest.cs");
-        File.Exists(cqrsPath).Should().BeFalse("IAuditableRequest moved from CQRS/ to Auditing/");
+        File.Exists(cqrsPath).Should().BeFalse("IAuditableRequest moved from Requests/ to Auditing/");
         File.Exists(auditingPath).Should().BeTrue("IAuditableRequest should exist in Auditing/");
     }
 
     [Fact]
     public void IMessageTriggeredRequest_ShouldBeInMessaging()
     {
-        var cqrsPath = Path.Combine(CommonPath, "CQRS", "IMessageTriggeredRequest.cs");
+        var cqrsPath = Path.Combine(CommonPath, "Requests", "IMessageTriggeredRequest.cs");
         var messagingPath = Path.Combine(CommonPath, "Messaging", "IMessageTriggeredRequest.cs");
-        File.Exists(cqrsPath).Should().BeFalse("IMessageTriggeredRequest moved from CQRS/ to Messaging/");
+        File.Exists(cqrsPath).Should().BeFalse("IMessageTriggeredRequest moved from Requests/ to Messaging/");
         File.Exists(messagingPath).Should().BeTrue("IMessageTriggeredRequest should exist in Messaging/");
     }
 
     [Fact]
-    public void NoIRequireEntitlement_InCQRS()
+    public void NoIRequireEntitlement_InRequests()
     {
-        var path = Path.Combine(CommonPath, "CQRS", "IRequireEntitlement.cs");
+        var path = Path.Combine(CommonPath, "Requests", "IRequireEntitlement.cs");
         File.Exists(path).Should().BeFalse("IRequireEntitlement was deleted; superseded by IRequireSubscription + IRequireFeature");
     }
 
     [Fact]
-    public void NoIInvalidateCacheRequest_InCQRS()
+    public void NoIInvalidateCacheRequest_InRequests()
     {
-        var path = Path.Combine(CommonPath, "CQRS", "IInvalidateCacheRequest.cs");
+        var path = Path.Combine(CommonPath, "Requests", "IInvalidateCacheRequest.cs");
         File.Exists(path).Should().BeFalse("IInvalidateCacheRequest was deleted; cache invalidation is ad-hoc via IPostCommitActionQueue");
     }
 
@@ -177,9 +177,9 @@ public class CommonFolderArchitectureTests
     }
 
     [Fact]
-    public void CQRS_ShouldNotContainMovedOrDeletedFiles()
+    public void Requests_ShouldNotContainMovedOrDeletedFiles()
     {
-        var cqrsPath = Path.Combine(CommonPath, "CQRS");
+        var cqrsPath = Path.Combine(CommonPath, "Requests");
         var files = Directory.GetFiles(cqrsPath, "*.cs")
             .Select(Path.GetFileName)
             .ToHashSet();
@@ -198,7 +198,7 @@ public class CommonFolderArchitectureTests
 
         var violations = files.Intersect(forbidden).ToArray();
         violations.Should().BeEmpty(
-            $"CQRS/ should not contain moved/deleted files: {string.Join(", ", violations)}");
+            $"Requests/ should not contain moved/deleted files: {string.Join(", ", violations)}");
     }
 
     [Fact]

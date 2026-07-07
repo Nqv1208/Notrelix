@@ -1,6 +1,3 @@
-using Microsoft.Extensions.Options;
-using Notrelix.Application.Common.Caching;
-
 namespace Notrelix.Infrastructure.Options;
 
 public class CacheKeyOptionsValidator : IValidateOptions<CacheKeyOptions>

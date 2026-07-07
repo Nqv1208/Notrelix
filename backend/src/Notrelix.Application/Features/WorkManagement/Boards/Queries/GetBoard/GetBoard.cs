@@ -2,7 +2,6 @@ using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
-using Notrelix.Application.Common.CQRS.Caching;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoard;
 

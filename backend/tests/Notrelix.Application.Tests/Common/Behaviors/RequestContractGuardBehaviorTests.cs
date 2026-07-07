@@ -1,5 +1,4 @@
-using Notrelix.Application.Common.CQRS.Caching;
-using Notrelix.Application.Common.CQRS.Scoping;
+using Notrelix.Application.Common.Requests.Scoping;
 
 namespace Notrelix.Application.Tests.Common.Behaviors;
 
