@@ -1,6 +1,6 @@
-using Notrelix.Application.Common.CQRS;
-using Notrelix.Application.Common.CQRS.Scoping;
-using Notrelix.Application.Common.CQRS.Security;
+using Notrelix.Application.Common.Requests;
+using Notrelix.Application.Common.Requests.Scoping;
+using Notrelix.Application.Common.Requests.Security;
 using Notrelix.Application.Features.Identity.Auth.Commands.Login;
 using Notrelix.Application.Features.Identity.Registration.Commands.Register;
 using Notrelix.Application.Features.Identity.Registration.Commands.SendWelcomeEmail;

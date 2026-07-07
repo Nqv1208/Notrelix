@@ -4,4 +4,5 @@ public interface IIdentityDbContext
 {
     DbSet<User> Users { get; }
     DbSet<UserSession> Sessions { get; }
+    DbSet<OAuthAccount> OAuthAccounts { get; }
 }

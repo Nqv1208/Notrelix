@@ -17,6 +17,8 @@ public static class MapAuthEndpoints
         publicGroup.MapForgotPassword();
         publicGroup.MapResetPassword();
         publicGroup.MapRefreshToken();
+        publicGroup.MapStartOAuthLogin();
+        publicGroup.MapCompleteOAuthLogin();
 
         var authGroup = app
             .MapGroup("/api/v1/auth")

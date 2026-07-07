@@ -122,6 +122,29 @@ services:
       Messaging__RabbitMQ__Port: "5672"
       Messaging__RabbitMQ__Username: ${RABBITMQ_USER:-rabbitmq}
       Messaging__RabbitMQ__Password: ${RABBITMQ_PASSWORD:-rabbitmq_local_only}
+      OAuth__FrontendSuccessUrl: ${OAUTH_FRONTEND_SUCCESS_URL:-http://localhost:3000/auth/callback}
+      OAuth__FrontendFailureUrl: ${OAUTH_FRONTEND_FAILURE_URL:-http://localhost:3000/login}
+      OAuth__Providers__Google__Enabled: ${OAUTH_GOOGLE_ENABLED:-false}
+      OAuth__Providers__Google__ClientId: ${OAUTH_GOOGLE_CLIENT_ID:-}
+      OAuth__Providers__Google__ClientSecret: ${OAUTH_GOOGLE_CLIENT_SECRET:-}
+      OAuth__Providers__Google__AuthorizationEndpoint: https://accounts.google.com/o/oauth2/v2/auth
+      OAuth__Providers__Google__TokenEndpoint: https://oauth2.googleapis.com/token
+      OAuth__Providers__Google__UserInfoEndpoint: https://openidconnect.googleapis.com/v1/userinfo
+      OAuth__Providers__Google__JwksUri: https://www.googleapis.com/oauth2/v3/certs
+      OAuth__Providers__Google__Issuer: https://accounts.google.com
+      OAuth__Providers__Google__RedirectUri: ${OAUTH_GOOGLE_REDIRECT_URI:-http://localhost:8000/api/v1/auth/oauth/google/callback}
+      OAuth__Providers__Google__Scopes__0: openid
+      OAuth__Providers__Google__Scopes__1: email
+      OAuth__Providers__Google__Scopes__2: profile
+      OAuth__Providers__GitHub__Enabled: ${OAUTH_GITHUB_ENABLED:-false}
+      OAuth__Providers__GitHub__ClientId: ${OAUTH_GITHUB_CLIENT_ID:-}
+      OAuth__Providers__GitHub__ClientSecret: ${OAUTH_GITHUB_CLIENT_SECRET:-}
+      OAuth__Providers__GitHub__AuthorizationEndpoint: https://github.com/login/oauth/authorize
+      OAuth__Providers__GitHub__TokenEndpoint: https://github.com/login/oauth/access_token
+      OAuth__Providers__GitHub__UserInfoEndpoint: https://api.github.com/user
+      OAuth__Providers__GitHub__EmailsEndpoint: https://api.github.com/user/emails
+      OAuth__Providers__GitHub__RedirectUri: ${OAUTH_GITHUB_REDIRECT_URI:-http://localhost:8000/api/v1/auth/oauth/github/callback}
+      OAuth__Providers__GitHub__Scopes__0: user:email
       DOTNET_USE_POLLING_FILE_WATCHER: "true"
       DOTNET_WATCH_RESTART_ON_RUDE_EDIT: "true"
     volumes:

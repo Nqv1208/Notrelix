@@ -44,7 +44,7 @@ public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkComm
         _tenant = tenant;
     }
 
-    public async Task<Result<CreateShareLinkResponse>> Handle(
+    public Task<Result<CreateShareLinkResponse>> Handle(
         CreateShareLinkCommand request,
         CancellationToken cancellationToken)
     {
@@ -78,7 +78,9 @@ public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkComm
             shareLink.Status == ShareLinkStatus.Active,
             shareLink.ExpiresAt);
 
-        return Result<CreateShareLinkResponse>.Success(new CreateShareLinkResponse(dto, rawToken));
+        return Task.FromResult(
+            Result<CreateShareLinkResponse>.Success(
+                new CreateShareLinkResponse(dto, rawToken)));
     }
 
 }

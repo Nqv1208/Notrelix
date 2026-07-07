@@ -1,4 +1,4 @@
-using Notrelix.Application.Common.CQRS.Scoping;
+using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.Identity.Registration.Commands.Register;

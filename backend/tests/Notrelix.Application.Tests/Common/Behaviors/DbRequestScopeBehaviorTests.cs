@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
-using Notrelix.Application.Common.CQRS.Scoping;
+using Notrelix.Application.Common.Requests.Scoping;
 
 namespace Notrelix.Application.Tests.Common.Behaviors;
 

@@ -3,12 +3,15 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardSchema.Queries.GetBoardSchema;
 
+public sealed record GetBoardSchemaCacheIdentity(Guid BoardId);
+
 public record GetBoardSchemaQuery(Guid BoardId) : IQuery<BoardSchemaDto>, IRequirePermission, IResourceScopedRequest, IAuthorizedCacheableRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
-    public string AuthorizedCacheKey => AuthorizedCacheKeyBuilder.ForWorkspaceResource("board-schema", BoardId);
-    public TimeSpan AuthorizedCacheTtl => TimeSpan.FromMinutes(5);
+    public AuthorizedCacheScope CacheScope => AuthorizedCacheScope.Workspace;
+    public object CacheIdentity => new GetBoardSchemaCacheIdentity(BoardId);
+    public TimeSpan? CacheTtl => TimeSpan.FromMinutes(5);
 }
 
 public class GetBoardSchemaQueryHandler : IRequestHandler<GetBoardSchemaQuery, BoardSchemaDto>

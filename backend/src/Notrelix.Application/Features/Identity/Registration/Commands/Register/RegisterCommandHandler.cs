@@ -12,7 +12,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
     private readonly IIdentityDbContext _identityContext;
     private readonly IAccountDbContext _accountContext;
     private readonly IPasswordHasher _passwordHasher;
-    private readonly IJwtService _jwtService;
+    private readonly IAuthSessionIssuer _sessionIssuer;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IIntegrationEventCollector _integrationEventCollector;
 
@@ -20,14 +20,14 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
         IIdentityDbContext identityContext,
         IAccountDbContext accountContext,
         IPasswordHasher passwordHasher,
-        IJwtService jwtService,
+        IAuthSessionIssuer sessionIssuer,
         IDateTimeProvider dateTimeProvider,
         IIntegrationEventCollector integrationEventCollector)
     {
         _identityContext = identityContext;
         _accountContext = accountContext;
         _passwordHasher = passwordHasher;
-        _jwtService = jwtService;
+        _sessionIssuer = sessionIssuer;
         _dateTimeProvider = dateTimeProvider;
         _integrationEventCollector = integrationEventCollector;
     }
@@ -68,13 +68,6 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
             now);
         _accountContext.AccountMembers.Add(accountMember);
 
-        var accessToken = _jwtService.GenerateAccessToken(user);
-        var refreshToken = _jwtService.GenerateRefreshToken();
-        var tokenHash = RefreshTokenHash.Create(refreshToken);
-
-        var session = UserSession.Create(user.Id, tokenHash, now.AddDays(30), now);
-        _identityContext.Sessions.Add(session);
-
         // Emit registration completed use-case integration event
         _integrationEventCollector.Add(
             new IdentityRegistrationCompletedIntegrationEventV1(
@@ -90,19 +83,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
                 CausationId: null,
                 OccurredAt: now));
 
-        return Result<AuthResult>.Success(new AuthResult
-        {
-            AccessToken = accessToken,
-            RefreshToken = refreshToken,
-            ExpiresAt = _dateTimeProvider.UtcNow.AddHours(1).DateTime,
-            User = new UserDto
-            {
-                Id = user.Id,
-                Email = user.Email.Value,
-                Name = user.Name,
-                AvatarUrl = user.AvatarUrl
-            },
-            WorkspaceProvisioning = "pending"
-        });
+        var authResult = await _sessionIssuer.IssueAsync(user, now, cancellationToken);
+        return Result<AuthResult>.Success(authResult with { WorkspaceProvisioning = "pending" });
     }
 }

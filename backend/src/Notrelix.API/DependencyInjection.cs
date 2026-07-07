@@ -34,6 +34,9 @@ public static class DependencyInjection
         services.Configure<SecurityHeaderOptions>(
             configuration.GetSection(SecurityHeaderOptions.SectionName));
 
+        services.Configure<OAuthRedirectOptions>(
+            configuration.GetSection("OAuth"));
+
         return services;
     }
 
