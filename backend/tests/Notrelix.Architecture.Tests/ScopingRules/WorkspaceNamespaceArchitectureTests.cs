@@ -36,6 +36,23 @@ public class WorkspaceNamespaceArchitectureTests
             .ToArray();
     }
 
+    private static string[] GetQueryFiles(string featurePath)
+    {
+        var appPath = GetApplicationPath();
+        var fullPath = Path.Combine(appPath, featurePath);
+        if (!Directory.Exists(fullPath))
+            return [];
+
+        return Directory.GetFiles(fullPath, "*.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                     && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}")
+                     && f.Contains($"{Path.DirectorySeparatorChar}Queries{Path.DirectorySeparatorChar}")
+                     && !f.EndsWith("Handler.cs")
+                     && !f.EndsWith("Validator.cs")
+                     && !f.EndsWith("Result.cs"))
+            .ToArray();
+    }
+
     private static string RemoveComments(string input)
     {
         var blockComments = @"/\*(.*?)\*/";
@@ -55,19 +72,19 @@ public class WorkspaceNamespaceArchitectureTests
                 continue;
 
             var declaration = trimmed;
-            var parenDepth = trimmed.Count(c => c == '(') - trimmed.Count(c => c == ')');
 
-            if (parenDepth != 0 || (!trimmed.Contains(';') && !trimmed.Contains('{') && !trimmed.Contains(':')))
+            if (trimmed.Contains(';') || trimmed.Contains('{'))
+                return declaration;
+
+            for (var j = i + 1; j < lines.Length; j++)
             {
-                for (var j = i + 1; j < lines.Length && parenDepth >= 0; j++)
-                {
-                    var nextLine = lines[j].Trim();
-                    declaration += " " + nextLine;
-                    parenDepth += nextLine.Count(c => c == '(') - nextLine.Count(c => c == ')');
-                    if (parenDepth <= 0 && (nextLine.Contains(';') || nextLine.Contains('{') || nextLine.Contains(':')))
-                        break;
-                }
+                var nextLine = lines[j].Trim();
+                declaration += " " + nextLine;
+
+                if (nextLine.Contains(';') || nextLine.Contains('{'))
+                    break;
             }
+
             return declaration;
         }
         return string.Empty;
@@ -83,280 +100,68 @@ public class WorkspaceNamespaceArchitectureTests
 
     private static readonly Dictionary<string, AllowlistEntry> WorkManagementMissingWorkspaceRequest = new()
     {
-        ["CreateBoardFieldCommand"] = new("CreateBoardFieldCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["UpdateBoardFieldCommand"] = new("UpdateBoardFieldCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["ReorderBoardFieldsCommand"] = new("ReorderBoardFieldsCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["DeleteBoardFieldCommand"] = new("DeleteBoardFieldCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
         ["CreateBoardItemLinkCommand"] = new("CreateBoardItemLinkCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
+            "ItemLinks command — has neither IWorkspaceRequest nor IResourceScopedRequest", "Add IResourceScopedRequest"),
         ["DeleteBoardItemLinkCommand"] = new("DeleteBoardItemLinkCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["AddLabelToBoardItemCommand"] = new("AddLabelToBoardItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["RemoveLabelFromBoardItemCommand"] = new("RemoveLabelFromBoardItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["DeleteLabelCommand"] = new("DeleteLabelCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["UpdateLabelCommand"] = new("UpdateLabelCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["CreateLabelCommand"] = new("CreateLabelCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["RemoveBoardMemberCommand"] = new("RemoveBoardMemberCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["AddBoardMemberCommand"] = new("AddBoardMemberCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["ArchiveBoardCommand"] = new("ArchiveBoardCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["UnarchiveBoardCommand"] = new("UnarchiveBoardCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
+            "ItemLinks command — has neither IWorkspaceRequest nor IResourceScopedRequest", "Add IResourceScopedRequest"),
         ["CreateBoardBySlugCommand"] = new("CreateBoardBySlugCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["UpdateBoardItemFieldValuesCommand"] = new("UpdateBoardItemFieldValuesCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["UnassignBoardItemMemberCommand"] = new("UnassignBoardItemMemberCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
+            "Board command — has neither IWorkspaceRequest nor IResourceScopedRequest", "Add IResourceScopedRequest"),
         ["SetBoardItemDueDateCommand"] = new("SetBoardItemDueDateCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
+            "BoardItem command — has neither IWorkspaceRequest nor IResourceScopedRequest", "Add IResourceScopedRequest"),
         ["UpdateBoardItemStatusCommand"] = new("UpdateBoardItemStatusCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["LinkPageToBoardItemCommand"] = new("LinkPageToBoardItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["ArchiveBoardItemCommand"] = new("ArchiveBoardItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["UnlinkPageFromBoardItemCommand"] = new("UnlinkPageFromBoardItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["UpdateBoardItemCommand"] = new("UpdateBoardItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["DuplicateBoardItemCommand"] = new("DuplicateBoardItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["ArchiveBoardGroupCommand"] = new("ArchiveBoardGroupCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["CreateBoardGroupCommand"] = new("CreateBoardGroupCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["UpdateBoardGroupCommand"] = new("UpdateBoardGroupCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["ReorderBoardGroupsCommand"] = new("ReorderBoardGroupsCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["DuplicateBoardGroupCommand"] = new("DuplicateBoardGroupCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["UnarchiveBoardGroupCommand"] = new("UnarchiveBoardGroupCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["CreateChecklistCommand"] = new("CreateChecklistCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["UpdateChecklistCommand"] = new("UpdateChecklistCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["DeleteChecklistCommand"] = new("DeleteChecklistCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["CreateChecklistItemCommand"] = new("CreateChecklistItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["UpdateChecklistItemCommand"] = new("UpdateChecklistItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["ToggleChecklistItemCommand"] = new("ToggleChecklistItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["DeleteChecklistItemCommand"] = new("DeleteChecklistItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["DeleteBoardViewCommand"] = new("DeleteBoardViewCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing workspace marker", "Add IWorkspaceRequest"),
-        ["CreateBoardViewCommand"] = new("CreateBoardViewCommand", AllowlistClassification.MigrationPending,
-            "Uses IResourceScopedRequest (new pattern) instead of IWorkspaceRequest", "Migrated to IResourceScopedRequest"),
-        ["SaveBoardViewCommand"] = new("SaveBoardViewCommand", AllowlistClassification.MigrationPending,
-            "Uses IResourceScopedRequest (new pattern) instead of IWorkspaceRequest", "Migrated to IResourceScopedRequest"),
-        ["UpdateBoardViewConfigCommand"] = new("UpdateBoardViewConfigCommand", AllowlistClassification.MigrationPending,
-            "Uses IResourceScopedRequest (new pattern) instead of IWorkspaceRequest", "Migrated to IResourceScopedRequest"),
-        ["UpdateBoardItemFieldValueCommand"] = new("UpdateBoardItemFieldValueCommand", AllowlistClassification.MigrationPending,
-            "Uses IResourceScopedRequest (new pattern) instead of IWorkspaceRequest", "Migrated to IResourceScopedRequest"),
-        ["CreateBoardItemCommand"] = new("CreateBoardItemCommand", AllowlistClassification.MigrationPending,
-            "Uses IResourceScopedRequest (new pattern) instead of IWorkspaceRequest", "Migrated to IResourceScopedRequest"),
-        ["MoveBoardItemCommand"] = new("MoveBoardItemCommand", AllowlistClassification.MigrationPending,
-            "Uses IResourceScopedRequest (new pattern) instead of IWorkspaceRequest", "Migrated to IResourceScopedRequest"),
-        ["AssignBoardItemMemberCommand"] = new("AssignBoardItemMemberCommand", AllowlistClassification.MigrationPending,
-            "Uses IResourceScopedRequest (new pattern) instead of IWorkspaceRequest", "Migrated to IResourceScopedRequest"),
-        ["UpdateBoardCommand"] = new("UpdateBoardCommand", AllowlistClassification.MigrationPending,
-            "Uses IResourceScopedRequest (new pattern) instead of IWorkspaceRequest", "Migrated to IResourceScopedRequest"),
+            "BoardItem command — has neither IWorkspaceRequest nor IResourceScopedRequest", "Add IResourceScopedRequest"),
     };
 
     private static readonly Dictionary<string, AllowlistEntry> DocumentsMissingWorkspaceRequest = new()
     {
-        ["DeletePageCommand"] = new("DeletePageCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing workspace marker", "Add IWorkspaceRequest"),
         ["PublishPageCommand"] = new("PublishPageCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing workspace marker", "Add IWorkspaceRequest"),
+            "Page command — has neither IWorkspaceRequest nor IResourceScopedRequest", "Add IResourceScopedRequest"),
         ["ArchivePageCommand"] = new("ArchivePageCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing workspace marker", "Add IWorkspaceRequest"),
-        ["UpdatePageCommand"] = new("UpdatePageCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing workspace marker", "Add IWorkspaceRequest"),
+            "Page command — has neither IWorkspaceRequest nor IResourceScopedRequest", "Add IResourceScopedRequest"),
         ["CreatePageCommand"] = new("CreatePageCommand", AllowlistClassification.LegacyGap,
-            "Documents command has WorkspaceId param but does not implement IWorkspaceRequest", "Add IWorkspaceRequest"),
+            "Page command — has neither IWorkspaceRequest nor IResourceScopedRequest", "Add IResourceScopedRequest"),
         ["SetPageDeadlineCommand"] = new("SetPageDeadlineCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing workspace marker", "Add IWorkspaceRequest"),
+            "Page command — has neither IWorkspaceRequest nor IResourceScopedRequest", "Add IResourceScopedRequest"),
         ["MovePageCommand"] = new("MovePageCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing workspace marker", "Add IWorkspaceRequest"),
-        ["UpdateBlockCommand"] = new("UpdateBlockCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing workspace marker", "Add IWorkspaceRequest"),
-        ["BatchUpdateBlocksCommand"] = new("BatchUpdateBlocksCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing workspace marker", "Add IWorkspaceRequest"),
-        ["ReorderBlocksCommand"] = new("ReorderBlocksCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing workspace marker", "Add IWorkspaceRequest"),
-        ["CreateBlockCommand"] = new("CreateBlockCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing workspace marker", "Add IWorkspaceRequest"),
-        ["DeleteBlockCommand"] = new("DeleteBlockCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing workspace marker", "Add IWorkspaceRequest"),
+            "Page command — has neither IWorkspaceRequest nor IResourceScopedRequest", "Add IResourceScopedRequest"),
     };
 
     private static readonly Dictionary<string, AllowlistEntry> CollaborationMissingWorkspaceRequest = new()
     {
-        ["CreateBoardItemAttachmentCommand"] = new("CreateBoardItemAttachmentCommand", AllowlistClassification.LegacyGap,
-            "Collaboration command missing workspace marker", "Add IWorkspaceRequest"),
-        ["MarkAllNotificationsAsReadCommand"] = new("MarkAllNotificationsAsReadCommand", AllowlistClassification.LegacyGap,
-            "Collaboration command missing workspace marker", "Add IWorkspaceRequest"),
-        ["MarkNotificationAsReadCommand"] = new("MarkNotificationAsReadCommand", AllowlistClassification.LegacyGap,
-            "Collaboration command missing workspace marker", "Add IWorkspaceRequest"),
-        ["DeleteCommentCommand"] = new("DeleteCommentCommand", AllowlistClassification.LegacyGap,
-            "Collaboration command missing workspace marker", "Add IWorkspaceRequest"),
-        ["UpdateCommentCommand"] = new("UpdateCommentCommand", AllowlistClassification.LegacyGap,
-            "Collaboration command missing workspace marker", "Add IWorkspaceRequest"),
-        ["CreateCommentCommand"] = new("CreateCommentCommand", AllowlistClassification.LegacyGap,
-            "Collaboration command missing workspace marker", "Add IWorkspaceRequest"),
-        ["ResolveCommentCommand"] = new("ResolveCommentCommand", AllowlistClassification.LegacyGap,
-            "Collaboration command missing workspace marker", "Add IWorkspaceRequest"),
-        ["DeleteAttachmentCommand"] = new("DeleteAttachmentCommand", AllowlistClassification.LegacyGap,
-            "Collaboration command missing workspace marker", "Add IWorkspaceRequest"),
     };
 
     // --- Allowlists for commands missing IRequirePermission ---
 
     private static readonly Dictionary<string, AllowlistEntry> WorkManagementMissingPermission = new()
     {
-        ["CreateBoardFieldCommand"] = new("CreateBoardFieldCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["UpdateBoardFieldCommand"] = new("UpdateBoardFieldCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["ReorderBoardFieldsCommand"] = new("ReorderBoardFieldsCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["DeleteBoardFieldCommand"] = new("DeleteBoardFieldCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
         ["CreateBoardItemLinkCommand"] = new("CreateBoardItemLinkCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
+            "ItemLinks command — missing IRequirePermission", "Add IRequirePermission"),
         ["DeleteBoardItemLinkCommand"] = new("DeleteBoardItemLinkCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["AddLabelToBoardItemCommand"] = new("AddLabelToBoardItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["RemoveLabelFromBoardItemCommand"] = new("RemoveLabelFromBoardItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["DeleteLabelCommand"] = new("DeleteLabelCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["UpdateLabelCommand"] = new("UpdateLabelCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["CreateLabelCommand"] = new("CreateLabelCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["RemoveBoardMemberCommand"] = new("RemoveBoardMemberCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["AddBoardMemberCommand"] = new("AddBoardMemberCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["ArchiveBoardCommand"] = new("ArchiveBoardCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["UnarchiveBoardCommand"] = new("UnarchiveBoardCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
+            "ItemLinks command — missing IRequirePermission", "Add IRequirePermission"),
         ["CreateBoardBySlugCommand"] = new("CreateBoardBySlugCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["UpdateBoardItemFieldValuesCommand"] = new("UpdateBoardItemFieldValuesCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["UnassignBoardItemMemberCommand"] = new("UnassignBoardItemMemberCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
+            "Board command — missing IRequirePermission", "Add IRequirePermission"),
         ["SetBoardItemDueDateCommand"] = new("SetBoardItemDueDateCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
+            "BoardItem command — missing IRequirePermission", "Add IRequirePermission"),
         ["UpdateBoardItemStatusCommand"] = new("UpdateBoardItemStatusCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["LinkPageToBoardItemCommand"] = new("LinkPageToBoardItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["ArchiveBoardItemCommand"] = new("ArchiveBoardItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["UnlinkPageFromBoardItemCommand"] = new("UnlinkPageFromBoardItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["UpdateBoardItemCommand"] = new("UpdateBoardItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["DuplicateBoardItemCommand"] = new("DuplicateBoardItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["ArchiveBoardGroupCommand"] = new("ArchiveBoardGroupCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["CreateBoardGroupCommand"] = new("CreateBoardGroupCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["UpdateBoardGroupCommand"] = new("UpdateBoardGroupCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["ReorderBoardGroupsCommand"] = new("ReorderBoardGroupsCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["DuplicateBoardGroupCommand"] = new("DuplicateBoardGroupCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["UnarchiveBoardGroupCommand"] = new("UnarchiveBoardGroupCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["CreateChecklistCommand"] = new("CreateChecklistCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["UpdateChecklistCommand"] = new("UpdateChecklistCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["DeleteChecklistCommand"] = new("DeleteChecklistCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["CreateChecklistItemCommand"] = new("CreateChecklistItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["UpdateChecklistItemCommand"] = new("UpdateChecklistItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["ToggleChecklistItemCommand"] = new("ToggleChecklistItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["DeleteChecklistItemCommand"] = new("DeleteChecklistItemCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
-        ["DeleteBoardViewCommand"] = new("DeleteBoardViewCommand", AllowlistClassification.LegacyGap,
-            "WorkManagement command missing permission marker", "Add IRequirePermission"),
+            "BoardItem command — missing IRequirePermission", "Add IRequirePermission"),
     };
 
     private static readonly Dictionary<string, AllowlistEntry> DocumentsMissingPermission = new()
     {
-        ["DeletePageCommand"] = new("DeletePageCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing permission marker", "Add IRequirePermission"),
         ["PublishPageCommand"] = new("PublishPageCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing permission marker", "Add IRequirePermission"),
+            "Page command — missing IRequirePermission", "Add IRequirePermission"),
         ["ArchivePageCommand"] = new("ArchivePageCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing permission marker", "Add IRequirePermission"),
-        ["UpdatePageCommand"] = new("UpdatePageCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing permission marker", "Add IRequirePermission"),
+            "Page command — missing IRequirePermission", "Add IRequirePermission"),
         ["CreatePageCommand"] = new("CreatePageCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing permission marker", "Add IRequirePermission"),
+            "Page command — missing IRequirePermission", "Add IRequirePermission"),
         ["SetPageDeadlineCommand"] = new("SetPageDeadlineCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing permission marker", "Add IRequirePermission"),
+            "Page command — missing IRequirePermission", "Add IRequirePermission"),
         ["MovePageCommand"] = new("MovePageCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing permission marker", "Add IRequirePermission"),
-        ["UpdateBlockCommand"] = new("UpdateBlockCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing permission marker", "Add IRequirePermission"),
-        ["BatchUpdateBlocksCommand"] = new("BatchUpdateBlocksCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing permission marker", "Add IRequirePermission"),
-        ["ReorderBlocksCommand"] = new("ReorderBlocksCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing permission marker", "Add IRequirePermission"),
-        ["CreateBlockCommand"] = new("CreateBlockCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing permission marker", "Add IRequirePermission"),
-        ["DeleteBlockCommand"] = new("DeleteBlockCommand", AllowlistClassification.LegacyGap,
-            "Documents command missing permission marker", "Add IRequirePermission"),
+            "Page command — missing IRequirePermission", "Add IRequirePermission"),
     };
 
     private static readonly Dictionary<string, AllowlistEntry> CollaborationMissingPermission = new()
     {
-        ["CreateBoardItemAttachmentCommand"] = new("CreateBoardItemAttachmentCommand", AllowlistClassification.LegacyGap,
-            "Collaboration command missing permission marker", "Add IRequirePermission"),
-        ["MarkAllNotificationsAsReadCommand"] = new("MarkAllNotificationsAsReadCommand", AllowlistClassification.LegacyGap,
-            "Collaboration command missing permission marker", "Add IRequirePermission"),
-        ["MarkNotificationAsReadCommand"] = new("MarkNotificationAsReadCommand", AllowlistClassification.LegacyGap,
-            "Collaboration command missing permission marker", "Add IRequirePermission"),
-        ["DeleteCommentCommand"] = new("DeleteCommentCommand", AllowlistClassification.LegacyGap,
-            "Collaboration command missing permission marker", "Add IRequirePermission"),
-        ["UpdateCommentCommand"] = new("UpdateCommentCommand", AllowlistClassification.LegacyGap,
-            "Collaboration command missing permission marker", "Add IRequirePermission"),
-        ["CreateCommentCommand"] = new("CreateCommentCommand", AllowlistClassification.LegacyGap,
-            "Collaboration command missing permission marker", "Add IRequirePermission"),
-        ["ResolveCommentCommand"] = new("ResolveCommentCommand", AllowlistClassification.LegacyGap,
-            "Collaboration command missing permission marker", "Add IRequirePermission"),
-        ["DeleteAttachmentCommand"] = new("DeleteAttachmentCommand", AllowlistClassification.LegacyGap,
-            "Collaboration command missing permission marker", "Add IRequirePermission"),
     };
 
     // --- Validation tests ---
@@ -408,7 +213,7 @@ public class WorkspaceNamespaceArchitectureTests
             var name = ExtractRecordName(declaration);
             if (name.EndsWith("Dto") || name.EndsWith("Response")) continue;
 
-            if (!declaration.Contains("IWorkspaceRequest"))
+            if (!declaration.Contains("IWorkspaceRequest") && !declaration.Contains("IResourceScopedRequest"))
             {
                 if (!WorkManagementMissingWorkspaceRequest.ContainsKey(name))
                     violations.Add($"{name}: {Path.GetFileName(file)}");
@@ -416,8 +221,8 @@ public class WorkspaceNamespaceArchitectureTests
         }
 
         violations.Should().BeEmpty(
-            $"WorkManagement commands must implement IWorkspaceRequest. " +
-            $"Fix by adding to WorkManagementMissingWorkspaceRequest with classification, or add IWorkspaceRequest. " +
+            $"WorkManagement commands must implement IWorkspaceRequest or IResourceScopedRequest. " +
+            $"Fix by adding to WorkManagementMissingWorkspaceRequest with classification, or add IWorkspaceRequest/IResourceScopedRequest. " +
             $"Violations: {string.Join(", ", violations)}");
     }
 
@@ -436,7 +241,7 @@ public class WorkspaceNamespaceArchitectureTests
             var name = ExtractRecordName(declaration);
             if (name.EndsWith("Dto") || name.EndsWith("Response")) continue;
 
-            if (!declaration.Contains("IWorkspaceRequest"))
+            if (!declaration.Contains("IWorkspaceRequest") && !declaration.Contains("IResourceScopedRequest"))
             {
                 if (!DocumentsMissingWorkspaceRequest.ContainsKey(name))
                     violations.Add($"{name}: {Path.GetFileName(file)}");
@@ -444,8 +249,8 @@ public class WorkspaceNamespaceArchitectureTests
         }
 
         violations.Should().BeEmpty(
-            $"Documents commands must implement IWorkspaceRequest. " +
-            $"Fix by adding to DocumentsMissingWorkspaceRequest with classification, or add IWorkspaceRequest. " +
+            $"Documents commands must implement IWorkspaceRequest or IResourceScopedRequest. " +
+            $"Fix by adding to DocumentsMissingWorkspaceRequest with classification, or add IWorkspaceRequest/IResourceScopedRequest. " +
             $"Violations: {string.Join(", ", violations)}");
     }
 
@@ -464,7 +269,7 @@ public class WorkspaceNamespaceArchitectureTests
             var name = ExtractRecordName(declaration);
             if (name.EndsWith("Dto") || name.EndsWith("Response")) continue;
 
-            if (!declaration.Contains("IWorkspaceRequest"))
+            if (!declaration.Contains("IWorkspaceRequest") && !declaration.Contains("IResourceScopedRequest"))
             {
                 if (!CollaborationMissingWorkspaceRequest.ContainsKey(name))
                     violations.Add($"{name}: {Path.GetFileName(file)}");
@@ -472,8 +277,8 @@ public class WorkspaceNamespaceArchitectureTests
         }
 
         violations.Should().BeEmpty(
-            $"Collaboration commands must implement IWorkspaceRequest. " +
-            $"Fix by adding to CollaborationMissingWorkspaceRequest with classification, or add IWorkspaceRequest. " +
+            $"Collaboration commands must implement IWorkspaceRequest or IResourceScopedRequest. " +
+            $"Fix by adding to CollaborationMissingWorkspaceRequest with classification, or add IWorkspaceRequest/IResourceScopedRequest. " +
             $"Violations: {string.Join(", ", violations)}");
     }
 
@@ -562,7 +367,7 @@ public class WorkspaceNamespaceArchitectureTests
     }
 
     [Fact]
-    public void CommandsImplementingIWorkspaceRequest_ShouldAlsoImplement_IRequirePermission()
+    public void CommandsImplementingWorkspaceRequest_ShouldAlsoImplement_IRequirePermission()
     {
         var featurePaths = new[] { "Features/WorkManagement", "Features/Documents", "Features/Collaboration" };
         var violations = new List<string>();
@@ -579,15 +384,47 @@ public class WorkspaceNamespaceArchitectureTests
                 var name = ExtractRecordName(declaration);
                 if (name.EndsWith("Dto") || name.EndsWith("Response")) continue;
 
-                if (declaration.Contains("IWorkspaceRequest") && !declaration.Contains("IRequirePermission"))
+                var hasWorkspaceMarker = declaration.Contains("IWorkspaceRequest") || declaration.Contains("IResourceScopedRequest");
+                if (hasWorkspaceMarker && !declaration.Contains("IRequirePermission"))
                 {
-                    violations.Add($"{name}: {Path.GetFileName(file)} implements IWorkspaceRequest but not IRequirePermission");
+                    violations.Add($"{name}: {Path.GetFileName(file)} implements IWorkspaceRequest/IResourceScopedRequest but not IRequirePermission");
                 }
             }
         }
 
         violations.Should().BeEmpty(
-            $"Commands implementing IWorkspaceRequest must also implement IRequirePermission. " +
+            $"Commands implementing IWorkspaceRequest or IResourceScopedRequest must also implement IRequirePermission. " +
+            $"Violations: {string.Join(", ", violations)}");
+    }
+
+    [Fact]
+    public void QueriesImplementingWorkspaceRequest_ShouldAlsoImplement_IRequirePermission()
+    {
+        var featurePaths = new[] { "Features/WorkManagement", "Features/Documents", "Features/Collaboration" };
+        var violations = new List<string>();
+
+        foreach (var featurePath in featurePaths)
+        {
+            var files = GetQueryFiles(featurePath);
+            foreach (var file in files)
+            {
+                var content = RemoveComments(File.ReadAllText(file));
+                var declaration = ReadDeclaration(content);
+                if (string.IsNullOrEmpty(declaration)) continue;
+
+                var name = ExtractRecordName(declaration);
+                if (name.EndsWith("Dto") || name.EndsWith("Response")) continue;
+
+                var hasWorkspaceMarker = declaration.Contains("IWorkspaceRequest") || declaration.Contains("IResourceScopedRequest");
+                if (hasWorkspaceMarker && !declaration.Contains("IRequirePermission"))
+                {
+                    violations.Add($"{name}: {Path.GetFileName(file)} implements IWorkspaceRequest/IResourceScopedRequest but not IRequirePermission");
+                }
+            }
+        }
+
+        violations.Should().BeEmpty(
+            $"Queries implementing IWorkspaceRequest or IResourceScopedRequest must also implement IRequirePermission. " +
             $"Violations: {string.Join(", ", violations)}");
     }
 }

@@ -2,15 +2,19 @@ using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
+using Notrelix.Application.Common.CQRS.Caching;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoard;
+
+public sealed record GetBoardCacheIdentity(Guid BoardId);
 
 public record GetBoardQuery(Guid BoardId) : IQuery<Result<BoardDto>>, IRequirePermission, IResourceScopedRequest, IRlsReadRequest, IAuthorizedCacheableRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
-    public string AuthorizedCacheKey => AuthorizedCacheKeyBuilder.ForWorkspaceResource("board", BoardId);
-    public TimeSpan AuthorizedCacheTtl => TimeSpan.FromMinutes(5);
+    public AuthorizedCacheScope CacheScope => AuthorizedCacheScope.Workspace;
+    public object CacheIdentity => new GetBoardCacheIdentity(BoardId);
+    public TimeSpan? CacheTtl => TimeSpan.FromMinutes(5);
 }
 
 public class GetBoardQueryHandler : IRequestHandler<GetBoardQuery, Result<BoardDto>>

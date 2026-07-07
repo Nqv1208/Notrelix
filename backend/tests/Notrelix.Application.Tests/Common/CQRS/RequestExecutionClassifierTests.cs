@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.CQRS.Caching;
 using Notrelix.Application.Common.CQRS.Execution;
 using Notrelix.Application.Common.CQRS.Scoping;
 using Notrelix.Application.Features.Identity.Registration.Commands.Register;
@@ -21,7 +22,7 @@ public class RequestExecutionClassifierTests
 
     private sealed record PublicCacheGlobalRequest : IRequest<string>, IPublicCacheableQuery<string>, IGlobalRequest
     {
-        public string CacheKey => "test";
+        public object CacheIdentity => "test";
         public TimeSpan? Ttl => null;
     }
 
@@ -57,8 +58,9 @@ public class RequestExecutionClassifierTests
     private sealed record AuthorizedCacheRequest : IRequest<string>, IAuthorizedCacheableRequest, IWorkspaceRequest
     {
         public Guid WorkspaceId => Guid.NewGuid();
-        public string AuthorizedCacheKey => "test";
-        public TimeSpan AuthorizedCacheTtl => TimeSpan.FromMinutes(5);
+        public AuthorizedCacheScope CacheScope => AuthorizedCacheScope.Workspace;
+        public object CacheIdentity => "test";
+        public TimeSpan? CacheTtl => TimeSpan.FromMinutes(5);
     }
 
     // --- Tests ---

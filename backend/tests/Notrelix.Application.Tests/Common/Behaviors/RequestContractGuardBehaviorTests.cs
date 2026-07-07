@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.CQRS.Caching;
 using Notrelix.Application.Common.CQRS.Scoping;
 
 namespace Notrelix.Application.Tests.Common.Behaviors;
@@ -31,21 +32,23 @@ public class RequestContractGuardBehaviorTests
     private sealed record AnonymousResourceRequest : IRequest<string>, IAnonymousRequest, IResourceScopedRequest
     {
         public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
+        UseCaseSecurityKind IUseCaseSecurityRequirement.SecurityKind => UseCaseSecurityKind.Anonymous;
     }
 
     private sealed record PublicCacheWorkspaceRequest : IRequest<string>, IPublicCacheableQuery<string>, IWorkspaceRequest
     {
         public Guid WorkspaceId => Guid.NewGuid();
-        public string CacheKey => "test";
+        public object CacheIdentity => "test";
         public TimeSpan? Ttl => null;
     }
 
     private sealed record PublicCacheAuthorizedCacheRequest : IRequest<string>, IPublicCacheableQuery<string>, IAuthorizedCacheableRequest
     {
-        public string CacheKey => "test-public";
+        public object CacheIdentity => "test-public";
         public TimeSpan? Ttl => null;
-        public string AuthorizedCacheKey => "test-authorized";
-        public TimeSpan AuthorizedCacheTtl => TimeSpan.FromMinutes(5);
+        public AuthorizedCacheScope CacheScope => AuthorizedCacheScope.Workspace;
+        object IAuthorizedCacheableRequest.CacheIdentity => "test-authorized";
+        TimeSpan? IAuthorizedCacheableRequest.CacheTtl => TimeSpan.FromMinutes(5);
     }
 
     private sealed record ValidAnonymousGlobalRequest : IRequest<string>, IAnonymousRequest, IGlobalRequest;

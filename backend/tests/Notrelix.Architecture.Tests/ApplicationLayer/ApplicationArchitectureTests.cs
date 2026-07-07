@@ -63,6 +63,8 @@ public class ApplicationArchitectureTests
             "SendWelcomeEmailResult.cs",
             "AcceptInvitation.cs",
             "ReorderBlocks.cs",
+            "GetBoard.cs",
+            "GetBoardSchemaQuery.cs",
         };
 
         var violations = new List<string>();
@@ -652,7 +654,33 @@ public class ApplicationArchitectureTests
     }
 
     [Fact]
-    public void AuthorizedCacheableRequests_Must_Use_AuthorizedCacheKeyBuilder()
+    public void PublicCacheableQueries_ShouldNotBeTenantOrPermissionScoped()
+    {
+        var files = GetApplicationFeatureFiles();
+        var violations = new List<string>();
+
+        foreach (var file in files)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            if (!content.Contains("IPublicCacheableQuery")) continue;
+
+            if (content.Contains("IWorkspaceRequest")
+                || content.Contains("IAccountRequest")
+                || content.Contains("IResourceScopedRequest")
+                || content.Contains("IRequirePermission")
+                || content.Contains("ISystemInternalRequest"))
+            {
+                violations.Add(Path.GetFileName(file));
+            }
+        }
+
+        violations.Should().BeEmpty(
+            "Public cacheable queries must not be tenant or permission scoped: " +
+            string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void AuthorizedCacheableRequests_ShouldNotExposeRawCacheKeyProperty()
     {
         var files = GetApplicationFeatureFiles();
         var violations = new List<string>();
@@ -661,14 +689,139 @@ public class ApplicationArchitectureTests
         {
             var content = RemoveComments(File.ReadAllText(file));
             if (!content.Contains("IAuthorizedCacheableRequest")) continue;
-            if (content.Contains("AuthorizedCacheKeyBuilder.")) continue;
 
-            violations.Add(Path.GetFileName(file));
+            if (content.Contains("string AuthorizedCacheKey") || content.Contains("string CacheKey"))
+                violations.Add(Path.GetFileName(file));
         }
 
         violations.Should().BeEmpty(
-            "All classes implementing IAuthorizedCacheableRequest must use AuthorizedCacheKeyBuilder to build cache keys. " +
-            "Violations: " + string.Join(", ", violations));
+            "Authorized cacheable requests must not expose raw cache key properties: " +
+            string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void AuthorizedCacheableRequests_ShouldDeclareCacheIdentity()
+    {
+        var files = GetApplicationFeatureFiles();
+        var violations = new List<string>();
+
+        foreach (var file in files)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            if (!content.Contains("IAuthorizedCacheableRequest")) continue;
+
+            if (!content.Contains("CacheIdentity"))
+                violations.Add(Path.GetFileName(file));
+        }
+
+        violations.Should().BeEmpty(
+            "All authorized cacheable requests must declare CacheIdentity: " +
+            string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void WorkspaceAuthorizedCacheRequests_ShouldImplementWorkspaceOrResourceScope()
+    {
+        var files = GetApplicationFeatureFiles();
+        var violations = new List<string>();
+
+        foreach (var file in files)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            if (!content.Contains("IAuthorizedCacheableRequest")) continue;
+            if (!content.Contains("CacheScope.Workspace") && !content.Contains("CacheScope.User"))
+                continue;
+
+            if (!content.Contains("IWorkspaceRequest") && !content.Contains("IResourceScopedRequest"))
+                violations.Add(Path.GetFileName(file));
+        }
+
+        violations.Should().BeEmpty(
+            "Workspace/User cache scope requests must also implement IWorkspaceRequest or IResourceScopedRequest: " +
+            string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void PermissionedCacheScope_ShouldBeDisallowed()
+    {
+        var files = GetApplicationFeatureFiles();
+        var violations = new List<string>();
+
+        foreach (var file in files)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            if (content.Contains("CacheScope.Permissioned") || content.Contains("AuthorizedCacheScope.Permissioned"))
+                violations.Add(Path.GetFileName(file));
+        }
+
+        violations.Should().BeEmpty(
+            "Permissioned cache scope must not be used before IPermissionVersionProvider exists: " +
+            string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void QueryTypes_ShouldNotReference_AuthorizedCacheKeyBuilder()
+    {
+        var files = GetApplicationFeatureFiles();
+        var violations = new List<string>();
+
+        foreach (var file in files)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            if (content.Contains("AuthorizedCacheKeyBuilder"))
+                violations.Add(Path.GetFileName(file));
+        }
+
+        violations.Should().BeEmpty(
+            "No files should reference deleted AuthorizedCacheKeyBuilder: " +
+            string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void QueryTypes_ShouldNotConstructCacheKeyStrings()
+    {
+        var files = GetApplicationFeatureFiles();
+        var violations = new List<string>();
+
+        foreach (var file in files)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            if (!content.Contains("IAuthorizedCacheableRequest") && !content.Contains("IPublicCacheableQuery"))
+                continue;
+
+            if (content.Contains("CacheKey =>") || content.Contains("AuthorizedCacheKey =>")
+                || content.Contains("=> $\"") || content.Contains("=> string."))
+                violations.Add(Path.GetFileName(file));
+        }
+
+        violations.Should().BeEmpty(
+            "Cacheable queries must not construct raw cache key strings: " +
+            string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void CacheBehaviors_ShouldUse_CacheKeyFactory()
+    {
+        var behaviorsPath = Path.Combine(GetApplicationPath(), "Common", "Behaviors");
+        var cacheBehaviors = new[] { "AuthorizedCacheBehavior.cs", "PublicCacheBehavior.cs" };
+
+        var violations = new List<string>();
+        foreach (var behavior in cacheBehaviors)
+        {
+            var fullPath = Path.Combine(behaviorsPath, behavior);
+            if (!File.Exists(fullPath))
+            {
+                violations.Add($"{behavior} (not found)");
+                continue;
+            }
+
+            var content = RemoveComments(File.ReadAllText(fullPath));
+            if (!content.Contains("CacheKeyFactory"))
+                violations.Add($"{behavior} (missing CacheKeyFactory dependency)");
+        }
+
+        violations.Should().BeEmpty(
+            "Cache behaviors must use CacheKeyFactory: " + string.Join(", ", violations));
     }
 
     private static string RemoveComments(string input)

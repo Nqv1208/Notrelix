@@ -2,22 +2,22 @@ using Notrelix.Application.Common.CQRS.Execution;
 
 namespace Notrelix.Application.Common.Behaviors;
 
-/// <summary>
-/// Public/shared cache behavior. Runs BEFORE DB/RLS scope (outer zone).
-/// For IPublicCacheableQuery requests: check Redis cache first, store result on cache miss.
-/// This is for PUBLIC data only. Private/user-scoped cache uses AuthorizedCacheBehavior.
-/// </summary>
 public class PublicCacheBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
+    private static readonly TimeSpan DefaultTtl = TimeSpan.FromMinutes(5);
+
     private readonly IRedisCacheService _cache;
+    private readonly CacheKeyFactory _keyFactory;
     private readonly ILogger<PublicCacheBehavior<TRequest, TResponse>> _logger;
 
     public PublicCacheBehavior(
         IRedisCacheService cache,
+        CacheKeyFactory keyFactory,
         ILogger<PublicCacheBehavior<TRequest, TResponse>> logger)
     {
         _cache = cache;
+        _keyFactory = keyFactory;
         _logger = logger;
     }
 
@@ -29,9 +29,6 @@ public class PublicCacheBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         if (request is not IPublicCacheableQuery<TResponse> cacheable)
             return await next();
 
-        // Defense-in-depth: ensure public cache is never used for tenant-scoped data.
-        // RequestContractGuardBehavior (runs earlier) also guards this, but this check
-        // protects against pipeline order changes or new behaviors added before the guard.
         var profile = RequestExecutionClassifier.Classify(request);
         if (profile.IsTenantScoped)
         {
@@ -40,8 +37,10 @@ public class PublicCacheBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
                 "Use AuthorizedCacheBehavior for private/tenant-scoped cache instead.");
         }
 
-        var cacheKey = cacheable.CacheKey;
-        var ttl = cacheable.Ttl;
+        var requestName = typeof(TRequest).FullName!;
+        var requestHash = _keyFactory.BuildHash(cacheable.CacheIdentity);
+        var cacheKey = _keyFactory.Public(requestName, requestHash);
+        var ttl = cacheable.Ttl ?? DefaultTtl;
 
         var cached = await _cache.GetAsync<TResponse>(cacheKey);
         if (cached is not null)
