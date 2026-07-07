@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthLogin;
 
 public class CompleteOAuthLoginCommandValidator : AbstractValidator<CompleteOAuthLoginCommand>

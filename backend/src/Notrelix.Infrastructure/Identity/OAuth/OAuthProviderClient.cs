@@ -1,10 +1,7 @@
 using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
-using Microsoft.Extensions.Options;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.DTOs;
 using Notrelix.Domain.Identity.OAuth;
@@ -205,7 +202,7 @@ public sealed class OAuthProviderClient : IOAuthProviderClient
         var picture = GetStringOrNull(root, "avatar_url") ?? GetStringOrNull(root, "picture");
 
         // GitHub email fallback: fetch from /user/emails if email is null
-        if (string.IsNullOrWhiteSpace(email) && provider == OAuthProvider.GitHub 
+        if (string.IsNullOrWhiteSpace(email) && provider == OAuthProvider.GitHub
             && !string.IsNullOrWhiteSpace(config.EmailsEndpoint))
         {
             email = await FetchPrimaryVerifiedGitHubEmailAsync(config.EmailsEndpoint, accessToken, ct);
@@ -279,7 +276,7 @@ public sealed class OAuthProviderClient : IOAuthProviderClient
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
 
         var response = await _httpClient.SendAsync(request, ct);
-        
+
         if (!response.IsSuccessStatusCode)
         {
             return null;
@@ -293,12 +290,12 @@ public sealed class OAuthProviderClient : IOAuthProviderClient
 
         foreach (var emailObj in json.RootElement.EnumerateArray())
         {
-            var isPrimary = emailObj.TryGetProperty("primary", out var primaryEl) 
+            var isPrimary = emailObj.TryGetProperty("primary", out var primaryEl)
                 && primaryEl.GetBoolean();
-            var isVerified = emailObj.TryGetProperty("verified", out var verifiedEl) 
+            var isVerified = emailObj.TryGetProperty("verified", out var verifiedEl)
                 && verifiedEl.GetBoolean();
-            var email = emailObj.TryGetProperty("email", out var emailEl) 
-                ? emailEl.GetString() 
+            var email = emailObj.TryGetProperty("email", out var emailEl)
+                ? emailEl.GetString()
                 : null;
 
             if (isPrimary && isVerified && !string.IsNullOrWhiteSpace(email))

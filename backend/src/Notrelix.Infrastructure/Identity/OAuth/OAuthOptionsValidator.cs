@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Options;
-
 namespace Notrelix.Infrastructure.Identity.OAuth;
 
 public sealed class OAuthOptionsValidator : IValidateOptions<OAuthOptions>

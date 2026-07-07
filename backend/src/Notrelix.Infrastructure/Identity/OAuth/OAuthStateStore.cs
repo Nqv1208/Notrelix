@@ -1,10 +1,6 @@
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
-using Microsoft.Extensions.Options;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.DTOs;
-using Notrelix.Infrastructure.Caching;
 
 namespace Notrelix.Infrastructure.Identity.OAuth;
 

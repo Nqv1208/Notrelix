@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Options;
-using Notrelix.API.Extensions;
 using Notrelix.API.Options;
 using Notrelix.API.RateLimiting;
 using Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthLogin;

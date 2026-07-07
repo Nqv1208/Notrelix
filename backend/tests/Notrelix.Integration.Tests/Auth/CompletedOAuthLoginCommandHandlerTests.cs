@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthLogin;
 using Notrelix.Application.Features.Identity.OAuth.DTOs;
-using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Identity.OAuth;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.SharedKernel;

@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace Notrelix.Application.Features.Identity.OAuth.Commands.StartOAuthLogin;
 
 public class StartOAuthLoginCommandValidator : AbstractValidator<StartOAuthLoginCommand>

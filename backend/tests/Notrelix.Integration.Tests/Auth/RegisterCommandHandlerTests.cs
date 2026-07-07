@@ -1,5 +1,4 @@
 using MediatR;
-using Notrelix.Application.Common.Security.Auth;
 using Notrelix.Application.Features.Identity.Registration.Commands.Register;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Identity.Users;

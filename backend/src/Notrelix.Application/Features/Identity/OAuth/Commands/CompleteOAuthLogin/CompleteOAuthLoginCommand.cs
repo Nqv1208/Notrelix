@@ -1,5 +1,4 @@
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Common.Security.Auth;
 using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Identity.Abstractions;

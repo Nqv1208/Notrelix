@@ -45,16 +45,16 @@ public sealed class StartOAuthLoginCommandHandler
 
         var state = GenerateCryptographicValue();
         var nonce = GenerateCryptographicValue();
-        
+
         string? codeVerifier = null;
         string? codeChallenge = null;
-        
+
         if (request.Provider == OAuthProvider.Google)
         {
             codeVerifier = GenerateCryptographicValue();
             codeChallenge = ComputeCodeChallenge(codeVerifier);
         }
-        
+
         var redirectUri = _optionsProvider.GetRedirectUri(request.Provider);
 
         var authRequest = new OAuthAuthorizationRequest(
