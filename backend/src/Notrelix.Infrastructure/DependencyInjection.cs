@@ -28,6 +28,8 @@ public static class DependencyInjection
         services.AddOperations(configuration);
         services.AddObservability(configuration);
 
+        services.AddOAuthInfrastructure(configuration);
+
         return services;
     }
 

@@ -18,20 +18,20 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
 {
     private readonly IIdentityDbContext _context;
     private readonly IPasswordHasher _passwordHasher;
-    private readonly IJwtService _jwtService;
+    private readonly IAuthSessionIssuer _sessionIssuer;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<LoginCommandHandler> _logger;
 
     public LoginCommandHandler(
         IIdentityDbContext context,
         IPasswordHasher passwordHasher,
-        IJwtService jwtService,
+        IAuthSessionIssuer sessionIssuer,
         IDateTimeProvider dateTimeProvider,
         ILogger<LoginCommandHandler> logger)
     {
         _context = context;
         _passwordHasher = passwordHasher;
-        _jwtService = jwtService;
+        _sessionIssuer = sessionIssuer;
         _dateTimeProvider = dateTimeProvider;
         _logger = logger;
     }
@@ -68,29 +68,11 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
         }
 
         var now = _dateTimeProvider.UtcNow;
-        var accessToken = _jwtService.GenerateAccessToken(user);
-        var refreshToken = _jwtService.GenerateRefreshToken();
-        var tokenHash = RefreshTokenHash.Create(refreshToken);
-
-        var session = UserSession.Create(user.Id, tokenHash, now.AddDays(30), now);
-        _context.Sessions.Add(session);
-
         user.RecordLogin(now);
 
         _logger.LogInformation("Login succeeded for {UserId} ({NormalizedEmail})", user.Id, normalizedEmail);
 
-        return Result<AuthResult>.Success(new AuthResult
-        {
-            AccessToken = accessToken,
-            RefreshToken = refreshToken,
-            ExpiresAt = _dateTimeProvider.UtcNow.AddHours(1).UtcDateTime,
-            User = new UserDto
-            {
-                Id = user.Id,
-                Email = user.Email.Value,
-                Name = user.Name,
-                AvatarUrl = user.AvatarUrl
-            }
-        });
+        var authResult = await _sessionIssuer.IssueAsync(user, now, cancellationToken);
+        return Result<AuthResult>.Success(authResult);
     }
 }

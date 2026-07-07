@@ -54,6 +54,9 @@ public static class DependencyInjection
         // Integration event collector (scoped per request)
         services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
 
+        // Auth session issuer
+        services.AddScoped<IAuthSessionIssuer, AuthSessionIssuer>();
+
         // AutoMapper
         services.AddAutoMapper(cfg => cfg.AddMaps(assembly), assembly);
     }
