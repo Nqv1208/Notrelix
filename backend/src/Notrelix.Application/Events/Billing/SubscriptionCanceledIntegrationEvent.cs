@@ -2,20 +2,22 @@ namespace Notrelix.Application.Events.Billing;
 
 [EventName("subscription.canceled", Version = 1)]
 public sealed record SubscriptionCanceledIntegrationEvent(
+    Guid EventId,
     Guid SubscriptionId,
     Guid? WorkspaceId,
     DateTimeOffset EffectiveAt,
-    Guid CorrelationId = default,
+    Guid CorrelationId,
     Guid? CausationId = null,
     DateTimeOffset OccurredAt = default
 ) : IntegrationEvent(
-    "subscription.canceled",
-    1,
+    eventId: EventId,
+    messageName: "subscription.canceled",
+    schemaVersion: 1,
+    correlationId: CorrelationId,
     sourceEventId: null,
     accountId: null,
-    WorkspaceId,
+    workspaceId: WorkspaceId,
     actorUserId: null,
-    CorrelationId,
-    CausationId,
-    OccurredAt
+    causationId: CausationId,
+    occurredAt: OccurredAt
 );

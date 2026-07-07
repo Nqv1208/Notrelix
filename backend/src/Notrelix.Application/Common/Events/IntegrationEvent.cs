@@ -14,24 +14,30 @@ public abstract record IntegrationEvent : IIntegrationEvent
     public DateTimeOffset OccurredAt { get; }
 
     protected IntegrationEvent(
+        Guid eventId,
         string messageName,
         int schemaVersion,
+        Guid correlationId,
         Guid? sourceEventId = null,
         Guid? accountId = null,
         Guid? workspaceId = null,
         Guid? actorUserId = null,
-        Guid correlationId = default,
         Guid? causationId = null,
         DateTimeOffset? occurredAt = null)
     {
-        EventId = Guid.CreateVersion7();
+        if (eventId == Guid.Empty)
+            throw new ArgumentException("EventId cannot be empty.", nameof(eventId));
+        if (correlationId == Guid.Empty)
+            throw new ArgumentException("CorrelationId cannot be empty.", nameof(correlationId));
+
+        EventId = eventId;
         MessageName = messageName;
         SchemaVersion = schemaVersion;
+        CorrelationId = correlationId;
         SourceEventId = sourceEventId;
         AccountId = accountId;
         WorkspaceId = workspaceId;
         ActorUserId = actorUserId;
-        CorrelationId = correlationId;
         CausationId = causationId;
         OccurredAt = occurredAt ?? DateTimeOffset.UtcNow;
     }

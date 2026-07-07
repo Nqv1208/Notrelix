@@ -58,13 +58,13 @@ internal sealed class EmailDispatcher : BackgroundService
             .FromSqlRaw("""
                 SELECT * FROM notifications.email_outbox
                 WHERE (
-                    ("Status" = 'Pending' AND "NextAttemptAt" <= {0})
+                    (status = 'Pending' AND next_attempt_at <= {0})
                     OR
-                    ("Status" = 'Sending' AND "ProcessingStartedAt" <= {1})
+                    (status = 'Sending' AND processing_started_at <= {1})
                     OR
-                    ("Status" = 'Failed' AND "NextAttemptAt" <= {0})
+                    (status = 'Failed' AND next_attempt_at <= {0})
                 )
-                ORDER BY "Priority", "CreatedAt"
+                ORDER BY priority, created_at
                 LIMIT {2}
                 FOR UPDATE SKIP LOCKED
                 """,

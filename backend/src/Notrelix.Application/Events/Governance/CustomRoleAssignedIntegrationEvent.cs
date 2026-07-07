@@ -2,22 +2,24 @@ namespace Notrelix.Application.Events.Governance;
 
 [EventName("governance.role.assigned", Version = 1)]
 public sealed record CustomRoleAssignedIntegrationEvent(
+    Guid EventId,
     Guid RoleId,
     Guid? WorkspaceId,
     string RoleName,
     Guid UserId,
+    Guid CorrelationId,
     Guid? ActorUserId = null,
-    Guid CorrelationId = default,
     Guid? CausationId = null,
     DateTimeOffset OccurredAt = default
 ) : IntegrationEvent(
-    "governance.role.assigned",
-    1,
+    eventId: EventId,
+    messageName: "governance.role.assigned",
+    schemaVersion: 1,
+    correlationId: CorrelationId,
     sourceEventId: null,
     accountId: null,
-    WorkspaceId,
-    ActorUserId,
-    CorrelationId,
-    CausationId,
-    OccurredAt
+    workspaceId: WorkspaceId,
+    actorUserId: ActorUserId,
+    causationId: CausationId,
+    occurredAt: OccurredAt
 );

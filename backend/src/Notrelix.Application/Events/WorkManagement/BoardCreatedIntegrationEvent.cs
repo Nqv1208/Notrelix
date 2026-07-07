@@ -2,21 +2,23 @@ namespace Notrelix.Application.Events.WorkManagement;
 
 [EventName("board.created", Version = 1)]
 public sealed record BoardCreatedIntegrationEvent(
+    Guid EventId,
     Guid BoardId,
     Guid? WorkspaceId,
     string Name,
+    Guid CorrelationId,
     Guid? ActorUserId = null,
-    Guid CorrelationId = default,
     Guid? CausationId = null,
     DateTimeOffset OccurredAt = default
 ) : IntegrationEvent(
-    "board.created",
-    1,
+    eventId: EventId,
+    messageName: "board.created",
+    schemaVersion: 1,
+    correlationId: CorrelationId,
     sourceEventId: null,
     accountId: null,
-    WorkspaceId,
-    ActorUserId,
-    CorrelationId,
-    CausationId,
-    OccurredAt
+    workspaceId: WorkspaceId,
+    actorUserId: ActorUserId,
+    causationId: CausationId,
+    occurredAt: OccurredAt
 );

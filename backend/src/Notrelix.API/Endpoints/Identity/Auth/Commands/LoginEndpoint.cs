@@ -17,10 +17,16 @@ public static class LoginEndpoint
     }
 
     private static async Task<IResult> HandleAsync(
-        LoginCommand command,
+        LoginRequest request,
         ISender sender,
         ICookieService cookieService)
     {
+        var command = new LoginCommand
+        {
+            Email = request.Email,
+            Password = request.Password
+        };
+
         var result = await sender.Send(command);
 
         if (result.Succeeded && result.Data is not null)

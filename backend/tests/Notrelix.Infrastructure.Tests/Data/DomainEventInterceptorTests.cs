@@ -26,8 +26,10 @@ public class DomainEventInterceptorTests
         dispatchPolicy.Setup(x => x.GetMode(typeof(WorkspaceCreatedDomainEvent)))
             .Returns(DomainEventDispatchMode.Outbox);
         dispatchPolicy.Setup(x => x.GetInlineTypes()).Returns([]);
+        var integrationEventCollector = new Mock<IIntegrationEventCollector>();
+        integrationEventCollector.Setup(x => x.DequeueAll()).Returns([]);
         var interceptor = new DomainEventInterceptor(
-            dateTimeProvider.Object, eventTypeRegistry.Object, integrationEventMapper.Object, dispatchPolicy.Object);
+            dateTimeProvider.Object, eventTypeRegistry.Object, integrationEventMapper.Object, dispatchPolicy.Object, integrationEventCollector.Object);
         await using var context = CreateContext(interceptor);
 
         var workspace = Workspace.Create(

@@ -9,7 +9,7 @@ public record GetBoardQuery(Guid BoardId) : IQuery<Result<BoardDto>>, IRequirePe
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
-    public string AuthorizedCacheKey => $"board:{BoardId}";
+    public string AuthorizedCacheKey => AuthorizedCacheKeyBuilder.ForWorkspaceResource("board", BoardId);
     public TimeSpan AuthorizedCacheTtl => TimeSpan.FromMinutes(5);
 }
 

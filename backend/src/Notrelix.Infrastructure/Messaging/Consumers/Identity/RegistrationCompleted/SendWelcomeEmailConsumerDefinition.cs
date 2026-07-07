@@ -1,10 +1,10 @@
-namespace Notrelix.Infrastructure.Messaging.Consumers.Identity.UserRegistered;
+namespace Notrelix.Infrastructure.Messaging.Consumers.Identity.RegistrationCompleted;
 
 public sealed class SendWelcomeEmailConsumerDefinition : ConsumerDefinition<SendWelcomeEmailConsumer>
 {
     public SendWelcomeEmailConsumerDefinition()
     {
-        EndpointName = "notrelix-identity-welcome-email-v1";
+        EndpointName = "notrelix-identity-registration-completed-welcome-email-v1";
         ConcurrentMessageLimit = 4;
     }
 

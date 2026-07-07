@@ -9,40 +9,49 @@ public sealed class WorkspaceEventMapper :
 {
     public override WorkspaceCreatedIntegrationEvent? Map(WorkspaceCreatedDomainEvent domainEvent)
     {
+        var de = (IDomainEvent)domainEvent;
+        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new WorkspaceCreatedIntegrationEvent(
-            domainEvent.WorkspaceId,
-            domainEvent.Name,
-            domainEvent.Slug,
-            domainEvent.CreatedBy,
-            ((IDomainEvent)domainEvent).ActorUserId,
-            default,
-            null,
-            domainEvent.OccurredAt
+            EventId: Guid.CreateVersion7(),
+            WorkspaceId: domainEvent.WorkspaceId,
+            Name: domainEvent.Name,
+            Slug: domainEvent.Slug,
+            OwnerId: domainEvent.CreatedBy,
+            CorrelationId: correlationId,
+            ActorUserId: de.ActorUserId,
+            CausationId: null,
+            OccurredAt: domainEvent.OccurredAt
         );
     }
 
     public WorkspaceMemberAddedIntegrationEvent? Map(WorkspaceMemberAddedDomainEvent domainEvent)
     {
+        var de = (IDomainEvent)domainEvent;
+        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new WorkspaceMemberAddedIntegrationEvent(
-            domainEvent.WorkspaceId,
-            domainEvent.UserId,
-            domainEvent.Role.ToString(),
-            ((IDomainEvent)domainEvent).ActorUserId,
-            default,
-            null,
-            domainEvent.OccurredAt
+            EventId: Guid.CreateVersion7(),
+            WorkspaceId: domainEvent.WorkspaceId,
+            UserId: domainEvent.UserId,
+            Role: domainEvent.Role.ToString(),
+            CorrelationId: correlationId,
+            ActorUserId: de.ActorUserId,
+            CausationId: null,
+            OccurredAt: domainEvent.OccurredAt
         );
     }
 
     public WorkspaceMemberRemovedIntegrationEvent? Map(WorkspaceMemberRemovedDomainEvent domainEvent)
     {
+        var de = (IDomainEvent)domainEvent;
+        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new WorkspaceMemberRemovedIntegrationEvent(
-            domainEvent.WorkspaceId,
-            domainEvent.UserId,
-            ((IDomainEvent)domainEvent).ActorUserId,
-            default,
-            null,
-            domainEvent.OccurredAt
+            EventId: Guid.CreateVersion7(),
+            WorkspaceId: domainEvent.WorkspaceId,
+            UserId: domainEvent.UserId,
+            CorrelationId: correlationId,
+            ActorUserId: de.ActorUserId,
+            CausationId: null,
+            OccurredAt: domainEvent.OccurredAt
         );
     }
 

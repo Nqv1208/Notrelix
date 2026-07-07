@@ -8,16 +8,19 @@ public class DomainEventInterceptor : SaveChangesInterceptor
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IEventTypeRegistry _eventTypeRegistry;
     private readonly IIntegrationEventMapper _integrationEventMapper;
+    private readonly IIntegrationEventCollector _integrationEventCollector;
 
     public DomainEventInterceptor(
         IDateTimeProvider dateTimeProvider,
         IEventTypeRegistry eventTypeRegistry,
         IIntegrationEventMapper integrationEventMapper,
-        IDomainEventDispatchPolicy dispatchPolicy)
+        IDomainEventDispatchPolicy dispatchPolicy,
+        IIntegrationEventCollector integrationEventCollector)
     {
         _dateTimeProvider = dateTimeProvider;
         _eventTypeRegistry = eventTypeRegistry;
         _integrationEventMapper = integrationEventMapper;
+        _integrationEventCollector = integrationEventCollector;
 
         var inlineTypes = dispatchPolicy.GetInlineTypes();
         if (inlineTypes.Count > 0)
@@ -71,6 +74,13 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         {
             entry.Entity.ClearDomainEvents();
         }
+
+        // Persist use-case integration events (collected at Application layer)
+        var pendingIntegrationEvents = _integrationEventCollector.DequeueAll() ?? [];
+        foreach (var integrationEvent in pendingIntegrationEvents)
+        {
+            WriteIntegrationEventOutboxEntry(context, integrationEvent, now);
+        }
     }
 
     private void WriteOutboxEntries(ApplicationDbContext context, IDomainEvent domainEvent, string messageName, DateTimeOffset now)
@@ -84,5 +94,14 @@ public class DomainEventInterceptor : SaveChangesInterceptor
             var outboxMsg = MessagingOutboxMessage.FromIntegrationEvent(mapping.IntegrationEvent, domainEvent, now);
             context.Set<MessagingOutboxMessage>().Add(outboxMsg);
         }
+    }
+
+    private void WriteIntegrationEventOutboxEntry(
+        ApplicationDbContext context,
+        IIntegrationEvent integrationEvent,
+        DateTimeOffset now)
+    {
+        var outboxMsg = MessagingOutboxMessage.FromIntegrationEvent(integrationEvent, now);
+        context.Set<MessagingOutboxMessage>().Add(outboxMsg);
     }
 }

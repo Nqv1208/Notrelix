@@ -1,9 +1,10 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.CQRS.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.ForgotPassword;
 
-public record ForgotPasswordCommand : ICommand<Result>
+public record ForgotPasswordCommand : ICommand<Result>, IGlobalRequest
 {
     public required string Email { get; init; }
 }

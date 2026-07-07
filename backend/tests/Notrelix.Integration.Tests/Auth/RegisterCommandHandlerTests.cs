@@ -41,8 +41,9 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
         var jwtService = new Mock<IJwtService>();
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
+        var integrationEventCollector = new Mock<IIntegrationEventCollector>();
 
-        var handler = new RegisterCommandHandler(context, context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object);
+        var handler = new RegisterCommandHandler(context, context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object, integrationEventCollector.Object);
 
         var result = await handler.Handle(new RegisterCommand
         {
@@ -73,7 +74,8 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
 
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
-        var handler = new RegisterCommandHandler(context, context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object);
+        var integrationEventCollector = new Mock<IIntegrationEventCollector>();
+        var handler = new RegisterCommandHandler(context, context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object, integrationEventCollector.Object);
 
         var now = DateTime.UtcNow;
         var result = await handler.Handle(new RegisterCommand
@@ -113,7 +115,9 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
         dispatchPolicy.Setup(x => x.GetMode(It.IsAny<Type>()))
             .Returns(DomainEventDispatchMode.Outbox);
         dispatchPolicy.Setup(x => x.GetInlineTypes()).Returns([]);
-        var interceptor = new DomainEventInterceptor(dateTimeProvider.Object, eventTypeRegistry.Object, integrationEventMapper.Object, dispatchPolicy.Object);
+        var integrationEventCollector = new Mock<IIntegrationEventCollector>();
+        integrationEventCollector.Setup(x => x.DequeueAll()).Returns([]);
+        var interceptor = new DomainEventInterceptor(dateTimeProvider.Object, eventTypeRegistry.Object, integrationEventMapper.Object, dispatchPolicy.Object, integrationEventCollector.Object);
         await using var context = _db.CreateContext(tenant, interceptor);
 
         var passwordHasher = new Mock<IPasswordHasher>();
@@ -123,7 +127,7 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
         jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>())).Returns("access-token");
         jwtService.Setup(x => x.GenerateRefreshToken()).Returns("refresh-token");
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
-        var handler = new RegisterCommandHandler(context, context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object);
+        var handler = new RegisterCommandHandler(context, context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object, integrationEventCollector.Object);
 
         var result = await handler.Handle(new RegisterCommand
         {
@@ -157,7 +161,8 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
 
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
-        var handler = new RegisterCommandHandler(context, context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object);
+        var integrationEventCollector = new Mock<IIntegrationEventCollector>();
+        var handler = new RegisterCommandHandler(context, context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object, integrationEventCollector.Object);
 
         var result = await handler.Handle(new RegisterCommand
         {

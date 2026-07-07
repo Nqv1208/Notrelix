@@ -2,19 +2,21 @@ namespace Notrelix.Application.Events.Identity;
 
 [EventName("user.deactivated", Version = 1)]
 public sealed record UserDeactivatedIntegrationEvent(
+    Guid EventId,
     Guid UserId,
+    Guid CorrelationId,
     Guid? ActorUserId = null,
-    Guid CorrelationId = default,
     Guid? CausationId = null,
     DateTimeOffset OccurredAt = default
 ) : IntegrationEvent(
-    "user.deactivated",
-    1,
+    eventId: EventId,
+    messageName: "user.deactivated",
+    schemaVersion: 1,
+    correlationId: CorrelationId,
     sourceEventId: null,
     accountId: null,
     workspaceId: null,
-    ActorUserId,
-    CorrelationId,
-    CausationId,
-    OccurredAt
+    actorUserId: ActorUserId,
+    causationId: CausationId,
+    occurredAt: OccurredAt
 );

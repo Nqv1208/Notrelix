@@ -28,6 +28,6 @@ public class AccountConfiguration : IEntityTypeConfiguration<Domain.Accounts.Acc
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => x.Slug).IsUnique().HasDatabaseName("idx_account_slug");
+        builder.HasIndex(x => x.Slug).HasDatabaseName("idx_account_slug");
     }
 }

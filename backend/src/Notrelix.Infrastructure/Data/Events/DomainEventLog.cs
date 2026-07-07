@@ -85,7 +85,7 @@ public sealed class DomainEventLog
             actorUserId: domainEvent.ActorUserId,
             correlationId: domainEvent.CorrelationId,
             causationId: domainEvent.CausationId,
-            occurredAt: now,
+            occurredAt: domainEvent.OccurredAt,
             recordedAt: now,
             payloadJson: payloadJson,
             metadataJson: null,

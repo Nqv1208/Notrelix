@@ -1,10 +1,11 @@
 using System.Text.Json;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.CQRS.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.Logout;
 
-public record LogoutCommand : ICommand<Result>, ITransactionalRequest
+public record LogoutCommand : ICommand<Result>, ITransactionalRequest, IGlobalRequest
 {
     public required string RefreshToken { get; init; }
     public string? AccessToken { get; init; }
@@ -15,12 +16,18 @@ public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Result>
     private readonly IIdentityDbContext _context;
     private readonly IJwtBlacklistService _jwtBlacklist;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ILogger<LogoutCommandHandler> _logger;
 
-    public LogoutCommandHandler(IIdentityDbContext context, IJwtBlacklistService jwtBlacklist, IDateTimeProvider dateTimeProvider)
+    public LogoutCommandHandler(
+        IIdentityDbContext context,
+        IJwtBlacklistService jwtBlacklist,
+        IDateTimeProvider dateTimeProvider,
+        ILogger<LogoutCommandHandler> logger)
     {
         _context = context;
         _jwtBlacklist = jwtBlacklist;
         _dateTimeProvider = dateTimeProvider;
+        _logger = logger;
     }
 
     public async Task<Result> Handle(LogoutCommand request, CancellationToken cancellationToken)
@@ -37,13 +44,13 @@ public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Result>
         if (!string.IsNullOrWhiteSpace(request.AccessToken))
         {
             var now = _dateTimeProvider.UtcNow;
-            BlacklistAccessToken(request.AccessToken, now);
+            await BlacklistAccessTokenAsync(request.AccessToken, now);
         }
 
         return Result.Success();
     }
 
-    private async void BlacklistAccessToken(string token, DateTimeOffset now)
+    private async Task BlacklistAccessTokenAsync(string token, DateTimeOffset now)
     {
         try
         {
@@ -73,8 +80,9 @@ public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Result>
             var remaining = expTime - now;
             await _jwtBlacklist.BlacklistAsync(jti, remaining);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Failed to blacklist access token during logout");
         }
     }
 }

@@ -2,24 +2,26 @@ namespace Notrelix.Application.Events.Governance;
 
 [EventName("governance.permission.revoked", Version = 1)]
 public sealed record ResourcePermissionRevokedIntegrationEvent(
+    Guid EventId,
     Guid PermissionId,
     Guid? WorkspaceId,
     string ResourceType,
     Guid ResourceId,
     string SubjectType,
     Guid SubjectId,
+    Guid CorrelationId,
     Guid? ActorUserId = null,
-    Guid CorrelationId = default,
     Guid? CausationId = null,
     DateTimeOffset OccurredAt = default
 ) : IntegrationEvent(
-    "governance.permission.revoked",
-    1,
+    eventId: EventId,
+    messageName: "governance.permission.revoked",
+    schemaVersion: 1,
+    correlationId: CorrelationId,
     sourceEventId: null,
     accountId: null,
-    WorkspaceId,
-    ActorUserId,
-    CorrelationId,
-    CausationId,
-    OccurredAt
+    workspaceId: WorkspaceId,
+    actorUserId: ActorUserId,
+    causationId: CausationId,
+    occurredAt: OccurredAt
 );

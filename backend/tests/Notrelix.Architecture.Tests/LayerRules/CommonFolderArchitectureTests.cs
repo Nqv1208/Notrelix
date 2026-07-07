@@ -213,4 +213,60 @@ public class CommonFolderArchitectureTests
 
         lines.Should().HaveCount(15, "expected exactly 15 pipeline behaviors");
     }
+
+    [Fact]
+    public void RequestContractGuardBehavior_Must_Use_RequestExecutionClassifier()
+    {
+        var file = Path.Combine(GetApplicationPath(), "Common", "Behaviors", "RequestContractGuardBehavior.cs");
+        var content = RemoveComments(File.ReadAllText(file));
+
+        content.Should().Contain("RequestExecutionClassifier.Classify",
+            "RequestContractGuardBehavior must use RequestExecutionClassifier instead of self-classifying request markers.");
+        content.Should().NotContain("request is IGlobalRequest",
+            "RequestContractGuardBehavior must not self-check marker interfaces — delegate to RequestExecutionClassifier.");
+    }
+
+    [Fact]
+    public void DbRequestScopeBehavior_Must_Use_RequestExecutionClassifier()
+    {
+        var file = Path.Combine(GetApplicationPath(), "Common", "Behaviors", "DbRequestScopeBehavior.cs");
+        var content = RemoveComments(File.ReadAllText(file));
+
+        content.Should().Contain("RequestExecutionClassifier.Classify",
+            "DbRequestScopeBehavior must use RequestExecutionClassifier instead of self-classifying request markers.");
+        content.Should().NotContain("request is ITransactionalRequest",
+            "DbRequestScopeBehavior must not self-check marker interfaces — delegate to RequestExecutionClassifier.");
+    }
+
+    private static string RemoveComments(string input)
+    {
+        var blockComments = @"/\*(.*?)\*/";
+        var lineComments = @"//(.*?)\r?\n";
+        var cleaned = Regex.Replace(input, blockComments, "", RegexOptions.Singleline);
+        cleaned = Regex.Replace(cleaned, lineComments, "\n");
+        return cleaned;
+    }
+
+    [Fact]
+    public void RequestContractGuardBehavior_Must_Run_Before_PublicCacheBehavior()
+    {
+        var diFile = Path.Combine(GetApplicationPath(), "DependencyInjection.cs");
+        var lines = File.ReadAllLines(diFile)
+            .Select(l => l.Trim())
+            .Where(l => l.Contains("AddTransient(typeof(IPipelineBehavior<"))
+            .Select(l => l.Contains("RequestContractGuardBehavior") ? "Guard"
+                : l.Contains("PublicCacheBehavior") ? "PublicCache"
+                : l.Contains("DbRequestScopeBehavior") ? "DbScope"
+                : l.Contains("AuthorizationBehavior") ? "Auth"
+                : null)
+            .OfType<string>()
+            .ToList();
+
+        var guardIndex = lines.IndexOf("Guard");
+        var publicCacheIndex = lines.IndexOf("PublicCache");
+
+        guardIndex.Should().BeLessThan(publicCacheIndex,
+            "RequestContractGuardBehavior must be registered BEFORE PublicCacheBehavior in the pipeline order. " +
+            "Otherwise, public cache could serve tenant-scoped data before the guard validates the contract.");
+    }
 }

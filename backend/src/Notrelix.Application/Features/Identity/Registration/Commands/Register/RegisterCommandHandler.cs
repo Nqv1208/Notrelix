@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Domain.Accounts.Accounts;
@@ -13,19 +14,22 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtService _jwtService;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IIntegrationEventCollector _integrationEventCollector;
 
     public RegisterCommandHandler(
         IIdentityDbContext identityContext,
         IAccountDbContext accountContext,
         IPasswordHasher passwordHasher,
         IJwtService jwtService,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IIntegrationEventCollector integrationEventCollector)
     {
         _identityContext = identityContext;
         _accountContext = accountContext;
         _passwordHasher = passwordHasher;
         _jwtService = jwtService;
         _dateTimeProvider = dateTimeProvider;
+        _integrationEventCollector = integrationEventCollector;
     }
 
     public async Task<Result<AuthResult>> Handle(RegisterCommand request, CancellationToken cancellationToken)
@@ -70,6 +74,21 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
 
         var session = UserSession.Create(user.Id, tokenHash, now.AddDays(30), now);
         _identityContext.Sessions.Add(session);
+
+        // Emit registration completed use-case integration event
+        _integrationEventCollector.Add(
+            new IdentityRegistrationCompletedIntegrationEventV1(
+                EventId: Guid.CreateVersion7(),
+                UserId: user.Id,
+                AccountId: account.Id,
+                Email: user.Email.Value,
+                DisplayName: user.Name,
+                AccountName: account.Name,
+                CorrelationId: Guid.CreateVersion7(),
+                ActorUserId: user.Id,
+                SourceEventId: null,
+                CausationId: null,
+                OccurredAt: now));
 
         return Result<AuthResult>.Success(new AuthResult
         {

@@ -19,6 +19,9 @@ public static class MessagingRegistration
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Billing.SubscriptionEventMapper>();
         services.AddScoped<IIntegrationEventMapper, CompositeIntegrationEventMapper>();
 
+        // Integration event catalog (immutable, throws on unknown types).
+        services.AddSingleton<IIntegrationEventCatalog, IntegrationEventCatalog>();
+
         // Message deduplication store (Application abstraction -> Infrastructure implementation).
         services.AddScoped<IMessageDeduplicationStore, MessageDeduplicationStore>();
 

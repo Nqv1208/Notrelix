@@ -7,7 +7,7 @@ public record GetBoardSchemaQuery(Guid BoardId) : IQuery<BoardSchemaDto>, IRequi
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
-    public string AuthorizedCacheKey => $"board-schema:{BoardId}";
+    public string AuthorizedCacheKey => AuthorizedCacheKeyBuilder.ForWorkspaceResource("board-schema", BoardId);
     public TimeSpan AuthorizedCacheTtl => TimeSpan.FromMinutes(5);
 }
 
