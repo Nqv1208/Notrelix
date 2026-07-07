@@ -9,48 +9,57 @@ public sealed class PermissionEventMapper :
 {
     public override ResourcePermissionGrantedIntegrationEvent? Map(ResourcePermissionGrantedDomainEvent domainEvent)
     {
+        var de = (IDomainEvent)domainEvent;
+        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new ResourcePermissionGrantedIntegrationEvent(
-            domainEvent.PermissionId,
-            domainEvent.WorkspaceId,
-            domainEvent.ResourceType.ToString(),
-            domainEvent.ResourceId,
-            domainEvent.SubjectType.ToString(),
-            domainEvent.SubjectId,
-            domainEvent.Level.ToString(),
-            ((IDomainEvent)domainEvent).ActorUserId,
-            default,
-            null,
-            domainEvent.OccurredAt
+            EventId: Guid.CreateVersion7(),
+            PermissionId: domainEvent.PermissionId,
+            WorkspaceId: domainEvent.WorkspaceId,
+            ResourceType: domainEvent.ResourceType.ToString(),
+            ResourceId: domainEvent.ResourceId,
+            SubjectType: domainEvent.SubjectType.ToString(),
+            SubjectId: domainEvent.SubjectId,
+            PermissionLevel: domainEvent.Level.ToString(),
+            CorrelationId: correlationId,
+            ActorUserId: de.ActorUserId,
+            CausationId: null,
+            OccurredAt: domainEvent.OccurredAt
         );
     }
 
     public ResourcePermissionRevokedIntegrationEvent? Map(ResourcePermissionRevokedDomainEvent domainEvent)
     {
+        var de = (IDomainEvent)domainEvent;
+        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new ResourcePermissionRevokedIntegrationEvent(
-            domainEvent.PermissionId,
-            domainEvent.WorkspaceId,
-            domainEvent.ResourceType.ToString(),
-            domainEvent.ResourceId,
-            domainEvent.SubjectType.ToString(),
-            domainEvent.SubjectId,
-            ((IDomainEvent)domainEvent).ActorUserId,
-            default,
-            null,
-            domainEvent.OccurredAt
+            EventId: Guid.CreateVersion7(),
+            PermissionId: domainEvent.PermissionId,
+            WorkspaceId: domainEvent.WorkspaceId,
+            ResourceType: domainEvent.ResourceType.ToString(),
+            ResourceId: domainEvent.ResourceId,
+            SubjectType: domainEvent.SubjectType.ToString(),
+            SubjectId: domainEvent.SubjectId,
+            CorrelationId: correlationId,
+            ActorUserId: de.ActorUserId,
+            CausationId: null,
+            OccurredAt: domainEvent.OccurredAt
         );
     }
 
     public CustomRoleAssignedIntegrationEvent? Map(CustomRoleAssignedDomainEvent domainEvent)
     {
+        var de = (IDomainEvent)domainEvent;
+        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new CustomRoleAssignedIntegrationEvent(
-            domainEvent.RoleId,
-            domainEvent.WorkspaceId,
-            string.Empty,
-            domainEvent.MemberId,
-            ((IDomainEvent)domainEvent).ActorUserId,
-            default,
-            null,
-            domainEvent.OccurredAt
+            EventId: Guid.CreateVersion7(),
+            RoleId: domainEvent.RoleId,
+            WorkspaceId: domainEvent.WorkspaceId,
+            RoleName: string.Empty,
+            UserId: domainEvent.MemberId,
+            CorrelationId: correlationId,
+            ActorUserId: de.ActorUserId,
+            CausationId: null,
+            OccurredAt: domainEvent.OccurredAt
         );
     }
 

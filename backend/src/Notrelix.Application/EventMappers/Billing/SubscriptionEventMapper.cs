@@ -8,26 +8,32 @@ public sealed class SubscriptionEventMapper :
 {
     public override SubscriptionChangedIntegrationEvent? Map(SubscriptionChangedDomainEvent domainEvent)
     {
+        var de = (IDomainEvent)domainEvent;
+        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new SubscriptionChangedIntegrationEvent(
-            domainEvent.SubscriptionId,
-            domainEvent.WorkspaceId,
-            domainEvent.OldPlanId,
-            domainEvent.NewPlanId,
-            default,
-            null,
-            domainEvent.OccurredAt
+            EventId: Guid.CreateVersion7(),
+            SubscriptionId: domainEvent.SubscriptionId,
+            WorkspaceId: domainEvent.WorkspaceId,
+            PreviousPlanId: domainEvent.OldPlanId,
+            NewPlanId: domainEvent.NewPlanId,
+            CorrelationId: correlationId,
+            CausationId: null,
+            OccurredAt: domainEvent.OccurredAt
         );
     }
 
     public SubscriptionCanceledIntegrationEvent? Map(SubscriptionCanceledDomainEvent domainEvent)
     {
+        var de = (IDomainEvent)domainEvent;
+        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new SubscriptionCanceledIntegrationEvent(
-            domainEvent.SubscriptionId,
-            domainEvent.WorkspaceId,
-            domainEvent.OccurredAt,
-            default,
-            null,
-            domainEvent.OccurredAt
+            EventId: Guid.CreateVersion7(),
+            SubscriptionId: domainEvent.SubscriptionId,
+            WorkspaceId: domainEvent.WorkspaceId,
+            EffectiveAt: domainEvent.OccurredAt,
+            CorrelationId: correlationId,
+            CausationId: null,
+            OccurredAt: domainEvent.OccurredAt
         );
     }
 

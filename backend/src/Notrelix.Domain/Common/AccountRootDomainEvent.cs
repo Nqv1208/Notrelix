@@ -1,9 +1,9 @@
+using Notrelix.Domain.Common.Constants;
+
 namespace Notrelix.Domain.Common;
 
-public abstract record AccountRootDomainEvent : WorkspaceRootDomainEvent
+public abstract record AccountRootDomainEvent : AccountScopedDomainEvent
 {
-    public Guid AccountId { get; }
-
     protected AccountRootDomainEvent(
         Guid accountId,
         DateTimeOffset occurredAt,
@@ -12,8 +12,10 @@ public abstract record AccountRootDomainEvent : WorkspaceRootDomainEvent
         string? causationId = null)
         : base(accountId, occurredAt, actorUserId, correlationId, causationId)
     {
-        AccountId = accountId;
-        CorrelationId = correlationId;
-        CausationId = causationId;
+        SourceContext = SourceContexts.Accounts;
+        AggregateType = AggregateTypes.Account;
+        AggregateId = accountId;
+        SubjectType = SubjectTypes.Account;
+        SubjectId = accountId;
     }
 }

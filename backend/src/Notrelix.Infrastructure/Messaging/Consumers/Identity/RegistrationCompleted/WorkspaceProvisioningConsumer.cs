@@ -1,9 +1,9 @@
 using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Workspaces.Provisioning.Commands.ProvisionPersonalWorkspace;
 
-namespace Notrelix.Infrastructure.Messaging.Consumers.Identity.UserRegistered;
+namespace Notrelix.Infrastructure.Messaging.Consumers.Identity.RegistrationCompleted;
 
-public sealed class WorkspaceProvisioningConsumer : IConsumer<UserRegisteredIntegrationEvent>
+public sealed class WorkspaceProvisioningConsumer : IConsumer<IdentityRegistrationCompletedIntegrationEventV1>
 {
     private readonly ISender _sender;
     private readonly ILogger<WorkspaceProvisioningConsumer> _logger;
@@ -14,14 +14,14 @@ public sealed class WorkspaceProvisioningConsumer : IConsumer<UserRegisteredInte
         _logger = logger;
     }
 
-    public async Task Consume(ConsumeContext<UserRegisteredIntegrationEvent> context)
+    public async Task Consume(ConsumeContext<IdentityRegistrationCompletedIntegrationEventV1> context)
     {
         var msg = context.Message;
 
         var result = await _sender.Send(new ProvisionPersonalWorkspaceCommand(
             UserId: msg.UserId,
-            AccountId: msg.AccountId ?? Guid.Empty,
-            Email: msg.Email,
+            AccountId: msg.AccountIdValue,
+            WorkspaceName: msg.DisplayName,
             MessageId: msg.EventId,
             SourceEventId: msg.SourceEventId,
             SourceMessageName: msg.MessageName,

@@ -1,12 +1,12 @@
 using Notrelix.Domain.Common.Exceptions;
 
-namespace Notrelix.Infrastructure.Messaging.Consumers.Identity.UserRegistered;
+namespace Notrelix.Infrastructure.Messaging.Consumers.Identity.RegistrationCompleted;
 
 public sealed class WorkspaceProvisioningConsumerDefinition : ConsumerDefinition<WorkspaceProvisioningConsumer>
 {
     public WorkspaceProvisioningConsumerDefinition()
     {
-        EndpointName = "notrelix-identity-workspace-provision-v1";
+        EndpointName = "notrelix-identity-registration-completed-workspace-provision-v1";
         ConcurrentMessageLimit = 2;
     }
 

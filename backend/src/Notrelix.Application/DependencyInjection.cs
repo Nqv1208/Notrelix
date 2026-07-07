@@ -51,6 +51,9 @@ public static class DependencyInjection
         services.AddScoped<IExecutionContextAccessor, Notrelix.Application.Common.Context.ExecutionContext>();
         services.AddScoped<IExecutionContextReader>(sp => sp.GetRequiredService<IExecutionContextAccessor>());
 
+        // Integration event collector (scoped per request)
+        services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
+
         // AutoMapper
         services.AddAutoMapper(cfg => cfg.AddMaps(assembly), assembly);
     }

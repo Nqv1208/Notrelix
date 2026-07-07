@@ -5,7 +5,7 @@ namespace Notrelix.Application.Features.Workspaces.Provisioning.Commands.Provisi
 public sealed record ProvisionPersonalWorkspaceCommand(
     Guid UserId,
     Guid AccountId,
-    string Email,
+    string WorkspaceName,
     Guid MessageId,
     Guid? SourceEventId,
     string SourceMessageName,
@@ -14,11 +14,16 @@ public sealed record ProvisionPersonalWorkspaceCommand(
     string? CausationId,
     DateTimeOffset OccurredAt
 ) : ICommand<ProvisionPersonalWorkspaceResult>,
+    ISystemInternalRequest,
     ITransactionalRequest,
-    IMessageTriggeredRequest
+    IMessageTriggeredRequest,
+    IIdempotentRequest
 {
+    public UseCaseSecurityKind SecurityKind => UseCaseSecurityKind.SystemInternal;
     public string ConsumerName => ConsumerNames.PersonalWorkspaceProvisioning;
     public Guid? WorkspaceId => null;
+
+    public string IdempotencyKey => $"account-default-workspace:{AccountId}";
 }
 
 public sealed record ProvisionPersonalWorkspaceResult(
@@ -52,7 +57,7 @@ public sealed class ProvisionPersonalWorkspaceCommandHandler
             request.MessageId, request.ConsumerName, cancellationToken))
         {
             var existingId = await _workspaceContext.Workspaces
-                .Where(w => w.IsPersonal && w.CreatedBy == request.UserId)
+                .Where(w => w.IsPersonal && w.AccountId == request.AccountId)
                 .Select(w => w.Id)
                 .FirstOrDefaultAsync(cancellationToken);
 
@@ -68,7 +73,7 @@ public sealed class ProvisionPersonalWorkspaceCommandHandler
         }
 
         var existingWorkspace = await _workspaceContext.Workspaces
-            .Where(w => w.IsPersonal && w.CreatedBy == request.UserId)
+            .Where(w => w.IsPersonal && w.AccountId == request.AccountId)
             .Select(w => new { w.Id })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -87,11 +92,11 @@ public sealed class ProvisionPersonalWorkspaceCommandHandler
                 existingWorkspace.Id, AlreadyExisted: true);
         }
 
-        var slug = Slug.GenerateFromName($"{request.Email}'s Workspace");
+        var slug = Slug.GenerateFromName($"{request.WorkspaceName}'s Workspace");
         var workspace = WorkspaceFactory.CreateWithOwner(
             request.AccountId,
             request.UserId,
-            $"{request.Email}'s Workspace",
+            $"{request.WorkspaceName}'s Workspace",
             slug.Value,
             request.OccurredAt,
             isPersonal: true);

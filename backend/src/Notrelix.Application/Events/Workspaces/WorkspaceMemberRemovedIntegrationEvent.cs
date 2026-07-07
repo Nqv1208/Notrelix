@@ -2,20 +2,22 @@ namespace Notrelix.Application.Events.Workspaces;
 
 [EventName("workspace.member.removed", Version = 1)]
 public sealed record WorkspaceMemberRemovedIntegrationEvent(
+    Guid EventId,
     Guid? WorkspaceId,
     Guid UserId,
+    Guid CorrelationId,
     Guid? ActorUserId = null,
-    Guid CorrelationId = default,
     Guid? CausationId = null,
     DateTimeOffset OccurredAt = default
 ) : IntegrationEvent(
-    "workspace.member.removed",
-    1,
+    eventId: EventId,
+    messageName: "workspace.member.removed",
+    schemaVersion: 1,
+    correlationId: CorrelationId,
     sourceEventId: null,
     accountId: null,
-    WorkspaceId,
-    ActorUserId,
-    CorrelationId,
-    CausationId,
-    OccurredAt
+    workspaceId: WorkspaceId,
+    actorUserId: ActorUserId,
+    causationId: CausationId,
+    occurredAt: OccurredAt
 );

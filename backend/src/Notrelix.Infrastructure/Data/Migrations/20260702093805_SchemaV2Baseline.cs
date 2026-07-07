@@ -4261,7 +4261,7 @@ namespace Notrelix.Infrastructure.Migrations
                 schema: "account",
                 table: "accounts",
                 column: "slug",
-                unique: true);
+                unique: false);
 
             migrationBuilder.CreateIndex(
                 name: "ix_activity_read_states_workspace_id_user_id",
@@ -5967,10 +5967,10 @@ namespace Notrelix.Infrastructure.Migrations
                 column: "name");
 
             migrationBuilder.CreateIndex(
-                name: "idx_workspaces_personal_per_user",
+                name: "idx_workspaces_personal_per_account",
                 schema: "workspace",
                 table: "workspaces",
-                column: "created_by",
+                column: "account_id",
                 unique: true,
                 filter: "is_personal = true AND deleted_at IS NULL");
 

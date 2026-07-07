@@ -1,3 +1,5 @@
+using Notrelix.Application.Common.CQRS.Execution;
+
 namespace Notrelix.Application.Common.Behaviors;
 
 /// <summary>
@@ -26,6 +28,17 @@ public class PublicCacheBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
     {
         if (request is not IPublicCacheableQuery<TResponse> cacheable)
             return await next();
+
+        // Defense-in-depth: ensure public cache is never used for tenant-scoped data.
+        // RequestContractGuardBehavior (runs earlier) also guards this, but this check
+        // protects against pipeline order changes or new behaviors added before the guard.
+        var profile = RequestExecutionClassifier.Classify(request);
+        if (profile.IsTenantScoped)
+        {
+            throw new SecurityMisconfigurationException(
+                $"{profile.RequestName} cannot use public cache for tenant-scoped data. " +
+                "Use AuthorizedCacheBehavior for private/tenant-scoped cache instead.");
+        }
 
         var cacheKey = cacheable.CacheKey;
         var ttl = cacheable.Ttl;

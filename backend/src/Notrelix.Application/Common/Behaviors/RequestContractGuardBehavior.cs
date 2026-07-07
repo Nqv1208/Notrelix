@@ -1,4 +1,4 @@
-using Notrelix.Application.Common.CQRS.Scoping;
+using Notrelix.Application.Common.CQRS.Execution;
 
 namespace Notrelix.Application.Common.Behaviors;
 
@@ -10,54 +10,49 @@ public sealed class RequestContractGuardBehavior<TRequest, TResponse> : IPipelin
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
-        var isGlobal = request is IGlobalRequest;
-        var isAnonymous = request is IAnonymousRequest;
-        var isAccount = request is IAccountRequest;
-        var isWorkspace = request is IWorkspaceRequest;
-        var isResource = request is IResourceScopedRequest;
-        var requiresPermission = request is IRequirePermission;
-        var isPublicCache = request is IPublicCacheableQuery<TResponse>;
-        var isAuthorizedCache = request is IAuthorizedCacheableRequest;
+        var profile = RequestExecutionClassifier.Classify(request);
 
-        if (isGlobal && (isAccount || isWorkspace || isResource))
-        {
-            throw Misconfigured(
-                request,
-                "Global request cannot also be account/workspace/resource scoped.");
-        }
-
-        if (isGlobal && requiresPermission)
-        {
-            throw Misconfigured(
-                request,
-                "Global request cannot require tenant/resource permission.");
-        }
-
-        if (isAnonymous && (isAccount || isWorkspace || isResource))
-        {
-            throw Misconfigured(
-                request,
-                "Anonymous request cannot be tenant/resource scoped.");
-        }
-
-        if (isPublicCache && (isAccount || isWorkspace || isResource))
-        {
-            throw Misconfigured(
-                request,
-                "Public cache cannot be used for tenant/account/workspace/resource scoped requests.");
-        }
-
-        if (isPublicCache && isAuthorizedCache)
-        {
-            throw Misconfigured(
-                request,
-                "A request cannot use both public cache and authorized/private cache.");
-        }
+        Validate(profile);
 
         return next();
     }
 
-    private static SecurityMisconfigurationException Misconfigured<T>(T request, string reason)
-        where T : notnull
-        => new($"{typeof(T).Name} has invalid request contract. {reason}");
+    private static void Validate(RequestExecutionProfile profile)
+    {
+        if (profile.IsAnonymous && profile.IsSystemInternal)
+        {
+            Throw(profile, "Request cannot be both anonymous and system-internal.");
+        }
+
+        if (profile.IsGlobal && profile.IsTenantScoped)
+        {
+            Throw(profile, "Global request cannot also be account/workspace/resource scoped.");
+        }
+
+        if (profile.IsGlobal && profile.RequiresPermission)
+        {
+            Throw(profile, "Global request cannot require tenant/resource permission.");
+        }
+
+        if (profile.IsAnonymous && profile.IsTenantScoped)
+        {
+            Throw(profile, "Anonymous request cannot be tenant/resource scoped.");
+        }
+
+        if (profile.IsPublicCacheable && profile.IsTenantScoped)
+        {
+            Throw(profile, "Public cache cannot be used for tenant/account/workspace/resource scoped requests.");
+        }
+
+        if (profile.IsPublicCacheable && profile.IsAuthorizedCacheable)
+        {
+            Throw(profile, "A request cannot use both public cache and authorized/private cache.");
+        }
+    }
+
+    private static void Throw(RequestExecutionProfile profile, string reason)
+    {
+        throw new SecurityMisconfigurationException(
+            $"{profile.RequestName} has invalid request contract. {reason}");
+    }
 }

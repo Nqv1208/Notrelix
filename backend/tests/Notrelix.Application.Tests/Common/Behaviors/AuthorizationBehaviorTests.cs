@@ -44,6 +44,11 @@ public class AuthorizationBehaviorTests
 
     public sealed record UnclassifiedRequest : IRequest<string>;
 
+    public sealed record SystemInternalPlainRequest : IRequest<string>, ISystemInternalRequest
+    {
+        public UseCaseSecurityKind SecurityKind => UseCaseSecurityKind.SystemInternal;
+    }
+
     // --- Helpers ---
 
     private static Mock<ICurrentUser> CreateAuthenticatedUser()
@@ -104,6 +109,42 @@ public class AuthorizationBehaviorTests
     }
 
     [Fact]
+    public async Task SystemInternalRequest_WithoutUser_BypassesAuth_CallsHandler()
+    {
+        var handlerCalled = false;
+        var behavior = CreateBehavior<SystemInternalPlainRequest>(user: CreateUnauthenticatedUser());
+
+        RequestHandlerDelegate<string> next = _ =>
+        {
+            handlerCalled = true;
+            return Task.FromResult("ok");
+        };
+
+        var result = await behavior.Handle(new SystemInternalPlainRequest(), next, CancellationToken.None);
+
+        result.Should().Be("ok");
+        handlerCalled.Should().BeTrue("system-internal request should bypass auth and call handler even without user context");
+    }
+
+    [Fact]
+    public async Task SystemInternalRequest_WithUser_BypassesAuth_CallsHandler()
+    {
+        var handlerCalled = false;
+        var behavior = CreateBehavior<SystemInternalPlainRequest>(user: CreateAuthenticatedUser());
+
+        RequestHandlerDelegate<string> next = _ =>
+        {
+            handlerCalled = true;
+            return Task.FromResult("ok");
+        };
+
+        var result = await behavior.Handle(new SystemInternalPlainRequest(), next, CancellationToken.None);
+
+        result.Should().Be("ok");
+        handlerCalled.Should().BeTrue("system-internal request should call handler even with authenticated user");
+    }
+
+    [Fact]
     public async Task AuthenticatedRequest_WithUser_CallsHandler()
     {
         var handlerCalled = false;
@@ -118,7 +159,7 @@ public class AuthorizationBehaviorTests
         var result = await behavior.Handle(new AuthenticatedRequest(), next, CancellationToken.None);
 
         result.Should().Be("ok");
-        handlerCalled.Should().BeTrue("authenticated request should call handler");
+        handlerCalled.Should().BeTrue("authenticated request with user should call handler");
     }
 
     [Fact]

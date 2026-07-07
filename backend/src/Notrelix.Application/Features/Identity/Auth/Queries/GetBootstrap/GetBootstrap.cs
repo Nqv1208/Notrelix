@@ -1,20 +1,27 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.CQRS.Scoping;
+using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.GetBootstrap;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Queries.GetBootstrap;
 
-public record GetBootstrapQuery(Guid UserId) : IQuery<Result<BootstrapResult>>;
+public record GetBootstrapQuery(Guid UserId) : IQuery<Result<BootstrapResult>>, IGlobalRequest;
 
 public class GetBootstrapQueryHandler : IRequestHandler<GetBootstrapQuery, Result<BootstrapResult>>
 {
     private readonly IIdentityDbContext _identityContext;
+    private readonly IAccountDbContext _accountContext;
     private readonly IWorkspaceDbContext _workspaceContext;
 
-    public GetBootstrapQueryHandler(IIdentityDbContext identityContext, IWorkspaceDbContext workspaceContext)
+    public GetBootstrapQueryHandler(
+        IIdentityDbContext identityContext,
+        IAccountDbContext accountContext,
+        IWorkspaceDbContext workspaceContext)
     {
         _identityContext = identityContext;
+        _accountContext = accountContext;
         _workspaceContext = workspaceContext;
     }
 
@@ -42,9 +49,18 @@ public class GetBootstrapQueryHandler : IRequestHandler<GetBootstrapQuery, Resul
                 })
             .ToListAsync(cancellationToken);
 
-        var personalWorkspace = await _workspaceContext.Workspaces
+        var accountMember = await _accountContext.AccountMembers
             .AsNoTracking()
-            .FirstOrDefaultAsync(w => w.CreatedBy == request.UserId && w.IsPersonal, cancellationToken);
+            .FirstOrDefaultAsync(m => m.UserId == request.UserId, cancellationToken);
+
+        Guid? personalWorkspaceId = null;
+        if (accountMember is not null)
+        {
+            var pw = await _workspaceContext.Workspaces
+                .AsNoTracking()
+                .FirstOrDefaultAsync(w => w.AccountId == accountMember.AccountId && w.IsPersonal, cancellationToken);
+            personalWorkspaceId = pw?.Id;
+        }
 
         return Result<BootstrapResult>.Success(new BootstrapResult
         {
@@ -58,8 +74,8 @@ public class GetBootstrapQueryHandler : IRequestHandler<GetBootstrapQuery, Resul
             Workspaces = workspaces,
             PersonalWorkspace = new PersonalWorkspaceStatus
             {
-                Status = personalWorkspace is not null ? "ready" : "pending",
-                WorkspaceId = personalWorkspace?.Id
+                Status = personalWorkspaceId is not null ? "ready" : "pending",
+                WorkspaceId = personalWorkspaceId
             }
         });
     }

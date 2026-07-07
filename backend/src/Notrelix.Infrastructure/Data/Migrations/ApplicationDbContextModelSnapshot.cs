@@ -118,7 +118,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasName("pk_accounts");
 
                     b.HasIndex("Slug")
-                        .IsUnique()
                         .HasDatabaseName("idx_account_slug");
 
                     b.ToTable("accounts", "account");
@@ -8762,9 +8761,9 @@ namespace Notrelix.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_workspaces");
 
-                    b.HasIndex("CreatedBy")
+                    b.HasIndex("AccountId")
                         .IsUnique()
-                        .HasDatabaseName("idx_workspaces_personal_per_user")
+                        .HasDatabaseName("idx_workspaces_personal_per_account")
                         .HasFilter("is_personal = true AND deleted_at IS NULL");
 
                     b.HasIndex("Name")

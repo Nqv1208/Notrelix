@@ -651,6 +651,26 @@ public class ApplicationArchitectureTests
             "ConsumerPipelineExecutor must not use workspaceId ?? accountId fallback pattern");
     }
 
+    [Fact]
+    public void AuthorizedCacheableRequests_Must_Use_AuthorizedCacheKeyBuilder()
+    {
+        var files = GetApplicationFeatureFiles();
+        var violations = new List<string>();
+
+        foreach (var file in files)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            if (!content.Contains("IAuthorizedCacheableRequest")) continue;
+            if (content.Contains("AuthorizedCacheKeyBuilder.")) continue;
+
+            violations.Add(Path.GetFileName(file));
+        }
+
+        violations.Should().BeEmpty(
+            "All classes implementing IAuthorizedCacheableRequest must use AuthorizedCacheKeyBuilder to build cache keys. " +
+            "Violations: " + string.Join(", ", violations));
+    }
+
     private static string RemoveComments(string input)
     {
         var blockComments = @"/\*(.*?)\*/";
