@@ -457,6 +457,67 @@ public class PipelineExecutionTests
         await postCommitBehavior.Handle(new SideEffectCommand(), postCommitNext, CancellationToken.None);
     }
 
+    [Fact]
+    public async Task Pipeline_SaveChangesFailure_DoesNotFlushPostCommit()
+    {
+        var mockContext = CreateMockContext(throwOnSave: true);
+        var mockPostCommit = CreateMockPostCommitQueue();
+
+        var transactionBehavior = new DbRequestScopeBehavior<SideEffectCommand, string>(
+            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
+
+        var enqueueBehavior = new PostCommitEnqueueBehavior<SideEffectCommand, string>(
+            mockPostCommit.Object, Mock.Of<IRealtimePublisher>(), CreateMockExecutionContext(), Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
+
+        var postCommitBehavior = new PostCommitScopeBehavior<SideEffectCommand, string>(
+            mockPostCommit.Object, Mock.Of<ILogger<PostCommitScopeBehavior<SideEffectCommand, string>>>());
+
+        RequestHandlerDelegate<string> txNext = _ => Task.FromResult("ok");
+
+        RequestHandlerDelegate<string> enqueueNext = ct =>
+            transactionBehavior.Handle(new SideEffectCommand(), txNext, ct);
+
+        RequestHandlerDelegate<string> postCommitNext = ct =>
+            enqueueBehavior.Handle(new SideEffectCommand(), enqueueNext, ct);
+
+        Func<Task> act = () => postCommitBehavior.Handle(new SideEffectCommand(), postCommitNext, CancellationToken.None);
+
+        await act.Should().ThrowAsync<DbUpdateException>();
+        mockContext.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        mockPostCommit.Verify(x => x.FlushAsync(It.IsAny<CancellationToken>()), Times.Never);
+        mockPostCommit.Verify(x => x.Clear(), Times.Once);
+    }
+
+    [Fact]
+    public async Task Pipeline_HandlerFailure_DoesNotFlushPostCommit()
+    {
+        var mockContext = CreateMockContext();
+        var mockPostCommit = CreateMockPostCommitQueue();
+
+        var transactionBehavior = new DbRequestScopeBehavior<SideEffectCommand, string>(
+            mockContext.Object, CreateMockRls().Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
+
+        var enqueueBehavior = new PostCommitEnqueueBehavior<SideEffectCommand, string>(
+            mockPostCommit.Object, Mock.Of<IRealtimePublisher>(), CreateMockExecutionContext(), Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
+
+        var postCommitBehavior = new PostCommitScopeBehavior<SideEffectCommand, string>(
+            mockPostCommit.Object, Mock.Of<ILogger<PostCommitScopeBehavior<SideEffectCommand, string>>>());
+
+        RequestHandlerDelegate<string> txNext = _ => throw new InvalidOperationException("handler failed");
+
+        RequestHandlerDelegate<string> enqueueNext = ct =>
+            transactionBehavior.Handle(new SideEffectCommand(), txNext, ct);
+
+        RequestHandlerDelegate<string> postCommitNext = ct =>
+            enqueueBehavior.Handle(new SideEffectCommand(), enqueueNext, ct);
+
+        Func<Task> act = () => postCommitBehavior.Handle(new SideEffectCommand(), postCommitNext, CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        mockPostCommit.Verify(x => x.FlushAsync(It.IsAny<CancellationToken>()), Times.Never);
+        mockPostCommit.Verify(x => x.Clear(), Times.Once);
+    }
+
     #endregion
 
     #region 4. Idempotency behavior

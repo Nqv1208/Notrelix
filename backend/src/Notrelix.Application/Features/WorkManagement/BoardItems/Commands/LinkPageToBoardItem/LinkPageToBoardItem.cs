@@ -12,23 +12,20 @@ public record LinkPageToBoardItemCommand(Guid BoardItemId, Guid PageId) : IComma
 public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoardItemCommand, Result>
 {
     private readonly IWorkManagementDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _timeProvider;
     private readonly IResourceReferenceResolver _resourceResolver;
-    private readonly ICurrentTenantContext _tenant;
 
     public LinkPageToBoardItemCommandHandler(
         IWorkManagementDbContext context,
-        ICurrentUser currentUser,
+        ICurrentRequestContext requestContext,
         IDateTimeProvider timeProvider,
-        IResourceReferenceResolver resourceResolver,
-        ICurrentTenantContext tenant)
+        IResourceReferenceResolver resourceResolver)
     {
         _context = context;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _timeProvider = timeProvider;
         _resourceResolver = resourceResolver;
-        _tenant = tenant;
     }
 
     public async Task<Result> Handle(LinkPageToBoardItemCommand request, CancellationToken cancellationToken)
@@ -49,13 +46,13 @@ public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoard
         var now = _timeProvider.UtcNow;
 
         var link = BoardItemLink.Create(
-            _tenant.RequireAccountId(),
+            _requestContext.RequireAccountId(),
             card.WorkspaceId,
             card.BoardId,
             card.Id,
             ResourceRef.Create(ResourceType.Page, request.PageId, card.WorkspaceId),
             BoardItemLinkType.Reference,
-            _currentUser.UserId,
+            _requestContext.UserId,
             now);
 
         _context.BoardItemLinks.Add(link);

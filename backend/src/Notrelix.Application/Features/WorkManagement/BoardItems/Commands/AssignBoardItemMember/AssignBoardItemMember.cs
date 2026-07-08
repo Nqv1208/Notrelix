@@ -15,23 +15,20 @@ public record AssignBoardItemMemberCommand(
 public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardItemMemberCommand, Result>
 {
     private readonly IWorkManagementDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspaceAccessResolver _workspaceAccess;
-    private readonly ICurrentTenantContext _tenant;
 
     public AssignBoardItemMemberCommandHandler(
         IWorkManagementDbContext context,
-        ICurrentUser currentUser,
+        ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
-        IWorkspaceAccessResolver workspaceAccess,
-        ICurrentTenantContext tenant)
+        IWorkspaceAccessResolver workspaceAccess)
     {
         _context = context;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
         _workspaceAccess = workspaceAccess;
-        _tenant = tenant;
     }
 
     public async Task<Result> Handle(AssignBoardItemMemberCommand request, CancellationToken ct)
@@ -40,7 +37,7 @@ public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardIt
             .FirstOrDefaultAsync(c => c.Id == request.BoardItemId, ct);
         if (card is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
-        var access = await _workspaceAccess.ResolveAsync(_tenant.RequireWorkspaceId(), request.UserId, ct);
+        var access = await _workspaceAccess.ResolveAsync(_requestContext.RequireWorkspaceId(), request.UserId, ct);
         if (!access.CanAccess)
             throw new ForbiddenException("Chỉ có thể assign thành viên thuộc cùng workspace.");
 
@@ -49,12 +46,12 @@ public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardIt
         if (alreadyAssigned) return Result.Success();
 
         var member = BoardItemMember.Create(
-            _tenant.RequireAccountId(),
+            _requestContext.RequireAccountId(),
             card.WorkspaceId,
             card.BoardId,
             card.Id,
             request.UserId,
-            _currentUser.UserId,
+            _requestContext.UserId,
             _dateTimeProvider.UtcNow);
 
         _context.BoardItemMembers.Add(member);

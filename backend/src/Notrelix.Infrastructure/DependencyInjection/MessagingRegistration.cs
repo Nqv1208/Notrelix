@@ -42,6 +42,7 @@ public static class MessagingRegistration
                     cfg.UsingInMemory((ctx, mem) =>
                     {
                         mem.UseConsumeFilter(typeof(TenantContextConsumeFilter<>), ctx);
+                        mem.UseConsumeFilter(typeof(DeduplicationConsumeFilter<>), ctx);
                         mem.ConfigureEndpoints(ctx);
                     });
                 });
@@ -99,6 +100,7 @@ public static class MessagingRegistration
                         });
 
                         rbt.UseConsumeFilter(typeof(TenantContextConsumeFilter<>), ctx);
+                        rbt.UseConsumeFilter(typeof(DeduplicationConsumeFilter<>), ctx);
 
                         rbt.PrefetchCount = opts.PrefetchCount;
 

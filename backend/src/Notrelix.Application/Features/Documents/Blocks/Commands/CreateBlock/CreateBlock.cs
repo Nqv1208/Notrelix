@@ -18,16 +18,14 @@ public record CreateBlockCommand(
 public class CreateBlockCommandHandler : IRequestHandler<CreateBlockCommand, Result<Guid>>
 {
     private readonly IDocumentDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly ICurrentTenantContext _tenant;
 
-    public CreateBlockCommandHandler(IDocumentDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider, ICurrentTenantContext tenant)
+    public CreateBlockCommandHandler(IDocumentDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
-        _tenant = tenant;
     }
 
     public async Task<Result<Guid>> Handle(CreateBlockCommand request, CancellationToken ct)
@@ -39,7 +37,7 @@ public class CreateBlockCommandHandler : IRequestHandler<CreateBlockCommand, Res
         var content = BlockContent.Create(JsonValue.Create(request.Properties ?? "{}"));
         var position = FractionalIndex.Create(request.Position);
 
-        var block = Block.Create(_tenant.RequireAccountId(), page.WorkspaceId, request.PageId, request.Type, content, position, _currentUser.UserId, _dateTimeProvider.UtcNow, parentId: request.ParentBlockId);
+        var block = Block.Create(_requestContext.RequireAccountId(), page.WorkspaceId, request.PageId, request.Type, content, position, _requestContext.UserId, _dateTimeProvider.UtcNow, parentId: request.ParentBlockId);
         _context.Blocks.Add(block);
         return Result<Guid>.Success(block.Id);
     }

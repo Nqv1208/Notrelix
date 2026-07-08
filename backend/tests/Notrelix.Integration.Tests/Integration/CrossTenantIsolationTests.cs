@@ -1,4 +1,12 @@
+using Notrelix.Domain.Collaboration.Comments;
+using Notrelix.Domain.Documents.Pages;
+using Notrelix.Domain.SharedKernel;
+using Notrelix.Domain.Workspaces.Spaces;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Domain.WorkManagement.BoardGroups;
+using Notrelix.Domain.WorkManagement.Fields;
+using Notrelix.Domain.WorkManagement.Forms;
+using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
@@ -352,5 +360,266 @@ public class CrossTenantIsolationTests : IAsyncLifetime
 
         var allBoards = await context.Boards.IgnoreQueryFilters().ToListAsync();
         allBoards.Should().HaveCount(2, "IgnoreQueryFilters should bypass workspace filter");
+    }
+
+    // ============================================================
+    // Part C — Extended cross-tenant isolation (7 entity types)
+    // Each test creates boards first, then child entities per workspace.
+    // ============================================================
+
+    [Fact]
+    public async Task BoardItem_CrossTenant_IsIsolated()
+    {
+        var wsA = TestIds.NewWorkspaceId();
+        var wsB = TestIds.NewWorkspaceId();
+
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
+
+        var boardA = new BoardBuilder().WithAccountId(AccountId).WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build();
+        var boardB = new BoardBuilder().WithAccountId(AccountId).WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B").WithCreatedAt(FixedTime).Build();
+        context.Boards.AddRange(boardA, boardB);
+        await context.SaveChangesAsync();
+
+        var groupA = BoardGroup.Create(AccountId, wsA, boardA.Id, "Group A", Color.Create("#0079BF"), FractionalIndex.Initial(), OwnerId, FixedTime);
+        var groupB = BoardGroup.Create(AccountId, wsB, boardB.Id, "Group B", Color.Create("#0079BF"), FractionalIndex.Initial(), OwnerId, FixedTime);
+        context.BoardGroups.AddRange(groupA, groupB);
+        await context.SaveChangesAsync();
+
+        var itemA = BoardItem.Create(AccountId, wsA, boardA.Id, groupA.Id, "Item A", FractionalIndex.Initial(), OwnerId, FixedTime);
+        var itemB = BoardItem.Create(AccountId, wsB, boardB.Id, groupB.Id, "Item B", FractionalIndex.Initial(), OwnerId, FixedTime);
+        context.BoardItems.AddRange(itemA, itemB);
+        await context.SaveChangesAsync();
+
+        tenant.SetWorkspace(AccountId, wsA, null);
+        var itemsInA = await context.BoardItems.ToListAsync();
+        itemsInA.Should().HaveCount(1);
+        itemsInA.Should().AllSatisfy(i => i.WorkspaceId.Should().Be(wsA));
+
+        tenant.SetWorkspace(AccountId, wsB, null);
+        var itemsInB = await context.BoardItems.ToListAsync();
+        itemsInB.Should().HaveCount(1);
+        itemsInB.Should().AllSatisfy(i => i.WorkspaceId.Should().Be(wsB));
+    }
+
+    [Fact]
+    public async Task BoardField_CrossTenant_IsIsolated()
+    {
+        var wsA = TestIds.NewWorkspaceId();
+        var wsB = TestIds.NewWorkspaceId();
+
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
+
+        var boardA = new BoardBuilder().WithAccountId(AccountId).WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build();
+        var boardB = new BoardBuilder().WithAccountId(AccountId).WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B").WithCreatedAt(FixedTime).Build();
+        context.Boards.AddRange(boardA, boardB);
+        await context.SaveChangesAsync();
+
+        var fieldA = BoardField.Create(AccountId, wsA, boardA.Id, "Field A", FieldType.Text, FieldSettings.Empty(), FractionalIndex.Initial(), OwnerId, FixedTime);
+        var fieldB = BoardField.Create(AccountId, wsB, boardB.Id, "Field B", FieldType.Text, FieldSettings.Empty(), FractionalIndex.Initial(), OwnerId, FixedTime);
+        context.BoardFields.AddRange(fieldA, fieldB);
+        await context.SaveChangesAsync();
+
+        tenant.SetWorkspace(AccountId, wsA, null);
+        var fieldsInA = await context.BoardFields.ToListAsync();
+        fieldsInA.Should().HaveCount(1);
+        fieldsInA.Should().AllSatisfy(f => f.WorkspaceId.Should().Be(wsA));
+
+        tenant.SetWorkspace(AccountId, wsB, null);
+        var fieldsInB = await context.BoardFields.ToListAsync();
+        fieldsInB.Should().HaveCount(1);
+        fieldsInB.Should().AllSatisfy(f => f.WorkspaceId.Should().Be(wsB));
+    }
+
+    [Fact]
+    public async Task Page_CrossTenant_IsIsolated()
+    {
+        var wsA = TestIds.NewWorkspaceId();
+        var wsB = TestIds.NewWorkspaceId();
+
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
+
+        var pageA = Page.Create(AccountId, wsA, "Page A", OwnerId, FixedTime);
+        var pageB = Page.Create(AccountId, wsB, "Page B", OwnerId, FixedTime);
+        context.Pages.AddRange(pageA, pageB);
+        await context.SaveChangesAsync();
+
+        tenant.SetWorkspace(AccountId, wsA, null);
+        var pagesInA = await context.Pages.ToListAsync();
+        pagesInA.Should().HaveCount(1);
+        pagesInA.Should().AllSatisfy(p => p.WorkspaceId.Should().Be(wsA));
+
+        tenant.SetWorkspace(AccountId, wsB, null);
+        var pagesInB = await context.Pages.ToListAsync();
+        pagesInB.Should().HaveCount(1);
+        pagesInB.Should().AllSatisfy(p => p.WorkspaceId.Should().Be(wsB));
+    }
+
+    [Fact]
+    public async Task Comment_CrossTenant_IsIsolated()
+    {
+        var wsA = TestIds.NewWorkspaceId();
+        var wsB = TestIds.NewWorkspaceId();
+
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
+
+        var boardA = new BoardBuilder().WithAccountId(AccountId).WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build();
+        var boardB = new BoardBuilder().WithAccountId(AccountId).WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B").WithCreatedAt(FixedTime).Build();
+        context.Boards.AddRange(boardA, boardB);
+        await context.SaveChangesAsync();
+
+        var targetA = ResourceRef.Create(ResourceType.Board, boardA.Id, wsA);
+        var targetB = ResourceRef.Create(ResourceType.Board, boardB.Id, wsB);
+        var commentA = Comment.Create(AccountId, wsA, targetA, "\"Comment A\"", OwnerId, FixedTime);
+        var commentB = Comment.Create(AccountId, wsB, targetB, "\"Comment B\"", OwnerId, FixedTime);
+        context.Comments.AddRange(commentA, commentB);
+        await context.SaveChangesAsync();
+
+        tenant.SetWorkspace(AccountId, wsA, null);
+        var commentsInA = await context.Comments.ToListAsync();
+        commentsInA.Should().HaveCount(1);
+        commentsInA.Should().AllSatisfy(c => c.WorkspaceId.Should().Be(wsA));
+
+        tenant.SetWorkspace(AccountId, wsB, null);
+        var commentsInB = await context.Comments.ToListAsync();
+        commentsInB.Should().HaveCount(1);
+        commentsInB.Should().AllSatisfy(c => c.WorkspaceId.Should().Be(wsB));
+    }
+
+    [Fact]
+    public async Task Form_CrossTenant_IsIsolated()
+    {
+        var wsA = TestIds.NewWorkspaceId();
+        var wsB = TestIds.NewWorkspaceId();
+
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
+
+        var boardA = new BoardBuilder().WithAccountId(AccountId).WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build();
+        var boardB = new BoardBuilder().WithAccountId(AccountId).WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B").WithCreatedAt(FixedTime).Build();
+        context.Boards.AddRange(boardA, boardB);
+        await context.SaveChangesAsync();
+
+        var formA = Form.Create(AccountId, wsA, boardA.Id, "Form A", "form-a", OwnerId, FixedTime);
+        var formB = Form.Create(AccountId, wsB, boardB.Id, "Form B", "form-b", OwnerId, FixedTime);
+        context.Forms.AddRange(formA, formB);
+        await context.SaveChangesAsync();
+
+        tenant.SetWorkspace(AccountId, wsA, null);
+        var formsInA = await context.Forms.ToListAsync();
+        formsInA.Should().HaveCount(1);
+        formsInA.Should().AllSatisfy(f => f.WorkspaceId.Should().Be(wsA));
+
+        tenant.SetWorkspace(AccountId, wsB, null);
+        var formsInB = await context.Forms.ToListAsync();
+        formsInB.Should().HaveCount(1);
+        formsInB.Should().AllSatisfy(f => f.WorkspaceId.Should().Be(wsB));
+    }
+
+    [Fact]
+    public async Task Space_CrossTenant_IsIsolated()
+    {
+        var wsA = TestIds.NewWorkspaceId();
+        var wsB = TestIds.NewWorkspaceId();
+
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
+
+        var spaceA = Space.Create(AccountId, wsA, "Space A", SpaceVisibility.Private, OwnerId, FixedTime);
+        var spaceB = Space.Create(AccountId, wsB, "Space B", SpaceVisibility.Private, OwnerId, FixedTime);
+        context.Spaces.AddRange(spaceA, spaceB);
+        await context.SaveChangesAsync();
+
+        tenant.SetWorkspace(AccountId, wsA, null);
+        var spacesInA = await context.Spaces.ToListAsync();
+        spacesInA.Should().HaveCount(1);
+        spacesInA.Should().AllSatisfy(s => s.WorkspaceId.Should().Be(wsA));
+
+        tenant.SetWorkspace(AccountId, wsB, null);
+        var spacesInB = await context.Spaces.ToListAsync();
+        spacesInB.Should().HaveCount(1);
+        spacesInB.Should().AllSatisfy(s => s.WorkspaceId.Should().Be(wsB));
+    }
+
+    [Fact]
+    public async Task AllScopedEntities_CrossTenant_SimultaneouslyIsolated()
+    {
+        var wsA = TestIds.NewWorkspaceId();
+        var wsB = TestIds.NewWorkspaceId();
+
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        await using var context = CreateContext(tenant);
+
+        var boardA = new BoardBuilder().WithAccountId(AccountId).WithWorkspaceId(wsA).WithCreatedBy(OwnerId).WithTitle("Board A").WithCreatedAt(FixedTime).Build();
+        var boardB = new BoardBuilder().WithAccountId(AccountId).WithWorkspaceId(wsB).WithCreatedBy(OwnerId).WithTitle("Board B").WithCreatedAt(FixedTime).Build();
+        context.Boards.AddRange(boardA, boardB);
+        await context.SaveChangesAsync();
+
+        var groupA = BoardGroup.Create(AccountId, wsA, boardA.Id, "Group A", Color.Create("#0079BF"), FractionalIndex.Initial(), OwnerId, FixedTime);
+        var groupB = BoardGroup.Create(AccountId, wsB, boardB.Id, "Group B", Color.Create("#0079BF"), FractionalIndex.Initial(), OwnerId, FixedTime);
+        context.BoardGroups.AddRange(groupA, groupB);
+        await context.SaveChangesAsync();
+
+        context.BoardItems.Add(BoardItem.Create(AccountId, wsA, boardA.Id, groupA.Id, "Item A", FractionalIndex.Initial(), OwnerId, FixedTime));
+        context.BoardItems.Add(BoardItem.Create(AccountId, wsB, boardB.Id, groupB.Id, "Item B", FractionalIndex.Initial(), OwnerId, FixedTime));
+
+        context.BoardFields.Add(BoardField.Create(AccountId, wsA, boardA.Id, "Field A", FieldType.Text, FieldSettings.Empty(), FractionalIndex.Initial(), OwnerId, FixedTime));
+        context.BoardFields.Add(BoardField.Create(AccountId, wsB, boardB.Id, "Field B", FieldType.Text, FieldSettings.Empty(), FractionalIndex.Initial(), OwnerId, FixedTime));
+
+        context.Pages.Add(Page.Create(AccountId, wsA, "Page A", OwnerId, FixedTime));
+        context.Pages.Add(Page.Create(AccountId, wsB, "Page B", OwnerId, FixedTime));
+
+        var targetA = ResourceRef.Create(ResourceType.Board, boardA.Id, wsA);
+        var targetB = ResourceRef.Create(ResourceType.Board, boardB.Id, wsB);
+        context.Comments.Add(Comment.Create(AccountId, wsA, targetA, "\"Comment A\"", OwnerId, FixedTime));
+        context.Comments.Add(Comment.Create(AccountId, wsB, targetB, "\"Comment B\"", OwnerId, FixedTime));
+
+        context.Forms.Add(Form.Create(AccountId, wsA, boardA.Id, "Form A", "form-a", OwnerId, FixedTime));
+        context.Forms.Add(Form.Create(AccountId, wsB, boardB.Id, "Form B", "form-b", OwnerId, FixedTime));
+
+        context.Spaces.Add(Space.Create(AccountId, wsA, "Space A", SpaceVisibility.Private, OwnerId, FixedTime));
+        context.Spaces.Add(Space.Create(AccountId, wsB, "Space B", SpaceVisibility.Private, OwnerId, FixedTime));
+
+        await context.SaveChangesAsync();
+
+        tenant.SetWorkspace(AccountId, wsA, null);
+
+        var boards = await context.Boards.ToListAsync();
+        boards.Should().HaveCount(1);
+        boards.Should().AllSatisfy(b => b.WorkspaceId.Should().Be(wsA));
+
+        var items = await context.BoardItems.ToListAsync();
+        items.Should().HaveCount(1);
+        items.Should().AllSatisfy(i => i.WorkspaceId.Should().Be(wsA));
+
+        var fields = await context.BoardFields.ToListAsync();
+        fields.Should().HaveCount(1);
+        fields.Should().AllSatisfy(f => f.WorkspaceId.Should().Be(wsA));
+
+        var pages = await context.Pages.ToListAsync();
+        pages.Should().HaveCount(1);
+        pages.Should().AllSatisfy(p => p.WorkspaceId.Should().Be(wsA));
+
+        var comments = await context.Comments.ToListAsync();
+        comments.Should().HaveCount(1);
+        comments.Should().AllSatisfy(c => c.WorkspaceId.Should().Be(wsA));
+
+        var forms = await context.Forms.ToListAsync();
+        forms.Should().HaveCount(1);
+        forms.Should().AllSatisfy(f => f.WorkspaceId.Should().Be(wsA));
+
+        var spaces = await context.Spaces.ToListAsync();
+        spaces.Should().HaveCount(1);
+        spaces.Should().AllSatisfy(s => s.WorkspaceId.Should().Be(wsA));
     }
 }

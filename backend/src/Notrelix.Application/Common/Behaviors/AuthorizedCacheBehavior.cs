@@ -8,17 +8,20 @@ public class AuthorizedCacheBehavior<TRequest, TResponse> : IPipelineBehavior<TR
     private readonly IRedisCacheService _cache;
     private readonly CacheKeyFactory _keyFactory;
     private readonly ICurrentTenantContext _tenantContext;
+    private readonly IPermissionVersionProvider _permissionVersionProvider;
     private readonly ILogger<AuthorizedCacheBehavior<TRequest, TResponse>> _logger;
 
     public AuthorizedCacheBehavior(
         IRedisCacheService cache,
         CacheKeyFactory keyFactory,
         ICurrentTenantContext tenantContext,
+        IPermissionVersionProvider permissionVersionProvider,
         ILogger<AuthorizedCacheBehavior<TRequest, TResponse>> logger)
     {
         _cache = cache;
         _keyFactory = keyFactory;
         _tenantContext = tenantContext;
+        _permissionVersionProvider = permissionVersionProvider;
         _logger = logger;
     }
 
@@ -47,7 +50,13 @@ public class AuthorizedCacheBehavior<TRequest, TResponse> : IPipelineBehavior<TR
 
             AuthorizedCacheScope.Permissioned => _keyFactory.Permissioned(
                 _tenantContext.RequireAccountId(), _tenantContext.RequireWorkspaceId(),
-                _tenantContext.RequireUserId(), "default", requestName, requestHash),
+                _tenantContext.RequireUserId(),
+                await _permissionVersionProvider.GetVersionAsync(
+                    _tenantContext.RequireAccountId(),
+                    _tenantContext.RequireWorkspaceId(),
+                    _tenantContext.RequireUserId(),
+                    cancellationToken),
+                requestName, requestHash),
 
             _ => throw new SecurityMisconfigurationException(
                 $"Unknown AuthorizedCacheScope '{cacheable.CacheScope}' on {requestName}.")

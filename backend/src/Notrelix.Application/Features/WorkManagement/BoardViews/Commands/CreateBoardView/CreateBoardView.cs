@@ -17,16 +17,14 @@ public record CreateBoardViewCommand(
 public class CreateBoardViewCommandHandler : IRequestHandler<CreateBoardViewCommand, BoardViewDto>
 {
     private readonly IWorkManagementDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly ICurrentTenantContext _tenant;
 
-    public CreateBoardViewCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider, ICurrentTenantContext tenant)
+    public CreateBoardViewCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
-        _tenant = tenant;
     }
 
     public async Task<BoardViewDto> Handle(CreateBoardViewCommand request, CancellationToken cancellationToken)
@@ -44,7 +42,7 @@ public class CreateBoardViewCommandHandler : IRequestHandler<CreateBoardViewComm
 
         var configData = JsonValue.Create(request.ConfigJson);
         var config = BoardViewConfig.Create(configData);
-        var view = BoardView.Create(_tenant.RequireAccountId(), _tenant.RequireWorkspaceId(), request.BoardId, request.Name, type, config, _currentUser.UserId, _dateTimeProvider.UtcNow);
+        var view = BoardView.Create(_requestContext.RequireAccountId(), _requestContext.RequireWorkspaceId(), request.BoardId, request.Name, type, config, _requestContext.UserId, _dateTimeProvider.UtcNow);
 
         _context.BoardViews.Add(view);
 

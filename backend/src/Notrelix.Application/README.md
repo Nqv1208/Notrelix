@@ -1,7 +1,7 @@
 # Notrelix.Application — Layer Structure
 
-> Source of truth: `docs/backend/application/notrelix-application-enterprise-rules-v4.md`
-> and `docs/backend/application/notrelix-application-layer-development-guide.md`.
+> Source of truth: `docs/application/notrelix-application-enterprise-rules-v4.md`
+> and `docs/application/notrelix-application-layer-development-guide.md`.
 
 This document describes the **canonical folder structure** the Application layer is
 being harmonized to. The scaffolding (empty module folders) mirrors the bounded
@@ -12,24 +12,36 @@ contexts/modules of `Notrelix.Domain`.
 ```
 Notrelix.Application/
 ├── Common/                  # cross-cutting concerns (no business use-cases)
-│   ├── Abstractions/        # application-owned interfaces (DbContext, CurrentUser, ...)
-│   ├── CQRS/                # ICommand / IQuery markers + request interfaces
-│   ├── Behaviors/           # MediatR pipeline behaviors
-│   ├── Security/            # permission context, decisions, requirements
-│   ├── Tenancy/             # workspace/tenant context
-│   ├── Transactions/        # unit-of-work / transaction abstractions
-│   ├── Idempotency/         # idempotency key handling
-│   ├── Entitlements/        # feature/quota checks
-│   ├── Auditing/            # audit writer abstractions
 │   ├── Activity/            # activity feed abstractions
+│   ├── Auditing/            # audit writer abstractions
+│   ├── Behaviors/           # MediatR pipeline behaviors
 │   ├── Caching/             # cache + invalidation abstractions
+│   ├── Context/             # request context (CurrentUser, CurrentTenant, ICurrentRequestContext)
+│   ├── Data/                # data access abstractions (unit-of-work, resource versioning)
+│   ├── DTOs/                # shared DTO contracts
+│   ├── Email/               # email abstractions
+│   ├── Entitlements/        # feature/quota checks
 │   ├── Events/              # integration event contracts
-│   ├── ReadModels/          # read-service interfaces
-│   ├── Mapping/             # AutoMapper profiles
-│   ├── Validation/          # FluentValidation base rules
-│   ├── Models/              # shared DTOs/models (Result, paging, ...)
 │   ├── Exceptions/          # application-level exceptions
-│   └── Extensions/          # extension methods
+│   ├── Idempotency/         # idempotency key handling
+│   ├── Integrations/        # integration provider abstractions
+│   ├── Messaging/           # message broker abstractions
+│   ├── Models/              # shared DTOs/models (Result, paging, ...)
+│   ├── PostCommit/          # after-commit side-effect queue
+│   ├── RateLimiting/        # rate limiting abstractions
+│   ├── Requests/            # request markers (ICommand, IQuery, scoping, security, gates, execution, transactions, realtime, caching)
+│   │   ├── Scoping/         # IResourceScopedRequest, IWorkspaceRequest, workspace-scoped authorization markers
+│   │   ├── Security/        # IRequirePermission, permission action/level markers
+│   │   ├── Gates/           # request gate interfaces (feature gates, rate limits)
+│   │   ├── Transactions/    # ITransactionalRequest marker
+│   │   ├── Caching/         # cache-control request markers
+│   │   ├── Execution/       # execution policy markers (offline, background)
+│   │   └── Realtime/        # realtime broadcast request markers
+│   ├── Security/            # permission context, decisions, version providers
+│   ├── Storage/             # file storage abstractions
+│   ├── SystemOperations/    # system-level operation abstractions
+│   ├── Tenancy/             # workspace/tenant context branching
+│   └── Time/                # IDateTimeProvider abstraction
 │
 └── Features/                # one folder per bounded context
     └── {BoundedContext}/

@@ -10,22 +10,19 @@ public record CreateBoardBySlugCommand(string Slug, string Title, string? Descri
 public class CreateBoardBySlugCommandHandler : IRequestHandler<CreateBoardBySlugCommand, Result<Guid>>
 {
     private readonly IWorkManagementDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly ICurrentTenantContext _tenant;
     private readonly IWorkspaceAccessResolver _workspaceAccess;
 
     public CreateBoardBySlugCommandHandler(
         IWorkManagementDbContext context,
-        ICurrentUser currentUser,
+        ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
-        ICurrentTenantContext tenant,
         IWorkspaceAccessResolver workspaceAccess)
     {
         _context = context;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
-        _tenant = tenant;
         _workspaceAccess = workspaceAccess;
     }
 
@@ -38,18 +35,18 @@ public class CreateBoardBySlugCommandHandler : IRequestHandler<CreateBoardBySlug
         var createdAt = _dateTimeProvider.UtcNow;
         var visibility = request.Visibility ?? BoardVisibility.Workspace;
 
-        var board = BoardEntity.Create(_tenant.RequireAccountId(), workspace.Id, _currentUser.UserId, request.Title, request.Description, createdAt, visibility);
+        var board = BoardEntity.Create(_requestContext.RequireAccountId(), workspace.Id, _requestContext.UserId, request.Title, request.Description, createdAt, visibility);
 
-        if (request.Background is not null) board.UpdateBackground(request.Background, _currentUser.UserId, createdAt);
+        if (request.Background is not null) board.UpdateBackground(request.Background, _requestContext.UserId, createdAt);
 
         _context.Boards.Add(board);
 
         var defaultFields = new[]
         {
-            BoardFieldEntity.Create(_tenant.RequireAccountId(), board.WorkspaceId, board.Id, "Title", FieldType.Text, FieldSettings.Empty(), FractionalIndex.Create("a0"), _currentUser.UserId, createdAt, isSystem: true),
-            BoardFieldEntity.Create(_tenant.RequireAccountId(), board.WorkspaceId, board.Id, "Status", FieldType.Status, FieldSettings.Empty(), FractionalIndex.Create("a1"), _currentUser.UserId, createdAt, isSystem: true),
-            BoardFieldEntity.Create(_tenant.RequireAccountId(), board.WorkspaceId, board.Id, "Assignee", FieldType.Person, FieldSettings.Empty(), FractionalIndex.Create("a2"), _currentUser.UserId, createdAt, isSystem: true),
-            BoardFieldEntity.Create(_tenant.RequireAccountId(), board.WorkspaceId, board.Id, "Due Date", FieldType.Date, FieldSettings.Empty(), FractionalIndex.Create("a3"), _currentUser.UserId, createdAt, isSystem: true),
+            BoardFieldEntity.Create(_requestContext.RequireAccountId(), board.WorkspaceId, board.Id, "Title", FieldType.Text, FieldSettings.Empty(), FractionalIndex.Create("a0"), _requestContext.UserId, createdAt, isSystem: true),
+            BoardFieldEntity.Create(_requestContext.RequireAccountId(), board.WorkspaceId, board.Id, "Status", FieldType.Status, FieldSettings.Empty(), FractionalIndex.Create("a1"), _requestContext.UserId, createdAt, isSystem: true),
+            BoardFieldEntity.Create(_requestContext.RequireAccountId(), board.WorkspaceId, board.Id, "Assignee", FieldType.Person, FieldSettings.Empty(), FractionalIndex.Create("a2"), _requestContext.UserId, createdAt, isSystem: true),
+            BoardFieldEntity.Create(_requestContext.RequireAccountId(), board.WorkspaceId, board.Id, "Due Date", FieldType.Date, FieldSettings.Empty(), FractionalIndex.Create("a3"), _requestContext.UserId, createdAt, isSystem: true),
         };
         _context.BoardFields.AddRange(defaultFields);
 

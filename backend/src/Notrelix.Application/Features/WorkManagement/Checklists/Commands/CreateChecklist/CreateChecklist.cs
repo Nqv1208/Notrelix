@@ -12,16 +12,14 @@ public record CreateChecklistCommand(Guid BoardItemId, string Title) : ICommand<
 public class CreateChecklistCommandHandler : IRequestHandler<CreateChecklistCommand, Result<Guid>>
 {
     private readonly IWorkManagementDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly ICurrentTenantContext _tenant;
 
-    public CreateChecklistCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider, ICurrentTenantContext tenant)
+    public CreateChecklistCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
-        _tenant = tenant;
     }
 
     public async Task<Result<Guid>> Handle(CreateChecklistCommand request, CancellationToken ct)
@@ -33,7 +31,7 @@ public class CreateChecklistCommandHandler : IRequestHandler<CreateChecklistComm
             throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
         var position = FractionalIndex.Initial();
-        var checklist = Checklist.Create(_tenant.RequireAccountId(), item.WorkspaceId, request.BoardItemId, request.Title, position, _currentUser.UserId, _dateTimeProvider.UtcNow);
+        var checklist = Checklist.Create(_requestContext.RequireAccountId(), item.WorkspaceId, request.BoardItemId, request.Title, position, _requestContext.UserId, _dateTimeProvider.UtcNow);
         _context.Checklists.Add(checklist);
         return Result<Guid>.Success(checklist.Id);
     }

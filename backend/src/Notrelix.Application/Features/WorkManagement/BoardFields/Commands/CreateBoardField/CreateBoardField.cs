@@ -12,20 +12,17 @@ public record CreateBoardFieldCommand(Guid BoardId, string Name, string FieldTyp
 public class CreateBoardFieldCommandHandler : IRequestHandler<CreateBoardFieldCommand, Result<Guid>>
 {
     private readonly IWorkManagementDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly ICurrentTenantContext _tenant;
 
     public CreateBoardFieldCommandHandler(
         IWorkManagementDbContext context,
-        ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider,
-        ICurrentTenantContext tenant)
+        ICurrentRequestContext requestContext,
+        IDateTimeProvider dateTimeProvider)
     {
         _context = context;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
-        _tenant = tenant;
     }
 
     public async Task<Result<Guid>> Handle(CreateBoardFieldCommand request, CancellationToken ct)
@@ -48,14 +45,14 @@ public class CreateBoardFieldCommandHandler : IRequestHandler<CreateBoardFieldCo
             : FieldType.Text;
 
         var column = BoardField.Create(
-            _tenant.RequireAccountId(),
+            _requestContext.RequireAccountId(),
             board.WorkspaceId,
             request.BoardId,
             request.Name,
             type,
             settings,
             position,
-            _currentUser.UserId,
+            _requestContext.UserId,
             now);
 
         _context.BoardFields.Add(column);

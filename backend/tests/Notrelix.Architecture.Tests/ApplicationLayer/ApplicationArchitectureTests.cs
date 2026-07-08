@@ -148,7 +148,7 @@ public class ApplicationArchitectureTests
             .Where(l => l.Contains("AddTransient(typeof(IPipelineBehavior<"))
             .ToList();
 
-        lines.Should().HaveCount(15, "expected exactly 15 pipeline behaviors");
+        lines.Should().HaveCount(16, "expected exactly 16 pipeline behaviors");
 
         var expectedOrder = new[]
         {
@@ -162,6 +162,7 @@ public class ApplicationArchitectureTests
             "PublicCacheBehavior",
             "DbRequestScopeBehavior",
             "AuthorizationBehavior",
+            "ConcurrencyBehavior",
             "SubscriptionGateBehavior",
             "FeatureGateBehavior",
             "IdempotencyBehavior",
@@ -750,12 +751,15 @@ public class ApplicationArchitectureTests
         foreach (var file in files)
         {
             var content = RemoveComments(File.ReadAllText(file));
-            if (content.Contains("CacheScope.Permissioned") || content.Contains("AuthorizedCacheScope.Permissioned"))
+            if (!content.Contains("CacheScope.Permissioned") && !content.Contains("AuthorizedCacheScope.Permissioned"))
+                continue;
+
+            if (!content.Contains("IRequirePermission") && !content.Contains("IWorkspaceRequest") && !content.Contains("IResourceScopedRequest"))
                 violations.Add(Path.GetFileName(file));
         }
 
         violations.Should().BeEmpty(
-            "Permissioned cache scope must not be used before IPermissionVersionProvider exists: " +
+            "Permissioned cache scope queries must implement IRequirePermission and IResourceScopedRequest: " +
             string.Join(", ", violations));
     }
 

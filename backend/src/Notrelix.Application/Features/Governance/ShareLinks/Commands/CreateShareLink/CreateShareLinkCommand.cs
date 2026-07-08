@@ -28,34 +28,31 @@ public record CreateShareLinkCommand(
 public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkCommand, Result<CreateShareLinkResponse>>
 {
     private readonly IGovernanceDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly ICurrentTenantContext _tenant;
 
     public CreateShareLinkCommandHandler(
         IGovernanceDbContext context,
-        ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider,
-        ICurrentTenantContext tenant)
+        ICurrentRequestContext requestContext,
+        IDateTimeProvider dateTimeProvider)
     {
         _context = context;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
-        _tenant = tenant;
     }
 
     public Task<Result<CreateShareLinkResponse>> Handle(
         CreateShareLinkCommand request,
         CancellationToken cancellationToken)
     {
-        var actorId = _currentUser.UserId;
-        var workspaceId = _tenant.RequireWorkspaceId();
+        var actorId = _requestContext.UserId;
+        var workspaceId = _requestContext.RequireWorkspaceId();
 
         var rawToken = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
         var tokenHash = ShareLinkTokenHash.Create(rawToken);
 
         var shareLink = ShareLink.Create(
-            _tenant.RequireAccountId(),
+            _requestContext.RequireAccountId(),
             workspaceId,
             request.ResourceType,
             request.ResourceId,
