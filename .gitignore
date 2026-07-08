@@ -2,6 +2,7 @@
 
 .env
 .env.*
+!.env.example
 
 # Skill for Coding Agents
 .codex/*
