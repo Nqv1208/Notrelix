@@ -1,6 +1,5 @@
 using System.Reflection;
 using Notrelix.Domain.Common;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Architecture.Tests;
 
