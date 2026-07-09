@@ -12,7 +12,12 @@ export interface InvitationsEndpoints {
 export function createInvitationsService(
   api: WorkspaceApiClient,
   endpoints: InvitationsEndpoints,
+  options?: {
+    mockMode?: boolean;
+  },
 ) {
+  const mockMode = options?.mockMode === true;
+
   return {
     async getByToken(token: string): Promise<WorkspaceInvitation> {
       return api.get<WorkspaceInvitation>(endpoints.workspaces.invitationByToken(token));
@@ -32,22 +37,27 @@ export function createInvitationsService(
       _workspaceId: string,
       _input: CreateWorkspaceInvitationInput,
     ): Promise<WorkspaceInvitation> {
-      // PENDING BACKEND IMPLEMENTATION
-      console.warn('POST /workspaces/{workspaceId}/invitations is pending backend validation.');
-      return {
-        id: 'stub-invitation',
-        email: _input.email,
-        role: _input.role as 'member',
-        expiresAt: new Date(Date.now() + 86400000).toISOString(),
-        isAccepted: false,
-        createdAt: new Date().toISOString(),
-      };
+      if (mockMode) {
+        console.warn('POST /workspaces/{workspaceId}/invitations is pending backend validation.');
+        return {
+          id: 'stub-invitation',
+          email: _input.email,
+          role: _input.role as 'member',
+          expiresAt: new Date(Date.now() + 86400000).toISOString(),
+          isAccepted: false,
+          createdAt: new Date().toISOString(),
+        };
+      }
+      throw new Error('Endpoint not implemented by backend.');
     },
 
     // PENDING BACKEND: DELETE /workspaces/{workspaceId}/invitations/{invitationId}
     async delete(_workspaceId: string, _invitationId: string): Promise<void> {
-      // PENDING BACKEND IMPLEMENTATION
-      console.warn('DELETE /workspaces/{workspaceId}/invitations/{invitationId} is pending backend validation.');
+      if (mockMode) {
+        console.warn('DELETE /workspaces/{workspaceId}/invitations/{invitationId} is pending backend validation.');
+        return;
+      }
+      throw new Error('Endpoint not implemented by backend.');
     },
   };
 }

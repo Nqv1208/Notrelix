@@ -12,9 +12,9 @@
     "./web": "./src/web/index.ts"
   },
   "scripts": {
-    "type-check": "tsc --noEmit",
-    "test": "bun test --pass-with-no-tests",
-    "clean": "rm -rf node_modules dist"
+    "test": "vitest --passWithNoTests",
+    "clean": "rm -rf node_modules dist",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "zod": "^4.3.6",

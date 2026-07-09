@@ -6,10 +6,14 @@ import type { UserProfile } from '../../types/account';
 interface UseProfileDeps {
   api: AccountApiClient;
   endpoints: AccountEndpoints;
+  options?: {
+    mockMode?: boolean;
+  };
+
 }
 
-export function createUseProfile({ api, endpoints }: UseProfileDeps) {
-  const service = createAccountService(api, endpoints);
+export function createUseProfile({ api, endpoints, options }: UseProfileDeps) {
+  const service = createAccountService(api, endpoints, options);
 
   return function useProfile() {
     const queryClient = useQueryClient();

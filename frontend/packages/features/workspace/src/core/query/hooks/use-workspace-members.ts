@@ -5,10 +5,13 @@ import { workspaceQueryKeys } from '../keys';
 
 interface UseWorkspaceMembersDeps {
   api: WorkspaceApiClient;
+  options?: {
+    mockMode?: boolean;
+  };
 }
 
-export function createUseWorkspaceMembers({ api }: UseWorkspaceMembersDeps) {
-  const service = createMembersService(api);
+export function createUseWorkspaceMembers({ api, options }: UseWorkspaceMembersDeps) {
+  const service = createMembersService(api, options);
 
   return function useWorkspaceMembers(workspaceId: string) {
     return useQuery({

@@ -1,8 +1,13 @@
 import { createContext, useContext, ReactNode } from 'react';
 import { createUseWorkspaceShellData, type WorkspaceSummary, type WorkspaceView } from '@notrelix/features-workspace';
+import { env } from '@/config/env';
 import { api, endpoints } from '@notrelix/contracts';
 
-const useWorkspaceShellData = createUseWorkspaceShellData({ api, endpoints });
+const useWorkspaceShellData = createUseWorkspaceShellData({
+  api,
+  endpoints,
+  options: { mockMode: env.mockApi },
+});
 
 interface WorkspaceContextType {
   workspaceId: string;

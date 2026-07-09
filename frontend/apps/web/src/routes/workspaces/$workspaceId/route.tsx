@@ -1,17 +1,28 @@
 import { Outlet, useParams } from '@tanstack/react-router';
+import { AuthGuard } from '@/shell/guards/auth-guard';
+import { WorkspaceGuard } from '@/shell/guards/workspace-guard';
+import { WorkspaceProvider } from '@/providers/workspace-provider';
+import { WorkspaceSidebar } from '@/shell/sidebar/sidebar';
+import { WorkspaceTopbar } from '@/shell/topbar/topbar';
 
 export function WorkspaceLayout() {
   const { workspaceId } = useParams({ from: '/workspaces/$workspaceId' });
 
   return (
-    <div className="min-h-screen flex">
-      <aside className="w-64 border-r bg-muted/30 p-4">
-        <h2 className="font-semibold mb-4">Workspace</h2>
-        <p className="text-sm text-muted-foreground">ID: {workspaceId}</p>
-      </aside>
-      <main className="flex-1">
-        <Outlet />
-      </main>
-    </div>
+    <AuthGuard>
+      <WorkspaceProvider workspaceId={workspaceId}>
+        <WorkspaceGuard>
+          <div className="flex h-screen w-screen overflow-hidden bg-background">
+            <WorkspaceSidebar />
+            <div className="flex-1 flex flex-col min-w-0">
+              <WorkspaceTopbar />
+              <main className="flex-1 overflow-y-auto min-h-0">
+                <Outlet />
+              </main>
+            </div>
+          </div>
+        </WorkspaceGuard>
+      </WorkspaceProvider>
+    </AuthGuard>
   );
 }

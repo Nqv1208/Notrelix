@@ -5,9 +5,13 @@ import { workspaceQueryKeys } from '../keys';
 interface UseWorkspaceListDeps {
   api: WorkspaceApiClient;
   endpoints: WorkspaceEndpoints;
+  options?: {
+    mockMode?: boolean;
+  };
+
 }
 
-export function createUseWorkspaceList({ api, endpoints }: UseWorkspaceListDeps) {
+export function createUseWorkspaceList({ api, endpoints, options }: UseWorkspaceListDeps) {
   const service = createWorkspaceService(api, endpoints);
 
   return function useWorkspaceList() {

@@ -5,8 +5,13 @@ import { api, endpoints } from '@notrelix/contracts';
 import { Button } from '@notrelix/ui-web';
 import { Search, Sun, Moon, ChevronRight } from 'lucide-react';
 import { useLocation } from '@tanstack/react-router';
+import { env } from '@/config/env';
 
-const NotificationBell = createNotificationBell({ api, endpoints });
+const NotificationBell = createNotificationBell({
+  api,
+  endpoints,
+  options: { mockMode: env.mockApi },
+});
 
 export function WorkspaceTopbar() {
   const { workspace } = useWorkspaceContext();

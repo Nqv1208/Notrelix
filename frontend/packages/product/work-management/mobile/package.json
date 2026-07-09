@@ -9,17 +9,19 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "type-check": "tsc --noEmit",
-    "clean": "rm -rf node_modules dist"
+    "clean": "rm -rf node_modules dist",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@notrelix/work-management-core": "workspace:*",
     "@notrelix/work-management-state": "workspace:*",
     "@notrelix/work-management-plugins": "workspace:*",
     "@notrelix/ui-mobile": "workspace:*",
-    "@notrelix/platform": "workspace:*"
+    "@notrelix/platform": "workspace:*",
+    "react": "^19.0.0"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "@types/react": "^19.0.0"
   }
 }

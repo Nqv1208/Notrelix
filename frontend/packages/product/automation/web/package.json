@@ -9,14 +9,16 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "type-check": "tsc --noEmit",
-    "clean": "rm -rf node_modules dist"
+    "clean": "rm -rf node_modules dist",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@notrelix/automation-core": "workspace:*",
     "@notrelix/ui-web": "workspace:*",
     "@notrelix/platform": "workspace:*",
-    "react": "^19.0.0"
+    "react": "^19.0.0",
+    "lucide-react": "^0.562.0",
+    "sonner": "^2.0.7"
   },
   "devDependencies": {
     "typescript": "^5.0.0",

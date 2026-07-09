@@ -100,15 +100,60 @@ function main() {
   const packageDirs = findWorkspacePackages(root)
 
   for (const pkgDir of packageDirs) {
-    let pkgName
-    try { pkgName = JSON.parse(readFileSync(join(pkgDir, "package.json"), "utf8")).name } catch { continue }
+    let pkgJson;
+    const pkgJsonPath = join(pkgDir, "package.json");
+    try {
+      pkgJson = JSON.parse(readFileSync(pkgJsonPath, "utf8"));
+    } catch {
+      continue;
+    }
+    const pkgName = pkgJson.name;
 
-    const files = walkDir(pkgDir)
-    const allowed = ALLOWED_IMPORTS[pkgName] ?? null
+    const allowed = ALLOWED_IMPORTS[pkgName] ?? null;
     const forbidden = [
       ...(FORBIDDEN_IMPORTS[pkgName] ?? []),
       ...(pkgDir.replace(root, "").startsWith("/packages/") ? ["next"] : []),
-    ]
+    ];
+
+    // Check declared dependencies in package.json
+    const declaredDeps = new Set([
+      ...Object.keys(pkgJson.dependencies || {}),
+      ...Object.keys(pkgJson.devDependencies || {}),
+      ...Object.keys(pkgJson.peerDependencies || {}),
+      ...Object.keys(pkgJson.optionalDependencies || {}),
+    ]);
+
+    for (const dep of declaredDeps) {
+      if (isForbiddenImport(dep, forbidden)) {
+        violations.push({
+          pkg: pkgName,
+          file: pkgJsonPath.replace(root, ""),
+          imported: dep,
+          rule: "DECLARED_FORBIDDEN_DEPENDENCY",
+        });
+      }
+
+      const internalPackage = dep.match(/^(@notrelix\/[^/]+)/)?.[1] ?? dep;
+      const isTooling = [
+        "@notrelix/tsconfig",
+        "@notrelix/eslint-config",
+        "@notrelix/testing",
+        "@notrelix/dependency-rules"
+      ].includes(internalPackage);
+
+      if (allowed !== null && internalPackage.startsWith("@notrelix/") && !isTooling) {
+        if (!allowed.some((a) => internalPackage === a || internalPackage.startsWith(a + "/"))) {
+          violations.push({
+            pkg: pkgName,
+            file: pkgJsonPath.replace(root, ""),
+            imported: internalPackage,
+            rule: "DECLARED_NOT_ALLOWED_DEPENDENCY",
+          });
+        }
+      }
+    }
+
+    const files = walkDir(pkgDir);
 
     for (const file of files) {
       const content = readFileSync(file, "utf8")

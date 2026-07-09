@@ -26,8 +26,17 @@ import {
 } from '@notrelix/ui-web';
 import { ChevronsUpDown, Plus } from 'lucide-react';
 
-const useWorkspaceList = createUseWorkspaceList({ api, endpoints });
-const useCreateWorkspace = createUseCreateWorkspace({ api, endpoints });
+import { env } from '@/config/env';
+
+const useWorkspaceList = createUseWorkspaceList({
+  api,
+  endpoints,
+  options: { mockMode: env.mockApi },
+});
+const useCreateWorkspace = createUseCreateWorkspace({
+  api,
+  endpoints,
+});
 
 export function WorkspaceSwitcher() {
   const navigate = useNavigate();

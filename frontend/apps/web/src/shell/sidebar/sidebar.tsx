@@ -1,4 +1,4 @@
-import { Link, useParams } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import { useNavigate } from '@notrelix/platform/navigation';
 import { useWorkspaceContext } from '../../providers/workspace-provider';
 import { WorkspaceSwitcher } from './workspace-switcher';
@@ -15,7 +15,6 @@ import {
   LayoutGrid,
   FileText,
   Plus,
-  BookOpen,
 } from 'lucide-react';
 
 const useLogout = createUseLogout({ api, endpoints });
@@ -24,7 +23,7 @@ const useCreatePage = createUseCreatePage(api, endpoints);
 
 export function WorkspaceSidebar() {
   const navigate = useNavigate();
-  const { workspaceId, workspace } = useWorkspaceContext();
+  const { workspaceId } = useWorkspaceContext();
   const { data: boards = [], isLoading: boardsLoading } = useWorkspaceBoards(workspaceId);
   const { data: pages = [], isLoading: pagesLoading } = usePageList(workspaceId);
   const createPageMutation = useCreatePage(workspaceId);

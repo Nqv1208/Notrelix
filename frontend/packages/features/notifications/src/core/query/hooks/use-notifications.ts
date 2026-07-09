@@ -5,10 +5,14 @@ import { notificationsQueryKeys } from '../keys';
 interface UseNotificationsDeps {
   api: NotificationsApiClient;
   endpoints: NotificationsEndpoints;
+  options?: {
+    mockMode?: boolean;
+  };
+
 }
 
-export function createUseNotifications({ api, endpoints }: UseNotificationsDeps) {
-  const service = createNotificationsService(api, endpoints);
+export function createUseNotifications({ api, endpoints, options }: UseNotificationsDeps) {
+  const service = createNotificationsService(api, endpoints, options);
   return function useNotifications() {
     return useQuery({
       queryKey: notificationsQueryKeys.all,

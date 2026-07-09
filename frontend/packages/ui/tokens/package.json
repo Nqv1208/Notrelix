@@ -10,8 +10,8 @@
     "./css": "./src/css/index.css"
   },
   "scripts": {
-    "type-check": "tsc --noEmit",
-    "clean": "rm -rf node_modules dist"
+    "clean": "rm -rf node_modules dist",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "clsx": "^2.1.1",

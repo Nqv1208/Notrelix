@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from "bun:test";
+import { afterEach, expect, test } from "vitest";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -30,7 +30,7 @@ function writePackage(root: string, packagePath: string, packageName: string, so
 
 function runChecker(root: string) {
   return spawnSync("node", ["src/check.mjs", "--root", root], {
-    cwd: join(import.meta.dir, ".."),
+    cwd: join(import.meta.dirname, ".."),
     encoding: "utf8",
   });
 }
@@ -40,7 +40,7 @@ test("rejects Next.js imports inside shared packages", () => {
   writePackage(
     root,
     "packages/product/work-management/state",
-    "@notrelix/wm-state",
+    "@notrelix/work-management-state",
     'import { useRouter } from "next/navigation";\nexport const useBadRouter = useRouter;\n',
   );
 
@@ -72,13 +72,13 @@ test("checks apps package boundaries, not only packages directories", () => {
   writePackage(
     root,
     "apps/marketing",
-    "@notrelix/marketing",
-    'import { boardApi } from "@notrelix/wm-state";\nexport const leaked = boardApi;\n',
+    "@notrelix/app-marketing",
+    'import { boardApi } from "@notrelix/work-management-state";\nexport const leaked = boardApi;\n',
   );
 
   const result = runChecker(root);
 
   expect(result.status).toBe(1);
   expect(result.stderr).toContain("FORBIDDEN");
-  expect(result.stderr).toContain("@notrelix/wm-state");
+  expect(result.stderr).toContain("@notrelix/work-management-state");
 });

@@ -10,8 +10,8 @@
     "./queries/keys": "./src/queries/keys.ts"
   },
   "scripts": {
-    "type-check": "tsc --noEmit",
-    "clean": "rm -rf node_modules dist"
+    "clean": "rm -rf node_modules dist",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@notrelix/kernel": "workspace:*",

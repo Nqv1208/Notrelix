@@ -20,9 +20,10 @@
   },
   "devDependencies": {
     "turbo": "latest",
-    "typescript": "latest",
-    "eslint": "latest",
-    "prettier": "latest"
+    "typescript": "^5.5.4",
+    "eslint": "^9.16.0",
+    "prettier": "latest",
+    "vitest": "^3.2.1"
   },
   "packageManager": "pnpm@10.0.0",
   "engines": {

@@ -18,6 +18,9 @@ import { Bell, Check, Trash2, MailOpen, MessageSquare, AlertCircle, UserPlus, Tr
 interface CreateNotificationBellDeps {
   api: NotificationsApiClient;
   endpoints: NotificationsEndpoints;
+  options?: {
+    mockMode?: boolean;
+  };
 }
 
 export function createNotificationBell(deps: CreateNotificationBellDeps) {

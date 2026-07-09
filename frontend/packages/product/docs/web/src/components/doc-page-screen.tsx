@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   createUsePage,
   createUsePageBlocks,
@@ -12,7 +12,7 @@ import {
   type Block,
   type BlockType,
 } from '@notrelix/docs-core';
-import { Button, Input, Skeleton, ThemeProvider } from '@notrelix/ui-web';
+import { Button, Skeleton } from '@notrelix/ui-web';
 import {
   Plus,
   Trash2,
@@ -22,8 +22,6 @@ import {
   Heading2,
   Heading3,
   AlignLeft,
-  Image as ImageIcon,
-  Code as CodeIcon,
   MessageSquare,
   Clock,
   ChevronRight,
@@ -33,6 +31,126 @@ import {
 interface CreateDocPageScreenDeps {
   api: DocsApiClient;
   endpoints: PageApiEndpoints;
+}
+
+interface BlockEditorProps {
+  pageId: string;
+  block: Block;
+  onDelete: (id: string) => void;
+  useUpdateBlock: ReturnType<typeof createUseUpdateBlock>;
+}
+
+// Sub-component to manage block-specific mutations cleanly at the top level
+function BlockEditor({ pageId, block, onDelete, useUpdateBlock }: BlockEditorProps) {
+  const updateBlockMutation = useUpdateBlock(pageId, block.id);
+
+  const handleUpdateText = (text: string) => {
+    if (text !== (block.properties.text || '')) {
+      updateBlockMutation.mutate({
+        properties: { text },
+      });
+    }
+  };
+
+  const handleToggleTodo = () => {
+    updateBlockMutation.mutate({
+      properties: { checked: !block.properties.checked },
+    });
+  };
+
+  return (
+    <div className="group flex items-start gap-2.5 relative -ml-6 pl-6">
+      {/* Block Action Bar (visible on hover) */}
+      <div className="absolute left-0 top-1 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-5 w-5 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+          onClick={() => onDelete(block.id)}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+
+      {/* Block Content by Type */}
+      <div className="flex-1">
+        {block.type === 'paragraph' && (
+          <input
+            type="text"
+            defaultValue={block.properties.text || ''}
+            onBlur={(e) => handleUpdateText(e.target.value)}
+            placeholder="Type something..."
+            className="w-full bg-transparent border-none outline-none text-base text-foreground focus:ring-0 p-0"
+          />
+        )}
+
+        {block.type === 'heading_1' && (
+          <input
+            type="text"
+            defaultValue={block.properties.text || ''}
+            onBlur={(e) => handleUpdateText(e.target.value)}
+            placeholder="Heading 1"
+            className="w-full bg-transparent border-none outline-none text-2xl font-bold text-foreground focus:ring-0 p-0"
+          />
+        )}
+
+        {block.type === 'heading_2' && (
+          <input
+            type="text"
+            defaultValue={block.properties.text || ''}
+            onBlur={(e) => handleUpdateText(e.target.value)}
+            placeholder="Heading 2"
+            className="w-full bg-transparent border-none outline-none text-xl font-semibold text-foreground focus:ring-0 p-0"
+          />
+        )}
+
+        {block.type === 'heading_3' && (
+          <input
+            type="text"
+            defaultValue={block.properties.text || ''}
+            onBlur={(e) => handleUpdateText(e.target.value)}
+            placeholder="Heading 3"
+            className="w-full bg-transparent border-none outline-none text-lg font-medium text-foreground focus:ring-0 p-0"
+          />
+        )}
+
+        {block.type === 'todo' && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleToggleTodo}
+              className="text-muted-foreground hover:text-primary transition-colors"
+            >
+              {block.properties.checked ? (
+                <CheckSquare className="h-4.5 w-4.5 text-primary" />
+              ) : (
+                <Square className="h-4.5 w-4.5" />
+              )}
+            </button>
+            <input
+              type="text"
+              defaultValue={block.properties.text || ''}
+              onBlur={(e) => handleUpdateText(e.target.value)}
+              className={`w-full bg-transparent border-none outline-none text-base focus:ring-0 p-0 ${
+                block.properties.checked ? 'line-through text-muted-foreground' : 'text-foreground'
+              }`}
+            />
+          </div>
+        )}
+
+        {block.type === 'callout' && (
+          <div className="flex items-start gap-3 p-4 rounded-xl border bg-muted/30">
+            <span className="text-xl">💡</span>
+            <input
+              type="text"
+              defaultValue={block.properties.text || ''}
+              onBlur={(e) => handleUpdateText(e.target.value)}
+              className="w-full bg-transparent border-none outline-none text-sm text-foreground focus:ring-0 p-0"
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function createDocPageScreen({ api, endpoints }: CreateDocPageScreenDeps) {
@@ -51,16 +169,15 @@ export function createDocPageScreen({ api, endpoints }: CreateDocPageScreenDeps)
 
     const updatePageMutation = useUpdatePage(workspaceId, pageId);
     const createBlockMutation = useCreateBlock(pageId);
-    const updateBlockMutation = useUpdateBlock(pageId, '');
     const deleteBlockMutation = useDeleteBlock(pageId);
 
-    const [titleInput, setTitleInput] = useState('');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'comments' | 'history'>('comments');
 
-    const handleTitleBlur = () => {
-      if (page && titleInput.trim() && titleInput !== page.title) {
-        updatePageMutation.mutate({ title: titleInput });
+    const handleTitleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+      const text = e.target.value;
+      if (page && text.trim() && text !== page.title) {
+        updatePageMutation.mutate({ title: text });
       }
     };
 
@@ -70,21 +187,6 @@ export function createDocPageScreen({ api, endpoints }: CreateDocPageScreenDeps)
         type,
         properties: { text: type === 'todo' ? 'To-do item' : 'New block text' },
         position,
-      });
-    };
-
-    const handleUpdateBlockText = (blockId: string, text: string) => {
-      // Create a temporary local update helper
-      const updateBlock = createUseUpdateBlock(api, endpoints)(pageId, blockId);
-      updateBlock.mutate({
-        properties: { text },
-      });
-    };
-
-    const handleToggleTodo = (blockId: string, checked: boolean) => {
-      const updateBlock = createUseUpdateBlock(api, endpoints)(pageId, blockId);
-      updateBlock.mutate({
-        properties: { checked: !checked },
       });
     };
 
@@ -149,97 +251,13 @@ export function createDocPageScreen({ api, endpoints }: CreateDocPageScreenDeps)
                 </p>
               ) : (
                 blocks.map((block) => (
-                  <div key={block.id} className="group flex items-start gap-2.5 relative -ml-6 pl-6">
-                    {/* Block Action Bar (visible on hover) */}
-                    <div className="absolute left-0 top-1 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => handleDeleteBlock(block.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-
-                    {/* Block Content by Type */}
-                    <div className="flex-1">
-                      {block.type === 'paragraph' && (
-                        <input
-                          type="text"
-                          defaultValue={block.properties.text || ''}
-                          onBlur={(e) => handleUpdateBlockText(block.id, e.target.value)}
-                          placeholder="Type something..."
-                          className="w-full bg-transparent border-none outline-none text-base text-foreground focus:ring-0 p-0"
-                        />
-                      )}
-
-                      {block.type === 'heading_1' && (
-                        <input
-                          type="text"
-                          defaultValue={block.properties.text || ''}
-                          onBlur={(e) => handleUpdateBlockText(block.id, e.target.value)}
-                          placeholder="Heading 1"
-                          className="w-full bg-transparent border-none outline-none text-2xl font-bold text-foreground focus:ring-0 p-0"
-                        />
-                      )}
-
-                      {block.type === 'heading_2' && (
-                        <input
-                          type="text"
-                          defaultValue={block.properties.text || ''}
-                          onBlur={(e) => handleUpdateBlockText(block.id, e.target.value)}
-                          placeholder="Heading 2"
-                          className="w-full bg-transparent border-none outline-none text-xl font-semibold text-foreground focus:ring-0 p-0"
-                        />
-                      )}
-
-                      {block.type === 'heading_3' && (
-                        <input
-                          type="text"
-                          defaultValue={block.properties.text || ''}
-                          onBlur={(e) => handleUpdateBlockText(block.id, e.target.value)}
-                          placeholder="Heading 3"
-                          className="w-full bg-transparent border-none outline-none text-lg font-medium text-foreground focus:ring-0 p-0"
-                        />
-                      )}
-
-                      {block.type === 'todo' && (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleToggleTodo(block.id, block.properties.checked || false)}
-                            className="text-muted-foreground hover:text-primary transition-colors"
-                          >
-                            {block.properties.checked ? (
-                              <CheckSquare className="h-4.5 w-4.5 text-primary" />
-                            ) : (
-                              <Square className="h-4.5 w-4.5" />
-                            )}
-                          </button>
-                          <input
-                            type="text"
-                            defaultValue={block.properties.text || ''}
-                            onBlur={(e) => handleUpdateBlockText(block.id, e.target.value)}
-                            className={`w-full bg-transparent border-none outline-none text-base focus:ring-0 p-0 ${
-                              block.properties.checked ? 'line-through text-muted-foreground' : 'text-foreground'
-                            }`}
-                          />
-                        </div>
-                      )}
-
-                      {block.type === 'callout' && (
-                        <div className="flex items-start gap-3 p-4 rounded-xl border bg-muted/30">
-                          <span className="text-xl">💡</span>
-                          <input
-                            type="text"
-                            defaultValue={block.properties.text || ''}
-                            onBlur={(e) => handleUpdateBlockText(block.id, e.target.value)}
-                            className="w-full bg-transparent border-none outline-none text-sm text-foreground focus:ring-0 p-0"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <BlockEditor
+                    key={block.id}
+                    pageId={pageId}
+                    block={block}
+                    onDelete={handleDeleteBlock}
+                    useUpdateBlock={useUpdateBlock}
+                  />
                 ))
               )}
             </div>

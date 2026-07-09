@@ -1,10 +1,15 @@
 import { type ReactNode } from 'react';
 import { Navigate, useParams } from '@tanstack/react-router';
 import { createUseWorkspaceList } from '@notrelix/features-workspace';
+import { env } from '@/config/env';
 import { api, endpoints } from '@notrelix/contracts';
 import { LoadingState } from '@notrelix/ui-web';
 
-const useWorkspaceList = createUseWorkspaceList({ api, endpoints });
+const useWorkspaceList = createUseWorkspaceList({
+  api,
+  endpoints,
+  options: { mockMode: env.mockApi },
+});
 
 interface WorkspaceGuardProps {
   children: ReactNode;

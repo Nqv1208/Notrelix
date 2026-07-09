@@ -10,9 +10,9 @@
     "./query/keys": "./src/query/keys.ts"
   },
   "scripts": {
-    "type-check": "tsc --noEmit",
-    "test": "bun test --pass-with-no-tests",
-    "clean": "rm -rf node_modules dist"
+    "test": "vitest --passWithNoTests",
+    "clean": "rm -rf node_modules dist",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.95.2"

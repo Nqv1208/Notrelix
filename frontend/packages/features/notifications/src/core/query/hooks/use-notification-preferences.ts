@@ -6,10 +6,14 @@ import type { NotificationPreferences } from '../../types/notifications';
 interface UseNotificationPreferencesDeps {
   api: NotificationsApiClient;
   endpoints: NotificationsEndpoints;
+  options?: {
+    mockMode?: boolean;
+  };
+
 }
 
-export function createUseNotificationPreferences({ api, endpoints }: UseNotificationPreferencesDeps) {
-  const service = createNotificationsService(api, endpoints);
+export function createUseNotificationPreferences({ api, endpoints, options }: UseNotificationPreferencesDeps) {
+  const service = createNotificationsService(api, endpoints, options);
 
   return function useNotificationPreferences() {
     const queryClient = useQueryClient();

@@ -5,10 +5,14 @@ import { notificationsQueryKeys } from '../keys';
 interface UseUnreadCountDeps {
   api: NotificationsApiClient;
   endpoints: NotificationsEndpoints;
+  options?: {
+    mockMode?: boolean;
+  };
+
 }
 
-export function createUseUnreadCount({ api, endpoints }: UseUnreadCountDeps) {
-  const service = createNotificationsService(api, endpoints);
+export function createUseUnreadCount({ api, endpoints, options }: UseUnreadCountDeps) {
+  const service = createNotificationsService(api, endpoints, options);
   return function useUnreadCount() {
     return useQuery({
       queryKey: notificationsQueryKeys.unreadCount,

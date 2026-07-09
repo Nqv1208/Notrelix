@@ -2,8 +2,7 @@
 
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import { Button } from '@notrelix/ui-web/ui/button';
-import { Switch } from '@notrelix/ui-web/ui/switch';
+import { Button, Switch } from '@notrelix/ui-web';
 
 export function AutomationsTab() {
   return (

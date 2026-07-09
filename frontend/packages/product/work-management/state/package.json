@@ -9,12 +9,11 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "type-check": "tsc --noEmit",
-    "clean": "rm -rf node_modules dist"
+    "clean": "rm -rf node_modules dist",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@notrelix/work-management-core": "workspace:*",
-    "@notrelix/kernel": "workspace:*",
     "@notrelix/contracts": "workspace:*",
     "@notrelix/query": "workspace:*",
     "@notrelix/platform": "workspace:*",

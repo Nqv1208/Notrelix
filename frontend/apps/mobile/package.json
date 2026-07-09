@@ -2,6 +2,7 @@
   "name": "@notrelix/app-mobile",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "expo start",
     "android": "expo run:android",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "typescript": "^5.0.0",
-    "@types/react": "^19.0.0"
+    "@types/react": "^19.0.0",
+    "@notrelix/eslint-config": "workspace:*"
   }
 }

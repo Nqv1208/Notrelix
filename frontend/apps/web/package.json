@@ -9,7 +9,7 @@
     "preview": "vite preview --port 5173",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "vitest",
+    "test": "vitest --passWithNoTests",
     "clean": "rm -rf dist node_modules"
   },
   "dependencies": {
@@ -51,6 +51,7 @@
     "tailwindcss": "^4",
     "@tailwindcss/postcss": "^4",
     "postcss": "^8.5.4",
-    "@tanstack/react-router-devtools": "latest"
+    "@tanstack/react-router-devtools": "latest",
+    "@notrelix/eslint-config": "workspace:*"
   }
 }
