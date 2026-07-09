@@ -32,13 +32,19 @@ public sealed class DeduplicationConsumeFilter<T> : IFilter<ConsumeContext<T>>
         await using var transaction = await _db.Database.BeginTransactionAsync(context.CancellationToken);
         try
         {
-            var alreadyProcessed = await _dedupStore.IsProcessedAsync(
-                integrationEvent.EventId, consumerName, context.CancellationToken);
+            var claimed = await _dedupStore.TryClaimProcessingAsync(
+                messageId: integrationEvent.EventId,
+                consumerName: consumerName,
+                messageName: integrationEvent.MessageName,
+                messageVersion: integrationEvent.SchemaVersion,
+                sourceEventId: integrationEvent.SourceEventId,
+                workspaceId: integrationEvent.WorkspaceId,
+                cancellationToken: context.CancellationToken);
 
-            if (alreadyProcessed)
+            if (!claimed)
             {
                 _logger.LogDebug(
-                    "Event {EventId} ({MessageName}) already processed by {ConsumerName}, skipping",
+                    "Event {EventId} ({MessageName}) already claimed/processed by {ConsumerName}, skipping",
                     integrationEvent.EventId, integrationEvent.MessageName, consumerName);
                 await transaction.RollbackAsync(context.CancellationToken);
                 return;
@@ -46,13 +52,9 @@ public sealed class DeduplicationConsumeFilter<T> : IFilter<ConsumeContext<T>>
 
             await next.Send(context);
 
-            _dedupStore.MarkProcessed(
+            _dedupStore.MarkSucceeded(
                 messageId: integrationEvent.EventId,
                 consumerName: consumerName,
-                messageName: integrationEvent.MessageName,
-                messageVersion: integrationEvent.SchemaVersion,
-                sourceEventId: integrationEvent.SourceEventId,
-                workspaceId: integrationEvent.WorkspaceId,
                 processedAt: DateTimeOffset.UtcNow);
 
             await _db.SaveChangesAsync(context.CancellationToken);

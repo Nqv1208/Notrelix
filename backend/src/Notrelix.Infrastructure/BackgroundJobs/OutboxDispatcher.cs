@@ -110,7 +110,9 @@ internal sealed class OutboxDispatcher : BackgroundService
         var now = dateTimeProvider.UtcNow;
 
         var alreadyProcessed = await context.Set<MessagingProcessedEvent>()
-            .AnyAsync(x => x.EventId == message.EventId && x.ConsumerName == DispatcherConsumerName, cancellationToken);
+            .AnyAsync(x => x.EventId == message.EventId 
+                && x.ConsumerName == DispatcherConsumerName 
+                && x.Status == "Succeeded", cancellationToken);
 
         if (alreadyProcessed)
         {
@@ -142,6 +144,7 @@ internal sealed class OutboxDispatcher : BackgroundService
                 message.SourceEventId, message.SubjectType, message.SubjectId,
                 message.WorkspaceId, message.ActorUserId,
                 message.CorrelationId, message.CausationId, now);
+            processedEvent.MarkFailed(now, ex.Message);
             context.Set<MessagingProcessedEvent>().Add(processedEvent);
             return;
         }
@@ -169,6 +172,7 @@ internal sealed class OutboxDispatcher : BackgroundService
                 message.SourceEventId, message.SubjectType, message.SubjectId,
                 message.WorkspaceId, message.ActorUserId,
                 message.CorrelationId, message.CausationId, now);
+            processedEvent.MarkSucceeded(now);
             context.Set<MessagingProcessedEvent>().Add(processedEvent);
 
             _logger.LogDebug("V5 outbox {MsgId}: {MsgName} dispatched (attempt {Retry})",

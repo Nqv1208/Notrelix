@@ -7,6 +7,15 @@ public interface IMessageDeduplicationStore
         string consumerName,
         CancellationToken cancellationToken);
 
+    Task<bool> TryClaimProcessingAsync(
+        Guid messageId,
+        string consumerName,
+        string messageName,
+        int messageVersion,
+        Guid? sourceEventId,
+        Guid? workspaceId,
+        CancellationToken cancellationToken);
+
     void MarkProcessed(
         Guid messageId,
         string consumerName,
@@ -14,5 +23,10 @@ public interface IMessageDeduplicationStore
         int messageVersion,
         Guid? sourceEventId,
         Guid? workspaceId,
+        DateTimeOffset processedAt);
+
+    void MarkSucceeded(
+        Guid messageId,
+        string consumerName,
         DateTimeOffset processedAt);
 }

@@ -494,27 +494,29 @@ Current `Common` folders include:
 
 ```txt
 src/Notrelix.Application/Common/
-  Abstractions/
   Activity/
   Auditing/
   Behaviors/
-  CQRS/
   Caching/
+  Context/
+  Data/
   DTOs/
   Email/
   Entitlements/
   Events/
   Exceptions/
-  Extensions/
   Idempotency/
-  Mapping/
+  Integrations/
+  Messaging/
   Models/
+  PostCommit/
   RateLimiting/
-  ReadModels/
+  Requests/
   Security/
+  Storage/
+  SystemOperations/
   Tenancy/
-  Transactions/
-  Validation/
+  Time/
 ```
 
 ### 10.1 `Common` rule
@@ -524,11 +526,11 @@ src/Notrelix.Application/Common/
 Allowed in `Common`:
 
 ```txt
-CQRS markers
+Request markers
 Pipeline behaviors
 Result model
 Paging model
-Current user abstraction
+Current request context abstraction (ICurrentRequestContext)
 Date/time abstraction
 Permission abstractions
 Workspace context abstraction
@@ -536,8 +538,11 @@ Idempotency abstractions
 Entitlement abstractions
 Cache abstractions
 Email abstraction
-Read model interfaces
-Validation base types
+Storage abstraction
+Messaging abstractions
+Post-commit action queue
+Integration abstractions
+System operations abstractions
 Application exceptions
 ```
 
@@ -556,38 +561,90 @@ If a type belongs to one feature module, place it under `Features`.
 
 ---
 
-## 11. Application CQRS marker rules
+## 11. Application Request marker rules
 
 Current marker folder:
 
 ```txt
-src/Notrelix.Application/Common/CQRS/
-  CacheInvalidationKey.cs
-  FeatureCode.cs
-  IActivityRequest.cs
-  IAuditableRequest.cs
-  ICacheableQuery.cs
+src/Notrelix.Application/Common/Requests/
   ICommand.cs
-  IExpectedVersionRequest.cs
-  IIdempotentRequest.cs
-  IInvalidateCacheRequest.cs
   IQuery.cs
-  IRealtimeRequest.cs
-  IRequireEntitlement.cs
-  IRequirePermission.cs
-  ITransactionalRequest.cs
-  IWorkspaceRequest.cs
-  RealtimeTopic.cs
+  Caching/
+    AuthorizedCacheScope.cs
+    IAuthorizedCacheableRequest.cs
+    IPublicCacheableQuery.cs
+  Execution/
+    RequestExecutionClassifier.cs
+    RequestExecutionProfile.cs
+  Gates/
+    IRequireFeature.cs
+    IRequireSubscription.cs
+  Realtime/
+    IRealtimeRequest.cs
+  Scoping/
+    IAccountRequest.cs
+    IGlobalRequest.cs
+    IResourceScopedRequest.cs
+    IRlsReadRequest.cs
+    IWorkspaceRequest.cs
+  Security/
+    IAuthenticatedRequest.cs
+    IAnonymousRequest.cs
+    IRequirePermission.cs
+    ISystemInternalRequest.cs
+    IUseCaseSecurityRequirement.cs
+    UseCaseSecurityKind.cs
+  Transactions/
+    IExpectedVersionRequest.cs
+    IIdempotentRequest.cs
+    ITransactionalRequest.cs
 ```
 
 Use these markers. Do not create duplicate marker interfaces elsewhere.
 
+### 11.1 Concurrency checking rule
+
+Any request implementing `IExpectedVersionRequest` must provide a positive `ExpectedVersion` and a supported `ResourceRef`. The system must fail fast if the resource version cannot be verified. Concurrency checks must never be silently skipped.
+
+The `ConcurrencyBehavior` enforces:
+- `ExpectedVersion <= 0` → throws `ValidationException`
+- `currentVersion == null` (resource not found) → throws `NotFoundException`
+- Unsupported resource type → throws `NotSupportedException` (never caught and skipped)
+
+### 11.2 Permissioned cache version rule
+
+Permissioned cache keys must use `IPermissionVersionProvider`. Permission version must include `accountId`, `workspaceId`, `userId`, and a real permission version stamp. Never use `"default"`, `"unknown"`, or hardcoded permission versions.
+
+The provider queries the following tables for the latest update timestamp:
+- `workspace.workspace_members`
+- `governance.member_role_assignments`
+- `governance.custom_roles`
+- `governance.resource_permissions`
+- `governance.permission_rules`
+
+Each subquery filters by `account_id`, `workspace_id`, and (for workspace_members) `user_id`.
+
+### 11.3 Request context rule
+
+Application handlers must not inject `ICurrentTenantContext` directly. Use `ICurrentRequestContext` when a handler needs current user/account/workspace data. Tenant runtime services, pipeline behaviors, DbContext/RLS services, and infrastructure tenant scopes may use `ICurrentTenantContext`.
+
+### 11.4 Consumer idempotency rule
+
+Integration consumers must use `DeduplicationConsumeFilter` with claim-before-execute pattern.
+
+- Idempotency key is `event_id + consumer_name`
+- Do not implement manual deduplication in consumer handlers
+- Do not reintroduce `ConsumerPipelineExecutor`
+- Consumers must not execute before claim succeeds
+- If consumer fails, transaction rolls back and message can be retried
+- Claim record has `Status` field: `Processing`, `Succeeded`, `Failed`
+
 Forbidden:
 
 ```txt
-Features/WorkManagement/Common/ICommand.cs
-Application/Commands/ICommand.cs
-Shared/ITransactional.cs
+Manual deduplication in consumer handlers
+ConsumerPipelineExecutor idempotency
+Check-then-mark-after pattern (race condition)
 ```
 
 ---
@@ -1170,9 +1227,9 @@ Every command must:
 - Implement `IWorkspaceRequest` if workspace-scoped.
 - Implement `IRequirePermission` if permission-protected.
 - Implement `IIdempotentRequest` if retryable or externally triggered.
-- Implement `IRequireEntitlement` if feature/quota-protected.
+- Implement `IRequireSubscription` if feature/quota-protected.
 - Implement `IExpectedVersionRequest` if optimistic concurrency is required.
-- Implement `IInvalidateCacheRequest` if it invalidates cache.
+- Implement `IAuthorizedCacheableRequest` if it invalidates authorized cache.
 - Implement `IRealtimeRequest` if it should notify clients after commit.
 - Return `Result<T>` or approved Application result model.
 
@@ -1196,7 +1253,7 @@ Every query must:
 - Implement `IQuery<TResponse>`.
 - Implement `IWorkspaceRequest` if workspace-scoped.
 - Implement `IRequirePermission` if permission-protected.
-- Implement `ICacheableQuery<T>` only if safe.
+- Implement `IPublicCacheableQuery<T>` only if safe.
 - Return DTOs, not Domain entities.
 - Use `AsNoTracking()` for EF read queries unless tracking is required.
 - Filter workspace-scoped data by `WorkspaceId`.
@@ -2382,7 +2439,7 @@ public sealed record {UseCase}Query(
 ) : IQuery<Result<{DtoName}>>,
     IWorkspaceRequest,
     IRequirePermission,
-    ICacheableQuery<Result<{DtoName}>>
+    IPublicCacheableQuery<Result<{DtoName}>>
 {
     public PermissionAction Action => PermissionAction.{Action};
     public ResourceRef Resource => ResourceRef.Create(ResourceType.{Resource}, ResourceId, WorkspaceId);
@@ -2509,7 +2566,7 @@ Use this matrix:
 | Query validator | `Application/Features/{Context}/{Module}/Queries/{UseCase}/{UseCase}QueryValidator.cs` |
 | Context DTO | `Application/Features/{Context}/Common/DTOs/{Dto}.cs` |
 | Module DTO | `Application/Features/{Context}/{Module}/DTOs/{Dto}.cs` |
-| Application abstraction | `Application/Features/{Context}/Abstractions/I{Context}DbContext.cs` or `Application/Common/Abstractions/` if truly cross-cutting |
+| Application abstraction | `Application/Features/{Context}/Abstractions/I{Context}DbContext.cs` or `Application/Common/Security/` or `Application/Common/Messaging/` if truly cross-cutting |
 | EF config | `Infrastructure/Data/Configurations/{Context}/{Entity}Configuration.cs` |
 | Migration | `Infrastructure/Data/Migrations/` |
 | Outbox | `Infrastructure/Data/Outbox/` |

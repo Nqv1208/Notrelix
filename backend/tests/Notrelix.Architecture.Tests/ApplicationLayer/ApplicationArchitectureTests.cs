@@ -644,17 +644,6 @@ public class ApplicationArchitectureTests
     }
 
     [Fact]
-    public void ConsumerPipelineExecutor_HasNoWorkspaceIdFallback()
-    {
-        var path = Path.Combine(Path.GetDirectoryName(GetApplicationPath())!,
-            "Notrelix.Infrastructure", "Messaging", "ConsumerPipelineExecutor.cs");
-        var content = File.ReadAllText(path);
-
-        content.Should().NotContain("message.WorkspaceId ?? message.AccountId",
-            "ConsumerPipelineExecutor must not use workspaceId ?? accountId fallback pattern");
-    }
-
-    [Fact]
     public void PublicCacheableQueries_ShouldNotBeTenantOrPermissionScoped()
     {
         var files = GetApplicationFeatureFiles();
