@@ -1,6 +1,6 @@
 using MassTransit;
 using Microsoft.Extensions.Logging;
-using Notrelix.Application.Common.Data.Rls;
+using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Messaging;
 using Notrelix.Infrastructure.Data.Rls;
@@ -64,18 +64,38 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
             ActorUserId = Guid.NewGuid()
         };
 
-        // Act: 2 concurrent deliveries với scope/DbContext riêng
-        var task1 = DeliverMessageInNewScope(integrationEvent, consumerName);
+        // TaskCompletionSource để giữ worker 1 sau khi claim
+        var consumerEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseConsumer = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        // Worker 1: claim → vào consumer → chờ release
+        var task1 = DeliverMessageInNewScope(
+            integrationEvent,
+            consumerName,
+            beforeComplete: async () =>
+            {
+                consumerEntered.SetResult();
+                await releaseConsumer.Task;
+            });
+
+        // Chờ worker 1 vào consumer (đã claim thành công)
+        await consumerEntered.Task;
+
+        // Worker 2: chạy khi worker 1 chưa commit → phải fail claim
         var task2 = DeliverMessageInNewScope(integrationEvent, consumerName);
+
+        // Release worker 1
+        releaseConsumer.SetResult();
+
         await Task.WhenAll(task1, task2);
 
-        // Assert
-        _consumerExecutionCount.Should().Be(1, "consumer should only execute once for duplicate events");
+        // Assert: chỉ 1 consumer thực sự chạy
+        _consumerExecutionCount.Should().Be(1);
 
-        var (context, store, _) = CreateFixture();
+        var (context, _, _) = CreateFixture();
         var inboxRowCount = await context.Set<MessagingProcessedEvent>()
             .CountAsync(e => e.EventId == eventId && e.ConsumerName == consumerName);
-        inboxRowCount.Should().Be(1, "only one inbox row should exist");
+        inboxRowCount.Should().Be(1);
 
         var status = await context.Set<MessagingProcessedEvent>()
             .Where(e => e.EventId == eventId && e.ConsumerName == consumerName)
@@ -139,9 +159,9 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
             ActorUserId = Guid.NewGuid()
         };
 
-        // Act: Deliver to 2 different consumers
-        await DeliverMessageInNewScope(integrationEvent, "consumer-A", "queue:consumer-a");
-        await DeliverMessageInNewScope(integrationEvent, "consumer-B", "queue:consumer-b");
+        // Act: Deliver to 2 different consumers (KHÔNG có prefix "queue:")
+        await DeliverMessageInNewScope(integrationEvent, "consumer-a");
+        await DeliverMessageInNewScope(integrationEvent, "consumer-b");
 
         // Assert
         _consumerExecutionCount.Should().Be(2, "both consumers should execute");
@@ -151,8 +171,8 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
             .Where(e => e.EventId == eventId)
             .ToListAsync();
         inboxRows.Count.Should().Be(2);
-        inboxRows.Should().Contain(r => r.ConsumerName == "consumer-A");
-        inboxRows.Should().Contain(r => r.ConsumerName == "consumer-B");
+        inboxRows.Should().Contain(r => r.ConsumerName == "consumer-a");
+        inboxRows.Should().Contain(r => r.ConsumerName == "consumer-b");
     }
 
     [Fact]
@@ -207,9 +227,23 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
         var workspaceB = Guid.NewGuid();
         var userId = Guid.NewGuid();
 
-        // Create boards in both workspaces
-        var boardA = new Board { Id = Guid.NewGuid(), AccountId = accountId, WorkspaceId = workspaceA, Name = "Board A" };
-        var boardB = new Board { Id = Guid.NewGuid(), AccountId = accountId, WorkspaceId = workspaceB, Name = "Board B" };
+        // Create boards using domain factory (signature đúng)
+        var boardA = Board.Create(
+            accountId,
+            workspaceA,
+            userId,
+            "Board A",
+            null,
+            DateTimeOffset.UtcNow);
+
+        var boardB = Board.Create(
+            accountId,
+            workspaceB,
+            userId,
+            "Board B",
+            null,
+            DateTimeOffset.UtcNow);
+
         context.Set<Board>().AddRange(boardA, boardB);
         await context.SaveChangesAsync();
 
@@ -242,8 +276,8 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
     private async Task DeliverMessageInNewScope(
         TestIntegrationEvent integrationEvent,
         string consumerName,
-        string? queueName = null,
-        bool shouldThrow = false)
+        bool shouldThrow = false,
+        Func<Task>? beforeComplete = null)
     {
         // Tạo scope/DbContext riêng cho mỗi delivery
         var tenant = new FakeCurrentTenantContext();
@@ -274,22 +308,27 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
         consumeContext.Setup(x => x.CancellationToken).Returns(CancellationToken.None);
 
         var receiveContext = new Mock<ReceiveContext>();
-        receiveContext.Setup(x => x.InputAddress).Returns(new Uri($"queue:{queueName ?? consumerName}"));
+        receiveContext.Setup(x => x.InputAddress).Returns(new Uri($"queue:{consumerName}"));
         consumeContext.Setup(x => x.ReceiveContext).Returns(receiveContext.Object);
 
         var next = new Mock<IPipe<ConsumeContext<TestIntegrationEvent>>>();
         next.Setup(x => x.Send(It.IsAny<ConsumeContext<TestIntegrationEvent>>()))
-            .Returns(() =>
+            .Returns(async () =>
             {
                 lock (_lock)
                 {
                     _consumerExecutionCount++;
                 }
+
+                if (beforeComplete is not null)
+                {
+                    await beforeComplete();
+                }
+
                 if (shouldThrow)
                 {
                     throw new InvalidOperationException("Consumer failed");
                 }
-                return Task.CompletedTask;
             });
 
         try
@@ -364,13 +403,5 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
         public Guid? ActorUserId { get; set; }
         public Guid? AccountId { get; set; }
         public DateTimeOffset OccurredAt { get; set; } = DateTimeOffset.UtcNow;
-    }
-
-    public class Board
-    {
-        public Guid Id { get; set; }
-        public Guid AccountId { get; set; }
-        public Guid WorkspaceId { get; set; }
-        public string Name { get; set; } = null!;
     }
 }

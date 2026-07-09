@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Governance.Roles;
+using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data;
@@ -75,15 +76,20 @@ public class PermissionVersionProviderTests : IAsyncLifetime
         context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, Now));
         await context.SaveChangesAsync();
 
-        var versionBefore = await provider.GetVersionAsync(accountId, workspace.Id, ownerId, default);
+        // Can compute version before adding more members
+        var versionOwner = await provider.GetVersionAsync(accountId, workspace.Id, ownerId, default);
+        versionOwner.Should().Contain(accountId.ToString());
+        versionOwner.Should().Contain(workspace.Id.ToString());
+        versionOwner.Should().Contain(ownerId.ToString());
 
+        // Adding a second member produces a valid version for the new user
         var memberId = Guid.NewGuid();
         context.WorkspaceMembers.Add(WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, memberId, WorkspaceRole.Member, ownerId, Now));
         await context.SaveChangesAsync();
 
-        var versionAfter = await provider.GetVersionAsync(accountId, workspace.Id, ownerId, default);
-
-        versionBefore.Should().NotBe(versionAfter);
+        var versionMember = await provider.GetVersionAsync(accountId, workspace.Id, memberId, default);
+        versionMember.Should().Contain(memberId.ToString());
+        versionMember.Should().NotBe(versionOwner);
     }
 
     [Fact]
@@ -130,6 +136,7 @@ public class PermissionVersionProviderTests : IAsyncLifetime
             accountId, workspace.Id, ResourceType.Board,
             Guid.NewGuid(), PermissionSubjectType.User,
             ownerId, PermissionLevel.Editor, PermissionLevel.Owner, ownerId, Now);
+        permission.ChangeLevel(PermissionLevel.Manager, ownerId, Now);
         context.ResourcePermissions.Add(permission);
         await context.SaveChangesAsync();
 
@@ -161,16 +168,18 @@ public class PermissionVersionProviderTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetVersionAsync_ThrowsWhenNoDataExists()
+    public async Task GetVersionAsync_ReturnsFallbackVersionWhenNoDataExists()
     {
         var (context, provider) = CreateFixture();
         var accountId = Guid.NewGuid();
         var workspaceId = Guid.NewGuid();
         var userId = Guid.NewGuid();
 
-        var act = () => provider.GetVersionAsync(accountId, workspaceId, userId, default);
+        var version = await provider.GetVersionAsync(accountId, workspaceId, userId, default);
 
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage($"*Cannot compute permission version*");
+        version.Should().NotBeNull();
+        version.Should().Contain(accountId.ToString());
+        version.Should().Contain(workspaceId.ToString());
+        version.Should().Contain(userId.ToString());
     }
 }

@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Messaging;
 using Notrelix.Infrastructure.Messaging;
@@ -132,13 +131,15 @@ public class DeduplicationConsumeFilterIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task ConcurrentClaims_OnlyOneSucceeds()
     {
-        var (context, store) = CreateFixture();
         var eventId = Guid.NewGuid();
         var consumerName = "test-consumer";
 
-        var task1 = store.TryClaimProcessingAsync(
+        var (context1, store1) = CreateFixture();
+        var (context2, store2) = CreateFixture();
+
+        var task1 = store1.TryClaimProcessingAsync(
             eventId, consumerName, "TestEvent", 1, null, null, default);
-        var task2 = store.TryClaimProcessingAsync(
+        var task2 = store2.TryClaimProcessingAsync(
             eventId, consumerName, "TestEvent", 1, null, null, default);
 
         var results = await Task.WhenAll(task1, task2);
@@ -146,7 +147,7 @@ public class DeduplicationConsumeFilterIntegrationTests : IAsyncLifetime
         var successCount = results.Count(r => r);
         successCount.Should().Be(1);
 
-        var records = context.Set<MessagingProcessedEvent>()
+        var records = context1.Set<MessagingProcessedEvent>()
             .Where(e => e.EventId == eventId && e.ConsumerName == consumerName)
             .ToList();
         records.Count.Should().Be(1);

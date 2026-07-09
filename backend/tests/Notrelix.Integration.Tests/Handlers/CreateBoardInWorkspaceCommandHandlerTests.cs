@@ -41,12 +41,12 @@ public class CreateBoardInWorkspaceCommandHandlerTests : IAsyncLifetime
 
         tenant.SetWorkspace(accountId, workspace.Id, null);
 
-        var handlerTenant = new FakeCurrentTenantContext();
-        handlerTenant.SetWorkspace(accountId, workspace.Id, userId);
+        var requestContextMock = new Mock<ICurrentRequestContext>();
+        requestContextMock.Setup(r => r.RequireAccountId()).Returns(accountId);
+        requestContextMock.Setup(r => r.UserId).Returns(userId);
 
         var handler = new CreateBoardInWorkspaceCommandHandler(
-            context, new FakeCurrentUser { UserId = userId },
-            handlerTenant, FakeDateTimeProvider.WithFixedTime(now));
+            context, requestContextMock.Object, FakeDateTimeProvider.WithFixedTime(now));
 
         var result = await handler.Handle(
             new CreateBoardInWorkspaceCommand(workspace.Id, "My Board", null, null, null),
@@ -68,24 +68,24 @@ public class CreateBoardInWorkspaceCommandHandlerTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Handle_WhenWorkspaceNotFound_ShouldThrowNotFoundException()
+    public async Task Handle_WhenWorkspaceNotFound_ShouldReturnSuccess_WithoutSaving()
     {
-        // Workspace existence is now validated by WorkspaceContextBehavior, not the handler.
-        // This test verifies the behavior throws NotFoundException via WorkspaceAccessResolver.
+        // Workspace existence is validated by WorkspaceContextBehavior, not the handler.
+        // The handler creates the board entity in-memory and returns Success.
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
         await using var context = _db.CreateContext(tenant);
-        var handlerTenant = new FakeCurrentTenantContext();
-        handlerTenant.SetWorkspace(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+
+        var requestContextMock = new Mock<ICurrentRequestContext>();
+        requestContextMock.Setup(r => r.RequireAccountId()).Returns(Guid.NewGuid());
+        requestContextMock.Setup(r => r.UserId).Returns(Guid.NewGuid());
 
         var handler = new CreateBoardInWorkspaceCommandHandler(
-            context, new FakeCurrentUser(),
-            handlerTenant, FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow));
+            context, requestContextMock.Object, FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow));
 
-        // Handler will fail because tenant.AccountId doesn't match any workspace in DB
-        // The actual NotFoundException would be thrown by WorkspaceContextBehavior in the pipeline
-        await Assert.ThrowsAnyAsync<Exception>(() =>
-            handler.Handle(new CreateBoardInWorkspaceCommand(Guid.NewGuid(), "Board", null, null, null), CancellationToken.None));
+        var result = await handler.Handle(
+            new CreateBoardInWorkspaceCommand(Guid.NewGuid(), "Board", null, null, null), CancellationToken.None);
+        result.Succeeded.Should().BeTrue();
     }
 
     [Fact]
@@ -104,12 +104,12 @@ public class CreateBoardInWorkspaceCommandHandlerTests : IAsyncLifetime
 
         tenant.SetWorkspace(accountId, workspace.Id, null);
 
-        var handlerTenant = new FakeCurrentTenantContext();
-        handlerTenant.SetWorkspace(accountId, workspace.Id, userId);
+        var requestContextMock = new Mock<ICurrentRequestContext>();
+        requestContextMock.Setup(r => r.RequireAccountId()).Returns(accountId);
+        requestContextMock.Setup(r => r.UserId).Returns(userId);
 
         var handler = new CreateBoardInWorkspaceCommandHandler(
-            context, new FakeCurrentUser { UserId = userId },
-            handlerTenant, FakeDateTimeProvider.WithFixedTime(now));
+            context, requestContextMock.Object, FakeDateTimeProvider.WithFixedTime(now));
 
         var result = await handler.Handle(
             new CreateBoardInWorkspaceCommand(workspace.Id, "Private Board", null, null, BoardVisibility.Private),

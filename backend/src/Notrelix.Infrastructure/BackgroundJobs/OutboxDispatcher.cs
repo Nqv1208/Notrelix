@@ -110,8 +110,8 @@ internal sealed class OutboxDispatcher : BackgroundService
         var now = dateTimeProvider.UtcNow;
 
         var alreadyProcessed = await context.Set<MessagingProcessedEvent>()
-            .AnyAsync(x => x.EventId == message.EventId 
-                && x.ConsumerName == DispatcherConsumerName 
+            .AnyAsync(x => x.EventId == message.EventId
+                && x.ConsumerName == DispatcherConsumerName
                 && x.Status == "Succeeded", cancellationToken);
 
         if (alreadyProcessed)

@@ -84,11 +84,11 @@ public class UpdateBoardItemFieldValuesCommandHandlerTests : IAsyncLifetime
 
     private UpdateBoardItemFieldValuesCommandHandler CreateHandler(ApplicationDbContext context, Guid userId)
     {
-        var currentUser = new Mock<ICurrentUser>();
-        currentUser.SetupGet(item => item.UserId).Returns(userId);
+        var requestContext = new Mock<ICurrentRequestContext>();
+        requestContext.SetupGet(item => item.UserId).Returns(userId);
         var timeProvider = new Mock<IDateTimeProvider>();
         timeProvider.Setup(t => t.UtcNow).Returns(DateTimeOffset.UtcNow);
 
-        return new UpdateBoardItemFieldValuesCommandHandler(context, currentUser.Object, timeProvider.Object, Mock.Of<IResourceReferenceResolver>(), Mock.Of<ICurrentTenantContext>());
+        return new UpdateBoardItemFieldValuesCommandHandler(context, requestContext.Object, timeProvider.Object, Mock.Of<IResourceReferenceResolver>());
     }
 }

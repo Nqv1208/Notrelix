@@ -8,7 +8,7 @@ public sealed class PermissionVersionProvider : IPermissionVersionProvider
     private const string Sql = """
         SELECT GREATEST(
             COALESCE((SELECT MAX(wm.updated_at) FROM workspace.workspace_members wm WHERE wm.account_id = @accountId AND wm.workspace_id = @workspaceId AND wm.user_id = @userId), '1970-01-01'::timestamp),
-            COALESCE((SELECT MAX(mra.updated_at) FROM governance.member_role_assignments mra WHERE mra.account_id = @accountId AND mra.workspace_id = @workspaceId), '1970-01-01'::timestamp),
+            COALESCE((SELECT MAX(mra.assigned_at) FROM governance.member_role_assignments mra WHERE mra.account_id = @accountId AND mra.workspace_id = @workspaceId), '1970-01-01'::timestamp),
             COALESCE((SELECT MAX(cr.updated_at) FROM governance.custom_roles cr WHERE cr.account_id = @accountId AND cr.workspace_id = @workspaceId), '1970-01-01'::timestamp),
             COALESCE((SELECT MAX(rp.updated_at) FROM governance.resource_permissions rp WHERE rp.account_id = @accountId AND rp.workspace_id = @workspaceId), '1970-01-01'::timestamp),
             COALESCE((SELECT MAX(pr.updated_at) FROM governance.permission_rules pr WHERE pr.account_id = @accountId AND pr.workspace_id = @workspaceId), '1970-01-01'::timestamp)
