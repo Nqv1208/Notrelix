@@ -1,0 +1,16 @@
+{
+  "name": "@notrelix/dependency-rules",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "check": "node src/check.mjs",
+    "test": "bun test --pass-with-no-tests",
+    "clean": "rm -rf node_modules"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
