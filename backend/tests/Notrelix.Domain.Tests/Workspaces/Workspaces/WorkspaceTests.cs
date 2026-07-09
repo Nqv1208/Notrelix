@@ -140,6 +140,61 @@ public class WorkspaceTests
     }
 
     [Fact]
+    public void UpdateDescription_ShouldSucceed_AndRaiseEvent()
+    {
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
+        workspace.ClearDomainEvents();
+        var actor = Guid.NewGuid();
+
+        workspace.UpdateDescription("New description", actor, Now);
+
+        workspace.Description.Should().Be("New description");
+        workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceDescriptionUpdatedDomainEvent);
+        var domainEvent = workspace.DomainEvents.OfType<WorkspaceDescriptionUpdatedDomainEvent>().Single();
+        domainEvent.OldDescription.Should().BeNull();
+        domainEvent.NewDescription.Should().Be("New description");
+        domainEvent.WorkspaceId.Should().Be(workspace.Id);
+        domainEvent.UpdatedBy.Should().Be(actor);
+    }
+
+    [Fact]
+    public void UpdateDescription_ShouldClearDescription_WhenSetToNull()
+    {
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now, description: "Initial description");
+        workspace.ClearDomainEvents();
+        var actor = Guid.NewGuid();
+
+        workspace.UpdateDescription(null, actor, Now);
+
+        workspace.Description.Should().BeNull();
+        workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceDescriptionUpdatedDomainEvent);
+        var domainEvent = workspace.DomainEvents.OfType<WorkspaceDescriptionUpdatedDomainEvent>().Single();
+        domainEvent.OldDescription.Should().Be("Initial description");
+        domainEvent.NewDescription.Should().BeNull();
+    }
+
+    [Fact]
+    public void UpdateDescription_WhenSameValue_ShouldBeNoOp()
+    {
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now, description: "Same");
+        workspace.ClearDomainEvents();
+
+        workspace.UpdateDescription("Same", Guid.NewGuid(), Now);
+
+        workspace.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void UpdateDescription_ArchivedWorkspace_ShouldThrow()
+    {
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
+        workspace.Archive(Guid.NewGuid(), Now);
+
+        var act = () => workspace.UpdateDescription("New description", Guid.NewGuid(), Now);
+        act.Should().Throw<BusinessRuleException>().WithMessage("Cannot update description of an archived workspace.");
+    }
+
+    [Fact]
     public void Create_PersonalWorkspace_ShouldHaveAccountId()
     {
         var workspace = Workspace.Create(AccountId, OwnerId, "Personal", "personal", Now, isPersonal: true);

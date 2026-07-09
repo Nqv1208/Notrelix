@@ -57,4 +57,18 @@ public sealed class TenantBootstrapStore : ITenantBootstrapStore
         return await _accountContext.Accounts
             .AnyAsync(a => a.Id == accountId, cancellationToken);
     }
+
+    public async Task<Guid> ResolveUserAccountAsync(Guid userId, CancellationToken ct)
+    {
+        var accountId = await _workspaceContext.WorkspaceMembers
+            .IgnoreQueryFilters()
+            .Where(m => m.UserId == userId)
+            .Select(m => m.AccountId)
+            .FirstOrDefaultAsync(ct);
+
+        if (accountId == Guid.Empty)
+            throw new InvalidOperationException($"User {userId} is not a member of any workspace account.");
+
+        return accountId;
+    }
 }

@@ -11,13 +11,13 @@ public record RemoveMemberBySlugCommand(
 public class RemoveMemberBySlugCommandHandler : IRequestHandler<RemoveMemberBySlugCommand, Result>
 {
     private readonly IWorkspaceDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public RemoveMemberBySlugCommandHandler(IWorkspaceDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public RemoveMemberBySlugCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
 
@@ -38,7 +38,7 @@ public class RemoveMemberBySlugCommandHandler : IRequestHandler<RemoveMemberBySl
         var activeOwnerCount = await _context.WorkspaceMembers
             .CountAsync(m => m.WorkspaceId == workspace.Id && m.Role == WorkspaceRole.Owner && m.Status == WorkspaceMemberStatus.Active, ct);
 
-        member.Remove(activeOwnerCount, _currentUser.UserId, _dateTimeProvider.UtcNow);
+        member.Remove(activeOwnerCount, _requestContext.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }

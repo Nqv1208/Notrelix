@@ -8,13 +8,13 @@ public record ArchiveWorkspaceBySlugCommand(string Slug) : ICommand<Result>, ITr
 public class ArchiveWorkspaceBySlugCommandHandler : IRequestHandler<ArchiveWorkspaceBySlugCommand, Result>
 {
     private readonly IWorkspaceDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public ArchiveWorkspaceBySlugCommandHandler(IWorkspaceDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public ArchiveWorkspaceBySlugCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
 
@@ -26,7 +26,7 @@ public class ArchiveWorkspaceBySlugCommandHandler : IRequestHandler<ArchiveWorks
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.Slug);
 
-        workspace.Archive(_currentUser.UserId, _dateTimeProvider.UtcNow);
+        workspace.Archive(_requestContext.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }

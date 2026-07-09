@@ -101,6 +101,23 @@ public class Workspace : AggregateRoot
         AddDomainEvent(new WorkspaceRestoredDomainEvent(Id, restoredBy, restoredAt));
     }
 
+    public void UpdateDescription(string? newDescription, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+
+        if (Status == WorkspaceStatus.Archived)
+            throw new BusinessRuleException("Cannot update description of an archived workspace.");
+
+        var oldDescription = Description;
+        var trimmed = newDescription?.Trim();
+        if (Description == trimmed) return;
+
+        Description = trimmed;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+        AddDomainEvent(new WorkspaceDescriptionUpdatedDomainEvent(Id, oldDescription, Description, updatedBy, updatedAt));
+    }
+
     public void UpdateSettings(WorkspaceSettings newSettings, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();

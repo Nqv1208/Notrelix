@@ -8769,9 +8769,10 @@ namespace Notrelix.Infrastructure.Migrations
                     b.HasIndex("Name")
                         .HasDatabaseName("idx_workspaces_name");
 
-                    b.HasIndex("Slug")
+                    b.HasIndex("AccountId", "Slug")
                         .IsUnique()
-                        .HasDatabaseName("idx_workspaces_slug");
+                        .HasDatabaseName("ux_workspaces_account_slug_active")
+                        .HasFilter("deleted_at IS NULL");
 
                     b.ToTable("workspaces", "workspace");
                 });

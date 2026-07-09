@@ -17,18 +17,18 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
 {
     private readonly IWorkspaceDbContext _workspaceContext;
     private readonly IActorLookupService _actorLookup;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public InviteMemberCommandHandler(
         IWorkspaceDbContext workspaceContext,
         IActorLookupService actorLookup,
-        ICurrentUser currentUser,
+        ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider)
     {
         _workspaceContext = workspaceContext;
         _actorLookup = actorLookup;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
 
@@ -65,7 +65,7 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
             return Result<Guid>.Failure("Đã có một lời mời đang chờ xử lý dành cho email này.");
 
         var token = InvitationTokenHash.Create(Guid.NewGuid().ToString("N"));
-        var invitation = WorkspaceInvitation.Create(workspace.AccountId, request.WorkspaceId, cleanEmail, request.Role, token, _currentUser.UserId, now);
+        var invitation = WorkspaceInvitation.Create(workspace.AccountId, request.WorkspaceId, cleanEmail, request.Role, token, _requestContext.UserId, now);
 
         _workspaceContext.WorkspaceInvitations.Add(invitation);
         return Result<Guid>.Success(invitation.Id);

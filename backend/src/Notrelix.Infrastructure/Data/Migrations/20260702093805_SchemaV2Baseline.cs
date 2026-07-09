@@ -5977,11 +5977,12 @@ namespace Notrelix.Infrastructure.Migrations
                 filter: "is_personal = true AND deleted_at IS NULL");
 
             migrationBuilder.CreateIndex(
-                name: "idx_workspaces_slug",
+                name: "ux_workspaces_account_slug_active",
                 schema: "workspace",
                 table: "workspaces",
-                column: "slug",
-                unique: true);
+                columns: new[] { "account_id", "slug" },
+                unique: true,
+                filter: "deleted_at IS NULL");
         }
 
         /// <inheritdoc />

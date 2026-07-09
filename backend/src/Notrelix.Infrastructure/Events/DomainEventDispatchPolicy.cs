@@ -503,6 +503,7 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
         Add<WorkspaceArchivedDomainEvent>(d);
         Add<WorkspaceCreatedDomainEvent>(d);
         Add<WorkspaceRenamedDomainEvent>(d);
+        Add<WorkspaceDescriptionUpdatedDomainEvent>(d);
         Add<WorkspaceRestoredDomainEvent>(d);
         Add<WorkspaceSoftDeletedDomainEvent>(d);
     }

@@ -4,22 +4,27 @@ using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetUserWorkspaces;
 
-public record GetUserWorkspacesQuery(Guid UserId) : IQuery<Result<List<WorkspaceDto>>>;
+public record GetUserWorkspacesQuery : IQuery<Result<List<WorkspaceDto>>>;
 
 public class GetUserWorkspacesQueryHandler : IRequestHandler<GetUserWorkspacesQuery, Result<List<WorkspaceDto>>>
 {
     private readonly IWorkspaceDbContext _context;
+    private readonly ICurrentRequestContext _requestContext;
 
-    public GetUserWorkspacesQueryHandler(IWorkspaceDbContext context) => _context = context;
+    public GetUserWorkspacesQueryHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext)
+    {
+        _context = context;
+        _requestContext = requestContext;
+    }
 
     public async Task<Result<List<WorkspaceDto>>> Handle(GetUserWorkspacesQuery request, CancellationToken ct)
     {
-        if (request.UserId == Guid.Empty)
+        if (_requestContext.UserId == Guid.Empty)
             return Result<List<WorkspaceDto>>.Failure("User is not authenticated");
 
         var workspaces = await _context.WorkspaceMembers
             .AsNoTracking()
-            .Where(m => m.UserId == request.UserId)
+            .Where(m => m.UserId == _requestContext.UserId)
             .Join(_context.Workspaces.AsNoTracking(),
                 member => member.WorkspaceId,
                 workspace => workspace.Id,

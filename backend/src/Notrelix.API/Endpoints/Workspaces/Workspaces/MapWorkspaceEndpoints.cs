@@ -21,7 +21,7 @@ public static class MapWorkspaceEndpoints
             .WithOpenApi();
 
         byIdGroup.MapGetWorkspace();
-        byIdGroup.MapUpdateWorkspace();
+        byIdGroup.MapUpdateWorkspaceProfile();
         byIdGroup.MapArchiveWorkspace();
         byIdGroup.MapRestoreWorkspace();
 
