@@ -25,9 +25,6 @@ public static class MessagingRegistration
         // Message deduplication store (Application abstraction -> Infrastructure implementation).
         services.AddScoped<IMessageDeduplicationStore, MessageDeduplicationStore>();
 
-        // Consumer pipeline executor — RLS + transaction + idempotency for integration event consumers.
-        services.AddScoped<IConsumerPipelineExecutor, ConsumerPipelineExecutor>();
-
         var transport = configuration["Messaging:Transport"] ?? "InMemory";
 
         switch (transport)
@@ -42,6 +39,7 @@ public static class MessagingRegistration
                     cfg.UsingInMemory((ctx, mem) =>
                     {
                         mem.UseConsumeFilter(typeof(TenantContextConsumeFilter<>), ctx);
+                        mem.UseConsumeFilter(typeof(DeduplicationConsumeFilter<>), ctx);
                         mem.ConfigureEndpoints(ctx);
                     });
                 });
@@ -99,6 +97,7 @@ public static class MessagingRegistration
                         });
 
                         rbt.UseConsumeFilter(typeof(TenantContextConsumeFilter<>), ctx);
+                        rbt.UseConsumeFilter(typeof(DeduplicationConsumeFilter<>), ctx);
 
                         rbt.PrefetchCount = opts.PrefetchCount;
 

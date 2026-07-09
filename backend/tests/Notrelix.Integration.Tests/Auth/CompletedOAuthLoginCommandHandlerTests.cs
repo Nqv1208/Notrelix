@@ -382,7 +382,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
         var now = DateTimeOffset.UtcNow;
 
         var gitHubState = new OAuthLoginState(
-            "github-state", "github-nonce", null,
+            "github-state", "github-nonce", "github-code-verifier",
             OAuthProvider.GitHub, null,
             DateTimeOffset.UtcNow.AddMinutes(10));
 

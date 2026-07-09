@@ -22,15 +22,18 @@ public sealed class MessagingProcessedEventConfiguration : IEntityTypeConfigurat
         builder.Property(x => x.SubjectType).HasMaxLength(160);
         builder.Property(x => x.CorrelationId).HasMaxLength(100);
         builder.Property(x => x.CausationId).HasMaxLength(100);
-        builder.Property(x => x.ProcessedAt).IsRequired();
-        builder.Property(x => x.Result).IsRequired().HasMaxLength(40).HasDefaultValue("Succeeded");
+        builder.Property(x => x.Status).IsRequired().HasMaxLength(40).HasDefaultValue("Processing");
+        builder.Property(x => x.ClaimedAt).IsRequired();
+        builder.Property(x => x.ProcessedAt);
+        builder.Property(x => x.FailedAt);
+        builder.Property(x => x.ErrorMessage).HasMaxLength(2000);
         builder.Property(x => x.MetadataJson).HasColumnType("jsonb").HasConversion<string>().IsRequired().HasDefaultValueSql("'{}'::jsonb");
 
-        builder.HasIndex(x => new { x.ConsumerName, x.ProcessedAt }).IsDescending(false, true);
-        builder.HasIndex(x => new { x.WorkspaceId, x.ProcessedAt })
+        builder.HasIndex(x => new { x.ConsumerName, x.ClaimedAt }).IsDescending(false, true);
+        builder.HasIndex(x => new { x.WorkspaceId, x.ClaimedAt })
             .HasFilter("\"workspace_id\" IS NOT NULL")
             .IsDescending(false, true);
-        builder.HasIndex(x => new { x.MessageName, x.ProcessedAt }).IsDescending(false, true);
+        builder.HasIndex(x => new { x.MessageName, x.ClaimedAt }).IsDescending(false, true);
         builder.HasIndex(x => x.CorrelationId)
             .HasFilter("\"correlation_id\" IS NOT NULL");
     }

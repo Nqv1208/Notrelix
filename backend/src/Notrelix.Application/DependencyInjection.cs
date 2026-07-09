@@ -30,6 +30,8 @@ public static class DependencyInjection
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(DbRequestScopeBehavior<,>));
         // Inner zone: inside DB/RLS scope
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
+        // Concurrency: version check for IExpectedVersionRequest (inside DB/RLS scope, after auth)
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ConcurrencyBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(SubscriptionGateBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(FeatureGateBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));

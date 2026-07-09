@@ -1,24 +1,16 @@
-using Notrelix.Infrastructure.Data;
-
 namespace Notrelix.Infrastructure.Messaging;
 
 public sealed class TenantContextConsumeFilter<T> : IFilter<ConsumeContext<T>>
     where T : class
 {
     private readonly ICurrentTenantContext _tenant;
-    private readonly IRlsSessionContext _rls;
-    private readonly ApplicationDbContext _db;
     private readonly ILogger<TenantContextConsumeFilter<T>> _logger;
 
     public TenantContextConsumeFilter(
         ICurrentTenantContext tenant,
-        IRlsSessionContext rls,
-        ApplicationDbContext db,
         ILogger<TenantContextConsumeFilter<T>> logger)
     {
         _tenant = tenant;
-        _rls = rls;
-        _db = db;
         _logger = logger;
     }
 
@@ -55,8 +47,6 @@ public sealed class TenantContextConsumeFilter<T> : IFilter<ConsumeContext<T>>
                         integrationEvent.WorkspaceId.Value,
                         integrationEvent.ActorUserId);
                 }
-
-                await _rls.ApplyAsync(_db.Database, context.CancellationToken);
             }
             else
             {

@@ -42,6 +42,16 @@ public class ExceptionMappingBehavior<TRequest, TResponse> : IPipelineBehavior<T
         {
             throw;
         }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            _logger.LogWarning(
+                "Concurrency conflict: {RequestType} CorrelationId={CorrelationId} Message={Message}",
+                typeof(TRequest).Name,
+                _executionContext.CorrelationId,
+                ex.Message);
+            throw new Exceptions.ConflictException(
+                "The resource was modified by another request. Reload and retry.");
+        }
         catch (UnauthorizedAccessException)
         {
             _logger.LogWarning(

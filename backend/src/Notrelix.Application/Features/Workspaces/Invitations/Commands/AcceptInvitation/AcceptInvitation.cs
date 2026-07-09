@@ -11,27 +11,24 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
 {
     private readonly IWorkspaceDbContext _workspaceContext;
     private readonly IActorLookupService _actorLookup;
-    private readonly ICurrentUser _currentUser;
-    private readonly ICurrentTenantContext _tenant;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public AcceptInvitationCommandHandler(
         IWorkspaceDbContext workspaceContext,
         IActorLookupService actorLookup,
-        ICurrentUser currentUser,
-        ICurrentTenantContext tenant,
+        ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider)
     {
         _workspaceContext = workspaceContext;
         _actorLookup = actorLookup;
-        _currentUser = currentUser;
-        _tenant = tenant;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<AcceptInvitationResultDto>> Handle(AcceptInvitationCommand request, CancellationToken ct)
     {
-        if (!_currentUser.IsAuthenticated || _currentUser.UserId == Guid.Empty)
+        if (!_requestContext.IsAuthenticated || _requestContext.UserId == Guid.Empty)
             return Result<AcceptInvitationResultDto>.Failure("Bạn cần đăng nhập để thực hiện hành động này.");
 
         var tokenHash = InvitationTokenHash.Create(request.Token);
@@ -52,7 +49,7 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         if (invitation.Status != WorkspaceInvitationStatus.Pending)
             return Result<AcceptInvitationResultDto>.Failure("Lời mời này không còn hiệu lực.");
 
-        var user = await _actorLookup.FindAsync(_currentUser.UserId, ct);
+        var user = await _actorLookup.FindAsync(_requestContext.UserId, ct);
 
         if (user == null)
             return Result<AcceptInvitationResultDto>.Failure("Không tìm thấy thông tin tài khoản người dùng hiện tại.");
@@ -62,17 +59,17 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         // For stricter email validation, an IAccountLookupService port could be introduced.
 
         var isAlreadyMember = await _workspaceContext.WorkspaceMembers
-            .AnyAsync(m => m.WorkspaceId == invitation.WorkspaceId && m.UserId == _currentUser.UserId, ct);
+            .AnyAsync(m => m.WorkspaceId == invitation.WorkspaceId && m.UserId == _requestContext.UserId, ct);
 
         if (isAlreadyMember)
         {
-            invitation.Accept(_currentUser.UserId, now);
+            invitation.Accept(_requestContext.UserId, now);
             return Result<AcceptInvitationResultDto>.Success(new AcceptInvitationResultDto(workspace?.Slug ?? "", invitation.WorkspaceId));
         }
 
-        invitation.Accept(_currentUser.UserId, now);
+        invitation.Accept(_requestContext.UserId, now);
 
-        var member = WorkspaceMember.Create(_tenant.RequireAccountId(), invitation.WorkspaceId, _currentUser.UserId, invitation.Role, invitation.InvitedBy, now);
+        var member = WorkspaceMember.Create(_requestContext.RequireAccountId(), invitation.WorkspaceId, _requestContext.UserId, invitation.Role, invitation.InvitedBy, now);
         _workspaceContext.WorkspaceMembers.Add(member);
 
         return Result<AcceptInvitationResultDto>.Success(new AcceptInvitationResultDto(workspace?.Slug ?? "", invitation.WorkspaceId));

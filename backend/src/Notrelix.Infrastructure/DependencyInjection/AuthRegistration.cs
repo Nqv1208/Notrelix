@@ -25,6 +25,7 @@ public static class AuthRegistration
         services.AddScoped<ICurrentWorkspace, CurrentWorkspace>();
         services.AddScoped<ICurrentAccount, CurrentAccount>();
         services.AddScoped<ICurrentTenantContext, CurrentTenantContext>();
+        services.AddScoped<ICurrentRequestContext, CurrentRequestContext>();
 
         // Correlation context for events/outbox/logs.
         services.AddScoped<ICorrelationContext, CurrentCorrelationContext>();
