@@ -7,15 +7,18 @@ public sealed class DeduplicationConsumeFilter<T> : IFilter<ConsumeContext<T>>
 {
     private readonly IMessageDeduplicationStore _dedupStore;
     private readonly ApplicationDbContext _db;
+    private readonly IRlsSessionContext _rls;
     private readonly ILogger<DeduplicationConsumeFilter<T>> _logger;
 
     public DeduplicationConsumeFilter(
         IMessageDeduplicationStore dedupStore,
         ApplicationDbContext db,
+        IRlsSessionContext rls,
         ILogger<DeduplicationConsumeFilter<T>> logger)
     {
         _dedupStore = dedupStore;
         _db = db;
+        _rls = rls;
         _logger = logger;
     }
 
@@ -32,6 +35,10 @@ public sealed class DeduplicationConsumeFilter<T> : IFilter<ConsumeContext<T>>
         await using var transaction = await _db.Database.BeginTransactionAsync(context.CancellationToken);
         try
         {
+            // CRITICAL: Apply RLS trong transaction này cho TẤT CẢ events
+            // Bao gồm cả system events (khi _tenant.IsSystemContext == true)
+            await _rls.ApplyAsync(_db.Database, context.CancellationToken);
+
             var claimed = await _dedupStore.TryClaimProcessingAsync(
                 messageId: integrationEvent.EventId,
                 consumerName: consumerName,

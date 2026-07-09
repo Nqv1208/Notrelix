@@ -639,12 +639,20 @@ Integration consumers must use `DeduplicationConsumeFilter` with claim-before-ex
 - If consumer fails, transaction rolls back and message can be retried
 - Claim record has `Status` field: `Processing`, `Succeeded`, `Failed`
 
+**RLS session must be applied inside the same transaction as consumer execution.**
+
+- `TenantContextConsumeFilter` only sets tenant memory context (does not apply RLS)
+- `DeduplicationConsumeFilter` owns consumer transaction + RLS apply + claim-before-execute
+- RLS is applied after `BeginTransactionAsync` and before claim/consumer execution
+- RLS applies for ALL integration events (workspace/account/system)
+
 Forbidden:
 
 ```txt
 Manual deduplication in consumer handlers
 ConsumerPipelineExecutor idempotency
 Check-then-mark-after pattern (race condition)
+Applying RLS outside consumer transaction
 ```
 
 ---

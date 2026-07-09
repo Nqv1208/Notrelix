@@ -16,15 +16,6 @@ public interface IMessageDeduplicationStore
         Guid? workspaceId,
         CancellationToken cancellationToken);
 
-    void MarkProcessed(
-        Guid messageId,
-        string consumerName,
-        string messageName,
-        int messageVersion,
-        Guid? sourceEventId,
-        Guid? workspaceId,
-        DateTimeOffset processedAt);
-
     void MarkSucceeded(
         Guid messageId,
         string consumerName,
