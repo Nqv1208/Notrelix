@@ -110,6 +110,9 @@ public class CommandMarkerArchitectureTests
         ["PublishPageCommand"] = new("PublishPageCommand", AllowlistClassification.LegacyGap,
             "Pre-hardening command missing ITransactionalRequest",
             "Add ITransactionalRequest"),
+        ["StartOAuthLoginCommand"] = new("StartOAuthLoginCommand", AllowlistClassification.PublicCommand,
+            "Non-mutating command: generates crypto + stores OAuth state in Redis, no DB mutation",
+            "Keep as-is; read-only command does not need transactional behavior"),
     };
 
     private static readonly Dictionary<string, AllowlistEntry> KnownMissingWorkspaceRequest = new()

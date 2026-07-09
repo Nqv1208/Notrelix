@@ -1,0 +1,9 @@
+namespace Notrelix.Application.Features.Identity.OAuth.DTOs;
+
+public sealed record OAuthLoginState(
+    string State,
+    string Nonce,
+    string CodeVerifier,
+    OAuthProvider Provider,
+    string? ReturnUrl,
+    DateTimeOffset ExpiresAt);

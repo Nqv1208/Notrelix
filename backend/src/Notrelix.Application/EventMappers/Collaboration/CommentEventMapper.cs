@@ -8,33 +8,39 @@ public sealed class CommentEventMapper :
 {
     public override CommentCreatedIntegrationEvent? Map(CommentCreatedDomainEvent domainEvent)
     {
+        var de = (IDomainEvent)domainEvent;
+        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new CommentCreatedIntegrationEvent(
-            domainEvent.CommentId,
-            domainEvent.WorkspaceId,
-            domainEvent.Target.ResourceType.ToString(),
-            domainEvent.Target.ResourceId,
-            domainEvent.CreatedBy,
-            string.Empty,
-            ((IDomainEvent)domainEvent).ActorUserId,
-            default,
-            null,
-            domainEvent.OccurredAt
+            EventId: Guid.CreateVersion7(),
+            CommentId: domainEvent.CommentId,
+            WorkspaceId: domainEvent.WorkspaceId,
+            TargetType: domainEvent.Target.ResourceType.ToString(),
+            TargetId: domainEvent.Target.ResourceId,
+            AuthorId: domainEvent.CreatedBy,
+            Body: string.Empty,
+            CorrelationId: correlationId,
+            ActorUserId: de.ActorUserId,
+            CausationId: null,
+            OccurredAt: domainEvent.OccurredAt
         );
     }
 
     public MentionCreatedIntegrationEvent? Map(MentionCreatedDomainEvent domainEvent)
     {
+        var de = (IDomainEvent)domainEvent;
+        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new MentionCreatedIntegrationEvent(
-            domainEvent.MentionId,
-            domainEvent.WorkspaceId,
-            domainEvent.Source.ResourceType.ToString(),
-            domainEvent.Source.ResourceId,
-            domainEvent.MentionedId,
-            default,
-            ((IDomainEvent)domainEvent).ActorUserId,
-            default,
-            null,
-            domainEvent.OccurredAt
+            EventId: Guid.CreateVersion7(),
+            MentionId: domainEvent.MentionId,
+            WorkspaceId: domainEvent.WorkspaceId,
+            TargetType: domainEvent.Source.ResourceType.ToString(),
+            TargetId: domainEvent.Source.ResourceId,
+            MentionedUserId: domainEvent.MentionedId,
+            MentionedByUserId: de.ActorUserId ?? domainEvent.MentionedId,
+            CorrelationId: correlationId,
+            ActorUserId: de.ActorUserId,
+            CausationId: null,
+            OccurredAt: domainEvent.OccurredAt
         );
     }
 

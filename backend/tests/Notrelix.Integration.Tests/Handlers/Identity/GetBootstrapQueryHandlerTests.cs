@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.Identity.Auth.Queries.GetBootstrap;
+using Notrelix.Domain.Accounts.Members;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
@@ -26,13 +27,15 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
 
     public Task DisposeAsync() => Task.CompletedTask;
 
+    private static readonly Guid AccountId = Guid.NewGuid();
+
     [Fact]
     public async Task Handle_WhenUserNotFound_ReturnsFailure()
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
         await using var context = _db.CreateContext(tenant);
-        var handler = new GetBootstrapQueryHandler(context, context);
+        var handler = new GetBootstrapQueryHandler(context, context, context);
 
         var result = await handler.Handle(new GetBootstrapQuery(Guid.NewGuid()), CancellationToken.None);
 
@@ -49,9 +52,10 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hashedpassword", now);
         context.Users.Add(user);
+        context.AccountMembers.Add(AccountMember.Create(AccountId, user.Id, AccountRole.Owner, user.Id, now));
         await context.SaveChangesAsync();
 
-        var handler = new GetBootstrapQueryHandler(context, context);
+        var handler = new GetBootstrapQueryHandler(context, context, context);
 
         var result = await handler.Handle(new GetBootstrapQuery(user.Id), CancellationToken.None);
 
@@ -71,15 +75,16 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
 
         var user = User.Create("test@example.com", "Test User", "hashedpassword", now);
         context.Users.Add(user);
+        context.AccountMembers.Add(AccountMember.Create(AccountId, user.Id, AccountRole.Owner, user.Id, now));
 
-        var workspace = Workspace.Create(Guid.NewGuid(), user.Id, "My Workspace", "my-workspace", now);
+        var workspace = Workspace.Create(AccountId, user.Id, "My Workspace", "my-workspace", now);
         context.Workspaces.Add(workspace);
 
-        var member = WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, user.Id, WorkspaceRole.Admin, user.Id, now);
+        var member = WorkspaceMember.Create(AccountId, workspace.Id, user.Id, WorkspaceRole.Admin, user.Id, now);
         context.WorkspaceMembers.Add(member);
         await context.SaveChangesAsync();
 
-        var handler = new GetBootstrapQueryHandler(context, context);
+        var handler = new GetBootstrapQueryHandler(context, context, context);
 
         var result = await handler.Handle(new GetBootstrapQuery(user.Id), CancellationToken.None);
 
@@ -101,12 +106,13 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
 
         var user = User.Create("test@example.com", "Test User", "hashedpassword", now);
         context.Users.Add(user);
+        context.AccountMembers.Add(AccountMember.Create(AccountId, user.Id, AccountRole.Owner, user.Id, now));
 
-        var personalWorkspace = Workspace.Create(Guid.NewGuid(), user.Id, "Personal", "personal", now, isPersonal: true);
+        var personalWorkspace = Workspace.Create(AccountId, user.Id, "Personal", "personal", now, isPersonal: true);
         context.Workspaces.Add(personalWorkspace);
         await context.SaveChangesAsync();
 
-        var handler = new GetBootstrapQueryHandler(context, context);
+        var handler = new GetBootstrapQueryHandler(context, context, context);
 
         var result = await handler.Handle(new GetBootstrapQuery(user.Id), CancellationToken.None);
 
@@ -125,9 +131,10 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
 
         var user = User.Create("test@example.com", "Test User", "hashedpassword", now);
         context.Users.Add(user);
+        context.AccountMembers.Add(AccountMember.Create(AccountId, user.Id, AccountRole.Owner, user.Id, now));
         await context.SaveChangesAsync();
 
-        var handler = new GetBootstrapQueryHandler(context, context);
+        var handler = new GetBootstrapQueryHandler(context, context, context);
 
         var result = await handler.Handle(new GetBootstrapQuery(user.Id), CancellationToken.None);
 

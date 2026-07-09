@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Notrelix.Domain.Common.Constants;
 
 namespace Notrelix.Infrastructure.Data.Messaging;
 
@@ -97,6 +98,14 @@ public sealed class MessagingOutboxMessage
         UpdatedAt = now;
     }
 
+    public void MarkDeadLetter(string errorCode, string errorMessage, DateTimeOffset now)
+    {
+        Status = "DeadLetter";
+        LastErrorCode = errorCode;
+        ErrorMessage = errorMessage;
+        UpdatedAt = now;
+    }
+
     public void MarkProcessed(DateTimeOffset now)
     {
         Status = "Processed";
@@ -145,10 +154,71 @@ public sealed class MessagingOutboxMessage
             actorUserId: integrationEvent.ActorUserId,
             correlationId: integrationEvent.CorrelationId.ToString(),
             causationId: integrationEvent.CausationId?.ToString(),
-            partitionKey: integrationEvent.WorkspaceId?.ToString(),
+            partitionKey: ResolvePartitionKey(integrationEvent),
             payloadJson: payloadJson,
             headersJson: null,
             metadataJson: null,
             createdAt: now);
+    }
+
+    public static MessagingOutboxMessage FromIntegrationEvent(
+        IIntegrationEvent integrationEvent,
+        DateTimeOffset now)
+    {
+        var payloadJson = JsonSerializer.SerializeToDocument(integrationEvent, integrationEvent.GetType(), JsonOptions);
+        return new MessagingOutboxMessage(
+            eventId: integrationEvent.EventId,
+            sourceEventId: integrationEvent.SourceEventId,
+            sourceContext: DeriveSourceContext(integrationEvent),
+            messageName: integrationEvent.MessageName,
+            schemaVersion: integrationEvent.SchemaVersion,
+            destination: null,
+            subjectType: SubjectTypes.User,
+            subjectId: integrationEvent.ActorUserId,
+            aggregateType: AggregateTypes.User,
+            aggregateId: integrationEvent.ActorUserId,
+            workspaceId: integrationEvent.WorkspaceId,
+            actorUserId: integrationEvent.ActorUserId,
+            correlationId: integrationEvent.CorrelationId.ToString(),
+            causationId: integrationEvent.CausationId?.ToString(),
+            partitionKey: ResolvePartitionKey(integrationEvent),
+            payloadJson: payloadJson,
+            headersJson: null,
+            metadataJson: null,
+            createdAt: now);
+    }
+
+    private static string ResolvePartitionKey(IIntegrationEvent integrationEvent)
+    {
+        if (integrationEvent.WorkspaceId.HasValue)
+            return integrationEvent.WorkspaceId.Value.ToString();
+        if (integrationEvent.AccountId.HasValue)
+            return integrationEvent.AccountId.Value.ToString();
+        return integrationEvent.EventId.ToString();
+    }
+
+    private static string DeriveSourceContext(IIntegrationEvent integrationEvent)
+    {
+        var messageName = integrationEvent.MessageName;
+        var dotIndex = messageName.IndexOf('.');
+        if (dotIndex > 0)
+        {
+            var prefix = messageName[..dotIndex];
+            return prefix switch
+            {
+                "identity" => SourceContexts.Identity,
+                "account" => SourceContexts.Accounts,
+                "workspace" => SourceContexts.Workspaces,
+                "board" => SourceContexts.Work,
+                "page" => SourceContexts.Docs,
+                "comment" => SourceContexts.Collaboration,
+                "mention" => SourceContexts.Collaboration,
+                "permission" => SourceContexts.Governance,
+                "role" => SourceContexts.Governance,
+                "subscription" => SourceContexts.Billing,
+                _ => SourceContexts.Integration,
+            };
+        }
+        return SourceContexts.Integration;
     }
 }

@@ -85,6 +85,29 @@ public class HandlerBoundaryArchitectureTests
     }
 
     [Fact]
+    public void Handlers_Must_Not_Inject_ICurrentTenantContext_Directly()
+    {
+        var handlerFiles = Directory.GetFiles(FeaturesPath, "*.cs", SearchOption.AllDirectories);
+        var violations = new List<string>();
+
+        foreach (var file in handlerFiles)
+        {
+            var content = File.ReadAllText(file);
+            var relativePath = Path.GetRelativePath(FindProjectRoot(), file);
+
+            if (!relativePath.Contains("Handler") && !content.Contains("IRequestHandler"))
+                continue;
+
+            if (content.Contains("ICurrentTenantContext"))
+                violations.Add(relativePath);
+        }
+
+        violations.Should().BeEmpty(
+            $"Handlers must not inject ICurrentTenantContext directly. Use ICurrentRequestContext instead. " +
+            $"Violations: {string.Join(", ", violations)}");
+    }
+
+    [Fact]
     public void Handlers_ShouldNotUse_AccountIdEmpty_ForFactoryCalls()
     {
         var handlerFiles = Directory.GetFiles(FeaturesPath, "*.cs", SearchOption.AllDirectories);

@@ -12,20 +12,17 @@ public record CreateBoardGroupCommand(Guid BoardId, string Title, string? Positi
 public class CreateBoardGroupCommandHandler : IRequestHandler<CreateBoardGroupCommand, Result<Guid>>
 {
     private readonly IWorkManagementDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly ICurrentTenantContext _tenant;
 
     public CreateBoardGroupCommandHandler(
         IWorkManagementDbContext context,
-        ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider,
-        ICurrentTenantContext tenant)
+        ICurrentRequestContext requestContext,
+        IDateTimeProvider dateTimeProvider)
     {
         _context = context;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
-        _tenant = tenant;
     }
 
     public async Task<Result<Guid>> Handle(CreateBoardGroupCommand request, CancellationToken ct)
@@ -39,7 +36,7 @@ public class CreateBoardGroupCommandHandler : IRequestHandler<CreateBoardGroupCo
             : FractionalIndex.Initial();
 
         var color = request.Color is not null ? Color.Create(request.Color) : Color.Create("#808080");
-        var list = BoardGroup.Create(_tenant.RequireAccountId(), board.WorkspaceId, request.BoardId, request.Title, color, position, _currentUser.UserId, _dateTimeProvider.UtcNow);
+        var list = BoardGroup.Create(_requestContext.RequireAccountId(), board.WorkspaceId, request.BoardId, request.Title, color, position, _requestContext.UserId, _dateTimeProvider.UtcNow);
         _context.BoardGroups.Add(list);
         return Result<Guid>.Success(list.Id);
     }

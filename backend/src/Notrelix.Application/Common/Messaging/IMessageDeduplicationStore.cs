@@ -7,12 +7,17 @@ public interface IMessageDeduplicationStore
         string consumerName,
         CancellationToken cancellationToken);
 
-    void MarkProcessed(
+    Task<bool> TryClaimProcessingAsync(
         Guid messageId,
         string consumerName,
         string messageName,
         int messageVersion,
         Guid? sourceEventId,
         Guid? workspaceId,
+        CancellationToken cancellationToken);
+
+    void MarkSucceeded(
+        Guid messageId,
+        string consumerName,
         DateTimeOffset processedAt);
 }

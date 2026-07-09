@@ -2,24 +2,26 @@ namespace Notrelix.Application.Events.Collaboration;
 
 [EventName("comment.created", Version = 1)]
 public sealed record CommentCreatedIntegrationEvent(
+    Guid EventId,
     Guid CommentId,
     Guid? WorkspaceId,
     string TargetType,
     Guid TargetId,
     Guid AuthorId,
     string Body,
+    Guid CorrelationId,
     Guid? ActorUserId = null,
-    Guid CorrelationId = default,
     Guid? CausationId = null,
     DateTimeOffset OccurredAt = default
 ) : IntegrationEvent(
-    "comment.created",
-    1,
+    eventId: EventId,
+    messageName: "comment.created",
+    schemaVersion: 1,
+    correlationId: CorrelationId,
     sourceEventId: null,
     accountId: null,
-    WorkspaceId,
-    ActorUserId,
-    CorrelationId,
-    CausationId,
-    OccurredAt
+    workspaceId: WorkspaceId,
+    actorUserId: ActorUserId,
+    causationId: CausationId,
+    occurredAt: OccurredAt
 );

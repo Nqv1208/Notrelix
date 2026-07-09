@@ -17,16 +17,14 @@ public record CreateBoardItemCommand(
 public class CreateBoardItemCommandHandler : IRequestHandler<CreateBoardItemCommand, BoardItemSlimDto>
 {
     private readonly IWorkManagementDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _timeProvider;
-    private readonly ICurrentTenantContext _tenant;
 
-    public CreateBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider, ICurrentTenantContext tenant)
+    public CreateBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider)
     {
         _context = context;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _timeProvider = timeProvider;
-        _tenant = tenant;
     }
 
     public async Task<BoardItemSlimDto> Handle(CreateBoardItemCommand request, CancellationToken cancellationToken)
@@ -41,13 +39,13 @@ public class CreateBoardItemCommandHandler : IRequestHandler<CreateBoardItemComm
         var position = FractionalIndex.Create(request.Position.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
         var item = BoardItem.Create(
-            _tenant.RequireAccountId(),
-            _tenant.RequireWorkspaceId(),
+            _requestContext.RequireAccountId(),
+            _requestContext.RequireWorkspaceId(),
             request.BoardId,
             request.GroupId,
             request.Title,
             position,
-            _currentUser.UserId,
+            _requestContext.UserId,
             now);
 
         _context.BoardItems.Add(item);

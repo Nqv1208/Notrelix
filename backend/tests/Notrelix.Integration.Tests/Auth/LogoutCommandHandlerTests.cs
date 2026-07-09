@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Commands.Logout;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.Identity.Sessions;
@@ -40,7 +41,8 @@ public class LogoutCommandHandlerTests : IAsyncLifetime
         var jwtBlacklist = new Mock<IJwtBlacklistService>();
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
-        var handler = new LogoutCommandHandler(context, jwtBlacklist.Object, dateTimeProvider.Object);
+        var logger = NullLogger<LogoutCommandHandler>.Instance;
+        var handler = new LogoutCommandHandler(context, jwtBlacklist.Object, dateTimeProvider.Object, logger);
 
         await handler.Handle(new LogoutCommand
         {
@@ -58,7 +60,8 @@ public class LogoutCommandHandlerTests : IAsyncLifetime
 
         var jwtBlacklist = new Mock<IJwtBlacklistService>();
         var dateTimeProvider = new Mock<IDateTimeProvider>();
-        var handler = new LogoutCommandHandler(context, jwtBlacklist.Object, dateTimeProvider.Object);
+        var logger = NullLogger<LogoutCommandHandler>.Instance;
+        var handler = new LogoutCommandHandler(context, jwtBlacklist.Object, dateTimeProvider.Object, logger);
 
         var result = await handler.Handle(new LogoutCommand
         {

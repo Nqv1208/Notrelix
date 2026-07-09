@@ -1,9 +1,10 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.ResetPassword;
 
-public record ResetPasswordCommand : ICommand<Result>, ITransactionalRequest
+public record ResetPasswordCommand : ICommand<Result>, ITransactionalRequest, IGlobalRequest
 {
     public required string Email { get; init; }
     public required string Code { get; init; }
@@ -16,6 +17,7 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
     private readonly IOtpService _otpService;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IEmailService _emailService;
+    private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<ResetPasswordCommandHandler> _logger;
 
     public ResetPasswordCommandHandler(
@@ -23,12 +25,14 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
         IOtpService otpService,
         IPasswordHasher passwordHasher,
         IEmailService emailService,
+        IDateTimeProvider dateTimeProvider,
         ILogger<ResetPasswordCommandHandler> logger)
     {
         _context = context;
         _otpService = otpService;
         _passwordHasher = passwordHasher;
         _emailService = emailService;
+        _dateTimeProvider = dateTimeProvider;
         _logger = logger;
     }
 
@@ -56,8 +60,9 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
             return Result.Failure("User not found");
         }
 
+        var now = _dateTimeProvider.UtcNow;
         var hash = _passwordHasher.HashPassword(request.NewPassword);
-        user.UpdatePassword(hash, DateTimeOffset.UtcNow);
+        user.UpdatePassword(hash, now);
 
         var activeSessions = await _context.Sessions
             .Where(s => s.UserId == user.Id && s.Status == SessionStatus.Active)
@@ -65,7 +70,7 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
 
         foreach (var session in activeSessions)
         {
-            session.Revoke(DateTimeOffset.UtcNow);
+            session.Revoke(now);
         }
 
         try

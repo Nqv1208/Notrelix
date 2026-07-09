@@ -2,15 +2,17 @@ namespace Notrelix.Domain.Common.Constants;
 
 public static class SourceContexts
 {
-    public const string Identity = "Identity";
-    public const string Workspaces = "Workspaces";
-    public const string Governance = "Governance";
-    public const string Work = "Work";
-    public const string Docs = "Docs";
-    public const string Collaboration = "Collaboration";
-    public const string Notifications = "Notifications";
-    public const string Automation = "Automation";
-    public const string Integrations = "Integrations";
-    public const string Billing = "Billing";
-    public const string Analytics = "Analytics";
+    public const string Identity = "identity";
+    public const string Accounts = "accounts";
+    public const string Workspaces = "workspaces";
+    public const string Governance = "governance";
+    public const string Work = "work";
+    public const string Docs = "docs";
+    public const string Collaboration = "collaboration";
+    public const string Notifications = "notifications";
+    public const string Automation = "automation";
+    public const string Integrations = "integrations";
+    public const string Billing = "billing";
+    public const string Analytics = "analytics";
+    public const string Integration = "integration";
 }

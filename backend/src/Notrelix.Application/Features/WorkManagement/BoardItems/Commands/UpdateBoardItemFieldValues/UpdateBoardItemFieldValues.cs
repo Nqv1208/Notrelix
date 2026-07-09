@@ -13,23 +13,20 @@ public record UpdateBoardItemFieldValuesCommand(Guid BoardItemId, Dictionary<Gui
 public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBoardItemFieldValuesCommand, Result>
 {
     private readonly IWorkManagementDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _timeProvider;
     private readonly IResourceReferenceResolver _resourceResolver;
-    private readonly ICurrentTenantContext _tenant;
 
     public UpdateBoardItemFieldValuesCommandHandler(
         IWorkManagementDbContext context,
-        ICurrentUser currentUser,
+        ICurrentRequestContext requestContext,
         IDateTimeProvider timeProvider,
-        IResourceReferenceResolver resourceResolver,
-        ICurrentTenantContext tenant)
+        IResourceReferenceResolver resourceResolver)
     {
         _context = context;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _timeProvider = timeProvider;
         _resourceResolver = resourceResolver;
-        _tenant = tenant;
     }
 
     public async Task<Result> Handle(UpdateBoardItemFieldValuesCommand request, CancellationToken ct)
@@ -49,7 +46,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
         {
             if (columnId == card.BoardId)
             {
-                card.Rename(ReadString(value) ?? card.Name, _currentUser.UserId, now);
+                card.Rename(ReadString(value) ?? card.Name, _requestContext.UserId, now);
                 continue;
             }
 
@@ -60,13 +57,13 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
             switch (semanticField)
             {
                 case "title":
-                    card.Rename(ReadString(value) ?? card.Name, _currentUser.UserId, now);
+                    card.Rename(ReadString(value) ?? card.Name, _requestContext.UserId, now);
                     break;
                 case "status":
                 case "priority":
                     {
                         var fv = FieldValue.Create(JsonValue.Create(JsonSerializer.Serialize(NormalizeStoredValue(value))));
-                        card.UpdateFieldValue(column, fv, _currentUser.UserId, now);
+                        card.UpdateFieldValue(column, fv, _requestContext.UserId, now);
                         break;
                     }
                 case "due_date":
@@ -75,7 +72,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
                         card.SetTimeline(
                             card.StartedAt,
                             dt.HasValue ? new DateTimeOffset(dt.Value, TimeSpan.Zero) : null,
-                            _currentUser.UserId,
+                            _requestContext.UserId,
                             now);
                         break;
                     }
@@ -86,11 +83,11 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
                         {
                             await EnsurePageCanBeLinkedAsync(pageId.Value, card.WorkspaceId, ct);
                             var link = BoardItemLink.Create(
-                                _tenant.RequireAccountId(),
+                                _requestContext.RequireAccountId(),
                                 card.WorkspaceId, card.BoardId, card.Id,
                                 ResourceRef.Create(ResourceType.Page, pageId.Value, card.WorkspaceId),
                                 BoardItemLinkType.Reference,
-                                _currentUser.UserId, now);
+                                _requestContext.UserId, now);
                             _context.BoardItemLinks.Add(link);
                         }
                         else
@@ -115,7 +112,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
                 case "multi_select":
                     {
                         var fv = FieldValue.Create(JsonValue.Create(JsonSerializer.Serialize(NormalizeStoredValue(value))));
-                        card.UpdateFieldValue(column, fv, _currentUser.UserId, now);
+                        card.UpdateFieldValue(column, fv, _requestContext.UserId, now);
                         break;
                     }
                 default:
@@ -155,9 +152,9 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
         foreach (var userId in requested.Where(userId => !existingUserIds.Contains(userId)))
         {
             var member = BoardItemMember.Create(
-                _tenant.RequireAccountId(),
+                _requestContext.RequireAccountId(),
                 card.WorkspaceId, card.BoardId, card.Id,
-                userId, _currentUser.UserId, now);
+                userId, _requestContext.UserId, now);
             _context.BoardItemMembers.Add(member);
         }
     }

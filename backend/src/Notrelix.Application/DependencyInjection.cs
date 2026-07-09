@@ -30,6 +30,8 @@ public static class DependencyInjection
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(DbRequestScopeBehavior<,>));
         // Inner zone: inside DB/RLS scope
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
+        // Concurrency: version check for IExpectedVersionRequest (inside DB/RLS scope, after auth)
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ConcurrencyBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(SubscriptionGateBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(FeatureGateBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
@@ -50,6 +52,12 @@ public static class DependencyInjection
         // Execution context (scoped per request)
         services.AddScoped<IExecutionContextAccessor, Notrelix.Application.Common.Context.ExecutionContext>();
         services.AddScoped<IExecutionContextReader>(sp => sp.GetRequiredService<IExecutionContextAccessor>());
+
+        // Integration event collector (scoped per request)
+        services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
+
+        // Auth session issuer
+        services.AddScoped<IAuthSessionIssuer, AuthSessionIssuer>();
 
         // AutoMapper
         services.AddAutoMapper(cfg => cfg.AddMaps(assembly), assembly);

@@ -59,6 +59,7 @@ internal sealed class OutboxDispatcher : BackgroundService
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var integrationEventBus = scope.ServiceProvider.GetRequiredService<IIntegrationEventBus>();
         var eventTypeRegistry = scope.ServiceProvider.GetRequiredService<IEventTypeRegistry>();
+        var eventCatalog = scope.ServiceProvider.GetRequiredService<IIntegrationEventCatalog>();
         var dateTimeProvider = scope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
 
         var now = dateTimeProvider.UtcNow;
@@ -91,7 +92,7 @@ internal sealed class OutboxDispatcher : BackgroundService
 
         foreach (var message in messages)
         {
-            await ProcessMessageAsync(message, context, eventTypeRegistry, integrationEventBus, dateTimeProvider, cancellationToken);
+            await ProcessMessageAsync(message, context, eventTypeRegistry, eventCatalog, integrationEventBus, dateTimeProvider, cancellationToken);
         }
 
         await context.SaveChangesAsync(cancellationToken);
@@ -101,6 +102,7 @@ internal sealed class OutboxDispatcher : BackgroundService
         MessagingOutboxMessage message,
         ApplicationDbContext context,
         IEventTypeRegistry eventTypeRegistry,
+        IIntegrationEventCatalog eventCatalog,
         IIntegrationEventBus integrationEventBus,
         IDateTimeProvider dateTimeProvider,
         CancellationToken cancellationToken)
@@ -108,7 +110,9 @@ internal sealed class OutboxDispatcher : BackgroundService
         var now = dateTimeProvider.UtcNow;
 
         var alreadyProcessed = await context.Set<MessagingProcessedEvent>()
-            .AnyAsync(x => x.EventId == message.EventId && x.ConsumerName == DispatcherConsumerName, cancellationToken);
+            .AnyAsync(x => x.EventId == message.EventId
+                && x.ConsumerName == DispatcherConsumerName
+                && x.Status == "Succeeded", cancellationToken);
 
         if (alreadyProcessed)
         {
@@ -123,13 +127,25 @@ internal sealed class OutboxDispatcher : BackgroundService
             Environment.MachineName, "MassTransit", null, "Started", now);
         context.Set<OutboxDeliveryAttempt>().Add(attempt);
 
-        var integrationEventType = eventTypeRegistry.GetEventType(message.MessageName);
-
-        if (integrationEventType is null)
+        Type integrationEventType;
+        try
         {
-            _logger.LogWarning("V5 outbox {MsgId}: event type {MsgName} not found in registry",
+            integrationEventType = eventCatalog.Resolve(message.MessageName);
+        }
+        catch (UnknownIntegrationEventTypeException ex)
+        {
+            _logger.LogCritical(ex, "V5 outbox {MsgId}: unknown integration event type {MsgName} — dead-lettering permanently",
                 message.Id, message.MessageName);
-            FailMessage(message, attempt, "EventTypeNotFound", "EventType not found in registry: " + message.MessageName, dateTimeProvider);
+            message.MarkDeadLetter("UnknownEventType", ex.Message, now);
+            attempt.MarkFailed("UnknownEventType", ex.Message, now);
+            var processedEvent = new MessagingProcessedEvent(
+                message.EventId, DispatcherConsumerName,
+                message.SourceContext, message.MessageName, message.SchemaVersion,
+                message.SourceEventId, message.SubjectType, message.SubjectId,
+                message.WorkspaceId, message.ActorUserId,
+                message.CorrelationId, message.CausationId, now);
+            processedEvent.MarkFailed(now, ex.Message);
+            context.Set<MessagingProcessedEvent>().Add(processedEvent);
             return;
         }
 
@@ -156,6 +172,7 @@ internal sealed class OutboxDispatcher : BackgroundService
                 message.SourceEventId, message.SubjectType, message.SubjectId,
                 message.WorkspaceId, message.ActorUserId,
                 message.CorrelationId, message.CausationId, now);
+            processedEvent.MarkSucceeded(now);
             context.Set<MessagingProcessedEvent>().Add(processedEvent);
 
             _logger.LogDebug("V5 outbox {MsgId}: {MsgName} dispatched (attempt {Retry})",

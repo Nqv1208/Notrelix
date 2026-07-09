@@ -21,30 +21,27 @@ public record RevokeResourcePermissionCommand(
 public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeResourcePermissionCommand, Result>
 {
     private readonly IGovernanceDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IAuditService _auditService;
-    private readonly ICurrentTenantContext _tenant;
 
     public RevokeResourcePermissionCommandHandler(
         IGovernanceDbContext context,
-        ICurrentUser currentUser,
+        ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
-        IAuditService auditService,
-        ICurrentTenantContext tenant)
+        IAuditService auditService)
     {
         _context = context;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
         _auditService = auditService;
-        _tenant = tenant;
     }
 
     public async Task<Result> Handle(
         RevokeResourcePermissionCommand request,
         CancellationToken cancellationToken)
     {
-        var workspaceId = _tenant.RequireWorkspaceId();
+        var workspaceId = _requestContext.RequireWorkspaceId();
 
         var permission = await _context.ResourcePermissions
             .FirstOrDefaultAsync(p => p.Id == request.PermissionId &&
@@ -57,7 +54,7 @@ public class RevokeResourcePermissionCommandHandler : IRequestHandler<RevokeReso
             throw new NotFoundException(nameof(ResourcePermission), request.PermissionId);
         }
 
-        var actorId = _currentUser.UserId;
+        var actorId = _requestContext.UserId;
 
         _context.ResourcePermissions.Remove(permission);
 

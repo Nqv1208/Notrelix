@@ -12,15 +12,13 @@ public record CreateWorkspaceCommand(
 public class CreateWorkspaceCommandHandler : IRequestHandler<CreateWorkspaceCommand, Result<Guid>>
 {
     private readonly IWorkspaceDbContext _context;
-    private readonly ICurrentUser _currentUser;
-    private readonly ICurrentTenantContext _tenant;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public CreateWorkspaceCommandHandler(IWorkspaceDbContext context, ICurrentUser currentUser, ICurrentTenantContext tenant, IDateTimeProvider dateTimeProvider)
+    public CreateWorkspaceCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
-        _currentUser = currentUser;
-        _tenant = tenant;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
 
@@ -35,8 +33,8 @@ public class CreateWorkspaceCommandHandler : IRequestHandler<CreateWorkspaceComm
             : slug.Value;
 
         var creationResult = WorkspaceFactory.CreateWithOwner(
-            _tenant.RequireAccountId(),
-            _currentUser.UserId, request.Name, finalSlug,
+            _requestContext.RequireAccountId(),
+            _requestContext.UserId, request.Name, finalSlug,
             _dateTimeProvider.UtcNow, request.IsPersonal,
             request.Description);
 

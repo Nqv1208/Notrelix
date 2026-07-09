@@ -25,23 +25,20 @@ public record GrantResourcePermissionCommand(
 public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResourcePermissionCommand, Result<ResourcePermissionDto>>
 {
     private readonly IGovernanceDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IAuditService _auditService;
-    private readonly ICurrentTenantContext _tenant;
 
     public GrantResourcePermissionCommandHandler(
         IGovernanceDbContext context,
-        ICurrentUser currentUser,
+        ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
-        IAuditService auditService,
-        ICurrentTenantContext tenant)
+        IAuditService auditService)
     {
         _context = context;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
         _auditService = auditService;
-        _tenant = tenant;
     }
 
     public async Task<Result<ResourcePermissionDto>> Handle(
@@ -54,9 +51,9 @@ public class GrantResourcePermissionCommandHandler : IRequestHandler<GrantResour
             return Result<ResourcePermissionDto>.Failure("Invalid format for enum parameters.");
         }
 
-        var workspaceId = _tenant.RequireWorkspaceId();
-        var accountId = _tenant.RequireAccountId();
-        var actorId = _currentUser.UserId;
+        var workspaceId = _requestContext.RequireWorkspaceId();
+        var accountId = _requestContext.RequireAccountId();
+        var actorId = _requestContext.UserId;
 
         var existingPermission = await _context.ResourcePermissions
             .FirstOrDefaultAsync(p => p.WorkspaceId == workspaceId &&

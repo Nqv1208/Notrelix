@@ -16,7 +16,7 @@ public static class DependencyInjection
         services.AddPersistence(configuration);
         services.AddMessaging(configuration);
         services.AddBackgroundJobs(configuration);
-        services.AddCaching(configuration);
+        services.AddCaching(configuration, environment);
         services.AddAuthInfrastructure(configuration);
         services.AddSecurityInfrastructure(configuration);
         services.AddGovernanceInfrastructure(configuration);
@@ -27,6 +27,8 @@ public static class DependencyInjection
         services.AddBilling(configuration, environment);
         services.AddOperations(configuration);
         services.AddObservability(configuration);
+
+        services.AddOAuthInfrastructure(configuration);
 
         return services;
     }

@@ -14,20 +14,17 @@ public record CreateAutomationRuleCommand(
 public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomationRuleCommand, Result<Guid>>
 {
     private readonly IAutomationDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly ICurrentTenantContext _tenant;
 
     public CreateAutomationRuleCommandHandler(
         IAutomationDbContext context,
-        ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider,
-        ICurrentTenantContext tenant)
+        ICurrentRequestContext requestContext,
+        IDateTimeProvider dateTimeProvider)
     {
         _context = context;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
-        _tenant = tenant;
     }
 
     public async Task<Result<Guid>> Handle(CreateAutomationRuleCommand request, CancellationToken cancellationToken)
@@ -37,11 +34,11 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
         var config = AutomationConfiguration.Create(trigger, action);
 
         var rule = AutomationRule.Create(
-            _tenant.RequireAccountId(),
+            _requestContext.RequireAccountId(),
             request.WorkspaceId,
             request.Name,
             config,
-            _currentUser.UserId,
+            _requestContext.UserId,
             _dateTimeProvider.UtcNow);
 
         _context.AutomationRules.Add(rule);

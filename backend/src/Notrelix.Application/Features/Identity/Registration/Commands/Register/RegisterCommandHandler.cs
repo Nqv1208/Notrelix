@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Domain.Accounts.Accounts;
@@ -11,21 +12,24 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
     private readonly IIdentityDbContext _identityContext;
     private readonly IAccountDbContext _accountContext;
     private readonly IPasswordHasher _passwordHasher;
-    private readonly IJwtService _jwtService;
+    private readonly IAuthSessionIssuer _sessionIssuer;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IIntegrationEventCollector _integrationEventCollector;
 
     public RegisterCommandHandler(
         IIdentityDbContext identityContext,
         IAccountDbContext accountContext,
         IPasswordHasher passwordHasher,
-        IJwtService jwtService,
-        IDateTimeProvider dateTimeProvider)
+        IAuthSessionIssuer sessionIssuer,
+        IDateTimeProvider dateTimeProvider,
+        IIntegrationEventCollector integrationEventCollector)
     {
         _identityContext = identityContext;
         _accountContext = accountContext;
         _passwordHasher = passwordHasher;
-        _jwtService = jwtService;
+        _sessionIssuer = sessionIssuer;
         _dateTimeProvider = dateTimeProvider;
+        _integrationEventCollector = integrationEventCollector;
     }
 
     public async Task<Result<AuthResult>> Handle(RegisterCommand request, CancellationToken cancellationToken)
@@ -64,26 +68,22 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
             now);
         _accountContext.AccountMembers.Add(accountMember);
 
-        var accessToken = _jwtService.GenerateAccessToken(user);
-        var refreshToken = _jwtService.GenerateRefreshToken();
-        var tokenHash = RefreshTokenHash.Create(refreshToken);
+        // Emit registration completed use-case integration event
+        _integrationEventCollector.Add(
+            new IdentityRegistrationCompletedIntegrationEventV1(
+                EventId: Guid.CreateVersion7(),
+                UserId: user.Id,
+                AccountId: account.Id,
+                Email: user.Email.Value,
+                DisplayName: user.Name,
+                AccountName: account.Name,
+                CorrelationId: Guid.CreateVersion7(),
+                ActorUserId: user.Id,
+                SourceEventId: null,
+                CausationId: null,
+                OccurredAt: now));
 
-        var session = UserSession.Create(user.Id, tokenHash, now.AddDays(30), now);
-        _identityContext.Sessions.Add(session);
-
-        return Result<AuthResult>.Success(new AuthResult
-        {
-            AccessToken = accessToken,
-            RefreshToken = refreshToken,
-            ExpiresAt = _dateTimeProvider.UtcNow.AddHours(1).DateTime,
-            User = new UserDto
-            {
-                Id = user.Id,
-                Email = user.Email.Value,
-                Name = user.Name,
-                AvatarUrl = user.AvatarUrl
-            },
-            WorkspaceProvisioning = "pending"
-        });
+        var authResult = await _sessionIssuer.IssueAsync(user, now, cancellationToken);
+        return Result<AuthResult>.Success(authResult with { WorkspaceProvisioning = "pending" });
     }
 }

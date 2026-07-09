@@ -118,7 +118,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasName("pk_accounts");
 
                     b.HasIndex("Slug")
-                        .IsUnique()
                         .HasDatabaseName("idx_account_slug");
 
                     b.ToTable("accounts", "account");
@@ -8762,9 +8761,9 @@ namespace Notrelix.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_workspaces");
 
-                    b.HasIndex("CreatedBy")
+                    b.HasIndex("AccountId")
                         .IsUnique()
-                        .HasDatabaseName("idx_workspaces_personal_per_user")
+                        .HasDatabaseName("idx_workspaces_personal_per_account")
                         .HasFilter("is_personal = true AND deleted_at IS NULL");
 
                     b.HasIndex("Name")
@@ -9752,6 +9751,10 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("causation_id");
 
+                    b.Property<DateTimeOffset>("ClaimedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("claimed_at");
+
                     b.Property<string>("ConsumerName")
                         .IsRequired()
                         .HasMaxLength(240)
@@ -9764,12 +9767,17 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnName("correlation_id");
 
                     b.Property<string>("ErrorMessage")
-                        .HasColumnType("text")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
                         .HasColumnName("error_message");
 
                     b.Property<Guid>("EventId")
                         .HasColumnType("uuid")
                         .HasColumnName("event_id");
+
+                    b.Property<DateTimeOffset?>("FailedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("failed_at");
 
                     b.Property<string>("MessageName")
                         .IsRequired()
@@ -9790,17 +9798,17 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnName("metadata_json")
                         .HasDefaultValueSql("'{}'::jsonb");
 
-                    b.Property<DateTimeOffset>("ProcessedAt")
+                    b.Property<DateTimeOffset?>("ProcessedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("processed_at");
 
-                    b.Property<string>("Result")
+                    b.Property<string>("Status")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)")
-                        .HasDefaultValue("Succeeded")
-                        .HasColumnName("result");
+                        .HasDefaultValue("Processing")
+                        .HasColumnName("status");
 
                     b.Property<string>("SourceContext")
                         .HasMaxLength(80)
@@ -9831,21 +9839,21 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasDatabaseName("ix_processed_events_correlation_id")
                         .HasFilter("\"correlation_id\" IS NOT NULL");
 
-                    b.HasIndex("ConsumerName", "ProcessedAt")
+                    b.HasIndex("ConsumerName", "ClaimedAt")
                         .IsDescending(false, true)
-                        .HasDatabaseName("ix_processed_events_consumer_name_processed_at");
+                        .HasDatabaseName("ix_processed_events_consumer_name_claimed_at");
 
                     b.HasIndex("EventId", "ConsumerName")
                         .IsUnique()
                         .HasDatabaseName("ix_processed_events_event_id_consumer_name");
 
-                    b.HasIndex("MessageName", "ProcessedAt")
+                    b.HasIndex("MessageName", "ClaimedAt")
                         .IsDescending(false, true)
-                        .HasDatabaseName("ix_processed_events_message_name_processed_at");
+                        .HasDatabaseName("ix_processed_events_message_name_claimed_at");
 
-                    b.HasIndex("WorkspaceId", "ProcessedAt")
+                    b.HasIndex("WorkspaceId", "ClaimedAt")
                         .IsDescending(false, true)
-                        .HasDatabaseName("ix_processed_events_workspace_id_processed_at")
+                        .HasDatabaseName("ix_processed_events_workspace_id_claimed_at")
                         .HasFilter("\"workspace_id\" IS NOT NULL");
 
                     b.ToTable("processed_events", "messaging");

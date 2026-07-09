@@ -1,9 +1,10 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Commands.RefreshToken;
 
-public record RefreshTokenCommand : ICommand<Result<AuthResult>>, ITransactionalRequest
+public record RefreshTokenCommand : ICommand<Result<AuthResult>>, ITransactionalRequest, IGlobalRequest
 {
     public required string RefreshToken { get; init; }
 }
@@ -62,7 +63,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         {
             AccessToken = accessToken,
             RefreshToken = newRefreshToken,
-            ExpiresAt = DateTime.UtcNow.AddHours(1),
+            ExpiresAt = _dateTimeProvider.UtcNow.UtcDateTime.AddHours(1),
             User = new UserDto
             {
                 Id = user.Id,

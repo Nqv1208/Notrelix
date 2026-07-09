@@ -28,7 +28,18 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
             return await next();
         }
 
-        // Rule 2: Non-anonymous requests require authenticated user
+        // Rule 1.5: System-internal requests skip user authentication.
+        // These are background/message-triggered requests, never exposed through HTTP endpoints.
+        // Architecture tests enforce the API boundary; consumers and hosted services own the request lifecycle.
+        if (request is ISystemInternalRequest)
+        {
+            _logger.LogTrace(
+                "System-internal request {RequestType} bypasses user authentication.",
+                typeof(TRequest).Name);
+            return await next();
+        }
+
+        // Rule 2: Non-anonymous, non-system requests require authenticated user
         if (!_currentUser.IsAuthenticated || _currentUser.UserId == Guid.Empty)
         {
             _logger.LogWarning("Authentication required for {RequestType}", typeof(TRequest).Name);

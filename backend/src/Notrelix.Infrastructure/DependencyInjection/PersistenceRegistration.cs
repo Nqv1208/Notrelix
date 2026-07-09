@@ -11,6 +11,7 @@ using Notrelix.Application.Features.Billing.Abstractions;
 using Notrelix.Application.Features.Analytics.Abstractions;
 using Notrelix.Infrastructure.Services;
 using Notrelix.Infrastructure.Data;
+using Notrelix.Infrastructure.Data.Services;
 using Notrelix.Infrastructure.Data.Abstractions;
 using Notrelix.Infrastructure.Data.Interceptors;
 using Notrelix.Infrastructure.Data.Rls;
@@ -95,6 +96,7 @@ public static class PersistenceRegistration
         services.AddScoped<IResourceScopeResolver, ResourceScopeResolver>();
         services.AddScoped<IActorLookupService, ActorLookupService>();
         services.AddScoped<IResourceReferenceResolver, ResourceReferenceResolver>();
+        services.AddScoped<IResourceVersionReader, ResourceVersionReader>();
         services.AddScoped<ApplicationDbContextInitialiser>();
         services.AddScoped<RlsPolicyApplier>();
         services.AddScoped<IRlsSessionContext, RlsSessionContext>();

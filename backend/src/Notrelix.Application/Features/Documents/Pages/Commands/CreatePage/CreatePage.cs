@@ -12,23 +12,21 @@ public record CreatePageCommand(
 public class CreatePageCommandHandler : IRequestHandler<CreatePageCommand, Result<Guid>>
 {
     private readonly IDocumentDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly ICurrentTenantContext _tenant;
 
-    public CreatePageCommandHandler(IDocumentDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider, ICurrentTenantContext tenant)
+    public CreatePageCommandHandler(IDocumentDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
-        _tenant = tenant;
     }
 
     public async Task<Result<Guid>> Handle(CreatePageCommand request, CancellationToken ct)
     {
         // Workspace existence is verified by workspace-scoped authorization at a higher layer.
 
-        var page = Page.Create(_tenant.RequireAccountId(), request.WorkspaceId, request.Title, _currentUser.UserId, _dateTimeProvider.UtcNow, request.ParentId);
+        var page = Page.Create(_requestContext.RequireAccountId(), request.WorkspaceId, request.Title, _requestContext.UserId, _dateTimeProvider.UtcNow, request.ParentId);
         _context.Pages.Add(page);
 
         return Result<Guid>.Success(page.Id);

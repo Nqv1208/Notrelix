@@ -21,19 +21,19 @@ public record GetResourcePermissionsQuery(
 public class GetResourcePermissionsQueryHandler : IRequestHandler<GetResourcePermissionsQuery, Result<List<ResourcePermissionDto>>>
 {
     private readonly IGovernanceDbContext _context;
-    private readonly ICurrentTenantContext _tenant;
+    private readonly ICurrentRequestContext _requestContext;
 
-    public GetResourcePermissionsQueryHandler(IGovernanceDbContext context, ICurrentTenantContext tenant)
+    public GetResourcePermissionsQueryHandler(IGovernanceDbContext context, ICurrentRequestContext requestContext)
     {
         _context = context;
-        _tenant = tenant;
+        _requestContext = requestContext;
     }
 
     public async Task<Result<List<ResourcePermissionDto>>> Handle(
         GetResourcePermissionsQuery request,
         CancellationToken cancellationToken)
     {
-        var workspaceId = _tenant.RequireWorkspaceId();
+        var workspaceId = _requestContext.RequireWorkspaceId();
         var permissions = await _context.ResourcePermissions
             .AsNoTracking()
             .Where(p => p.WorkspaceId == workspaceId &&

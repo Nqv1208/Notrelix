@@ -12,16 +12,14 @@ public record AddLabelToBoardItemCommand(Guid BoardItemId, Guid LabelId) : IComm
 public class AddLabelToBoardItemCommandHandler : IRequestHandler<AddLabelToBoardItemCommand, Result>
 {
     private readonly IWorkManagementDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly ICurrentTenantContext _tenant;
 
-    public AddLabelToBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider, ICurrentTenantContext tenant)
+    public AddLabelToBoardItemCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
-        _tenant = tenant;
     }
 
     public async Task<Result> Handle(AddLabelToBoardItemCommand request, CancellationToken ct)
@@ -39,9 +37,9 @@ public class AddLabelToBoardItemCommandHandler : IRequestHandler<AddLabelToBoard
         if (exists) return Result.Success();
 
         var link = BoardItemLabel.Create(
-            _tenant.RequireAccountId(),
+            _requestContext.RequireAccountId(),
             card.WorkspaceId, label.BoardId, request.BoardItemId, request.LabelId,
-            _currentUser.UserId, _dateTimeProvider.UtcNow);
+            _requestContext.UserId, _dateTimeProvider.UtcNow);
         _context.BoardItemLabels.Add(link);
         return Result.Success();
     }

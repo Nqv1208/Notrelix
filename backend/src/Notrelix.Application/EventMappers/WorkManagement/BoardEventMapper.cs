@@ -9,44 +9,53 @@ public sealed class BoardEventMapper :
 {
     public override BoardCreatedIntegrationEvent? Map(BoardCreatedDomainEvent domainEvent)
     {
+        var de = (IDomainEvent)domainEvent;
+        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new BoardCreatedIntegrationEvent(
-            domainEvent.BoardId,
-            domainEvent.WorkspaceId,
-            domainEvent.Title,
-            ((IDomainEvent)domainEvent).ActorUserId,
-            default,
-            null,
-            domainEvent.OccurredAt
+            EventId: Guid.CreateVersion7(),
+            BoardId: domainEvent.BoardId,
+            WorkspaceId: domainEvent.WorkspaceId,
+            Name: domainEvent.Title,
+            CorrelationId: correlationId,
+            ActorUserId: de.ActorUserId,
+            CausationId: null,
+            OccurredAt: domainEvent.OccurredAt
         );
     }
 
     public BoardItemCreatedIntegrationEvent? Map(BoardItemCreatedDomainEvent domainEvent)
     {
+        var de = (IDomainEvent)domainEvent;
+        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new BoardItemCreatedIntegrationEvent(
-            domainEvent.ItemId,
-            domainEvent.BoardId,
-            domainEvent.WorkspaceId,
-            domainEvent.Name,
-            ((IDomainEvent)domainEvent).ActorUserId,
-            default,
-            null,
-            domainEvent.OccurredAt
+            EventId: Guid.CreateVersion7(),
+            ItemId: domainEvent.ItemId,
+            BoardId: domainEvent.BoardId,
+            WorkspaceId: domainEvent.WorkspaceId,
+            Title: domainEvent.Name,
+            CorrelationId: correlationId,
+            ActorUserId: de.ActorUserId,
+            CausationId: null,
+            OccurredAt: domainEvent.OccurredAt
         );
     }
 
     public BoardItemFieldValueChangedIntegrationEvent? Map(BoardItemFieldValueChangedDomainEvent domainEvent)
     {
+        var de = (IDomainEvent)domainEvent;
+        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new BoardItemFieldValueChangedIntegrationEvent(
-            domainEvent.ItemId,
-            domainEvent.BoardId,
-            domainEvent.FieldId,
-            domainEvent.WorkspaceId,
-            domainEvent.OldValue.ToString(),
-            domainEvent.NewValue.ToString(),
-            ((IDomainEvent)domainEvent).ActorUserId,
-            default,
-            null,
-            domainEvent.OccurredAt
+            EventId: Guid.CreateVersion7(),
+            ItemId: domainEvent.ItemId,
+            BoardId: domainEvent.BoardId,
+            FieldId: domainEvent.FieldId,
+            WorkspaceId: domainEvent.WorkspaceId,
+            OldValue: domainEvent.OldValue.ToString(),
+            NewValue: domainEvent.NewValue.ToString(),
+            CorrelationId: correlationId,
+            ActorUserId: de.ActorUserId,
+            CausationId: null,
+            OccurredAt: domainEvent.OccurredAt
         );
     }
 

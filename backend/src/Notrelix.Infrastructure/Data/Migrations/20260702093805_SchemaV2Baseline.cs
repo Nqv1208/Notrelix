@@ -1801,9 +1801,11 @@ namespace Notrelix.Infrastructure.Migrations
                     actor_user_id = table.Column<Guid>(type: "uuid", nullable: true),
                     correlation_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     causation_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    processed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    result = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, defaultValue: "Succeeded"),
-                    error_message = table.Column<string>(type: "text", nullable: true),
+                    status = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, defaultValue: "Processing"),
+                    claimed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    processed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    failed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    error_message = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
                     metadata_json = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'{}'::jsonb")
                 },
                 constraints: table =>
@@ -4261,7 +4263,7 @@ namespace Notrelix.Infrastructure.Migrations
                 schema: "account",
                 table: "accounts",
                 column: "slug",
-                unique: true);
+                unique: false);
 
             migrationBuilder.CreateIndex(
                 name: "ix_activity_read_states_workspace_id_user_id",
@@ -5417,10 +5419,10 @@ namespace Notrelix.Infrastructure.Migrations
                 columns: new[] { "workspace_id", "user_id" });
 
             migrationBuilder.CreateIndex(
-                name: "ix_processed_events_consumer_name_processed_at",
+                name: "ix_processed_events_consumer_name_claimed_at",
                 schema: "messaging",
                 table: "processed_events",
-                columns: new[] { "consumer_name", "processed_at" },
+                columns: new[] { "consumer_name", "claimed_at" },
                 descending: new[] { false, true });
 
             migrationBuilder.CreateIndex(
@@ -5438,17 +5440,17 @@ namespace Notrelix.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_processed_events_message_name_processed_at",
+                name: "ix_processed_events_message_name_claimed_at",
                 schema: "messaging",
                 table: "processed_events",
-                columns: new[] { "message_name", "processed_at" },
+                columns: new[] { "message_name", "claimed_at" },
                 descending: new[] { false, true });
 
             migrationBuilder.CreateIndex(
-                name: "ix_processed_events_workspace_id_processed_at",
+                name: "ix_processed_events_workspace_id_claimed_at",
                 schema: "messaging",
                 table: "processed_events",
-                columns: new[] { "workspace_id", "processed_at" },
+                columns: new[] { "workspace_id", "claimed_at" },
                 descending: new[] { false, true },
                 filter: "\"workspace_id\" IS NOT NULL");
 
@@ -5967,10 +5969,10 @@ namespace Notrelix.Infrastructure.Migrations
                 column: "name");
 
             migrationBuilder.CreateIndex(
-                name: "idx_workspaces_personal_per_user",
+                name: "idx_workspaces_personal_per_account",
                 schema: "workspace",
                 table: "workspaces",
-                column: "created_by",
+                column: "account_id",
                 unique: true,
                 filter: "is_personal = true AND deleted_at IS NULL");
 

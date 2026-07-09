@@ -12,16 +12,14 @@ public record DuplicateBoardGroupCommand(Guid GroupId) : ICommand<Result<Guid>>,
 public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardGroupCommand, Result<Guid>>
 {
     private readonly IWorkManagementDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _timeProvider;
-    private readonly ICurrentTenantContext _tenant;
 
-    public DuplicateBoardGroupCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider, ICurrentTenantContext tenant)
+    public DuplicateBoardGroupCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider)
     {
         _context = context;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _timeProvider = timeProvider;
-        _tenant = tenant;
     }
 
     public async Task<Result<Guid>> Handle(DuplicateBoardGroupCommand request, CancellationToken ct)
@@ -47,8 +45,8 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
 
         var now = _timeProvider.UtcNow;
 
-        var accountId = _tenant.RequireAccountId();
-        var duplicate = BoardGroup.Create(accountId, board.WorkspaceId, source.BoardId, $"{source.Title} copy", source.Color, nextPosition, _currentUser.UserId, now);
+        var accountId = _requestContext.RequireAccountId();
+        var duplicate = BoardGroup.Create(accountId, board.WorkspaceId, source.BoardId, $"{source.Title} copy", source.Color, nextPosition, _requestContext.UserId, now);
         _context.BoardGroups.Add(duplicate);
 
         var cards = await _context.BoardItems
@@ -59,7 +57,7 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
 
         foreach (var card in cards)
         {
-            _context.BoardItems.Add(CloneCard(card, accountId, duplicate.Id, board.Id, board.WorkspaceId, _currentUser.UserId, card.Name, card.Position, now));
+            _context.BoardItems.Add(CloneCard(card, accountId, duplicate.Id, board.Id, board.WorkspaceId, _requestContext.UserId, card.Name, card.Position, now));
         }
 
         return Result<Guid>.Success(duplicate.Id);

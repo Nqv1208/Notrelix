@@ -30,11 +30,11 @@ public class LoginCommandHandlerTests : IAsyncLifetime
         await using var context = _db.CreateContext();
 
         var passwordHasher = new Mock<IPasswordHasher>();
-        var jwtService = new Mock<IJwtService>();
+        var sessionIssuer = new Mock<IAuthSessionIssuer>();
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
 
-        var handler = new LoginCommandHandler(context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object, NullLogger<LoginCommandHandler>.Instance);
+        var handler = new LoginCommandHandler(context, passwordHasher.Object, sessionIssuer.Object, dateTimeProvider.Object, NullLogger<LoginCommandHandler>.Instance);
 
         var result = await handler.Handle(new LoginCommand
         {
@@ -66,7 +66,8 @@ public class LoginCommandHandlerTests : IAsyncLifetime
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
 
-        var handler = new LoginCommandHandler(context, passwordHasher.Object, jwtService.Object, dateTimeProvider.Object, NullLogger<LoginCommandHandler>.Instance);
+        var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object);
+        var handler = new LoginCommandHandler(context, passwordHasher.Object, sessionIssuer, dateTimeProvider.Object, NullLogger<LoginCommandHandler>.Instance);
 
         var before = DateTimeOffset.UtcNow;
         var result = await handler.Handle(new LoginCommand

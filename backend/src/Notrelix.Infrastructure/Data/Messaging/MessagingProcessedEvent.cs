@@ -17,8 +17,10 @@ public sealed class MessagingProcessedEvent
     public Guid? ActorUserId { get; private set; }
     public string? CorrelationId { get; private set; }
     public string? CausationId { get; private set; }
-    public DateTimeOffset ProcessedAt { get; private set; }
-    public string Result { get; private set; } = "Succeeded";
+    public string Status { get; private set; } = "Processing";
+    public DateTimeOffset ClaimedAt { get; private set; }
+    public DateTimeOffset? ProcessedAt { get; private set; }
+    public DateTimeOffset? FailedAt { get; private set; }
     public string? ErrorMessage { get; private set; }
     public JsonDocument MetadataJson { get; private set; } = JsonDocument.Parse("{}");
 
@@ -37,7 +39,7 @@ public sealed class MessagingProcessedEvent
         Guid? actorUserId,
         string? correlationId,
         string? causationId,
-        DateTimeOffset processedAt)
+        DateTimeOffset claimedAt)
     {
         Id = Guid.CreateVersion7();
         EventId = eventId;
@@ -52,6 +54,20 @@ public sealed class MessagingProcessedEvent
         ActorUserId = actorUserId;
         CorrelationId = correlationId;
         CausationId = causationId;
+        Status = "Processing";
+        ClaimedAt = claimedAt;
+    }
+
+    public void MarkSucceeded(DateTimeOffset processedAt)
+    {
+        Status = "Succeeded";
         ProcessedAt = processedAt;
+    }
+
+    public void MarkFailed(DateTimeOffset failedAt, string errorMessage)
+    {
+        Status = "Failed";
+        FailedAt = failedAt;
+        ErrorMessage = errorMessage;
     }
 }

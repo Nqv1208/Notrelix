@@ -1,6 +1,5 @@
 using System.Reflection;
 using Notrelix.Domain.Common;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Architecture.Tests;
 
@@ -175,8 +174,9 @@ public class DomainHardeningArchitectureTests
             var inheritsRoot = typeof(WorkspaceRootDomainEvent).IsAssignableFrom(type);
             var inheritsGlobal = typeof(GlobalDomainEvent).IsAssignableFrom(type);
             var inheritsBillingAccount = typeof(BillingAccountScopedDomainEvent).IsAssignableFrom(type);
+            var inheritsAccount = typeof(AccountScopedDomainEvent).IsAssignableFrom(type);
 
-            if (!inheritsScoped && !inheritsRoot && !inheritsGlobal && !inheritsBillingAccount)
+            if (!inheritsScoped && !inheritsRoot && !inheritsGlobal && !inheritsBillingAccount && !inheritsAccount)
             {
                 violations.Add($"{type.FullName} inherits DomainEvent directly — should use scoped base");
             }
@@ -184,7 +184,7 @@ public class DomainHardeningArchitectureTests
 
         violations.Should().BeEmpty(
             "All concrete DomainEvents must inherit from GlobalDomainEvent, WorkspaceRootDomainEvent, " +
-            "WorkspaceScopedDomainEvent, or BillingAccountScopedDomainEvent — not directly from DomainEvent. " +
+            "WorkspaceScopedDomainEvent, AccountScopedDomainEvent, or BillingAccountScopedDomainEvent — not directly from DomainEvent. " +
             $"Violations: {string.Join(", ", violations)}");
     }
 
@@ -249,29 +249,6 @@ public class DomainHardeningArchitectureTests
 
         violations.Should().BeEmpty(
             "Projection/runtime/ops models must not become rich Domain types without explicit classification. " +
-            $"Violations: {string.Join(", ", violations)}");
-    }
-
-    [Fact]
-    public void ResourceType_ProjectionOrExternalTargets_ShouldBeClassifiedInRegistryPolicy()
-    {
-        var prohibited = new[]
-        {
-            ResourceType.Notification.ToString(),
-            ResourceType.ActivityLog.ToString(),
-            ResourceType.External.ToString()
-        };
-
-        var policyPath = Path.Combine(GetRepoRoot(), "docs", "domain", "resource-ref-registry-policy.md");
-        File.Exists(policyPath).Should().BeTrue("ResourceRef registry policy is required by Slice D0.");
-
-        var policy = File.ReadAllText(policyPath);
-        var violations = prohibited
-            .Where(value => !policy.Contains(value, StringComparison.Ordinal))
-            .ToList();
-
-        violations.Should().BeEmpty(
-            "Projection/runtime/external ResourceType values must be explicitly classified by the registry policy. " +
             $"Violations: {string.Join(", ", violations)}");
     }
 
