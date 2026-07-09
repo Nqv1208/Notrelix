@@ -20,17 +20,11 @@ public class ConcurrencyBehaviorTests
         return reader;
     }
 
-    private static Mock<ILogger<ConcurrencyBehavior<VersionedCommand, string>>> CreateLogger()
-    {
-        return new Mock<ILogger<ConcurrencyBehavior<VersionedCommand, string>>>();
-    }
-
     [Fact]
     public async Task NonVersionedRequest_ShouldSkipCheck()
     {
         var reader = CreateReader();
-        var logger = new Mock<ILogger<ConcurrencyBehavior<UnversionedCommand, string>>>();
-        var behavior = new ConcurrencyBehavior<UnversionedCommand, string>(reader.Object, logger.Object);
+        var behavior = new ConcurrencyBehavior<UnversionedCommand, string>(reader.Object);
 
         var result = await behavior.Handle(new UnversionedCommand(), _ => Task.FromResult("ok"), default);
 
@@ -39,27 +33,41 @@ public class ConcurrencyBehaviorTests
     }
 
     [Fact]
-    public async Task ExpectedVersionZero_ShouldSkipCheck()
+    public async Task ExpectedVersionZero_ShouldThrowValidationException()
     {
         var reader = CreateReader();
-        var logger = CreateLogger();
-        var behavior = new ConcurrencyBehavior<VersionedCommand, string>(reader.Object, logger.Object);
+        var behavior = new ConcurrencyBehavior<VersionedCommand, string>(reader.Object);
 
-        var result = await behavior.Handle(
+        var act = () => behavior.Handle(
             new VersionedCommand { ExpectedVersion = 0 },
             _ => Task.FromResult("ok"),
             default);
 
-        result.Should().Be("ok");
+        await act.Should().ThrowAsync<ValidationException>()
+            .WithMessage($"*ExpectedVersion must be a positive value*");
         reader.Verify(x => x.GetVersionAsync(It.IsAny<ResourceRef>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExpectedVersionNegative_ShouldThrowValidationException()
+    {
+        var reader = CreateReader();
+        var behavior = new ConcurrencyBehavior<VersionedCommand, string>(reader.Object);
+
+        var act = () => behavior.Handle(
+            new VersionedCommand { ExpectedVersion = -1 },
+            _ => Task.FromResult("ok"),
+            default);
+
+        await act.Should().ThrowAsync<ValidationException>()
+            .WithMessage($"*ExpectedVersion must be a positive value*");
     }
 
     [Fact]
     public async Task MatchingVersion_ShouldProceed()
     {
         var reader = CreateReader(version: 1);
-        var logger = CreateLogger();
-        var behavior = new ConcurrencyBehavior<VersionedCommand, string>(reader.Object, logger.Object);
+        var behavior = new ConcurrencyBehavior<VersionedCommand, string>(reader.Object);
 
         var result = await behavior.Handle(
             new VersionedCommand { ExpectedVersion = 1 },
@@ -73,8 +81,7 @@ public class ConcurrencyBehaviorTests
     public async Task VersionMismatch_ShouldThrowConflict()
     {
         var reader = CreateReader(version: 2);
-        var logger = CreateLogger();
-        var behavior = new ConcurrencyBehavior<VersionedCommand, string>(reader.Object, logger.Object);
+        var behavior = new ConcurrencyBehavior<VersionedCommand, string>(reader.Object);
 
         var act = () => behavior.Handle(
             new VersionedCommand { ExpectedVersion = 1 },
@@ -86,34 +93,33 @@ public class ConcurrencyBehaviorTests
     }
 
     [Fact]
-    public async Task NullVersion_ShouldProceed()
+    public async Task NullVersion_ShouldThrowNotFound()
     {
         var reader = CreateReader(version: null);
-        var logger = CreateLogger();
-        var behavior = new ConcurrencyBehavior<VersionedCommand, string>(reader.Object, logger.Object);
+        var behavior = new ConcurrencyBehavior<VersionedCommand, string>(reader.Object);
 
-        var result = await behavior.Handle(
+        var act = () => behavior.Handle(
             new VersionedCommand { ExpectedVersion = 1 },
             _ => Task.FromResult("ok"),
             default);
 
-        result.Should().Be("ok");
+        await act.Should().ThrowAsync<NotFoundException>()
+            .WithMessage($"*not found*");
     }
 
     [Fact]
-    public async Task UnsupportedResourceType_ShouldLogWarning_AndProceed()
+    public async Task UnsupportedResourceType_ShouldThrow()
     {
         var reader = new Mock<IResourceVersionReader>();
         reader.Setup(x => x.GetVersionAsync(It.IsAny<ResourceRef>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new NotSupportedException("ResourceType 'Widget' not supported"));
-        var logger = CreateLogger();
-        var behavior = new ConcurrencyBehavior<VersionedCommand, string>(reader.Object, logger.Object);
+        var behavior = new ConcurrencyBehavior<VersionedCommand, string>(reader.Object);
 
-        var result = await behavior.Handle(
+        var act = () => behavior.Handle(
             new VersionedCommand { ExpectedVersion = 1 },
             _ => Task.FromResult("ok"),
             default);
 
-        result.Should().Be("ok");
+        await act.Should().ThrowAsync<NotSupportedException>();
     }
 }

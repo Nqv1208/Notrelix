@@ -34,16 +34,13 @@ public sealed class ProvisionPersonalWorkspaceCommandHandler
     : IRequestHandler<ProvisionPersonalWorkspaceCommand, ProvisionPersonalWorkspaceResult>
 {
     private readonly IWorkspaceDbContext _workspaceContext;
-    private readonly IMessageDeduplicationStore _deduplicationStore;
     private readonly IDateTimeProvider _clock;
 
     public ProvisionPersonalWorkspaceCommandHandler(
         IWorkspaceDbContext workspaceContext,
-        IMessageDeduplicationStore deduplicationStore,
         IDateTimeProvider clock)
     {
         _workspaceContext = workspaceContext;
-        _deduplicationStore = deduplicationStore;
         _clock = clock;
     }
 
@@ -51,27 +48,6 @@ public sealed class ProvisionPersonalWorkspaceCommandHandler
         ProvisionPersonalWorkspaceCommand request,
         CancellationToken cancellationToken)
     {
-        var now = _clock.UtcNow;
-
-        if (await _deduplicationStore.IsProcessedAsync(
-            request.MessageId, request.ConsumerName, cancellationToken))
-        {
-            var existingId = await _workspaceContext.Workspaces
-                .Where(w => w.IsPersonal && w.AccountId == request.AccountId)
-                .Select(w => w.Id)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (existingId == Guid.Empty)
-            {
-                throw new InvalidOperationException(
-                    $"Message {request.MessageId} was marked processed by " +
-                    $"{request.ConsumerName}, but personal workspace was not found. " +
-                    "Data consistency violation.");
-            }
-
-            return new ProvisionPersonalWorkspaceResult(existingId, AlreadyExisted: true);
-        }
-
         var existingWorkspace = await _workspaceContext.Workspaces
             .Where(w => w.IsPersonal && w.AccountId == request.AccountId)
             .Select(w => new { w.Id })
@@ -79,15 +55,6 @@ public sealed class ProvisionPersonalWorkspaceCommandHandler
 
         if (existingWorkspace is not null)
         {
-            _deduplicationStore.MarkProcessed(
-                request.MessageId,
-                request.ConsumerName,
-                request.SourceMessageName,
-                request.SourceMessageVersion,
-                sourceEventId: request.SourceEventId,
-                workspaceId: existingWorkspace.Id,
-                processedAt: now);
-
             return new ProvisionPersonalWorkspaceResult(
                 existingWorkspace.Id, AlreadyExisted: true);
         }
@@ -103,15 +70,6 @@ public sealed class ProvisionPersonalWorkspaceCommandHandler
 
         _workspaceContext.Workspaces.Add(workspace.Workspace);
         _workspaceContext.WorkspaceMembers.Add(workspace.OwnerMember);
-
-        _deduplicationStore.MarkProcessed(
-            request.MessageId,
-            request.ConsumerName,
-            request.SourceMessageName,
-            request.SourceMessageVersion,
-            sourceEventId: request.SourceEventId,
-            workspaceId: workspace.Workspace.Id,
-            processedAt: now);
 
         return new ProvisionPersonalWorkspaceResult(
             workspace.Workspace.Id,

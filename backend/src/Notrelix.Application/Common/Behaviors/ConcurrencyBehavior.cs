@@ -4,40 +4,38 @@ public class ConcurrencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
     where TRequest : notnull
 {
     private readonly IResourceVersionReader _versionReader;
-    private readonly ILogger<ConcurrencyBehavior<TRequest, TResponse>> _logger;
 
-    public ConcurrencyBehavior(
-        IResourceVersionReader versionReader,
-        ILogger<ConcurrencyBehavior<TRequest, TResponse>> logger)
+    public ConcurrencyBehavior(IResourceVersionReader versionReader)
     {
         _versionReader = versionReader;
-        _logger = logger;
     }
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken ct)
     {
         if (request is IExpectedVersionRequest expectedVersionRequest)
         {
-            if (expectedVersionRequest.ExpectedVersion > 0)
+            if (expectedVersionRequest.ExpectedVersion <= 0)
             {
-                try
-                {
-                    var currentVersion = await _versionReader.GetVersionAsync(expectedVersionRequest.Resource, ct);
+                throw new Exceptions.ValidationException(
+                    $"ExpectedVersion must be a positive value for {typeof(TRequest).Name}. " +
+                    $"Request {typeof(TRequest).Name} implements IExpectedVersionRequest " +
+                    $"but provides ExpectedVersion={expectedVersionRequest.ExpectedVersion}.");
+            }
 
-                    if (currentVersion.HasValue && currentVersion.Value != expectedVersionRequest.ExpectedVersion)
-                    {
-                        throw new ConflictException(
-                            $"Resource {expectedVersionRequest.Resource} version mismatch. " +
-                            $"Expected {expectedVersionRequest.ExpectedVersion}, got {currentVersion.Value}.");
-                    }
-                }
-                catch (NotSupportedException ex)
-                {
-                    _logger.LogWarning(
-                        "Version check skipped for {RequestType}: {Message}",
-                        typeof(TRequest).Name,
-                        ex.Message);
-                }
+            var currentVersion = await _versionReader.GetVersionAsync(expectedVersionRequest.Resource, ct);
+
+            if (!currentVersion.HasValue)
+            {
+                throw new NotFoundException(
+                    $"Resource {expectedVersionRequest.Resource} not found. " +
+                    $"Cannot verify concurrency version for {typeof(TRequest).Name}.");
+            }
+
+            if (currentVersion.Value != expectedVersionRequest.ExpectedVersion)
+            {
+                throw new ConflictException(
+                    $"Resource {expectedVersionRequest.Resource} version mismatch. " +
+                    $"Expected {expectedVersionRequest.ExpectedVersion}, got {currentVersion.Value}.");
             }
         }
 

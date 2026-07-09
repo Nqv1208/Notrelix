@@ -7,11 +7,11 @@ public sealed class PermissionVersionProvider : IPermissionVersionProvider
 {
     private const string Sql = """
         SELECT GREATEST(
-            COALESCE((SELECT MAX(wm.updated_at) FROM workspace.workspace_members wm WHERE wm.workspace_id = @workspaceId AND wm.user_id = @userId), '1970-01-01'::timestamp),
-            COALESCE((SELECT MAX(mra.updated_at) FROM governance.member_role_assignments mra WHERE mra.workspace_id = @workspaceId), '1970-01-01'::timestamp),
-            COALESCE((SELECT MAX(cr.updated_at) FROM governance.custom_roles cr WHERE cr.workspace_id = @workspaceId), '1970-01-01'::timestamp),
-            COALESCE((SELECT MAX(rp.updated_at) FROM governance.resource_permissions rp WHERE rp.workspace_id = @workspaceId), '1970-01-01'::timestamp),
-            COALESCE((SELECT MAX(pr.updated_at) FROM governance.permission_rules pr WHERE pr.workspace_id = @workspaceId), '1970-01-01'::timestamp)
+            COALESCE((SELECT MAX(wm.updated_at) FROM workspace.workspace_members wm WHERE wm.account_id = @accountId AND wm.workspace_id = @workspaceId AND wm.user_id = @userId), '1970-01-01'::timestamp),
+            COALESCE((SELECT MAX(mra.updated_at) FROM governance.member_role_assignments mra WHERE mra.account_id = @accountId AND mra.workspace_id = @workspaceId), '1970-01-01'::timestamp),
+            COALESCE((SELECT MAX(cr.updated_at) FROM governance.custom_roles cr WHERE cr.account_id = @accountId AND cr.workspace_id = @workspaceId), '1970-01-01'::timestamp),
+            COALESCE((SELECT MAX(rp.updated_at) FROM governance.resource_permissions rp WHERE rp.account_id = @accountId AND rp.workspace_id = @workspaceId), '1970-01-01'::timestamp),
+            COALESCE((SELECT MAX(pr.updated_at) FROM governance.permission_rules pr WHERE pr.account_id = @accountId AND pr.workspace_id = @workspaceId), '1970-01-01'::timestamp)
         )
         """;
 
@@ -36,6 +36,12 @@ public sealed class PermissionVersionProvider : IPermissionVersionProvider
         await using var cmd = connection.CreateCommand();
         cmd.CommandText = Sql;
 
+        var accountParam = cmd.CreateParameter();
+        accountParam.ParameterName = "accountId";
+        accountParam.Value = accountId;
+        accountParam.DbType = DbType.Guid;
+        cmd.Parameters.Add(accountParam);
+
         var workspaceParam = cmd.CreateParameter();
         workspaceParam.ParameterName = "workspaceId";
         workspaceParam.Value = workspaceId;
@@ -55,14 +61,14 @@ public sealed class PermissionVersionProvider : IPermissionVersionProvider
 
         if (result is DateTime maxUpdatedAt)
         {
-            var version = $"perm:{workspaceId}:{userId}:{maxUpdatedAt.Ticks}";
-            _logger.LogTrace("Permission version for {UserId} in {WorkspaceId}: {Version} (maxUpdate={MaxUpdate})",
-                userId, workspaceId, version, maxUpdatedAt);
+            var version = $"perm:{accountId}:{workspaceId}:{userId}:{maxUpdatedAt.Ticks}";
+            _logger.LogTrace("Permission version for {UserId} in account {AccountId} workspace {WorkspaceId}: {Version} (maxUpdate={MaxUpdate})",
+                userId, accountId, workspaceId, version, maxUpdatedAt);
             return version;
         }
 
         throw new InvalidOperationException(
-            $"Cannot compute permission version for user {userId} in workspace {workspaceId}. " +
+            $"Cannot compute permission version for user {userId} in account {accountId} workspace {workspaceId}. " +
             "Permissioned cache scope requires a valid permission version.");
     }
 }
