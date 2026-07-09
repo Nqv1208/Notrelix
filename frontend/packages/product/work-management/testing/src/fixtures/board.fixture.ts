@@ -1,4 +1,4 @@
-import type { Board, BoardGroup, FieldDefinition } from '@notrelix/wm-core';
+import type { Board, BoardGroup, FieldDefinition } from '@notrelix/work-management-core';
 
 const defaultFields: FieldDefinition[] = [
   {

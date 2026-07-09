@@ -9,3 +9,6 @@ export type {
   UserPreferences,
   SecuritySettings,
 } from './types/account';
+
+export { createAccountService, type AccountApiClient, type AccountEndpoints } from './api/account.service';
+export * from './query';

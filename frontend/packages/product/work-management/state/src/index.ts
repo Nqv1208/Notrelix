@@ -23,3 +23,6 @@ export * from './mutations'
 
 // State hooks
 export * from './hooks'
+
+// Cache helpers
+export * from './cache'

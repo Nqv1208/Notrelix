@@ -20,7 +20,8 @@
     "@notrelix/contracts": "workspace:*",
     "@notrelix/kernel": "workspace:*",
     "@notrelix/platform": "workspace:*",
-    "@notrelix/query": "workspace:*"
+    "@notrelix/query": "workspace:*",
+    "@tanstack/react-query": "^5.95.2"
   },
   "devDependencies": {
     "typescript": "^5.0.0",

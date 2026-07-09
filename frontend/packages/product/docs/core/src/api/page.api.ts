@@ -1,14 +1,7 @@
-import type { Page, BreadcrumbItem, CreatePagePayload, UpdatePagePayload, PageDetail } from '../types/page';
-import type { SearchResult } from '../types/tree';
+import type { Page, CreatePagePayload, UpdatePagePayload, PageDetail } from '../types/page';
 import type { PageDtoApi, BreadcrumbDtoApi } from '../dto';
 import { mapPage, mapBreadcrumb } from '../model/page.mapper';
 
-/**
- * Page API client.
- *
- * Uses the api client injected via config.
- * This avoids direct dependency on @notrelix/contracts.
- */
 export interface DocsApiClient {
   get<T>(url: string): Promise<T>;
   post<T>(url: string, body: unknown): Promise<T>;
@@ -23,12 +16,16 @@ export interface PageApiEndpoints {
     breadcrumb: (pageId: string) => string;
     blocks: (pageId: string) => string;
     comments: (pageId: string) => string;
+    history: (pageId: string) => string;
     search: (workspaceId: string) => string;
   };
   blocks: {
     detail: (blockId: string) => string;
     reorder: string;
     batch: (pageId: string) => string;
+  };
+  comments: {
+    detail: (commentId: string) => string;
   };
 }
 
@@ -61,13 +58,6 @@ export function createPageApi(
       };
     },
 
-    async getBreadcrumb(pageId: string): Promise<BreadcrumbItem[]> {
-      const breadcrumb = await api.get<BreadcrumbDtoApi[]>(
-        endpoints.pages.breadcrumb(pageId),
-      );
-      return breadcrumb.map(mapBreadcrumb);
-    },
-
     async create(payload: CreatePagePayload): Promise<PageDetail> {
       const id = await api.post<string>(
         endpoints.pages.list(payload.workspaceId),
@@ -93,30 +83,6 @@ export function createPageApi(
 
     async delete(pageId: string): Promise<void> {
       await api.delete<void>(endpoints.pages.detail(pageId));
-    },
-
-    async search(
-      workspaceId: string,
-      query: string,
-    ): Promise<SearchResult[]> {
-      const pages = await api.get<PageDtoApi[]>(
-        `${endpoints.pages.search(workspaceId)}?query=${encodeURIComponent(query)}`,
-      );
-      return pages.map((page) => ({
-        id: page.id,
-        type: 'page' as const,
-        title: page.title,
-        excerpt: page.title,
-        icon: page.iconValue ?? null,
-        pageId: page.id,
-        score: 1,
-        group: 'Pages' as const,
-      }));
-    },
-
-    async getFavorites(workspaceId: string): Promise<Page[]> {
-      const pages = await this.getList(workspaceId);
-      return pages.filter((page) => page.isFavorited);
     },
   };
 }

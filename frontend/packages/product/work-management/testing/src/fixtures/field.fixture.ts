@@ -1,4 +1,4 @@
-import type { FieldDefinition } from '@notrelix/wm-core';
+import type { FieldDefinition } from '@notrelix/work-management-core';
 
 export function fieldFixture(overrides?: Partial<FieldDefinition>): FieldDefinition {
   return {

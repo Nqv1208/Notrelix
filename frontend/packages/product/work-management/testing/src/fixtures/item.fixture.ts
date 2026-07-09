@@ -1,4 +1,4 @@
-import type { Card } from '@notrelix/wm-core';
+import type { Card } from '@notrelix/work-management-core';
 
 export function itemFixture(overrides?: Partial<Card>): Card {
   return {

@@ -1,4 +1,8 @@
 import { useParams } from '@tanstack/react-router';
+import { createDocPageScreen } from '@notrelix/docs-web';
+import { api, endpoints } from '@notrelix/contracts';
+
+const DocPageScreen = createDocPageScreen({ api, endpoints });
 
 export function DocPage() {
   const { workspaceId, docId } = useParams({
@@ -6,11 +10,9 @@ export function DocPage() {
   });
 
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-4">Document</h1>
-      <p className="text-muted-foreground">
-        Workspace: {workspaceId}, Document: {docId}
-      </p>
-    </div>
+    <DocPageScreen
+      workspaceId={workspaceId}
+      pageId={docId}
+    />
   );
 }

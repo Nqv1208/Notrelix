@@ -32,4 +32,15 @@ export {
 export { parseAuthError, resolveErrorDisplay } from './core';
 
 // Web
-export { createUseLogin, createUseAuthUser, createUseLogout, createLoginForm } from './web';
+export {
+  createUseLogin,
+  createUseAuthUser,
+  createUseLogout,
+  createUseRegister,
+  createUseForgotPassword,
+  createUseResetPassword,
+  createLoginForm,
+  createAuthProvider,
+  useAuth,
+  useCurrentUser,
+} from './web';

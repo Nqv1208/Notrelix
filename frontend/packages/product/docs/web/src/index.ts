@@ -1,3 +1,1 @@
-// @notrelix/docs-web — barrel export
-// TODO: Populate during Milestone 5 (Docs Extraction)
-export {}
+export { createDocPageScreen } from './components/doc-page-screen';

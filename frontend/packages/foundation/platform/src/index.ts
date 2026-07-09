@@ -38,8 +38,8 @@ export {
   type NavigationConfig,
 } from './navigation'
 
-// Auth (placeholder)
-export type { } from './auth'
+// Auth
+export * from './auth'
 
 // Workspace (placeholder)
 export type { } from './workspace'

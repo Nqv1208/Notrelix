@@ -17,7 +17,8 @@
     "@notrelix/docs-collaboration": "workspace:*",
     "@notrelix/ui-web": "workspace:*",
     "@notrelix/platform": "workspace:*",
-    "react": "^19.0.0"
+    "react": "^19.0.0",
+    "lucide-react": "^0.562.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0",

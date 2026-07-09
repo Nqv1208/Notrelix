@@ -1,3 +1,9 @@
-// @notrelix/feature-account — barrel export
-// TODO: Populate during Milestone 5 (Feature Extraction)
-export {}
+/**
+ * @notrelix/features-account — Account feature package.
+ *
+ * Core types, services, query keys, and hooks.
+ */
+
+// Core exports
+export * from './core';
+export { accountQueryKeys } from './core/query/keys';

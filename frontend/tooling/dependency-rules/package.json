@@ -7,6 +7,7 @@
   "types": "./src/index.ts",
   "scripts": {
     "check": "node src/check.mjs",
+    "check:deps": "node src/check.mjs",
     "test": "bun test --pass-with-no-tests",
     "clean": "rm -rf node_modules"
   },
