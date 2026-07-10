@@ -16,9 +16,10 @@ public static class RestoreWorkspaceEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid workspaceId,
+        long expectedVersion,
         ISender sender)
     {
-        var result = await sender.Send(new RestoreWorkspaceCommand(workspaceId));
+        var result = await sender.Send(new RestoreWorkspaceCommand(workspaceId, expectedVersion));
         return result.ToNoContentResult();
     }
 }

@@ -102,6 +102,22 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
                     $"{typeof(TRequest).Name} is account-scoped without IRequirePermission or ISystemInternalRequest. " +
                     "Add IRequirePermission with permission action/resource, or mark as ISystemInternalRequest.");
             }
+
+            // Account-scoped requests must not specify a Resource — it is resolved from tenant context
+            if (request is IRequirePermission accountPermission && accountPermission.Resource is not null)
+            {
+                var resource = accountPermission.Resource;
+                _logger.LogError(
+                    "Security misconfiguration: Account request {RequestType} specifies a Resource ({ResourceType}/{ResourceId}). " +
+                    "Account-scoped requests must not specify a Resource; it is resolved from tenant context.",
+                    typeof(TRequest).Name,
+                    resource.ResourceType,
+                    resource.ResourceId);
+
+                throw new SecurityMisconfigurationException(
+                    $"{typeof(TRequest).Name} is account-scoped but specifies a Resource ({resource.ResourceType}/{resource.ResourceId}). " +
+                    "Account-scoped requests must not specify a Resource; it is resolved from tenant context.");
+            }
         }
 
         // Rule 6 & 7: Evaluate permission for IRequirePermission requests

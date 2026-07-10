@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Domain.Accounts.Members;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Workspaces.Workspaces;
@@ -58,17 +59,15 @@ public sealed class TenantBootstrapStore : ITenantBootstrapStore
             .AnyAsync(a => a.Id == accountId, cancellationToken);
     }
 
-    public async Task<Guid> ResolveUserAccountAsync(Guid userId, CancellationToken ct)
+    public async Task VerifyAccountAccessAsync(Guid accountId, Guid userId, CancellationToken ct)
     {
-        var accountId = await _workspaceContext.WorkspaceMembers
-            .IgnoreQueryFilters()
-            .Where(m => m.UserId == userId)
-            .Select(m => m.AccountId)
-            .FirstOrDefaultAsync(ct);
+        var hasAccess = await _accountContext.AccountMembers
+            .AnyAsync(m => m.AccountId == accountId
+                           && m.UserId == userId
+                           && m.Status == AccountMemberStatus.Active,
+                ct);
 
-        if (accountId == Guid.Empty)
-            throw new InvalidOperationException($"User {userId} is not a member of any workspace account.");
-
-        return accountId;
+        if (!hasAccess)
+            throw new ForbiddenException($"User {userId} does not have active access to account {accountId}.");
     }
 }

@@ -3,11 +3,15 @@ using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Commands.RestoreWorkspace;
 
-public record RestoreWorkspaceCommand(Guid WorkspaceId)
-    : ICommand<Result>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission
+public record RestoreWorkspaceCommand(
+    Guid WorkspaceId,
+    long ExpectedVersion
+) : ICommand<Result>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageWorkspace;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
+    long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion;
+    ResourceRef IExpectedVersionRequest.Resource => Resource;
 }
 
 public class RestoreWorkspaceCommandHandler : IRequestHandler<RestoreWorkspaceCommand, Result>

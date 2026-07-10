@@ -13,7 +13,6 @@ public static class MapWorkspaceEndpoints
             .WithOpenApi();
 
         group.MapListUserWorkspaces();
-        group.MapCreateWorkspace();
 
         var byIdGroup = app
             .MapGroup("/api/v1/workspaces/{workspaceId:guid}")
@@ -31,6 +30,13 @@ public static class MapWorkspaceEndpoints
             .WithOpenApi();
 
         bySlugGroup.MapGetWorkspaceBySlug();
+
+        var accountGroup = app
+            .MapGroup("/api/v1/accounts/{accountId:guid}/workspaces")
+            .WithTags("Workspaces.Workspaces")
+            .WithOpenApi();
+
+        accountGroup.MapCreateWorkspace();
 
         return app;
     }

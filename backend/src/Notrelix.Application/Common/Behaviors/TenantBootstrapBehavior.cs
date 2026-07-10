@@ -48,10 +48,15 @@ public class TenantBootstrapBehavior<TRequest, TResponse> : IPipelineBehavior<TR
             var actorUserId = _tenant.UserId
                 ?? throw new UnauthorizedAccessException("Account-scoped request requires authenticated user.");
 
-            var accountId = await _tenantBootstrapStore.ResolveUserAccountAsync(actorUserId, cancellationToken);
+            var accountId = _tenant.AccountId
+                ?? throw new AccountSelectionRequiredException(
+                    $"{typeof(TRequest).Name} is account-scoped but no AccountId is selected. " +
+                    "Provide account context via route, header, or session.");
+
+            await _tenantBootstrapStore.VerifyAccountAccessAsync(accountId, actorUserId, cancellationToken);
 
             _logger.LogInformation(
-                "Bootstrapped account context: UserId={UserId} AccountId={AccountId} RequestType={RequestType}",
+                "Verified account access: UserId={UserId} AccountId={AccountId} RequestType={RequestType}",
                 actorUserId,
                 accountId,
                 typeof(TRequest).Name);

@@ -6,7 +6,11 @@ namespace Notrelix.Application.Features.Workspaces.Members.Commands.RemoveMember
 public record RemoveMemberCommand(
     Guid WorkspaceId,
     Guid UserId
-) : ICommand<Result>, ITransactionalRequest;
+) : ICommand<Result>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.RemoveMember;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
+}
 
 public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, Result>
 {

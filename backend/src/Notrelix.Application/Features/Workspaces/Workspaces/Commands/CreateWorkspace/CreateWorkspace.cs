@@ -30,14 +30,20 @@ public class CreateWorkspaceCommandHandler : IRequestHandler<CreateWorkspaceComm
     {
         var accountId = _requestContext.RequireAccountId();
         var slug = Slug.GenerateFromName(request.Name);
+        const int maxSlugLength = 128;
+        const int suffixLength = 7;
 
         // Pre-check for UX — DB unique constraint is source of truth
         var slugExists = await _context.Workspaces
             .AnyAsync(w => w.AccountId == accountId && w.Slug == slug.Value, ct);
 
         var finalSlug = slugExists
-            ? slug.Value + "-" + Guid.NewGuid().ToString("N")[..6]
-            : slug.Value;
+            ? slug.Value.Length > maxSlugLength - suffixLength
+                ? slug.Value[..(maxSlugLength - suffixLength)] + "-" + Guid.NewGuid().ToString("N")[..6]
+                : slug.Value + "-" + Guid.NewGuid().ToString("N")[..6]
+            : slug.Value.Length > maxSlugLength
+                ? slug.Value[..maxSlugLength]
+                : slug.Value;
 
         var creationResult = WorkspaceFactory.CreateWithOwner(
             accountId,

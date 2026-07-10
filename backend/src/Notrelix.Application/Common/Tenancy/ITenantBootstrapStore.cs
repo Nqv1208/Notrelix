@@ -6,8 +6,10 @@ public interface ITenantBootstrapStore
     Task<bool> HasAccountAccessAsync(Guid accountId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Resolves the user's account for metadata-only IAccountRequest (no AccountId in request).
-    /// Returns the account ID from the user's first workspace membership.
+    /// Verifies that the user is an active AccountMember of the given account.
+    /// Throws ForbiddenException if the user does not have access.
+    /// This is the correct way to verify account access.
+    /// AccountMember must NOT be used to resolve/select the current account.
     /// </summary>
-    Task<Guid> ResolveUserAccountAsync(Guid userId, CancellationToken ct);
+    Task VerifyAccountAccessAsync(Guid accountId, Guid userId, CancellationToken ct);
 }

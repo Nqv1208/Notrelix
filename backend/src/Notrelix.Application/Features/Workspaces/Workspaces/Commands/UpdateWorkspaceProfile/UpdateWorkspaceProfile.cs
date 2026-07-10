@@ -6,11 +6,14 @@ namespace Notrelix.Application.Features.Workspaces.Workspaces.Commands.UpdateWor
 public record UpdateWorkspaceProfileCommand(
     Guid WorkspaceId,
     string? Name,
-    string? Description
-) : ICommand<Result>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission
+    string? Description,
+    long? ExpectedVersion
+) : ICommand<Result>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageWorkspace;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
+    long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion ?? 0;
+    ResourceRef IExpectedVersionRequest.Resource => Resource;
 }
 
 public class UpdateWorkspaceProfileCommandHandler : IRequestHandler<UpdateWorkspaceProfileCommand, Result>

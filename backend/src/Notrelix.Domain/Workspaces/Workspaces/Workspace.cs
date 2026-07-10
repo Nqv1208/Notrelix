@@ -108,8 +108,10 @@ public class Workspace : AggregateRoot
         if (Status == WorkspaceStatus.Archived)
             throw new BusinessRuleException("Cannot update description of an archived workspace.");
 
+        Guard.MaxLength(newDescription, 1024);
+
         var oldDescription = Description;
-        var trimmed = newDescription?.Trim();
+        var trimmed = string.IsNullOrWhiteSpace(newDescription) ? null : newDescription.Trim();
         if (Description == trimmed) return;
 
         Description = trimmed;

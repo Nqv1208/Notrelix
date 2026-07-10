@@ -16,9 +16,10 @@ public static class ArchiveWorkspaceEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid workspaceId,
+        long expectedVersion,
         ISender sender)
     {
-        var result = await sender.Send(new ArchiveWorkspaceCommand(workspaceId));
+        var result = await sender.Send(new ArchiveWorkspaceCommand(workspaceId, expectedVersion));
         return result.ToNoContentResult();
     }
 }
