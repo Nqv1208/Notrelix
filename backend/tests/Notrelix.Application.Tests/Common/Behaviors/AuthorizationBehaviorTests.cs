@@ -32,6 +32,12 @@ public class AuthorizationBehaviorTests
     public sealed record AccountWithPermissionRequest : IRequest<string>, IAccountRequest, IRequirePermission
     {
         public PermissionAction Action => PermissionAction.ViewBoard;
+        public ResourceRef? Resource => null;
+    }
+
+    public sealed record AccountWithNonNullResourceRequest : IRequest<string>, IAccountRequest, IRequirePermission
+    {
+        public PermissionAction Action => PermissionAction.ViewBoard;
         public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
     }
 
@@ -330,7 +336,8 @@ public class AuthorizationBehaviorTests
     public async Task AccountRequest_WithPermissionMarker_CallsPermissionService()
     {
         var handlerCalled = false;
-        var tenant = CreateTenantContext(accountId: Guid.NewGuid());
+        var accountId = Guid.NewGuid();
+        var tenant = CreateTenantContext(accountId: accountId);
         var permissionService = new Mock<IAuthorizationDecisionStore>();
         permissionService.Setup(x => x.EvaluateAsync(It.IsAny<PermissionContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PermissionDecision(true, null));
@@ -346,6 +353,30 @@ public class AuthorizationBehaviorTests
         await behavior.Handle(new AccountWithPermissionRequest(), next, CancellationToken.None);
 
         handlerCalled.Should().BeTrue("handler should execute when permission is granted");
+
+        // Verify permission was evaluated with account resource resolved from tenant context
+        permissionService.Verify(
+            x => x.EvaluateAsync(
+                It.Is<PermissionContext>(ctx =>
+                    ctx.ResourceType == ResourceType.Account &&
+                    ctx.ResourceId == accountId &&
+                    ctx.Scope == Notrelix.Application.Common.Security.PermissionScope.Account),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task AccountRequest_WithNonNullResource_ThrowsSecurityMisconfiguration()
+    {
+        var tenant = CreateTenantContext(accountId: Guid.NewGuid());
+        var behavior = CreateBehavior<AccountWithNonNullResourceRequest>(tenant: tenant);
+
+        RequestHandlerDelegate<string> next = _ => Task.FromResult("ok");
+
+        Func<Task> act = () => behavior.Handle(new AccountWithNonNullResourceRequest(), next, CancellationToken.None);
+
+        var ex = await act.Should().ThrowAsync<SecurityMisconfigurationException>();
+        ex.Which.Message.Should().Contain("account-scoped but specifies a Resource");
     }
 
     [Fact]
