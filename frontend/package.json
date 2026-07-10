@@ -15,7 +15,7 @@
     "format": "turbo format",
     "codegen": "turbo codegen",
     "check:deps": "turbo check:deps",
-    "clean": "turbo clean && rm -rf node_modules",
+    "clean": "turbo run clean && rm -rf node_modules .turbo",
     "validate": "pnpm typecheck && pnpm lint && pnpm test && pnpm check:deps"
   },
   "devDependencies": {

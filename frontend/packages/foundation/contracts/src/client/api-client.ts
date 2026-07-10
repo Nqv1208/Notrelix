@@ -12,12 +12,14 @@ export type ApiRequestOptions = {
   correlationId?: string
 }
 
-const configuredBaseUrl = "/api/v1";
-const BASE_URL = configuredBaseUrl.endsWith("/api")
-  ? `${configuredBaseUrl}/v1`
-  : configuredBaseUrl;
+let activeBaseUrl = "/api/v1";
+
+export function configureApi(baseUrl: string) {
+  activeBaseUrl = baseUrl;
+}
 
 export async function apiFetch<TResponse>(
+  baseUrl: string,
   url: string,
   options: RequestInit & ApiRequestOptions = {},
   retry = true
@@ -38,7 +40,7 @@ export async function apiFetch<TResponse>(
 
   let response: Response
   try {
-    response = await fetch(`${BASE_URL}${url}`, {
+    response = await fetch(`${baseUrl}${url}`, {
       credentials: "include",
       ...options,
       headers,
@@ -63,9 +65,10 @@ export async function apiFetch<TResponse>(
     url !== endpoints.auth.register
   ) {
     try {
-      await refreshOnce()
+      await refreshOnce(baseUrl)
       // Retry original request with same correlationId and skipAuthRefresh = true
       return await apiFetch<TResponse>(
+        baseUrl,
         url,
         { ...options, skipAuthRefresh: true, correlationId },
         false
@@ -137,10 +140,10 @@ export async function apiFetch<TResponse>(
 
 let refreshPromise: Promise<void> | null = null
 
-async function refreshOnce(): Promise<void> {
+async function refreshOnce(baseUrl: string): Promise<void> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
-      const refreshResponse = await fetch(`${BASE_URL}${endpoints.auth.refresh}`, {
+      const refreshResponse = await fetch(`${baseUrl}${endpoints.auth.refresh}`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -178,7 +181,7 @@ function extractErrorMessage(data: any): string {
 
 export const api = {
   get<TResponse>(url: string, options?: ApiRequestOptions): Promise<TResponse> {
-    return apiFetch<TResponse>(url, { method: "GET", ...options })
+    return apiFetch<TResponse>(activeBaseUrl, url, { method: "GET", ...options })
   },
 
   post<TResponse, TBody = unknown>(url: string, body?: TBody, options?: ApiRequestOptions): Promise<TResponse> {
@@ -189,7 +192,7 @@ export const api = {
     if (body !== undefined) {
       init.body = JSON.stringify(body)
     }
-    return apiFetch<TResponse>(url, init)
+    return apiFetch<TResponse>(activeBaseUrl, url, init)
   },
 
   put<TResponse, TBody = unknown>(url: string, body?: TBody, options?: ApiRequestOptions): Promise<TResponse> {
@@ -200,7 +203,7 @@ export const api = {
     if (body !== undefined) {
       init.body = JSON.stringify(body)
     }
-    return apiFetch<TResponse>(url, init)
+    return apiFetch<TResponse>(activeBaseUrl, url, init)
   },
 
   patch<TResponse, TBody = unknown>(url: string, body?: TBody, options?: ApiRequestOptions): Promise<TResponse> {
@@ -211,10 +214,40 @@ export const api = {
     if (body !== undefined) {
       init.body = JSON.stringify(body)
     }
-    return apiFetch<TResponse>(url, init)
+    return apiFetch<TResponse>(activeBaseUrl, url, init)
   },
 
   delete<TResponse>(url: string, options?: ApiRequestOptions): Promise<TResponse> {
-    return apiFetch<TResponse>(url, { method: "DELETE", ...options })
+    return apiFetch<TResponse>(activeBaseUrl, url, { method: "DELETE", ...options })
   },
+}
+
+export function createNotrelixClient(config: { baseUrl: string }) {
+  const customBaseUrl = config.baseUrl;
+  return {
+    api: {
+      get<TResponse>(url: string, options?: ApiRequestOptions): Promise<TResponse> {
+        return apiFetch<TResponse>(customBaseUrl, url, { method: "GET", ...options })
+      },
+      post<TResponse, TBody = unknown>(url: string, body?: TBody, options?: ApiRequestOptions): Promise<TResponse> {
+        const init: RequestInit & ApiRequestOptions = { method: "POST", ...options }
+        if (body !== undefined) init.body = JSON.stringify(body)
+        return apiFetch<TResponse>(customBaseUrl, url, init)
+      },
+      put<TResponse, TBody = unknown>(url: string, body?: TBody, options?: ApiRequestOptions): Promise<TResponse> {
+        const init: RequestInit & ApiRequestOptions = { method: "PUT", ...options }
+        if (body !== undefined) init.body = JSON.stringify(body)
+        return apiFetch<TResponse>(customBaseUrl, url, init)
+      },
+      patch<TResponse, TBody = unknown>(url: string, body?: TBody, options?: ApiRequestOptions): Promise<TResponse> {
+        const init: RequestInit & ApiRequestOptions = { method: "PATCH", ...options }
+        if (body !== undefined) init.body = JSON.stringify(body)
+        return apiFetch<TResponse>(customBaseUrl, url, init)
+      },
+      delete<TResponse>(url: string, options?: ApiRequestOptions): Promise<TResponse> {
+        return apiFetch<TResponse>(customBaseUrl, url, { method: "DELETE", ...options })
+      },
+    },
+    endpoints,
+  }
 }

@@ -12,11 +12,13 @@ const useWorkspaceList = createUseWorkspaceList({
 });
 
 interface WorkspaceGuardProps {
+  workspaceId?: string;
   children: ReactNode;
 }
 
-export function WorkspaceGuard({ children }: WorkspaceGuardProps) {
-  const { workspaceId } = useParams({ strict: false });
+export function WorkspaceGuard({ workspaceId: propWorkspaceId, children }: WorkspaceGuardProps) {
+  const { workspaceId: paramWorkspaceId } = useParams({ strict: false });
+  const workspaceId = propWorkspaceId ?? paramWorkspaceId;
   const { data: workspaces = [], isLoading } = useWorkspaceList();
 
   if (isLoading) {

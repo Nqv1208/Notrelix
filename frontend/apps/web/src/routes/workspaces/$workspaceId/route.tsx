@@ -11,7 +11,7 @@ export function WorkspaceLayout() {
   return (
     <AuthGuard>
       <WorkspaceProvider workspaceId={workspaceId}>
-        <WorkspaceGuard>
+        <WorkspaceGuard workspaceId={workspaceId}>
           <div className="flex h-screen w-screen overflow-hidden bg-background">
             <WorkspaceSidebar />
             <div className="flex-1 flex flex-col min-w-0">

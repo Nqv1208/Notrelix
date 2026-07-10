@@ -1,2 +1,2 @@
-export { api, apiFetch, type ApiRequestOptions } from './api-client'
+export { api, apiFetch, configureApi, createNotrelixClient, type ApiRequestOptions } from './api-client'
 export { getCsrfToken } from './csrf'

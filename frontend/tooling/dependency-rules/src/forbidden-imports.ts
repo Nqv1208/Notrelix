@@ -4,13 +4,30 @@
  * and business logic leaking into UI primitives.
  */
 export const FORBIDDEN_IMPORTS: Record<string, string[]> = {
-  // Foundation: no React, no DOM, no cross-layer
-  "@notrelix/contracts": ["react", "react-dom", "react-native"],
+  // Foundation: no React, no DOM, no Next, no cross-layer UI
+  "@notrelix/contracts": [
+    "react", "react-dom", "react-native",
+    "next", "next-themes", "@notrelix/ui-web", "@notrelix/ui-mobile"
+  ],
   "@notrelix/kernel": [
     "react", "react-dom", "react-native",
-    "@notrelix/platform", "@notrelix/ui-web", "@notrelix/ui-mobile",
+    "next", "next-themes", "@notrelix/platform", "@notrelix/ui-web", "@notrelix/ui-mobile"
   ],
-  "@notrelix/ui-tokens": ["react", "react-dom", "react-native"],
+  "@notrelix/platform": [
+    "next", "next-themes", "@notrelix/ui-web", "@notrelix/ui-mobile"
+  ],
+  "@notrelix/query": [
+    "next", "next-themes", "@notrelix/ui-web", "@notrelix/ui-mobile"
+  ],
+  "@notrelix/realtime": [
+    "next", "next-themes", "@notrelix/ui-web", "@notrelix/ui-mobile"
+  ],
+  "@notrelix/observability": [
+    "next", "next-themes", "@notrelix/ui-web", "@notrelix/ui-mobile"
+  ],
+  "@notrelix/ui-tokens": [
+    "react", "react-dom", "react-native", "next"
+  ],
 
   // Product cores: no React, no UI
   "@notrelix/work-management-core": [
@@ -18,7 +35,7 @@ export const FORBIDDEN_IMPORTS: Record<string, string[]> = {
     "@notrelix/ui-web", "@notrelix/ui-mobile",
   ],
   "@notrelix/work-management-state": [
-    "next", "@notrelix/ui-web", "@notrelix/ui-mobile",
+    "next", "next-themes", "@notrelix/ui-web", "@notrelix/ui-mobile",
   ],
   "@notrelix/work-management-plugins": [
     "react", "react-dom",
@@ -34,7 +51,7 @@ export const FORBIDDEN_IMPORTS: Record<string, string[]> = {
 
   // Cross-runtime: web must not import mobile, mobile must not import web
   "@notrelix/ui-web": ["@notrelix/ui-mobile", "react-native"],
-  "@notrelix/ui-mobile": ["@notrelix/ui-web", "@radix-ui", "shadcn"],
+  "@notrelix/ui-mobile": ["@notrelix/ui-web", "@radix-ui", "shadcn", "cmdk"],
   "@notrelix/work-management-web": [
     "@notrelix/ui-mobile", "@notrelix/runtime-mobile", "react-native",
   ],
@@ -51,7 +68,7 @@ export const FORBIDDEN_IMPORTS: Record<string, string[]> = {
   ],
 
   // Web app: no Next.js
-  "@notrelix/app-web": ["next"],
+  "@notrelix/app-web": ["next", "next-themes"],
 
   // Mobile app: no web, no Next.js
   "@notrelix/app-mobile": ["next", "@notrelix/ui-web", "@notrelix/runtime-web"],
