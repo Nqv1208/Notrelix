@@ -1,11 +1,24 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Requests;
+using Notrelix.Application.Common.Requests.Security;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation;
 
 public record AcceptInvitationResultDto(string WorkspaceSlug, Guid WorkspaceId);
 
-public record AcceptInvitationCommand(string Token) : ICommand<Result<AcceptInvitationResultDto>>, ITransactionalRequest;
+public record AcceptInvitationCommand(string Token)
+    : ICommand<Result<AcceptInvitationResultDto>>,
+      IAuthenticatedRequest,
+      ITokenScopedRequest,
+      ITransactionalRequest
+{
+    TokenPurpose ITokenScopedRequest.TokenPurpose =>
+        TokenPurpose.WorkspaceInvitation;
+
+    UseCaseSecurityKind IUseCaseSecurityRequirement.SecurityKind =>
+        UseCaseSecurityKind.TokenScoped;
+}
 
 public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCommand, Result<AcceptInvitationResultDto>>
 {
