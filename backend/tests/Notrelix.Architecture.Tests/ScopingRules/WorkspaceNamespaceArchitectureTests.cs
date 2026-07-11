@@ -525,4 +525,57 @@ public class WorkspaceNamespaceArchitectureTests
             $"Violations: {string.Join(", ", violations)}");
     }
 
+    [Fact]
+    public void WorkspaceQueries_WithWorkspaceId_MustImplement_IWorkspaceRequest()
+    {
+        var files = GetQueryFiles("Features/Workspaces");
+        var violations = new List<string>();
+
+        foreach (var file in files)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            var declaration = ReadDeclaration(content);
+            if (string.IsNullOrEmpty(declaration)) continue;
+
+            var name = ExtractRecordName(declaration);
+            if (name.EndsWith("Dto") || name.EndsWith("Response")) continue;
+
+            var hasWorkspaceId = content.Contains("Guid WorkspaceId") || content.Contains("Guid? WorkspaceId");
+            if (!hasWorkspaceId) continue;
+
+            if (!declaration.Contains("IWorkspaceRequest"))
+                violations.Add($"{name}: {Path.GetFileName(file)} has Guid WorkspaceId but does not implement IWorkspaceRequest");
+        }
+
+        violations.Should().BeEmpty(
+            $"Workspace queries with Guid WorkspaceId must implement IWorkspaceRequest to trigger TenantBootstrapBehavior. " +
+            $"Violations: {string.Join(", ", violations)}");
+    }
+
+    [Fact]
+    public void WorkspaceQueries_WithWorkspaceId_MustImplement_IRequirePermission()
+    {
+        var files = GetQueryFiles("Features/Workspaces");
+        var violations = new List<string>();
+
+        foreach (var file in files)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            var declaration = ReadDeclaration(content);
+            if (string.IsNullOrEmpty(declaration)) continue;
+
+            var name = ExtractRecordName(declaration);
+            if (name.EndsWith("Dto") || name.EndsWith("Response")) continue;
+
+            var hasWorkspaceId = content.Contains("Guid WorkspaceId") || content.Contains("Guid? WorkspaceId");
+            if (!hasWorkspaceId) continue;
+
+            if (!declaration.Contains("IRequirePermission"))
+                violations.Add($"{name}: {Path.GetFileName(file)} has Guid WorkspaceId but does not implement IRequirePermission");
+        }
+
+        violations.Should().BeEmpty(
+            $"Workspace queries with Guid WorkspaceId must implement IRequirePermission for authorization. " +
+            $"Violations: {string.Join(", ", violations)}");
+    }
 }

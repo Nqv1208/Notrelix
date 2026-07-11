@@ -41,6 +41,9 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         var workspace = await _workspaceContext.Workspaces.AsNoTracking()
             .FirstOrDefaultAsync(w => w.Id == invitation.WorkspaceId, ct);
 
+        if (workspace is null)
+            throw new NotFoundException(nameof(Workspace), invitation.WorkspaceId);
+
         var now = _dateTimeProvider.UtcNow;
 
         if (now >= invitation.ExpiresAt)
@@ -54,9 +57,11 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         if (user == null)
             return Result<AcceptInvitationResultDto>.Failure("Không tìm thấy thông tin tài khoản người dùng hiện tại.");
 
-        // Note: Email validation against invitation email cannot be done via IActorLookupService
-        // since it doesn't expose email. The invitation token already binds to the email.
-        // For stricter email validation, an IAccountLookupService port could be introduced.
+        // TODO: Email validation against invitation email is not yet implemented.
+        // IActorLookupService does not expose email. The invitation token binds to the email,
+        // but if a token is forwarded, a different user could accept. An IIdentityUserLookupService
+        // port should be introduced to check: currentUser.Email == invitation.Email.
+        // This is a P1 requirement before Invitations slice is considered complete.
 
         var isAlreadyMember = await _workspaceContext.WorkspaceMembers
             .AnyAsync(m => m.WorkspaceId == invitation.WorkspaceId && m.UserId == _requestContext.UserId, ct);
@@ -64,15 +69,14 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         if (isAlreadyMember)
         {
             invitation.Accept(_requestContext.UserId, now);
-            return Result<AcceptInvitationResultDto>.Success(new AcceptInvitationResultDto(workspace?.Slug ?? "", invitation.WorkspaceId));
+            return Result<AcceptInvitationResultDto>.Success(new AcceptInvitationResultDto(workspace.Slug, invitation.WorkspaceId));
         }
 
         invitation.Accept(_requestContext.UserId, now);
 
-        var accountId = workspace?.AccountId ?? invitation.AccountId;
-        var member = WorkspaceMember.Create(accountId, invitation.WorkspaceId, _requestContext.UserId, invitation.Role, invitation.InvitedBy, now);
+        var member = WorkspaceMember.Create(workspace.AccountId, invitation.WorkspaceId, _requestContext.UserId, invitation.Role, invitation.InvitedBy, now);
         _workspaceContext.WorkspaceMembers.Add(member);
 
-        return Result<AcceptInvitationResultDto>.Success(new AcceptInvitationResultDto(workspace?.Slug ?? "", invitation.WorkspaceId));
+        return Result<AcceptInvitationResultDto>.Success(new AcceptInvitationResultDto(workspace.Slug, invitation.WorkspaceId));
     }
 }

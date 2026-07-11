@@ -270,10 +270,6 @@ public class UseCaseSecurityClassificationTests
             // Has IRequirePermission (implies authenticated + resource-scoped)
             if (declaration.Contains("IRequirePermission")) continue;
 
-            // Has WorkspaceId in content (implies workspace-scoped)
-            var hasWorkspaceId = content.Contains("Guid WorkspaceId") || content.Contains("Guid? WorkspaceId");
-            if (hasWorkspaceId) continue;
-
             // Known allowlist entry
             if (KnownUnclassified.ContainsKey(name)) continue;
 
