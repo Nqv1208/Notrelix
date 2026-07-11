@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Requests.Security;
-
 namespace Notrelix.Application.Common.Requests;
 
 public interface ITokenScopedRequest : IUseCaseSecurityRequirement

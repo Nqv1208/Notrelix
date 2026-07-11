@@ -1,11 +1,8 @@
 using global::Notrelix.Application.Common.Models;
-using Notrelix.Application.Common.Requests;
-using Notrelix.Application.Common.Requests.Security;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Domain.Accounts.Accounts;
-using Notrelix.Domain.Identity.Users;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation;
 

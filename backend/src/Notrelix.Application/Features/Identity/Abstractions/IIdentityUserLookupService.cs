@@ -1,5 +1,3 @@
-using Notrelix.Domain.Identity.Users;
-
 namespace Notrelix.Application.Features.Identity.Abstractions;
 
 public interface IIdentityUserLookupService

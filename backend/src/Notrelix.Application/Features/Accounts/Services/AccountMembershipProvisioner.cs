@@ -1,6 +1,5 @@
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Domain.Accounts.Members;
-using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Application.Features.Accounts.Services;
 

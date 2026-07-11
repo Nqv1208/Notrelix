@@ -1,6 +1,5 @@
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Workspaces.DTOs;
-using Notrelix.Application.Common.Requests.Security;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetUserWorkspaces;
