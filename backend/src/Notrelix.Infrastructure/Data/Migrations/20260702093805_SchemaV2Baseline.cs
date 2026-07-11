@@ -2470,6 +2470,8 @@ namespace Notrelix.Infrastructure.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    email_confirmed = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    email_confirmed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     normalized_email = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: false),
                     name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     avatar = table.Column<string>(type: "text", nullable: true),

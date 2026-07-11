@@ -340,6 +340,7 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
         Add<UserActivatedDomainEvent>(d);
         Add<UserDeactivatedDomainEvent>(d);
         Add<UserEmailChangedDomainEvent>(d);
+        Add<UserEmailConfirmedDomainEvent>(d);
         Add<UserLoggedInDomainEvent>(d);
         Add<UserPasswordChangedDomainEvent>(d);
         Add<UserRegisteredDomainEvent>(d);

@@ -5173,6 +5173,16 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("deleted_by");
 
+                    b.Property<bool>("EmailConfirmed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("email_confirmed");
+
+                    b.Property<DateTimeOffset?>("EmailConfirmedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("email_confirmed_at");
+
                     b.Property<DateTimeOffset?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_login_at");
@@ -9803,14 +9813,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("processed_at");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)")
-                        .HasDefaultValue("Processing")
-                        .HasColumnName("status");
-
                     b.Property<string>("SourceContext")
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)")
@@ -9819,6 +9821,14 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<Guid?>("SourceEventId")
                         .HasColumnType("uuid")
                         .HasColumnName("source_event_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasDefaultValue("Processing")
+                        .HasColumnName("status");
 
                     b.Property<Guid?>("SubjectId")
                         .HasColumnType("uuid")

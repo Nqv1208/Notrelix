@@ -15,6 +15,8 @@ public class User : AggregateRoot
     public string? AvatarUrl => Avatar;
     public string PasswordHash { get; private set; } = null!;
     public UserStatus Status { get; private set; }
+    public bool EmailConfirmed { get; private set; }
+    public DateTimeOffset? EmailConfirmedAt { get; private set; }
     public DateTimeOffset? LastLoginAt { get; private set; }
 
     private readonly List<OAuthAccount> _oauthAccounts = new();
@@ -43,7 +45,9 @@ public class User : AggregateRoot
             NormalizedEmail = NormalizeEmail(emailValue.Value),
             Name = name.Trim(),
             PasswordHash = passwordHash,
-            Status = UserStatus.Active
+            Status = UserStatus.Active,
+            EmailConfirmed = false,
+            EmailConfirmedAt = null
         };
 
         user.SetAuditOnCreate(null, createdAt);
@@ -82,6 +86,8 @@ public class User : AggregateRoot
 
         Email = emailValue;
         NormalizedEmail = NormalizeEmail(emailValue.Value);
+        EmailConfirmed = false;
+        EmailConfirmedAt = null;
 
         SetAuditOnUpdate(Id, updatedAt);
         IncrementVersion();
@@ -184,6 +190,28 @@ public class User : AggregateRoot
             suspendedBy,
             suspendedAt,
             string.IsNullOrWhiteSpace(reason) ? null : reason.Trim()));
+    }
+
+    public void ConfirmEmail(DateTimeOffset confirmedAt)
+    {
+        EnsureNotDeleted();
+
+        if (EmailConfirmed)
+            return;
+
+        EmailConfirmed = true;
+        EmailConfirmedAt = confirmedAt;
+
+        if (Status == UserStatus.PendingVerification)
+        {
+            Status = UserStatus.Active;
+        }
+
+        SetAuditOnUpdate(Id, confirmedAt);
+        IncrementVersion();
+
+        AddDomainEvent(new UserEmailConfirmedDomainEvent(
+            Id, Email.Value, confirmedAt));
     }
 
     public void LinkOAuthAccount(

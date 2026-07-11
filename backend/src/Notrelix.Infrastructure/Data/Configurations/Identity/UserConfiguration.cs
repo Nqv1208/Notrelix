@@ -28,6 +28,8 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(x => x.PasswordHash).HasColumnName("password_hash").IsRequired();
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.LastLoginAt).HasColumnName("last_login_at");
+        builder.Property(x => x.EmailConfirmed).HasColumnName("email_confirmed").IsRequired().HasDefaultValue(false);
+        builder.Property(x => x.EmailConfirmedAt).HasColumnName("email_confirmed_at");
 
         builder.Ignore(x => x.AvatarUrl);
 
