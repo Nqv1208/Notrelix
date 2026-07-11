@@ -68,8 +68,9 @@ public class WorkspaceAuthTests : IClassFixture<NotrelixApiFactory>
     public async Task ArchiveWorkspace_Unauthenticated_ReturnsUnauthorized()
     {
         var client = _factory.CreateClient();
+        var body = JsonContent(new { ExpectedVersion = 1L });
 
-        var response = await client.PostAsync($"{BasePath}/{WorkspaceId}/archive?expectedVersion=1", null);
+        var response = await client.PostAsync($"{BasePath}/{WorkspaceId}/archive", body);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -78,18 +79,9 @@ public class WorkspaceAuthTests : IClassFixture<NotrelixApiFactory>
     public async Task RestoreWorkspace_Unauthenticated_ReturnsUnauthorized()
     {
         var client = _factory.CreateClient();
+        var body = JsonContent(new { ExpectedVersion = 1L });
 
-        var response = await client.PostAsync($"{BasePath}/{WorkspaceId}/restore?expectedVersion=1", null);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
-    public async Task GetWorkspaceBySlug_Unauthenticated_ReturnsUnauthorized()
-    {
-        var client = _factory.CreateClient();
-
-        var response = await client.GetAsync($"{BasePath}/by-slug/test-slug");
+        var response = await client.PostAsync($"{BasePath}/{WorkspaceId}/restore", body);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }

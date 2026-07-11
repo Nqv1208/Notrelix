@@ -53,12 +53,6 @@ public sealed class TenantBootstrapStore : ITenantBootstrapStore
             IsWorkspaceActive: isActive);
     }
 
-    public async Task<bool> HasAccountAccessAsync(Guid accountId, CancellationToken cancellationToken)
-    {
-        return await _accountContext.Accounts
-            .AnyAsync(a => a.Id == accountId, cancellationToken);
-    }
-
     public async Task VerifyAccountAccessAsync(Guid accountId, Guid userId, CancellationToken ct)
     {
         var hasAccess = await _accountContext.AccountMembers

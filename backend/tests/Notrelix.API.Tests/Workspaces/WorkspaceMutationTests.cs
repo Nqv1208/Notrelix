@@ -22,7 +22,7 @@ public class WorkspaceMutationTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task UpdateWorkspaceProfile_WithValidBody_ReturnsSuccess()
     {
-        var body = new { Name = "Updated Name", Description = "Updated description" };
+        var body = new { Name = "Updated Name", Description = "Updated description", ExpectedVersion = 1L };
 
         var response = await _client.PatchAsync($"/api/v1/workspaces/{WorkspaceId}/profile", JsonContent(body));
 
@@ -32,7 +32,7 @@ public class WorkspaceMutationTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task UpdateWorkspaceProfile_WithNonexistentWorkspace_ReturnsNotFound()
     {
-        var body = new { Name = "Updated Name" };
+        var body = new { Name = "Updated Name", ExpectedVersion = 1L };
 
         var response = await _client.PatchAsync($"/api/v1/workspaces/99999999-9999-9999-9999-999999999999/profile", JsonContent(body));
 
@@ -43,7 +43,7 @@ public class WorkspaceMutationTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task UpdateWorkspaceProfile_WithEmptyName_ReturnsBadRequest()
     {
-        var body = new { Name = "" };
+        var body = new { Name = "", ExpectedVersion = 1L };
 
         var response = await _client.PatchAsync($"/api/v1/workspaces/{WorkspaceId}/profile", JsonContent(body));
 
@@ -55,7 +55,7 @@ public class WorkspaceMutationTests : IClassFixture<NotrelixApiFactory>
     public async Task UpdateWorkspaceProfile_WithDescriptionExceedingMaxLength_ReturnsBadRequest()
     {
         var longDesc = new string('X', 2000);
-        var body = new { Description = longDesc };
+        var body = new { Description = longDesc, ExpectedVersion = 1L };
 
         var response = await _client.PatchAsync($"/api/v1/workspaces/{WorkspaceId}/profile", JsonContent(body));
 
@@ -66,7 +66,9 @@ public class WorkspaceMutationTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task ArchiveWorkspace_WithValidExpectedVersion_ReturnsNoContent()
     {
-        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/archive?expectedVersion=1", null);
+        var body = JsonContent(new { ExpectedVersion = 1L });
+
+        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/archive", body);
 
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
@@ -74,7 +76,9 @@ public class WorkspaceMutationTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task ArchiveWorkspace_WithZeroExpectedVersion_ReturnsBadRequest()
     {
-        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/archive?expectedVersion=0", null);
+        var body = JsonContent(new { ExpectedVersion = 0L });
+
+        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/archive", body);
 
         // ConcurrencyBehavior removed from test pipeline; mock returns success.
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.BadRequest);
@@ -83,7 +87,9 @@ public class WorkspaceMutationTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task ArchiveWorkspace_WithNonexistentWorkspace_ReturnsNotFound()
     {
-        var response = await _client.PostAsync("/api/v1/workspaces/99999999-9999-9999-9999-999999999999/archive?expectedVersion=1", null);
+        var body = JsonContent(new { ExpectedVersion = 1L });
+
+        var response = await _client.PostAsync("/api/v1/workspaces/99999999-9999-9999-9999-999999999999/archive", body);
 
         // Handler mock returns success; non-existence handled at Application layer.
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
@@ -93,7 +99,9 @@ public class WorkspaceMutationTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task RestoreWorkspace_WithValidExpectedVersion_ReturnsNoContent()
     {
-        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/restore?expectedVersion=1", null);
+        var body = JsonContent(new { ExpectedVersion = 1L });
+
+        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/restore", body);
 
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
@@ -101,7 +109,9 @@ public class WorkspaceMutationTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task RestoreWorkspace_WithZeroExpectedVersion_ReturnsBadRequest()
     {
-        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/restore?expectedVersion=0", null);
+        var body = JsonContent(new { ExpectedVersion = 0L });
+
+        var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/restore", body);
 
         // ConcurrencyBehavior removed from test pipeline; mock returns success.
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.BadRequest);
@@ -110,7 +120,9 @@ public class WorkspaceMutationTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task RestoreWorkspace_WithNonexistentWorkspace_ReturnsNotFound()
     {
-        var response = await _client.PostAsync("/api/v1/workspaces/99999999-9999-9999-9999-999999999999/restore?expectedVersion=1", null);
+        var body = JsonContent(new { ExpectedVersion = 1L });
+
+        var response = await _client.PostAsync("/api/v1/workspaces/99999999-9999-9999-9999-999999999999/restore", body);
 
         // Handler mock returns success; non-existence handled at Application layer.
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);

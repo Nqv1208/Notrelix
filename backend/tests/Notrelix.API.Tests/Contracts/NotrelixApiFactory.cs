@@ -1,7 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Authentication;
 using Notrelix.Application.Common.Behaviors;
-using Notrelix.Application.Common.Security.Auth;
 using Notrelix.Application.Features.Identity.Auth.Commands.ForgotPassword;
 using Notrelix.Application.Features.Identity.Auth.Commands.Login;
 using Notrelix.Application.Features.Identity.Auth.Commands.Logout;
@@ -25,7 +24,6 @@ using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspa
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.RestoreWorkspace;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.UpdateWorkspaceProfile;
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspace;
-using Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspaceBySlug;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -39,7 +37,6 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Common.Security;
 using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Features.Workspaces.DTOs;
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetUserWorkspaces;
@@ -162,9 +159,6 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 mock.Setup(x => x.ResolveWorkspaceAccessAsync(
                         It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new WorkspaceAccessSnapshot(testAccountId, testWorkspaceId, testUserId, true, true));
-                mock.Setup(x => x.HasAccountAccessAsync(
-                        It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(true);
                 return mock.Object;
             });
 
@@ -280,9 +274,6 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             // relational-DB-specific failures (transactions, RLS, FromSqlRaw)
             // that the In-Memory test provider does not support.
             MockWorkspaceHandler<GetWorkspaceQuery, Result<WorkspaceDto>>(services,
-                Result<WorkspaceDto>.Success(new WorkspaceDto(
-                    Guid.NewGuid(), "Mocked", "mocked", null, false, "Free", null, null, null, false, 0, DateTime.UtcNow, null)));
-            MockWorkspaceHandler<GetWorkspaceBySlugQuery, Result<WorkspaceDto>>(services,
                 Result<WorkspaceDto>.Success(new WorkspaceDto(
                     Guid.NewGuid(), "Mocked", "mocked", null, false, "Free", null, null, null, false, 0, DateTime.UtcNow, null)));
             MockWorkspaceHandler<UpdateWorkspaceProfileCommand, Result>(services, Result.Success());

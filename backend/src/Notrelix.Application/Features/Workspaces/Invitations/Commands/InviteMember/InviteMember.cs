@@ -44,17 +44,6 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         var cleanEmail = request.Email.Trim().ToLowerInvariant();
         var now = _dateTimeProvider.UtcNow;
 
-        // Check if user with this email exists via actor lookup
-        // We cannot look up by email directly; the invitation flow does not require the user to exist yet.
-        // The InviteMemberCommand checks for existing membership using workspace members only.
-
-        var isAlreadyMember = await _workspaceContext.WorkspaceMembers
-            .AnyAsync(m => m.WorkspaceId == request.WorkspaceId, ct);
-
-        // Note: We can't check if the target user is already a member without their UserId.
-        // The email-based invite flow creates an invitation; duplicate-membership is checked at Accept time.
-        // For a stricter check, a IUserLookupByEmailService port could be introduced in the future.
-
         var hasActiveInvitation = await _workspaceContext.WorkspaceInvitations
             .AnyAsync(i => i.WorkspaceId == request.WorkspaceId
                            && i.Email == cleanEmail

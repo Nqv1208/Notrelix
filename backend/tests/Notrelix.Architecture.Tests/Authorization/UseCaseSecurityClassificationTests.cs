@@ -124,10 +124,6 @@ public class UseCaseSecurityClassificationTests
         ["UpdateProfileCommand"] = new("UpdateProfileCommand", AllowlistClassification.Intentional,
             "User updates own profile — identity-based, not resource-based", "Keep as-is"),
 
-        // === No workspace/account scope (creating workspace) ===
-        ["CreateWorkspaceCommand"] = new("CreateWorkspaceCommand", AllowlistClassification.Intentional,
-            "Global command — user creates own workspace, no pre-existing scope", "Add IAuthenticatedRequest"),
-
         // === Pre-hardening legacy gaps (no WorkspaceId property directly) ===
         // Collaboration — Comments (use ResourceId)
         ["GetCommentsQuery"] = new("GetCommentsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
@@ -201,26 +197,12 @@ public class UseCaseSecurityClassificationTests
         ["UpdateBoardFieldCommand"] = new("UpdateBoardFieldCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
         ["CreateBoardFieldCommand"] = new("CreateBoardFieldCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
 
-        // Workspaces — queries (no direct WorkspaceId in params)
+        // Workspaces — query (no direct WorkspaceId in params)
         ["GetUserWorkspacesQuery"] = new("GetUserWorkspacesQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["ArchiveWorkspaceBySlugCommand"] = new("ArchiveWorkspaceBySlugCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
 
-        // Workspaces — members (use WorkspaceId from route/slug)
-        ["GetWorkspaceQuery"] = new("GetWorkspaceQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["GetWorkspaceBySlugQuery"] = new("GetWorkspaceBySlugQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["GetWorkspaceMembersBySlugQuery"] = new("GetWorkspaceMembersBySlugQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["GetWorkspaceMembersQuery"] = new("GetWorkspaceMembersQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["RemoveMemberCommand"] = new("RemoveMemberCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["RemoveMemberBySlugCommand"] = new("RemoveMemberBySlugCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["UpdateMemberRoleCommand"] = new("UpdateMemberRoleCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["UpdateMemberRoleBySlugCommand"] = new("UpdateMemberRoleBySlugCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["GetWorkspaceActivityBySlugQuery"] = new("GetWorkspaceActivityBySlugQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["GetWorkspaceActivityQuery"] = new("GetWorkspaceActivityQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-
-        // Workspaces — invitations
-        ["GetWorkspaceInvitationsQuery"] = new("GetWorkspaceInvitationsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["InviteMemberBySlugCommand"] = new("InviteMemberBySlugCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["CancelInvitationCommand"] = new("CancelInvitationCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
+        // Workspaces — token-scoped invitation
+        ["AcceptInvitationCommand"] = new("AcceptInvitationCommand", AllowlistClassification.PublicCommand,
+            "Token-scoped invitation command — auth required, no resource scope", "Keep as-is"),
 
         // Integrations — Calendar (use WorkspaceId from route/context)
         ["DisconnectCalendarCommand"] = new("DisconnectCalendarCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),

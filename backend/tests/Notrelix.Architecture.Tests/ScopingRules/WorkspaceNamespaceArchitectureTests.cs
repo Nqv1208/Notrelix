@@ -164,6 +164,16 @@ public class WorkspaceNamespaceArchitectureTests
     {
     };
 
+    // --- Allowlists for workspace commands ---
+
+    private static readonly Dictionary<string, AllowlistEntry> WorkspaceCommandsMissingClassification = new()
+    {
+        ["AcceptInvitationCommand"] = new("AcceptInvitationCommand", AllowlistClassification.PublicCommand,
+            "Token-scoped invitation command — auth required, no resource scope", "Keep as-is"),
+        ["ProvisionPersonalWorkspaceCommand"] = new("ProvisionPersonalWorkspaceCommand", AllowlistClassification.SystemCommand,
+            "System-internal background command — no user request path", "Keep as-is"),
+    };
+
     // --- Validation tests ---
 
     [Fact]
@@ -177,6 +187,7 @@ public class WorkspaceNamespaceArchitectureTests
             ["WorkManagement_MissingPermission"] = WorkManagementMissingPermission,
             ["Documents_MissingPermission"] = DocumentsMissingPermission,
             ["Collaboration_MissingPermission"] = CollaborationMissingPermission,
+            ["WorkspaceCommands_MissingClassification"] = WorkspaceCommandsMissingClassification,
         };
 
         var violations = new List<string>();
@@ -369,7 +380,7 @@ public class WorkspaceNamespaceArchitectureTests
     [Fact]
     public void CommandsImplementingWorkspaceRequest_ShouldAlsoImplement_IRequirePermission()
     {
-        var featurePaths = new[] { "Features/WorkManagement", "Features/Documents", "Features/Collaboration" };
+        var featurePaths = new[] { "Features/WorkManagement", "Features/Documents", "Features/Collaboration", "Features/Workspaces" };
         var violations = new List<string>();
 
         foreach (var featurePath in featurePaths)
@@ -400,7 +411,7 @@ public class WorkspaceNamespaceArchitectureTests
     [Fact]
     public void QueriesImplementingWorkspaceRequest_ShouldAlsoImplement_IRequirePermission()
     {
-        var featurePaths = new[] { "Features/WorkManagement", "Features/Documents", "Features/Collaboration" };
+        var featurePaths = new[] { "Features/WorkManagement", "Features/Documents", "Features/Collaboration", "Features/Workspaces" };
         var violations = new List<string>();
 
         foreach (var featurePath in featurePaths)
@@ -427,4 +438,91 @@ public class WorkspaceNamespaceArchitectureTests
             $"Queries implementing IWorkspaceRequest or IResourceScopedRequest must also implement IRequirePermission. " +
             $"Violations: {string.Join(", ", violations)}");
     }
+
+    [Fact]
+    public void WorkspaceCommands_ShouldImplement_IWorkspaceRequest_Or_IAccountRequest()
+    {
+        var files = GetCommandFiles("Features/Workspaces");
+        var violations = new List<string>();
+
+        foreach (var file in files)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            var declaration = ReadDeclaration(content);
+            if (string.IsNullOrEmpty(declaration)) continue;
+
+            var name = ExtractRecordName(declaration);
+            if (name.EndsWith("Dto") || name.EndsWith("Response")) continue;
+
+            if (!declaration.Contains("IWorkspaceRequest") && !declaration.Contains("IAccountRequest"))
+            {
+                if (!WorkspaceCommandsMissingClassification.ContainsKey(name))
+                    violations.Add($"{name}: {Path.GetFileName(file)}");
+            }
+        }
+
+        violations.Should().BeEmpty(
+            $"Workspace commands must implement IWorkspaceRequest or IAccountRequest. " +
+            $"Fix by adding to WorkspaceCommandsMissingClassification with classification, or add IWorkspaceRequest/IAccountRequest. " +
+            $"Violations: {string.Join(", ", violations)}");
+    }
+
+    [Fact]
+    public void NoSlugBasedWorkspaceCommands_ShouldExist()
+    {
+        var files = GetCommandFiles("Features/Workspaces");
+        var violations = new List<string>();
+
+        foreach (var file in files)
+        {
+            var fileName = Path.GetFileName(file);
+            if (fileName.Contains("BySlug"))
+                violations.Add($"{fileName}");
+        }
+
+        violations.Should().BeEmpty(
+            $"No slug-based workspace commands may exist. All BySlug commands have been deleted. " +
+            $"Violations: {string.Join(", ", violations)}");
+    }
+
+    [Fact]
+    public void NoSlugBasedWorkspaceQueries_ShouldExist()
+    {
+        var files = GetQueryFiles("Features/Workspaces");
+        var violations = new List<string>();
+
+        foreach (var file in files)
+        {
+            var fileName = Path.GetFileName(file);
+            if (fileName.Contains("BySlug"))
+                violations.Add($"{fileName}");
+        }
+
+        violations.Should().BeEmpty(
+            $"No slug-based workspace queries may exist. All BySlug queries have been deleted. " +
+            $"Violations: {string.Join(", ", violations)}");
+    }
+
+    [Fact]
+    public void WorkspaceCommands_ShouldNotIntroduceNewSlugBasedCommands()
+    {
+        var files = GetCommandFiles("Features/Workspaces");
+        var violations = new List<string>();
+
+        foreach (var file in files)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            var declaration = ReadDeclaration(content);
+            if (string.IsNullOrEmpty(declaration)) continue;
+
+            var name = ExtractRecordName(declaration);
+            if (name.Contains("BySlug"))
+                violations.Add($"{name}: {Path.GetFileName(file)}");
+        }
+
+        violations.Should().BeEmpty(
+            $"New slug-based workspace commands are forbidden. Use workspaceId from route/context instead. " +
+            $"Violations: {string.Join(", ", violations)}");
+    }
+
 }

@@ -5,6 +5,7 @@ public class UpdateWorkspaceProfileCommandValidator : AbstractValidator<UpdateWo
     public UpdateWorkspaceProfileCommandValidator()
     {
         RuleFor(x => x.WorkspaceId).NotEmpty();
+        RuleFor(x => x.ExpectedVersion).GreaterThan(0);
         RuleFor(x => x.Name).MaximumLength(200);
         RuleFor(x => x.Description).MaximumLength(1024);
     }

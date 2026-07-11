@@ -7,12 +7,12 @@ public record UpdateWorkspaceProfileCommand(
     Guid WorkspaceId,
     string? Name,
     string? Description,
-    long? ExpectedVersion
+    long ExpectedVersion
 ) : ICommand<Result>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageWorkspace;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
-    long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion ?? 0;
+    long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion;
     ResourceRef IExpectedVersionRequest.Resource => Resource;
 }
 

@@ -1,6 +1,5 @@
 using Notrelix.API.Contracts.Workspaces.Workspaces.Requests;
 using Notrelix.API.Extensions;
-using Notrelix.Application.Common.Context;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace;
 
 namespace Notrelix.API.Endpoints.Workspaces.Workspaces.Commands;

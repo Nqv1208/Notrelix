@@ -3,7 +3,6 @@ namespace Notrelix.Application.Common.Tenancy;
 public interface ITenantBootstrapStore
 {
     Task<WorkspaceAccessSnapshot> ResolveWorkspaceAccessAsync(Guid workspaceId, Guid actorUserId, CancellationToken ct);
-    Task<bool> HasAccountAccessAsync(Guid accountId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Verifies that the user is an active AccountMember of the given account.

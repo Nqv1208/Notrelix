@@ -5,5 +5,6 @@ public class ArchiveWorkspaceCommandValidator : AbstractValidator<ArchiveWorkspa
     public ArchiveWorkspaceCommandValidator()
     {
         RuleFor(x => x.WorkspaceId).NotEmpty();
+        RuleFor(x => x.ExpectedVersion).GreaterThan(0);
     }
 }

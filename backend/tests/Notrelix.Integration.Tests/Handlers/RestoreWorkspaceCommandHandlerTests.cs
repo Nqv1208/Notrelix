@@ -40,7 +40,7 @@ public class RestoreWorkspaceCommandHandlerTests : IAsyncLifetime
         requestContextMock.Setup(r => r.UserId).Returns(userId);
         var handler = new RestoreWorkspaceCommandHandler(context, requestContextMock.Object, FakeDateTimeProvider.WithFixedTime(now));
 
-        var result = await handler.Handle(new RestoreWorkspaceCommand(workspace.Id), CancellationToken.None);
+        var result = await handler.Handle(new RestoreWorkspaceCommand(workspace.Id, 1L), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         await context.SaveChangesAsync();
@@ -58,7 +58,7 @@ public class RestoreWorkspaceCommandHandlerTests : IAsyncLifetime
         var handler = new RestoreWorkspaceCommandHandler(context, requestContextMock.Object, FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow));
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
-            handler.Handle(new RestoreWorkspaceCommand(Guid.NewGuid()), CancellationToken.None));
+            handler.Handle(new RestoreWorkspaceCommand(Guid.NewGuid(), 1L), CancellationToken.None));
     }
 
     [Fact]
@@ -76,7 +76,7 @@ public class RestoreWorkspaceCommandHandlerTests : IAsyncLifetime
         requestContextMock.Setup(r => r.UserId).Returns(userId);
         var handler = new RestoreWorkspaceCommandHandler(context, requestContextMock.Object, FakeDateTimeProvider.WithFixedTime(now));
 
-        var result = await handler.Handle(new RestoreWorkspaceCommand(workspace.Id), CancellationToken.None);
+        var result = await handler.Handle(new RestoreWorkspaceCommand(workspace.Id, 1L), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         await context.SaveChangesAsync();

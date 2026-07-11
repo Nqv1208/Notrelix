@@ -6,7 +6,11 @@ namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.CancelIn
 public record CancelInvitationCommand(
     Guid WorkspaceId,
     Guid InvitationId
-) : ICommand<Result>, ITransactionalRequest;
+) : ICommand<Result>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.InviteMember;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
+}
 
 public class CancelInvitationCommandHandler : IRequestHandler<CancelInvitationCommand, Result>
 {

@@ -22,12 +22,19 @@ public class Workspace : AggregateRoot
 
         var slugValue = SharedKernel.Slug.Create(slug);
 
+        var normalizedDescription = string.IsNullOrWhiteSpace(description)
+            ? null
+            : description.Trim();
+
+        if (normalizedDescription is not null)
+            Guard.MaxLength(normalizedDescription, 1024);
+
         var workspace = new Workspace
         {
             AccountId = accountId,
             Name = name.Trim(),
             Slug = slugValue.Value,
-            Description = description?.Trim(),
+            Description = normalizedDescription,
             Status = WorkspaceStatus.Active,
             Settings = WorkspaceSettings.Create(),
             IsPersonal = isPersonal
@@ -104,17 +111,23 @@ public class Workspace : AggregateRoot
     public void UpdateDescription(string? newDescription, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
 
         if (Status == WorkspaceStatus.Archived)
             throw new BusinessRuleException("Cannot update description of an archived workspace.");
 
-        Guard.MaxLength(newDescription, 1024);
+        var normalized = string.IsNullOrWhiteSpace(newDescription)
+            ? null
+            : newDescription.Trim();
+
+        if (normalized is not null)
+            Guard.MaxLength(normalized, 1024);
+
+        if (Description == normalized)
+            return;
 
         var oldDescription = Description;
-        var trimmed = string.IsNullOrWhiteSpace(newDescription) ? null : newDescription.Trim();
-        if (Description == trimmed) return;
-
-        Description = trimmed;
+        Description = normalized;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
         AddDomainEvent(new WorkspaceDescriptionUpdatedDomainEvent(Id, oldDescription, Description, updatedBy, updatedAt));

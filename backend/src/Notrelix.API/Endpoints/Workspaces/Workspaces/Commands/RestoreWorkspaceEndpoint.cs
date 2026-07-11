@@ -1,3 +1,4 @@
+using Notrelix.API.Contracts.Workspaces.Workspaces.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.RestoreWorkspace;
 
@@ -16,10 +17,10 @@ public static class RestoreWorkspaceEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid workspaceId,
-        long expectedVersion,
+        RestoreWorkspaceRequest request,
         ISender sender)
     {
-        var result = await sender.Send(new RestoreWorkspaceCommand(workspaceId, expectedVersion));
+        var result = await sender.Send(new RestoreWorkspaceCommand(workspaceId, request.ExpectedVersion));
         return result.ToNoContentResult();
     }
 }

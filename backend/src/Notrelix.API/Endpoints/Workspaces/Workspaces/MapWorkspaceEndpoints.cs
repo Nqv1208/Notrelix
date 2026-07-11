@@ -24,13 +24,6 @@ public static class MapWorkspaceEndpoints
         byIdGroup.MapArchiveWorkspace();
         byIdGroup.MapRestoreWorkspace();
 
-        var bySlugGroup = app
-            .MapGroup("/api/v1/workspaces/by-slug/{slug}")
-            .WithTags("Workspaces.Workspaces")
-            .WithOpenApi();
-
-        bySlugGroup.MapGetWorkspaceBySlug();
-
         var accountGroup = app
             .MapGroup("/api/v1/accounts/{accountId:guid}/workspaces")
             .WithTags("Workspaces.Workspaces")

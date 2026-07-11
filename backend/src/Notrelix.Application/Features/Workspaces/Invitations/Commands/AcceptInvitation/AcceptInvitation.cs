@@ -69,7 +69,8 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
 
         invitation.Accept(_requestContext.UserId, now);
 
-        var member = WorkspaceMember.Create(_requestContext.RequireAccountId(), invitation.WorkspaceId, _requestContext.UserId, invitation.Role, invitation.InvitedBy, now);
+        var accountId = workspace?.AccountId ?? invitation.AccountId;
+        var member = WorkspaceMember.Create(accountId, invitation.WorkspaceId, _requestContext.UserId, invitation.Role, invitation.InvitedBy, now);
         _workspaceContext.WorkspaceMembers.Add(member);
 
         return Result<AcceptInvitationResultDto>.Success(new AcceptInvitationResultDto(workspace?.Slug ?? "", invitation.WorkspaceId));

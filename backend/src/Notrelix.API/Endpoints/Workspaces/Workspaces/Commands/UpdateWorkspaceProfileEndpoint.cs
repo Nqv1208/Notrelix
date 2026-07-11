@@ -1,3 +1,4 @@
+using Notrelix.API.Contracts.Workspaces.Workspaces.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.UpdateWorkspaceProfile;
 
@@ -16,10 +17,16 @@ public static class UpdateWorkspaceProfileEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid workspaceId,
-        UpdateWorkspaceProfileCommand command,
+        UpdateWorkspaceProfileRequest request,
         ISender sender)
     {
-        var result = await sender.Send(command with { WorkspaceId = workspaceId });
+        var command = new UpdateWorkspaceProfileCommand(
+            workspaceId,
+            request.Name,
+            request.Description,
+            request.ExpectedVersion);
+
+        var result = await sender.Send(command);
         return result.ToApiResult();
     }
 }
