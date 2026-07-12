@@ -25,6 +25,8 @@ public class SystemContextUsageTests
         "RestoreWorkspace.cs",
         "TenantBootstrapStore.cs",
         "ResourceScopeResolver.cs",
+        "EmailTemplateMaterialization.cs",
+        "EmailVerificationTokenIssuer.cs",
     ];
 
     [Fact]

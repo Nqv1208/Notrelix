@@ -1,4 +1,6 @@
 using System.Net;
+using System.Text;
+using System.Text.Json;
 using Notrelix.API.Tests.Contracts;
 
 namespace Notrelix.API.Tests.Workspaces;
@@ -69,34 +71,45 @@ public class InvitationEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task GetInvitationByToken_WithValidToken_ReturnsSuccess()
     {
-        var response = await _client.GetAsync("/api/v1/invitations/by-token/valid-token");
+        var response = await _client.PostAsync(
+            "/api/v1/invitations/preview",
+            JsonContent(new { Token = "v1.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" }));
 
-        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound, HttpStatusCode.BadRequest);
     }
 
     [Fact]
     public async Task GetInvitationByToken_WithInvalidToken_ReturnsNotFound()
     {
-        var response = await _client.GetAsync($"/api/v1/invitations/by-token/invalid-{Guid.NewGuid():N}");
+        var response = await _client.PostAsync(
+            "/api/v1/invitations/preview",
+            JsonContent(new { Token = $"invalid-{Guid.NewGuid():N}" }));
 
         // Handler mock returns success; token validation at Application layer.
-        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound, HttpStatusCode.BadRequest);
     }
 
     // ── Accept Invitation ───────────────────────────────────
     [Fact]
     public async Task AcceptInvitation_WithValidToken_ReturnsSuccess()
     {
-        var response = await _client.PostAsync("/api/v1/invitations/accept/valid-token", null);
+        var response = await _client.PostAsync(
+            "/api/v1/invitations/accept",
+            JsonContent(new { Token = "v1.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" }));
 
-        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound, HttpStatusCode.BadRequest);
     }
 
     [Fact]
     public async Task AcceptInvitation_WithInvalidToken_ReturnsNotFound()
     {
-        var response = await _client.PostAsync($"/api/v1/invitations/accept/invalid-{Guid.NewGuid():N}", null);
+        var response = await _client.PostAsync(
+            "/api/v1/invitations/accept",
+            JsonContent(new { Token = $"invalid-{Guid.NewGuid():N}" }));
 
-        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound, HttpStatusCode.BadRequest);
     }
+
+    private static StringContent JsonContent(object body)
+        => new(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
 }

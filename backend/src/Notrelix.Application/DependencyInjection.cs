@@ -1,5 +1,7 @@
 using System.Reflection;
 using Notrelix.Application.Common.Behaviors;
+using Notrelix.Application.Features.Identity.Verification.Abstractions;
+using Notrelix.Application.Features.Identity.Verification.Services;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -30,6 +32,7 @@ public static class DependencyInjection
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(DbRequestScopeBehavior<,>));
         // Inner zone: inside DB/RLS scope
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(VerifiedEmailBehavior<,>));
         // Concurrency: version check for IExpectedVersionRequest (inside DB/RLS scope, after auth)
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ConcurrencyBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(SubscriptionGateBehavior<,>));
@@ -58,6 +61,7 @@ public static class DependencyInjection
 
         // Auth session issuer
         services.AddScoped<IAuthSessionIssuer, AuthSessionIssuer>();
+        services.AddScoped<IEmailVerificationTokenIssuer, EmailVerificationTokenIssuer>();
 
         // AutoMapper
         services.AddAutoMapper(cfg => cfg.AddMaps(assembly), assembly);

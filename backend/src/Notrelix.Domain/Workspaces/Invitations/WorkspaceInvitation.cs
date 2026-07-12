@@ -7,6 +7,8 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
     public string Email { get; private set; } = null!;
     public WorkspaceRole Role { get; private set; }
     public InvitationTokenHash Token { get; private set; } = null!;
+    public int HashVersion { get; private set; }
+    public int TokenGeneration { get; private set; }
     public WorkspaceInvitationStatus Status { get; private set; }
     public DateTimeOffset ExpiresAt { get; private set; }
     public Guid InvitedBy { get; private set; }
@@ -19,6 +21,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         string email,
         WorkspaceRole role,
         InvitationTokenHash token,
+        int hashVersion,
         Guid invitedBy,
         DateTimeOffset createdAt,
         TimeSpan? expiry = null)
@@ -40,6 +43,8 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
             Email = emailValue.Value,
             Role = role,
             Token = token,
+            HashVersion = hashVersion,
+            TokenGeneration = 1,
             Status = WorkspaceInvitationStatus.Pending,
             ExpiresAt = createdAt.Add(expiry ?? TimeSpan.FromDays(7)),
             InvitedBy = invitedBy
@@ -98,5 +103,33 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
 
         AddDomainEvent(new WorkspaceInvitationRevokedDomainEvent(
             AccountId, Id, WorkspaceId, revokedBy, revokedAt));
+    }
+
+    public void Resend(
+        InvitationTokenHash newTokenHash,
+        int newHashVersion,
+        DateTimeOffset resentAt,
+        TimeSpan expiry,
+        Guid resentBy)
+    {
+        EnsureNotDeleted();
+        Guard.NotNull(newTokenHash);
+        Guard.NotEmpty(resentBy);
+
+        if (Status is not WorkspaceInvitationStatus.Pending and
+            not WorkspaceInvitationStatus.Expired)
+        {
+            throw new BusinessRuleException(
+                "Only pending or expired invitations can be resent.");
+        }
+
+        Token = newTokenHash;
+        HashVersion = newHashVersion;
+        TokenGeneration = checked(TokenGeneration + 1);
+        Status = WorkspaceInvitationStatus.Pending;
+        ExpiresAt = resentAt.Add(expiry);
+
+        SetAuditOnUpdate(resentBy, resentAt);
+        IncrementVersion();
     }
 }

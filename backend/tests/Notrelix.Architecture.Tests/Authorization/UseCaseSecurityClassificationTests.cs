@@ -95,7 +95,9 @@ public class UseCaseSecurityClassificationTests
     private static readonly string[] SecurityInterfaces =
     [
         "IAnonymousRequest",
+        "IAnonymousTokenScopedRequest",
         "IAuthenticatedRequest",
+        "IAuthenticatedTokenScopedRequest",
         "ISystemInternalRequest",
         "IWorkspaceRequest",
         "IAccountRequest",
@@ -369,6 +371,32 @@ public class UseCaseSecurityClassificationTests
     }
 
     [Fact]
+    public void TokenScopedRequests_ShouldUseCompositeSecurityMarker()
+    {
+        var violations = new List<string>();
+
+        foreach (var file in GetRequestFiles())
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            var declaration = ReadDeclaration(content);
+            if (!declaration.Contains("ITokenScopedRequest", StringComparison.Ordinal))
+                continue;
+
+            var isComposite = declaration.Contains("IAnonymousTokenScopedRequest", StringComparison.Ordinal)
+                || declaration.Contains("IAuthenticatedTokenScopedRequest", StringComparison.Ordinal);
+            var isDirectlyMixed = declaration.Contains("IAnonymousRequest", StringComparison.Ordinal)
+                || declaration.Contains("IAuthenticatedRequest", StringComparison.Ordinal);
+
+            if (!isComposite && isDirectlyMixed)
+                violations.Add(Path.GetFileName(file));
+        }
+
+        violations.Should().BeEmpty(
+            "Token-scoped commands must use IAnonymousTokenScopedRequest or " +
+            "IAuthenticatedTokenScopedRequest rather than mixing security markers directly.");
+    }
+
+    [Fact]
     public void UnclassifiedCommands_Count_ShouldNotIncrease()
     {
         var allowlistedCount = KnownUnclassified.Values.Count(e =>
@@ -411,5 +439,70 @@ public class UseCaseSecurityClassificationTests
 
         HasWorkspaceIdProperty(contentWithCommentOnly).Should().BeFalse(
             "WorkspaceId in comments should not be detected as a real property");
+    }
+
+    [Fact]
+    public void WorkspaceMutatingCommands_ShouldRequireVerifiedEmail()
+    {
+        var workspaceMutatingCommands = new[]
+        {
+            "InviteMember.cs",
+            "ResendInvitation.cs",
+            "AcceptInvitation.cs",
+            "CreateWorkspace.cs",
+        };
+
+        var appPath = GetApplicationPath();
+        var violations = new List<string>();
+
+        foreach (var fileName in workspaceMutatingCommands)
+        {
+            var files = Directory.GetFiles(
+                Path.Combine(appPath, "Features"), fileName, SearchOption.AllDirectories);
+
+            foreach (var file in files)
+            {
+                var content = RemoveComments(File.ReadAllText(file));
+                if (!content.Contains("ICommand<")) continue;
+
+                if (!content.Contains("IRequireVerifiedEmail"))
+                {
+                    violations.Add($"{fileName}: missing IRequireVerifiedEmail");
+                }
+            }
+        }
+
+        violations.Should().BeEmpty(
+            $"Workspace-mutating commands must implement IRequireVerifiedEmail. " +
+            $"Violations: {string.Join(", ", violations)}");
+    }
+
+    [Fact]
+    public void ApplicationHandlers_ShouldNotReferenceEmailServices()
+    {
+        var appPath = GetApplicationPath();
+        var handlerFiles = Directory.GetFiles(
+                Path.Combine(appPath, "Features"), "*.cs", SearchOption.AllDirectories)
+            .Where(f => f.EndsWith("Handler.cs"))
+            .ToArray();
+
+        var forbidden = new[] { "IEmailService", "IEmailOutboxWriter" };
+        var violations = new List<string>();
+
+        foreach (var file in handlerFiles)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            foreach (var service in forbidden)
+            {
+                if (content.Contains(service))
+                {
+                    violations.Add($"{Path.GetFileName(file)}: references {service}");
+                }
+            }
+        }
+
+        violations.Should().BeEmpty(
+            $"Application handlers must not reference email services directly. " +
+            $"Use integration events instead. Violations: {string.Join(", ", violations)}");
     }
 }

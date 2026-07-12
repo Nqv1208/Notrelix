@@ -129,7 +129,7 @@ public class WorkspaceAuthTests : IClassFixture<NotrelixApiFactory>
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    // ── Invitation endpoints require auth ────────────────────
+    // ── Authenticated invitation endpoints ───────────────────
     [Fact]
     public async Task ListInvitations_Unauthenticated_ReturnsUnauthorized()
     {
@@ -165,19 +165,23 @@ public class WorkspaceAuthTests : IClassFixture<NotrelixApiFactory>
     {
         var client = _factory.CreateClient();
 
-        var response = await client.PostAsync("/api/v1/invitations/accept/test-token", null);
+        var response = await client.PostAsync(
+            "/api/v1/invitations/accept",
+            JsonContent(new { Token = "v1.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" }));
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
-    public async Task GetInvitationByToken_Unauthenticated_ReturnsUnauthorized()
+    public async Task GetInvitationByToken_Unauthenticated_IsPublic()
     {
         var client = _factory.CreateClient();
 
-        var response = await client.GetAsync("/api/v1/invitations/by-token/test-token");
+        var response = await client.PostAsync(
+            "/api/v1/invitations/preview",
+            JsonContent(new { Token = "v1.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" }));
 
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound, HttpStatusCode.BadRequest);
     }
 
     // ── Authenticated endpoints should pass auth check ───────

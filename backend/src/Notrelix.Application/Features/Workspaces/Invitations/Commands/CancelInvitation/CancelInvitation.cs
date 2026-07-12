@@ -15,8 +15,18 @@ public record CancelInvitationCommand(
 public class CancelInvitationCommandHandler : IRequestHandler<CancelInvitationCommand, Result>
 {
     private readonly IWorkspaceDbContext _context;
+    private readonly ICurrentRequestContext _requestContext;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public CancelInvitationCommandHandler(IWorkspaceDbContext context) => _context = context;
+    public CancelInvitationCommandHandler(
+        IWorkspaceDbContext context,
+        ICurrentRequestContext requestContext,
+        IDateTimeProvider dateTimeProvider)
+    {
+        _context = context;
+        _requestContext = requestContext;
+        _dateTimeProvider = dateTimeProvider;
+    }
 
     public async Task<Result> Handle(CancelInvitationCommand request, CancellationToken ct)
     {
@@ -26,7 +36,12 @@ public class CancelInvitationCommandHandler : IRequestHandler<CancelInvitationCo
         if (invitation is null)
             throw new NotFoundException(nameof(WorkspaceInvitation), request.InvitationId);
 
-        _context.WorkspaceInvitations.Remove(invitation);
+        var now = _dateTimeProvider.UtcNow;
+        if (now >= invitation.ExpiresAt)
+            invitation.Expire(now);
+        else
+            invitation.Revoke(_requestContext.UserId, now);
+
         return Result.Success();
     }
 }

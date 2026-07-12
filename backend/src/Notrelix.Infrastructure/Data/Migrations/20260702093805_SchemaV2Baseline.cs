@@ -910,10 +910,12 @@ namespace Notrelix.Infrastructure.Migrations
                     recipient_name = table.Column<string>(type: "character varying(240)", maxLength: 240, nullable: true),
                     template_name = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: false),
                     template_version = table.Column<int>(type: "integer", nullable: false, defaultValue: 1),
-                    subject = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: false),
+                    subject = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: true),
                     body_html = table.Column<string>(type: "text", nullable: true),
                     body_text = table.Column<string>(type: "text", nullable: true),
-                    template_data_json = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'{}'::jsonb"),
+                    template_data_json = table.Column<string>(type: "jsonb", nullable: true),
+                    content_mode = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, defaultValue: "Templated"),
+                    lock_token = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: true),
                     headers_json = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'{}'::jsonb"),
                     priority = table.Column<int>(type: "integer", nullable: false, defaultValue: 100),
                     status = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, defaultValue: "Pending"),
@@ -929,7 +931,9 @@ namespace Notrelix.Infrastructure.Migrations
                     last_error_code = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: true),
                     error_message = table.Column<string>(type: "text", nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    sensitive_payload_cleared_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    sensitive_payload_expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -957,7 +961,11 @@ namespace Notrelix.Infrastructure.Migrations
                     status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     used_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    expired_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    expired_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    hash_version = table.Column<int>(type: "integer", nullable: false, defaultValue: 1),
+                    email_snapshot = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: true),
+                    revocation_reason = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    revoked_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -1617,7 +1625,10 @@ namespace Notrelix.Infrastructure.Migrations
                     status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     used_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    expired_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    expired_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    hash_version = table.Column<int>(type: "integer", nullable: false, defaultValue: 1),
+                    revocation_reason = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    revoked_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -2655,7 +2666,9 @@ namespace Notrelix.Infrastructure.Migrations
                     workspace_id = table.Column<Guid>(type: "uuid", nullable: false),
                     email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     role = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    token = table.Column<string>(type: "text", nullable: false),
+                    token_hash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    hash_version = table.Column<int>(type: "integer", nullable: false, defaultValue: 1),
+                    token_generation = table.Column<int>(type: "integer", nullable: false, defaultValue: 1),
                     status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     invited_by = table.Column<Guid>(type: "uuid", nullable: false),
@@ -4847,10 +4860,12 @@ namespace Notrelix.Infrastructure.Migrations
                 filter: "deleted_at IS NULL");
 
             migrationBuilder.CreateIndex(
-                name: "idx_email_verification_tokens_user_id",
+                name: "ux_email_verification_tokens_one_active_per_user",
                 schema: "identity",
                 table: "email_verification_tokens",
-                column: "user_id");
+                column: "user_id",
+                unique: true,
+                filter: "status = 'Active' AND deleted_at IS NULL");
 
             migrationBuilder.CreateIndex(
                 name: "idx_entitlements_account_id",
@@ -5932,6 +5947,13 @@ namespace Notrelix.Infrastructure.Migrations
                 column: "workspace_id");
 
             migrationBuilder.CreateIndex(
+                name: "ux_workspace_invitations_token_hash",
+                schema: "workspace",
+                table: "workspace_invitations",
+                column: "token_hash",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "idx_workspace_members_user_id",
                 schema: "workspace",
                 table: "workspace_members",
@@ -5985,6 +6007,18 @@ namespace Notrelix.Infrastructure.Migrations
                 columns: new[] { "account_id", "slug" },
                 unique: true,
                 filter: "deleted_at IS NULL");
+
+            migrationBuilder.AddCheckConstraint(
+                name: "ck_email_outbox_content_mode",
+                schema: "notifications",
+                table: "email_outbox",
+                sql: "(content_mode = 'Rendered' AND subject IS NOT NULL AND (body_html IS NOT NULL OR body_text IS NOT NULL) AND template_data_json IS NULL) OR (content_mode = 'Templated' AND subject IS NULL AND body_html IS NULL AND body_text IS NULL AND template_data_json IS NOT NULL AND template_data_json <> '{}'::jsonb)");
+
+            migrationBuilder.AddCheckConstraint(
+                name: "ck_email_outbox_sensitive_payload_state",
+                schema: "notifications",
+                table: "email_outbox",
+                sql: "sensitive_payload_cleared_at IS NULL OR template_data_json IS NULL");
         }
 
         /// <inheritdoc />

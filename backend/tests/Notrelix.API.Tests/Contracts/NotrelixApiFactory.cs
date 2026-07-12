@@ -10,6 +10,7 @@ using Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthLogin;
 using Notrelix.Application.Features.Identity.OAuth.Commands.StartOAuthLogin;
 using Notrelix.Application.Features.Identity.OAuth.DTOs;
 using Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile;
+using Notrelix.Application.Features.Identity.Registration.Commands.Register;
 using Notrelix.Application.Features.Identity.Auth.GetBootstrap;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember;
@@ -236,6 +237,17 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             if (concurrencyDescriptor is not null)
                 services.Remove(concurrencyDescriptor);
 
+            // Remove VerifiedEmailBehavior — queries IIdentityUserLookupService
+            // against InMemory DB where no test user exists, causing 401.
+            var verifiedEmailDescriptor = services.FirstOrDefault(sd =>
+                !sd.IsKeyedService &&
+                sd.ServiceType.IsGenericType &&
+                sd.ServiceType.GetGenericTypeDefinition() == typeof(IPipelineBehavior<,>) &&
+                sd.ImplementationType is { IsGenericType: true } &&
+                sd.ImplementationType.GetGenericTypeDefinition() == typeof(VerifiedEmailBehavior<,>));
+            if (verifiedEmailDescriptor is not null)
+                services.Remove(verifiedEmailDescriptor);
+
             // Pipeline behaviors require IPermissionEvaluator.
             services.RemoveAll<IPermissionEvaluator>();
             services.AddScoped<IPermissionEvaluator>(_ =>
@@ -310,6 +322,8 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                     Guid.NewGuid(), "Test Workspace", "Inviter", "test@test.com", "Member", false, false)));
             MockWorkspaceHandler<CreateWorkspaceCommand, Result<Guid>>(services,
                 Result<Guid>.Success(Guid.NewGuid()));
+            MockWorkspaceHandler<RegisterCommand, Result<AuthResult>>(services,
+                Result<AuthResult>.Success(CreateAuthResult()));
 
             services.AddAuthentication(defaultScheme: "Test")
                 .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });

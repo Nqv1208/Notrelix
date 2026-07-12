@@ -27,6 +27,16 @@ public sealed class EmailDeliveryAttempt
         DurationMs = (int)(completedAt - StartedAt).TotalMilliseconds;
     }
 
+    public void Restart(DateTimeOffset startedAt)
+    {
+        Status = "InProgress";
+        StartedAt = startedAt;
+        CompletedAt = null;
+        DurationMs = null;
+        ErrorCode = null;
+        ErrorMessage = null;
+    }
+
     public void MarkFailed(string? errorCode, string? errorMessage, DateTimeOffset completedAt)
     {
         Status = "Failed";

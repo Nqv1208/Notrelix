@@ -14,6 +14,7 @@ public static class MapInvitationEndpoints
 
         wsGroup.MapListWorkspaceInvitations();
         wsGroup.MapCancelInvitation();
+        wsGroup.MapResendInvitation();
 
         var invitationsGroup = app
             .MapGroup("/api/v1/invitations")

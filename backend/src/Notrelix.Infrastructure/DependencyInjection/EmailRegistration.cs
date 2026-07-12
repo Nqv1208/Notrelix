@@ -1,4 +1,9 @@
+using Notrelix.Application.Features.Notifications.WorkspaceInvitations.Abstractions;
+using Notrelix.Application.Features.Notifications.Email;
+using Notrelix.Infrastructure.Configuration;
 using Notrelix.Infrastructure.Email;
+using Notrelix.Infrastructure.Notifications.Links;
+using Notrelix.Infrastructure.Notifications.Email;
 using Notrelix.Infrastructure.Options;
 
 namespace Notrelix.Infrastructure;
@@ -55,6 +60,22 @@ public static class EmailRegistration
         }
 
         services.AddScoped<IEmailOutboxWriter, EmailOutboxWriter>();
+        services.AddScoped<IWorkspaceInvitationLinkBuilder, WorkspaceInvitationLinkBuilder>();
+        services.AddScoped<IEmailVerificationLinkBuilder, EmailVerificationLinkBuilder>();
+        services.AddScoped<IEmailTemplateMaterializer, WorkspaceInvitationEmailMaterializer>();
+        services.AddScoped<IEmailTemplateMaterializer, EmailVerificationEmailMaterializer>();
+        services.AddScoped<IEmailTemplateMaterializerRegistry, EmailTemplateMaterializerRegistry>();
+
+        services
+            .AddOptions<FrontendOptions>()
+            .Bind(configuration.GetSection(FrontendOptions.SectionName))
+            .ValidateDataAnnotations()
+            .Validate(
+                o => o.AppBaseUrl is not null
+                    && o.AppBaseUrl.IsAbsoluteUri
+                    && o.AppBaseUrl.Scheme is "http" or "https",
+                "Frontend:AppBaseUrl must be an absolute http(s) URI.")
+            .ValidateOnStart();
 
         return services;
     }

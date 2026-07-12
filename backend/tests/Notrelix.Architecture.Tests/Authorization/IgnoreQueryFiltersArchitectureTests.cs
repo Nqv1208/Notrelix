@@ -83,6 +83,12 @@ public class IgnoreQueryFiltersArchitectureTests
         ["ResourceScopeResolver.cs"] = new("ResourceScopeResolver.cs", AllowlistClassification.InfrastructureBootstrap,
             "Resource scope resolver bypasses EF query filter to resolve resource tenant context before RLS is set",
             "Keep as InfrastructureBootstrap — resolver runs before RLS session is established"),
+        ["EmailTemplateMaterialization.cs"] = new("EmailTemplateMaterialization.cs", AllowlistClassification.Intentional,
+            "Email template materialization bypasses EF query filter to resolve templates across tenant boundaries",
+            "Keep as Intentional — cross-tenant template resolution"),
+        ["EmailVerificationTokenIssuer.cs"] = new("EmailVerificationTokenIssuer.cs", AllowlistClassification.Intentional,
+            "Token issuer bypasses EF query filter to revoke prior tokens across tenant boundaries",
+            "Keep as Intentional — cross-tenant token revocation"),
     };
 
     [Fact]

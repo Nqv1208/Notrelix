@@ -17,10 +17,16 @@ public class WorkspaceInvitationConfiguration : IEntityTypeConfiguration<Workspa
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.ExpiresAt).HasColumnName("expires_at").IsRequired();
         builder.Property(x => x.InvitedBy).HasColumnName("invited_by").IsRequired();
+        builder.Property(x => x.HashVersion).HasColumnName("hash_version").IsRequired().HasDefaultValue(1);
+        builder.Property(x => x.TokenGeneration).HasColumnName("token_generation").IsRequired().HasDefaultValue(1);
 
         builder.OwnsOne(x => x.Token, token =>
         {
-            token.Property(t => t.Value).HasColumnName("token").IsRequired();
+            token.Property(t => t.Value)
+                .HasColumnName("token_hash")
+                .HasMaxLength(InvitationTokenHash.HashLength)
+                .HasColumnType($"character varying({InvitationTokenHash.HashLength})")
+                .IsRequired();
         });
 
         builder.Ignore(x => x.IsDeleted);
@@ -36,5 +42,8 @@ public class WorkspaceInvitationConfiguration : IEntityTypeConfiguration<Workspa
 
         builder.HasIndex(x => x.WorkspaceId).HasDatabaseName("idx_workspace_invitations_workspace_id");
         builder.HasIndex(x => x.Email).HasDatabaseName("idx_workspace_invitations_email");
+        // Token is owned into the same table; its unique index is maintained by
+        // the migration SQL because EF cannot express an index over an owned
+        // property with a simple member-access expression.
     }
 }

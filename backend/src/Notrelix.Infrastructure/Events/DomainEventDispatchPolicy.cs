@@ -333,9 +333,11 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
         Add<ApiTokenSoftDeletedDomainEvent>(d);
         Add<EmailVerificationTokenCreatedDomainEvent>(d);
         Add<EmailVerificationTokenExpiredDomainEvent>(d);
+        Add<EmailVerificationTokenRevokedDomainEvent>(d);
         Add<EmailVerificationTokenUsedDomainEvent>(d);
         Add<PasswordResetTokenCreatedDomainEvent>(d);
         Add<PasswordResetTokenExpiredDomainEvent>(d);
+        Add<PasswordResetTokenRevokedDomainEvent>(d);
         Add<PasswordResetTokenUsedDomainEvent>(d);
         Add<UserActivatedDomainEvent>(d);
         Add<UserDeactivatedDomainEvent>(d);

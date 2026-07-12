@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
@@ -10,15 +11,13 @@ public record AcceptInvitationResultDto(string WorkspaceSlug, Guid WorkspaceId);
 
 public record AcceptInvitationCommand(string Token)
     : ICommand<Result<AcceptInvitationResultDto>>,
-      IAuthenticatedRequest,
-      ITokenScopedRequest,
+      IAuthenticatedTokenScopedRequest,
+      IRequireVerifiedEmail,
       ITransactionalRequest
 {
     TokenPurpose ITokenScopedRequest.TokenPurpose =>
         TokenPurpose.WorkspaceInvitation;
 
-    UseCaseSecurityKind IUseCaseSecurityRequirement.SecurityKind =>
-        UseCaseSecurityKind.TokenScoped;
 }
 
 public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCommand, Result<AcceptInvitationResultDto>>
@@ -27,6 +26,7 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
     private readonly IIdentityUserLookupService _identityUserLookup;
     private readonly IAccountMembershipProvisioner _accountMembershipProvisioner;
     private readonly IAccountStatusReader _accountStatusReader;
+    private readonly IOneTimeTokenService _oneTimeTokenService;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
@@ -35,6 +35,7 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         IIdentityUserLookupService identityUserLookup,
         IAccountMembershipProvisioner accountMembershipProvisioner,
         IAccountStatusReader accountStatusReader,
+        IOneTimeTokenService oneTimeTokenService,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider)
     {
@@ -42,6 +43,7 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         _identityUserLookup = identityUserLookup;
         _accountMembershipProvisioner = accountMembershipProvisioner;
         _accountStatusReader = accountStatusReader;
+        _oneTimeTokenService = oneTimeTokenService;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
@@ -69,12 +71,26 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
             return Result<AcceptInvitationResultDto>.Failure(
                 "Email must be confirmed before accepting workspace invitations.");
 
-        var tokenHash = InvitationTokenHash.Create(request.Token);
+        ParsedOneTimeToken presentedHash;
+        try
+        {
+            presentedHash = _oneTimeTokenService.ParseAndHash(
+                request.Token,
+                TokenPurpose.WorkspaceInvitation);
+        }
+        catch (InvalidOneTimeTokenException)
+        {
+            return Result<AcceptInvitationResultDto>.Failure(
+                "Invalid or expired invitation token.");
+        }
+
         var invitation = await _workspaceContext.WorkspaceInvitations
-            .FirstOrDefaultAsync(i => i.Token == tokenHash, ct);
+            .FirstOrDefaultAsync(
+                i => i.Token.Value == presentedHash.TokenHash
+                    && i.HashVersion == presentedHash.HashVersion, ct);
 
         if (invitation is null)
-            throw new NotFoundException(nameof(WorkspaceInvitation), request.Token);
+            throw new NotFoundException(nameof(WorkspaceInvitation), "Invalid invitation token.");
 
         var now = _dateTimeProvider.UtcNow;
 
