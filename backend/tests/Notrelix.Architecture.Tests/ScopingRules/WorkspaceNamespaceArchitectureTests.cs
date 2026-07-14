@@ -170,6 +170,8 @@ public class WorkspaceNamespaceArchitectureTests
     {
         ["AcceptInvitationCommand"] = new("AcceptInvitationCommand", AllowlistClassification.PublicCommand,
             "Token-scoped invitation command — auth required, no resource scope", "Keep as-is"),
+        ["DeclineInvitationCommand"] = new("DeclineInvitationCommand", AllowlistClassification.PublicCommand,
+            "Token-scoped invitation command — auth required, no resource scope", "Keep as-is"),
         ["ProvisionPersonalWorkspaceCommand"] = new("ProvisionPersonalWorkspaceCommand", AllowlistClassification.SystemCommand,
             "System-internal background command — no user request path", "Keep as-is"),
     };

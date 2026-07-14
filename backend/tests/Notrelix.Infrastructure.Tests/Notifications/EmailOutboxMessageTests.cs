@@ -85,4 +85,62 @@ public sealed class EmailOutboxMessageTests
         message.TemplateDataJson.Should().BeNull();
         message.SensitivePayloadClearedAt.Should().NotBeNull();
     }
+
+    [Fact]
+    public void CancelledMessage_ShouldSetContentModePurgedAndClearPayload()
+    {
+        var message = EmailOutboxMessage.CreateTemplated(
+            new QueueTemplatedEmailRequest<EmailVerificationEmailPayload>(
+                "email-verification:id",
+                "person@example.com",
+                null,
+                null,
+                Guid.NewGuid(),
+                "identity",
+                "email-verification",
+                1,
+                new EmailVerificationEmailPayload(
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    new ProtectedSecretEnvelope("protected"),
+                    Now.AddHours(1)),
+                Now.AddHours(1)),
+            Now);
+
+        message.MarkCancelled("test-reason", Now);
+
+        message.Status.Should().Be("Cancelled");
+        message.ContentMode.Should().Be(EmailContentMode.Purged);
+        message.TemplateDataJson.Should().BeNull();
+        message.SensitivePayloadClearedAt.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void DeadLetterMessage_ShouldSetContentModePurgedAndClearPayload()
+    {
+        var message = EmailOutboxMessage.CreateTemplated(
+            new QueueTemplatedEmailRequest<EmailVerificationEmailPayload>(
+                "email-verification:id",
+                "person@example.com",
+                null,
+                null,
+                Guid.NewGuid(),
+                "identity",
+                "email-verification",
+                1,
+                new EmailVerificationEmailPayload(
+                    Guid.NewGuid(),
+                    Guid.NewGuid(),
+                    new ProtectedSecretEnvelope("protected"),
+                    Now.AddHours(1)),
+                Now.AddHours(1)),
+            Now);
+
+        message.MarkDeadLetter(Now);
+
+        message.Status.Should().Be("DeadLetter");
+        message.ContentMode.Should().Be(EmailContentMode.Purged);
+        message.TemplateDataJson.Should().BeNull();
+        message.SensitivePayloadClearedAt.Should().NotBeNull();
+    }
 }

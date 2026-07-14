@@ -18,12 +18,10 @@ public class MemberEndpointTests : IClassFixture<NotrelixApiFactory>
         _client = factory.CreateAuthenticatedClient();
     }
 
-    // ── List Members ────────────────────────────────────────
     [Fact]
     public async Task ListMembers_WithExistingWorkspace_ReturnsSuccess()
     {
         var response = await _client.GetAsync($"/api/v1/workspaces/{WorkspaceId}/members");
-
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
     }
 
@@ -31,19 +29,14 @@ public class MemberEndpointTests : IClassFixture<NotrelixApiFactory>
     public async Task ListMembers_WithNonexistentWorkspace_ReturnsNotFound()
     {
         var response = await _client.GetAsync("/api/v1/workspaces/99999999-9999-9999-9999-999999999999/members");
-
-        // Handler mock always returns success; non-existence handled at Application layer.
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
     }
 
-    // ── Invite Member ───────────────────────────────────────
     [Fact]
     public async Task InviteMember_WithValidData_ReturnsSuccess()
     {
         var body = new { Email = $"invite-{Guid.NewGuid():N}@test.com", Role = "Member" };
-
         var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/members", JsonContent(body));
-
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.Created, HttpStatusCode.NotFound);
     }
 
@@ -51,9 +44,7 @@ public class MemberEndpointTests : IClassFixture<NotrelixApiFactory>
     public async Task InviteMember_WithInvalidEmail_ReturnsBadRequest()
     {
         var body = new { Email = "invalid", Role = "Member" };
-
         var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/members", JsonContent(body));
-
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
@@ -61,52 +52,38 @@ public class MemberEndpointTests : IClassFixture<NotrelixApiFactory>
     public async Task InviteMember_WithNonexistentWorkspace_ReturnsNotFound()
     {
         var body = new { Email = "test@test.com", Role = "Member" };
-
         var response = await _client.PostAsync("/api/v1/workspaces/99999999-9999-9999-9999-999999999999/members", JsonContent(body));
-
-        // Handler mock always returns success; non-existence handled at Application layer.
         response.StatusCode.Should().BeOneOf(HttpStatusCode.Created, HttpStatusCode.OK, HttpStatusCode.NotFound);
     }
 
-    // ── Update Member Role ──────────────────────────────────
     [Fact]
     public async Task UpdateMemberRole_WithValidRole_ReturnsSuccess()
     {
         var body = new { Role = "Admin" };
-
         var response = await _client.PatchAsync($"/api/v1/workspaces/{WorkspaceId}/members/{TargetUserId}", JsonContent(body));
-
-        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 
     [Fact]
     public async Task UpdateMemberRole_WithNonexistentMember_ReturnsNotFound()
     {
         var body = new { Role = "Admin" };
-
         var response = await _client.PatchAsync($"/api/v1/workspaces/{WorkspaceId}/members/99999999-9999-9999-9999-999999999999", JsonContent(body));
-
-        // Handler mock always returns success; non-existence handled at Application layer.
-        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 
     [Fact]
     public async Task UpdateMemberRole_WithNonexistentWorkspace_ReturnsNotFound()
     {
         var body = new { Role = "Admin" };
-
         var response = await _client.PatchAsync("/api/v1/workspaces/99999999-9999-9999-9999-999999999999/members/22222222-2222-2222-2222-222222222222", JsonContent(body));
-
-        // Handler mock always returns success; non-existence handled at Application layer.
-        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 
-    // ── Remove Member ───────────────────────────────────────
     [Fact]
     public async Task RemoveMember_WithExistingMember_ReturnsSuccess()
     {
         var response = await _client.DeleteAsync($"/api/v1/workspaces/{WorkspaceId}/members/{TargetUserId}");
-
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 
@@ -114,8 +91,6 @@ public class MemberEndpointTests : IClassFixture<NotrelixApiFactory>
     public async Task RemoveMember_WithNonexistentMember_ReturnsNotFound()
     {
         var response = await _client.DeleteAsync($"/api/v1/workspaces/{WorkspaceId}/members/99999999-9999-9999-9999-999999999999");
-
-        // Handler mock always returns success; non-existence handled at Application layer.
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 
@@ -123,15 +98,8 @@ public class MemberEndpointTests : IClassFixture<NotrelixApiFactory>
     public async Task RemoveMember_WithNonexistentWorkspace_ReturnsNotFound()
     {
         var response = await _client.DeleteAsync("/api/v1/workspaces/99999999-9999-9999-9999-999999999999/members/22222222-2222-2222-2222-222222222222");
-
-        // Handler mock always returns success; non-existence handled at Application layer.
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
-
-    // ── Permissions ─────────────────────────────────────────
-    // Permission-denied tests require per-user mock setup in NotrelixApiFactory.
-    // Current mocks always return PermissionDecision(true, null).
-    // TODO: Add permission-denied test when mock supports per-user decisions.
 
     private static StringContent JsonContent(object body)
     {

@@ -97,7 +97,7 @@ public class WorkspaceInvitationTests
         var expiry = TimeSpan.FromHours(1);
         var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"), 1, Guid.NewGuid(), now, expiry);
 
-        var acceptedAt = now.Add(expiry); // exactly at ExpiresAt
+        var acceptedAt = now.Add(expiry);
         Action act = () => invitation.Accept(Guid.NewGuid(), acceptedAt);
 
         act.Should().Throw<BusinessRuleException>().WithMessage("Invitation has expired.");
@@ -124,7 +124,7 @@ public class WorkspaceInvitationTests
     }
 
     [Fact]
-    public void Resend_ShouldIncrementTokenGeneration()
+    public void Resend_ShouldIncrementTokenGeneration_AndRaiseEvent()
     {
         var now = DateTimeOffset.UtcNow;
         var invitation = WorkspaceInvitation.Create(
@@ -136,15 +136,146 @@ public class WorkspaceInvitationTests
             1,
             Guid.NewGuid(),
             now);
+        var actor = Guid.NewGuid();
 
         invitation.Resend(
             InvitationTokenHash.Create("b1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"),
             1,
             now.AddMinutes(1),
             TimeSpan.FromDays(7),
-            Guid.NewGuid());
+            actor);
 
         invitation.TokenGeneration.Should().Be(2);
         invitation.Status.Should().Be(WorkspaceInvitationStatus.Pending);
+        invitation.DomainEvents.Should().ContainSingle(e => e is WorkspaceInvitationResentDomainEvent);
+    }
+
+    [Fact]
+    public void Decline_ShouldSucceed_AndRaiseEvent()
+    {
+        var invitation = WorkspaceInvitation.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "test@example.com",
+            WorkspaceRole.Member,
+            InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"),
+            1,
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow);
+        var actor = Guid.NewGuid();
+
+        invitation.Decline(actor, DateTimeOffset.UtcNow);
+
+        invitation.Status.Should().Be(WorkspaceInvitationStatus.Declined);
+        invitation.DomainEvents.Should().ContainSingle(e => e is WorkspaceInvitationDeclinedDomainEvent);
+    }
+
+    [Fact]
+    public void Decline_ShouldThrow_WhenNotPending()
+    {
+        var invitation = WorkspaceInvitation.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "test@example.com",
+            WorkspaceRole.Member,
+            InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"),
+            1,
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow);
+        invitation.Expire(DateTimeOffset.UtcNow);
+
+        var act = () => invitation.Decline(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        act.Should().Throw<BusinessRuleException>().WithMessage("Invitation is not pending.");
+    }
+
+    [Fact]
+    public void Decline_ShouldThrow_WhenDeleted()
+    {
+        var invitation = WorkspaceInvitation.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "test@example.com",
+            WorkspaceRole.Member,
+            InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"),
+            1,
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow);
+        invitation.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        var act = () => invitation.Decline(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        act.Should().Throw<DomainException>().WithMessage("*deleted*");
+    }
+
+    [Fact]
+    public void ChangeRole_ShouldSucceed_AndRaiseEvent()
+    {
+        var invitation = WorkspaceInvitation.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "test@example.com",
+            WorkspaceRole.Member,
+            InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"),
+            1,
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow);
+        var actor = Guid.NewGuid();
+
+        invitation.ChangeRole(WorkspaceRole.Admin, actor, DateTimeOffset.UtcNow);
+
+        invitation.Role.Should().Be(WorkspaceRole.Admin);
+        invitation.DomainEvents.Should().ContainSingle(e => e is WorkspaceInvitationRoleChangedDomainEvent);
+    }
+
+    [Fact]
+    public void ChangeRole_WhenSameRole_ShouldBeNoOp()
+    {
+        var invitation = WorkspaceInvitation.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "test@example.com",
+            WorkspaceRole.Member,
+            InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"),
+            1,
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow);
+        invitation.ClearDomainEvents();
+
+        invitation.ChangeRole(WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        invitation.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ChangeRole_ShouldThrow_WhenNotPending()
+    {
+        var invitation = WorkspaceInvitation.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "test@example.com",
+            WorkspaceRole.Member,
+            InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"),
+            1,
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow);
+        invitation.Expire(DateTimeOffset.UtcNow);
+
+        var act = () => invitation.ChangeRole(WorkspaceRole.Admin, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        act.Should().Throw<BusinessRuleException>().WithMessage("Invitation is not pending.");
+    }
+
+    [Fact]
+    public void Create_ShouldRejectOwnerRole()
+    {
+        var act = () => WorkspaceInvitation.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "test@example.com",
+            WorkspaceRole.Owner,
+            InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"),
+            1,
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*owner*");
     }
 }

@@ -231,6 +231,9 @@ internal sealed class EmailDispatcher : BackgroundService
     {
         cancellationToken.ThrowIfCancellationRequested();
 
+        if (message.ContentMode == EmailContentMode.Purged)
+            return Task.FromResult<RenderedEmail?>(null);
+
         if (message.ContentMode == EmailContentMode.Rendered)
         {
             return Task.FromResult<RenderedEmail?>(

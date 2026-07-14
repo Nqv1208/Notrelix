@@ -25,6 +25,42 @@ using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspa
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.RestoreWorkspace;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.UpdateWorkspaceProfile;
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspace;
+using Notrelix.Application.Features.Workspaces.Workspaces.Commands.UnarchiveWorkspace;
+using Notrelix.Application.Features.Workspaces.Workspaces.Commands.DeleteWorkspace;
+using Notrelix.Application.Features.Workspaces.Workspaces.Commands.TransferOwnership;
+using Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetAccountWorkspaces;
+using Notrelix.Application.Features.Workspaces.Workspaces.Queries.ResolveSlug;
+using Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSettings;
+using Notrelix.Application.Features.Workspaces.Settings.Commands.UpdateWorkspaceSettings;
+using Notrelix.Application.Features.Workspaces.Members.Commands.AddMember;
+using Notrelix.Application.Features.Workspaces.Members.Commands.SuspendMember;
+using Notrelix.Application.Features.Workspaces.Members.Commands.ActivateMember;
+using Notrelix.Application.Features.Workspaces.Members.Commands.RestoreMember;
+using Notrelix.Application.Features.Workspaces.Invitations.Commands.DeclineInvitation;
+using Notrelix.Application.Features.Workspaces.Invitations.Commands.ChangeInvitationRole;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.CreateSpace;
+using Notrelix.Application.Features.Workspaces.Spaces.Queries.GetWorkspaceSpaces;
+using Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.RenameSpace;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.UpdateSpaceDescription;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.ChangeSpaceVisibility;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.ChangeSpaceType;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.ArchiveSpace;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.UnarchiveSpace;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.DeleteSpace;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.RestoreSpace;
+using Notrelix.Application.Features.Workspaces.Teams.Commands.CreateTeam;
+using Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeams;
+using Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam;
+using Notrelix.Application.Features.Workspaces.Teams.Commands.RenameTeam;
+using Notrelix.Application.Features.Workspaces.Teams.Commands.UpdateTeamDescription;
+using Notrelix.Application.Features.Workspaces.Teams.Commands.AddTeamMember;
+using Notrelix.Application.Features.Workspaces.Teams.Commands.RemoveTeamMember;
+using Notrelix.Application.Features.Workspaces.Teams.Commands.ChangeTeamMemberRole;
+using Notrelix.Application.Features.Workspaces.Teams.Commands.ArchiveTeam;
+using Notrelix.Application.Features.Workspaces.Teams.Commands.UnarchiveTeam;
+using Notrelix.Application.Features.Workspaces.Teams.Commands.DeleteTeam;
+using Notrelix.Application.Features.Workspaces.Teams.Commands.RestoreTeam;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -322,6 +358,50 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                     Guid.NewGuid(), "Test Workspace", "Inviter", "test@test.com", "Member", false, false)));
             MockWorkspaceHandler<CreateWorkspaceCommand, Result<Guid>>(services,
                 Result<Guid>.Success(Guid.NewGuid()));
+            MockWorkspaceHandler<UnarchiveWorkspaceCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<DeleteWorkspaceCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<TransferOwnershipCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<GetAccountWorkspacesQuery, Result<List<WorkspaceDto>>>(services,
+                Result<List<WorkspaceDto>>.Success(new List<WorkspaceDto>()));
+            MockWorkspaceHandler<ResolveSlugQuery, Result<WorkspaceDto>>(services,
+                Result<WorkspaceDto>.Success(new WorkspaceDto(
+                    Guid.NewGuid(), "Mocked", "mocked", null, false, "Free", null, null, null, false, 0, DateTime.UtcNow, null)));
+            MockWorkspaceHandler<GetWorkspaceSettingsQuery, Result<WorkspaceSettingsDto>>(services,
+                Result<WorkspaceSettingsDto>.Success(new WorkspaceSettingsDto(false, false, false, "Member", 7)));
+            MockWorkspaceHandler<UpdateWorkspaceSettingsCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<AddMemberCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<SuspendMemberCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<ActivateMemberCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<RestoreMemberCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<DeclineInvitationCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<ChangeInvitationRoleCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<CreateSpaceCommand, Result<Guid>>(services, Result<Guid>.Success(Guid.NewGuid()));
+            MockWorkspaceHandler<GetWorkspaceSpacesQuery, Result<List<SpaceDto>>>(services,
+                Result<List<SpaceDto>>.Success(new List<SpaceDto>()));
+            MockWorkspaceHandler<GetSpaceQuery, Result<SpaceDto>>(services,
+                Result<SpaceDto>.Success(new SpaceDto(Guid.NewGuid(), "Mocked", null, "Workspace", "Folder", false, DateTime.UtcNow)));
+            MockWorkspaceHandler<RenameSpaceCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<UpdateSpaceDescriptionCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<ChangeSpaceVisibilityCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<ChangeSpaceTypeCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<ArchiveSpaceCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<UnarchiveSpaceCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<DeleteSpaceCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<RestoreSpaceCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<CreateTeamCommand, Result<Guid>>(services, Result<Guid>.Success(Guid.NewGuid()));
+            MockWorkspaceHandler<GetWorkspaceTeamsQuery, Result<List<TeamDto>>>(services,
+                Result<List<TeamDto>>.Success(new List<TeamDto>()));
+            MockWorkspaceHandler<GetTeamQuery, Result<TeamDto>>(services,
+                Result<TeamDto>.Success(new TeamDto(Guid.NewGuid(), "Mocked", null, false, 0, DateTime.UtcNow)));
+            MockWorkspaceHandler<RenameTeamCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<UpdateTeamDescriptionCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<AddTeamMemberCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<RemoveTeamMemberCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<ChangeTeamMemberRoleCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<ArchiveTeamCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<UnarchiveTeamCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<DeleteTeamCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<RestoreTeamCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<RegisterCommand, Result<AuthResult>>(services,
                 Result<AuthResult>.Success(CreateAuthResult()));
 

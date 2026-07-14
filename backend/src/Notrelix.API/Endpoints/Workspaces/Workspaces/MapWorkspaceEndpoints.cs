@@ -22,7 +22,10 @@ public static class MapWorkspaceEndpoints
         byIdGroup.MapGetWorkspace();
         byIdGroup.MapUpdateWorkspaceProfile();
         byIdGroup.MapArchiveWorkspace();
+        byIdGroup.MapUnarchiveWorkspace();
         byIdGroup.MapRestoreWorkspace();
+        byIdGroup.MapDeleteWorkspace();
+        byIdGroup.MapTransferOwnership();
 
         var accountGroup = app
             .MapGroup("/api/v1/accounts/{accountId:guid}/workspaces")
@@ -30,6 +33,9 @@ public static class MapWorkspaceEndpoints
             .WithOpenApi();
 
         accountGroup.MapCreateWorkspace();
+        accountGroup.MapGetAccountWorkspaces();
+
+        app.MapResolveSlug();
 
         return app;
     }

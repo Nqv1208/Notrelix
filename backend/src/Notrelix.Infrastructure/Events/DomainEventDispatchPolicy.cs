@@ -492,23 +492,34 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
         Add<WorkspaceMemberSuspendedDomainEvent>(d);
         Add<SpaceArchivedDomainEvent>(d);
         Add<SpaceCreatedDomainEvent>(d);
-        Add<SpaceMovedDomainEvent>(d);
+        Add<SpaceDescriptionUpdatedDomainEvent>(d);
         Add<SpaceRenamedDomainEvent>(d);
         Add<SpaceRestoredDomainEvent>(d);
         Add<SpaceSoftDeletedDomainEvent>(d);
+        Add<SpaceTypeChangedDomainEvent>(d);
+        Add<SpaceUnarchivedDomainEvent>(d);
+        Add<SpaceVisibilityChangedDomainEvent>(d);
         Add<TeamArchivedDomainEvent>(d);
         Add<TeamCreatedDomainEvent>(d);
+        Add<TeamDescriptionUpdatedDomainEvent>(d);
         Add<TeamMemberAddedDomainEvent>(d);
         Add<TeamMemberRemovedDomainEvent>(d);
+        Add<TeamMemberRoleChangedDomainEvent>(d);
         Add<TeamRenamedDomainEvent>(d);
         Add<TeamRestoredDomainEvent>(d);
         Add<TeamSoftDeletedDomainEvent>(d);
+        Add<TeamUnarchivedDomainEvent>(d);
         Add<WorkspaceArchivedDomainEvent>(d);
         Add<WorkspaceCreatedDomainEvent>(d);
         Add<WorkspaceRenamedDomainEvent>(d);
         Add<WorkspaceDescriptionUpdatedDomainEvent>(d);
         Add<WorkspaceRestoredDomainEvent>(d);
+        Add<WorkspaceSettingsUpdatedDomainEvent>(d);
         Add<WorkspaceSoftDeletedDomainEvent>(d);
+        Add<WorkspaceUnarchivedDomainEvent>(d);
+        Add<WorkspaceInvitationDeclinedDomainEvent>(d);
+        Add<WorkspaceInvitationResentDomainEvent>(d);
+        Add<WorkspaceInvitationRoleChangedDomainEvent>(d);
     }
 
     private static void Add<T>(Dictionary<Type, DomainEventDispatchMode> d, DomainEventDispatchMode mode = DomainEventDispatchMode.Outbox)

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Notrelix.API.ErrorHandling;
 using Notrelix.API.Options;
@@ -26,6 +27,11 @@ public static class DependencyInjection
         services.AddApiSwagger();
         services.AddApiRouting();
         services.AddApiForwardedHeaders(configuration, environment);
+
+        services.ConfigureHttpJsonOptions(options =>
+        {
+            options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        });
 
         services.Configure<RateLimitingOptions>(
             configuration.GetSection("RateLimiting:Policies"));

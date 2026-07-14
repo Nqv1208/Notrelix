@@ -5,5 +5,6 @@ public enum WorkspaceInvitationStatus
     Pending,
     Accepted,
     Revoked,
-    Expired
+    Expired,
+    Declined
 }

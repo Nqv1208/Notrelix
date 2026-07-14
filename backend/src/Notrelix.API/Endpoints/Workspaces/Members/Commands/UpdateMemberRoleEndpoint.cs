@@ -21,7 +21,7 @@ public static class UpdateMemberRoleEndpoint
         UpdateMemberRoleRequest body,
         ISender sender)
     {
-        var result = await sender.Send(new UpdateMemberRoleCommand(workspaceId, userId, Enum.Parse<WorkspaceRole>(body.Role, ignoreCase: true)));
+        var result = await sender.Send(new UpdateMemberRoleCommand(workspaceId, userId, body.Role));
         return result.ToApiResult();
     }
 }

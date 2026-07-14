@@ -10283,7 +10283,7 @@ namespace Notrelix.Infrastructure.Migrations
 
                     b.ToTable("email_outbox", "notifications", t =>
                         {
-                            t.HasCheckConstraint("ck_email_outbox_content_mode", "(content_mode = 'Rendered' AND subject IS NOT NULL AND (body_html IS NOT NULL OR body_text IS NOT NULL) AND template_data_json IS NULL) OR (content_mode = 'Templated' AND subject IS NULL AND body_html IS NULL AND body_text IS NULL AND template_data_json IS NOT NULL AND template_data_json <> '{}'::jsonb)");
+                            t.HasCheckConstraint("ck_email_outbox_content_mode", "(content_mode = 'Rendered' AND subject IS NOT NULL AND (body_html IS NOT NULL OR body_text IS NOT NULL) AND template_data_json IS NULL) OR (content_mode = 'Templated' AND subject IS NULL AND body_html IS NULL AND body_text IS NULL AND template_data_json IS NOT NULL AND template_data_json <> '{}'::jsonb) OR (content_mode = 'Purged' AND subject IS NULL AND body_html IS NULL AND body_text IS NULL AND template_data_json IS NULL AND sensitive_payload_cleared_at IS NOT NULL)");
 
                             t.HasCheckConstraint("ck_email_outbox_sensitive_payload_state", "sensitive_payload_cleared_at IS NULL OR template_data_json IS NULL");
                         });

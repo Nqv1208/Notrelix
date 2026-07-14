@@ -1,3 +1,3 @@
 namespace Notrelix.API.Contracts.Workspaces.Members.Requests;
 
-public record UpdateMemberRoleRequest(string Role);
+public sealed record UpdateMemberRoleRequest(WorkspaceRole Role);

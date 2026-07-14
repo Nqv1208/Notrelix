@@ -88,6 +88,23 @@ public class Workspace : AggregateRoot
         AddDomainEvent(new WorkspaceArchivedDomainEvent(Id, archivedBy, archivedAt));
     }
 
+    public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(unarchivedBy);
+
+        if (Status == WorkspaceStatus.Active) return;
+
+        if (Status != WorkspaceStatus.Archived)
+            throw new BusinessRuleException(
+                "Only an archived workspace can be unarchived.");
+
+        Status = WorkspaceStatus.Active;
+        SetAuditOnUpdate(unarchivedBy, unarchivedAt);
+        IncrementVersion();
+        AddDomainEvent(new WorkspaceUnarchivedDomainEvent(Id, unarchivedBy, unarchivedAt));
+    }
+
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
@@ -142,8 +159,11 @@ public class Workspace : AggregateRoot
         if (Status == WorkspaceStatus.Archived)
             throw new BusinessRuleException("Cannot update settings of an archived workspace.");
 
+        if (Settings == newSettings) return;
+
         Settings = newSettings;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new WorkspaceSettingsUpdatedDomainEvent(Id, updatedBy, updatedAt));
     }
 }

@@ -4,8 +4,9 @@ namespace Notrelix.Infrastructure.Data.Notifications;
 
 public enum EmailContentMode
 {
-    Rendered,
-    Templated
+    Rendered = 0,
+    Templated = 1,
+    Purged = 2
 }
 
 public sealed class EmailOutboxMessage
@@ -211,6 +212,7 @@ public sealed class EmailOutboxMessage
         if (TemplateDataJson is null)
             return;
 
+        ContentMode = EmailContentMode.Purged;
         TemplateDataJson = null;
         SensitivePayloadClearedAt ??= clearedAt;
         UpdatedAt = clearedAt;
