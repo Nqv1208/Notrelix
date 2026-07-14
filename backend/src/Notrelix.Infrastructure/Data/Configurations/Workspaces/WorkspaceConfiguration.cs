@@ -35,8 +35,13 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => x.Slug).IsUnique().HasDatabaseName("idx_workspaces_slug");
         builder.HasIndex(x => x.Name).HasDatabaseName("idx_workspaces_name");
+
+        // One active workspace per account-slug pair (soft-delete aware)
+        builder.HasIndex(x => new { x.AccountId, x.Slug })
+            .IsUnique()
+            .HasFilter("deleted_at IS NULL")
+            .HasDatabaseName("ux_workspaces_account_slug_active");
 
         // One personal workspace per account (soft-delete aware)
         builder.HasIndex(x => x.AccountId)

@@ -13,10 +13,13 @@ public class PasswordResetTokenConfiguration : IEntityTypeConfiguration<Password
 
         builder.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(x => x.TokenHash).HasColumnName("token_hash").IsRequired();
+        builder.Property(x => x.HashVersion).HasColumnName("hash_version").IsRequired().HasDefaultValue(1);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.ExpiresAt).HasColumnName("expires_at").IsRequired();
         builder.Property(x => x.UsedAt).HasColumnName("used_at");
         builder.Property(x => x.ExpiredAt).HasColumnName("expired_at");
+        builder.Property(x => x.RevokedAt).HasColumnName("revoked_at");
+        builder.Property(x => x.RevocationReason).HasColumnName("revocation_reason").HasMaxLength(256);
 
         builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");

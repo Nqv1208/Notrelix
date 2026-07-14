@@ -8,6 +8,7 @@ public sealed record RequestExecutionProfile(
     bool IsAccountScoped,
     bool IsWorkspaceScoped,
     bool IsResourceScoped,
+    bool IsTokenScoped,
     bool IsTransactional,
     bool IsRlsRead,
     bool RequiresPermission,

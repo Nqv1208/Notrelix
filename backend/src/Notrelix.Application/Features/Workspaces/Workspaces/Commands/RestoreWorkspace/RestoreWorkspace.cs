@@ -3,23 +3,27 @@ using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Commands.RestoreWorkspace;
 
-public record RestoreWorkspaceCommand(Guid WorkspaceId)
-    : ICommand<Result>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission
+public record RestoreWorkspaceCommand(
+    Guid WorkspaceId,
+    long ExpectedVersion
+) : ICommand<Result>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageWorkspace;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
+    long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion;
+    ResourceRef IExpectedVersionRequest.Resource => Resource;
 }
 
 public class RestoreWorkspaceCommandHandler : IRequestHandler<RestoreWorkspaceCommand, Result>
 {
     private readonly IWorkspaceDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public RestoreWorkspaceCommandHandler(IWorkspaceDbContext context, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public RestoreWorkspaceCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
 
@@ -32,7 +36,7 @@ public class RestoreWorkspaceCommandHandler : IRequestHandler<RestoreWorkspaceCo
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
-        workspace.Restore(_currentUser.UserId, _dateTimeProvider.UtcNow);
+        workspace.Restore(_requestContext.UserId, _dateTimeProvider.UtcNow);
 
         return Result.Success();
     }

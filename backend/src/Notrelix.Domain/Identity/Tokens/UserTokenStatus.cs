@@ -4,5 +4,6 @@ public enum UserTokenStatus
 {
     Active,
     Used,
-    Expired
+    Expired,
+    Revoked
 }

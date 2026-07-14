@@ -211,7 +211,7 @@ public class CommonFolderArchitectureTests
             .Where(l => l.Contains("AddTransient(typeof(IPipelineBehavior<"))
             .ToList();
 
-        lines.Should().HaveCount(16, "expected exactly 16 pipeline behaviors");
+        lines.Should().HaveCount(17, "expected exactly 17 pipeline behaviors");
     }
 
     [Fact]

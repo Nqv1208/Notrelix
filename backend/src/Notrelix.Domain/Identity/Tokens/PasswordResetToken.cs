@@ -13,7 +13,7 @@ public class PasswordResetToken : OneTimeUseToken
         DateTimeOffset createdAt)
     {
         var token = new PasswordResetToken();
-        token.Initialize(userId, tokenHash, expiresAt, createdAt);
+        token.Initialize(userId, tokenHash, 1, expiresAt, createdAt);
         token.SetAuditOnCreate(userId, createdAt);
         token.AddDomainEvent(new PasswordResetTokenCreatedDomainEvent(token.Id, userId, createdAt));
         return token;
@@ -27,5 +27,10 @@ public class PasswordResetToken : OneTimeUseToken
     public void Expire(DateTimeOffset expiredAt)
     {
         base.TryExpire(expiredAt, new PasswordResetTokenExpiredDomainEvent(Id, UserId, expiredAt));
+    }
+
+    public bool Revoke(DateTimeOffset revokedAt, string revocationReason)
+    {
+        return base.TryRevoke(revokedAt, revocationReason, new PasswordResetTokenRevokedDomainEvent(Id, UserId, revokedAt));
     }
 }

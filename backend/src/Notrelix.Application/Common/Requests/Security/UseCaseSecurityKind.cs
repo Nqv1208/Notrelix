@@ -6,5 +6,6 @@ public enum UseCaseSecurityKind
     AuthenticatedUser = 1,
     AccountScoped = 2,
     WorkspaceScoped = 3,
-    SystemInternal = 4
+    SystemInternal = 4,
+    TokenScoped = 5
 }

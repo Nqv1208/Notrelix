@@ -25,21 +25,33 @@ public class AuthorizationBehaviorTests
         public Guid WorkspaceId => Guid.NewGuid();
     }
 
-    public sealed record AccountNoPermissionRequest : IRequest<string>, IAccountRequest
-    {
-        public Guid AccountId => Guid.NewGuid();
-    }
+    public sealed record AccountNoPermissionRequest : IRequest<string>, IAccountRequest;
 
-    public sealed record AccountSystemInternalRequest : IRequest<string>, IAccountRequest, ISystemInternalRequest
-    {
-        public Guid AccountId => Guid.NewGuid();
-    }
+    public sealed record AccountSystemInternalRequest : IRequest<string>, IAccountRequest, ISystemInternalRequest;
 
     public sealed record AccountWithPermissionRequest : IRequest<string>, IAccountRequest, IRequirePermission
     {
-        public Guid AccountId => Guid.NewGuid();
+        public PermissionAction Action => PermissionAction.ViewBoard;
+        public ResourceRef? Resource => null;
+    }
+
+    public sealed record AccountWithNonNullResourceRequest : IRequest<string>, IAccountRequest, IRequirePermission
+    {
         public PermissionAction Action => PermissionAction.ViewBoard;
         public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
+    }
+
+    public sealed record AccountNullResourceRequest : IRequest<string>, IAccountRequest, IRequirePermission
+    {
+        public PermissionAction Action => PermissionAction.ViewWorkspace;
+        public ResourceRef? Resource => null;
+    }
+
+    public sealed record WorkspaceNullResourceRequest : IRequest<string>, IWorkspaceRequest, IRequirePermission
+    {
+        public Guid WorkspaceId => Guid.NewGuid();
+        public PermissionAction Action => PermissionAction.ViewBoard;
+        public ResourceRef? Resource => null;
     }
 
     public sealed record UnclassifiedRequest : IRequest<string>;
@@ -72,6 +84,7 @@ public class AuthorizationBehaviorTests
         var mock = new Mock<ICurrentTenantContext>();
         mock.Setup(x => x.AccountId).Returns(accountId);
         mock.Setup(x => x.WorkspaceId).Returns(workspaceId);
+        mock.Setup(x => x.RequireAccountId()).Returns(accountId ?? Guid.Empty);
         return mock;
     }
 
@@ -323,7 +336,8 @@ public class AuthorizationBehaviorTests
     public async Task AccountRequest_WithPermissionMarker_CallsPermissionService()
     {
         var handlerCalled = false;
-        var tenant = CreateTenantContext(accountId: Guid.NewGuid());
+        var accountId = Guid.NewGuid();
+        var tenant = CreateTenantContext(accountId: accountId);
         var permissionService = new Mock<IAuthorizationDecisionStore>();
         permissionService.Setup(x => x.EvaluateAsync(It.IsAny<PermissionContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PermissionDecision(true, null));
@@ -339,6 +353,100 @@ public class AuthorizationBehaviorTests
         await behavior.Handle(new AccountWithPermissionRequest(), next, CancellationToken.None);
 
         handlerCalled.Should().BeTrue("handler should execute when permission is granted");
+
+        // Verify permission was evaluated with account resource resolved from tenant context
+        permissionService.Verify(
+            x => x.EvaluateAsync(
+                It.Is<PermissionContext>(ctx =>
+                    ctx.ResourceType == ResourceType.Account &&
+                    ctx.ResourceId == accountId &&
+                    ctx.Scope == Notrelix.Application.Common.Security.PermissionScope.Account),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task AccountRequest_WithNonNullResource_ThrowsSecurityMisconfiguration()
+    {
+        var tenant = CreateTenantContext(accountId: Guid.NewGuid());
+        var behavior = CreateBehavior<AccountWithNonNullResourceRequest>(tenant: tenant);
+
+        RequestHandlerDelegate<string> next = _ => Task.FromResult("ok");
+
+        Func<Task> act = () => behavior.Handle(new AccountWithNonNullResourceRequest(), next, CancellationToken.None);
+
+        var ex = await act.Should().ThrowAsync<SecurityMisconfigurationException>();
+        ex.Which.Message.Should().Contain("account-scoped but specifies a Resource");
+    }
+
+    [Fact]
+    public async Task AccountScopedNullResource_UsesTenantAccountId()
+    {
+        var handlerCalled = false;
+        var accountId = Guid.NewGuid();
+        var tenant = CreateTenantContext(accountId: accountId);
+        var permissionService = new Mock<IAuthorizationDecisionStore>();
+        permissionService.Setup(x => x.EvaluateAsync(It.IsAny<PermissionContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PermissionDecision(true, null));
+
+        var behavior = CreateBehavior<AccountNullResourceRequest>(tenant: tenant, permission: permissionService);
+
+        RequestHandlerDelegate<string> next = _ =>
+        {
+            handlerCalled = true;
+            return Task.FromResult("ok");
+        };
+
+        await behavior.Handle(new AccountNullResourceRequest(), next, CancellationToken.None);
+
+        handlerCalled.Should().BeTrue("handler should execute when permission is granted");
+
+        // Verify permission was evaluated with account resource resolved from tenant context
+        permissionService.Verify(
+            x => x.EvaluateAsync(
+                It.Is<PermissionContext>(ctx =>
+                    ctx.ResourceType == ResourceType.Account &&
+                    ctx.ResourceId == accountId &&
+                    ctx.Scope == Notrelix.Application.Common.Security.PermissionScope.Account),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task AccountScopedNullResource_WithoutTenantAccount_ThrowsSecurityMisconfiguration()
+    {
+        var handlerCalled = false;
+        var tenant = CreateTenantContext(accountId: null);
+        var behavior = CreateBehavior<AccountNullResourceRequest>(tenant: tenant);
+
+        RequestHandlerDelegate<string> next = _ =>
+        {
+            handlerCalled = true;
+            return Task.FromResult("ok");
+        };
+
+        Func<Task> act = () => behavior.Handle(new AccountNullResourceRequest(), next, CancellationToken.None);
+
+        await act.Should().ThrowAsync<SecurityMisconfigurationException>();
+        handlerCalled.Should().BeFalse("handler should not execute when tenant account is missing");
+    }
+
+    [Fact]
+    public async Task WorkspaceScopedNullResource_ThrowsSecurityMisconfiguration()
+    {
+        var handlerCalled = false;
+        var behavior = CreateBehavior<WorkspaceNullResourceRequest>();
+
+        RequestHandlerDelegate<string> next = _ =>
+        {
+            handlerCalled = true;
+            return Task.FromResult("ok");
+        };
+
+        Func<Task> act = () => behavior.Handle(new WorkspaceNullResourceRequest(), next, CancellationToken.None);
+
+        await act.Should().ThrowAsync<SecurityMisconfigurationException>();
+        handlerCalled.Should().BeFalse("handler should not execute");
     }
 
     [Fact]

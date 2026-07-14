@@ -14,6 +14,8 @@ public static class MapInvitationEndpoints
 
         wsGroup.MapListWorkspaceInvitations();
         wsGroup.MapCancelInvitation();
+        wsGroup.MapResendInvitation();
+        wsGroup.MapChangeInvitationRole();
 
         var invitationsGroup = app
             .MapGroup("/api/v1/invitations")
@@ -22,7 +24,7 @@ public static class MapInvitationEndpoints
 
         invitationsGroup.MapGetUserPendingInvitations();
         invitationsGroup.MapAcceptInvitation();
-
+        invitationsGroup.MapDeclineInvitation();
         invitationsGroup.MapGetInvitationByToken();
 
         return app;

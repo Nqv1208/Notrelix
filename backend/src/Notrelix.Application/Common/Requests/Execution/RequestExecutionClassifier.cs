@@ -20,6 +20,7 @@ public static class RequestExecutionClassifier
             IsAccountScoped: request is IAccountRequest,
             IsWorkspaceScoped: request is IWorkspaceRequest,
             IsResourceScoped: request is IResourceScopedRequest,
+            IsTokenScoped: request is ITokenScopedRequest,
             IsTransactional: request is ITransactionalRequest,
             IsRlsRead: request is IRlsReadRequest,
             RequiresPermission: request is IRequirePermission,

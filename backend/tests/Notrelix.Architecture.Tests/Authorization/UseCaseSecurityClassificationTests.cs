@@ -71,6 +71,23 @@ public class UseCaseSecurityClassificationTests
         return match.Success ? match.Groups[1].Value : string.Empty;
     }
 
+    private static bool HasWorkspaceIdInDeclaration(string declaration)
+    {
+        return Regex.IsMatch(
+            declaration,
+            @"\bGuid\??\s+WorkspaceId\b",
+            RegexOptions.Compiled);
+    }
+
+    private static bool HasWorkspaceIdProperty(string content)
+    {
+        var sanitized = RemoveComments(content);
+        return Regex.IsMatch(
+            sanitized,
+            @"public\s+Guid\??\s+WorkspaceId\s*\{\s*get;",
+            RegexOptions.Compiled);
+    }
+
     private const string LegacyGapReason = "Pre-hardening command without security classification marker";
     private const string LegacyGapTarget = "Implement IWorkspaceRequest or IAccountRequest";
 
@@ -78,10 +95,13 @@ public class UseCaseSecurityClassificationTests
     private static readonly string[] SecurityInterfaces =
     [
         "IAnonymousRequest",
+        "IAnonymousTokenScopedRequest",
         "IAuthenticatedRequest",
+        "IAuthenticatedTokenScopedRequest",
         "ISystemInternalRequest",
         "IWorkspaceRequest",
-        "IAccountRequest"
+        "IAccountRequest",
+        "ITokenScopedRequest"
     ];
 
     /// <summary>
@@ -92,175 +112,150 @@ public class UseCaseSecurityClassificationTests
     {
         // === Public auth commands ===
         ["LoginCommand"] = new("LoginCommand", AllowlistClassification.PublicCommand,
-            "Public unauthenticated command", "Add IAnonymousRequest"),
+            "Public unauthenticated command", "Add IAnonymousRequest", Feature: "Identity"),
         ["LogoutCommand"] = new("LogoutCommand", AllowlistClassification.PublicCommand,
-            "Public unauthenticated command", "Add IAnonymousRequest"),
+            "Public unauthenticated command", "Add IAnonymousRequest", Feature: "Identity"),
         ["RefreshTokenCommand"] = new("RefreshTokenCommand", AllowlistClassification.PublicCommand,
-            "Public unauthenticated command", "Add IAnonymousRequest"),
+            "Public unauthenticated command", "Add IAnonymousRequest", Feature: "Identity"),
         ["ForgotPasswordCommand"] = new("ForgotPasswordCommand", AllowlistClassification.PublicCommand,
-            "Public unauthenticated command", "Add IAnonymousRequest"),
+            "Public unauthenticated command", "Add IAnonymousRequest", Feature: "Identity"),
         ["ResetPasswordCommand"] = new("ResetPasswordCommand", AllowlistClassification.PublicCommand,
-            "Public unauthenticated command", "Add IAnonymousRequest"),
+            "Public unauthenticated command", "Add IAnonymousRequest", Feature: "Identity"),
         ["RegisterCommand"] = new("RegisterCommand", AllowlistClassification.PublicCommand,
-            "Public unauthenticated command", "Add IAnonymousRequest"),
+            "Public unauthenticated command", "Add IAnonymousRequest", Feature: "Identity"),
 
         // === System commands (no workspace/user scope) ===
         ["SendWelcomeEmailCommand"] = new("SendWelcomeEmailCommand", AllowlistClassification.SystemCommand,
-            "System command triggered by user registration", "Keep as-is"),
+            "System command triggered by user registration", "Keep as-is", Feature: "Identity"),
         ["ProvisionPersonalWorkspaceCommand"] = new("ProvisionPersonalWorkspaceCommand", AllowlistClassification.SystemCommand,
-            "System command triggered by user registration", "Keep as-is"),
+            "System command triggered by user registration", "Keep as-is", Feature: "Identity"),
         ["HandleCalendarWebhookCommand"] = new("HandleCalendarWebhookCommand", AllowlistClassification.SystemCommand,
-            "External webhook handler", "Keep as-is"),
+            "External webhook handler", "Keep as-is", Feature: "Integrations"),
         ["HandleN8nCallbackCommand"] = new("HandleN8nCallbackCommand", AllowlistClassification.SystemCommand,
-            "External N8n webhook callback handler", "Keep as-is"),
+            "External N8n webhook callback handler", "Keep as-is", Feature: "Automation"),
 
         // === Bootstrap/queries with no workspace/account scope ===
         ["GetBootstrapQuery"] = new("GetBootstrapQuery", AllowlistClassification.PublicCommand,
-            "Public bootstrap data query", "Add IAnonymousRequest"),
+            "Public bootstrap data query", "Add IAnonymousRequest", Feature: "Accounts"),
         ["GetCurrentUserQuery"] = new("GetCurrentUserQuery", AllowlistClassification.PublicCommand,
-            "Public current user query", "Add IAuthenticatedRequest"),
+            "Public current user query", "Add IAuthenticatedRequest", Feature: "Identity"),
 
         // === Identity-based (no resource scope) ===
         ["UpdateProfileCommand"] = new("UpdateProfileCommand", AllowlistClassification.Intentional,
-            "User updates own profile — identity-based, not resource-based", "Keep as-is"),
-
-        // === No workspace/account scope (creating workspace) ===
-        ["CreateWorkspaceCommand"] = new("CreateWorkspaceCommand", AllowlistClassification.Intentional,
-            "Global command — user creates own workspace, no pre-existing scope", "Add IAuthenticatedRequest"),
+            "User updates own profile — identity-based, not resource-based", "Keep as-is", Feature: "Identity"),
 
         // === Pre-hardening legacy gaps (no WorkspaceId property directly) ===
         // Collaboration — Comments (use ResourceId)
-        ["GetCommentsQuery"] = new("GetCommentsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["ResolveCommentCommand"] = new("ResolveCommentCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["CreateCommentCommand"] = new("CreateCommentCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["UpdateCommentCommand"] = new("UpdateCommentCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["DeleteCommentCommand"] = new("DeleteCommentCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
+        ["GetCommentsQuery"] = new("GetCommentsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Collaboration"),
+        ["ResolveCommentCommand"] = new("ResolveCommentCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Collaboration"),
+        ["CreateCommentCommand"] = new("CreateCommentCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Collaboration"),
+        ["UpdateCommentCommand"] = new("UpdateCommentCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Collaboration"),
+        ["DeleteCommentCommand"] = new("DeleteCommentCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Collaboration"),
 
         // Collaboration — Activity (use ResourceId)
-        ["GetResourceActivityQuery"] = new("GetResourceActivityQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
+        ["GetResourceActivityQuery"] = new("GetResourceActivityQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Collaboration"),
 
         // Collaboration — Attachments (use BoardItemId/ResourceId)
-        ["GetBoardItemAttachmentsQuery"] = new("GetBoardItemAttachmentsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["CreateBoardItemAttachmentCommand"] = new("CreateBoardItemAttachmentCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["DeleteAttachmentCommand"] = new("DeleteAttachmentCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
+        ["GetBoardItemAttachmentsQuery"] = new("GetBoardItemAttachmentsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Collaboration"),
+        ["CreateBoardItemAttachmentCommand"] = new("CreateBoardItemAttachmentCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Collaboration"),
+        ["DeleteAttachmentCommand"] = new("DeleteAttachmentCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Collaboration"),
 
         // WorkManagement — BoardGroups (use BoardId)
-        ["UnarchiveBoardGroupCommand"] = new("UnarchiveBoardGroupCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["DuplicateBoardGroupCommand"] = new("DuplicateBoardGroupCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["ReorderBoardGroupsCommand"] = new("ReorderBoardGroupsCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["UpdateBoardGroupCommand"] = new("UpdateBoardGroupCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["CreateBoardGroupCommand"] = new("CreateBoardGroupCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["ArchiveBoardGroupCommand"] = new("ArchiveBoardGroupCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
+        ["UnarchiveBoardGroupCommand"] = new("UnarchiveBoardGroupCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["DuplicateBoardGroupCommand"] = new("DuplicateBoardGroupCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["ReorderBoardGroupsCommand"] = new("ReorderBoardGroupsCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["UpdateBoardGroupCommand"] = new("UpdateBoardGroupCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["CreateBoardGroupCommand"] = new("CreateBoardGroupCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["ArchiveBoardGroupCommand"] = new("ArchiveBoardGroupCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
 
         // WorkManagement — Checklists (use BoardItemId)
-        ["GetChecklistsQuery"] = new("GetChecklistsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["UpdateChecklistItemCommand"] = new("UpdateChecklistItemCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["CreateChecklistItemCommand"] = new("CreateChecklistItemCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["UpdateChecklistCommand"] = new("UpdateChecklistCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["ToggleChecklistItemCommand"] = new("ToggleChecklistItemCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["DeleteChecklistCommand"] = new("DeleteChecklistCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["DeleteChecklistItemCommand"] = new("DeleteChecklistItemCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["CreateChecklistCommand"] = new("CreateChecklistCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
+        ["GetChecklistsQuery"] = new("GetChecklistsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["UpdateChecklistItemCommand"] = new("UpdateChecklistItemCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["CreateChecklistItemCommand"] = new("CreateChecklistItemCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["UpdateChecklistCommand"] = new("UpdateChecklistCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["ToggleChecklistItemCommand"] = new("ToggleChecklistItemCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["DeleteChecklistCommand"] = new("DeleteChecklistCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["DeleteChecklistItemCommand"] = new("DeleteChecklistItemCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["CreateChecklistCommand"] = new("CreateChecklistCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
 
         // WorkManagement — BoardViews (use BoardId)
-        ["DeleteBoardViewCommand"] = new("DeleteBoardViewCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
+        ["DeleteBoardViewCommand"] = new("DeleteBoardViewCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
 
         // WorkManagement — Labels (use BoardId)
-        ["GetLabelsQuery"] = new("GetLabelsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["CreateLabelCommand"] = new("CreateLabelCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["UpdateLabelCommand"] = new("UpdateLabelCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["DeleteLabelCommand"] = new("DeleteLabelCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["RemoveLabelFromBoardItemCommand"] = new("RemoveLabelFromBoardItemCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["AddLabelToBoardItemCommand"] = new("AddLabelToBoardItemCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
+        ["GetLabelsQuery"] = new("GetLabelsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["CreateLabelCommand"] = new("CreateLabelCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["UpdateLabelCommand"] = new("UpdateLabelCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["DeleteLabelCommand"] = new("DeleteLabelCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["RemoveLabelFromBoardItemCommand"] = new("RemoveLabelFromBoardItemCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["AddLabelToBoardItemCommand"] = new("AddLabelToBoardItemCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
 
         // WorkManagement — BoardItemLinks (use BoardItemId)
-        ["DeleteBoardItemLinkCommand"] = new("DeleteBoardItemLinkCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["CreateBoardItemLinkCommand"] = new("CreateBoardItemLinkCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
+        ["DeleteBoardItemLinkCommand"] = new("DeleteBoardItemLinkCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["CreateBoardItemLinkCommand"] = new("CreateBoardItemLinkCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
 
         // WorkManagement — BoardItems (use BoardItemId or BoardId)
-        ["GetBoardItemQuery"] = new("GetBoardItemQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["GetMyBoardItemsQuery"] = new("GetMyBoardItemsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["DuplicateBoardItemCommand"] = new("DuplicateBoardItemCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["UpdateBoardItemCommand"] = new("UpdateBoardItemCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["UnlinkPageFromBoardItemCommand"] = new("UnlinkPageFromBoardItemCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["ArchiveBoardItemCommand"] = new("ArchiveBoardItemCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["LinkPageToBoardItemCommand"] = new("LinkPageToBoardItemCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["UpdateBoardItemStatusCommand"] = new("UpdateBoardItemStatusCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["SetBoardItemDueDateCommand"] = new("SetBoardItemDueDateCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["UnassignBoardItemMemberCommand"] = new("UnassignBoardItemMemberCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["UpdateBoardItemFieldValuesCommand"] = new("UpdateBoardItemFieldValuesCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
+        ["GetBoardItemQuery"] = new("GetBoardItemQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["GetMyBoardItemsQuery"] = new("GetMyBoardItemsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["DuplicateBoardItemCommand"] = new("DuplicateBoardItemCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["UpdateBoardItemCommand"] = new("UpdateBoardItemCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["UnlinkPageFromBoardItemCommand"] = new("UnlinkPageFromBoardItemCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["ArchiveBoardItemCommand"] = new("ArchiveBoardItemCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["LinkPageToBoardItemCommand"] = new("LinkPageToBoardItemCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["UpdateBoardItemStatusCommand"] = new("UpdateBoardItemStatusCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["SetBoardItemDueDateCommand"] = new("SetBoardItemDueDateCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["UnassignBoardItemMemberCommand"] = new("UnassignBoardItemMemberCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["UpdateBoardItemFieldValuesCommand"] = new("UpdateBoardItemFieldValuesCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
 
         // WorkManagement — Board (use BoardId)
-        ["GetFullBoardQuery"] = new("GetFullBoardQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["CreateBoardBySlugCommand"] = new("CreateBoardBySlugCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["UnarchiveBoardCommand"] = new("UnarchiveBoardCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["AddBoardMemberCommand"] = new("AddBoardMemberCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["RemoveBoardMemberCommand"] = new("RemoveBoardMemberCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["DeleteBoardFieldCommand"] = new("DeleteBoardFieldCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["ReorderBoardFieldsCommand"] = new("ReorderBoardFieldsCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["UpdateBoardFieldCommand"] = new("UpdateBoardFieldCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["CreateBoardFieldCommand"] = new("CreateBoardFieldCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-
-        // Workspaces — queries (no direct WorkspaceId in params)
-        ["GetUserWorkspacesQuery"] = new("GetUserWorkspacesQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["ArchiveWorkspaceBySlugCommand"] = new("ArchiveWorkspaceBySlugCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-
-        // Workspaces — members (use WorkspaceId from route/slug)
-        ["GetWorkspaceQuery"] = new("GetWorkspaceQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["GetWorkspaceBySlugQuery"] = new("GetWorkspaceBySlugQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["GetWorkspaceMembersBySlugQuery"] = new("GetWorkspaceMembersBySlugQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["GetWorkspaceMembersQuery"] = new("GetWorkspaceMembersQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["RemoveMemberCommand"] = new("RemoveMemberCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["RemoveMemberBySlugCommand"] = new("RemoveMemberBySlugCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["UpdateMemberRoleCommand"] = new("UpdateMemberRoleCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["UpdateMemberRoleBySlugCommand"] = new("UpdateMemberRoleBySlugCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["GetWorkspaceActivityBySlugQuery"] = new("GetWorkspaceActivityBySlugQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["GetWorkspaceActivityQuery"] = new("GetWorkspaceActivityQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-
-        // Workspaces — invitations
-        ["GetWorkspaceInvitationsQuery"] = new("GetWorkspaceInvitationsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["InviteMemberBySlugCommand"] = new("InviteMemberBySlugCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["CancelInvitationCommand"] = new("CancelInvitationCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
+        ["GetFullBoardQuery"] = new("GetFullBoardQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["CreateBoardBySlugCommand"] = new("CreateBoardBySlugCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["UnarchiveBoardCommand"] = new("UnarchiveBoardCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["AddBoardMemberCommand"] = new("AddBoardMemberCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["RemoveBoardMemberCommand"] = new("RemoveBoardMemberCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["DeleteBoardFieldCommand"] = new("DeleteBoardFieldCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["ReorderBoardFieldsCommand"] = new("ReorderBoardFieldsCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["UpdateBoardFieldCommand"] = new("UpdateBoardFieldCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
+        ["CreateBoardFieldCommand"] = new("CreateBoardFieldCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "WorkManagement"),
 
         // Integrations — Calendar (use WorkspaceId from route/context)
-        ["DisconnectCalendarCommand"] = new("DisconnectCalendarCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["ConnectCalendarCommand"] = new("ConnectCalendarCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["TriggerCalendarSyncCommand"] = new("TriggerCalendarSyncCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
+        ["DisconnectCalendarCommand"] = new("DisconnectCalendarCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Integrations"),
+        ["ConnectCalendarCommand"] = new("ConnectCalendarCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Integrations"),
+        ["TriggerCalendarSyncCommand"] = new("TriggerCalendarSyncCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Integrations"),
 
         // Governance — ShareLinks/Permissions
-        ["DisableShareLinkCommand"] = new("DisableShareLinkCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["GetResourcePermissionsQuery"] = new("GetResourcePermissionsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["GrantResourcePermissionCommand"] = new("GrantResourcePermissionCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["RevokeResourcePermissionCommand"] = new("RevokeResourcePermissionCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
+        ["DisableShareLinkCommand"] = new("DisableShareLinkCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Governance"),
+        ["GetResourcePermissionsQuery"] = new("GetResourcePermissionsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Governance"),
+        ["GrantResourcePermissionCommand"] = new("GrantResourcePermissionCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Governance"),
+        ["RevokeResourcePermissionCommand"] = new("RevokeResourcePermissionCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Governance"),
 
         // Automation
-        ["GetAutomationExecutionsQuery"] = new("GetAutomationExecutionsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["GetWorkspaceAutomationsQuery"] = new("GetWorkspaceAutomationsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["SetAutomationRuleEnabledCommand"] = new("SetAutomationRuleEnabledCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["CreateAutomationRuleCommand"] = new("CreateAutomationRuleCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
+        ["GetAutomationExecutionsQuery"] = new("GetAutomationExecutionsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Automation"),
+        ["GetWorkspaceAutomationsQuery"] = new("GetWorkspaceAutomationsQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Automation"),
+        ["SetAutomationRuleEnabledCommand"] = new("SetAutomationRuleEnabledCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Automation"),
+        ["CreateAutomationRuleCommand"] = new("CreateAutomationRuleCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Automation"),
 
         // Documents — Blocks (use PageId)
-        ["GetPageBlocksQuery"] = new("GetPageBlocksQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["DeleteBlockCommand"] = new("DeleteBlockCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["CreateBlockCommand"] = new("CreateBlockCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["ReorderBlocksCommand"] = new("ReorderBlocksCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["BatchUpdateBlocksCommand"] = new("BatchUpdateBlocksCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["UpdateBlockCommand"] = new("UpdateBlockCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
+        ["GetPageBlocksQuery"] = new("GetPageBlocksQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
+        ["DeleteBlockCommand"] = new("DeleteBlockCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
+        ["CreateBlockCommand"] = new("CreateBlockCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
+        ["ReorderBlocksCommand"] = new("ReorderBlocksCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
+        ["BatchUpdateBlocksCommand"] = new("BatchUpdateBlocksCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
+        ["UpdateBlockCommand"] = new("UpdateBlockCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
 
         // Documents — Pages (use PageId)
-        ["GetWorkspacePagesQuery"] = new("GetWorkspacePagesQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["GetPageHistoryQuery"] = new("GetPageHistoryQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["SearchPagesQuery"] = new("SearchPagesQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["GetPageBreadcrumbQuery"] = new("GetPageBreadcrumbQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["GetPageQuery"] = new("GetPageQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["GetPageTreeQuery"] = new("GetPageTreeQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["MovePageCommand"] = new("MovePageCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["SetPageDeadlineCommand"] = new("SetPageDeadlineCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["CreatePageCommand"] = new("CreatePageCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["UpdatePageCommand"] = new("UpdatePageCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["ArchivePageCommand"] = new("ArchivePageCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["PublishPageCommand"] = new("PublishPageCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
-        ["DeletePageCommand"] = new("DeletePageCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget),
+        ["GetWorkspacePagesQuery"] = new("GetWorkspacePagesQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
+        ["GetPageHistoryQuery"] = new("GetPageHistoryQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
+        ["SearchPagesQuery"] = new("SearchPagesQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
+        ["GetPageBreadcrumbQuery"] = new("GetPageBreadcrumbQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
+        ["GetPageQuery"] = new("GetPageQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
+        ["GetPageTreeQuery"] = new("GetPageTreeQuery", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
+        ["MovePageCommand"] = new("MovePageCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
+        ["SetPageDeadlineCommand"] = new("SetPageDeadlineCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
+        ["CreatePageCommand"] = new("CreatePageCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
+        ["UpdatePageCommand"] = new("UpdatePageCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
+        ["ArchivePageCommand"] = new("ArchivePageCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
+        ["PublishPageCommand"] = new("PublishPageCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
+        ["DeletePageCommand"] = new("DeletePageCommand", AllowlistClassification.LegacyGap, LegacyGapReason, LegacyGapTarget, Feature: "Documents"),
     };
 
     [Fact]
@@ -288,10 +283,6 @@ public class UseCaseSecurityClassificationTests
             // Has IRequirePermission (implies authenticated + resource-scoped)
             if (declaration.Contains("IRequirePermission")) continue;
 
-            // Has WorkspaceId in content (implies workspace-scoped)
-            var hasWorkspaceId = content.Contains("Guid WorkspaceId") || content.Contains("Guid? WorkspaceId");
-            if (hasWorkspaceId) continue;
-
             // Known allowlist entry
             if (KnownUnclassified.ContainsKey(name)) continue;
 
@@ -299,8 +290,11 @@ public class UseCaseSecurityClassificationTests
         }
 
         violations.Should().BeEmpty(
-            $"All commands/queries must implement a security classification interface, implement IRequirePermission, " +
-            $"have WorkspaceId property, or be in KnownUnclassified allowlist. " +
+            $"All commands/queries must implement a security classification interface " +
+            $"(IAnonymousRequest, IAuthenticatedRequest, ISystemInternalRequest, IAccountRequest, " +
+            $"IWorkspaceRequest, ITokenScopedRequest), " +
+            $"implement IRequirePermission where authorization is required, " +
+            $"or be explicitly documented in KnownUnclassified with a non-legacy reason. " +
             $"Violations: {string.Join(", ", violations)}");
     }
 
@@ -377,19 +371,138 @@ public class UseCaseSecurityClassificationTests
     }
 
     [Fact]
+    public void TokenScopedRequests_ShouldUseCompositeSecurityMarker()
+    {
+        var violations = new List<string>();
+
+        foreach (var file in GetRequestFiles())
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            var declaration = ReadDeclaration(content);
+            if (!declaration.Contains("ITokenScopedRequest", StringComparison.Ordinal))
+                continue;
+
+            var isComposite = declaration.Contains("IAnonymousTokenScopedRequest", StringComparison.Ordinal)
+                || declaration.Contains("IAuthenticatedTokenScopedRequest", StringComparison.Ordinal);
+            var isDirectlyMixed = declaration.Contains("IAnonymousRequest", StringComparison.Ordinal)
+                || declaration.Contains("IAuthenticatedRequest", StringComparison.Ordinal);
+
+            if (!isComposite && isDirectlyMixed)
+                violations.Add(Path.GetFileName(file));
+        }
+
+        violations.Should().BeEmpty(
+            "Token-scoped commands must use IAnonymousTokenScopedRequest or " +
+            "IAuthenticatedTokenScopedRequest rather than mixing security markers directly.");
+    }
+
+    [Fact]
     public void UnclassifiedCommands_Count_ShouldNotIncrease()
     {
-        // Track the number of unclassified legacy-gap commands to prevent regression.
-        // As commands are migrated to IWorkspaceRequest/IAccountRequest, remove them
-        // from KnownUnclassified and decrement this count.
         var allowlistedCount = KnownUnclassified.Values.Count(e =>
             e.Classification == AllowlistClassification.LegacyGap ||
             e.Classification == AllowlistClassification.PublicCommand);
 
-        var maxAllowed = 105;
+        var maxAllowed = 90;
 
         allowlistedCount.Should().BeLessThanOrEqualTo(maxAllowed,
             $"Unclassified commands count ({allowlistedCount}) exceeds maximum allowed ({maxAllowed}). " +
             $"Migrate commands to IWorkspaceRequest/IAccountRequest and remove from KnownUnclassified.");
+    }
+
+    [Fact]
+    public void WorkspaceFeature_ShouldNotContainLegacySecurityAllowlistEntries()
+    {
+        var legacyWorkspaceEntries = KnownUnclassified
+            .Where(x => x.Value.Feature == "Workspaces")
+            .Where(x => x.Value.Classification == AllowlistClassification.LegacyGap)
+            .Select(x => x.Key)
+            .ToList();
+
+        legacyWorkspaceEntries.Should().BeEmpty(
+            "Workspace foundation is hard-locked and must not contain legacy security gaps.");
+    }
+
+    [Fact]
+    public void WorkspaceIdDetection_ShouldIgnoreComments()
+    {
+        var declarationWithParam =
+            "public record FooCommand(Guid WorkspaceId) : ICommand<Unit>, IWorkspaceRequest";
+
+        HasWorkspaceIdInDeclaration(declarationWithParam).Should().BeTrue();
+
+        var contentWithCommentOnly = @"
+            // Guid WorkspaceId
+            /* public Guid WorkspaceId { get; } */
+            public record FooCommand(string Name) : ICommand<Unit>;
+        ";
+
+        HasWorkspaceIdProperty(contentWithCommentOnly).Should().BeFalse(
+            "WorkspaceId in comments should not be detected as a real property");
+    }
+
+    [Fact]
+    public void WorkspaceMutatingCommands_ShouldRequireVerifiedEmail()
+    {
+        var workspaceMutatingCommands = new[]
+        {
+            "InviteMember.cs",
+            "ResendInvitation.cs",
+            "AcceptInvitation.cs",
+            "CreateWorkspace.cs",
+        };
+
+        var appPath = GetApplicationPath();
+        var violations = new List<string>();
+
+        foreach (var fileName in workspaceMutatingCommands)
+        {
+            var files = Directory.GetFiles(
+                Path.Combine(appPath, "Features"), fileName, SearchOption.AllDirectories);
+
+            foreach (var file in files)
+            {
+                var content = RemoveComments(File.ReadAllText(file));
+                if (!content.Contains("ICommand<")) continue;
+
+                if (!content.Contains("IRequireVerifiedEmail"))
+                {
+                    violations.Add($"{fileName}: missing IRequireVerifiedEmail");
+                }
+            }
+        }
+
+        violations.Should().BeEmpty(
+            $"Workspace-mutating commands must implement IRequireVerifiedEmail. " +
+            $"Violations: {string.Join(", ", violations)}");
+    }
+
+    [Fact]
+    public void ApplicationHandlers_ShouldNotReferenceEmailServices()
+    {
+        var appPath = GetApplicationPath();
+        var handlerFiles = Directory.GetFiles(
+                Path.Combine(appPath, "Features"), "*.cs", SearchOption.AllDirectories)
+            .Where(f => f.EndsWith("Handler.cs"))
+            .ToArray();
+
+        var forbidden = new[] { "IEmailService", "IEmailOutboxWriter" };
+        var violations = new List<string>();
+
+        foreach (var file in handlerFiles)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            foreach (var service in forbidden)
+            {
+                if (content.Contains(service))
+                {
+                    violations.Add($"{Path.GetFileName(file)}: references {service}");
+                }
+            }
+        }
+
+        violations.Should().BeEmpty(
+            $"Application handlers must not reference email services directly. " +
+            $"Use integration events instead. Violations: {string.Join(", ", violations)}");
     }
 }

@@ -12,6 +12,7 @@ public static class MapProfileEndpoints
             .WithOpenApi();
 
         group.MapUpdateProfile();
+        group.MapUpdateEmail();
 
         return app;
     }

@@ -102,13 +102,28 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
                     $"{typeof(TRequest).Name} is account-scoped without IRequirePermission or ISystemInternalRequest. " +
                     "Add IRequirePermission with permission action/resource, or mark as ISystemInternalRequest.");
             }
+
+            // Account-scoped requests must not specify a Resource — it is resolved from tenant context
+            if (request is IRequirePermission accountPermission && accountPermission.Resource is not null)
+            {
+                var resource = accountPermission.Resource;
+                _logger.LogError(
+                    "Security misconfiguration: Account request {RequestType} specifies a Resource ({ResourceType}/{ResourceId}). " +
+                    "Account-scoped requests must not specify a Resource; it is resolved from tenant context.",
+                    typeof(TRequest).Name,
+                    resource.ResourceType,
+                    resource.ResourceId);
+
+                throw new SecurityMisconfigurationException(
+                    $"{typeof(TRequest).Name} is account-scoped but specifies a Resource ({resource.ResourceType}/{resource.ResourceId}). " +
+                    "Account-scoped requests must not specify a Resource; it is resolved from tenant context.");
+            }
         }
 
         // Rule 6 & 7: Evaluate permission for IRequirePermission requests
         if (request is IRequirePermission requirePermission)
         {
             var userId = _currentUser.UserId;
-            var workspaceId = requirePermission.Resource.WorkspaceId ?? _tenant.WorkspaceId;
 
             var scope = request switch
             {
@@ -117,7 +132,27 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
                 _ => Security.PermissionScope.Resource,
             };
 
-            if (scope is Security.PermissionScope.Workspace or Security.PermissionScope.Resource && workspaceId is null)
+            // Resolve resource reference for permission evaluation
+            // Account-scoped requests may have null Resource — resolve from tenant context
+            ResourceRef resolvedResource;
+            if (requirePermission.Resource is not null)
+            {
+                resolvedResource = requirePermission.Resource;
+            }
+            else if (scope == Security.PermissionScope.Account)
+            {
+                resolvedResource = ResourceRef.Create(ResourceType.Account, _tenant.RequireAccountId());
+            }
+            else
+            {
+                throw new SecurityMisconfigurationException(
+                    $"{typeof(TRequest).Name} has null Resource but is not account-scoped. " +
+                    "Non-account-scoped IRequirePermission requests must specify a Resource.");
+            }
+
+            var workspaceId = resolvedResource.WorkspaceId ?? _tenant.WorkspaceId;
+
+            if (scope != Security.PermissionScope.Account && workspaceId is null)
             {
                 throw new SecurityMisconfigurationException(
                     $"{typeof(TRequest).Name} requires workspace context for permission evaluation " +
@@ -129,8 +164,8 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
                     userId,
                     _tenant.RequireAccountId(),
                     workspaceId,
-                    requirePermission.Resource.ResourceType,
-                    requirePermission.Resource.ResourceId,
+                    resolvedResource.ResourceType,
+                    resolvedResource.ResourceId,
                     requirePermission.Action,
                     scope),
                 cancellationToken);
@@ -141,14 +176,14 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
                     "Permission denied: UserId={UserId} Action={Action} ResourceType={ResourceType} ResourceId={ResourceId} WorkspaceId={WorkspaceId} Reason={Reason}",
                     userId,
                     requirePermission.Action,
-                    requirePermission.Resource.ResourceType,
-                    requirePermission.Resource.ResourceId,
-                    requirePermission.Resource.WorkspaceId,
+                    resolvedResource.ResourceType,
+                    resolvedResource.ResourceId,
+                    resolvedResource.WorkspaceId,
                     decision.ReasonCode);
 
                 if (decision.ReasonCode == "resource_not_found")
                 {
-                    throw new NotFoundException(requirePermission.Resource.ResourceType.ToString(), requirePermission.Resource.ResourceId);
+                    throw new NotFoundException(resolvedResource.ResourceType.ToString(), resolvedResource.ResourceId);
                 }
                 throw new ForbiddenException("You do not have permission to perform this action.");
             }

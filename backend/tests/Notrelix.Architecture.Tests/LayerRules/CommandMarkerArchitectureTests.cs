@@ -174,6 +174,8 @@ public class CommandMarkerArchitectureTests
             "Collaboration command missing permission marker", "Add IRequirePermission"),
         ["UpdateProfileCommand"] = new("UpdateProfileCommand", AllowlistClassification.Intentional,
             "User updates own profile — permission is identity-based, not resource-based", "Keep as-is"),
+        ["UpdateEmailCommand"] = new("UpdateEmailCommand", AllowlistClassification.Intentional,
+            "User updates own email — permission is identity-based, not resource-based", "Keep as-is"),
         ["UpdateBoardGroupCommand"] = new("UpdateBoardGroupCommand", AllowlistClassification.LegacyGap,
             "WorkManagement command missing permission marker", "Add IRequirePermission"),
         ["CreateBoardGroupCommand"] = new("CreateBoardGroupCommand", AllowlistClassification.LegacyGap,

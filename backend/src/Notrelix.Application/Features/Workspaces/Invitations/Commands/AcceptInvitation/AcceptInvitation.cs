@@ -1,77 +1,171 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Tokens;
+using Notrelix.Application.Features.Accounts.Abstractions;
+using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Domain.Accounts.Accounts;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation;
 
 public record AcceptInvitationResultDto(string WorkspaceSlug, Guid WorkspaceId);
 
-public record AcceptInvitationCommand(string Token) : ICommand<Result<AcceptInvitationResultDto>>, ITransactionalRequest;
+public record AcceptInvitationCommand(string Token)
+    : ICommand<Result<AcceptInvitationResultDto>>,
+      IAuthenticatedTokenScopedRequest,
+      IRequireVerifiedEmail,
+      ITransactionalRequest
+{
+    TokenPurpose ITokenScopedRequest.TokenPurpose =>
+        TokenPurpose.WorkspaceInvitation;
+
+}
 
 public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCommand, Result<AcceptInvitationResultDto>>
 {
     private readonly IWorkspaceDbContext _workspaceContext;
-    private readonly IActorLookupService _actorLookup;
+    private readonly IIdentityUserLookupService _identityUserLookup;
+    private readonly IAccountMembershipProvisioner _accountMembershipProvisioner;
+    private readonly IAccountStatusReader _accountStatusReader;
+    private readonly IOneTimeTokenService _oneTimeTokenService;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public AcceptInvitationCommandHandler(
         IWorkspaceDbContext workspaceContext,
-        IActorLookupService actorLookup,
+        IIdentityUserLookupService identityUserLookup,
+        IAccountMembershipProvisioner accountMembershipProvisioner,
+        IAccountStatusReader accountStatusReader,
+        IOneTimeTokenService oneTimeTokenService,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider)
     {
         _workspaceContext = workspaceContext;
-        _actorLookup = actorLookup;
+        _identityUserLookup = identityUserLookup;
+        _accountMembershipProvisioner = accountMembershipProvisioner;
+        _accountStatusReader = accountStatusReader;
+        _oneTimeTokenService = oneTimeTokenService;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
 
-    public async Task<Result<AcceptInvitationResultDto>> Handle(AcceptInvitationCommand request, CancellationToken ct)
+    public async Task<Result<AcceptInvitationResultDto>> Handle(
+        AcceptInvitationCommand request, CancellationToken ct)
     {
         if (!_requestContext.IsAuthenticated || _requestContext.UserId == Guid.Empty)
-            return Result<AcceptInvitationResultDto>.Failure("Bạn cần đăng nhập để thực hiện hành động này.");
+            return Result<AcceptInvitationResultDto>.Failure(
+                "You must be logged in to perform this action.");
 
-        var tokenHash = InvitationTokenHash.Create(request.Token);
+        var currentUserId = _requestContext.UserId;
+
+        var currentUser = await _identityUserLookup.FindByIdAsync(currentUserId, ct);
+
+        if (currentUser is null)
+            return Result<AcceptInvitationResultDto>.Failure(
+                "Current user was not found.");
+
+        if (currentUser.Status is not (UserStatus.Active or UserStatus.PendingVerification))
+            return Result<AcceptInvitationResultDto>.Failure(
+                "Your account must be active before accepting workspace invitations.");
+
+        if (!currentUser.EmailConfirmed)
+            return Result<AcceptInvitationResultDto>.Failure(
+                "Email must be confirmed before accepting workspace invitations.");
+
+        ParsedOneTimeToken presentedHash;
+        try
+        {
+            presentedHash = _oneTimeTokenService.ParseAndHash(
+                request.Token,
+                TokenPurpose.WorkspaceInvitation);
+        }
+        catch (InvalidOneTimeTokenException)
+        {
+            return Result<AcceptInvitationResultDto>.Failure(
+                "Invalid or expired invitation token.");
+        }
+
         var invitation = await _workspaceContext.WorkspaceInvitations
-            .FirstOrDefaultAsync(i => i.Token == tokenHash, ct);
+            .FirstOrDefaultAsync(
+                i => i.Token.Value == presentedHash.TokenHash
+                    && i.HashVersion == presentedHash.HashVersion, ct);
 
-        if (invitation == null)
-            throw new NotFoundException(nameof(WorkspaceInvitation), request.Token);
-
-        var workspace = await _workspaceContext.Workspaces.AsNoTracking()
-            .FirstOrDefaultAsync(w => w.Id == invitation.WorkspaceId, ct);
+        if (invitation is null)
+            throw new NotFoundException(nameof(WorkspaceInvitation), "Invalid invitation token.");
 
         var now = _dateTimeProvider.UtcNow;
 
         if (now >= invitation.ExpiresAt)
-            return Result<AcceptInvitationResultDto>.Failure("Lời mời đã hết hạn.");
+            return Result<AcceptInvitationResultDto>.Failure(
+                "This invitation has expired.");
 
         if (invitation.Status != WorkspaceInvitationStatus.Pending)
-            return Result<AcceptInvitationResultDto>.Failure("Lời mời này không còn hiệu lực.");
+            return Result<AcceptInvitationResultDto>.Failure(
+                "This invitation is no longer valid.");
 
-        var user = await _actorLookup.FindAsync(_requestContext.UserId, ct);
+        var currentEmail = NormalizeEmail(currentUser.Email);
+        var invitedEmail = NormalizeEmail(invitation.Email);
 
-        if (user == null)
-            return Result<AcceptInvitationResultDto>.Failure("Không tìm thấy thông tin tài khoản người dùng hiện tại.");
+        if (currentEmail != invitedEmail)
+            return Result<AcceptInvitationResultDto>.Failure(
+                "This invitation belongs to a different email address.");
 
-        // Note: Email validation against invitation email cannot be done via IActorLookupService
-        // since it doesn't expose email. The invitation token already binds to the email.
-        // For stricter email validation, an IAccountLookupService port could be introduced.
+        var workspace = await _workspaceContext.Workspaces.AsNoTracking()
+            .FirstOrDefaultAsync(w => w.Id == invitation.WorkspaceId, ct);
+
+        if (workspace is null)
+            throw new NotFoundException(nameof(Workspace), invitation.WorkspaceId);
+
+        if (workspace.Status != WorkspaceStatus.Active)
+            return Result<AcceptInvitationResultDto>.Failure(
+                "Cannot accept invitation for an inactive workspace.");
+
+        var accountStatus = await _accountStatusReader.GetStatusAsync(
+            workspace.AccountId, ct);
+
+        if (accountStatus is null)
+            return Result<AcceptInvitationResultDto>.Failure(
+                "Account was not found.");
+
+        if (accountStatus is not AccountStatus.Active and not AccountStatus.Trialing)
+            return Result<AcceptInvitationResultDto>.Failure(
+                "Cannot accept invitation for an inactive account.");
 
         var isAlreadyMember = await _workspaceContext.WorkspaceMembers
-            .AnyAsync(m => m.WorkspaceId == invitation.WorkspaceId && m.UserId == _requestContext.UserId, ct);
+            .AnyAsync(m =>
+                m.WorkspaceId == invitation.WorkspaceId &&
+                m.UserId == currentUserId, ct);
 
         if (isAlreadyMember)
         {
-            invitation.Accept(_requestContext.UserId, now);
-            return Result<AcceptInvitationResultDto>.Success(new AcceptInvitationResultDto(workspace?.Slug ?? "", invitation.WorkspaceId));
+            invitation.Accept(currentUserId, now);
+            return Result<AcceptInvitationResultDto>.Success(
+                new AcceptInvitationResultDto(workspace.Slug, invitation.WorkspaceId));
         }
 
-        invitation.Accept(_requestContext.UserId, now);
+        await _accountMembershipProvisioner
+            .EnsureWorkspaceInviteeAccountMembershipAsync(
+                workspace.AccountId,
+                currentUserId,
+                invitation.InvitedBy,
+                now,
+                ct);
 
-        var member = WorkspaceMember.Create(_requestContext.RequireAccountId(), invitation.WorkspaceId, _requestContext.UserId, invitation.Role, invitation.InvitedBy, now);
+        invitation.Accept(currentUserId, now);
+
+        var member = WorkspaceMember.Create(
+            workspace.AccountId,
+            invitation.WorkspaceId,
+            currentUserId,
+            invitation.Role,
+            invitation.InvitedBy,
+            now);
+
         _workspaceContext.WorkspaceMembers.Add(member);
 
-        return Result<AcceptInvitationResultDto>.Success(new AcceptInvitationResultDto(workspace?.Slug ?? "", invitation.WorkspaceId));
+        return Result<AcceptInvitationResultDto>.Success(
+            new AcceptInvitationResultDto(workspace.Slug, invitation.WorkspaceId));
     }
+
+    private static string NormalizeEmail(string email)
+        => email.Trim().ToLowerInvariant();
 }
