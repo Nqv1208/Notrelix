@@ -2,6 +2,8 @@ namespace Notrelix.Domain.Workspaces.Invitations;
 
 public sealed class InvitationTokenHash : ValueObject
 {
+    public const int HashLength = 64;
+
     public string Value { get; }
 
     private InvitationTokenHash() { }
@@ -13,7 +15,17 @@ public sealed class InvitationTokenHash : ValueObject
     public static InvitationTokenHash Create(string hash)
     {
         Guard.NotNullOrWhiteSpace(hash);
-        return new InvitationTokenHash(hash.Trim());
+
+        var normalized = hash.Trim().ToLowerInvariant();
+
+        if (normalized.Length != HashLength ||
+            normalized.Any(c => !Uri.IsHexDigit(c)))
+        {
+            throw new BusinessRuleException(
+                "Invitation token hash must be a valid SHA-256 hexadecimal value.");
+        }
+
+        return new InvitationTokenHash(normalized);
     }
 
     protected override IEnumerable<object?> GetEqualityComponents()

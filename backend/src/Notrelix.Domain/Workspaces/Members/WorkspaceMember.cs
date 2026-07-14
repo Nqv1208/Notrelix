@@ -40,6 +40,12 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
 
+        if (newRole == WorkspaceRole.Owner)
+        {
+            throw new BusinessRuleException(
+                "Ownership must be transferred through the ownership transfer workflow.");
+        }
+
         if (Status != WorkspaceMemberStatus.Active)
         {
             throw new BusinessRuleException("Cannot change role of an inactive or suspended member.");
@@ -56,6 +62,25 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         IncrementVersion();
         AddDomainEvent(new WorkspaceMemberRoleChangedDomainEvent(
             AccountId, WorkspaceId, Id, UserId, oldRole, newRole, updatedBy, updatedAt));
+    }
+
+    public void PromoteToOwner(Guid promotedBy, DateTimeOffset promotedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(promotedBy);
+
+        if (Status != WorkspaceMemberStatus.Active)
+            throw new BusinessRuleException("Cannot promote an inactive member to owner.");
+
+        if (Role == WorkspaceRole.Owner) return;
+
+        var oldRole = Role;
+        Role = WorkspaceRole.Owner;
+
+        SetAuditOnUpdate(promotedBy, promotedAt);
+        IncrementVersion();
+        AddDomainEvent(new WorkspaceMemberRoleChangedDomainEvent(
+            AccountId, WorkspaceId, Id, UserId, oldRole, WorkspaceRole.Owner, promotedBy, promotedAt));
     }
 
     public void Suspend(

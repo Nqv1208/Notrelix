@@ -130,4 +130,38 @@ public class EmailVerificationTokenTests
 
         act.Should().Throw<BusinessRuleException>().WithMessage("*used token*");
     }
+
+    [Fact]
+    public void Revoke_ShouldMakeTokenUnavailable()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var token = EmailVerificationToken.Create(
+            Guid.NewGuid(),
+            ValidHash,
+            1,
+            "person@example.com",
+            now.AddHours(1),
+            now);
+
+        token.TryRevoke(now.AddMinutes(1), "resend").Should().BeTrue();
+        token.Status.Should().Be(UserTokenStatus.Revoked);
+        token.RevokedAt.Should().Be(now.AddMinutes(1));
+        token.RevocationReason.Should().Be("resend");
+    }
+
+    [Fact]
+    public void Create_ShouldSnapshotNormalizedEmailAndHashVersion()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var token = EmailVerificationToken.Create(
+            Guid.NewGuid(),
+            ValidHash,
+            3,
+            " PERSON@EXAMPLE.COM ",
+            now.AddHours(1),
+            now);
+
+        token.HashVersion.Should().Be(3);
+        token.NormalizedEmailSnapshot.Should().Be("person@example.com");
+    }
 }

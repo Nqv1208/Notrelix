@@ -35,4 +35,5 @@ public sealed record AllowlistEntry(
     string RequestTypeName,
     AllowlistClassification Classification,
     string Reason,
-    string TargetState);
+    string TargetState,
+    string Feature = "");

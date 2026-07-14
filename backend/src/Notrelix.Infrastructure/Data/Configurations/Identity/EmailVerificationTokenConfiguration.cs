@@ -13,10 +13,14 @@ public class EmailVerificationTokenConfiguration : IEntityTypeConfiguration<Emai
 
         builder.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(x => x.TokenHash).HasColumnName("token_hash").IsRequired();
+        builder.Property(x => x.HashVersion).HasColumnName("hash_version").IsRequired().HasDefaultValue(1);
+        builder.Property(x => x.NormalizedEmailSnapshot).HasColumnName("email_snapshot").HasMaxLength(320);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.ExpiresAt).HasColumnName("expires_at").IsRequired();
         builder.Property(x => x.UsedAt).HasColumnName("used_at");
         builder.Property(x => x.ExpiredAt).HasColumnName("expired_at");
+        builder.Property(x => x.RevokedAt).HasColumnName("revoked_at");
+        builder.Property(x => x.RevocationReason).HasColumnName("revocation_reason").HasMaxLength(256);
 
         builder.Ignore(x => x.IsDeleted);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
@@ -30,6 +34,10 @@ public class EmailVerificationTokenConfiguration : IEntityTypeConfiguration<Emai
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
         builder.HasIndex(x => x.UserId).HasDatabaseName("idx_email_verification_tokens_user_id");
+        builder.HasIndex(x => x.UserId)
+            .IsUnique()
+            .HasFilter("status = 'Active' AND deleted_at IS NULL")
+            .HasDatabaseName("ux_email_verification_tokens_one_active_per_user");
         builder.HasIndex(x => x.ExpiresAt).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_email_verification_tokens_expires");
     }
 }

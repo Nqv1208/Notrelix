@@ -65,9 +65,11 @@ public class GetUserWorkspacesQueryHandlerTests : IAsyncLifetime
 
         await context.SaveChangesAsync();
 
-        var handler = new GetUserWorkspacesQueryHandler(context);
+        var requestContextMock = new Mock<ICurrentRequestContext>();
+        requestContextMock.Setup(r => r.UserId).Returns(userId);
+        var handler = new GetUserWorkspacesQueryHandler(context, requestContextMock.Object);
 
-        var result = await handler.Handle(new GetUserWorkspacesQuery(userId), CancellationToken.None);
+        var result = await handler.Handle(new GetUserWorkspacesQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         result.Data.Should().NotBeNull();
@@ -87,9 +89,11 @@ public class GetUserWorkspacesQueryHandlerTests : IAsyncLifetime
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
         await using var context = _db.CreateContext(tenant);
-        var handler = new GetUserWorkspacesQueryHandler(context);
+        var requestContextMock = new Mock<ICurrentRequestContext>();
+        requestContextMock.Setup(r => r.UserId).Returns(Guid.Empty);
+        var handler = new GetUserWorkspacesQueryHandler(context, requestContextMock.Object);
 
-        var result = await handler.Handle(new GetUserWorkspacesQuery(Guid.Empty), CancellationToken.None);
+        var result = await handler.Handle(new GetUserWorkspacesQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().ContainSingle("User is not authenticated");

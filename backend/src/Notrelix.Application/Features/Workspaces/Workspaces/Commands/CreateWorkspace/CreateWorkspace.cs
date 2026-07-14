@@ -7,7 +7,11 @@ public record CreateWorkspaceCommand(
     string Name,
     string? Description,
     bool IsPersonal
-) : ICommand<Result<Guid>>, ITransactionalRequest;
+) : ICommand<Result<Guid>>, IAccountRequest, IRequirePermission, IRequireVerifiedEmail, ITransactionalRequest
+{
+    public PermissionAction Action => PermissionAction.CreateWorkspace;
+    public ResourceRef? Resource => null;
+}
 
 public class CreateWorkspaceCommandHandler : IRequestHandler<CreateWorkspaceCommand, Result<Guid>>
 {
@@ -24,16 +28,25 @@ public class CreateWorkspaceCommandHandler : IRequestHandler<CreateWorkspaceComm
 
     public async Task<Result<Guid>> Handle(CreateWorkspaceCommand request, CancellationToken ct)
     {
+        var accountId = _requestContext.RequireAccountId();
         var slug = Slug.GenerateFromName(request.Name);
+        const int maxSlugLength = 128;
+        const int suffixLength = 7;
+
+        // Pre-check for UX — DB unique constraint is source of truth
         var slugExists = await _context.Workspaces
-            .AnyAsync(w => w.Slug == slug.Value, ct);
+            .AnyAsync(w => w.AccountId == accountId && w.Slug == slug.Value, ct);
 
         var finalSlug = slugExists
-            ? slug.Value + "-" + Guid.NewGuid().ToString("N")[..6]
-            : slug.Value;
+            ? slug.Value.Length > maxSlugLength - suffixLength
+                ? slug.Value[..(maxSlugLength - suffixLength)] + "-" + Guid.NewGuid().ToString("N")[..6]
+                : slug.Value + "-" + Guid.NewGuid().ToString("N")[..6]
+            : slug.Value.Length > maxSlugLength
+                ? slug.Value[..maxSlugLength]
+                : slug.Value;
 
         var creationResult = WorkspaceFactory.CreateWithOwner(
-            _requestContext.RequireAccountId(),
+            accountId,
             _requestContext.UserId, request.Name, finalSlug,
             _dateTimeProvider.UtcNow, request.IsPersonal,
             request.Description);

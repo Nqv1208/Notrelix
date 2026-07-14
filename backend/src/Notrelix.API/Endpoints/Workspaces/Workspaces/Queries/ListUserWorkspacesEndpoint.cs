@@ -15,13 +15,9 @@ public static class ListUserWorkspacesEndpoint
     }
 
     private static async Task<IResult> HandleAsync(
-        ISender sender,
-        ICurrentUser currentUser)
+        ISender sender)
     {
-        if (!currentUser.IsAuthenticated || currentUser.UserId == Guid.Empty)
-            return Results.Unauthorized();
-
-        var result = await sender.Send(new GetUserWorkspacesQuery(currentUser.UserId));
+        var result = await sender.Send(new GetUserWorkspacesQuery());
         return result.ToApiResult();
     }
 }

@@ -36,7 +36,8 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, R
             Id = user.Id,
             Email = user.Email.Value,
             Name = user.Name,
-            AvatarUrl = user.AvatarUrl
+            AvatarUrl = user.AvatarUrl,
+            EmailConfirmed = user.EmailConfirmed
         });
     }
 }

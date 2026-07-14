@@ -22,12 +22,19 @@ public class Workspace : AggregateRoot
 
         var slugValue = SharedKernel.Slug.Create(slug);
 
+        var normalizedDescription = string.IsNullOrWhiteSpace(description)
+            ? null
+            : description.Trim();
+
+        if (normalizedDescription is not null)
+            Guard.MaxLength(normalizedDescription, 1024);
+
         var workspace = new Workspace
         {
             AccountId = accountId,
             Name = name.Trim(),
             Slug = slugValue.Value,
-            Description = description?.Trim(),
+            Description = normalizedDescription,
             Status = WorkspaceStatus.Active,
             Settings = WorkspaceSettings.Create(),
             IsPersonal = isPersonal
@@ -81,6 +88,23 @@ public class Workspace : AggregateRoot
         AddDomainEvent(new WorkspaceArchivedDomainEvent(Id, archivedBy, archivedAt));
     }
 
+    public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(unarchivedBy);
+
+        if (Status == WorkspaceStatus.Active) return;
+
+        if (Status != WorkspaceStatus.Archived)
+            throw new BusinessRuleException(
+                "Only an archived workspace can be unarchived.");
+
+        Status = WorkspaceStatus.Active;
+        SetAuditOnUpdate(unarchivedBy, unarchivedAt);
+        IncrementVersion();
+        AddDomainEvent(new WorkspaceUnarchivedDomainEvent(Id, unarchivedBy, unarchivedAt));
+    }
+
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
@@ -101,6 +125,31 @@ public class Workspace : AggregateRoot
         AddDomainEvent(new WorkspaceRestoredDomainEvent(Id, restoredBy, restoredAt));
     }
 
+    public void UpdateDescription(string? newDescription, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+
+        if (Status == WorkspaceStatus.Archived)
+            throw new BusinessRuleException("Cannot update description of an archived workspace.");
+
+        var normalized = string.IsNullOrWhiteSpace(newDescription)
+            ? null
+            : newDescription.Trim();
+
+        if (normalized is not null)
+            Guard.MaxLength(normalized, 1024);
+
+        if (Description == normalized)
+            return;
+
+        var oldDescription = Description;
+        Description = normalized;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+        AddDomainEvent(new WorkspaceDescriptionUpdatedDomainEvent(Id, oldDescription, Description, updatedBy, updatedAt));
+    }
+
     public void UpdateSettings(WorkspaceSettings newSettings, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
@@ -110,8 +159,11 @@ public class Workspace : AggregateRoot
         if (Status == WorkspaceStatus.Archived)
             throw new BusinessRuleException("Cannot update settings of an archived workspace.");
 
+        if (Settings == newSettings) return;
+
         Settings = newSettings;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new WorkspaceSettingsUpdatedDomainEvent(Id, updatedBy, updatedAt));
     }
 }

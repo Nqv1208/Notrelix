@@ -4999,6 +4999,17 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
 
+                    b.Property<int>("HashVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("hash_version");
+
+                    b.Property<string>("NormalizedEmailSnapshot")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("email_snapshot");
+
                     b.Property<DateTimeOffset?>("RestoredAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("restored_at");
@@ -5006,6 +5017,15 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<Guid?>("RestoredBy")
                         .HasColumnType("uuid")
                         .HasColumnName("restored_by");
+
+                    b.Property<string>("RevocationReason")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("revocation_reason");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -5049,7 +5069,9 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasFilter("deleted_at IS NULL");
 
                     b.HasIndex("UserId")
-                        .HasDatabaseName("idx_email_verification_tokens_user_id");
+                        .IsUnique()
+                        .HasDatabaseName("ux_email_verification_tokens_one_active_per_user")
+                        .HasFilter("status = 'Active' AND deleted_at IS NULL");
 
                     b.ToTable("email_verification_tokens", "identity");
                 });
@@ -5088,6 +5110,12 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
 
+                    b.Property<int>("HashVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("hash_version");
+
                     b.Property<DateTimeOffset?>("RestoredAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("restored_at");
@@ -5095,6 +5123,15 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<Guid?>("RestoredBy")
                         .HasColumnType("uuid")
                         .HasColumnName("restored_by");
+
+                    b.Property<string>("RevocationReason")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("revocation_reason");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -5172,6 +5209,16 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<Guid?>("DeletedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("deleted_by");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("email_confirmed");
+
+                    b.Property<DateTimeOffset?>("EmailConfirmedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("email_confirmed_at");
 
                     b.Property<DateTimeOffset?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone")
@@ -8295,6 +8342,12 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
 
+                    b.Property<int>("HashVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("hash_version");
+
                     b.Property<Guid>("InvitedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("invited_by");
@@ -8318,6 +8371,12 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("status");
+
+                    b.Property<int>("TokenGeneration")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("token_generation");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -8769,9 +8828,10 @@ namespace Notrelix.Infrastructure.Migrations
                     b.HasIndex("Name")
                         .HasDatabaseName("idx_workspaces_name");
 
-                    b.HasIndex("Slug")
+                    b.HasIndex("AccountId", "Slug")
                         .IsUnique()
-                        .HasDatabaseName("idx_workspaces_slug");
+                        .HasDatabaseName("ux_workspaces_account_slug_active")
+                        .HasFilter("deleted_at IS NULL");
 
                     b.ToTable("workspaces", "workspace");
                 });
@@ -9802,14 +9862,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("processed_at");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)")
-                        .HasDefaultValue("Processing")
-                        .HasColumnName("status");
-
                     b.Property<string>("SourceContext")
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)")
@@ -9818,6 +9870,14 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<Guid?>("SourceEventId")
                         .HasColumnType("uuid")
                         .HasColumnName("source_event_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasDefaultValue("Processing")
+                        .HasColumnName("status");
 
                     b.Property<Guid?>("SubjectId")
                         .HasColumnType("uuid")
@@ -10034,6 +10094,12 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("body_text");
 
+                    b.Property<string>("ContentMode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("content_mode");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -10059,6 +10125,11 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)")
                         .HasColumnName("last_error_code");
+
+                    b.Property<string>("LockToken")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("lock_token");
 
                     b.Property<string>("LockedBy")
                         .HasMaxLength(160)
@@ -10119,6 +10190,14 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasDefaultValue(0)
                         .HasColumnName("retry_count");
 
+                    b.Property<DateTimeOffset?>("SensitivePayloadClearedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("sensitive_payload_cleared_at");
+
+                    b.Property<DateTimeOffset?>("SensitivePayloadExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("sensitive_payload_expires_at");
+
                     b.Property<DateTimeOffset?>("SentAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("sent_at");
@@ -10145,17 +10224,13 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnName("status");
 
                     b.Property<string>("Subject")
-                        .IsRequired()
                         .HasMaxLength(320)
                         .HasColumnType("character varying(320)")
                         .HasColumnName("subject");
 
                     b.Property<string>("TemplateDataJson")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("jsonb")
-                        .HasColumnName("template_data_json")
-                        .HasDefaultValueSql("'{}'::jsonb");
+                        .HasColumnName("template_data_json");
 
                     b.Property<string>("TemplateName")
                         .IsRequired()
@@ -10206,7 +10281,12 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasDatabaseName("ix_email_outbox_status_priority_next_attempt_at_created_at")
                         .HasFilter("\"status\" IN ('Pending', 'Failed')");
 
-                    b.ToTable("email_outbox", "notifications");
+                    b.ToTable("email_outbox", "notifications", t =>
+                        {
+                            t.HasCheckConstraint("ck_email_outbox_content_mode", "(content_mode = 'Rendered' AND subject IS NOT NULL AND (body_html IS NOT NULL OR body_text IS NOT NULL) AND template_data_json IS NULL) OR (content_mode = 'Templated' AND subject IS NULL AND body_html IS NULL AND body_text IS NULL AND template_data_json IS NOT NULL AND template_data_json <> '{}'::jsonb) OR (content_mode = 'Purged' AND subject IS NULL AND body_html IS NULL AND body_text IS NULL AND template_data_json IS NULL AND sensitive_payload_cleared_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_email_outbox_sensitive_payload_state", "sensitive_payload_cleared_at IS NULL OR template_data_json IS NULL");
+                        });
                 });
 
             modelBuilder.Entity("Notrelix.Infrastructure.Data.Notifications.NotificationCounterRecord", b =>
@@ -13180,8 +13260,9 @@ namespace Notrelix.Infrastructure.Migrations
 
                             b1.Property<string>("Value")
                                 .IsRequired()
-                                .HasColumnType("text")
-                                .HasColumnName("token");
+                                .HasMaxLength(64)
+                                .HasColumnType("character varying(64)")
+                                .HasColumnName("token_hash");
 
                             b1.HasKey("WorkspaceInvitationId");
 

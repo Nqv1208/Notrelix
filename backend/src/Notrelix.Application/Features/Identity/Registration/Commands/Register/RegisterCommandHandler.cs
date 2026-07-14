@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Verification.Abstractions;
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
 
@@ -15,6 +16,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
     private readonly IAuthSessionIssuer _sessionIssuer;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IIntegrationEventCollector _integrationEventCollector;
+    private readonly IEmailVerificationTokenIssuer? _emailVerificationTokenIssuer;
 
     public RegisterCommandHandler(
         IIdentityDbContext identityContext,
@@ -22,7 +24,8 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
         IPasswordHasher passwordHasher,
         IAuthSessionIssuer sessionIssuer,
         IDateTimeProvider dateTimeProvider,
-        IIntegrationEventCollector integrationEventCollector)
+        IIntegrationEventCollector integrationEventCollector,
+        IEmailVerificationTokenIssuer? emailVerificationTokenIssuer = null)
     {
         _identityContext = identityContext;
         _accountContext = accountContext;
@@ -30,6 +33,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
         _sessionIssuer = sessionIssuer;
         _dateTimeProvider = dateTimeProvider;
         _integrationEventCollector = integrationEventCollector;
+        _emailVerificationTokenIssuer = emailVerificationTokenIssuer;
     }
 
     public async Task<Result<AuthResult>> Handle(RegisterCommand request, CancellationToken cancellationToken)
@@ -67,6 +71,15 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
             user.Id,
             now);
         _accountContext.AccountMembers.Add(accountMember);
+
+        if (_emailVerificationTokenIssuer is not null)
+        {
+            await _emailVerificationTokenIssuer.IssueAsync(
+                user,
+                user.Id,
+                now,
+                cancellationToken);
+        }
 
         // Emit registration completed use-case integration event
         _integrationEventCollector.Add(
