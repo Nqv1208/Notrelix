@@ -65,37 +65,52 @@ internal sealed class OutboxDispatcher : BackgroundService
         var now = dateTimeProvider.UtcNow;
         var processingCutoff = now.AddSeconds(-ProcessingTimeoutSeconds);
 
-        var messages = await context.Set<MessagingOutboxMessage>()
-            .FromSqlRaw("""
-                SELECT * FROM messaging.outbox_messages
-                WHERE (
-                    (status = 'Pending' AND next_attempt_at <= {0})
-                    OR
-                    (status = 'Processing' AND processing_started_at <= {1})
-                    OR
-                    (status = 'Failed' AND next_attempt_at <= {0})
-                )
-                ORDER BY created_at
-                LIMIT {2}
-                FOR UPDATE SKIP LOCKED
-            """, now.UtcDateTime, processingCutoff.UtcDateTime, BatchSize)
-            .ToListAsync(cancellationToken);
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
-        if (messages.Count == 0) return;
-
-        foreach (var message in messages)
+        try
         {
-            message.MarkProcessing(now);
+            var messages = await context.Set<MessagingOutboxMessage>()
+                .FromSqlRaw("""
+                    SELECT * FROM messaging.outbox_messages
+                    WHERE (
+                        (status = 'Pending' AND next_attempt_at <= {0})
+                        OR
+                        (status = 'Processing' AND processing_started_at <= {1})
+                        OR
+                        (status = 'Failed' AND next_attempt_at <= {0})
+                    )
+                    ORDER BY created_at
+                    LIMIT {2}
+                    FOR UPDATE SKIP LOCKED
+                """, now.UtcDateTime, processingCutoff.UtcDateTime, BatchSize)
+                .ToListAsync(cancellationToken);
+
+            if (messages.Count == 0)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return;
+            }
+
+            foreach (var message in messages)
+            {
+                message.MarkProcessing(now);
+            }
+
+            await context.SaveChangesAsync(cancellationToken);
+
+            foreach (var message in messages)
+            {
+                await ProcessMessageAsync(message, context, eventTypeRegistry, eventCatalog, integrationEventBus, dateTimeProvider, cancellationToken);
+            }
+
+            await context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
         }
-
-        await context.SaveChangesAsync(cancellationToken);
-
-        foreach (var message in messages)
+        catch
         {
-            await ProcessMessageAsync(message, context, eventTypeRegistry, eventCatalog, integrationEventBus, dateTimeProvider, cancellationToken);
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
         }
-
-        await context.SaveChangesAsync(cancellationToken);
     }
 
     private async Task ProcessMessageAsync(

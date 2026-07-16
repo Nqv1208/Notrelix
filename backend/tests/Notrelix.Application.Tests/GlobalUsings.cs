@@ -31,3 +31,11 @@ global using Notrelix.Domain.Workspaces.Members;
 global using Notrelix.Domain.Workspaces.Spaces;
 global using Notrelix.Domain.Workspaces.Teams;
 global using Notrelix.Domain.Workspaces.Workspaces;
+
+// WorkManagement domain types
+global using Notrelix.Domain.WorkManagement.Boards;
+global using Notrelix.Domain.WorkManagement.BoardGroups;
+global using Notrelix.Domain.WorkManagement.Items;
+global using Notrelix.Domain.WorkManagement.Fields;
+global using Notrelix.Domain.WorkManagement.Views;
+global using Notrelix.Domain.WorkManagement.Labels;

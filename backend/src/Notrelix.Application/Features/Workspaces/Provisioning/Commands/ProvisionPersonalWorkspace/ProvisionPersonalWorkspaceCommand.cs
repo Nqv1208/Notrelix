@@ -17,13 +17,16 @@ public sealed record ProvisionPersonalWorkspaceCommand(
     ISystemInternalRequest,
     ITransactionalRequest,
     IMessageTriggeredRequest,
-    IIdempotentRequest
+    IIdempotentRequest,
+    ISystemOperation
 {
-    public UseCaseSecurityKind SecurityKind => UseCaseSecurityKind.SystemInternal;
     public string ConsumerName => ConsumerNames.PersonalWorkspaceProvisioning;
     public Guid? WorkspaceId => null;
 
     public string IdempotencyKey => $"account-default-workspace:{AccountId}";
+    public string OperationName => "ProvisionPersonalWorkspace";
+    public SystemOperationReason Reason => new("Workspaces", "Auto-provision personal workspace for new user");
+    Guid ISystemOperation.CorrelationId => MessageId;
 }
 
 public sealed record ProvisionPersonalWorkspaceResult(

@@ -56,10 +56,7 @@ public class AuthorizationBehaviorTests
 
     public sealed record UnclassifiedRequest : IRequest<string>;
 
-    public sealed record SystemInternalPlainRequest : IRequest<string>, ISystemInternalRequest
-    {
-        public UseCaseSecurityKind SecurityKind => UseCaseSecurityKind.SystemInternal;
-    }
+    public sealed record SystemInternalPlainRequest : IRequest<string>, ISystemInternalRequest;
 
     // --- Helpers ---
 

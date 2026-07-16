@@ -6,5 +6,6 @@ public enum PartitionKey
     UserId,
     AccountId,
     WorkspaceId,
+    ApiKey,
     Global,
 }

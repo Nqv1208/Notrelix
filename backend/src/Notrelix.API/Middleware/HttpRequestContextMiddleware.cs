@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Notrelix.API.Extensions;
 
 namespace Notrelix.API.Middleware;
 
@@ -23,6 +24,7 @@ public sealed class HttpRequestContextMiddleware
     public async Task InvokeAsync(HttpContext context)
     {
         var executionContext = context.RequestServices.GetRequiredService<IExecutionContextAccessor>();
+        var tenantContext = context.RequestServices.GetRequiredService<ICurrentTenantContext>();
 
         // Extract user identity from JWT claims (after UseAuthentication)
         if (context.User.Identity?.IsAuthenticated == true)
@@ -34,6 +36,7 @@ public sealed class HttpRequestContextMiddleware
             if (userId != Guid.Empty)
             {
                 executionContext.SetUser(userId, email, name);
+                tenantContext.SetUser(userId);
             }
         }
 
@@ -54,6 +57,12 @@ public sealed class HttpRequestContextMiddleware
             && parsedWorkspaceId != Guid.Empty)
         {
             context.Items["WorkspaceHint"] = parsedWorkspaceId;
+        }
+
+        // Extract account hint from header or route
+        if (context.TryGetAccountIdHint(out var accountId))
+        {
+            tenantContext.SetAccountHint(accountId);
         }
 
         await _next(context);

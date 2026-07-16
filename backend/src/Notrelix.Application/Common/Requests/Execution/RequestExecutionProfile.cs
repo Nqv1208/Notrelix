@@ -15,7 +15,8 @@ public sealed record RequestExecutionProfile(
     bool RequiresSubscription,
     bool RequiresFeature,
     bool IsPublicCacheable,
-    bool IsAuthorizedCacheable)
+    bool IsAuthorizedCacheable,
+    bool IsRealtimeRequest)
 {
     public bool IsTenantScoped =>
         IsAccountScoped || IsWorkspaceScoped || IsResourceScoped;

@@ -24,6 +24,8 @@ namespace Notrelix.Infrastructure.Data
             public Guid RequireAccountId() => throw new InvalidOperationException("Design-time only.");
             public Guid RequireWorkspaceId() => throw new InvalidOperationException("Design-time only.");
             public Guid RequireUserId() => throw new InvalidOperationException("Design-time only.");
+            public void SetUser(Guid userId) { }
+            public void SetAccountHint(Guid accountId) { }
             public void SetAccount(Guid accountId, Guid? userId) { }
             public void SetWorkspace(Guid accountId, Guid workspaceId, Guid? userId) { }
             public void SetSystem() { }

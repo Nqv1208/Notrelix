@@ -1,5 +1,7 @@
+using System.Data;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Infrastructure.Data;
 using Notrelix.Domain.Accounts.Members;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Governance.Permissions;
@@ -12,15 +14,18 @@ public sealed class TenantBootstrapStore : ITenantBootstrapStore
     private readonly IWorkspaceDbContext _workspaceContext;
     private readonly IAccountDbContext _accountContext;
     private readonly IPermissionEvaluator _permissionEvaluator;
+    private readonly ICurrentTenantContext _tenant;
 
     public TenantBootstrapStore(
         IWorkspaceDbContext workspaceContext,
         IAccountDbContext accountContext,
-        IPermissionEvaluator permissionEvaluator)
+        IPermissionEvaluator permissionEvaluator,
+        ICurrentTenantContext tenant)
     {
         _workspaceContext = workspaceContext;
         _accountContext = accountContext;
         _permissionEvaluator = permissionEvaluator;
+        _tenant = tenant;
     }
 
     public async Task<WorkspaceAccessSnapshot> ResolveWorkspaceAccessAsync(
@@ -28,6 +33,8 @@ public sealed class TenantBootstrapStore : ITenantBootstrapStore
         Guid actorUserId,
         CancellationToken ct)
     {
+        await EnsureBootstrapConnectionAsync(ct);
+
         var workspace = await _workspaceContext.Workspaces
             .IgnoreQueryFilters()
             .Where(w => w.Id == workspaceId)
@@ -63,5 +70,28 @@ public sealed class TenantBootstrapStore : ITenantBootstrapStore
 
         if (!hasAccess)
             throw new ForbiddenException($"User {userId} does not have active access to account {accountId}.");
+    }
+
+    private async Task EnsureBootstrapConnectionAsync(CancellationToken ct)
+    {
+        var concreteContext = (ApplicationDbContext)(object)_workspaceContext;
+        var connection = (NpgsqlConnection)concreteContext.Database.GetDbConnection();
+
+        if (connection.State != ConnectionState.Open)
+        {
+            await connection.OpenAsync(ct);
+        }
+
+        var userId = _tenant.UserId?.ToString() ?? "";
+        var correlationId = System.Diagnostics.Activity.Current?.Id ?? "";
+
+        await using var cmd = new NpgsqlCommand($@"
+            SELECT set_config('app.current_user_id', @userId, true);
+            SELECT set_config('app.request_scope', 'app', true);
+            SELECT set_config('app.correlation_id', @correlationId, true);
+        ", connection);
+        cmd.Parameters.AddWithValue("@userId", userId);
+        cmd.Parameters.AddWithValue("@correlationId", correlationId);
+        await cmd.ExecuteScalarAsync(ct);
     }
 }

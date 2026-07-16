@@ -1,6 +1,5 @@
 namespace Notrelix.Application.Common.Requests.Security;
 
-public interface IAnonymousRequest : IUseCaseSecurityRequirement
+public interface IAnonymousRequest
 {
-    UseCaseSecurityKind IUseCaseSecurityRequirement.SecurityKind => UseCaseSecurityKind.Anonymous;
 }
