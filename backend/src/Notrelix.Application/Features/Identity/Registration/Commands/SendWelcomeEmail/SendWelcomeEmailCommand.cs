@@ -11,9 +11,12 @@ public sealed record SendWelcomeEmailCommand(
     string? CorrelationId,
     string? CausationId,
     DateTimeOffset OccurredAt
-) : ICommand<SendWelcomeEmailResult>, ISystemInternalRequest, ITransactionalRequest, IMessageTriggeredRequest
+) : ICommand<SendWelcomeEmailResult>, ISystemInternalRequest, ITransactionalRequest, IMessageTriggeredRequest, ISystemOperation
 {
-    public UseCaseSecurityKind SecurityKind => UseCaseSecurityKind.SystemInternal;
     public string ConsumerName => ConsumerNames.WelcomeEmailSending;
     public Guid? WorkspaceId => null;
+
+    public string OperationName => "SendWelcomeEmail";
+    public SystemOperationReason Reason => new("Identity", "Welcome email for newly registered user");
+    Guid ISystemOperation.CorrelationId => MessageId;
 }

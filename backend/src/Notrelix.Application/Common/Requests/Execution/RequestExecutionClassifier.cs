@@ -27,6 +27,7 @@ public static class RequestExecutionClassifier
             RequiresSubscription: request is IRequireSubscription,
             RequiresFeature: request is IRequireFeature,
             IsPublicCacheable: isPublicCacheable,
-            IsAuthorizedCacheable: request is IAuthorizedCacheableRequest);
+            IsAuthorizedCacheable: request is IAuthorizedCacheableRequest,
+            IsRealtimeRequest: request is IRealtimeRequest);
     }
 }

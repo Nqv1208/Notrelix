@@ -10,12 +10,11 @@ public abstract record AccountRootDomainEvent : AccountScopedDomainEvent
         Guid? actorUserId = null,
         string? correlationId = null,
         string? causationId = null)
-        : base(accountId, occurredAt, actorUserId, correlationId, causationId)
+        : base(accountId, occurredAt, actorUserId, correlationId, causationId, subjectId: accountId)
     {
         SourceContext = SourceContexts.Accounts;
         AggregateType = AggregateTypes.Account;
         AggregateId = accountId;
         SubjectType = SubjectTypes.Account;
-        SubjectId = accountId;
     }
 }

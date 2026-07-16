@@ -58,19 +58,22 @@ app.UseExceptionHandler();
 // 3. Correlation ID (request tracing)
 app.UseMiddleware<CorrelationIdMiddleware>();
 
-// 4. Security headers (transport security)
+// 4. CSRF validation (before rate limiting, after correlation)
+app.UseMiddleware<CsrfValidationMiddleware>();
+
+// 5. Security headers (transport security)
 app.UseMiddleware<SecurityHeadersMiddleware>();
 
-// 5. Rate limiting (before auth, after security headers)
+// 6. Rate limiting (before auth, after security headers)
 app.UseMiddleware<PreAuthenticationRateLimitMiddleware>();
 
-// 6. HSTS (non-dev only)
+// 7. HSTS (non-dev only)
 if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
 }
 
-// 7. Swagger (dev only)
+// 8. Swagger (dev only)
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -95,10 +98,13 @@ app.UseMiddleware<HttpRequestContextMiddleware>();
 // 12. Rate limiting (authenticated)
 app.UseMiddleware<AuthenticatedRateLimitMiddleware>();
 
-// 13. Authorization
+// 13. Security audit (capture auth failures, rate limits)
+app.UseMiddleware<SecurityAuditMiddleware>();
+
+// 14. Authorization
 app.UseAuthorization();
 
-// 13. Endpoints
+// 15. Endpoints
 app.MapEndpoints();
 
 app.Run();

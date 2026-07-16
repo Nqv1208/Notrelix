@@ -12,7 +12,7 @@ public sealed record UserSessionCreatedDomainEvent : GlobalDomainEvent
         Guid sessionId,
         Guid userId,
         DateTimeOffset createdAt)
-        : base(occurredAt: createdAt, actorUserId: userId)
+        : base(occurredAt: createdAt, actorUserId: userId, subjectId: sessionId)
     {
         SessionId = sessionId;
         UserId = userId;
@@ -22,6 +22,5 @@ public sealed record UserSessionCreatedDomainEvent : GlobalDomainEvent
         AggregateType = AggregateTypes.UserSession;
         AggregateId = sessionId;
         SubjectType = SubjectTypes.UserSession;
-        SubjectId = sessionId;
     }
 }

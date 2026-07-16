@@ -14,7 +14,7 @@ public sealed record UserRegisteredDomainEvent : GlobalDomainEvent
         string email,
         string displayName,
         DateTimeOffset registeredAt)
-        : base(occurredAt: registeredAt, actorUserId: userId)
+        : base(occurredAt: registeredAt, actorUserId: userId, subjectId: userId)
     {
         UserId = userId;
         Email = email;
@@ -25,6 +25,5 @@ public sealed record UserRegisteredDomainEvent : GlobalDomainEvent
         AggregateType = AggregateTypes.User;
         AggregateId = userId;
         SubjectType = SubjectTypes.User;
-        SubjectId = userId;
     }
 }

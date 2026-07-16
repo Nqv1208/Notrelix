@@ -1,8 +1,10 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Notrelix.API.ErrorHandling;
+using Notrelix.API.Middleware;
 using Notrelix.API.Options;
 using Notrelix.API.RateLimiting;
+using Notrelix.Infrastructure.Auth.Csrf;
 using Notrelix.Infrastructure.Observability.HealthChecks;
 
 namespace Microsoft.Extensions.DependencyInjection;
@@ -42,6 +44,10 @@ public static class DependencyInjection
 
         services.Configure<OAuthRedirectOptions>(
             configuration.GetSection("OAuth"));
+
+        services.Configure<CsrfOptions>(
+            configuration.GetSection("Security:Csrf"));
+        services.AddSingleton<CsrfProtector>();
 
         return services;
     }

@@ -1,9 +1,6 @@
 namespace Notrelix.Application.Common.Requests;
 
-public interface ITokenScopedRequest : IUseCaseSecurityRequirement
+public interface ITokenScopedRequest
 {
     TokenPurpose TokenPurpose { get; }
-
-    UseCaseSecurityKind IUseCaseSecurityRequirement.SecurityKind =>
-        UseCaseSecurityKind.TokenScoped;
 }

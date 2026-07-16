@@ -9,8 +9,9 @@ public abstract record AccountScopedDomainEvent : DomainEvent
         DateTimeOffset occurredAt,
         Guid? actorUserId = null,
         string? correlationId = null,
-        string? causationId = null)
-        : base(occurredAt, workspaceId: null, actorUserId)
+        string? causationId = null,
+        Guid subjectId = default)
+        : base(occurredAt, workspaceId: null, actorUserId, subjectId)
     {
         AccountId = accountId;
         CorrelationId = correlationId;

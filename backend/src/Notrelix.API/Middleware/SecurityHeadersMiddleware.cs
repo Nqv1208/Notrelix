@@ -42,6 +42,13 @@ public sealed class SecurityHeadersMiddleware
             // Remove server header
             headers["X-Powered-By"] = "";
 
+            // Permissions Policy — restrict browser features
+            headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()";
+
+            // Cross-Origin policies — isolate browsing context
+            headers["Cross-Origin-Embedder-Policy"] = "require-corp";
+            headers["Cross-Origin-Opener-Policy"] = "same-origin";
+
             // Content Security Policy (if enabled)
             if (securityHeaders.EnableCsp && !string.IsNullOrWhiteSpace(securityHeaders.ContentSecurityPolicy))
             {
