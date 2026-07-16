@@ -41,6 +41,15 @@ public class TenantBootstrapBehavior<TRequest, TResponse> : IPipelineBehavior<TR
                 throw new ForbiddenException("Access to workspace denied.");
             }
 
+            if (!snapshot.IsWorkspaceActive)
+            {
+                _logger.LogWarning(
+                    "Request to inactive workspace: UserId={UserId} WorkspaceId={WorkspaceId} RequestType={RequestType}",
+                    actorUserId,
+                    workspaceId,
+                    typeof(TRequest).Name);
+            }
+
             _tenant.SetWorkspace(snapshot.AccountId, snapshot.WorkspaceId, snapshot.ActorUserId);
         }
         else if (request is IAccountRequest)
