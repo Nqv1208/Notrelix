@@ -102,6 +102,60 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         AddDomainEvent(new FieldOptionAddedDomainEvent(AccountId, WorkspaceId, Id, option.Id, option.Name, addedBy, addedAt));
     }
 
+    public void RemoveOption(Guid optionId, Guid removedBy, DateTimeOffset removedAt)
+    {
+        EnsureNotDeleted();
+        var option = _options.FirstOrDefault(o => o.Id == optionId);
+        if (option is null)
+            throw new NotFoundException(nameof(FieldOption), optionId);
+
+        _options.Remove(option);
+        SetAuditOnUpdate(removedBy, removedAt);
+        IncrementVersion();
+        AddDomainEvent(new FieldOptionRemovedDomainEvent(AccountId, WorkspaceId, Id, optionId, removedBy, removedAt));
+    }
+
+    public void UpdateOption(Guid optionId, string name, Color color, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotNullOrWhiteSpace(name);
+
+        var option = _options.FirstOrDefault(o => o.Id == optionId);
+        if (option is null)
+            throw new NotFoundException(nameof(FieldOption), optionId);
+
+        if (_options.Any(o => o.Id != optionId && string.Equals(o.Name, name, StringComparison.OrdinalIgnoreCase)))
+            throw new BusinessRuleException($"Duplicate option name '{name}'.");
+
+        option.Update(name, color);
+
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+        AddDomainEvent(new FieldOptionUpdatedDomainEvent(AccountId, WorkspaceId, Id, optionId, name.Trim(), updatedBy, updatedAt));
+    }
+
+    public void ReorderOptions(List<Guid> orderedOptionIds, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        if (orderedOptionIds.Count != _options.Count)
+            throw new BusinessRuleException("Reorder list must contain all options.");
+
+        var positions = new[] { "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9",
+            "aA", "aB", "aC", "aD", "aE", "aF", "aG", "aH", "aI", "aJ" };
+
+        for (var i = 0; i < orderedOptionIds.Count; i++)
+        {
+            var option = _options.FirstOrDefault(o => o.Id == orderedOptionIds[i]);
+            if (option is null)
+                throw new NotFoundException(nameof(FieldOption), orderedOptionIds[i]);
+
+            option.UpdatePosition(FractionalIndex.Create(positions[i]));
+        }
+
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+    }
+
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
