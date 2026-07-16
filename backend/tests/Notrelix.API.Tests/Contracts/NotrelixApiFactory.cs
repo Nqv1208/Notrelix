@@ -61,6 +61,60 @@ using Notrelix.Application.Features.Workspaces.Teams.Commands.ArchiveTeam;
 using Notrelix.Application.Features.Workspaces.Teams.Commands.UnarchiveTeam;
 using Notrelix.Application.Features.Workspaces.Teams.Commands.DeleteTeam;
 using Notrelix.Application.Features.Workspaces.Teams.Commands.RestoreTeam;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoard;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.ArchiveBoard;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.UnarchiveBoard;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.AddBoardMember;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.RemoveBoardMember;
+using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoard;
+using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoards;
+using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetFullBoard;
+using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMembers;
+using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardsBySlug;
+using Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardBySlug;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.DeleteBoardField;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderBoardFields;
+using Notrelix.Application.Features.WorkManagement.BoardSchema.Queries.GetBoardSchema;
+using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.CreateBoardGroup;
+using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UpdateBoardGroup;
+using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ArchiveBoardGroup;
+using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.UnarchiveBoardGroup;
+using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DuplicateBoardGroup;
+using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ReorderBoardGroups;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CreateBoardItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ArchiveBoardItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.DuplicateBoardItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValues;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.AssignBoardItemMember;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UnassignBoardItemMember;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetBoardItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetBoardItems;
+using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.CreateBoardView;
+using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.UpdateBoardViewConfig;
+using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.DeleteBoardView;
+using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SaveBoardView;
+using Notrelix.Application.Features.WorkManagement.BoardViews.Queries.GetBoardView;
+using Notrelix.Application.Features.WorkManagement.Labels.Commands.CreateLabel;
+using Notrelix.Application.Features.WorkManagement.Labels.Commands.UpdateLabel;
+using Notrelix.Application.Features.WorkManagement.Labels.Commands.DeleteLabel;
+using Notrelix.Application.Features.WorkManagement.Labels.Commands.AddLabelToBoardItem;
+using Notrelix.Application.Features.WorkManagement.Labels.Commands.RemoveLabelFromBoardItem;
+using Notrelix.Application.Features.WorkManagement.Labels.Queries.GetLabels;
+using Notrelix.Application.Features.WorkManagement.Checklists.Commands.CreateChecklist;
+using Notrelix.Application.Features.WorkManagement.Checklists.Commands.UpdateChecklist;
+using Notrelix.Application.Features.WorkManagement.Checklists.Commands.DeleteChecklist;
+using Notrelix.Application.Features.WorkManagement.Checklists.Commands.CreateChecklistItem;
+using Notrelix.Application.Features.WorkManagement.Checklists.Commands.UpdateChecklistItem;
+using Notrelix.Application.Features.WorkManagement.Checklists.Commands.DeleteChecklistItem;
+using Notrelix.Application.Features.WorkManagement.Checklists.Commands.ToggleChecklistItem;
+using Notrelix.Application.Features.WorkManagement.Checklists.Queries.GetChecklists;
+using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -404,6 +458,105 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             MockWorkspaceHandler<RestoreTeamCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<RegisterCommand, Result<AuthResult>>(services,
                 Result<AuthResult>.Success(CreateAuthResult()));
+
+            // ── WorkManagement handler mocks ──
+            // Boards
+            MockWorkspaceHandler<CreateBoardInWorkspaceCommand, Result<Guid>>(services,
+                Result<Guid>.Success(Guid.NewGuid()));
+            MockWorkspaceHandler<UpdateBoardCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<ArchiveBoardCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<UnarchiveBoardCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<AddBoardMemberCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<RemoveBoardMemberCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<GetBoardQuery, Result<BoardDto>>(services,
+                Result<BoardDto>.Success(new BoardDto(
+                    Guid.NewGuid(), Guid.NewGuid(), "Test Board", null, "default",
+                    "Workspace", false, 0, 0, DateTime.UtcNow)));
+            MockWorkspaceHandler<GetBoardsQuery, Result<List<BoardDto>>>(services,
+                Result<List<BoardDto>>.Success(new List<BoardDto>()));
+            MockWorkspaceHandler<GetFullBoardQuery, Result<FullBoardDto>>(services,
+                Result<FullBoardDto>.Success(new FullBoardDto(
+                    Guid.NewGuid(), Guid.NewGuid(), "Test Board", null, "default",
+                    "Workspace", new List<BoardFieldDto>(), new List<BoardGroupDto>(),
+                    new List<BoardMemberDto>())));
+            MockWorkspaceHandler<GetBoardMembersQuery, Result<List<BoardMemberDto>>>(services,
+                Result<List<BoardMemberDto>>.Success(new List<BoardMemberDto>()));
+            MockWorkspaceHandler<GetBoardsBySlugQuery, Result<List<BoardDto>>>(services,
+                Result<List<BoardDto>>.Success(new List<BoardDto>()));
+            MockWorkspaceHandler<CreateBoardBySlugCommand, Result<Guid>>(services,
+                Result<Guid>.Success(Guid.NewGuid()));
+            // Board fields
+            MockWorkspaceHandler<CreateBoardFieldCommand, Result<Guid>>(services,
+                Result<Guid>.Success(Guid.NewGuid()));
+            MockWorkspaceHandler<UpdateBoardFieldCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<DeleteBoardFieldCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<ReorderBoardFieldsCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<GetBoardSchemaQuery, BoardSchemaDto>(services,
+                new BoardSchemaDto(Guid.NewGuid(), "Test Board", null,
+                    new List<BoardFieldSchemaDto>(), new List<BoardGroupSchemaDto>()));
+            // Board groups
+            MockWorkspaceHandler<CreateBoardGroupCommand, Result<Guid>>(services,
+                Result<Guid>.Success(Guid.NewGuid()));
+            MockWorkspaceHandler<UpdateBoardGroupCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<ArchiveBoardGroupCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<UnarchiveBoardGroupCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<DuplicateBoardGroupCommand, Result<Guid>>(services,
+                Result<Guid>.Success(Guid.NewGuid()));
+            MockWorkspaceHandler<ReorderBoardGroupsCommand, Result>(services, Result.Success());
+            // Board items
+            MockWorkspaceHandler<CreateBoardItemCommand, BoardItemSlimDto>(services,
+                new BoardItemSlimDto(Guid.NewGuid(), Guid.NewGuid(), "Test Item", "a0",
+                    new List<Guid>(), new List<Guid>()));
+            MockWorkspaceHandler<GetBoardItemsQuery, List<BoardItemSlimDto>>(services,
+                new List<BoardItemSlimDto>());
+            MockWorkspaceHandler<GetBoardItemQuery, Result<BoardItemDto>>(services,
+                Result<BoardItemDto>.Success(new BoardItemDto(
+                    Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
+                    "Test Item", new List<BoardItemMemberDto>(), new List<BoardItemLabelDto>(),
+                    new List<ChecklistDto>(), 0, 0, "a0", DateTime.UtcNow, null)));
+            MockWorkspaceHandler<UpdateBoardItemCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<ArchiveBoardItemCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<DuplicateBoardItemCommand, Result<Guid>>(services,
+                Result<Guid>.Success(Guid.NewGuid()));
+            MockWorkspaceHandler<MoveBoardItemCommand, BoardItemSlimDto>(services,
+                new BoardItemSlimDto(Guid.NewGuid(), Guid.NewGuid(), "Test Item", "a0",
+                    new List<Guid>(), new List<Guid>()));
+            MockWorkspaceHandler<UpdateBoardItemFieldValueCommand, BoardItemSlimDto>(services,
+                new BoardItemSlimDto(Guid.NewGuid(), Guid.NewGuid(), "Test Item", "a0",
+                    new List<Guid>(), new List<Guid>()));
+            MockWorkspaceHandler<UpdateBoardItemFieldValuesCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<AssignBoardItemMemberCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<UnassignBoardItemMemberCommand, Result>(services, Result.Success());
+            // Board views
+            MockWorkspaceHandler<GetBoardViewQuery, Result<object>>(services,
+                Result<object>.Success(new { type = "Table", config = "{}" }));
+            MockWorkspaceHandler<CreateBoardViewCommand, BoardViewDto>(services,
+                new BoardViewDto(Guid.NewGuid(), Guid.NewGuid(), "Test View", "Table", "{}", true));
+            MockWorkspaceHandler<SaveBoardViewCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<UpdateBoardViewConfigCommand, BoardViewDto>(services,
+                new BoardViewDto(Guid.NewGuid(), Guid.NewGuid(), "Test View", "Table", "{}", true));
+            MockWorkspaceHandler<DeleteBoardViewCommand, Result>(services, Result.Success());
+            // Labels
+            MockWorkspaceHandler<CreateLabelCommand, Result<Guid>>(services,
+                Result<Guid>.Success(Guid.NewGuid()));
+            MockWorkspaceHandler<GetLabelsQuery, Result<List<BoardItemLabelDto>>>(services,
+                Result<List<BoardItemLabelDto>>.Success(new List<BoardItemLabelDto>()));
+            MockWorkspaceHandler<UpdateLabelCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<DeleteLabelCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<AddLabelToBoardItemCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<RemoveLabelFromBoardItemCommand, Result>(services, Result.Success());
+            // Checklists
+            MockWorkspaceHandler<GetChecklistsQuery, Result<List<ChecklistDto>>>(services,
+                Result<List<ChecklistDto>>.Success(new List<ChecklistDto>()));
+            MockWorkspaceHandler<CreateChecklistCommand, Result<Guid>>(services,
+                Result<Guid>.Success(Guid.NewGuid()));
+            MockWorkspaceHandler<UpdateChecklistCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<DeleteChecklistCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<CreateChecklistItemCommand, Result<Guid>>(services,
+                Result<Guid>.Success(Guid.NewGuid()));
+            MockWorkspaceHandler<UpdateChecklistItemCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<DeleteChecklistItemCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<ToggleChecklistItemCommand, Result>(services, Result.Success());
 
             services.AddAuthentication(defaultScheme: "Test")
                 .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
