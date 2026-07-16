@@ -523,17 +523,18 @@ public class PipelineExecutionTests
     #region 4. Idempotency behavior
 
     [Fact]
-    public async Task IdempotencyBehavior_LockAcquired_ExecutesHandlerAndStoresResult()
+    public async Task IdempotencyBehavior_LockAcquired_ExecutesHandlerAndEnqueuesPostCommitResult()
     {
         var mockStore = CreateMockIdempotencyStore(lockAcquired: true);
+        var mockQueue = new Mock<IPostCommitActionQueue>();
         var behavior = new IdempotencyBehavior<ExecutableCommand, string>(
-            mockStore.Object, Mock.Of<ILogger<IdempotencyBehavior<ExecutableCommand, string>>>());
+            mockStore.Object, mockQueue.Object, Mock.Of<ILogger<IdempotencyBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("result");
         var result = await behavior.Handle(new ExecutableCommand(), next, CancellationToken.None);
 
         result.Should().Be("result");
-        mockStore.Verify(x => x.SetResultAsync("test-key", "result"), Times.Once);
+        mockQueue.Verify(x => x.Enqueue(It.IsAny<IPostCommitAction>()), Times.Once);
     }
 
     [Fact]
@@ -546,7 +547,7 @@ public class PipelineExecutionTests
             .ReturnsAsync("cached-result");
 
         var behavior = new IdempotencyBehavior<ExecutableCommand, string>(
-            mockStore.Object, Mock.Of<ILogger<IdempotencyBehavior<ExecutableCommand, string>>>());
+            mockStore.Object, Mock.Of<IPostCommitActionQueue>(), Mock.Of<ILogger<IdempotencyBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => throw new InvalidOperationException("should not be called");
         var result = await behavior.Handle(new ExecutableCommand(), next, CancellationToken.None);
@@ -564,7 +565,7 @@ public class PipelineExecutionTests
             .ReturnsAsync((string?)null);
 
         var behavior = new IdempotencyBehavior<ExecutableCommand, string>(
-            mockStore.Object, Mock.Of<ILogger<IdempotencyBehavior<ExecutableCommand, string>>>());
+            mockStore.Object, Mock.Of<IPostCommitActionQueue>(), Mock.Of<ILogger<IdempotencyBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => throw new InvalidOperationException("should not be called");
 
@@ -574,11 +575,12 @@ public class PipelineExecutionTests
     }
 
     [Fact]
-    public async Task IdempotencyBehavior_HandlerThrows_ReleasesLockAndDoesNotStoreResult()
+    public async Task IdempotencyBehavior_HandlerThrows_ReleasesLockAndDoesNotEnqueueResult()
     {
         var mockStore = CreateMockIdempotencyStore(lockAcquired: true);
+        var mockQueue = new Mock<IPostCommitActionQueue>();
         var behavior = new IdempotencyBehavior<ExecutableCommand, string>(
-            mockStore.Object, Mock.Of<ILogger<IdempotencyBehavior<ExecutableCommand, string>>>());
+            mockStore.Object, mockQueue.Object, Mock.Of<ILogger<IdempotencyBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => throw new InvalidOperationException("handler failed");
 
@@ -586,7 +588,7 @@ public class PipelineExecutionTests
 
         await act.Should().ThrowAsync<InvalidOperationException>();
         mockStore.Verify(x => x.ReleaseLockAsync("test-key"), Times.Once);
-        mockStore.Verify(x => x.SetResultAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        mockQueue.Verify(x => x.Enqueue(It.IsAny<IPostCommitAction>()), Times.Never);
     }
 
     [Fact]
@@ -594,7 +596,7 @@ public class PipelineExecutionTests
     {
         var mockStore = CreateMockIdempotencyStore();
         var behavior = new IdempotencyBehavior<NonTransactionalCommand, string>(
-            mockStore.Object, Mock.Of<ILogger<IdempotencyBehavior<NonTransactionalCommand, string>>>());
+            mockStore.Object, Mock.Of<IPostCommitActionQueue>(), Mock.Of<ILogger<IdempotencyBehavior<NonTransactionalCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("ok");
         var result = await behavior.Handle(new NonTransactionalCommand(), next, CancellationToken.None);
