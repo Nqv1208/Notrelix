@@ -25,13 +25,11 @@ public class RequestContractGuardBehaviorTests
     private sealed record AnonymousWorkspaceRequest : IRequest<string>, IAnonymousRequest, IWorkspaceRequest
     {
         public Guid WorkspaceId => Guid.NewGuid();
-        UseCaseSecurityKind IUseCaseSecurityRequirement.SecurityKind => UseCaseSecurityKind.Anonymous;
     }
 
     private sealed record AnonymousResourceRequest : IRequest<string>, IAnonymousRequest, IResourceScopedRequest
     {
         public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
-        UseCaseSecurityKind IUseCaseSecurityRequirement.SecurityKind => UseCaseSecurityKind.Anonymous;
     }
 
     private sealed record PublicCacheWorkspaceRequest : IRequest<string>, IPublicCacheableQuery<string>, IWorkspaceRequest

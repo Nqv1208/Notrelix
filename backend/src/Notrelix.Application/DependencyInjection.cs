@@ -22,7 +22,9 @@ public static class DependencyInjection
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ApplicationTracingBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(RequestContractGuardBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TokenValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TenantBootstrapBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(SystemOperationAuditBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ResourceScopeBehavior<,>));
         // Post-commit scope: wraps DB scope, flushes side effects after commit
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(PostCommitScopeBehavior<,>));
