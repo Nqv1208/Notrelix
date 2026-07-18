@@ -1,5 +1,3 @@
-"use client"
-
 import * as React from "react"
 import {
   DayPicker,
@@ -7,7 +5,7 @@ import {
   type DayButton,
 } from "react-day-picker"
 
-import { cn } from "../../lib/cn"
+import { cn } from '../../lib/cn'
 import { Button, buttonVariants } from "./button"
 import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "lucide-react"
 

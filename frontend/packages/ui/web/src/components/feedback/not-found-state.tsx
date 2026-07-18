@@ -1,7 +1,7 @@
 import * as React from "react"
 import { FileQuestion } from "lucide-react"
 
-import { cn } from "../../lib/cn"
+import { cn } from '../../lib/cn'
 
 interface NotFoundStateProps {
   title?: string

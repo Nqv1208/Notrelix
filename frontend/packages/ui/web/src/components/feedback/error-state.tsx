@@ -2,7 +2,7 @@ import * as React from "react"
 import { AlertTriangle } from "lucide-react"
 // AppError will be available from @notrelix/kernel in future milestones
 
-import { cn } from "../../lib/cn"
+import { cn } from '../../lib/cn'
 
 interface ErrorStateProps {
   error?: unknown

@@ -1,12 +1,10 @@
-"use client"
-
 import * as React from "react"
 import {
   Group,
   Panel,
   Separator,
 } from "react-resizable-panels"
-import { cn } from "../../lib/cn"
+import { cn } from '../../lib/cn'
 
 type ResizablePanelGroupProps = Omit<
   React.ComponentProps<typeof Group>,

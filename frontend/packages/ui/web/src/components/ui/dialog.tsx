@@ -1,9 +1,7 @@
-"use client"
-
 import * as React from "react"
 import { Dialog as DialogPrimitive } from "radix-ui"
 
-import { cn } from "../../lib/cn"
+import { cn } from '../../lib/cn'
 import { Button } from "./button"
 import { XIcon } from "lucide-react"
 

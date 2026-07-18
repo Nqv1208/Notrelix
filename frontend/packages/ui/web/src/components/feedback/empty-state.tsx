@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Inbox } from "lucide-react"
 
-import { cn } from "../../lib/cn"
+import { cn } from '../../lib/cn'
 
 interface EmptyStateProps {
   icon?: React.ReactNode
