@@ -19,13 +19,19 @@
     "validate": "pnpm typecheck && pnpm lint && pnpm test && pnpm check:deps"
   },
   "devDependencies": {
-    "turbo": "latest",
-    "typescript": "^5.5.4",
     "eslint": "^9.16.0",
     "prettier": "latest",
+    "turbo": "latest",
+    "typescript": "^5.5.4",
     "vitest": "^3.2.1"
   },
   "packageManager": "pnpm@10.0.0",
+  "pnpm": {
+    "overrides": {
+      "react": "^19.2.7",
+      "react-dom": "^19.2.7"
+    }
+  },
   "engines": {
     "node": ">=22.0.0",
     "pnpm": ">=10.0.0"

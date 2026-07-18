@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { createBreadcrumbApi } from '../../api/breadcrumb.api';
-import type { DocsApiClient, PageApiEndpoints } from '../../api/page.api';
+import { createBreadcrumbApi } from '~/api/breadcrumb.api';
+import type { DocsApiClient, PageApiEndpoints } from '~/api/page.api';
 import { docsQueryKeys } from '../keys';
 
 export function createUsePageBreadcrumb(api: DocsApiClient, endpoints: PageApiEndpoints) {

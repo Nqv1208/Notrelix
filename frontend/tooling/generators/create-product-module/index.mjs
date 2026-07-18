@@ -37,9 +37,24 @@ if (existsSync(productDir)) {
 
 console.log(`Creating product module: ${productName}`);
 
+function makeTsconfig(extendsRelative) {
+  return JSON.stringify({
+    extends: extendsRelative,
+    compilerOptions: {
+      outDir: './dist',
+      rootDir: './src',
+      baseUrl: '.',
+      paths: { '~/*': ['./src/*'] },
+    },
+    include: ['src/**/*'],
+    exclude: ['node_modules', 'dist'],
+  }, null, 2) + '\n';
+}
+
 // Create core
 const coreDir = join(productDir, 'core');
 mkdirSync(join(coreDir, 'src'), { recursive: true });
+writeFileSync(join(coreDir, 'tsconfig.json'), makeTsconfig('../../../../tooling/tsconfig/base.json'));
 writeFileSync(join(coreDir, 'package.json'), JSON.stringify({
   name: `@notrelix/${productName}-core`,
   version: '0.0.1',
@@ -56,6 +71,7 @@ writeFileSync(join(coreDir, 'src/index.ts'), `// @notrelix/${productName}-core\n
 // Create web
 const webDir = join(productDir, 'web');
 mkdirSync(join(webDir, 'src'), { recursive: true });
+writeFileSync(join(webDir, 'tsconfig.json'), makeTsconfig('../../../../tooling/tsconfig/react-library.json'));
 writeFileSync(join(webDir, 'package.json'), JSON.stringify({
   name: `@notrelix/${productName}-web`,
   version: '0.0.1',
@@ -73,6 +89,7 @@ writeFileSync(join(webDir, 'src/index.ts'), `// @notrelix/${productName}-web\nex
 // Create mobile
 const mobileDir = join(productDir, 'mobile');
 mkdirSync(join(mobileDir, 'src'), { recursive: true });
+writeFileSync(join(mobileDir, 'tsconfig.json'), makeTsconfig('../../../../tooling/tsconfig/react-library.json'));
 writeFileSync(join(mobileDir, 'package.json'), JSON.stringify({
   name: `@notrelix/${productName}-mobile`,
   version: '0.0.1',

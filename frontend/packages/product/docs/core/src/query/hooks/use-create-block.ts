@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createBlockApi } from '../../api/block.api';
-import type { DocsApiClient, PageApiEndpoints } from '../../api/page.api';
+import { createBlockApi } from '~/api/block.api';
+import type { DocsApiClient, PageApiEndpoints } from '~/api/page.api';
 import { docsQueryKeys } from '../keys';
-import type { CreateBlockPayload } from '../../types/block';
+import type { CreateBlockPayload } from '~/types/block';
 
 export function createUseCreateBlock(api: DocsApiClient, endpoints: PageApiEndpoints) {
   const blockApi = createBlockApi(api, endpoints);

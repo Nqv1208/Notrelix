@@ -8,3 +8,15 @@ export { createUseRemoveMember } from './hooks/mutations/use-remove-member';
 export { createUseCreateInvitation } from './hooks/mutations/use-create-invitation';
 export { createUseDeleteInvitation } from './hooks/mutations/use-delete-invitation';
 export { createUseAcceptInvitation } from './hooks/mutations/use-accept-invitation';
+
+export { WorkspaceCompactHeader } from './components/workspace-compact-header';
+export { WorkspaceViewTabs } from './components/workspace-view-tabs';
+export { WorkspaceContextualToolbar } from './components/workspace-contextual-toolbar';
+export { WorkspaceAddViewMenu } from './components/workspace-add-view-menu';
+export { PendingInvitationsMenu } from './components/pending-invitations-menu';
+
+export { WorkspaceOverview } from './components/dashboard/workspace-overview';
+export { ActiveBoards } from './components/dashboard/active-boards';
+export { PinnedDocs } from './components/dashboard/pinned-docs';
+export { ActivityFeed } from './components/dashboard/activity-feed';
+export { UpcomingDeadlines } from './components/dashboard/upcoming-deadlines';

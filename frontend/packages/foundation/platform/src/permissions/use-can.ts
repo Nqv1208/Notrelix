@@ -1,5 +1,3 @@
-"use client"
-
 import React, { useContext } from "react"
 import { hasPermission, type PermissionResourceContext } from "./ability"
 import type { Permission } from "./permissions"

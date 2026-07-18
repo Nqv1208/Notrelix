@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createWorkspaceService, type WorkspaceApiClient, type WorkspaceEndpoints } from '../../../core/api/workspace.service';
-import { workspaceQueryKeys } from '../../../core/query/keys';
-import type { UpdateWorkspaceInput } from '../../../core/types/workspace';
+import { createWorkspaceService, type WorkspaceApiClient, type WorkspaceEndpoints } from '~/core/api/workspace.service';
+import { workspaceQueryKeys } from '~/core/query/keys';
+import type { UpdateWorkspaceInput } from '~/core/types/workspace';
 
 interface UseUpdateWorkspaceDeps {
   api: WorkspaceApiClient;

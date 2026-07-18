@@ -1,6 +1,6 @@
 # Notrelix Frontend — Migration Tracker
 
-**Last Updated:** 2026-07-08  
+**Last Updated:** 2026-07-12  
 **Current Milestone:** M6 — Cleanup + Validation  
 **Overall Progress:** ███████████████████░ 99%
 
@@ -78,7 +78,7 @@
 | 9b | Split automation product | ✅ | Core types + web component populated |
 | 9c | Split normal features (auth, workspace, etc.) | ✅ | All 10 feature core packages populated with types, auth has API/schemas/utils |
 | 9d | Split query keys by feature | ✅ | 12 feature-owned key files created, old god file replaced with re-exports |
-| 10a | Extract apps/marketing (Next.js) | ✅ | Landing, pricing, privacy, terms, contact pages |
+| 10a | Extract apps/marketing (Next.js) | ✅ | Marketing v2 ở `/v2` và `/`, pricing, privacy, terms, contact pages |
 | 10b | Create apps/web (Vite + TanStack Router) | ✅ | Auth, workspace, board, docs routes created |
 | 10c | Create apps/mobile placeholder | ✅ | Expo skeleton with placeholder screen |
 
@@ -95,6 +95,14 @@
 | 12 | Observability baseline | ⬜ | Telemetry events in dev |
 | 12 | Final architecture validation | ✅ | apps/web created with Vite + TanStack Router |
 
+### Marketing v2 validation snapshot
+
+```txt
+apps/marketing: lint ✅, typecheck ✅, production build ✅
+frontend workspace: typecheck ✅, lint ✅, test ✅, check:deps ✅
+visual smoke: desktop/mobile screenshot ✅, tab keyboard flow ✅, mobile scroll width ✅
+```
+
 ---
 
 ## Decision Log
@@ -107,3 +115,4 @@
 | 4 | Parallel app operation during migration | 2026-07-06 | apps/app stays live until apps/web fully validated |
 | 5 | OpenAPI contracts deferred if backend not ready | 2026-07-06 | Manual contracts first, codegen later |
 | 6 | Start from M1 Foundation, not feature moves | 2026-07-06 | Foundation packages are dependency-free, lowest risk |
+| 7 | Marketing v2 is canonical at `/` and available at `/v2` | 2026-07-12 | Keep an explicit preview route while making the public marketing entry point production-ready |

@@ -4,8 +4,8 @@ import {
   createUseUnreadCount,
   createUseMarkRead,
   createUseArchiveNotification,
-} from '../../core';
-import type { NotificationsApiClient, NotificationsEndpoints } from '../../core/api/notifications.service';
+} from '~/core';
+import type { NotificationsApiClient, NotificationsEndpoints } from '~/core/api/notifications.service';
 import {
   Button,
   Popover,
@@ -13,7 +13,7 @@ import {
   PopoverContent,
   ScrollArea,
 } from '@notrelix/ui-web';
-import { Bell, Check, Trash2, MailOpen, MessageSquare, AlertCircle, UserPlus, Trello } from 'lucide-react';
+import { Bell, Check, Trash2, MailOpen, MessageSquare, AlertCircle, UserPlus, LayoutGrid } from 'lucide-react';
 
 interface CreateNotificationBellDeps {
   api: NotificationsApiClient;
@@ -70,7 +70,7 @@ export function createNotificationBell(deps: CreateNotificationBellDeps) {
         case 'comment':
           return <MessageSquare className="h-4 w-4 text-green-500" />;
         case 'assignment':
-          return <Trello className="h-4 w-4 text-amber-500" />;
+          return <LayoutGrid className="h-4 w-4 text-amber-500" />;
         case 'system':
         default:
           return <AlertCircle className="h-4 w-4 text-red-500" />;

@@ -87,6 +87,8 @@ writeFileSync(join(featureDir, 'tsconfig.json'), JSON.stringify({
   compilerOptions: {
     outDir: './dist',
     rootDir: './src',
+    baseUrl: '.',
+    paths: { '~/*': ['./src/*'] },
   },
   include: ['src/**/*'],
   exclude: ['node_modules', 'dist'],

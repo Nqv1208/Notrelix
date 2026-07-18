@@ -40,6 +40,8 @@ export {
   createUseForgotPassword,
   createUseResetPassword,
   createLoginForm,
+  createRegisterForm,
+  createForgotPasswordForm,
   createAuthProvider,
   useAuth,
   useCurrentUser,

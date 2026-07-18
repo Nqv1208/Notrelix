@@ -1,5 +1,3 @@
-'use client';
-
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Switch } from '@notrelix/ui-web';

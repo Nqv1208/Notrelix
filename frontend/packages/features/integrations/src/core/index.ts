@@ -10,3 +10,17 @@ export type {
   IntegrationConnection,
   Webhook,
 } from './types/integrations';
+
+export { integrationsQueryKeys } from './query/keys';
+
+export {
+  createUseConnections,
+  createUseDisconnect,
+  createUseWebhooks,
+} from './query/hooks/use-integrations';
+
+export {
+  createIntegrationsService,
+  type IntegrationsApiClient,
+  type IntegrationsEndpoints,
+} from './api/integrations.service';

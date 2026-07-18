@@ -12,4 +12,6 @@ export { createUseRegister } from './hooks/use-register';
 export { createUseForgotPassword } from './hooks/use-forgot-password';
 export { createUseResetPassword } from './hooks/use-reset-password';
 export { createLoginForm } from './components/login-form';
+export { createRegisterForm } from './components/register-form';
+export { createForgotPasswordForm } from './components/forgot-password-form';
 export { createAuthProvider, useAuth, useCurrentUser } from './components/auth-provider';

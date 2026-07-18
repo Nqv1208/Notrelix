@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createMembersService } from '../../../core/api/members.service';
-import type { WorkspaceApiClient } from '../../../core/api/workspace.service';
-import { workspaceQueryKeys } from '../../../core/query/keys';
-import type { WorkspaceMember } from '../../../core/types/workspace';
+import { createMembersService } from '~/core/api/members.service';
+import type { WorkspaceApiClient } from '~/core/api/workspace.service';
+import { workspaceQueryKeys } from '~/core/query/keys';
+import type { WorkspaceMember } from '~/core/types/workspace';
 
 interface UseUpdateMemberRoleDeps {
   api: WorkspaceApiClient;

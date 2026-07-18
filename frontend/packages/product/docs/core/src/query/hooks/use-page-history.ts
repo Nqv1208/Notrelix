@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { createHistoryApi } from '../../api/history.api';
-import type { DocsApiClient, PageApiEndpoints } from '../../api/page.api';
+import { createHistoryApi } from '~/api/history.api';
+import type { DocsApiClient, PageApiEndpoints } from '~/api/page.api';
 import { docsQueryKeys } from '../keys';
 
 export function createUsePageHistory(api: DocsApiClient, endpoints: PageApiEndpoints) {

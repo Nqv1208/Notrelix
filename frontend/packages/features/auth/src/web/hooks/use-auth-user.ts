@@ -1,8 +1,6 @@
-'use client';
-
 import { useQuery } from '@tanstack/react-query';
-import { createAuthService, type AuthApiClient, type AuthEndpoints } from '../../core/api/auth.service';
-import { authQueryKeys } from '../../core/query/keys';
+import { createAuthService, type AuthApiClient, type AuthEndpoints } from '~/core/api/auth.service';
+import { authQueryKeys } from '~/core/query/keys';
 
 interface UseAuthUserDeps {
   api: AuthApiClient;

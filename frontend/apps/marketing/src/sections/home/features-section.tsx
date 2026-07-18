@@ -1,66 +1,133 @@
-import { FileText, LayoutGrid, MessageSquare, Zap, Shield, Globe } from 'lucide-react';
+import {
+  FileText,
+  LayoutGrid,
+  Users,
+  Blocks,
+  Zap,
+  Bell,
+  Shield,
+  Search,
+  Globe,
+  type LucideIcon,
+} from 'lucide-react'
 
-const features = [
+import { Badge } from '@notrelix/ui-web/components/ui/badge'
+
+type Feature = {
+  icon: LucideIcon
+  title: string
+  description: string
+  color: string
+}
+
+const features: Feature[] = [
   {
-    icon: <FileText className="size-6" />,
-    title: 'Document Editor',
-    description: 'Rich block-based editor with slash commands, comments, and real-time collaboration.',
+    icon: FileText,
+    title: 'Block-based Editor',
+    description:
+      'Rich document editor with headings, lists, code blocks, callouts, toggles, and 13+ block types. Slash commands for rapid content creation.',
+    color: 'from-violet-500 to-indigo-500',
   },
   {
-    icon: <LayoutGrid className="size-6" />,
-    title: 'Project Boards',
-    description: 'Kanban, table, calendar, and timeline views over the same work data.',
+    icon: LayoutGrid,
+    title: 'Kanban Boards',
+    description:
+      'Visual project boards with drag-and-drop cards, labels, checklists, and due dates. Track work across lists with ease.',
+    color: 'from-emerald-500 to-teal-500',
   },
   {
-    icon: <MessageSquare className="size-6" />,
-    title: 'Team Collaboration',
-    description: 'Comments, mentions, and notifications keep everyone in the loop.',
+    icon: Users,
+    title: 'Team Workspaces',
+    description:
+      'Invite members, assign roles, and collaborate in shared workspaces. Granular permission controls keep content secure.',
+    color: 'from-amber-500 to-orange-500',
   },
   {
-    icon: <Zap className="size-6" />,
-    title: 'Automation',
-    description: 'Trigger-action workflows reduce repetitive tasks automatically.',
+    icon: Blocks,
+    title: 'Nested Pages',
+    description:
+      'Organize knowledge with unlimited page nesting. Build wikis, runbooks, and documentation hierarchies effortlessly.',
+    color: 'from-pink-500 to-rose-500',
   },
   {
-    icon: <Shield className="size-6" />,
-    title: 'Enterprise Security',
-    description: 'Role-based access control, audit logs, and SSO support.',
+    icon: Zap,
+    title: 'Automations',
+    description:
+      'Set up rules that trigger actions automatically — move cards, send notifications, update statuses, and more.',
+    color: 'from-cyan-500 to-blue-500',
   },
   {
-    icon: <Globe className="size-6" />,
+    icon: Bell,
+    title: 'Smart Notifications',
+    description:
+      'Stay in the loop with real-time notifications for comments, mentions, due dates, and workspace activity.',
+    color: 'from-purple-500 to-fuchsia-500',
+  },
+  {
+    icon: Shield,
+    title: 'Roles & Permissions',
+    description:
+      'Fine-grained RBAC with workspace-level and resource-level access control. Share pages and boards selectively.',
+    color: 'from-slate-500 to-zinc-600',
+  },
+  {
+    icon: Search,
+    title: 'Universal Search',
+    description:
+      'Find anything instantly across pages, blocks, cards, and comments. Full-text search across your entire workspace.',
+    color: 'from-indigo-500 to-violet-500',
+  },
+  {
+    icon: Globe,
     title: 'Integrations',
-    description: 'Connect with Slack, GitHub, Jira, and your favorite tools.',
+    description:
+      'Connect with Slack, Google Drive, GitHub, and more. Webhooks let you build custom workflows with any service.',
+    color: 'from-teal-500 to-emerald-500',
   },
-];
+]
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="py-24 bg-muted/30">
+    <section id="features" className="py-28 bg-muted/30">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-            Everything you need to ship
+          <Badge
+            variant="outline"
+            className="mb-4 text-xs font-semibold tracking-wider uppercase"
+          >
+            Features
+          </Badge>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-5">
+            Everything your team needs
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            One workspace for documents, projects, and team collaboration.
+            From rich document editing to visual project boards — Notrelix
+            replaces a dozen tools with one cohesive workspace.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((feature) => (
-            <div
-              key={feature.title}
-              className="p-6 rounded-2xl border bg-card hover:shadow-lg transition-shadow"
-            >
-              <div className="size-12 flex items-center justify-center rounded-xl bg-primary/10 text-primary mb-4">
-                {feature.icon}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {features.map((feature) => {
+            const Icon = feature.icon
+            return (
+              <div
+                key={feature.title}
+                className="group relative rounded-2xl border bg-card/50 backdrop-blur-sm p-6 hover:shadow-xl hover:shadow-violet-500/5 hover:-translate-y-0.5 transition-all duration-300"
+              >
+                <div
+                  className={`flex items-center justify-center size-11 rounded-xl bg-gradient-to-br ${feature.color} mb-4 shadow-lg opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all`}
+                >
+                  <Icon className="size-5 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {feature.description}
+                </p>
               </div>
-              <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-              <p className="text-muted-foreground">{feature.description}</p>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </section>
-  );
+  )
 }

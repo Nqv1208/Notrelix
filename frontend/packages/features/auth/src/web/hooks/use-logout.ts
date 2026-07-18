@@ -1,8 +1,6 @@
-'use client';
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@notrelix/platform/navigation';
-import { createAuthService, type AuthApiClient, type AuthEndpoints } from '../../core/api/auth.service';
+import { createAuthService, type AuthApiClient, type AuthEndpoints } from '~/core/api/auth.service';
 
 interface UseLogoutDeps {
   api: AuthApiClient;

@@ -1,5 +1,3 @@
-"use client"
-
 import React from "react"
 import { useCan } from "./use-can"
 import type { Permission } from "./permissions"

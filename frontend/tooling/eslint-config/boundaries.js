@@ -22,6 +22,10 @@ export default {
             group: ['next/*'],
             message: 'Packages cannot import next/*. Only apps/marketing can use Next.js.',
           },
+          {
+            group: ['../../*', '../../../*', '../../../../../*'],
+            message: 'Deep relative imports (../../) are forbidden in packages. Use ~/ alias instead.',
+          },
         ],
       },
     ],

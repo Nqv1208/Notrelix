@@ -13,15 +13,18 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@notrelix/docs-core": "workspace:*",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@notrelix/docs-collaboration": "workspace:*",
-    "@notrelix/ui-web": "workspace:*",
+    "@notrelix/docs-core": "workspace:*",
     "@notrelix/platform": "workspace:*",
-    "react": "^19.0.0",
-    "lucide-react": "^0.562.0"
+    "@notrelix/ui-web": "workspace:*",
+    "lucide-react": "^0.562.0",
+    "react": "^19.0.0"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
-    "@types/react": "^19.0.0"
+    "@types/react": "^19.0.0",
+    "typescript": "^5.0.0"
   }
 }

@@ -14,6 +14,14 @@ import { DocPage } from './routes/workspaces/$workspaceId/docs/$docId';
 import { DashboardPage } from './routes/workspaces/$workspaceId/dashboard';
 import { SettingsPage } from './routes/workspaces/$workspaceId/settings';
 import { MembersPage } from './routes/workspaces/$workspaceId/members';
+import { BillingPage } from './routes/workspaces/$workspaceId/billing';
+import { AccountLayout } from './routes/workspaces/$workspaceId/account';
+import { AccountProfilePage } from './routes/workspaces/$workspaceId/account/profile';
+import { AccountSecurityPage } from './routes/workspaces/$workspaceId/account/security';
+import { AccountAppearancePage } from './routes/workspaces/$workspaceId/account/appearance';
+import { AccountNotificationsPage } from './routes/workspaces/$workspaceId/account/notifications';
+import { SearchResultsPage } from './routes/workspaces/$workspaceId/search';
+import { ChatPage } from './routes/workspaces/$workspaceId/chat';
 import { RootLayout } from './routes/__root';
 
 // Create routes
@@ -99,6 +107,54 @@ const membersRoute = createRoute({
   component: MembersPage,
 });
 
+const billingRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: '/billing',
+  component: BillingPage,
+});
+
+const accountRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: '/account',
+  component: AccountLayout,
+});
+
+const accountProfileRoute = createRoute({
+  getParentRoute: () => accountRoute,
+  path: '/profile',
+  component: AccountProfilePage,
+});
+
+const accountSecurityRoute = createRoute({
+  getParentRoute: () => accountRoute,
+  path: '/security',
+  component: AccountSecurityPage,
+});
+
+const accountAppearanceRoute = createRoute({
+  getParentRoute: () => accountRoute,
+  path: '/appearance',
+  component: AccountAppearancePage,
+});
+
+const accountNotificationsRoute = createRoute({
+  getParentRoute: () => accountRoute,
+  path: '/notifications',
+  component: AccountNotificationsPage,
+});
+
+const searchRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: '/search',
+  component: SearchResultsPage,
+});
+
+const chatRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: '/chat',
+  component: ChatPage,
+});
+
 // Build route tree
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -114,6 +170,15 @@ const routeTree = rootRoute.addChildren([
     dashboardRoute,
     settingsRoute,
     membersRoute,
+    billingRoute,
+    searchRoute,
+    chatRoute,
+    accountRoute.addChildren([
+      accountProfileRoute,
+      accountSecurityRoute,
+      accountAppearanceRoute,
+      accountNotificationsRoute,
+    ]),
   ]),
 ]);
 

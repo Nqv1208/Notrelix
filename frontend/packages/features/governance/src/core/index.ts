@@ -9,3 +9,17 @@ export type {
   GovernancePermission,
   AuditLogEntry,
 } from './types/governance';
+
+export { governanceQueryKeys } from './query/keys';
+
+export {
+  createUseRoles,
+  createUseCreateRole,
+  createUseAuditLogs,
+} from './query/hooks/use-governance';
+
+export {
+  createGovernanceService,
+  type GovernanceApiClient,
+  type GovernanceEndpoints,
+} from './api/governance.service';

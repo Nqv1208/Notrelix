@@ -2,6 +2,7 @@
   "name": "@notrelix/app-marketing",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev --port 3000",
     "build": "next build",
@@ -11,22 +12,24 @@
     "clean": "rm -rf .next node_modules"
   },
   "dependencies": {
+    "@notrelix/ui-tokens": "workspace:*",
+    "@notrelix/ui-web": "workspace:*",
+    "class-variance-authority": "latest",
+    "clsx": "latest",
+    "lucide-react": "latest",
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "@notrelix/ui-web": "workspace:*",
-    "@notrelix/ui-tokens": "workspace:*",
-    "lucide-react": "latest",
-    "class-variance-authority": "latest",
-    "clsx": "latest",
-    "tailwind-merge": "latest"
+    "tailwind-merge": "latest",
+    "tw-animate-css": "latest"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
+    "@notrelix/tsconfig": "workspace:*",
+    "@svgr/webpack": "^8.1.0",
+    "@tailwindcss/postcss": "^4",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@notrelix/tsconfig": "workspace:*",
     "tailwindcss": "^4",
-    "@tailwindcss/postcss": "^4"
+    "typescript": "^5.0.0"
   }
 }

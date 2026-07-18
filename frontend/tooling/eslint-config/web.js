@@ -3,9 +3,11 @@
  */
 
 import baseConfig from './index.js';
+import boundariesConfig from './boundaries.js';
 
 export default [
   ...baseConfig,
+  boundariesConfig,
   {
     rules: {
       'no-restricted-imports': [

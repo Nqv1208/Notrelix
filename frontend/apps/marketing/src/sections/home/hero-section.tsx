@@ -1,7 +1,15 @@
-import Link from 'next/link';
-import { ArrowRight, Check } from 'lucide-react';
-import { Button } from '@notrelix/ui-web/components/ui/button';
-import { Badge } from '@notrelix/ui-web/components/ui/badge';
+'use client'
+
+import Link from 'next/link'
+import {
+  ArrowRight,
+  Check,
+  LayoutGrid,
+  GripVertical,
+} from 'lucide-react'
+
+import { Button } from '@notrelix/ui-web/components/ui/button'
+import { Badge } from '@notrelix/ui-web/components/ui/badge'
 
 export function HeroSection() {
   return (
@@ -38,8 +46,12 @@ export function HeroSection() {
                 <ArrowRight className="size-4 ml-2" />
               </Button>
             </Link>
-            <a href="#features">
-              <Button variant="outline" size="lg" className="w-full sm:w-auto px-8 h-12 text-base">
+            <a href="#showcase">
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full sm:w-auto px-8 h-12 text-base"
+              >
                 See it in action
               </Button>
             </a>
@@ -58,7 +70,128 @@ export function HeroSection() {
             )}
           </div>
         </div>
+
+        <div className="relative max-w-5xl mx-auto">
+          <div className="absolute -inset-4 bg-gradient-to-r from-violet-500/20 via-indigo-500/20 to-purple-500/20 rounded-[2rem] blur-2xl" />
+
+          <div className="relative rounded-2xl border bg-card shadow-2xl shadow-violet-500/5 overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-3 bg-muted/50 border-b">
+              <div className="flex gap-1.5">
+                <div className="size-3 rounded-full bg-red-400/80" />
+                <div className="size-3 rounded-full bg-yellow-400/80" />
+                <div className="size-3 rounded-full bg-green-400/80" />
+              </div>
+              <div className="flex-1 flex items-center justify-center">
+                <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-background/60 text-xs text-muted-foreground">
+                  <div className="size-3 rounded bg-gradient-to-br from-violet-500 to-indigo-500" />
+                  app.notrelix.io
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-[240px_1fr] min-h-[420px]">
+              <div className="border-r bg-muted/30 p-3 hidden sm:block">
+                <div className="text-xs font-semibold text-muted-foreground mb-3 px-2">
+                  WORKSPACE
+                </div>
+                {[
+                  { icon: '🚀', label: 'Getting Started', active: true },
+                  { icon: '🗺️', label: 'Product Roadmap', active: false },
+                  { icon: '📝', label: 'Meeting Notes', active: false },
+                  { icon: '🎯', label: 'Design System', active: false },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-sm mb-0.5 ${
+                      item.active
+                        ? 'bg-accent font-medium'
+                        : 'text-muted-foreground'
+                    }`}
+                  >
+                    <span className="text-base">{item.icon}</span>
+                    {item.label}
+                  </div>
+                ))}
+                <div className="mt-4 text-xs font-semibold text-muted-foreground mb-3 px-2">
+                  BOARDS
+                </div>
+                {[
+                  {
+                    icon: <LayoutGrid className="size-4 text-violet-500" />,
+                    label: 'Sprint Board',
+                  },
+                  {
+                    icon: <LayoutGrid className="size-4 text-emerald-500" />,
+                    label: 'Bug Tracker',
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-muted-foreground mb-0.5"
+                  >
+                    {item.icon}
+                    {item.label}
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-6 sm:p-8">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-3xl">🚀</span>
+                  <h2 className="text-2xl font-bold">Getting Started</h2>
+                </div>
+                <div className="space-y-3 mt-6">
+                  <div className="flex items-start gap-3 group">
+                    <GripVertical className="size-4 text-muted-foreground/30 mt-1 shrink-0" />
+                    <div className="text-xl font-semibold">
+                      Welcome to Notrelix
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 group">
+                    <GripVertical className="size-4 text-muted-foreground/30 mt-1 shrink-0" />
+                    <p className="text-muted-foreground">
+                      Your all-in-one workspace for documents, wikis, and
+                      project management.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3 ml-1 group">
+                    <GripVertical className="size-4 text-muted-foreground/30 mt-0.5 shrink-0" />
+                    <div className="flex gap-3 rounded-lg bg-violet-50 dark:bg-violet-950/30 border border-violet-200/60 dark:border-violet-800/40 p-3 flex-1">
+                      <span className="text-lg">💡</span>
+                      <span className="text-sm">
+                        Type{' '}
+                        <kbd className="px-1.5 py-0.5 rounded bg-background border text-xs font-mono">
+                          /
+                        </kbd>{' '}
+                        to insert blocks — headings, lists, code, images, and
+                        more.
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 group">
+                    <GripVertical className="size-4 text-muted-foreground/30 mt-1 shrink-0" />
+                    <div className="flex items-center gap-2">
+                      <div className="size-4 rounded border-2 border-emerald-500 bg-emerald-500 flex items-center justify-center">
+                        <Check className="size-2.5 text-white" />
+                      </div>
+                      <span className="line-through text-muted-foreground">
+                        Create your first page
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 group">
+                    <GripVertical className="size-4 text-muted-foreground/30 mt-1 shrink-0" />
+                    <div className="flex items-center gap-2">
+                      <div className="size-4 rounded border-2 border-muted-foreground/30" />
+                      <span>Invite team members</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
-  );
+  )
 }
