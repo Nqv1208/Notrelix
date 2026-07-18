@@ -1,5 +1,3 @@
-"use client"
-
 import { useMemo, useState } from "react"
 import type { BoardGroup, Card } from "@notrelix/work-management-core"
 import type { KanbanFiltersState } from "@notrelix/work-management-core"

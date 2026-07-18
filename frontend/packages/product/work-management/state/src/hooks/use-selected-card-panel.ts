@@ -1,5 +1,3 @@
-"use client"
-
 import { useCallback, useState } from "react"
 
 export function useSelectedCardPanel(initialCardId: string | null = null) {

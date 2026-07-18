@@ -1,5 +1,3 @@
-"use client"
-
 import { useResizeColumn } from "./use-resize-column"
 import type { ViewConfig } from "@notrelix/work-management-core"
 

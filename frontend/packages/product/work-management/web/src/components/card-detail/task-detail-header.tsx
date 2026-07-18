@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useRef, useCallback, useEffect, type KeyboardEvent } from "react"
 import { Bell, BellOff, CalendarDays, MoreHorizontal, X } from "lucide-react"
 import { Avatar, AvatarFallback } from "@notrelix/ui-web"

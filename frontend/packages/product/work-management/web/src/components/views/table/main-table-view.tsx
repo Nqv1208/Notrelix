@@ -1,5 +1,4 @@
-"use client"
-import { TaskDetailPanel } from "../../card-detail/task-detail-panel"
+import { TaskDetailPanel } from "~/components/card-detail/task-detail-panel"
 
 import { useCallback, useMemo, useState } from "react"
 import {

@@ -1,5 +1,3 @@
-"use client"
-
 import { useCallback, useMemo, useState } from "react"
 import { getCoreRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table"
 import type { Card } from "@notrelix/work-management-core"

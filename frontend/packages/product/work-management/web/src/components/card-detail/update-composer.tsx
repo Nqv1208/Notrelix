@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 import { AtSign, Bot, ImageIcon, Paperclip, Send, SmilePlus } from "lucide-react"
 import { Avatar, AvatarFallback } from "@notrelix/ui-web"

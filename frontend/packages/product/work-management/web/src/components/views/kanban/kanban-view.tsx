@@ -1,5 +1,3 @@
-"use client"
-
 import { useCallback } from "react"
 import { useBoardKanban, useSelectedCardPanel } from "@notrelix/work-management-state"
 import { useDuplicateCard, useDeleteCard } from "@notrelix/work-management-state"

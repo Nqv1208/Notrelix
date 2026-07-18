@@ -1,5 +1,3 @@
-"use client"
-
 import { Inbox } from "lucide-react"
 
 export function KanbanEmptyState() {

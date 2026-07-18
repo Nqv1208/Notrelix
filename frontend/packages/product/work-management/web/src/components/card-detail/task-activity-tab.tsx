@@ -1,5 +1,3 @@
-"use client"
-
 import { useMemo, useState } from "react"
 import { Activity, Bot, Download, RefreshCw, Search, UserRound } from "lucide-react"
 import { Button } from "@notrelix/ui-web"

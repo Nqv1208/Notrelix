@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 import { Check, MessageSquareText, MoreHorizontal, Pencil, Trash2, X } from "lucide-react"
 import { Avatar, AvatarFallback } from "@notrelix/ui-web"

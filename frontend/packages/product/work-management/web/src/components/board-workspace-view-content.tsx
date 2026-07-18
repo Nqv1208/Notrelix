@@ -1,5 +1,3 @@
-"use client"
-
 import { Skeleton } from "@notrelix/ui-web"
 import { useFullBoard } from "@notrelix/work-management-state"
 import { MainTableView } from "./views/table/main-table-view"

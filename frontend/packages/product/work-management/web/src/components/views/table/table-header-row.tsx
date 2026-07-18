@@ -1,5 +1,3 @@
-"use client"
-
 import type { PointerEvent } from "react"
 import { GripVertical, MoreHorizontal } from "lucide-react"
 import { Checkbox } from "@notrelix/ui-web"

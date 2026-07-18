@@ -1,5 +1,3 @@
-"use client"
-
 import React from "react"
 import { MoreHorizontal, GripVertical } from "lucide-react"
 import { useSortable } from "@dnd-kit/sortable"

@@ -1,5 +1,3 @@
-"use client"
-
 import { useMemo } from "react"
 import type { BoardTableColumn, FieldDefinition, FieldType, ViewConfig } from "@notrelix/work-management-core"
 

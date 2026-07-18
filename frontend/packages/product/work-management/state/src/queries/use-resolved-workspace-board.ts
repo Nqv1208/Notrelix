@@ -1,5 +1,3 @@
-"use client"
-
 import { useMemo } from "react"
 import type { Board } from "@notrelix/work-management-core"
 import { useWorkspaceBoards } from "../queries/use-workspace-boards"

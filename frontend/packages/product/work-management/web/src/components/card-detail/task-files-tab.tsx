@@ -1,5 +1,3 @@
-"use client"
-
 import { useMemo, useState } from "react"
 import { Grid2X2, List, Paperclip, Search, Upload } from "lucide-react"
 import { Badge } from "@notrelix/ui-web"

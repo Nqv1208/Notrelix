@@ -1,5 +1,3 @@
-"use client"
-
 import { useEffect, useRef, useState } from "react"
 import { Plus, X } from "lucide-react"
 import { Button } from "@notrelix/ui-web"

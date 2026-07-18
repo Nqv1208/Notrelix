@@ -1,5 +1,3 @@
-"use client"
-
 import { Skeleton } from "@notrelix/ui-web"
 
 export function KanbanSkeleton() {

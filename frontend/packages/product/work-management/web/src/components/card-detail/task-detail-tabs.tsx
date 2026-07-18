@@ -1,5 +1,3 @@
-"use client"
-
 import { Activity, Files, FileText, ListChecks, MessageSquareText } from "lucide-react"
 import { ScrollArea } from "@notrelix/ui-web"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@notrelix/ui-web"

@@ -1,10 +1,8 @@
-"use client"
-
 import { useEffect } from "react"
 import { Sheet, SheetContent } from "@notrelix/ui-web"
 import type { Board, Card } from "@notrelix/work-management-core"
-import { TaskDetailHeader } from "../../card-detail/task-detail-header"
-import { TaskDetailTabs } from "../../card-detail/task-detail-tabs"
+import { TaskDetailHeader } from "~/components/card-detail/task-detail-header"
+import { TaskDetailTabs } from "~/components/card-detail/task-detail-tabs"
 
 interface KanbanCardDetailPanelProps {
   board: Board

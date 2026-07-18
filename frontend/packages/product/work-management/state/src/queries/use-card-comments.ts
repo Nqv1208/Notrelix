@@ -1,5 +1,3 @@
-"use client"
-
 import { useQuery } from "@tanstack/react-query"
 import { queryKeys } from "@notrelix/query"
 import { commentApi } from "../api/item-comments.api"

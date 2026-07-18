@@ -8,6 +8,11 @@
 // Board views
 export * from './components/board-workspace-view-content'
 
+// Board layout
+export * from './components/board-layout/board-layout-shell'
+export * from './components/board-layout/board-toolbar'
+export * from './components/board-layout/view-tabs'
+
 // Kanban view
 export * from './components/views/kanban/kanban-view'
 export * from './components/views/kanban/kanban-board'

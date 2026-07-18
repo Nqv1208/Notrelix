@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import { ChevronDown, MoreHorizontal, Plus, Check, Copy, Eye, EyeOff, Trash2 } from "lucide-react"
 import { useDroppable } from "@dnd-kit/core"

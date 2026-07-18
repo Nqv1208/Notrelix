@@ -1,5 +1,3 @@
-"use client"
-
 import { useCallback, useMemo } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"

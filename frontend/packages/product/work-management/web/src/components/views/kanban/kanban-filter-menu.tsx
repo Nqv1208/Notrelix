@@ -1,5 +1,3 @@
-"use client"
-
 import { Filter, X } from "lucide-react"
 import { Button } from "@notrelix/ui-web"
 import { Checkbox } from "@notrelix/ui-web"

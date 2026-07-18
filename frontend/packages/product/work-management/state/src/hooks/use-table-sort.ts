@@ -1,5 +1,3 @@
-"use client"
-
 import { useCallback } from "react"
 import type { SortConfig, ViewConfig } from "@notrelix/work-management-core"
 

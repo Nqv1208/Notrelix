@@ -1,5 +1,3 @@
-"use client"
-
 import type { KanbanSortOption } from "@notrelix/work-management-core"
 import { ArrowUpDown } from "lucide-react"
 import { Button } from "@notrelix/ui-web"

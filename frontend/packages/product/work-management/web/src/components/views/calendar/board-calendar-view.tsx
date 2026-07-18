@@ -1,5 +1,3 @@
-"use client"
-
 import { useMemo } from "react"
 import { CalendarDays } from "lucide-react"
 import { Badge } from "@notrelix/ui-web"

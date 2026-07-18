@@ -1,4 +1,3 @@
-"use client"
 import { getOptionToneClass, formatDate, toDateInputValue, getChecklistProgress } from "./table-utils"
 
 import { useState } from "react"
