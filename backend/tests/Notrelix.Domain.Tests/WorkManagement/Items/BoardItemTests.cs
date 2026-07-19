@@ -150,4 +150,75 @@ public class BoardItemTests
         item.FieldValues.Should().HaveCount(1);
         item.DomainEvents.Should().ContainSingle(e => e is BoardItemFieldValueChangedDomainEvent);
     }
+
+    [Fact]
+    public void Archive_ShouldSetIsArchived_AndRaiseEvent()
+    {
+        var item = CreateValidItem();
+        item.ClearDomainEvents();
+
+        item.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        item.IsArchived.Should().BeTrue();
+        item.DomainEvents.Should().ContainSingle(e => e is BoardItemArchivedDomainEvent);
+    }
+
+    [Fact]
+    public void Archive_ShouldBeIdempotent()
+    {
+        var item = CreateValidItem();
+        item.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        item.ClearDomainEvents();
+
+        item.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        item.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Archive_ShouldThrow_WhenDeleted()
+    {
+        var item = CreateValidItem();
+        item.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        Action act = () => item.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<DomainException>();
+    }
+
+    [Fact]
+    public void Unarchive_ShouldClearIsArchived_AndRaiseEvent()
+    {
+        var item = CreateValidItem();
+        item.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        item.ClearDomainEvents();
+
+        item.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        item.IsArchived.Should().BeFalse();
+        item.DomainEvents.Should().ContainSingle(e => e is BoardItemUnarchivedDomainEvent);
+    }
+
+    [Fact]
+    public void Unarchive_ShouldBeIdempotent()
+    {
+        var item = CreateValidItem();
+        item.ClearDomainEvents();
+
+        item.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        item.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Unarchive_ShouldThrow_WhenDeleted()
+    {
+        var item = CreateValidItem();
+        item.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        item.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        Action act = () => item.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<DomainException>();
+    }
 }

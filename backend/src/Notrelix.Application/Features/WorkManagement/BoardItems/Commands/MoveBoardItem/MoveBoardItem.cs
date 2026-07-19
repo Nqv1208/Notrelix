@@ -6,11 +6,13 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveB
 public record MoveBoardItemCommand(
     Guid ItemId,
     Guid NewGroupId,
-    double Position) : ICommand<BoardItemSlimDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest
+    double Position,
+    string? IdempotencyKey = null) : ICommand<BoardItemSlimDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.MoveItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, ItemId);
     public RealtimeTopic Topic => new("board", "Board", ItemId);
+    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"move-item:{ItemId}";
 }
 
 public class MoveBoardItemCommandHandler : IRequestHandler<MoveBoardItemCommand, BoardItemSlimDto>

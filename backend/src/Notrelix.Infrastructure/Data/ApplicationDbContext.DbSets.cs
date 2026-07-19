@@ -171,7 +171,9 @@ public partial class ApplicationDbContext
     public DbSet<ItemDependency> ItemDependencies => Set<ItemDependency>();
     public DbSet<TimeTrackingEntry> TimeTrackingEntries => Set<TimeTrackingEntry>();
     public DbSet<RelationFieldConfig> RelationFieldConfigs => Set<RelationFieldConfig>();
+    public DbSet<FormulaField> FormulaFields => Set<FormulaField>();
     public DbSet<FormulaDependency> FormulaDependencies => Set<FormulaDependency>();
+    public DbSet<RollupField> RollupFields => Set<RollupField>();
     public DbSet<RollupSnapshot> RollupSnapshots => Set<RollupSnapshot>();
     public DbSet<Form> Forms => Set<Form>();
     public DbSet<FormQuestion> FormQuestions => Set<FormQuestion>();

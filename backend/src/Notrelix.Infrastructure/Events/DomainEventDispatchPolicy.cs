@@ -391,6 +391,7 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
         Add<BoardGroupReorderedDomainEvent>(d);
         Add<BoardGroupRestoredDomainEvent>(d);
         Add<BoardGroupSoftDeletedDomainEvent>(d);
+        Add<BoardGroupUnarchivedDomainEvent>(d);
         Add<BoardArchivedDomainEvent>(d);
         Add<BoardBackgroundUpdatedDomainEvent>(d);
         Add<BoardCreatedDomainEvent>(d);
@@ -427,6 +428,7 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
         Add<FormRestoredDomainEvent>(d);
         Add<FormSoftDeletedDomainEvent>(d);
         Add<FormSubmissionCreatedDomainEvent>(d);
+        Add<FormSubmissionDeletedDomainEvent>(d);
         Add<FormSubmissionMarkedAsSpamDomainEvent>(d);
         Add<FormSubmissionProcessedDomainEvent>(d);
         Add<FormSubmissionRejectedDomainEvent>(d);
@@ -446,6 +448,8 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
         Add<BoardItemRestoredDomainEvent>(d);
         Add<BoardItemSoftDeletedDomainEvent>(d);
         Add<BoardItemTimelineSetDomainEvent>(d);
+        Add<BoardItemUnarchivedDomainEvent>(d);
+        Add<BoardItemTimelineSetDomainEvent>(d);
         Add<LabelCreatedDomainEvent>(d);
         Add<LabelRestoredDomainEvent>(d);
         Add<LabelSoftDeletedDomainEvent>(d);
@@ -461,9 +465,11 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
         Add<ItemTemplateCreatedDomainEvent>(d);
         Add<BoardViewConfigUpdatedDomainEvent>(d);
         Add<BoardViewCreatedDomainEvent>(d);
+        Add<BoardViewArchivedDomainEvent>(d);
         Add<BoardViewDeletedDomainEvent>(d);
         Add<BoardViewRenamedDomainEvent>(d);
         Add<BoardViewRestoredDomainEvent>(d);
+        Add<BoardViewUnarchivedDomainEvent>(d);
         Add<BoardViewUserPreferenceCreatedDomainEvent>(d);
         Add<BoardViewUserPreferenceFilterChangedDomainEvent>(d);
         Add<BoardViewUserPreferenceGroupChangedDomainEvent>(d);

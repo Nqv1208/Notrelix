@@ -93,16 +93,61 @@ public class FormSubmissionTests
     }
 
     [Fact]
-    public void Reject_MultipleCalls_ShouldOverwriteProcessedAt()
+    public void Reject_MultipleCalls_ShouldThrow()
     {
         var submission = CreateSubmission();
         submission.Reject(DateTimeOffset.UtcNow);
-        submission.ClearDomainEvents();
 
         var later = DateTimeOffset.UtcNow.AddMinutes(5);
-        submission.Reject(later);
+        var act = () => submission.Reject(later);
 
-        submission.ProcessedAt.Should().Be(later);
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void Delete_ShouldSetStatusAndRaiseEvent()
+    {
+        var submission = CreateSubmission();
+        var deletedBy = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+
+        submission.Delete(deletedBy, now);
+
+        submission.Status.Should().Be(FormSubmissionStatus.Deleted);
+        submission.DomainEvents.Should().ContainSingle(e => e is FormSubmissionDeletedDomainEvent);
+    }
+
+    [Fact]
+    public void Delete_MultipleCalls_ShouldThrow()
+    {
+        var submission = CreateSubmission();
+        submission.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        var act = () => submission.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void MarkAsSpam_WhenRejected_ShouldThrow()
+    {
+        var submission = CreateSubmission();
+        submission.Reject(DateTimeOffset.UtcNow);
+
+        var act = () => submission.MarkAsSpam(DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void MarkProcessed_WhenRejected_ShouldThrow()
+    {
+        var submission = CreateSubmission();
+        submission.Reject(DateTimeOffset.UtcNow);
+
+        var act = () => submission.MarkProcessed(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
     }
 
     private static FormSubmission CreateSubmission()

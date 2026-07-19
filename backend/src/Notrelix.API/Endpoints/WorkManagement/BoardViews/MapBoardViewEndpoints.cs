@@ -17,6 +17,11 @@ public static class MapBoardViewEndpoints
         group.MapCreateBoardView();
         group.MapUpdateBoardViewConfig();
         group.MapDeleteBoardView();
+        group.MapArchiveBoardView();
+        group.MapUnarchiveBoardView();
+        group.MapRestoreBoardView();
+        group.MapRenameBoardView();
+        group.MapSetDefaultView();
 
         return app;
     }

@@ -30,6 +30,8 @@ public static class MapBoardFieldEndpoints
             .WithName("WorkManagement.BoardFields.Reorder")
             .WithSummary("Reorder board fields");
 
+        group.MapFieldOptionEndpoints();
+
         var schemaGroup = app
             .MapGroup("/api/v1/boards/{boardId:guid}")
             .WithTags("WorkManagement.BoardFields")

@@ -3,10 +3,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.UpdateChecklist;
 
-public record UpdateChecklistCommand(Guid ChecklistId, string? Title, double? Position) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+public record UpdateChecklistCommand(Guid ChecklistId, string? Title, double? Position, string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Checklist, ChecklistId);
+    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"update-checklist:{ChecklistId}";
 }
 
 public class UpdateChecklistCommandHandler : IRequestHandler<UpdateChecklistCommand, Result>

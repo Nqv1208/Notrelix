@@ -109,4 +109,75 @@ public class BoardViewTests
 
         act.Should().NotThrow();
     }
+
+    [Fact]
+    public void Archive_ShouldSetIsArchived_AndRaiseEvent()
+    {
+        var view = BoardView.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "View", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        view.ClearDomainEvents();
+
+        view.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        view.IsArchived.Should().BeTrue();
+        view.DomainEvents.Should().ContainSingle(e => e is BoardViewArchivedDomainEvent);
+    }
+
+    [Fact]
+    public void Archive_ShouldBeIdempotent()
+    {
+        var view = BoardView.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "View", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        view.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        view.ClearDomainEvents();
+
+        view.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        view.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Archive_ShouldThrow_WhenDeleted()
+    {
+        var view = BoardView.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "View", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        view.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        Action act = () => view.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<DomainException>();
+    }
+
+    [Fact]
+    public void Unarchive_ShouldClearIsArchived_AndRaiseEvent()
+    {
+        var view = BoardView.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "View", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        view.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        view.ClearDomainEvents();
+
+        view.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        view.IsArchived.Should().BeFalse();
+        view.DomainEvents.Should().ContainSingle(e => e is BoardViewUnarchivedDomainEvent);
+    }
+
+    [Fact]
+    public void Unarchive_ShouldBeIdempotent()
+    {
+        var view = BoardView.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "View", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        view.ClearDomainEvents();
+
+        view.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        view.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Unarchive_ShouldThrow_WhenDeleted()
+    {
+        var view = BoardView.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "View", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        view.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        view.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        Action act = () => view.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<DomainException>();
+    }
 }

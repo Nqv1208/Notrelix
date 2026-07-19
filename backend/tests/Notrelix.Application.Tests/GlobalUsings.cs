@@ -39,3 +39,4 @@ global using Notrelix.Domain.WorkManagement.Items;
 global using Notrelix.Domain.WorkManagement.Fields;
 global using Notrelix.Domain.WorkManagement.Views;
 global using Notrelix.Domain.WorkManagement.Labels;
+global using Notrelix.Domain.WorkManagement.Approvals;

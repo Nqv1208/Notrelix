@@ -10,11 +10,13 @@ public record CreateBoardInWorkspaceCommand(
     string Title,
     string? Description,
     string? Background,
-    BoardVisibility? Visibility) : ICommand<Result<Guid>>, ITransactionalRequest, IRequirePermission, IWorkspaceRequest, IRealtimeRequest
+    BoardVisibility? Visibility,
+    string? IdempotencyKey = null) : ICommand<Result<Guid>>, ITransactionalRequest, IRequirePermission, IWorkspaceRequest, IRealtimeRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreateBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId);
     public RealtimeTopic Topic => new("workspace", "Workspace", WorkspaceId);
+    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"create-board:{WorkspaceId}:{Title}";
 }
 
 public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardInWorkspaceCommand, Result<Guid>>

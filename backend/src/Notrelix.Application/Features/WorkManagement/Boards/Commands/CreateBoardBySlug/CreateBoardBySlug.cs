@@ -5,7 +5,10 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardBySlug;
 
-public record CreateBoardBySlugCommand(string Slug, string Title, string? Description, string? Background, BoardVisibility? Visibility) : ICommand<Result<Guid>>, ITransactionalRequest;
+public record CreateBoardBySlugCommand(string Slug, string Title, string? Description, string? Background, BoardVisibility? Visibility, string? IdempotencyKey = null) : ICommand<Result<Guid>>, ITransactionalRequest, IIdempotentRequest
+{
+    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"create-board-slug:{Slug}";
+}
 
 public class CreateBoardBySlugCommandHandler : IRequestHandler<CreateBoardBySlugCommand, Result<Guid>>
 {

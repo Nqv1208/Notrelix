@@ -6,11 +6,13 @@ namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.Updat
 public record UpdateBoardViewConfigCommand(
     Guid BoardId,
     Guid ViewId,
-    string ConfigJson) : ICommand<BoardViewDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest
+    string ConfigJson,
+    string? IdempotencyKey = null) : ICommand<BoardViewDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateBoardView;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardView, ViewId);
     public RealtimeTopic Topic => new("board", "Board", BoardId);
+    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"update-view-config:{ViewId}";
 }
 
 public class UpdateBoardViewConfigCommandHandler : IRequestHandler<UpdateBoardViewConfigCommand, BoardViewDto>

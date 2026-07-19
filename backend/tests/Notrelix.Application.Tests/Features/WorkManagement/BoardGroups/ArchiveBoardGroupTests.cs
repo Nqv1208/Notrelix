@@ -43,7 +43,7 @@ public class ArchiveBoardGroupTests : WorkManagementHandlerTestBase
     public async Task Handle_AlreadyArchived_IsIdempotent()
     {
         var group = CreateBoardGroup();
-        group.SoftDelete(TestUserId, TestNow);
+        group.Archive(TestUserId, TestNow);
         SetupBoardGroups(group);
 
         var command = new ArchiveBoardGroupCommand(group.Id);
