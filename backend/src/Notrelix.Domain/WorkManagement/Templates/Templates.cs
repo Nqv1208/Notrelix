@@ -26,6 +26,60 @@ public class BoardTemplate : AggregateRoot
         template.AddDomainEvent(new BoardTemplateCreatedDomainEvent(template.Id, template.Name, createdAt));
         return template;
     }
+
+    public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        Guard.NotNullOrWhiteSpace(name);
+        Guard.MaxLength(name, 255);
+
+        var normalizedName = name.Trim();
+        if (Name == normalizedName) return;
+
+        Name = normalizedName;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+    }
+
+    public void Draft(Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        if (Status == TemplateStatus.Draft) return;
+        if (Status == TemplateStatus.Archived)
+            throw new BusinessRuleException("Cannot draft an archived template. Restore it first.");
+
+        Status = TemplateStatus.Draft;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+    }
+
+    public void Publish(Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        if (Status == TemplateStatus.Published) return;
+        if (Status == TemplateStatus.Archived)
+            throw new BusinessRuleException("Cannot publish an archived template. Restore it first.");
+
+        Status = TemplateStatus.Published;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+    }
+
+    public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
+    {
+        if (Status == TemplateStatus.Archived) return;
+
+        Status = TemplateStatus.Archived;
+        SetAuditOnUpdate(archivedBy, archivedAt);
+        IncrementVersion();
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (Status != TemplateStatus.Archived)
+            throw new BusinessRuleException("Only archived templates can be restored.");
+
+        Status = TemplateStatus.Draft;
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+    }
 }
 
 public class ItemTemplate : AggregateRoot, IWorkspaceScoped
@@ -59,5 +113,59 @@ public class ItemTemplate : AggregateRoot, IWorkspaceScoped
 
         template.AddDomainEvent(new ItemTemplateCreatedDomainEvent(accountId, workspaceId, template.Id, template.Name, createdAt));
         return template;
+    }
+
+    public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        Guard.NotNullOrWhiteSpace(name);
+        Guard.MaxLength(name, 255);
+
+        var normalizedName = name.Trim();
+        if (Name == normalizedName) return;
+
+        Name = normalizedName;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+    }
+
+    public void Draft(Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        if (Status == TemplateStatus.Draft) return;
+        if (Status == TemplateStatus.Archived)
+            throw new BusinessRuleException("Cannot draft an archived template. Restore it first.");
+
+        Status = TemplateStatus.Draft;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+    }
+
+    public void Publish(Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        if (Status == TemplateStatus.Published) return;
+        if (Status == TemplateStatus.Archived)
+            throw new BusinessRuleException("Cannot publish an archived template. Restore it first.");
+
+        Status = TemplateStatus.Published;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+    }
+
+    public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
+    {
+        if (Status == TemplateStatus.Archived) return;
+
+        Status = TemplateStatus.Archived;
+        SetAuditOnUpdate(archivedBy, archivedAt);
+        IncrementVersion();
+    }
+
+    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (Status != TemplateStatus.Archived)
+            throw new BusinessRuleException("Only archived templates can be restored.");
+
+        Status = TemplateStatus.Draft;
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
     }
 }

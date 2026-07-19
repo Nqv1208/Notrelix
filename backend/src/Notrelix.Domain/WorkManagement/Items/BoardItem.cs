@@ -15,6 +15,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
     public DateTimeOffset? StartedAt { get; private set; }
     public DateTimeOffset? DueAt { get; private set; }
     public DateTimeOffset? CompletedAt { get; private set; }
+    public bool IsArchived { get; private set; }
 
     private readonly List<BoardItemValue> _fieldValues = new();
     public IReadOnlyCollection<BoardItemValue> FieldValues => _fieldValues.AsReadOnly();
@@ -219,6 +220,26 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
         AddDomainEvent(new BoardItemSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
+    }
+
+    public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
+    {
+        EnsureNotDeleted();
+        if (IsArchived) return;
+        IsArchived = true;
+        SetAuditOnUpdate(archivedBy, archivedAt);
+        IncrementVersion();
+        AddDomainEvent(new BoardItemArchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, archivedBy, archivedAt));
+    }
+
+    public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
+    {
+        EnsureNotDeleted();
+        if (!IsArchived) return;
+        IsArchived = false;
+        SetAuditOnUpdate(unarchivedBy, unarchivedAt);
+        IncrementVersion();
+        AddDomainEvent(new BoardItemUnarchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, unarchivedBy, unarchivedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)

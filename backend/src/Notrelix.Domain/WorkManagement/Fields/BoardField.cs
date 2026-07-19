@@ -154,6 +154,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
 
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        AddDomainEvent(new BoardFieldReorderedDomainEvent(AccountId, WorkspaceId, Id, BoardId, 0, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)

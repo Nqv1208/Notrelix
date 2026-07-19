@@ -59,6 +59,10 @@ public class Label : AggregateRoot, IWorkspaceScoped
 
     public void Update(string name, LabelColor color, Guid updatedBy, DateTimeOffset updatedAt)
     {
+        EnsureNotDeleted();
+        Guard.NotNullOrWhiteSpace(name);
+        Guard.NotNull(color);
+
         Name = name.Trim();
         Color = color;
         SetAuditOnUpdate(updatedBy, updatedAt);
@@ -69,6 +73,7 @@ public class Label : AggregateRoot, IWorkspaceScoped
     {
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
+        Status = LabelStatus.SoftDeleted;
         AddDomainEvent(new LabelSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
@@ -76,6 +81,7 @@ public class Label : AggregateRoot, IWorkspaceScoped
     {
         if (!IsDeleted) return;
         base.Restore(restoredBy, restoredAt);
+        Status = LabelStatus.Active;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
         AddDomainEvent(new LabelRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));

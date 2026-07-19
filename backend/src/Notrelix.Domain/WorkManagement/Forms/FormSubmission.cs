@@ -61,6 +61,9 @@ public class FormSubmission : Entity, IWorkspaceScoped
 
     public void Reject(DateTimeOffset processedAt)
     {
+        if (Status != FormSubmissionStatus.Accepted)
+            throw new BusinessRuleException("Only accepted submissions can be rejected.");
+
         Status = FormSubmissionStatus.Rejected;
         ProcessedAt = processedAt;
         AddDomainEvent(new FormSubmissionRejectedDomainEvent(AccountId, WorkspaceId, Id, FormId, processedAt));
@@ -68,6 +71,9 @@ public class FormSubmission : Entity, IWorkspaceScoped
 
     public void MarkAsSpam(DateTimeOffset processedAt)
     {
+        if (Status != FormSubmissionStatus.Accepted)
+            throw new BusinessRuleException("Only accepted submissions can be marked as spam.");
+
         Status = FormSubmissionStatus.Spam;
         ProcessedAt = processedAt;
         AddDomainEvent(new FormSubmissionMarkedAsSpamDomainEvent(AccountId, WorkspaceId, Id, FormId, processedAt));
@@ -75,8 +81,20 @@ public class FormSubmission : Entity, IWorkspaceScoped
 
     public void MarkProcessed(Guid createdItemId, DateTimeOffset processedAt)
     {
+        if (Status != FormSubmissionStatus.Accepted)
+            throw new BusinessRuleException("Only accepted submissions can be processed.");
+
         CreatedItemId = createdItemId;
         ProcessedAt = processedAt;
         AddDomainEvent(new FormSubmissionProcessedDomainEvent(AccountId, WorkspaceId, Id, FormId, createdItemId, processedAt));
+    }
+
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt)
+    {
+        if (Status == FormSubmissionStatus.Deleted)
+            throw new BusinessRuleException("Submission is already deleted.");
+
+        Status = FormSubmissionStatus.Deleted;
+        AddDomainEvent(new FormSubmissionDeletedDomainEvent(AccountId, WorkspaceId, Id, FormId, deletedBy, deletedAt));
     }
 }

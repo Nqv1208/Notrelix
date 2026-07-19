@@ -59,6 +59,7 @@ public enum ResourceType
     WorkspaceInvitation,
     ItemTemplate,
     Label,
+    SavedFilter,
     Plan,
     UsageMetric,
     WorkspaceFeatureUsage,

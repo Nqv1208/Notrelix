@@ -9,6 +9,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
     public ViewType Type { get; private set; }
     public BoardViewConfig Config { get; private set; } = null!;
     public bool IsDefault { get; private set; }
+    public bool IsArchived { get; private set; }
 
     private BoardView() : base() { }
 
@@ -87,6 +88,24 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         AddDomainEvent(new BoardViewRenamedDomainEvent(AccountId, WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
     }
 
+    public void SetDefault(Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        if (IsDefault) return;
+        IsDefault = true;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+    }
+
+    public void ClearDefault(Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        if (!IsDefault) return;
+        IsDefault = false;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+    }
+
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
@@ -104,5 +123,25 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
         AddDomainEvent(new BoardViewRestoredDomainEvent(AccountId, WorkspaceId, Id, BoardId, restoredBy, restoredAt));
+    }
+
+    public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
+    {
+        EnsureNotDeleted();
+        if (IsArchived) return;
+        IsArchived = true;
+        SetAuditOnUpdate(archivedBy, archivedAt);
+        IncrementVersion();
+        AddDomainEvent(new BoardViewArchivedDomainEvent(AccountId, WorkspaceId, Id, BoardId, archivedBy, archivedAt));
+    }
+
+    public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
+    {
+        EnsureNotDeleted();
+        if (!IsArchived) return;
+        IsArchived = false;
+        SetAuditOnUpdate(unarchivedBy, unarchivedAt);
+        IncrementVersion();
+        AddDomainEvent(new BoardViewUnarchivedDomainEvent(AccountId, WorkspaceId, Id, BoardId, unarchivedBy, unarchivedAt));
     }
 }

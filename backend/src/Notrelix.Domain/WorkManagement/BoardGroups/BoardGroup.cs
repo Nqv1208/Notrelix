@@ -9,6 +9,7 @@ public class BoardGroup : SoftDeletableEntity, IWorkspaceScoped
     public Color Color { get; private set; } = null!;
     public FractionalIndex Position { get; private set; } = null!;
     public bool IsCollapsed { get; private set; }
+    public bool IsArchived { get; private set; }
 
     private BoardGroup() : base() { }
 
@@ -95,5 +96,23 @@ public class BoardGroup : SoftDeletableEntity, IWorkspaceScoped
         if (!IsDeleted) return;
         base.Restore(restoredBy, restoredAt);
         AddDomainEvent(new BoardGroupRestoredDomainEvent(AccountId, WorkspaceId, BoardId, Id, restoredBy, restoredAt));
+    }
+
+    public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
+    {
+        EnsureNotDeleted();
+        if (IsArchived) return;
+        IsArchived = true;
+        SetAuditOnUpdate(archivedBy, archivedAt);
+        AddDomainEvent(new BoardGroupArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
+    }
+
+    public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
+    {
+        EnsureNotDeleted();
+        if (!IsArchived) return;
+        IsArchived = false;
+        SetAuditOnUpdate(unarchivedBy, unarchivedAt);
+        AddDomainEvent(new BoardGroupUnarchivedDomainEvent(AccountId, WorkspaceId, Id, unarchivedBy, unarchivedAt));
     }
 }

@@ -23,6 +23,26 @@ public class ApprovalStep : Entity
             Position = position
         };
     }
+
+    public void Approve(DateTimeOffset decidedAt, string? note = null)
+    {
+        if (Status != ApprovalStatus.Pending)
+            throw new BusinessRuleException("Only pending steps can be approved.");
+
+        Status = ApprovalStatus.Approved;
+        DecidedAt = decidedAt;
+        Note = note;
+    }
+
+    public void Reject(DateTimeOffset decidedAt, string? note = null)
+    {
+        if (Status != ApprovalStatus.Pending)
+            throw new BusinessRuleException("Only pending steps can be rejected.");
+
+        Status = ApprovalStatus.Rejected;
+        DecidedAt = decidedAt;
+        Note = note;
+    }
 }
 
 public class ApprovalRequest : AggregateRoot, IWorkspaceScoped
@@ -39,6 +59,52 @@ public class ApprovalRequest : AggregateRoot, IWorkspaceScoped
     public IReadOnlyCollection<ApprovalStep> Steps => _steps.AsReadOnly();
 
     private ApprovalRequest() : base() { }
+
+    public void AddStep(int position, Guid? approverUserId = null, Guid? approverTeamId = null)
+    {
+        EnsureNotDeleted();
+        if (Status != ApprovalStatus.Pending)
+            throw new BusinessRuleException("Cannot add steps to a non-pending approval request.");
+
+        var step = ApprovalStep.Create(Id, position, approverUserId, approverTeamId);
+        _steps.Add(step);
+    }
+
+    public void Approve(Guid decidedBy, DateTimeOffset decidedAt, string? note = null)
+    {
+        EnsureNotDeleted();
+        if (Status != ApprovalStatus.Pending)
+            throw new BusinessRuleException("Only pending approval requests can be approved.");
+
+        Status = ApprovalStatus.Approved;
+        SetAuditOnUpdate(decidedBy, decidedAt);
+        IncrementVersion();
+        AddDomainEvent(new ApprovalRequestApprovedDomainEvent(AccountId, WorkspaceId, Id, decidedBy, decidedAt));
+    }
+
+    public void Reject(Guid decidedBy, DateTimeOffset decidedAt, string? note = null)
+    {
+        EnsureNotDeleted();
+        if (Status != ApprovalStatus.Pending)
+            throw new BusinessRuleException("Only pending approval requests can be rejected.");
+
+        Status = ApprovalStatus.Rejected;
+        SetAuditOnUpdate(decidedBy, decidedAt);
+        IncrementVersion();
+        AddDomainEvent(new ApprovalRequestRejectedDomainEvent(AccountId, WorkspaceId, Id, decidedBy, note, decidedAt));
+    }
+
+    public void Cancel(Guid cancelledBy, DateTimeOffset cancelledAt)
+    {
+        EnsureNotDeleted();
+        if (Status != ApprovalStatus.Pending)
+            throw new BusinessRuleException("Only pending approval requests can be cancelled.");
+
+        Status = ApprovalStatus.Cancelled;
+        SetAuditOnUpdate(cancelledBy, cancelledAt);
+        IncrementVersion();
+        AddDomainEvent(new ApprovalRequestCancelledDomainEvent(AccountId, WorkspaceId, Id, cancelledBy, cancelledAt));
+    }
 
     public static ApprovalRequest Create(Guid accountId, Guid workspaceId, ResourceRef target, string title, Guid requestedBy, DateTimeOffset createdAt)
     {
