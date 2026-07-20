@@ -13,9 +13,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
     public bool IsSystem { get; private set; }
     public DataClassification DataClassification { get; private set; } = DataClassification.Internal;
     public bool IsSensitive { get; private set; }
-    public bool IsFormula { get; private set; }
-    public string? FormulaExpression { get; private set; }
-    public string MirrorSourceJson { get; private set; } = "{}";
+
 
     private readonly List<FieldOption> _options = new();
     public IReadOnlyCollection<FieldOption> Options => _options.AsReadOnly();
@@ -35,10 +33,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         string? defaultValue = null,
         bool isSystem = false,
         DataClassification dataClassification = DataClassification.Internal,
-        bool isSensitive = false,
-        bool isFormula = false,
-        string? formulaExpression = null,
-        string? mirrorSourceJson = null)
+        bool isSensitive = false)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(boardId);
@@ -62,10 +57,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
             DefaultValue = defaultValue,
             IsSystem = isSystem,
             DataClassification = dataClassification,
-            IsSensitive = isSensitive,
-            IsFormula = isFormula,
-            FormulaExpression = formulaExpression,
-            MirrorSourceJson = mirrorSourceJson ?? "{}"
+            IsSensitive = isSensitive
         };
 
         field.SetAuditOnCreate(createdBy, createdAt);
@@ -198,17 +190,6 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         Position = position;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-    }
-
-    public void UpdateFormula(bool isFormula, string? expression, Guid updatedBy, DateTimeOffset updatedAt)
-    {
-        EnsureNotDeleted();
-        if (IsFormula == isFormula && FormulaExpression == expression) return;
-        IsFormula = isFormula;
-        FormulaExpression = expression;
-        SetAuditOnUpdate(updatedBy, updatedAt);
-        IncrementVersion();
-        AddDomainEvent(new BoardFieldFormulaUpdatedDomainEvent(AccountId, WorkspaceId, BoardId, Id, isFormula, expression, updatedBy, updatedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)

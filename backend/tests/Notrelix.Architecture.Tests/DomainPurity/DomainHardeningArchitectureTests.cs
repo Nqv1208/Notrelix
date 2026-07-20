@@ -57,11 +57,6 @@ public class DomainHardeningArchitectureTests
             "MirrorValueSnapshot",
             AllowlistClassification.LegacyGap,
             "Mirror snapshots are computed projections.",
-            "Keep computation/projection outside aggregate behavior."),
-        ["RollupSnapshot"] = new(
-            "RollupSnapshot",
-            AllowlistClassification.LegacyGap,
-            "Rollup snapshots are computed projections.",
             "Keep computation/projection outside aggregate behavior.")
     };
 

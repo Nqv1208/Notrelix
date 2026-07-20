@@ -6052,6 +6052,10 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("deleted_by");
 
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_archived");
+
                     b.Property<bool>("IsCollapsed")
                         .HasColumnType("boolean")
                         .HasColumnName("is_collapsed");
@@ -6493,14 +6497,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("deleted_by");
 
-                    b.Property<string>("FormulaExpression")
-                        .HasColumnType("text")
-                        .HasColumnName("formula_expression");
-
-                    b.Property<bool>("IsFormula")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_formula");
-
                     b.Property<bool>("IsSensitive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_sensitive");
@@ -6508,11 +6504,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<bool>("IsSystem")
                         .HasColumnType("boolean")
                         .HasColumnName("is_system");
-
-                    b.Property<string>("MirrorSourceJson")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("mirror_source_json");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -6852,33 +6843,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.ToTable("form_submissions", "work");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.WorkManagement.Formulas.FormulaDependency", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("DependsOnFieldId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("depends_on_field_id");
-
-                    b.Property<Guid>("FormulaFieldId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("formula_field_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_formula_dependencies");
-
-                    b.HasIndex("DependsOnFieldId")
-                        .HasDatabaseName("idx_formula_dependencies_depends_on");
-
-                    b.HasIndex("FormulaFieldId", "DependsOnFieldId")
-                        .IsUnique()
-                        .HasDatabaseName("idx_formula_dependencies_pair");
-
-                    b.ToTable("formula_dependencies", "work");
-                });
-
             modelBuilder.Entity("Notrelix.Domain.WorkManagement.Items.BoardItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -6924,6 +6888,10 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<Guid>("GroupId")
                         .HasColumnType("uuid")
                         .HasColumnName("group_id");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_archived");
 
                     b.Property<string>("ItemKey")
                         .HasColumnType("text")
@@ -7730,39 +7698,6 @@ namespace Notrelix.Infrastructure.Migrations
                     b.ToTable("relation_field_configs", "work");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.WorkManagement.Rollups.RollupSnapshot", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("FieldId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("field_id");
-
-                    b.Property<Guid>("ItemId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("item_id");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<string>("Value")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("value");
-
-                    b.HasKey("Id")
-                        .HasName("pk_rollup_snapshots");
-
-                    b.HasIndex("ItemId", "FieldId")
-                        .IsUnique()
-                        .HasDatabaseName("idx_rollup_snapshots_item_field");
-
-                    b.ToTable("rollup_snapshots", "work");
-                });
-
             modelBuilder.Entity("Notrelix.Domain.WorkManagement.Templates.BoardTemplate", b =>
                 {
                     b.Property<Guid>("Id")
@@ -7964,6 +7899,10 @@ namespace Notrelix.Infrastructure.Migrations
                     b.Property<Guid?>("DeletedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("deleted_by");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_archived");
 
                     b.Property<bool>("IsDefault")
                         .HasColumnType("boolean")
@@ -13009,16 +12948,6 @@ namespace Notrelix.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_mirror_value_snapshots_board_item_connections_connection_id");
-                });
-
-            modelBuilder.Entity("Notrelix.Domain.WorkManagement.Rollups.RollupSnapshot", b =>
-                {
-                    b.HasOne("Notrelix.Domain.WorkManagement.Items.BoardItem", null)
-                        .WithMany()
-                        .HasForeignKey("ItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_rollup_snapshots_board_items_item_id");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.WorkManagement.Templates.ItemTemplate", b =>

@@ -46,7 +46,6 @@ using Notrelix.Domain.WorkManagement.Boards.Events;
 using Notrelix.Domain.WorkManagement.Checklists.Events;
 using Notrelix.Domain.WorkManagement.Fields.Events;
 using Notrelix.Domain.WorkManagement.Forms.Events;
-using Notrelix.Domain.WorkManagement.Formulas.Events;
 using Notrelix.Domain.WorkManagement.Items.Events;
 using Notrelix.Domain.WorkManagement.Labels.Events;
 using Notrelix.Domain.WorkManagement.Relations.Events;
@@ -412,7 +411,6 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
         Add<BoardFieldClassificationUpdatedDomainEvent>(d);
         Add<BoardFieldCreatedDomainEvent>(d);
         Add<BoardFieldDeletedDomainEvent>(d);
-        Add<BoardFieldFormulaUpdatedDomainEvent>(d);
         Add<BoardFieldRenamedDomainEvent>(d);
         Add<BoardFieldReorderedDomainEvent>(d);
         Add<BoardFieldRestoredDomainEvent>(d);
@@ -432,7 +430,6 @@ public sealed class DomainEventDispatchPolicy : IDomainEventDispatchPolicy
         Add<FormSubmissionMarkedAsSpamDomainEvent>(d);
         Add<FormSubmissionProcessedDomainEvent>(d);
         Add<FormSubmissionRejectedDomainEvent>(d);
-        Add<FormulaDependencyChangedDomainEvent>(d);
         Add<BoardItemArchivedDomainEvent>(d);
         Add<BoardItemCompletedDomainEvent>(d);
         Add<BoardItemCreatedDomainEvent>(d);

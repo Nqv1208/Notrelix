@@ -31,14 +31,6 @@ public interface IWorkManagementDbContext
     DbSet<TimeTrackingEntry> TimeTrackingEntries { get; }
     DbSet<RelationFieldConfig> RelationFieldConfigs { get; }
 
-    // Formulas
-    DbSet<FormulaField> FormulaFields { get; }
-    DbSet<FormulaDependency> FormulaDependencies { get; }
-
-    // Rollups
-    DbSet<RollupField> RollupFields { get; }
-    DbSet<RollupSnapshot> RollupSnapshots { get; }
-
     // Checklists
     DbSet<Checklist> Checklists { get; }
     DbSet<ChecklistItem> ChecklistItems { get; }

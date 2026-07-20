@@ -24,8 +24,6 @@ using Notrelix.API.Endpoints.WorkManagement.BoardPreferences;
 using Notrelix.API.Endpoints.WorkManagement.SavedFilters;
 using Notrelix.API.Endpoints.WorkManagement.Relations;
 using Notrelix.API.Endpoints.WorkManagement.Templates;
-using Notrelix.API.Endpoints.WorkManagement.Formulas;
-using Notrelix.API.Endpoints.WorkManagement.Rollups;
 using Notrelix.API.Endpoints.Workspaces.Activity;
 using Notrelix.API.Endpoints.Workspaces.Invitations;
 using Notrelix.API.Endpoints.Workspaces.Members;
@@ -96,12 +94,6 @@ public static class EndpointRouteBuilderExtensions
 
         // WorkManagement - Templates
         app.MapTemplates();
-
-        // WorkManagement - Formulas
-        app.MapFormulas();
-
-        // WorkManagement - Rollups
-        app.MapRollups();
 
         // Collaboration
         app.RegisterBoardItemActivityEndpoints();
