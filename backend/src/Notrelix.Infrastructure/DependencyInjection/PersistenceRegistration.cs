@@ -111,7 +111,12 @@ public static class PersistenceRegistration
 
         // Outbox persistence infrastructure.
         services.AddSingleton<IEventTypeRegistry, Notrelix.Infrastructure.Messaging.EventTypeRegistry>();
-        services.AddSingleton<IDomainEventDispatchPolicy, DomainEventDispatchPolicy>();
+        services.AddSingleton<IClassificationPolicy>(_ =>
+            ClassificationPolicy.CreateBuilder()
+                .Build());
+        services.AddSingleton<IDeliveryPolicy>(_ =>
+            DeliveryPolicy.CreateBuilder()
+                .Build());
 
         return services;
     }

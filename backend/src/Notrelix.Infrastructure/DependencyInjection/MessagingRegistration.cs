@@ -25,6 +25,10 @@ public static class MessagingRegistration
         // Message deduplication store (Application abstraction -> Infrastructure implementation).
         services.AddScoped<IMessageDeduplicationStore, MessageDeduplicationStore>();
 
+        // Consumer registry (immutable catalog of all registered consumers).
+        services.AddSingleton<IConsumerRegistry>(
+            new ConsumerRegistry(ConsumerRegistrySetup.GetConsumerDefinitions()));
+
         var transport = configuration["Messaging:Transport"] ?? "InMemory";
 
         switch (transport)

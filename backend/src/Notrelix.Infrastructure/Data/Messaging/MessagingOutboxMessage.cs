@@ -135,7 +135,7 @@ public sealed class MessagingOutboxMessage
 
     public static MessagingOutboxMessage FromIntegrationEvent(
         IIntegrationEvent integrationEvent,
-        IDomainEvent sourceDomainEvent,
+        DomainEvent sourceDomainEvent,
         DateTimeOffset now)
     {
         var payloadJson = JsonSerializer.SerializeToDocument(integrationEvent, integrationEvent.GetType(), JsonOptions);
