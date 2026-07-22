@@ -12,7 +12,7 @@ public sealed record UserSessionCreatedDomainEvent : GlobalDomainEvent
         Guid sessionId,
         Guid userId,
         DateTimeOffset createdAt)
-        : base(occurredAt: createdAt, actorUserId: userId, subjectId: sessionId)
+        : base(occurredAt: createdAt)
     {
         SessionId = sessionId;
         UserId = userId;

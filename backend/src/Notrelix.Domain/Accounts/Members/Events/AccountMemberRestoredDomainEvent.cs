@@ -6,4 +6,4 @@ public sealed record AccountMemberRestoredDomainEvent(
     Guid UserId,
     Guid ActorId,
     DateTimeOffset OccurredAt
-) : AccountScopedDomainEvent(AccountId, OccurredAt, ActorId);
+) : AccountScopedDomainEvent(AccountId, OccurredAt);

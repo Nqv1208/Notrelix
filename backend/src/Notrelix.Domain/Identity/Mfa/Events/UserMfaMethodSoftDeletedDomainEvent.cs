@@ -6,4 +6,4 @@ public sealed record UserMfaMethodSoftDeletedDomainEvent(
     Guid DeletedBy,
     DateTimeOffset OccurredAt,
     string? Reason
-) : GlobalDomainEvent(OccurredAt, DeletedBy);
+) : GlobalDomainEvent(OccurredAt);

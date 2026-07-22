@@ -4,4 +4,4 @@ public sealed record UserSecuritySettingsCreatedDomainEvent(
     Guid UserSecuritySettingsId,
     Guid UserId,
     DateTimeOffset OccurredAt
-) : GlobalDomainEvent(OccurredAt, UserId);
+) : GlobalDomainEvent(OccurredAt);

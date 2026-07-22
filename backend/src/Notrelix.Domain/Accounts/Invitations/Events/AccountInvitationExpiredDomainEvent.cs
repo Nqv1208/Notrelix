@@ -4,4 +4,4 @@ public sealed record AccountInvitationExpiredDomainEvent(
     Guid InvitationId,
     Guid AccountId,
     DateTimeOffset OccurredAt
-) : AccountScopedDomainEvent(AccountId, OccurredAt, null);
+) : AccountScopedDomainEvent(AccountId, OccurredAt);

@@ -7,4 +7,4 @@ public sealed record AccountCreatedDomainEvent(
     AccountType Type,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : AccountRootDomainEvent(AccountId, OccurredAt, CreatedBy);
+) : AccountRootDomainEvent(AccountId, OccurredAt);

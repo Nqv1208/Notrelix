@@ -6,4 +6,4 @@ public sealed record CommentResolvedDomainEvent(
     Guid CommentId,
     Guid ResolvedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, ResolvedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

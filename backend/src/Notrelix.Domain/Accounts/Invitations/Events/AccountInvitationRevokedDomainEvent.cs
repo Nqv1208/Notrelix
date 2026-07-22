@@ -5,4 +5,4 @@ public sealed record AccountInvitationRevokedDomainEvent(
     Guid AccountId,
     Guid RevokedBy,
     DateTimeOffset OccurredAt
-) : AccountScopedDomainEvent(AccountId, OccurredAt, RevokedBy);
+) : AccountScopedDomainEvent(AccountId, OccurredAt);

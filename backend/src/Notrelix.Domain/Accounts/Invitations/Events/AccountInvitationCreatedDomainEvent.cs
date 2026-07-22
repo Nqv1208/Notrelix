@@ -7,4 +7,4 @@ public sealed record AccountInvitationCreatedDomainEvent(
     AccountRole Role,
     Guid InvitedBy,
     DateTimeOffset OccurredAt
-) : AccountScopedDomainEvent(AccountId, OccurredAt, InvitedBy);
+) : AccountScopedDomainEvent(AccountId, OccurredAt);

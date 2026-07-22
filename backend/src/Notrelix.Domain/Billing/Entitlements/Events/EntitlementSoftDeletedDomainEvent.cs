@@ -7,4 +7,4 @@ public sealed record EntitlementSoftDeletedDomainEvent(
     string FeatureCode,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
-) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, DeletedBy);
+) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

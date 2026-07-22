@@ -6,4 +6,4 @@ public sealed record SubscriptionRestoredDomainEvent(
     Guid SubscriptionId,
     Guid RestoredBy,
     DateTimeOffset OccurredAt
-) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, RestoredBy);
+) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

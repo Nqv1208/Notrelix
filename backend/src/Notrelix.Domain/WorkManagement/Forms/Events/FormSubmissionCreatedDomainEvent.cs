@@ -8,4 +8,4 @@ public sealed record FormSubmissionCreatedDomainEvent(
     Guid BoardId,
     Guid? SubmitterUserId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, SubmitterUserId);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

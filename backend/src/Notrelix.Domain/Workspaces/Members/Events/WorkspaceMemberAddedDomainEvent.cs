@@ -8,4 +8,4 @@ public sealed record WorkspaceMemberAddedDomainEvent(
     WorkspaceRole Role,
     Guid ActorId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, ActorId);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

@@ -8,9 +8,8 @@ public record SubscriptionCanceledDomainEvent : BillingAccountScopedDomainEvent
         Guid accountId,
         Guid? workspaceId,
         Guid subscriptionId,
-        Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(accountId, workspaceId, occurredAt, actorUserId)
+        : base(accountId, workspaceId, occurredAt)
     {
         SubscriptionId = subscriptionId;
     }

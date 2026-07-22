@@ -6,4 +6,4 @@ public sealed record ApprovalRequestCancelledDomainEvent(
     Guid RequestId,
     Guid CancelledBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, CancelledBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

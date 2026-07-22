@@ -7,4 +7,4 @@ public sealed record AiAgentRunCancelledDomainEvent(
     Guid AgentId,
     Guid? ActorUserId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, ActorUserId);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

@@ -7,4 +7,4 @@ public sealed record RelationFieldConfiguredDomainEvent(
     Guid SourceBoardId,
     Guid TargetBoardId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

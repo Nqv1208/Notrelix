@@ -3,12 +3,12 @@ using Notrelix.Infrastructure.Events;
 
 namespace Notrelix.Architecture.Tests;
 
-public class DispatchPolicyArchitectureTests
+public class ClassificationPolicyArchitectureTests
 {
     [Fact]
-    public void AllDomainEvents_ShouldBeRegistered_InDispatchPolicy()
+    public void ClassificationPolicy_ShouldNotThrow_ForAnyDomainEvent()
     {
-        var policy = new DomainEventDispatchPolicy();
+        var policy = ClassificationPolicy.CreateBuilder().Build();
 
         var domainEvents = typeof(IDomainEvent).Assembly
             .GetTypes()
@@ -16,28 +16,23 @@ public class DispatchPolicyArchitectureTests
                         && typeof(IDomainEvent).IsAssignableFrom(t))
             .ToList();
 
-        var unregistered = new List<string>();
         foreach (var eventType in domainEvents)
         {
-            try
-            {
-                policy.GetMode(eventType);
-            }
-            catch (InvalidOperationException)
-            {
-                unregistered.Add(eventType.FullName!);
-            }
+            var classification = policy.GetClassification(eventType);
+            classification.Should().NotBeNull();
+            classification.Value.Should().BeOneOf(
+                EventClassification.Business,
+                EventClassification.Lifecycle,
+                EventClassification.System,
+                EventClassification.Audit,
+                EventClassification.Internal);
         }
-
-        unregistered.Should().BeEmpty(
-            $"All IDomainEvent types must be registered in DomainEventDispatchPolicy. " +
-            $"Missing: {string.Join(", ", unregistered)}");
     }
 
     [Fact]
-    public void DispatchPolicy_ShouldNotThrow_ForAnyRegisteredEvent()
+    public void DeliveryPolicy_ShouldNotThrow_ForAnyDomainEvent()
     {
-        var policy = new DomainEventDispatchPolicy();
+        var policy = DeliveryPolicy.CreateBuilder().Build();
 
         var domainEvents = typeof(IDomainEvent).Assembly
             .GetTypes()
@@ -47,8 +42,8 @@ public class DispatchPolicyArchitectureTests
 
         foreach (var eventType in domainEvents)
         {
-            var mode = policy.GetMode(eventType);
-            mode.Should().BeOneOf(DomainEventDispatchMode.Inline, DomainEventDispatchMode.Outbox, DomainEventDispatchMode.Ignore);
+            var decision = policy.GetDecision(eventType);
+            decision.Should().NotBeNull();
         }
     }
 }

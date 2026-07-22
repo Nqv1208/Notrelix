@@ -8,4 +8,4 @@ public sealed record WorkspaceInvitationCreatedDomainEvent(
     WorkspaceRole Role,
     Guid InvitedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, InvitedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

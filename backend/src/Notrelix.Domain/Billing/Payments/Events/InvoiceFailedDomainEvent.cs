@@ -6,4 +6,4 @@ public sealed record InvoiceFailedDomainEvent(
     Guid? WorkspaceId,
     string Error,
     DateTimeOffset OccurredAt
-) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

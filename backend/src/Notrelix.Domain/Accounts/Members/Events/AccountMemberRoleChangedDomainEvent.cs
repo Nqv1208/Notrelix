@@ -8,4 +8,4 @@ public sealed record AccountMemberRoleChangedDomainEvent(
     AccountRole NewRole,
     Guid ActorId,
     DateTimeOffset OccurredAt
-) : AccountScopedDomainEvent(AccountId, OccurredAt, ActorId);
+) : AccountScopedDomainEvent(AccountId, OccurredAt);

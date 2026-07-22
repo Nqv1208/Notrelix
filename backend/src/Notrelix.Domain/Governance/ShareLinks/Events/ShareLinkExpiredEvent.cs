@@ -5,4 +5,4 @@ public sealed record ShareLinkExpiredEvent(
     Guid WorkspaceId,
     Guid LinkId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

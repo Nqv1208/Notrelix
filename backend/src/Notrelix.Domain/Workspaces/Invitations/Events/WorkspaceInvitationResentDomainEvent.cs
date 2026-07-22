@@ -6,4 +6,4 @@ public sealed record WorkspaceInvitationResentDomainEvent(
     Guid WorkspaceId,
     Guid ResentBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, ResentBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

@@ -9,9 +9,8 @@ public record ApiTokenRestoredDomainEvent : WorkspaceScopedDomainEvent
         Guid accountId,
         Guid workspaceId,
         Guid tokenId,
-        Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(accountId, workspaceId, occurredAt, actorUserId)
+        : base(accountId, workspaceId, occurredAt)
     {
         AccountId = accountId;
         TokenId = tokenId;

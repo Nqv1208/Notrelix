@@ -7,4 +7,4 @@ public sealed record SubscriptionRenewedDomainEvent(
     DateTimeOffset NewPeriodStart,
     DateTimeOffset NewPeriodEnd,
     DateTimeOffset OccurredAt
-) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

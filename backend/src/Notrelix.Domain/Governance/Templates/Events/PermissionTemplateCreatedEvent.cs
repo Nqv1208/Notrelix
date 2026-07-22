@@ -5,4 +5,4 @@ public sealed record PermissionTemplateCreatedEvent(
     string Name,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : GlobalDomainEvent(OccurredAt, CreatedBy);
+) : GlobalDomainEvent(OccurredAt);

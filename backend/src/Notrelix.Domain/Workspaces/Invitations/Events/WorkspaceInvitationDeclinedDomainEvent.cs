@@ -6,4 +6,4 @@ public sealed record WorkspaceInvitationDeclinedDomainEvent(
     Guid WorkspaceId,
     Guid DeclinedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, DeclinedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

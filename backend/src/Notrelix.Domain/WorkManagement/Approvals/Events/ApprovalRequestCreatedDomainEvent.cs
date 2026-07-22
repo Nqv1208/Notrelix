@@ -6,4 +6,4 @@ public sealed record ApprovalRequestCreatedDomainEvent(
     Guid WorkspaceId,
     ResourceRef Target,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

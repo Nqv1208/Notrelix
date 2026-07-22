@@ -5,4 +5,4 @@ public sealed record ScheduledJobRestoredDomainEvent(
     Guid WorkspaceId,
     Guid JobId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

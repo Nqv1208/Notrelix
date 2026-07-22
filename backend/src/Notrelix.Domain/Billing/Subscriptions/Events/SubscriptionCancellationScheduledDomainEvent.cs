@@ -6,4 +6,4 @@ public sealed record SubscriptionCancellationScheduledDomainEvent(
     Guid SubscriptionId,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, UpdatedBy);
+) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

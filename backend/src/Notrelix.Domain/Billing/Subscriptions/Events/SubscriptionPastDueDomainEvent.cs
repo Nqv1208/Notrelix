@@ -5,4 +5,4 @@ public sealed record SubscriptionPastDueDomainEvent(
     Guid? WorkspaceId,
     Guid SubscriptionId,
     DateTimeOffset OccurredAt
-) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

@@ -6,4 +6,4 @@ public sealed record ChecklistItemRemovedDomainEvent(
     Guid ChecklistId,
     Guid ItemId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

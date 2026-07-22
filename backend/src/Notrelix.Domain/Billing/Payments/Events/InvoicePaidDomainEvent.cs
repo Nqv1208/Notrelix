@@ -5,4 +5,4 @@ public sealed record InvoicePaidDomainEvent(
     Guid InvoiceId,
     Guid? WorkspaceId,
     DateTimeOffset OccurredAt
-) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

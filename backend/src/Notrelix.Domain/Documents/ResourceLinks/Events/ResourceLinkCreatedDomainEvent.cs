@@ -7,4 +7,4 @@ public sealed record ResourceLinkCreatedDomainEvent(
     Guid TargetId,
     LinkType Type,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

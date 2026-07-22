@@ -8,15 +8,10 @@ public abstract record BillingAccountScopedDomainEvent : DomainEvent, IAccountSc
     protected BillingAccountScopedDomainEvent(
         Guid accountId,
         Guid? workspaceId,
-        DateTimeOffset occurredAt,
-        Guid? actorUserId = null,
-        string? correlationId = null,
-        string? causationId = null)
-        : base(occurredAt, workspaceId, actorUserId)
+        DateTimeOffset occurredAt)
+        : base(occurredAt)
     {
         AccountId = accountId;
         WorkspaceId = workspaceId;
-        CorrelationId = correlationId;
-        CausationId = causationId;
     }
 }

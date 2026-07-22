@@ -6,4 +6,4 @@ public sealed record WorkspaceInvitationRevokedDomainEvent(
     Guid WorkspaceId,
     Guid RevokedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, RevokedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

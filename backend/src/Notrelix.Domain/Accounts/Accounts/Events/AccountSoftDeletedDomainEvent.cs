@@ -5,4 +5,4 @@ public sealed record AccountSoftDeletedDomainEvent(
     Guid DeletedBy,
     DateTimeOffset OccurredAt,
     string? Reason
-) : AccountRootDomainEvent(AccountId, OccurredAt, DeletedBy);
+) : AccountRootDomainEvent(AccountId, OccurredAt);

@@ -7,4 +7,4 @@ public sealed record CalendarEventLinkedDomainEvent(
     Guid CalendarEventId,
     ResourceRef Target,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

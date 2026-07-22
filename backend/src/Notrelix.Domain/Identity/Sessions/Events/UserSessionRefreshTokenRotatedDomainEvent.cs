@@ -4,4 +4,4 @@ public sealed record UserSessionRefreshTokenRotatedDomainEvent(
     Guid SessionId,
     Guid UserId,
     DateTimeOffset OccurredAt
-) : GlobalDomainEvent(OccurredAt, UserId);
+) : GlobalDomainEvent(OccurredAt);

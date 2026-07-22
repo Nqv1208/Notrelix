@@ -6,4 +6,4 @@ public sealed record AccountRenamedDomainEvent(
     string NewName,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : AccountRootDomainEvent(AccountId, OccurredAt, UpdatedBy);
+) : AccountRootDomainEvent(AccountId, OccurredAt);

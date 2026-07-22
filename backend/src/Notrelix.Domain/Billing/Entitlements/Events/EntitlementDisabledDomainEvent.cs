@@ -10,9 +10,8 @@ public record EntitlementDisabledDomainEvent : BillingAccountScopedDomainEvent
         Guid? workspaceId,
         Guid entitlementId,
         string featureCode,
-        Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(accountId, workspaceId, occurredAt, actorUserId)
+        : base(accountId, workspaceId, occurredAt)
     {
         EntitlementId = entitlementId;
         FeatureCode = featureCode;

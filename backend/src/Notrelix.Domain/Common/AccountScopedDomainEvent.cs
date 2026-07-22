@@ -6,15 +6,9 @@ public abstract record AccountScopedDomainEvent : DomainEvent
 
     protected AccountScopedDomainEvent(
         Guid accountId,
-        DateTimeOffset occurredAt,
-        Guid? actorUserId = null,
-        string? correlationId = null,
-        string? causationId = null,
-        Guid subjectId = default)
-        : base(occurredAt, workspaceId: null, actorUserId, subjectId)
+        DateTimeOffset occurredAt)
+        : base(occurredAt)
     {
         AccountId = accountId;
-        CorrelationId = correlationId;
-        CausationId = causationId;
     }
 }

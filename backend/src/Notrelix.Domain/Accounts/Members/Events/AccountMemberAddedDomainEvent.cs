@@ -7,4 +7,4 @@ public sealed record AccountMemberAddedDomainEvent(
     AccountRole Role,
     Guid ActorId,
     DateTimeOffset OccurredAt
-) : AccountScopedDomainEvent(AccountId, OccurredAt, ActorId);
+) : AccountScopedDomainEvent(AccountId, OccurredAt);

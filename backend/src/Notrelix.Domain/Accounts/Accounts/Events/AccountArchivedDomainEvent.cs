@@ -4,4 +4,4 @@ public sealed record AccountArchivedDomainEvent(
     Guid AccountId,
     Guid ArchivedBy,
     DateTimeOffset OccurredAt
-) : AccountRootDomainEvent(AccountId, OccurredAt, ArchivedBy);
+) : AccountRootDomainEvent(AccountId, OccurredAt);

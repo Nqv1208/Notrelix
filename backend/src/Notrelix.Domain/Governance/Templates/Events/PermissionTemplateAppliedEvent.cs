@@ -7,4 +7,4 @@ public sealed record PermissionTemplateAppliedEvent(
     Guid TargetResourceId,
     Guid AppliedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, AppliedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

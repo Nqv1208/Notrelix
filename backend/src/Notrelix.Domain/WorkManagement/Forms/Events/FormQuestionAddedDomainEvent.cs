@@ -10,9 +10,8 @@ public record FormQuestionAddedDomainEvent : WorkspaceScopedDomainEvent
         Guid workspaceId,
         Guid formId,
         string questionKey,
-        Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(accountId, workspaceId, occurredAt, actorUserId)
+        : base(accountId, workspaceId, occurredAt)
     {
         FormId = formId;
         QuestionKey = questionKey;

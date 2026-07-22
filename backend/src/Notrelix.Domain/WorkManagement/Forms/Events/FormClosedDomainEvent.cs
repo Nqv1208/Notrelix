@@ -8,9 +8,8 @@ public record FormClosedDomainEvent : WorkspaceScopedDomainEvent
         Guid accountId,
         Guid workspaceId,
         Guid formId,
-        Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(accountId, workspaceId, occurredAt, actorUserId)
+        : base(accountId, workspaceId, occurredAt)
     {
         FormId = formId;
     }

@@ -11,7 +11,7 @@ public record EntitlementExpiredDomainEvent : BillingAccountScopedDomainEvent
         Guid entitlementId,
         string featureCode,
         DateTimeOffset occurredAt)
-        : base(accountId, workspaceId, occurredAt, null)
+        : base(accountId, workspaceId, occurredAt)
     {
         EntitlementId = entitlementId;
         FeatureCode = featureCode;

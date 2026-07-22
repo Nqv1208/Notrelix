@@ -6,4 +6,4 @@ public sealed record IntegrationConnectionReauthorizedDomainEvent(
     Guid ConnectionId,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, UpdatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

@@ -7,4 +7,4 @@ public sealed record SubscriptionChangedDomainEvent(
     Guid OldPlanId,
     Guid NewPlanId,
     DateTimeOffset OccurredAt
-) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

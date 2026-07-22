@@ -6,4 +6,4 @@ public sealed record AccountInvitationAcceptedDomainEvent(
     Guid AcceptedByUserId,
     Guid ActorId,
     DateTimeOffset OccurredAt
-) : AccountScopedDomainEvent(AccountId, OccurredAt, ActorId);
+) : AccountScopedDomainEvent(AccountId, OccurredAt);

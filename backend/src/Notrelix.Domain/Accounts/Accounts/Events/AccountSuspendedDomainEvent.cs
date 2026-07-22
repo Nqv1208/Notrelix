@@ -6,4 +6,4 @@ public sealed record AccountSuspendedDomainEvent(
     Guid SuspendedBy,
     DateTimeOffset OccurredAt,
     string? Reason
-) : AccountRootDomainEvent(AccountId, OccurredAt, SuspendedBy);
+) : AccountRootDomainEvent(AccountId, OccurredAt);

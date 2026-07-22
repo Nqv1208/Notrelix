@@ -12,9 +12,8 @@ public record FormCreatedDomainEvent : WorkspaceScopedDomainEvent
         Guid formId,
         Guid boardId,
         string name,
-        Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(accountId, workspaceId, occurredAt, actorUserId)
+        : base(accountId, workspaceId, occurredAt)
     {
         FormId = formId;
         BoardId = boardId;

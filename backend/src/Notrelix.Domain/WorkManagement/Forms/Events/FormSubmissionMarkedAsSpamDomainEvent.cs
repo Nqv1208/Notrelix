@@ -6,4 +6,4 @@ public sealed record FormSubmissionMarkedAsSpamDomainEvent(
     Guid SubmissionId,
     Guid FormId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

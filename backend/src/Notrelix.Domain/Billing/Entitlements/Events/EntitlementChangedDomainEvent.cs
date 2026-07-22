@@ -6,4 +6,4 @@ public sealed record EntitlementChangedDomainEvent(
     string FeatureCode,
     int NewLimit,
     DateTimeOffset OccurredAt
-) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

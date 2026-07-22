@@ -14,7 +14,7 @@ public sealed record UserRegisteredDomainEvent : GlobalDomainEvent
         string email,
         string displayName,
         DateTimeOffset registeredAt)
-        : base(occurredAt: registeredAt, actorUserId: userId, subjectId: userId)
+        : base(occurredAt: registeredAt)
     {
         UserId = userId;
         Email = email;

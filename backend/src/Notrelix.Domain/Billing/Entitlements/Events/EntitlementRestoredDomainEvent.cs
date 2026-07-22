@@ -7,4 +7,4 @@ public sealed record EntitlementRestoredDomainEvent(
     string FeatureCode,
     Guid RestoredBy,
     DateTimeOffset OccurredAt
-) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, RestoredBy);
+) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

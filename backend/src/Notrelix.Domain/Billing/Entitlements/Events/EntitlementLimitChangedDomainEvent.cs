@@ -14,9 +14,8 @@ public record EntitlementLimitChangedDomainEvent : BillingAccountScopedDomainEve
         string featureCode,
         decimal oldLimit,
         decimal newLimit,
-        Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(accountId, workspaceId, occurredAt, actorUserId)
+        : base(accountId, workspaceId, occurredAt)
     {
         EntitlementId = entitlementId;
         FeatureCode = featureCode;

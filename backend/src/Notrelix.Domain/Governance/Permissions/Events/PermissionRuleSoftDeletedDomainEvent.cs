@@ -9,9 +9,8 @@ public record PermissionRuleSoftDeletedDomainEvent : WorkspaceScopedDomainEvent
         Guid accountId,
         Guid workspaceId,
         Guid ruleId,
-        Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(accountId, workspaceId, occurredAt, actorUserId)
+        : base(accountId, workspaceId, occurredAt)
     {
         AccountId = accountId;
         RuleId = ruleId;

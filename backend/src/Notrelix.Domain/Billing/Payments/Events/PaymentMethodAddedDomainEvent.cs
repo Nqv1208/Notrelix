@@ -8,4 +8,4 @@ public sealed record PaymentMethodAddedDomainEvent(
     string Last4,
     string Brand,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

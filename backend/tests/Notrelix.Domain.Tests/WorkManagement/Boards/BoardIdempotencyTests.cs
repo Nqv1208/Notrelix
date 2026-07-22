@@ -166,7 +166,7 @@ public class BoardIdempotencyTests
     {
         var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
 
-        var evt = (IDomainEvent)board.DomainEvents.Single(e => e is BoardCreatedDomainEvent);
+        var evt = (IWorkspaceScoped)board.DomainEvents.Single(e => e is BoardCreatedDomainEvent);
         evt.WorkspaceId.Should().Be(_workspaceId);
     }
 
@@ -178,7 +178,7 @@ public class BoardIdempotencyTests
 
         board.Rename("Renamed", _actorId, _now);
 
-        var evt = (IDomainEvent)board.DomainEvents.Single(e => e is BoardRenamedDomainEvent);
+        var evt = (IWorkspaceScoped)board.DomainEvents.Single(e => e is BoardRenamedDomainEvent);
         evt.WorkspaceId.Should().Be(_workspaceId);
     }
 

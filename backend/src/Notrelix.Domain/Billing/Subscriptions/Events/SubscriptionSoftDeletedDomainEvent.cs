@@ -6,4 +6,4 @@ public sealed record SubscriptionSoftDeletedDomainEvent(
     Guid SubscriptionId,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
-) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, DeletedBy);
+) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

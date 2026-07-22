@@ -7,4 +7,4 @@ public sealed record AutomationExecutionCancelledDomainEvent(
     Guid RuleId,
     Guid CancelledBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, CancelledBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

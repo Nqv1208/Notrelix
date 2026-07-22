@@ -6,4 +6,4 @@ public sealed record CalendarIntegrationActivatedDomainEvent(
     Guid IntegrationId,
     Guid ActivatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, ActivatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

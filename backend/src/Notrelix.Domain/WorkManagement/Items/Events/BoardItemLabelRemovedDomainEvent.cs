@@ -6,4 +6,4 @@ public sealed record BoardItemLabelRemovedDomainEvent(
     Guid ItemId,
     Guid LabelId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

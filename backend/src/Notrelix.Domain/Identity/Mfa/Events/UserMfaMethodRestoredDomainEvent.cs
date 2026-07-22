@@ -5,4 +5,4 @@ public sealed record UserMfaMethodRestoredDomainEvent(
     Guid UserId,
     Guid RestoredBy,
     DateTimeOffset OccurredAt
-) : GlobalDomainEvent(OccurredAt, RestoredBy);
+) : GlobalDomainEvent(OccurredAt);

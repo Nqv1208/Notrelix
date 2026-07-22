@@ -1,7 +1,15 @@
 namespace Notrelix.Domain.Workspaces.Workspaces.Events;
 
-public sealed record WorkspaceArchivedDomainEvent(
-    Guid WorkspaceId,
-    Guid ArchivedBy,
-    DateTimeOffset OccurredAt
-) : WorkspaceRootDomainEvent(WorkspaceId, OccurredAt, ArchivedBy);
+public sealed record WorkspaceArchivedDomainEvent : WorkspaceRootDomainEvent
+{
+    public Guid ArchivedBy { get; }
+
+    public WorkspaceArchivedDomainEvent(
+        Guid workspaceId,
+        Guid archivedBy,
+        DateTimeOffset occurredAt)
+        : base(workspaceId, occurredAt)
+    {
+        ArchivedBy = archivedBy;
+    }
+}

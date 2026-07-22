@@ -6,4 +6,4 @@ public sealed record ScheduledJobCreatedDomainEvent(
     Guid JobId,
     Guid RuleId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

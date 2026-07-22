@@ -6,4 +6,4 @@ public sealed record InvoiceSoftDeletedDomainEvent(
     Guid InvoiceId,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
-) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, DeletedBy);
+) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

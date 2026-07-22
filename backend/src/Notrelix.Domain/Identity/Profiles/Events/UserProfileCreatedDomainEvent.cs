@@ -4,4 +4,4 @@ public sealed record UserProfileCreatedDomainEvent(
     Guid UserProfileId,
     Guid UserId,
     DateTimeOffset OccurredAt
-) : GlobalDomainEvent(OccurredAt, UserId);
+) : GlobalDomainEvent(OccurredAt);

@@ -10,9 +10,8 @@ public record FeatureUsageConsumedDomainEvent : WorkspaceScopedDomainEvent
         Guid workspaceId,
         string featureCode,
         decimal amount,
-        Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(accountId, workspaceId, occurredAt, actorUserId)
+        : base(accountId, workspaceId, occurredAt)
     {
         FeatureCode = featureCode;
         Amount = amount;

@@ -8,4 +8,4 @@ public sealed record ReactionRemovedDomainEvent(
     Guid UserId,
     Emoji Emoji,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);
