@@ -1,5 +1,9 @@
 namespace Notrelix.Domain.WorkManagement.Formulas;
 
+/// <summary>
+/// EXPERIMENTAL: Formula expression value object. Parser/evaluator not yet implemented.
+/// Do not depend on this type in production code paths.
+/// </summary>
 public sealed class FormulaExpression : ValueObject
 {
     public string Expression { get; }

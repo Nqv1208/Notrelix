@@ -17,6 +17,20 @@ public class BoardItemConnection : Entity, IWorkspaceScoped
 
     private BoardItemConnection() : base() { }
 
+    private static string ValidateJson(string? value)
+    {
+        var json = value ?? "{}";
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldSettings_InvalidJsonFormat, "MetadataJson must be valid JSON.");
+        }
+        return json;
+    }
+
     public static BoardItemConnection Create(
         Guid accountId,
         Guid workspaceId,
@@ -38,7 +52,7 @@ public class BoardItemConnection : Entity, IWorkspaceScoped
         Guard.NotEmpty(targetItemId);
 
         if (sourceItemId == targetItemId)
-            throw new BusinessRuleException("Cannot connect an item to itself.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Connection_CannotConnectToSelf, "Cannot connect an item to itself.");
 
         Guard.NotEmpty(accountId);
 
@@ -52,7 +66,7 @@ public class BoardItemConnection : Entity, IWorkspaceScoped
             TargetBoardId = targetBoardId,
             TargetItemId = targetItemId,
             SyncStatus = syncStatus,
-            MetadataJson = metadataJson ?? "{}",
+            MetadataJson = ValidateJson(metadataJson),
             CreatedBy = createdBy,
             CreatedAt = createdAt
         };

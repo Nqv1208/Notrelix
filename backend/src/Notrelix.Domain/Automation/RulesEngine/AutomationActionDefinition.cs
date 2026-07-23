@@ -32,7 +32,7 @@ public sealed class AutomationActionDefinition : ValueObject
             {
                 using var document = JsonDocument.Parse(configuration);
                 if (document.RootElement.ValueKind == JsonValueKind.Null)
-                    throw new BusinessRuleException("Action configuration cannot be null JSON.");
+                    throw new BusinessRuleException(BusinessRuleCodes.Automation_Action_ConfigCannotBeNullJson, "Action configuration cannot be null JSON.");
             }
             catch (JsonException ex)
             {

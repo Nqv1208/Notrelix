@@ -44,7 +44,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         };
 
         view.SetAuditOnCreate(createdBy, createdAt);
-        view.AddDomainEvent(new BoardViewCreatedDomainEvent(accountId, workspaceId, boardId, view.Id, view.Name, type, createdBy, createdAt));
+        view.RaiseDomainEvent(new BoardViewCreatedDomainEvent(accountId, workspaceId, boardId, view.Id, view.Name, type, createdBy, createdAt));
 
         return view;
     }
@@ -56,20 +56,20 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
 
         // Ensure the config type matches the view type
         if (Type == ViewType.Kanban && config is not KanbanViewConfig)
-            throw new BusinessRuleException("Kanban view must use KanbanViewConfig");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_View_KanbanMustUseKanbanConfig, "Kanban view must use KanbanViewConfig");
         if (Type == ViewType.Table && config is not TableViewConfig)
-            throw new BusinessRuleException("Table view must use TableViewConfig");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_View_TableMustUseTableConfig, "Table view must use TableViewConfig");
         if (Type == ViewType.Calendar && config is not CalendarViewConfig)
-            throw new BusinessRuleException("Calendar view must use CalendarViewConfig");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_View_CalendarMustUseCalendarConfig, "Calendar view must use CalendarViewConfig");
         if (Type == ViewType.Timeline && config is not TimelineViewConfig)
-            throw new BusinessRuleException("Timeline view must use TimelineViewConfig");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_View_TimelineMustUseTimelineConfig, "Timeline view must use TimelineViewConfig");
 
         if (Config == config) return;
 
         Config = config;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardViewConfigUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardViewConfigUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
 
     public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
@@ -85,7 +85,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         Name = normalizedName;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardViewRenamedDomainEvent(AccountId, WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardViewRenamedDomainEvent(AccountId, WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
     }
 
     public void SetDefault(Guid updatedBy, DateTimeOffset updatedAt)
@@ -113,7 +113,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardViewDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
+        RaiseDomainEvent(new BoardViewDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -122,7 +122,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new BoardViewRestoredDomainEvent(AccountId, WorkspaceId, Id, BoardId, restoredBy, restoredAt));
+        RaiseDomainEvent(new BoardViewRestoredDomainEvent(AccountId, WorkspaceId, Id, BoardId, restoredBy, restoredAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
@@ -132,7 +132,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         IsArchived = true;
         SetAuditOnUpdate(archivedBy, archivedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardViewArchivedDomainEvent(AccountId, WorkspaceId, Id, BoardId, archivedBy, archivedAt));
+        RaiseDomainEvent(new BoardViewArchivedDomainEvent(AccountId, WorkspaceId, Id, BoardId, archivedBy, archivedAt));
     }
 
     public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
@@ -142,6 +142,6 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         IsArchived = false;
         SetAuditOnUpdate(unarchivedBy, unarchivedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardViewUnarchivedDomainEvent(AccountId, WorkspaceId, Id, BoardId, unarchivedBy, unarchivedAt));
+        RaiseDomainEvent(new BoardViewUnarchivedDomainEvent(AccountId, WorkspaceId, Id, BoardId, unarchivedBy, unarchivedAt));
     }
 }

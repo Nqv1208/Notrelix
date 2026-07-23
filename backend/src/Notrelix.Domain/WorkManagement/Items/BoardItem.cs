@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Notrelix.Domain.WorkManagement.Items;
 
 public class BoardItem : AggregateRoot, IWorkspaceScoped
@@ -45,6 +47,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         Guard.MaxLength(name, 500);
         Guard.NotNull(position);
         Guard.NotEmpty(accountId);
+        Guard.NotNegative(itemLevel);
 
         var item = new BoardItem
         {
@@ -63,7 +66,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         };
 
         item.SetAuditOnCreate(createdBy, createdAt);
-        item.AddDomainEvent(new BoardItemCreatedDomainEvent(accountId, workspaceId, boardId, groupId, item.Id, item.Name, createdBy, createdAt));
+        item.RaiseDomainEvent(new BoardItemCreatedDomainEvent(accountId, workspaceId, boardId, groupId, item.Id, item.Name, createdBy, createdAt));
 
         return item;
     }
@@ -81,7 +84,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         Name = normalizedName;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardItemRenamedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldName, Name, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardItemRenamedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldName, Name, updatedBy, updatedAt));
     }
 
     public void MoveToGroup(BoardGroupRef group, FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
@@ -103,7 +106,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         Position = newPosition;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardItemMovedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldGroupId, group.GroupId, newPosition.Value, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardItemMovedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldGroupId, group.GroupId, newPosition.Value, updatedBy, updatedAt));
     }
 
     public void UpdateFieldValue(BoardField field, FieldValue newValue, Guid updatedBy, DateTimeOffset updatedAt)
@@ -113,16 +116,16 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         Guard.NotNull(newValue);
 
         if (field.WorkspaceId != WorkspaceId)
-            throw new BusinessRuleException("Field belongs to a different workspace.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_BelongsToDifferentWorkspace, "Field belongs to a different workspace.");
 
         if (field.BoardId != BoardId)
-            throw new BusinessRuleException("Field does not belong to this board.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_DoesNotBelongToBoard, "Field does not belong to this board.");
 
         if (field.IsDeleted)
-            throw new BusinessRuleException("Cannot update value for a deleted field.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_CannotUpdateDeleted, "Cannot update value for a deleted field.");
 
         if (field.IsSystem)
-            throw new BusinessRuleException("Cannot update a system field.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_CannotUpdateSystem, "Cannot update a system field.");
 
         FieldValueValidator.Validate(newValue, field.Type, field.Settings);
 
@@ -134,20 +137,15 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         }
         else if (field.Type == FieldType.MultiSelect)
         {
-            // MultiSelect: validate each value is a valid option
-            try
+            using var msDoc = JsonDocument.Parse(newValue.Data.Value);
+            if (msDoc.RootElement.ValueKind != JsonValueKind.Array)
+                throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldValue_InvalidMultiSelectValue, "Value for field type MultiSelect must be an array of option IDs.");
+
+            foreach (var element in msDoc.RootElement.EnumerateArray())
             {
-                using var doc = System.Text.Json.JsonDocument.Parse(newValue.Data.Value);
-                foreach (var element in doc.RootElement.EnumerateArray())
-                {
-                    var optionId = element.GetString();
-                    if (!field.Options.Any(o => o.Id.ToString() == optionId))
-                        throw new BusinessRuleException($"Value '{optionId}' is not a valid option for field '{field.Name}'.");
-                }
-            }
-            catch
-            {
-                throw new BusinessRuleException($"Value for field type {field.Type} must be an array of option IDs.");
+                var optionId = element.GetString();
+                if (!field.Options.Any(o => o.Id.ToString() == optionId))
+                    throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldValue_InvalidSelectValue, $"Value '{optionId}' is not a valid option for field '{field.Name}'.");
             }
         }
 
@@ -166,41 +164,43 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
 
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardItemFieldValueChangedDomainEvent(AccountId, WorkspaceId, Id, BoardId, field.Id, oldValue, newValue, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardItemFieldValueChangedDomainEvent(AccountId, WorkspaceId, Id, BoardId, field.Id, oldValue, newValue, updatedBy, updatedAt));
     }
 
-    public void AssignParentItem(Guid? parentItemId, int itemLevel, Func<Guid, (Guid BoardId, Guid?)> getParentInfo, Guid updatedBy, DateTimeOffset updatedAt)
+    public void AssignParentItem(Guid? parentItemId, int itemLevel, IReadOnlyDictionary<Guid, ItemParentSnapshot> parentChain, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
 
         if (parentItemId.HasValue)
         {
-            var parentInfo = getParentInfo(parentItemId.Value);
-            if (parentInfo.BoardId != BoardId)
-                throw new BusinessRuleException("Parent item must belong to the same board.");
+            if (!parentChain.TryGetValue(parentItemId.Value, out var parentSnapshot))
+                throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Item_ParentMustBelongToSameBoard, "Parent item must belong to the same board.");
+
+            if (parentSnapshot.BoardId != BoardId)
+                throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Item_ParentMustBelongToSameBoard, "Parent item must belong to the same board.");
         }
 
-        BoardItemRules.EnsureNoCycle(Id, parentItemId, id => getParentInfo(id).Item2);
+        BoardItemRules.EnsureNoCycle(Id, parentItemId, parentChain);
 
         ParentItemId = parentItemId;
         ItemLevel = itemLevel;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardItemParentAssignedDomainEvent(AccountId, WorkspaceId, BoardId, Id, parentItemId, itemLevel, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardItemParentAssignedDomainEvent(AccountId, WorkspaceId, BoardId, Id, parentItemId, itemLevel, updatedBy, updatedAt));
     }
 
     public void SetTimeline(DateTimeOffset? startedAt, DateTimeOffset? dueAt, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         if (startedAt != null && dueAt != null && dueAt < startedAt)
-            throw new BusinessRuleException("Due date must be after start date.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Item_DueDateMustBeAfterStartDate, "Due date must be after start date.");
 
         if (StartedAt == startedAt && DueAt == dueAt) return;
         StartedAt = startedAt;
         DueAt = dueAt;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardItemTimelineSetDomainEvent(AccountId, WorkspaceId, BoardId, Id, startedAt, dueAt, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardItemTimelineSetDomainEvent(AccountId, WorkspaceId, BoardId, Id, startedAt, dueAt, updatedBy, updatedAt));
     }
 
     public void Complete(DateTimeOffset? completedAt, Guid updatedBy, DateTimeOffset updatedAt)
@@ -210,7 +210,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         CompletedAt = completedAt;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardItemCompletedDomainEvent(AccountId, WorkspaceId, BoardId, Id, completedAt, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardItemCompletedDomainEvent(AccountId, WorkspaceId, BoardId, Id, completedAt, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -219,7 +219,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardItemSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
+        RaiseDomainEvent(new BoardItemSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
@@ -229,7 +229,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         IsArchived = true;
         SetAuditOnUpdate(archivedBy, archivedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardItemArchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, archivedBy, archivedAt));
+        RaiseDomainEvent(new BoardItemArchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, archivedBy, archivedAt));
     }
 
     public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
@@ -239,7 +239,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         IsArchived = false;
         SetAuditOnUpdate(unarchivedBy, unarchivedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardItemUnarchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, unarchivedBy, unarchivedAt));
+        RaiseDomainEvent(new BoardItemUnarchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, unarchivedBy, unarchivedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -248,6 +248,6 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new BoardItemRestoredDomainEvent(AccountId, WorkspaceId, Id, BoardId, restoredBy, restoredAt));
+        RaiseDomainEvent(new BoardItemRestoredDomainEvent(AccountId, WorkspaceId, Id, BoardId, restoredBy, restoredAt));
     }
 }

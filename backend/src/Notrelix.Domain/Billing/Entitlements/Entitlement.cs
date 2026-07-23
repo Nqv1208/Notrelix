@@ -30,13 +30,13 @@ public class Entitlement : AggregateRoot, IAccountScoped
         Guard.NotNull(feature);
 
         if (limit < 0)
-            throw new BusinessRuleException("Entitlement limit cannot be negative.");
+            throw new BusinessRuleException(BusinessRuleCodes.Billing_Entitlement_LimitCannotBeNegative, "Entitlement limit cannot be negative.");
 
         if (targetScope == EntitlementTargetScope.Workspace && targetWorkspaceId is null)
-            throw new BusinessRuleException("Workspace-scoped entitlement requires a target workspace id.");
+            throw new BusinessRuleException(BusinessRuleCodes.Billing_Entitlement_WorkspaceScopedRequiresTarget, "Workspace-scoped entitlement requires a target workspace id.");
 
         if (targetScope == EntitlementTargetScope.Account && targetWorkspaceId is not null)
-            throw new BusinessRuleException("Account-scoped entitlement must not specify a target workspace id.");
+            throw new BusinessRuleException(BusinessRuleCodes.Billing_Entitlement_AccountScopedMustNotSpecifyTarget, "Account-scoped entitlement must not specify a target workspace id.");
 
         var entitlement = new Entitlement
         {
@@ -51,7 +51,7 @@ public class Entitlement : AggregateRoot, IAccountScoped
             ExpiresAt = expiresAt
         };
 
-        entitlement.AddDomainEvent(new EntitlementGrantedDomainEvent(
+        entitlement.RaiseDomainEvent(new EntitlementGrantedDomainEvent(
             accountId, targetWorkspaceId, entitlement.Id, feature.Code, limit, null, createdAt));
         return entitlement;
     }
@@ -62,10 +62,10 @@ public class Entitlement : AggregateRoot, IAccountScoped
         Guard.NotEmpty(actorUserId);
 
         if (newLimit < 0)
-            throw new BusinessRuleException("Entitlement limit cannot be negative.");
+            throw new BusinessRuleException(BusinessRuleCodes.Billing_Entitlement_LimitCannotBeNegative, "Entitlement limit cannot be negative.");
 
         if (Status != EntitlementStatus.Active)
-            throw new BusinessRuleException("Cannot change the limit of a non-active entitlement.");
+            throw new BusinessRuleException(BusinessRuleCodes.Billing_Entitlement_CannotChangeLimitOfNonActive, "Cannot change the limit of a non-active entitlement.");
 
         if (Limit == newLimit) return;
 
@@ -74,7 +74,7 @@ public class Entitlement : AggregateRoot, IAccountScoped
         SetAuditOnUpdate(actorUserId, occurredAt);
         IncrementVersion();
 
-        AddDomainEvent(new EntitlementLimitChangedDomainEvent(
+        RaiseDomainEvent(new EntitlementLimitChangedDomainEvent(
             AccountId, WorkspaceId, Id, Feature.Code, oldLimit, newLimit, actorUserId, occurredAt));
     }
 
@@ -84,7 +84,7 @@ public class Entitlement : AggregateRoot, IAccountScoped
         Guard.NotEmpty(actorUserId);
 
         if (Status == EntitlementStatus.Revoked)
-            throw new BusinessRuleException("Cannot disable a revoked entitlement.");
+            throw new BusinessRuleException(BusinessRuleCodes.Billing_Entitlement_CannotDisableRevoked, "Cannot disable a revoked entitlement.");
 
         if (Status == EntitlementStatus.Disabled) return;
 
@@ -92,7 +92,7 @@ public class Entitlement : AggregateRoot, IAccountScoped
         SetAuditOnUpdate(actorUserId, occurredAt);
         IncrementVersion();
 
-        AddDomainEvent(new EntitlementDisabledDomainEvent(
+        RaiseDomainEvent(new EntitlementDisabledDomainEvent(
             AccountId, WorkspaceId, Id, Feature.Code, actorUserId, occurredAt));
     }
 
@@ -109,7 +109,7 @@ public class Entitlement : AggregateRoot, IAccountScoped
         SetAuditOnUpdate(actorUserId, occurredAt);
         IncrementVersion();
 
-        AddDomainEvent(new EntitlementRevokedDomainEvent(
+        RaiseDomainEvent(new EntitlementRevokedDomainEvent(
             AccountId, WorkspaceId, Id, Feature.Code, actorUserId, occurredAt));
     }
 
@@ -120,13 +120,13 @@ public class Entitlement : AggregateRoot, IAccountScoped
         if (Status == EntitlementStatus.Expired) return;
 
         if (Status == EntitlementStatus.Revoked)
-            throw new BusinessRuleException("Cannot expire a revoked entitlement.");
+            throw new BusinessRuleException(BusinessRuleCodes.Billing_Entitlement_CannotExpireRevoked, "Cannot expire a revoked entitlement.");
 
         Status = EntitlementStatus.Expired;
         SetAuditOnUpdate(null, occurredAt);
         IncrementVersion();
 
-        AddDomainEvent(new EntitlementExpiredDomainEvent(
+        RaiseDomainEvent(new EntitlementExpiredDomainEvent(
             AccountId, WorkspaceId, Id, Feature.Code, occurredAt));
     }
 
@@ -143,7 +143,7 @@ public class Entitlement : AggregateRoot, IAccountScoped
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
         IncrementVersion();
-        AddDomainEvent(new EntitlementSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, Feature.Code, deletedBy, deletedAt));
+        RaiseDomainEvent(new EntitlementSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, Feature.Code, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -152,6 +152,6 @@ public class Entitlement : AggregateRoot, IAccountScoped
         base.Restore(restoredBy, restoredAt);
         Status = EntitlementStatus.Active;
         IncrementVersion();
-        AddDomainEvent(new EntitlementRestoredDomainEvent(AccountId, WorkspaceId, Id, Feature.Code, restoredBy, restoredAt));
+        RaiseDomainEvent(new EntitlementRestoredDomainEvent(AccountId, WorkspaceId, Id, Feature.Code, restoredBy, restoredAt));
     }
 }

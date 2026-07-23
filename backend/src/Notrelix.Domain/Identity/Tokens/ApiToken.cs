@@ -47,7 +47,7 @@ public class ApiToken : AggregateRoot, IWorkspaceScoped
         };
 
         token.SetAuditOnCreate(createdBy, createdAt);
-        token.AddDomainEvent(new ApiTokenCreatedDomainEvent(accountId, workspaceId, token.Id, name, createdBy, createdAt));
+        token.RaiseDomainEvent(new ApiTokenCreatedDomainEvent(accountId, workspaceId, token.Id, name, createdBy, createdAt));
         return token;
     }
 
@@ -60,7 +60,7 @@ public class ApiToken : AggregateRoot, IWorkspaceScoped
         RevokedAt = revokedAt;
         RevokedBy = revokedBy;
         SetAuditOnUpdate(revokedBy, revokedAt);
-        AddDomainEvent(new ApiTokenRevokedDomainEvent(AccountId, WorkspaceId, Id, revokedBy, revokedAt));
+        RaiseDomainEvent(new ApiTokenRevokedDomainEvent(AccountId, WorkspaceId, Id, revokedBy, revokedAt));
         IncrementVersion();
     }
 
@@ -70,11 +70,11 @@ public class ApiToken : AggregateRoot, IWorkspaceScoped
         if (ExpiresAt.HasValue && usedAt > ExpiresAt.Value)
         {
             Status = ApiTokenStatus.Expired;
-            throw new BusinessRuleException("Cannot use an expired API token.");
+            throw new BusinessRuleException(BusinessRuleCodes.Identity_ApiToken_CannotUseExpired, "Cannot use an expired API token.");
         }
 
         if (Status != ApiTokenStatus.Active)
-            throw new BusinessRuleException("Cannot use an inactive API token.");
+            throw new BusinessRuleException(BusinessRuleCodes.Identity_ApiToken_CannotUseInactive, "Cannot use an inactive API token.");
 
         LastUsedAt = usedAt;
         IncrementVersion();
@@ -86,7 +86,7 @@ public class ApiToken : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new ApiTokenSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new ApiTokenSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -95,6 +95,6 @@ public class ApiToken : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new ApiTokenRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new ApiTokenRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

@@ -13,25 +13,25 @@ public static class Guard
     public static void NotNullOrWhiteSpace(string? value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
     {
         if (string.IsNullOrWhiteSpace(value))
-            throw new BusinessRuleException("Value cannot be null or whitespace.");
+            throw new BusinessRuleException(BusinessRuleCodes.Guard_NullOrWhiteSpace, "Value cannot be null or whitespace.");
     }
 
     public static void NotEmpty(Guid value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
     {
         if (value == Guid.Empty)
-            throw new BusinessRuleException("GUID cannot be empty.");
+            throw new BusinessRuleException(BusinessRuleCodes.Guard_Empty, "GUID cannot be empty.");
     }
 
     public static void Positive(double value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
     {
         if (value <= 0)
-            throw new BusinessRuleException("Value must be positive.");
+            throw new BusinessRuleException(BusinessRuleCodes.Guard_Negative, "Value must be positive.");
     }
 
     public static void NotNegative(double value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
     {
         if (value < 0)
-            throw new BusinessRuleException("Value must not be negative.");
+            throw new BusinessRuleException(BusinessRuleCodes.Guard_NotNegative, "Value must not be negative.");
     }
 
     public static void MaxLength(string? value, int maxLength, [CallerArgumentExpression(nameof(value))] string? paramName = null)

@@ -41,7 +41,7 @@ public class AccountDomain : AggregateRoot, IAccountScoped
     public void EnableAutoJoin()
     {
         if (VerificationStatus != "Verified")
-            throw new BusinessRuleException("Cannot enable auto-join for an unverified domain.");
+            throw new BusinessRuleException(BusinessRuleCodes.Accounts_Domain_CannotEnableAutoJoinUnverified, "Cannot enable auto-join for an unverified domain.");
         AutoJoinEnabled = true;
     }
 

@@ -40,6 +40,6 @@ public class WorkspacePolicy : AuditableEntity, IWorkspaceScoped
         if (sharingPolicy != null) SharingPolicy = sharingPolicy;
 
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new WorkspacePolicyUpdatedEvent(AccountId, WorkspaceId, updatedBy, updatedAt));
+        RaiseDomainEvent(new WorkspacePolicyUpdatedEvent(AccountId, WorkspaceId, updatedBy, updatedAt));
     }
 }

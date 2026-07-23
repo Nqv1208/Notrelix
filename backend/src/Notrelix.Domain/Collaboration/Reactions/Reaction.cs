@@ -22,7 +22,7 @@ public class Reaction : AggregateRoot, IWorkspaceScoped
             throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
 
         if (checkDuplicate != null && checkDuplicate(userId))
-            throw new BusinessRuleException("User has already reacted with this emoji to this target.");
+            throw new BusinessRuleException(BusinessRuleCodes.Collaboration_Reaction_DuplicateReaction, "User has already reacted with this emoji to this target.");
 
         var reaction = new Reaction
         {
@@ -34,12 +34,12 @@ public class Reaction : AggregateRoot, IWorkspaceScoped
         };
 
         reaction.SetAuditOnCreate(userId, createdAt);
-        reaction.AddDomainEvent(new ReactionCreatedDomainEvent(accountId, workspaceId, reaction.Id, target, userId, emoji, createdAt));
+        reaction.RaiseDomainEvent(new ReactionCreatedDomainEvent(accountId, workspaceId, reaction.Id, target, userId, emoji, createdAt));
         return reaction;
     }
 
     public void Remove(DateTimeOffset removedAt)
     {
-        AddDomainEvent(new ReactionRemovedDomainEvent(AccountId, WorkspaceId, Id, Target, UserId, Emoji, removedAt));
+        RaiseDomainEvent(new ReactionRemovedDomainEvent(AccountId, WorkspaceId, Id, Target, UserId, Emoji, removedAt));
     }
 }

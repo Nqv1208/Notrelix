@@ -33,7 +33,7 @@ public sealed class AutomationTriggerDefinition : ValueObject
             {
                 using var document = JsonDocument.Parse(configuration);
                 if (document.RootElement.ValueKind == JsonValueKind.Null)
-                    throw new BusinessRuleException("Trigger configuration cannot be null JSON.");
+                    throw new BusinessRuleException(BusinessRuleCodes.Automation_Trigger_ConfigCannotBeNullJson, "Trigger configuration cannot be null JSON.");
             }
             catch (JsonException ex)
             {

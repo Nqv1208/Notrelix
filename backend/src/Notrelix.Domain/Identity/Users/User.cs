@@ -51,7 +51,7 @@ public class User : AggregateRoot
         };
 
         user.SetAuditOnCreate(null, createdAt);
-        user.AddDomainEvent(new UserRegisteredDomainEvent(user.Id, user.Email.Value, user.Name, createdAt));
+        user.RaiseDomainEvent(new UserRegisteredDomainEvent(user.Id, user.Email.Value, user.Name, createdAt));
         return user;
     }
 
@@ -69,7 +69,7 @@ public class User : AggregateRoot
 
         SetAuditOnUpdate(Id, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new UserProfileUpdatedDomainEvent(Id, updatedAt));
+        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(Id, updatedAt));
     }
 
     public void UpdateEmail(
@@ -91,7 +91,7 @@ public class User : AggregateRoot
 
         SetAuditOnUpdate(Id, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new UserEmailChangedDomainEvent(
+        RaiseDomainEvent(new UserEmailChangedDomainEvent(
             Id,
             oldEmail,
             Email,
@@ -109,7 +109,7 @@ public class User : AggregateRoot
 
         SetAuditOnUpdate(Id, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new UserPasswordChangedDomainEvent(Id, updatedAt));
+        RaiseDomainEvent(new UserPasswordChangedDomainEvent(Id, updatedAt));
     }
 
     public void RecordLogin(DateTimeOffset loggedInAt)
@@ -120,7 +120,7 @@ public class User : AggregateRoot
 
         SetAuditOnUpdate(Id, loggedInAt);
         IncrementVersion();
-        AddDomainEvent(new UserLoggedInDomainEvent(Id, loggedInAt));
+        RaiseDomainEvent(new UserLoggedInDomainEvent(Id, loggedInAt));
     }
 
     public void Activate(Guid activatedBy, DateTimeOffset activatedAt, string? reason = null)
@@ -136,7 +136,7 @@ public class User : AggregateRoot
         SetAuditOnUpdate(activatedBy, activatedAt);
         IncrementVersion();
 
-        AddDomainEvent(new UserActivatedDomainEvent(
+        RaiseDomainEvent(new UserActivatedDomainEvent(
             Id,
             previousStatus,
             activatedBy,
@@ -160,7 +160,7 @@ public class User : AggregateRoot
         SetAuditOnUpdate(deactivatedBy, deactivatedAt);
         IncrementVersion();
 
-        AddDomainEvent(new UserDeactivatedDomainEvent(
+        RaiseDomainEvent(new UserDeactivatedDomainEvent(
             Id,
             previousStatus,
             deactivatedBy,
@@ -184,7 +184,7 @@ public class User : AggregateRoot
         SetAuditOnUpdate(suspendedBy, suspendedAt);
         IncrementVersion();
 
-        AddDomainEvent(new UserSuspendedDomainEvent(
+        RaiseDomainEvent(new UserSuspendedDomainEvent(
             Id,
             previousStatus,
             suspendedBy,
@@ -210,7 +210,7 @@ public class User : AggregateRoot
         SetAuditOnUpdate(Id, confirmedAt);
         IncrementVersion();
 
-        AddDomainEvent(new UserEmailConfirmedDomainEvent(
+        RaiseDomainEvent(new UserEmailConfirmedDomainEvent(
             Id, Email.Value, confirmedAt));
     }
 
@@ -245,7 +245,7 @@ public class User : AggregateRoot
 
         SetAuditOnUpdate(Id, linkedAt);
         IncrementVersion();
-        AddDomainEvent(new OAuthAccountLinkedDomainEvent(Id, provider, providerId, linkedAt));
+        RaiseDomainEvent(new OAuthAccountLinkedDomainEvent(Id, provider, providerId, linkedAt));
     }
 
     public void UnlinkOAuthAccount(OAuthProvider provider, DateTimeOffset unlinkedAt)
@@ -257,7 +257,7 @@ public class User : AggregateRoot
         _oauthAccounts.Remove(existing);
         SetAuditOnUpdate(Id, unlinkedAt);
         IncrementVersion();
-        AddDomainEvent(new OAuthAccountUnlinkedDomainEvent(Id, provider, existing.ProviderId, unlinkedAt));
+        RaiseDomainEvent(new OAuthAccountUnlinkedDomainEvent(Id, provider, existing.ProviderId, unlinkedAt));
     }
 
     public void RotateOAuthToken(OAuthProvider provider, OAuthToken newToken, DateTimeOffset rotatedAt)
@@ -273,7 +273,7 @@ public class User : AggregateRoot
         existing.UpdateToken(newToken);
         SetAuditOnUpdate(Id, rotatedAt);
         IncrementVersion();
-        AddDomainEvent(new OAuthTokenReferenceRotatedDomainEvent(Id, provider, rotatedAt));
+        RaiseDomainEvent(new OAuthTokenReferenceRotatedDomainEvent(Id, provider, rotatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -282,7 +282,7 @@ public class User : AggregateRoot
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new UserSoftDeletedDomainEvent(Id, deletedBy, deletedAt, reason));
+        RaiseDomainEvent(new UserSoftDeletedDomainEvent(Id, deletedBy, deletedAt, reason));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -291,6 +291,6 @@ public class User : AggregateRoot
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new UserRestoredDomainEvent(Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new UserRestoredDomainEvent(Id, restoredBy, restoredAt));
     }
 }

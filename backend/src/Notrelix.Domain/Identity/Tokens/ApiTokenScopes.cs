@@ -30,7 +30,7 @@ public sealed class ApiTokenScopes : ValueObject
         }
         catch (JsonException)
         {
-            throw new BusinessRuleException("Invalid API token scopes JSON format.");
+            throw new BusinessRuleException(BusinessRuleCodes.Identity_ApiToken_InvalidScopesFormat, "Invalid API token scopes JSON format.");
         }
     }
 

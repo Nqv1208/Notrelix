@@ -23,16 +23,16 @@ public sealed class KanbanViewConfig : BoardViewConfig
         Guard.NotEmpty(columnField.Id);
 
         if (!columnField.CanBeUsedAsKanbanColumn())
-            throw new BusinessRuleException("Invalid Kanban column field.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Kanban_InvalidColumnField, "Invalid Kanban column field.");
 
         var ids = visibleFieldIds.ToArray();
         if (ids.Length == 0)
-            throw new BusinessRuleException("Kanban view must have at least one visible field.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Kanban_MustHaveVisibleField, "Kanban view must have at least one visible field.");
         if (ids.Any(id => id == Guid.Empty))
-            throw new BusinessRuleException("Visible field IDs cannot be empty.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Kanban_VisibleFieldIdsCannotBeEmpty, "Visible field IDs cannot be empty.");
 
         if (swimlaneFieldId.HasValue && swimlaneFieldId.Value == Guid.Empty)
-            throw new BusinessRuleException("Swimlane field ID cannot be empty.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Kanban_SwimlaneFieldIdCannotBeEmpty, "Swimlane field ID cannot be empty.");
 
         var deduplicated = ids.Distinct().ToArray();
 

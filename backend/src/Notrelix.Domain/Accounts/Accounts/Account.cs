@@ -36,7 +36,7 @@ public class Account : AggregateRoot
         };
 
         account.SetAuditOnCreate(createdBy, createdAt);
-        account.AddDomainEvent(new AccountCreatedDomainEvent(
+        account.RaiseDomainEvent(new AccountCreatedDomainEvent(
             account.Id, account.Name, account.Slug, account.Type, createdBy, createdAt));
 
         return account;
@@ -49,7 +49,7 @@ public class Account : AggregateRoot
         Guard.MaxLength(newName, 160);
 
         if (Status == AccountStatus.Closed)
-            throw new BusinessRuleException("Cannot rename a closed account.");
+            throw new BusinessRuleException(BusinessRuleCodes.Accounts_Account_CannotRenameClosed, "Cannot rename a closed account.");
 
         var oldName = Name;
         if (Name == newName.Trim()) return;
@@ -57,7 +57,7 @@ public class Account : AggregateRoot
         Name = newName.Trim();
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new AccountRenamedDomainEvent(Id, oldName, Name, updatedBy, updatedAt));
+        RaiseDomainEvent(new AccountRenamedDomainEvent(Id, oldName, Name, updatedBy, updatedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
@@ -68,7 +68,7 @@ public class Account : AggregateRoot
         Status = AccountStatus.Closed;
         SetAuditOnUpdate(archivedBy, archivedAt);
         IncrementVersion();
-        AddDomainEvent(new AccountArchivedDomainEvent(Id, archivedBy, archivedAt));
+        RaiseDomainEvent(new AccountArchivedDomainEvent(Id, archivedBy, archivedAt));
     }
 
     public void Suspend(Guid suspendedBy, DateTimeOffset suspendedAt, string? reason = null)
@@ -80,7 +80,7 @@ public class Account : AggregateRoot
         Status = AccountStatus.Suspended;
         SetAuditOnUpdate(suspendedBy, suspendedAt);
         IncrementVersion();
-        AddDomainEvent(new AccountSuspendedDomainEvent(Id, previousStatus, suspendedBy, suspendedAt, reason));
+        RaiseDomainEvent(new AccountSuspendedDomainEvent(Id, previousStatus, suspendedBy, suspendedAt, reason));
     }
 
     public void Activate(Guid activatedBy, DateTimeOffset activatedAt)
@@ -100,7 +100,7 @@ public class Account : AggregateRoot
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new AccountSoftDeletedDomainEvent(Id, deletedBy, deletedAt, reason));
+        RaiseDomainEvent(new AccountSoftDeletedDomainEvent(Id, deletedBy, deletedAt, reason));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -110,7 +110,7 @@ public class Account : AggregateRoot
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new AccountRestoredDomainEvent(Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new AccountRestoredDomainEvent(Id, restoredBy, restoredAt));
     }
 
     public void UpdatePlanCode(string? planCode, Guid updatedBy, DateTimeOffset updatedAt)

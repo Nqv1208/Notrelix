@@ -31,7 +31,7 @@ public class UsageMetric : AggregateRoot, IWorkspaceScoped
             CurrentPeriod = period
         };
 
-        metric.AddDomainEvent(new UsageMetricCreatedDomainEvent(accountId, workspaceId, key, createdAt));
+        metric.RaiseDomainEvent(new UsageMetricCreatedDomainEvent(accountId, workspaceId, key, createdAt));
         return metric;
     }
 
@@ -42,13 +42,13 @@ public class UsageMetric : AggregateRoot, IWorkspaceScoped
 
         if (CurrentValue + amount > limit)
         {
-            AddDomainEvent(new UsageLimitExceededDomainEvent(AccountId, WorkspaceId, Key, occurredAt));
+            RaiseDomainEvent(new UsageLimitExceededDomainEvent(AccountId, WorkspaceId, Key, occurredAt));
             UsageRules.EnsureCanIncrease(CurrentValue, amount, limit, isHardLimit);
         }
 
         CurrentValue += amount;
         _history.Add(UsageMetricHistory.Create(Id, amount, occurredAt));
-        AddDomainEvent(new UsageMetricIncreasedDomainEvent(AccountId, WorkspaceId, Key, amount, occurredAt));
+        RaiseDomainEvent(new UsageMetricIncreasedDomainEvent(AccountId, WorkspaceId, Key, amount, occurredAt));
     }
 
     public void Decrease(int amount, DateTimeOffset occurredAt)
@@ -64,7 +64,7 @@ public class UsageMetric : AggregateRoot, IWorkspaceScoped
         CurrentValue -= amount;
         _history.Add(UsageMetricHistory.Create(Id, -amount, occurredAt));
         IncrementVersion();
-        AddDomainEvent(new UsageMetricDecreasedDomainEvent(AccountId, WorkspaceId, Key, amount, occurredAt));
+        RaiseDomainEvent(new UsageMetricDecreasedDomainEvent(AccountId, WorkspaceId, Key, amount, occurredAt));
     }
 
     public void Reset(UsagePeriod newPeriod, DateTimeOffset occurredAt)
@@ -75,7 +75,7 @@ public class UsageMetric : AggregateRoot, IWorkspaceScoped
         CurrentValue = 0;
         CurrentPeriod = newPeriod;
         IncrementVersion();
-        AddDomainEvent(new UsageMetricResetDomainEvent(AccountId, WorkspaceId, Key, occurredAt));
+        RaiseDomainEvent(new UsageMetricResetDomainEvent(AccountId, WorkspaceId, Key, occurredAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -83,7 +83,7 @@ public class UsageMetric : AggregateRoot, IWorkspaceScoped
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
         IncrementVersion();
-        AddDomainEvent(new UsageMetricSoftDeletedDomainEvent(AccountId, WorkspaceId, Key, deletedBy, deletedAt));
+        RaiseDomainEvent(new UsageMetricSoftDeletedDomainEvent(AccountId, WorkspaceId, Key, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -91,6 +91,6 @@ public class UsageMetric : AggregateRoot, IWorkspaceScoped
         if (!IsDeleted) return;
         base.Restore(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new UsageMetricRestoredDomainEvent(AccountId, WorkspaceId, Key, restoredBy, restoredAt));
+        RaiseDomainEvent(new UsageMetricRestoredDomainEvent(AccountId, WorkspaceId, Key, restoredBy, restoredAt));
     }
 }

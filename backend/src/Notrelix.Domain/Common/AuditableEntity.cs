@@ -15,13 +15,13 @@ public abstract class AuditableEntity : Entity
     {
     }
 
-    public void SetAuditOnCreate(Guid? createdBy, DateTimeOffset createdAt)
+    internal void SetAuditOnCreate(Guid? createdBy, DateTimeOffset createdAt)
     {
         CreatedBy = createdBy;
         CreatedAt = createdAt;
     }
 
-    public void SetAuditOnUpdate(Guid? updatedBy, DateTimeOffset updatedAt)
+    internal void SetAuditOnUpdate(Guid? updatedBy, DateTimeOffset updatedAt)
     {
         UpdatedBy = updatedBy;
         UpdatedAt = updatedAt;

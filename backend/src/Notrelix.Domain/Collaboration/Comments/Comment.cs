@@ -50,7 +50,7 @@ public class Comment : AggregateRoot, IWorkspaceScoped
         };
 
         comment.SetAuditOnCreate(createdBy, createdAt);
-        comment.AddDomainEvent(new CommentCreatedDomainEvent(accountId, workspaceId, comment.Id, target, createdBy, createdAt));
+        comment.RaiseDomainEvent(new CommentCreatedDomainEvent(accountId, workspaceId, comment.Id, target, createdBy, createdAt));
 
         return comment;
     }
@@ -66,7 +66,7 @@ public class Comment : AggregateRoot, IWorkspaceScoped
         Content = newContent.Trim();
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new CommentUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
+        RaiseDomainEvent(new CommentUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void Resolve(Guid resolvedBy, DateTimeOffset resolvedAt)
@@ -77,7 +77,7 @@ public class Comment : AggregateRoot, IWorkspaceScoped
         CommentStatus = CommentStatus.Resolved;
         SetAuditOnUpdate(resolvedBy, resolvedAt);
         IncrementVersion();
-        AddDomainEvent(new CommentResolvedDomainEvent(AccountId, WorkspaceId, Id, resolvedBy, resolvedAt));
+        RaiseDomainEvent(new CommentResolvedDomainEvent(AccountId, WorkspaceId, Id, resolvedBy, resolvedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -87,7 +87,7 @@ public class Comment : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new CommentSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new CommentSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -97,6 +97,6 @@ public class Comment : AggregateRoot, IWorkspaceScoped
         CommentStatus = CommentStatus.Active;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new CommentRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new CommentRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

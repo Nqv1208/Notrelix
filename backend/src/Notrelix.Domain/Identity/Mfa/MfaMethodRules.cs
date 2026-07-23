@@ -6,12 +6,12 @@ public static class MfaMethodRules
     {
         if (type == MfaMethodType.AuthenticatorApp && secretRef is null)
         {
-            throw new BusinessRuleException("Authenticator app MFA method requires a secret reference.");
+            throw new BusinessRuleException(BusinessRuleCodes.Identity_Mfa_AuthenticatorRequiresSecret, "Authenticator app MFA method requires a secret reference.");
         }
 
         if ((type == MfaMethodType.Email || type == MfaMethodType.Sms) && string.IsNullOrWhiteSpace(destinationMasked))
         {
-            throw new BusinessRuleException("Email or SMS MFA method requires a masked destination.");
+            throw new BusinessRuleException(BusinessRuleCodes.Identity_Mfa_EmailSmsRequiresDestination, "Email or SMS MFA method requires a masked destination.");
         }
     }
 }

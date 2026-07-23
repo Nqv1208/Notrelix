@@ -30,12 +30,12 @@ public class DocumentVersion : AggregateRoot, IWorkspaceScoped
         };
 
         version.SetAuditOnCreate(createdBy, createdAt);
-        version.AddDomainEvent(new DocumentVersionCreatedDomainEvent(accountId, workspaceId, pageId, versionNumber, createdAt));
+        version.RaiseDomainEvent(new DocumentVersionCreatedDomainEvent(accountId, workspaceId, pageId, versionNumber, createdAt));
         return version;
     }
 
     public void ApplyRestore(Guid restoredBy, DateTimeOffset restoredAt)
     {
-        AddDomainEvent(new DocumentVersionRestoredDomainEvent(AccountId, WorkspaceId, PageId, VersionNumber, restoredAt));
+        RaiseDomainEvent(new DocumentVersionRestoredDomainEvent(AccountId, WorkspaceId, PageId, VersionNumber, restoredAt));
     }
 }

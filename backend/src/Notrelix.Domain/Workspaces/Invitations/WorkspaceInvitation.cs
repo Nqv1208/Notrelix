@@ -38,7 +38,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
                 "Cannot invite a user as workspace owner.");
 
         if (expiry is not null && expiry <= TimeSpan.Zero)
-            throw new BusinessRuleException("Invitation expiry must be greater than zero.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Invitation_ExpiryMustBePositive, "Invitation expiry must be greater than zero.");
 
         var invitation = new WorkspaceInvitation
         {
@@ -55,7 +55,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         };
 
         invitation.SetAuditOnCreate(invitedBy, createdAt);
-        invitation.AddDomainEvent(new WorkspaceInvitationCreatedDomainEvent(
+        invitation.RaiseDomainEvent(new WorkspaceInvitationCreatedDomainEvent(
             accountId, invitation.Id, workspaceId, invitation.Email, role, invitedBy, createdAt));
 
         return invitation;
@@ -67,16 +67,16 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(acceptedUserId);
 
         if (Status != WorkspaceInvitationStatus.Pending)
-            throw new BusinessRuleException("Invitation is not pending.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Invitation_NotPending, "Invitation is not pending.");
 
         if (acceptedAt >= ExpiresAt)
-            throw new BusinessRuleException("Invitation has expired.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Invitation_HasExpired, "Invitation has expired.");
 
         Status = WorkspaceInvitationStatus.Accepted;
         SetAuditOnUpdate(acceptedUserId, acceptedAt);
         IncrementVersion();
 
-        AddDomainEvent(new WorkspaceInvitationAcceptedDomainEvent(
+        RaiseDomainEvent(new WorkspaceInvitationAcceptedDomainEvent(
             AccountId, Id, WorkspaceId, acceptedUserId, acceptedUserId, acceptedAt));
     }
 
@@ -86,13 +86,13 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(declinedBy);
 
         if (Status != WorkspaceInvitationStatus.Pending)
-            throw new BusinessRuleException("Invitation is not pending.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Invitation_NotPending, "Invitation is not pending.");
 
         Status = WorkspaceInvitationStatus.Declined;
         SetAuditOnUpdate(declinedBy, declinedAt);
         IncrementVersion();
 
-        AddDomainEvent(new WorkspaceInvitationDeclinedDomainEvent(
+        RaiseDomainEvent(new WorkspaceInvitationDeclinedDomainEvent(
             AccountId, Id, WorkspaceId, declinedBy, declinedAt));
     }
 
@@ -102,7 +102,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(updatedBy);
 
         if (Status != WorkspaceInvitationStatus.Pending)
-            throw new BusinessRuleException("Invitation is not pending.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Invitation_NotPending, "Invitation is not pending.");
 
         if (newRole == WorkspaceRole.Owner)
             throw new BusinessRuleException(
@@ -115,7 +115,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
 
-        AddDomainEvent(new WorkspaceInvitationRoleChangedDomainEvent(
+        RaiseDomainEvent(new WorkspaceInvitationRoleChangedDomainEvent(
             AccountId, Id, WorkspaceId, oldRole, newRole, updatedBy, updatedAt));
     }
 
@@ -129,7 +129,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(null, expiredAt);
         IncrementVersion();
 
-        AddDomainEvent(new WorkspaceInvitationExpiredDomainEvent(
+        RaiseDomainEvent(new WorkspaceInvitationExpiredDomainEvent(
             AccountId, Id, WorkspaceId, expiredAt));
     }
 
@@ -144,7 +144,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(revokedBy, revokedAt);
         IncrementVersion();
 
-        AddDomainEvent(new WorkspaceInvitationRevokedDomainEvent(
+        RaiseDomainEvent(new WorkspaceInvitationRevokedDomainEvent(
             AccountId, Id, WorkspaceId, revokedBy, revokedAt));
     }
 
@@ -175,7 +175,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(resentBy, resentAt);
         IncrementVersion();
 
-        AddDomainEvent(new WorkspaceInvitationResentDomainEvent(
+        RaiseDomainEvent(new WorkspaceInvitationResentDomainEvent(
             AccountId, Id, WorkspaceId, resentBy, resentAt));
     }
 }

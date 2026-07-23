@@ -30,7 +30,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
         };
 
         team.SetAuditOnCreate(createdBy, createdAt);
-        team.AddDomainEvent(new TeamCreatedDomainEvent(team.Id, accountId, workspaceId, team.Name, createdBy, createdAt));
+        team.RaiseDomainEvent(new TeamCreatedDomainEvent(team.Id, accountId, workspaceId, team.Name, createdBy, createdAt));
 
         return team;
     }
@@ -43,7 +43,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(updatedBy);
 
         if (Status == TeamStatus.Archived)
-            throw new BusinessRuleException("Cannot rename an archived team.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Team_CannotRenameArchived, "Cannot rename an archived team.");
 
         var oldName = Name;
         var normalizedName = name.Trim();
@@ -52,7 +52,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
         Name = normalizedName;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new TeamRenamedDomainEvent(AccountId, WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
+        RaiseDomainEvent(new TeamRenamedDomainEvent(AccountId, WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
     }
 
     public void UpdateDescription(string? newDescription, Guid updatedBy, DateTimeOffset updatedAt)
@@ -61,7 +61,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(updatedBy);
 
         if (Status == TeamStatus.Archived)
-            throw new BusinessRuleException("Cannot update description of an archived team.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Team_CannotUpdateDescriptionArchived, "Cannot update description of an archived team.");
 
         var normalized = string.IsNullOrWhiteSpace(newDescription)
             ? null
@@ -76,7 +76,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
         Description = normalized;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new TeamDescriptionUpdatedDomainEvent(
+        RaiseDomainEvent(new TeamDescriptionUpdatedDomainEvent(
             AccountId, WorkspaceId, Id, oldDescription, Description, updatedBy, updatedAt));
     }
 
@@ -89,7 +89,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
         Status = TeamStatus.Archived;
         SetAuditOnUpdate(archivedBy, archivedAt);
         IncrementVersion();
-        AddDomainEvent(new TeamArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
+        RaiseDomainEvent(new TeamArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
     }
 
     public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
@@ -106,7 +106,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
         Status = TeamStatus.Active;
         SetAuditOnUpdate(unarchivedBy, unarchivedAt);
         IncrementVersion();
-        AddDomainEvent(new TeamUnarchivedDomainEvent(
+        RaiseDomainEvent(new TeamUnarchivedDomainEvent(
             AccountId, WorkspaceId, Id, unarchivedBy, unarchivedAt));
     }
 
@@ -114,7 +114,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (Status == TeamStatus.Archived)
-            throw new BusinessRuleException("Cannot add a member to an archived team.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Team_CannotAddMemberArchived, "Cannot add a member to an archived team.");
         Guard.NotEmpty(userId);
         Guard.NotEmpty(addedBy);
 
@@ -122,7 +122,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
         if (existing != null)
         {
             if (existing.Status == TeamMemberStatus.Active)
-                throw new BusinessRuleException("User is already a member of this team.");
+                throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Team_UserAlreadyMember, "User is already a member of this team.");
 
             existing.Reactivate(role, workspaceMemberId, addedBy, addedAt);
         }
@@ -134,14 +134,14 @@ public class Team : AggregateRoot, IWorkspaceScoped
 
         SetAuditOnUpdate(addedBy, addedAt);
         IncrementVersion();
-        AddDomainEvent(new TeamMemberAddedDomainEvent(AccountId, WorkspaceId, Id, userId, role, addedBy, addedAt));
+        RaiseDomainEvent(new TeamMemberAddedDomainEvent(AccountId, WorkspaceId, Id, userId, role, addedBy, addedAt));
     }
 
     public void RemoveMember(Guid userId, Guid removedBy, DateTimeOffset removedAt)
     {
         EnsureNotDeleted();
         if (Status == TeamStatus.Archived)
-            throw new BusinessRuleException("Cannot remove a member from an archived team.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Team_CannotRemoveMemberArchived, "Cannot remove a member from an archived team.");
         Guard.NotEmpty(userId);
         Guard.NotEmpty(removedBy);
 
@@ -157,7 +157,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
         member.Remove(removedBy, removedAt);
         SetAuditOnUpdate(removedBy, removedAt);
         IncrementVersion();
-        AddDomainEvent(new TeamMemberRemovedDomainEvent(AccountId, WorkspaceId, Id, userId, removedBy, removedAt));
+        RaiseDomainEvent(new TeamMemberRemovedDomainEvent(AccountId, WorkspaceId, Id, userId, removedBy, removedAt));
     }
 
     public void ChangeMemberRole(Guid userId, TeamMemberRole newRole, Guid updatedBy, DateTimeOffset updatedAt)
@@ -167,11 +167,11 @@ public class Team : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(updatedBy);
 
         if (Status == TeamStatus.Archived)
-            throw new BusinessRuleException("Cannot change member role in an archived team.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Team_CannotChangeMemberRoleArchived, "Cannot change member role in an archived team.");
 
         var member = _members.FirstOrDefault(m => m.UserId == userId && m.Status == TeamMemberStatus.Active);
         if (member == null)
-            throw new BusinessRuleException("User is not an active member of this team.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Team_UserNotActiveMember, "User is not an active member of this team.");
 
         var activeLeadCount = _members.Count(m => m.Status == TeamMemberStatus.Active && m.Role == TeamMemberRole.Lead);
         TeamLeadRules.EnsureCanDowngradeLead(member.Role, newRole, activeLeadCount);
@@ -183,7 +183,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
 
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new TeamMemberRoleChangedDomainEvent(
+        RaiseDomainEvent(new TeamMemberRoleChangedDomainEvent(
             AccountId, WorkspaceId, Id, userId, oldRole, newRole, updatedBy, updatedAt));
     }
 
@@ -195,7 +195,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new TeamSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new TeamSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -206,6 +206,6 @@ public class Team : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new TeamRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new TeamRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

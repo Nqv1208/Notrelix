@@ -8,6 +8,7 @@ public abstract record DomainEvent : IDomainEvent
     protected DomainEvent()
     {
         EventId = Guid.CreateVersion7();
+        OccurredAt = DateTimeOffset.UtcNow;
     }
 
     protected DomainEvent(DateTimeOffset occurredAt)

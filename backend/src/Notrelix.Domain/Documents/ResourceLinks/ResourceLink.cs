@@ -18,10 +18,10 @@ public class ResourceLink : AggregateRoot, IWorkspaceScoped
         Guard.NotNull(target);
 
         if (source == target)
-            throw new BusinessRuleException("Cannot create a self-referencing resource link.");
+            throw new BusinessRuleException(BusinessRuleCodes.Documents_ResourceLink_CannotCreateSelfReferencing, "Cannot create a self-referencing resource link.");
 
         if (target.WorkspaceId.HasValue && target.WorkspaceId != source.WorkspaceId)
-            throw new BusinessRuleException("Target resource must belong to the same workspace as the source resource.");
+            throw new BusinessRuleException(BusinessRuleCodes.Documents_ResourceLink_TargetMustBeInSameWorkspace, "Target resource must belong to the same workspace as the source resource.");
 
         var link = new ResourceLink
         {
@@ -33,7 +33,7 @@ public class ResourceLink : AggregateRoot, IWorkspaceScoped
         };
 
         link.SetAuditOnCreate(createdBy, createdAt);
-        link.AddDomainEvent(new ResourceLinkCreatedDomainEvent(accountId, workspaceId, source.ResourceId, target.ResourceId, type, createdAt));
+        link.RaiseDomainEvent(new ResourceLinkCreatedDomainEvent(accountId, workspaceId, source.ResourceId, target.ResourceId, type, createdAt));
         return link;
     }
 
@@ -43,6 +43,6 @@ public class ResourceLink : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new ResourceLinkDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
+        RaiseDomainEvent(new ResourceLinkDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
     }
 }

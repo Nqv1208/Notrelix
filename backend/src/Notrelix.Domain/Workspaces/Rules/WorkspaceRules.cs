@@ -6,6 +6,6 @@ public static class WorkspaceRules
     {
         Guard.NotNullOrWhiteSpace(name);
         if (name.Length > 160)
-            throw new BusinessRuleException("Workspace name is too long.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Workspace_NameTooLong, "Workspace name is too long.");
     }
 }

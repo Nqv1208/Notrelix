@@ -1,6 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.BoardGroups;
 
-public class BoardGroup : SoftDeletableEntity, IWorkspaceScoped
+public class BoardGroup : AggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -36,7 +36,7 @@ public class BoardGroup : SoftDeletableEntity, IWorkspaceScoped
         };
 
         group.SetAuditOnCreate(createdBy, createdAt);
-        group.AddDomainEvent(new BoardGroupCreatedDomainEvent(accountId, workspaceId, boardId, group.Id, group.Title, createdBy, createdAt));
+        group.RaiseDomainEvent(new BoardGroupCreatedDomainEvent(accountId, workspaceId, boardId, group.Id, group.Title, createdBy, createdAt));
         return group;
     }
 
@@ -52,7 +52,8 @@ public class BoardGroup : SoftDeletableEntity, IWorkspaceScoped
 
         Title = normalizedTitle;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new BoardGroupRenamedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldTitle, Title, updatedBy, updatedAt));
+        IncrementVersion();
+        RaiseDomainEvent(new BoardGroupRenamedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldTitle, Title, updatedBy, updatedAt));
     }
 
     public void UpdateColor(Color color, Guid updatedBy, DateTimeOffset updatedAt)
@@ -64,7 +65,8 @@ public class BoardGroup : SoftDeletableEntity, IWorkspaceScoped
         var oldColor = Color;
         Color = color;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new BoardGroupColorChangedDomainEvent(AccountId, WorkspaceId, BoardId, Id, oldColor, color, updatedBy, updatedAt));
+        IncrementVersion();
+        RaiseDomainEvent(new BoardGroupColorChangedDomainEvent(AccountId, WorkspaceId, BoardId, Id, oldColor, color, updatedBy, updatedAt));
     }
 
     public void UpdatePosition(FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
@@ -75,27 +77,30 @@ public class BoardGroup : SoftDeletableEntity, IWorkspaceScoped
 
         Position = newPosition;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new BoardGroupReorderedDomainEvent(AccountId, WorkspaceId, Id, BoardId, newPosition.Value, updatedBy, updatedAt));
+        IncrementVersion();
+        RaiseDomainEvent(new BoardGroupReorderedDomainEvent(AccountId, WorkspaceId, Id, BoardId, newPosition.Value, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
         base.SoftDelete(deletedBy, deletedAt, reason);
-        AddDomainEvent(new BoardGroupSoftDeletedDomainEvent(AccountId, WorkspaceId, BoardId, Id, deletedBy, deletedAt));
+        IncrementVersion();
+        RaiseDomainEvent(new BoardGroupSoftDeletedDomainEvent(AccountId, WorkspaceId, BoardId, Id, deletedBy, deletedAt));
     }
 
     public void ValidateNotDefaultGroup(Guid? defaultGroupId)
     {
         if (defaultGroupId.HasValue && Id == defaultGroupId.Value)
-            throw new BusinessRuleException("Cannot delete the board's default group.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Board_CannotDeleteDefaultGroup, "Cannot delete the board's default group.");
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
         base.Restore(restoredBy, restoredAt);
-        AddDomainEvent(new BoardGroupRestoredDomainEvent(AccountId, WorkspaceId, BoardId, Id, restoredBy, restoredAt));
+        IncrementVersion();
+        RaiseDomainEvent(new BoardGroupRestoredDomainEvent(AccountId, WorkspaceId, BoardId, Id, restoredBy, restoredAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
@@ -104,7 +109,8 @@ public class BoardGroup : SoftDeletableEntity, IWorkspaceScoped
         if (IsArchived) return;
         IsArchived = true;
         SetAuditOnUpdate(archivedBy, archivedAt);
-        AddDomainEvent(new BoardGroupArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
+        IncrementVersion();
+        RaiseDomainEvent(new BoardGroupArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
     }
 
     public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
@@ -113,6 +119,7 @@ public class BoardGroup : SoftDeletableEntity, IWorkspaceScoped
         if (!IsArchived) return;
         IsArchived = false;
         SetAuditOnUpdate(unarchivedBy, unarchivedAt);
-        AddDomainEvent(new BoardGroupUnarchivedDomainEvent(AccountId, WorkspaceId, Id, unarchivedBy, unarchivedAt));
+        IncrementVersion();
+        RaiseDomainEvent(new BoardGroupUnarchivedDomainEvent(AccountId, WorkspaceId, Id, unarchivedBy, unarchivedAt));
     }
 }

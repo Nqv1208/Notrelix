@@ -61,7 +61,7 @@ public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
         };
 
         integration.SetAuditOnCreate(createdBy, createdAt);
-        integration.AddDomainEvent(new CalendarIntegrationConnectedDomainEvent(accountId, workspaceId, connectionId, createdAt));
+        integration.RaiseDomainEvent(new CalendarIntegrationConnectedDomainEvent(accountId, workspaceId, connectionId, createdAt));
 
         return integration;
     }
@@ -73,7 +73,7 @@ public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
 
         IsActive = true;
         SetAuditOnUpdate(updatedBy, occurredAt);
-        AddDomainEvent(new CalendarIntegrationActivatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
+        RaiseDomainEvent(new CalendarIntegrationActivatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
     }
 
     public void Deactivate(Guid updatedBy, DateTimeOffset occurredAt)
@@ -83,7 +83,7 @@ public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
 
         IsActive = false;
         SetAuditOnUpdate(updatedBy, occurredAt);
-        AddDomainEvent(new CalendarIntegrationDeactivatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
+        RaiseDomainEvent(new CalendarIntegrationDeactivatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
     }
 
     public void ChangeSyncDirection(CalendarSyncDirection newDirection, Guid updatedBy, DateTimeOffset occurredAt)
@@ -95,7 +95,7 @@ public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
 
         SyncDirection = newDirection;
         SetAuditOnUpdate(updatedBy, occurredAt);
-        AddDomainEvent(new CalendarIntegrationSyncDirectionChangedDomainEvent(AccountId, WorkspaceId, Id, newDirection, updatedBy, occurredAt));
+        RaiseDomainEvent(new CalendarIntegrationSyncDirectionChangedDomainEvent(AccountId, WorkspaceId, Id, newDirection, updatedBy, occurredAt));
     }
 
     public void LinkEvent(Guid internalEventId, string externalEventId, string? eTag = null)

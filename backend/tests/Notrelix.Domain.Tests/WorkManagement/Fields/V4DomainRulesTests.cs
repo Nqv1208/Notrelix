@@ -64,17 +64,14 @@ public class V4DomainRulesTests
         var itemC = Guid.NewGuid();
 
         // Graph: A -> B -> C -> A (introducing cycle)
-        var dependencies = new Dictionary<Guid, List<Guid>>
+        var graph = new Dictionary<Guid, ItemDependencySnapshot>
         {
-            { itemA, new List<Guid> { itemB } },
-            { itemB, new List<Guid> { itemC } },
-            { itemC, new List<Guid>() } // We want to add C -> A
+            [itemA] = new ItemDependencySnapshot(itemA, new List<Guid> { itemB }),
+            [itemB] = new ItemDependencySnapshot(itemB, new List<Guid> { itemC }),
+            [itemC] = new ItemDependencySnapshot(itemC, new List<Guid>())
         };
 
-        Func<Guid, IEnumerable<Guid>> getDependencies = id =>
-            dependencies.TryGetValue(id, out var list) ? list : Enumerable.Empty<Guid>();
-
-        Action act = () => DependencyRules.EnsureNoCycle(itemC, itemA, getDependencies);
+        Action act = () => DependencyRules.EnsureNoCycle(itemC, itemA, graph);
 
         act.Should().Throw<BusinessRuleException>().WithMessage("Adding this dependency would create a cycle.");
     }

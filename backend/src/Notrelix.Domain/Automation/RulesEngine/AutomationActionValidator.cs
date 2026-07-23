@@ -30,14 +30,14 @@ public static class AutomationActionValidator
                 ValidateNotifyMemberConfig(action.Configuration);
                 break;
             default:
-                throw new BusinessRuleException($"Unknown action type '{action.Type}'.");
+                throw new BusinessRuleException(BusinessRuleCodes.Automation_ActionValidator_UnknownActionType, $"Unknown action type '{action.Type}'.");
         }
     }
 
     private static void ValidateWebhookConfig(string? configuration)
     {
         if (string.IsNullOrWhiteSpace(configuration))
-            throw new BusinessRuleException("Webhook action requires a configuration with 'url' or 'webhookPath' property.");
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_ActionValidator_InvalidWebhookJson, "Webhook action requires a configuration with 'url' or 'webhookPath' property.");
 
         try
         {
@@ -45,7 +45,7 @@ public static class AutomationActionValidator
             var root = doc.RootElement;
 
             if (!root.TryGetProperty("url", out _) && !root.TryGetProperty("webhookPath", out _))
-                throw new BusinessRuleException("Webhook action configuration must contain 'url' or 'webhookPath'.");
+                throw new BusinessRuleException(BusinessRuleCodes.Automation_ActionValidator_InvalidWebhookJson, "Webhook action configuration must contain 'url' or 'webhookPath'.");
         }
         catch (JsonException ex)
         {
@@ -56,7 +56,7 @@ public static class AutomationActionValidator
     private static void ValidateSendEmailConfig(string? configuration)
     {
         if (string.IsNullOrWhiteSpace(configuration))
-            throw new BusinessRuleException("SendEmail action requires a configuration with 'templateId' or 'subject' property.");
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_ActionValidator_InvalidSendEmailJson, "SendEmail action requires a configuration with 'templateId' or 'subject' property.");
 
         try
         {
@@ -64,7 +64,7 @@ public static class AutomationActionValidator
             var root = doc.RootElement;
 
             if (!root.TryGetProperty("templateId", out _) && !root.TryGetProperty("subject", out _))
-                throw new BusinessRuleException("SendEmail action configuration must contain 'templateId' or 'subject'.");
+                throw new BusinessRuleException(BusinessRuleCodes.Automation_ActionValidator_InvalidSendEmailJson, "SendEmail action configuration must contain 'templateId' or 'subject'.");
         }
         catch (JsonException ex)
         {
@@ -75,7 +75,7 @@ public static class AutomationActionValidator
     private static void ValidateSlackMessageConfig(string? configuration)
     {
         if (string.IsNullOrWhiteSpace(configuration))
-            throw new BusinessRuleException("SlackMessage action requires a configuration with 'channel' property.");
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_ActionValidator_InvalidSlackMessageJson, "SlackMessage action requires a configuration with 'channel' property.");
 
         try
         {
@@ -83,7 +83,7 @@ public static class AutomationActionValidator
             var root = doc.RootElement;
 
             if (!root.TryGetProperty("channel", out _))
-                throw new BusinessRuleException("SlackMessage action configuration must contain 'channel'.");
+                throw new BusinessRuleException(BusinessRuleCodes.Automation_ActionValidator_InvalidSlackMessageJson, "SlackMessage action configuration must contain 'channel'.");
         }
         catch (JsonException ex)
         {
@@ -94,7 +94,7 @@ public static class AutomationActionValidator
     private static void ValidateUpdateFieldConfig(string? configuration)
     {
         if (string.IsNullOrWhiteSpace(configuration))
-            throw new BusinessRuleException("UpdateField action requires a configuration with 'fieldId' and 'value' properties.");
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_ActionValidator_InvalidUpdateFieldJson, "UpdateField action requires a configuration with 'fieldId' and 'value' properties.");
 
         try
         {
@@ -102,7 +102,7 @@ public static class AutomationActionValidator
             var root = doc.RootElement;
 
             if (!root.TryGetProperty("fieldId", out _) || !root.TryGetProperty("value", out _))
-                throw new BusinessRuleException("UpdateField action configuration must contain 'fieldId' and 'value'.");
+                throw new BusinessRuleException(BusinessRuleCodes.Automation_ActionValidator_InvalidUpdateFieldJson, "UpdateField action configuration must contain 'fieldId' and 'value'.");
         }
         catch (JsonException ex)
         {
@@ -113,7 +113,7 @@ public static class AutomationActionValidator
     private static void ValidateCreateItemConfig(string? configuration)
     {
         if (string.IsNullOrWhiteSpace(configuration))
-            throw new BusinessRuleException("CreateItem action requires a configuration with 'targetGroupId' property.");
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_ActionValidator_InvalidCreateItemJson, "CreateItem action requires a configuration with 'targetGroupId' property.");
 
         try
         {
@@ -121,7 +121,7 @@ public static class AutomationActionValidator
             var root = doc.RootElement;
 
             if (!root.TryGetProperty("targetGroupId", out _))
-                throw new BusinessRuleException("CreateItem action configuration must contain 'targetGroupId'.");
+                throw new BusinessRuleException(BusinessRuleCodes.Automation_ActionValidator_InvalidCreateItemJson, "CreateItem action configuration must contain 'targetGroupId'.");
         }
         catch (JsonException ex)
         {
@@ -132,7 +132,7 @@ public static class AutomationActionValidator
     private static void ValidateMoveItemConfig(string? configuration)
     {
         if (string.IsNullOrWhiteSpace(configuration))
-            throw new BusinessRuleException("MoveItem action requires a configuration with 'targetGroupId' property.");
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_ActionValidator_InvalidMoveItemJson, "MoveItem action requires a configuration with 'targetGroupId' property.");
 
         try
         {
@@ -140,7 +140,7 @@ public static class AutomationActionValidator
             var root = doc.RootElement;
 
             if (!root.TryGetProperty("targetGroupId", out _))
-                throw new BusinessRuleException("MoveItem action configuration must contain 'targetGroupId'.");
+                throw new BusinessRuleException(BusinessRuleCodes.Automation_ActionValidator_InvalidMoveItemJson, "MoveItem action configuration must contain 'targetGroupId'.");
         }
         catch (JsonException ex)
         {
@@ -151,7 +151,7 @@ public static class AutomationActionValidator
     private static void ValidateNotifyMemberConfig(string? configuration)
     {
         if (string.IsNullOrWhiteSpace(configuration))
-            throw new BusinessRuleException("NotifyMember action requires a configuration with 'userId' or 'teamId' property.");
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_ActionValidator_InvalidNotifyMemberJson, "NotifyMember action requires a configuration with 'userId' or 'teamId' property.");
 
         try
         {
@@ -159,7 +159,7 @@ public static class AutomationActionValidator
             var root = doc.RootElement;
 
             if (!root.TryGetProperty("userId", out _) && !root.TryGetProperty("teamId", out _))
-                throw new BusinessRuleException("NotifyMember action configuration must contain 'userId' or 'teamId'.");
+                throw new BusinessRuleException(BusinessRuleCodes.Automation_ActionValidator_InvalidNotifyMemberJson, "NotifyMember action configuration must contain 'userId' or 'teamId'.");
         }
         catch (JsonException ex)
         {

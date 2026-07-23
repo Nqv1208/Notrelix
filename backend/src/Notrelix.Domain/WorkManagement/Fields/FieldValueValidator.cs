@@ -7,7 +7,7 @@ public static class FieldValueValidator
     public static void Validate(FieldValue value, FieldType type, FieldSettings settings)
     {
         if (value == null)
-            throw new BusinessRuleException("Field value cannot be null.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldValue_CannotBeNull, "Field value cannot be null.");
 
         var data = value.Data;
         if (data == null)
@@ -22,7 +22,10 @@ public static class FieldValueValidator
             if (settings?.Data?.Value != null && settings.Data.Value != "{}")
                 settingsDoc = JsonDocument.Parse(settings.Data.Value);
         }
-        catch { /* ignore invalid settings JSON */ }
+        catch (JsonException)
+        {
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldSettings_InvalidJsonFormat, "Field settings contain invalid JSON.");
+        }
 
         try
         {
@@ -50,7 +53,7 @@ public static class FieldValueValidator
 
                 case FieldType.Number:
                     if (kind != JsonValueKind.Number)
-                        throw new BusinessRuleException("Value for field type Number must be a number.");
+                        throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldValue_InvalidStringValue, "Value for field type Number must be a number.");
                     var numVal = element.GetDouble();
                     if (settingsDoc != null)
                     {
@@ -69,7 +72,7 @@ public static class FieldValueValidator
 
                 case FieldType.Checkbox:
                     if (kind != JsonValueKind.True && kind != JsonValueKind.False)
-                        throw new BusinessRuleException("Value for field type Checkbox must be a boolean.");
+                        throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldValue_InvalidBooleanValue, "Value for field type Checkbox must be a boolean.");
                     break;
 
                 case FieldType.Status:
@@ -81,12 +84,12 @@ public static class FieldValueValidator
 
                 case FieldType.MultiSelect:
                     if (kind != JsonValueKind.Array)
-                        throw new BusinessRuleException("Value for field type MultiSelect must be an array of option IDs.");
+                        throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldValue_InvalidMultiSelectValue, "Value for field type MultiSelect must be an array of option IDs.");
                     break;
 
                 case FieldType.Date:
                     if (kind != JsonValueKind.String)
-                        throw new BusinessRuleException("Value for field type Date must be a string representation of DateTimeOffset.");
+                        throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldValue_InvalidDateValue, "Value for field type Date must be a string representation of DateTimeOffset.");
                     break;
 
                 default:
@@ -96,7 +99,7 @@ public static class FieldValueValidator
         }
         catch (JsonException)
         {
-            throw new BusinessRuleException("Invalid JSON format in field value.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldValue_InvalidJsonFormat, "Invalid JSON format in field value.");
         }
     }
 }

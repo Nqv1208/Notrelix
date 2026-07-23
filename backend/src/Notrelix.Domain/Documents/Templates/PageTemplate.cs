@@ -27,18 +27,18 @@ public class PageTemplate : AggregateRoot
         };
 
         template.SetAuditOnCreate(null, createdAt);
-        template.AddDomainEvent(new PageTemplateCreatedDomainEvent(template.Id, template.Name, createdAt));
+        template.RaiseDomainEvent(new PageTemplateCreatedDomainEvent(template.Id, template.Name, createdAt));
         return template;
     }
 
     public void Publish(Guid publishedBy, DateTimeOffset publishedAt)
     {
         if (Status == PageTemplateStatus.Archived)
-            throw new BusinessRuleException("Cannot publish an archived template.");
+            throw new BusinessRuleException(BusinessRuleCodes.Documents_PageTemplate_CannotPublishArchived, "Cannot publish an archived template.");
 
         Status = PageTemplateStatus.Published;
         SetAuditOnUpdate(publishedBy, publishedAt);
-        AddDomainEvent(new PageTemplatePublishedDomainEvent(Id, publishedAt));
+        RaiseDomainEvent(new PageTemplatePublishedDomainEvent(Id, publishedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)

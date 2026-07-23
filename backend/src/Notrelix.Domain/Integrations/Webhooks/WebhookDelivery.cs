@@ -37,7 +37,7 @@ public class WebhookDelivery : AggregateRoot, IWorkspaceScoped
             MaxRetries = maxRetries
         };
 
-        delivery.AddDomainEvent(new WebhookDeliveryRecordedDomainEvent(accountId, workspaceId, subscriptionId, delivery.Id, WebhookDeliveryStatus.Pending, createdAt));
+        delivery.RaiseDomainEvent(new WebhookDeliveryRecordedDomainEvent(accountId, workspaceId, subscriptionId, delivery.Id, WebhookDeliveryStatus.Pending, createdAt));
         return delivery;
     }
 
@@ -51,7 +51,7 @@ public class WebhookDelivery : AggregateRoot, IWorkspaceScoped
         ResponseBody = responseBody;
         DeliveredAt = deliveredAt;
         IncrementVersion();
-        AddDomainEvent(new WebhookDeliveryRecordedDomainEvent(AccountId, WorkspaceId, WebhookSubscriptionId, Id, WebhookDeliveryStatus.Sent, deliveredAt));
+        RaiseDomainEvent(new WebhookDeliveryRecordedDomainEvent(AccountId, WorkspaceId, WebhookSubscriptionId, Id, WebhookDeliveryStatus.Sent, deliveredAt));
     }
 
     public void MarkFailed(int? statusCode, string? responseBody, DateTimeOffset failedAt, string? reason = null)
@@ -65,13 +65,13 @@ public class WebhookDelivery : AggregateRoot, IWorkspaceScoped
         FailedAt = failedAt;
         FailureReason = reason;
         IncrementVersion();
-        AddDomainEvent(new WebhookDeliveryRecordedDomainEvent(AccountId, WorkspaceId, WebhookSubscriptionId, Id, WebhookDeliveryStatus.Failed, failedAt));
+        RaiseDomainEvent(new WebhookDeliveryRecordedDomainEvent(AccountId, WorkspaceId, WebhookSubscriptionId, Id, WebhookDeliveryStatus.Failed, failedAt));
     }
 
     public void ScheduleRetry(DateTimeOffset nextRetryAt)
     {
         if (Status != WebhookDeliveryStatus.Failed)
-            throw new BusinessRuleException("Can only schedule retry for a failed delivery.");
+            throw new BusinessRuleException(BusinessRuleCodes.Integrations_WebhookDelivery_CannotScheduleRetryUnlessFailed, "Can only schedule retry for a failed delivery.");
 
         if (RetryCount >= MaxRetries)
             throw new BusinessRuleException($"Maximum retry count ({MaxRetries}) reached.");

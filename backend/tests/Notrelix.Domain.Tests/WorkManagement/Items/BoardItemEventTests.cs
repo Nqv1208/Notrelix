@@ -79,7 +79,11 @@ public class BoardItemEventTests
         var version = item.Version;
         var parentId = Guid.NewGuid();
 
-        item.AssignParentItem(parentId, 1, _ => (BoardA, (Guid?)null), Actor, Now);
+        var chain = new Dictionary<Guid, ItemParentSnapshot>
+        {
+            [parentId] = new ItemParentSnapshot(parentId, BoardA, null)
+        };
+        item.AssignParentItem(parentId, 1, chain, Actor, Now);
 
         item.Version.Should().Be(version + 1);
         item.ParentItemId.Should().Be(parentId);
@@ -95,7 +99,7 @@ public class BoardItemEventTests
     {
         var item = BoardItem.Create(AccountId, WsA, BoardA, GroupA, "Item", FractionalIndex.Create("a0"), Actor, Now);
 
-        var act = () => item.AssignParentItem(item.Id, 0, _ => (BoardA, (Guid?)null), Actor, Now);
+        var act = () => item.AssignParentItem(item.Id, 0, new Dictionary<Guid, ItemParentSnapshot>(), Actor, Now);
         act.Should().Throw<BusinessRuleException>().WithMessage("*own parent*");
     }
 
@@ -104,16 +108,15 @@ public class BoardItemEventTests
     {
         var item = BoardItem.Create(AccountId, WsA, BoardA, GroupA, "Item", FractionalIndex.Create("a0"), Actor, Now);
 
-        // Simulate: item → parent → grandparent → item (cycle back to item)
         var grandparent = Guid.NewGuid();
         var parent = Guid.NewGuid();
-        var lookup = new Dictionary<Guid, Guid?>
+        var chain = new Dictionary<Guid, ItemParentSnapshot>
         {
-            [grandparent] = item.Id,  // grandparent's parent is item — creates cycle
-            [parent] = grandparent,
+            [parent] = new ItemParentSnapshot(parent, BoardA, grandparent),
+            [grandparent] = new ItemParentSnapshot(grandparent, BoardA, item.Id),
         };
 
-        var act = () => item.AssignParentItem(parent, 1, id => (BoardA, lookup.GetValueOrDefault(id)), Actor, Now);
+        var act = () => item.AssignParentItem(parent, 1, chain, Actor, Now);
         act.Should().Throw<BusinessRuleException>().WithMessage("*cycle*");
     }
 
@@ -121,11 +124,16 @@ public class BoardItemEventTests
     public void BoardItem_AssignParentItem_WithNull_ShouldClearParent()
     {
         var item = BoardItem.Create(AccountId, WsA, BoardA, GroupA, "Item", FractionalIndex.Create("a0"), Actor, Now);
-        item.AssignParentItem(Guid.NewGuid(), 1, _ => (BoardA, (Guid?)null), Actor, Now);
+        var parentId = Guid.NewGuid();
+        var chain = new Dictionary<Guid, ItemParentSnapshot>
+        {
+            [parentId] = new ItemParentSnapshot(parentId, BoardA, null)
+        };
+        item.AssignParentItem(parentId, 1, chain, Actor, Now);
         item.ClearDomainEvents();
         var version = item.Version;
 
-        item.AssignParentItem(null, 0, _ => (BoardA, (Guid?)null), Actor, Now);
+        item.AssignParentItem(null, 0, new Dictionary<Guid, ItemParentSnapshot>(), Actor, Now);
 
         item.ParentItemId.Should().BeNull();
         item.ItemLevel.Should().Be(0);

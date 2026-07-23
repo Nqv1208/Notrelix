@@ -27,7 +27,7 @@ public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
         };
 
         subscription.SetAuditOnCreate(createdBy, createdAt);
-        subscription.AddDomainEvent(new WebhookSubscriptionCreatedDomainEvent(accountId, subscription.Id, workspaceId, subscription.TargetUrl.Value, createdAt));
+        subscription.RaiseDomainEvent(new WebhookSubscriptionCreatedDomainEvent(accountId, subscription.Id, workspaceId, subscription.TargetUrl.Value, createdAt));
 
         return subscription;
     }
@@ -40,7 +40,7 @@ public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
         IsActive = true;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new WebhookSubscriptionEnabledDomainEvent(AccountId, Id, WorkspaceId, updatedAt));
+        RaiseDomainEvent(new WebhookSubscriptionEnabledDomainEvent(AccountId, Id, WorkspaceId, updatedAt));
     }
 
     public void Disable(Guid updatedBy, DateTimeOffset updatedAt)
@@ -51,7 +51,7 @@ public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
         IsActive = false;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new WebhookSubscriptionDisabledDomainEvent(AccountId, Id, WorkspaceId, updatedAt));
+        RaiseDomainEvent(new WebhookSubscriptionDisabledDomainEvent(AccountId, Id, WorkspaceId, updatedAt));
     }
 
     public void RotateSecret(WebhookSecretHash newHash, Guid updatedBy, DateTimeOffset updatedAt)
@@ -62,7 +62,7 @@ public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
         SecretHash = newHash;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new WebhookSubscriptionSecretRotatedDomainEvent(AccountId, Id, WorkspaceId, updatedAt));
+        RaiseDomainEvent(new WebhookSubscriptionSecretRotatedDomainEvent(AccountId, Id, WorkspaceId, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)

@@ -38,7 +38,7 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(accountId);
 
         if (!PermissionRules.CanGrant(granterLevel, level))
-            throw new BusinessRuleException("Cannot grant a permission level higher than the granter's own level.");
+            throw new BusinessRuleException(BusinessRuleCodes.Governance_Permission_CannotGrantHigherThanGranter, "Cannot grant a permission level higher than the granter's own level.");
 
         var permission = new ResourcePermission
         {
@@ -55,7 +55,7 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         };
 
         permission.SetAuditOnCreate(grantedBy, grantedAt);
-        permission.AddDomainEvent(new ResourcePermissionGrantedDomainEvent(
+        permission.RaiseDomainEvent(new ResourcePermissionGrantedDomainEvent(
             accountId, workspaceId, permission.Id, resourceType, resourceId, subjectType, subjectId, level, grantedBy, grantedAt));
 
         return permission;
@@ -70,7 +70,7 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         Level = newLevel;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new ResourcePermissionLevelChangedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, oldLevel, newLevel, updatedBy, updatedAt));
+        RaiseDomainEvent(new ResourcePermissionLevelChangedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, oldLevel, newLevel, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -80,7 +80,7 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
         if (!_suppressSoftDeleteEvent)
-            AddDomainEvent(new ResourcePermissionSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, deletedBy, deletedAt));
+            RaiseDomainEvent(new ResourcePermissionSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, deletedBy, deletedAt));
     }
 
     public void Revoke(Guid revokedBy, DateTimeOffset revokedAt)
@@ -90,7 +90,7 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         _suppressSoftDeleteEvent = true;
         SoftDelete(revokedBy, revokedAt);
         _suppressSoftDeleteEvent = false;
-        AddDomainEvent(new ResourcePermissionRevokedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, revokedBy, revokedAt));
+        RaiseDomainEvent(new ResourcePermissionRevokedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, revokedBy, revokedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -99,6 +99,6 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new ResourcePermissionRestoredDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, restoredBy, restoredAt));
+        RaiseDomainEvent(new ResourcePermissionRestoredDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, restoredBy, restoredAt));
     }
 }

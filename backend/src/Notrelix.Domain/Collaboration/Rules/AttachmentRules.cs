@@ -11,7 +11,7 @@ public static class AttachmentRules
     public static void EnsureValidFileSize(long fileSizeBytes, long maxFileSizeBytes)
     {
         if (fileSizeBytes <= 0)
-            throw new BusinessRuleException("File size must be greater than zero.");
+            throw new BusinessRuleException(BusinessRuleCodes.Collaboration_Attachment_FileSizeMustBePositive, "File size must be greater than zero.");
 
         if (fileSizeBytes > maxFileSizeBytes)
             throw new BusinessRuleException($"File size exceeds maximum allowed size of {maxFileSizeBytes} bytes.");

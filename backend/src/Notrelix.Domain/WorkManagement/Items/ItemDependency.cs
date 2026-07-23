@@ -30,7 +30,7 @@ public class ItemDependency : SoftDeletableEntity, IWorkspaceScoped
         Guard.NotEmpty(successorItemId);
 
         if (predecessorItemId == successorItemId)
-            throw new BusinessRuleException("An item cannot depend on itself.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Dependency_CannotDependOnSelf, "An item cannot depend on itself.");
 
         Guard.NotEmpty(accountId);
 

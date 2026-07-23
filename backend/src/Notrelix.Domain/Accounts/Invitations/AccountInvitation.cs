@@ -26,7 +26,7 @@ public class AccountInvitation : AggregateRoot, IAccountScoped
         var emailValue = SharedKernel.Email.Create(email);
 
         if (expiry is not null && expiry <= TimeSpan.Zero)
-            throw new BusinessRuleException("Invitation expiry must be greater than zero.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Invitation_ExpiryMustBePositive, "Invitation expiry must be greater than zero.");
 
         var invitation = new AccountInvitation
         {
@@ -39,7 +39,7 @@ public class AccountInvitation : AggregateRoot, IAccountScoped
         };
 
         invitation.SetAuditOnCreate(invitedBy, createdAt);
-        invitation.AddDomainEvent(new AccountInvitationCreatedDomainEvent(
+        invitation.RaiseDomainEvent(new AccountInvitationCreatedDomainEvent(
             invitation.Id, accountId, invitation.Email, role, invitedBy, createdAt));
 
         return invitation;
@@ -51,15 +51,15 @@ public class AccountInvitation : AggregateRoot, IAccountScoped
         Guard.NotEmpty(acceptedUserId);
 
         if (Status != AccountInvitationStatus.Pending)
-            throw new BusinessRuleException("Invitation is not pending.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Invitation_NotPending, "Invitation is not pending.");
 
         if (acceptedAt >= ExpiresAt)
-            throw new BusinessRuleException("Invitation has expired.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Invitation_HasExpired, "Invitation has expired.");
 
         Status = AccountInvitationStatus.Accepted;
         SetAuditOnUpdate(acceptedUserId, acceptedAt);
 
-        AddDomainEvent(new AccountInvitationAcceptedDomainEvent(
+        RaiseDomainEvent(new AccountInvitationAcceptedDomainEvent(
             Id, AccountId, acceptedUserId, acceptedUserId, acceptedAt));
     }
 
@@ -72,7 +72,7 @@ public class AccountInvitation : AggregateRoot, IAccountScoped
         Status = AccountInvitationStatus.Expired;
         SetAuditOnUpdate(null, expiredAt);
 
-        AddDomainEvent(new AccountInvitationExpiredDomainEvent(Id, AccountId, expiredAt));
+        RaiseDomainEvent(new AccountInvitationExpiredDomainEvent(Id, AccountId, expiredAt));
     }
 
     public void Revoke(Guid revokedBy, DateTimeOffset revokedAt)
@@ -83,11 +83,11 @@ public class AccountInvitation : AggregateRoot, IAccountScoped
         if (Status != AccountInvitationStatus.Pending) return;
 
         if (revokedAt >= ExpiresAt)
-            throw new BusinessRuleException("Invitation has expired.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Invitation_HasExpired, "Invitation has expired.");
 
         Status = AccountInvitationStatus.Revoked;
         SetAuditOnUpdate(revokedBy, revokedAt);
 
-        AddDomainEvent(new AccountInvitationRevokedDomainEvent(Id, AccountId, revokedBy, revokedAt));
+        RaiseDomainEvent(new AccountInvitationRevokedDomainEvent(Id, AccountId, revokedBy, revokedAt));
     }
 }

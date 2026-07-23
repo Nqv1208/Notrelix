@@ -6,7 +6,7 @@ public static class BlockTreeRules
     {
         if (targetParentId is null) return;
         if (blockId == targetParentId.Value)
-            throw new BusinessRuleException("A block cannot be its own parent.");
+            throw new BusinessRuleException(BusinessRuleCodes.Documents_BlockTree_CannotBeOwnParent, "A block cannot be its own parent.");
 
         var current = targetParentId.Value;
         while (true)
@@ -14,7 +14,7 @@ public static class BlockTreeRules
             var parentId = getParentId(current);
             if (parentId is null) break;
             if (parentId == blockId)
-                throw new BusinessRuleException("Block move would create a cycle.");
+                throw new BusinessRuleException(BusinessRuleCodes.Documents_BlockTree_MoveWouldCreateCycle, "Block move would create a cycle.");
             current = parentId.Value;
         }
     }
@@ -25,9 +25,9 @@ public static class BlockTreeRules
 
         var scope = getBlockScope(parentBlockId.Value);
         if (scope is null)
-            throw new BusinessRuleException("Parent block not found.");
+            throw new BusinessRuleException(BusinessRuleCodes.Documents_BlockTree_ParentNotFound, "Parent block not found.");
 
         if (scope.Value.PageId != pageId || scope.Value.WorkspaceId != workspaceId)
-            throw new BusinessRuleException("Parent block must belong to the same page and workspace.");
+            throw new BusinessRuleException(BusinessRuleCodes.Documents_BlockTree_ParentMustBeInSamePage, "Parent block must belong to the same page and workspace.");
     }
 }

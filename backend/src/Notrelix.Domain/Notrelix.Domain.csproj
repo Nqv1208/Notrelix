@@ -4,6 +4,11 @@
     <RootNamespace>Notrelix.Domain</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Notrelix.Infrastructure" />
+    <InternalsVisibleTo Include="Notrelix.Domain.Tests" />
+  </ItemGroup>
+
   <!-- NO PACKAGES - Domain layer must be PURE according to Clean Architecture rules -->
 
 </Project>

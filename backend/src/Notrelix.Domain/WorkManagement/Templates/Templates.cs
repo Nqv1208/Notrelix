@@ -23,7 +23,7 @@ public class BoardTemplate : AggregateRoot
             Status = TemplateStatus.Published
         };
 
-        template.AddDomainEvent(new BoardTemplateCreatedDomainEvent(template.Id, template.Name, createdAt));
+        template.RaiseDomainEvent(new BoardTemplateCreatedDomainEvent(template.Id, template.Name, createdAt));
         return template;
     }
 
@@ -44,7 +44,7 @@ public class BoardTemplate : AggregateRoot
     {
         if (Status == TemplateStatus.Draft) return;
         if (Status == TemplateStatus.Archived)
-            throw new BusinessRuleException("Cannot draft an archived template. Restore it first.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_BoardTemplate_CannotDraftArchived, "Cannot draft an archived template. Restore it first.");
 
         Status = TemplateStatus.Draft;
         SetAuditOnUpdate(updatedBy, updatedAt);
@@ -55,7 +55,7 @@ public class BoardTemplate : AggregateRoot
     {
         if (Status == TemplateStatus.Published) return;
         if (Status == TemplateStatus.Archived)
-            throw new BusinessRuleException("Cannot publish an archived template. Restore it first.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_BoardTemplate_CannotPublishArchived, "Cannot publish an archived template. Restore it first.");
 
         Status = TemplateStatus.Published;
         SetAuditOnUpdate(updatedBy, updatedAt);
@@ -74,7 +74,7 @@ public class BoardTemplate : AggregateRoot
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (Status != TemplateStatus.Archived)
-            throw new BusinessRuleException("Only archived templates can be restored.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_BoardTemplate_CanOnlyRestoreArchived, "Only archived templates can be restored.");
 
         Status = TemplateStatus.Draft;
         SetAuditOnUpdate(restoredBy, restoredAt);
@@ -111,7 +111,7 @@ public class ItemTemplate : AggregateRoot, IWorkspaceScoped
             Status = TemplateStatus.Published
         };
 
-        template.AddDomainEvent(new ItemTemplateCreatedDomainEvent(accountId, workspaceId, template.Id, template.Name, createdAt));
+        template.RaiseDomainEvent(new ItemTemplateCreatedDomainEvent(accountId, workspaceId, template.Id, template.Name, createdAt));
         return template;
     }
 
@@ -132,7 +132,7 @@ public class ItemTemplate : AggregateRoot, IWorkspaceScoped
     {
         if (Status == TemplateStatus.Draft) return;
         if (Status == TemplateStatus.Archived)
-            throw new BusinessRuleException("Cannot draft an archived template. Restore it first.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_BoardTemplate_CannotDraftArchived, "Cannot draft an archived template. Restore it first.");
 
         Status = TemplateStatus.Draft;
         SetAuditOnUpdate(updatedBy, updatedAt);
@@ -143,7 +143,7 @@ public class ItemTemplate : AggregateRoot, IWorkspaceScoped
     {
         if (Status == TemplateStatus.Published) return;
         if (Status == TemplateStatus.Archived)
-            throw new BusinessRuleException("Cannot publish an archived template. Restore it first.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_BoardTemplate_CannotPublishArchived, "Cannot publish an archived template. Restore it first.");
 
         Status = TemplateStatus.Published;
         SetAuditOnUpdate(updatedBy, updatedAt);
@@ -162,7 +162,7 @@ public class ItemTemplate : AggregateRoot, IWorkspaceScoped
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (Status != TemplateStatus.Archived)
-            throw new BusinessRuleException("Only archived templates can be restored.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_BoardTemplate_CanOnlyRestoreArchived, "Only archived templates can be restored.");
 
         Status = TemplateStatus.Draft;
         SetAuditOnUpdate(restoredBy, restoredAt);

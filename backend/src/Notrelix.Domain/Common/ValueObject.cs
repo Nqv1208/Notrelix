@@ -19,8 +19,10 @@ public abstract class ValueObject
     public override int GetHashCode()
     {
         return GetEqualityComponents()
-            .Select(x => x?.GetHashCode() ?? 0)
-            .Aggregate((x, y) => x ^ y);
+            .Aggregate(
+                new HashCode(),
+                (hashcode, component) => { hashcode.Add(component); return hashcode; },
+                hashcode => hashcode.ToHashCode());
     }
 
     public static bool operator ==(ValueObject? left, ValueObject? right)

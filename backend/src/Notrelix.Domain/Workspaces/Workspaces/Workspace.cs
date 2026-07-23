@@ -41,7 +41,7 @@ public class Workspace : AggregateRoot
         };
 
         workspace.SetAuditOnCreate(ownerId, createdAt);
-        workspace.AddDomainEvent(new WorkspaceCreatedDomainEvent(workspace.AccountId, workspace.Id, workspace.Name, workspace.Slug, ownerId, createdAt));
+        workspace.RaiseDomainEvent(new WorkspaceCreatedDomainEvent(workspace.AccountId, workspace.Id, workspace.Name, workspace.Slug, ownerId, createdAt));
 
         return workspace;
     }
@@ -65,7 +65,7 @@ public class Workspace : AggregateRoot
         Guard.MaxLength(newName, 160);
 
         if (Status == WorkspaceStatus.Archived)
-            throw new BusinessRuleException("Cannot rename an archived workspace.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Workspace_CannotRenameArchived, "Cannot rename an archived workspace.");
 
         var oldName = Name;
         if (Name == newName.Trim()) return;
@@ -73,7 +73,7 @@ public class Workspace : AggregateRoot
         Name = newName.Trim();
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceRenamedDomainEvent(Id, oldName, Name, updatedBy, updatedAt));
+        RaiseDomainEvent(new WorkspaceRenamedDomainEvent(Id, oldName, Name, updatedBy, updatedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
@@ -85,7 +85,7 @@ public class Workspace : AggregateRoot
         Status = WorkspaceStatus.Archived;
         SetAuditOnUpdate(archivedBy, archivedAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceArchivedDomainEvent(Id, archivedBy, archivedAt));
+        RaiseDomainEvent(new WorkspaceArchivedDomainEvent(Id, archivedBy, archivedAt));
     }
 
     public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
@@ -102,7 +102,7 @@ public class Workspace : AggregateRoot
         Status = WorkspaceStatus.Active;
         SetAuditOnUpdate(unarchivedBy, unarchivedAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceUnarchivedDomainEvent(Id, unarchivedBy, unarchivedAt));
+        RaiseDomainEvent(new WorkspaceUnarchivedDomainEvent(Id, unarchivedBy, unarchivedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -112,7 +112,7 @@ public class Workspace : AggregateRoot
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceSoftDeletedDomainEvent(Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new WorkspaceSoftDeletedDomainEvent(Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -122,7 +122,7 @@ public class Workspace : AggregateRoot
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceRestoredDomainEvent(Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new WorkspaceRestoredDomainEvent(Id, restoredBy, restoredAt));
     }
 
     public void UpdateDescription(string? newDescription, Guid updatedBy, DateTimeOffset updatedAt)
@@ -131,7 +131,7 @@ public class Workspace : AggregateRoot
         Guard.NotEmpty(updatedBy);
 
         if (Status == WorkspaceStatus.Archived)
-            throw new BusinessRuleException("Cannot update description of an archived workspace.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Workspace_CannotUpdateDescriptionArchived, "Cannot update description of an archived workspace.");
 
         var normalized = string.IsNullOrWhiteSpace(newDescription)
             ? null
@@ -147,7 +147,7 @@ public class Workspace : AggregateRoot
         Description = normalized;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceDescriptionUpdatedDomainEvent(Id, oldDescription, Description, updatedBy, updatedAt));
+        RaiseDomainEvent(new WorkspaceDescriptionUpdatedDomainEvent(Id, oldDescription, Description, updatedBy, updatedAt));
     }
 
     public void UpdateSettings(WorkspaceSettings newSettings, Guid updatedBy, DateTimeOffset updatedAt)
@@ -157,13 +157,13 @@ public class Workspace : AggregateRoot
         Guard.NotNull(newSettings);
 
         if (Status == WorkspaceStatus.Archived)
-            throw new BusinessRuleException("Cannot update settings of an archived workspace.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Workspace_CannotUpdateSettingsArchived, "Cannot update settings of an archived workspace.");
 
         if (Settings == newSettings) return;
 
         Settings = newSettings;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceSettingsUpdatedDomainEvent(Id, updatedBy, updatedAt));
+        RaiseDomainEvent(new WorkspaceSettingsUpdatedDomainEvent(Id, updatedBy, updatedAt));
     }
 }

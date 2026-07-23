@@ -28,7 +28,7 @@ public class UserSession : AggregateRoot
 
         if (expiresAt <= createdAt)
         {
-            throw new BusinessRuleException("Session expiration time must be after creation time.");
+            throw new BusinessRuleException(BusinessRuleCodes.Identity_Session_ExpirationMustBeAfterCreation, "Session expiration time must be after creation time.");
         }
 
         var session = new UserSession
@@ -42,7 +42,7 @@ public class UserSession : AggregateRoot
         };
 
         session.SetAuditOnCreate(userId, createdAt);
-        session.AddDomainEvent(new UserSessionCreatedDomainEvent(session.Id, userId, createdAt));
+        session.RaiseDomainEvent(new UserSessionCreatedDomainEvent(session.Id, userId, createdAt));
 
         return session;
     }
@@ -54,13 +54,13 @@ public class UserSession : AggregateRoot
 
         if (Status != SessionStatus.Active)
         {
-            throw new BusinessRuleException("Cannot update refresh token for an inactive session.");
+            throw new BusinessRuleException(BusinessRuleCodes.Identity_Session_CannotUpdateRefreshTokenOfInactive, "Cannot update refresh token for an inactive session.");
         }
 
         RefreshTokenHash = newTokenHash;
         SetAuditOnUpdate(UserId, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new UserSessionRefreshTokenRotatedDomainEvent(Id, UserId, updatedAt));
+        RaiseDomainEvent(new UserSessionRefreshTokenRotatedDomainEvent(Id, UserId, updatedAt));
     }
 
     public void Revoke(DateTimeOffset revokedAt, string? reason = null)
@@ -70,7 +70,7 @@ public class UserSession : AggregateRoot
 
         if (Status == SessionStatus.Expired)
         {
-            throw new BusinessRuleException("Cannot revoke an expired session.");
+            throw new BusinessRuleException(BusinessRuleCodes.Identity_Session_CannotRevokeExpired, "Cannot revoke an expired session.");
         }
 
         Status = SessionStatus.Revoked;
@@ -78,7 +78,7 @@ public class UserSession : AggregateRoot
 
         SetAuditOnUpdate(UserId, revokedAt);
         IncrementVersion();
-        AddDomainEvent(new UserSessionRevokedDomainEvent(Id, UserId, revokedAt, reason));
+        RaiseDomainEvent(new UserSessionRevokedDomainEvent(Id, UserId, revokedAt, reason));
     }
 
     public void Expire(DateTimeOffset expiredAt)
@@ -88,7 +88,7 @@ public class UserSession : AggregateRoot
 
         if (Status == SessionStatus.Revoked)
         {
-            throw new BusinessRuleException("Cannot expire a revoked session.");
+            throw new BusinessRuleException(BusinessRuleCodes.Identity_Session_CannotExpireRevoked, "Cannot expire a revoked session.");
         }
 
         Status = SessionStatus.Expired;
@@ -96,7 +96,7 @@ public class UserSession : AggregateRoot
 
         SetAuditOnUpdate(UserId, expiredAt);
         IncrementVersion();
-        AddDomainEvent(new UserSessionExpiredDomainEvent(Id, UserId, expiredAt));
+        RaiseDomainEvent(new UserSessionExpiredDomainEvent(Id, UserId, expiredAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -105,7 +105,7 @@ public class UserSession : AggregateRoot
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new UserSessionSoftDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, reason));
+        RaiseDomainEvent(new UserSessionSoftDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, reason));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -114,6 +114,6 @@ public class UserSession : AggregateRoot
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new UserSessionRestoredDomainEvent(Id, UserId, restoredBy, restoredAt));
+        RaiseDomainEvent(new UserSessionRestoredDomainEvent(Id, UserId, restoredBy, restoredAt));
     }
 }

@@ -61,7 +61,7 @@ public class PermissionRule : AggregateRoot, IWorkspaceScoped
         };
 
         rule.SetAuditOnCreate(createdBy, createdAt);
-        rule.AddDomainEvent(new PermissionRuleCreatedDomainEvent(accountId, workspaceId, rule.Id, action.ToString(), createdBy, createdAt));
+        rule.RaiseDomainEvent(new PermissionRuleCreatedDomainEvent(accountId, workspaceId, rule.Id, action.ToString(), createdBy, createdAt));
         return rule;
     }
 
@@ -70,7 +70,7 @@ public class PermissionRule : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Status = PermissionRuleStatus.Disabled;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new PermissionRuleDisabledDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
+        RaiseDomainEvent(new PermissionRuleDisabledDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
         IncrementVersion();
     }
 
@@ -80,7 +80,7 @@ public class PermissionRule : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new PermissionRuleSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new PermissionRuleSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -89,7 +89,7 @@ public class PermissionRule : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new PermissionRuleRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new PermissionRuleRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 
     public bool IsActive(DateTimeOffset now)

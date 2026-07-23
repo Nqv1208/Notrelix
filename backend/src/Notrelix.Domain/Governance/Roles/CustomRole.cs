@@ -32,7 +32,7 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
         };
 
         role.SetAuditOnCreate(createdBy, createdAt);
-        role.AddDomainEvent(new CustomRoleCreatedDomainEvent(accountId, role.Id, workspaceId, role.Name, createdBy, createdAt));
+        role.RaiseDomainEvent(new CustomRoleCreatedDomainEvent(accountId, role.Id, workspaceId, role.Name, createdBy, createdAt));
 
         return role;
     }
@@ -41,7 +41,7 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (IsSystem)
-            throw new BusinessRuleException("Cannot rename a system role.");
+            throw new BusinessRuleException(BusinessRuleCodes.Governance_Role_CannotRenameSystem, "Cannot rename a system role.");
         Guard.NotNullOrWhiteSpace(name);
         Guard.MaxLength(name, 100);
 
@@ -51,7 +51,7 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
         Name = newName;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new CustomRoleUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
+        RaiseDomainEvent(new CustomRoleUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void AddPermission(string action, Guid updatedBy, DateTimeOffset updatedAt)
@@ -64,7 +64,7 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
         _permissions.Add(CustomRolePermission.Create(Id, action));
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new CustomRoleUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
+        RaiseDomainEvent(new CustomRoleUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void RemovePermission(string action, Guid updatedBy, DateTimeOffset updatedAt)
@@ -77,7 +77,7 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
         _permissions.Remove(permission);
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new CustomRoleUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
+        RaiseDomainEvent(new CustomRoleUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void AssignToMember(Guid memberId, Guid assignedBy, DateTimeOffset assignedAt)
@@ -85,7 +85,7 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         SetAuditOnUpdate(assignedBy, assignedAt);
         IncrementVersion();
-        AddDomainEvent(new CustomRoleAssignedDomainEvent(AccountId, WorkspaceId, Id, memberId, assignedBy, assignedAt));
+        RaiseDomainEvent(new CustomRoleAssignedDomainEvent(AccountId, WorkspaceId, Id, memberId, assignedBy, assignedAt));
     }
 
     public void RevokeFromMember(Guid memberId, Guid revokedBy, DateTimeOffset revokedAt)
@@ -93,7 +93,7 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         SetAuditOnUpdate(revokedBy, revokedAt);
         IncrementVersion();
-        AddDomainEvent(new CustomRoleRevokedDomainEvent(AccountId, WorkspaceId, Id, memberId, revokedBy, revokedAt));
+        RaiseDomainEvent(new CustomRoleRevokedDomainEvent(AccountId, WorkspaceId, Id, memberId, revokedBy, revokedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
@@ -104,7 +104,7 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
         Status = CustomRoleStatus.Archived;
         SetAuditOnUpdate(archivedBy, archivedAt);
         IncrementVersion();
-        AddDomainEvent(new CustomRoleArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
+        RaiseDomainEvent(new CustomRoleArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
     }
 
     public void Activate(Guid activatedBy, DateTimeOffset activatedAt)
@@ -114,19 +114,19 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
         Status = CustomRoleStatus.Active;
         SetAuditOnUpdate(activatedBy, activatedAt);
         IncrementVersion();
-        AddDomainEvent(new CustomRoleActivatedDomainEvent(AccountId, WorkspaceId, Id, activatedBy, activatedAt));
+        RaiseDomainEvent(new CustomRoleActivatedDomainEvent(AccountId, WorkspaceId, Id, activatedBy, activatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
         if (IsSystem)
-            throw new BusinessRuleException("Cannot delete a system role.");
+            throw new BusinessRuleException(BusinessRuleCodes.Governance_Role_CannotDeleteSystem, "Cannot delete a system role.");
         Status = CustomRoleStatus.Archived;
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new CustomRoleSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new CustomRoleSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -136,6 +136,6 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new CustomRoleRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new CustomRoleRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

@@ -38,7 +38,7 @@ public class ResourceWatcher : AggregateRoot, IWorkspaceScoped
         };
 
         watcher.SetAuditOnCreate(createdBy, createdAt);
-        watcher.AddDomainEvent(new ResourceWatchedDomainEvent(accountId, workspaceId, watcher.Id, target, userId, createdAt));
+        watcher.RaiseDomainEvent(new ResourceWatchedDomainEvent(accountId, workspaceId, watcher.Id, target, userId, createdAt));
         return watcher;
     }
 
@@ -50,6 +50,6 @@ public class ResourceWatcher : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(unwatchedBy, removedAt);
         SetAuditOnUpdate(unwatchedBy, removedAt);
         IncrementVersion();
-        AddDomainEvent(new ResourceUnwatchedDomainEvent(AccountId, WorkspaceId, Id, removedAt));
+        RaiseDomainEvent(new ResourceUnwatchedDomainEvent(AccountId, WorkspaceId, Id, removedAt));
     }
 }

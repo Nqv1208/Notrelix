@@ -61,7 +61,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         };
 
         field.SetAuditOnCreate(createdBy, createdAt);
-        field.AddDomainEvent(new BoardFieldCreatedDomainEvent(accountId, workspaceId, boardId, field.Id, field.Name, type, createdBy, createdAt));
+        field.RaiseDomainEvent(new BoardFieldCreatedDomainEvent(accountId, workspaceId, boardId, field.Id, field.Name, type, createdBy, createdAt));
 
         return field;
     }
@@ -75,23 +75,23 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         Settings = settings;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardFieldUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardFieldUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
 
     public void AddOption(string name, Color color, FractionalIndex position, Guid addedBy, DateTimeOffset addedAt)
     {
         EnsureNotDeleted();
         if (Type != FieldType.Select && Type != FieldType.MultiSelect && Type != FieldType.Status)
-            throw new BusinessRuleException($"Cannot add options to field of type {Type}");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_CannotAddOptionsForType, $"Cannot add options to field of type {Type}");
 
         if (_options.Any(o => string.Equals(o.Name, name, StringComparison.OrdinalIgnoreCase)))
-            throw new BusinessRuleException($"Duplicate option name '{name}'.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_DuplicateOptionName, $"Duplicate option name '{name}'.");
 
         var option = FieldOption.Create(Id, name, color, position);
         _options.Add(option);
         SetAuditOnUpdate(addedBy, addedAt);
         IncrementVersion();
-        AddDomainEvent(new FieldOptionAddedDomainEvent(AccountId, WorkspaceId, Id, option.Id, option.Name, addedBy, addedAt));
+        RaiseDomainEvent(new FieldOptionAddedDomainEvent(AccountId, WorkspaceId, Id, option.Id, option.Name, addedBy, addedAt));
     }
 
     public void RemoveOption(Guid optionId, Guid removedBy, DateTimeOffset removedAt)
@@ -104,7 +104,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         _options.Remove(option);
         SetAuditOnUpdate(removedBy, removedAt);
         IncrementVersion();
-        AddDomainEvent(new FieldOptionRemovedDomainEvent(AccountId, WorkspaceId, Id, optionId, removedBy, removedAt));
+        RaiseDomainEvent(new FieldOptionRemovedDomainEvent(AccountId, WorkspaceId, Id, optionId, removedBy, removedAt));
     }
 
     public void UpdateOption(Guid optionId, string name, Color color, Guid updatedBy, DateTimeOffset updatedAt)
@@ -117,23 +117,26 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
             throw new NotFoundException(nameof(FieldOption), optionId);
 
         if (_options.Any(o => o.Id != optionId && string.Equals(o.Name, name, StringComparison.OrdinalIgnoreCase)))
-            throw new BusinessRuleException($"Duplicate option name '{name}'.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_DuplicateOptionName, $"Duplicate option name '{name}'.");
 
         option.Update(name, color);
 
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new FieldOptionUpdatedDomainEvent(AccountId, WorkspaceId, Id, optionId, name.Trim(), updatedBy, updatedAt));
+        RaiseDomainEvent(new FieldOptionUpdatedDomainEvent(AccountId, WorkspaceId, Id, optionId, name.Trim(), updatedBy, updatedAt));
     }
 
     public void ReorderOptions(List<Guid> orderedOptionIds, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         if (orderedOptionIds.Count != _options.Count)
-            throw new BusinessRuleException("Reorder list must contain all options.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_ReorderMustContainAllOptions, "Reorder list must contain all options.");
 
-        var positions = new[] { "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9",
-            "aA", "aB", "aC", "aD", "aE", "aF", "aG", "aH", "aI", "aJ" };
+        var sorted = _options.OrderBy(o => o.Position).ToList();
+        var n = sorted.Count;
+        var positions = new List<string> { "a0" };
+        for (var i = 1; i < n; i++)
+            positions.Add(FractionalIndexMidpoint.Between(positions[i - 1], "a1"));
 
         for (var i = 0; i < orderedOptionIds.Count; i++)
         {
@@ -146,7 +149,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
 
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardFieldReorderedDomainEvent(AccountId, WorkspaceId, Id, BoardId, 0, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardFieldReorderedDomainEvent(AccountId, WorkspaceId, Id, BoardId, 0, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -154,12 +157,12 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         if (IsDeleted) return;
 
         if (IsSystem)
-            throw new BusinessRuleException("Cannot delete a system field.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_CannotDeleteSystem, "Cannot delete a system field.");
 
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardFieldDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
+        RaiseDomainEvent(new BoardFieldDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
     public bool CanBeUsedAsKanbanColumn()
@@ -177,7 +180,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         IsSensitive = isSensitive;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardFieldClassificationUpdatedDomainEvent(AccountId, WorkspaceId, BoardId, Id, classification, isSensitive, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardFieldClassificationUpdatedDomainEvent(AccountId, WorkspaceId, BoardId, Id, classification, isSensitive, updatedBy, updatedAt));
     }
 
     public void UpdatePosition(FractionalIndex position, Guid updatedBy, DateTimeOffset updatedAt)
@@ -198,6 +201,6 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new BoardFieldRestoredDomainEvent(AccountId, WorkspaceId, BoardId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new BoardFieldRestoredDomainEvent(AccountId, WorkspaceId, BoardId, Id, restoredBy, restoredAt));
     }
 }

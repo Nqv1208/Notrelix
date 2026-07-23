@@ -40,7 +40,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
         };
 
         space.SetAuditOnCreate(createdBy, createdAt);
-        space.AddDomainEvent(new SpaceCreatedDomainEvent(space.Id, accountId, workspaceId, space.Name, createdBy, createdAt));
+        space.RaiseDomainEvent(new SpaceCreatedDomainEvent(space.Id, accountId, workspaceId, space.Name, createdBy, createdAt));
 
         return space;
     }
@@ -49,7 +49,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (Status == SpaceStatus.Archived)
-            throw new BusinessRuleException("Cannot rename an archived space.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Space_CannotRenameArchived, "Cannot rename an archived space.");
         Guard.NotNullOrWhiteSpace(newName);
         Guard.MaxLength(newName, 160);
         Guard.NotEmpty(updatedBy);
@@ -61,7 +61,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
         Name = normalizedName;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new SpaceRenamedDomainEvent(AccountId, WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
+        RaiseDomainEvent(new SpaceRenamedDomainEvent(AccountId, WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
     }
 
     public void UpdateDescription(string? newDescription, Guid updatedBy, DateTimeOffset updatedAt)
@@ -70,7 +70,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(updatedBy);
 
         if (Status == SpaceStatus.Archived)
-            throw new BusinessRuleException("Cannot update description of an archived space.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Space_CannotUpdateDescriptionArchived, "Cannot update description of an archived space.");
 
         var normalized = string.IsNullOrWhiteSpace(newDescription)
             ? null
@@ -85,7 +85,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
         Description = normalized;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new SpaceDescriptionUpdatedDomainEvent(
+        RaiseDomainEvent(new SpaceDescriptionUpdatedDomainEvent(
             AccountId, WorkspaceId, Id, oldDescription, Description, updatedBy, updatedAt));
     }
 
@@ -95,7 +95,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(updatedBy);
 
         if (Status == SpaceStatus.Archived)
-            throw new BusinessRuleException("Cannot change visibility of an archived space.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Space_CannotChangeVisibilityArchived, "Cannot change visibility of an archived space.");
 
         if (Visibility == newVisibility) return;
 
@@ -103,7 +103,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
         Visibility = newVisibility;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new SpaceVisibilityChangedDomainEvent(
+        RaiseDomainEvent(new SpaceVisibilityChangedDomainEvent(
             AccountId, WorkspaceId, Id, oldVisibility, newVisibility, updatedBy, updatedAt));
     }
 
@@ -113,7 +113,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(updatedBy);
 
         if (Status == SpaceStatus.Archived)
-            throw new BusinessRuleException("Cannot change type of an archived space.");
+            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Space_CannotChangeTypeArchived, "Cannot change type of an archived space.");
 
         if (SpaceType == newType) return;
 
@@ -121,7 +121,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
         SpaceType = newType;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new SpaceTypeChangedDomainEvent(
+        RaiseDomainEvent(new SpaceTypeChangedDomainEvent(
             AccountId, WorkspaceId, Id, oldType, newType, updatedBy, updatedAt));
     }
 
@@ -134,7 +134,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
         Status = SpaceStatus.Archived;
         SetAuditOnUpdate(archivedBy, archivedAt);
         IncrementVersion();
-        AddDomainEvent(new SpaceArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
+        RaiseDomainEvent(new SpaceArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
     }
 
     public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
@@ -151,7 +151,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
         Status = SpaceStatus.Active;
         SetAuditOnUpdate(unarchivedBy, unarchivedAt);
         IncrementVersion();
-        AddDomainEvent(new SpaceUnarchivedDomainEvent(
+        RaiseDomainEvent(new SpaceUnarchivedDomainEvent(
             AccountId, WorkspaceId, Id, unarchivedBy, unarchivedAt));
     }
 
@@ -163,7 +163,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
         base.SoftDelete(deletedBy, deletedAt, reason);
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new SpaceSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new SpaceSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -174,6 +174,6 @@ public class Space : AggregateRoot, IWorkspaceScoped
         base.Restore(restoredBy, restoredAt);
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new SpaceRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new SpaceRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

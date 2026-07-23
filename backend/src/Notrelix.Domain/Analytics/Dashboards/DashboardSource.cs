@@ -49,7 +49,7 @@ public class DashboardSource : AggregateRoot, IWorkspaceScoped
         };
 
         source.SetAuditOnCreate(createdBy, createdAt);
-        source.AddDomainEvent(new DashboardSourceAddedDomainEvent(accountId, workspaceId, dashboardId, source.Id, createdBy, createdAt));
+        source.RaiseDomainEvent(new DashboardSourceAddedDomainEvent(accountId, workspaceId, dashboardId, source.Id, createdBy, createdAt));
         return source;
     }
 
@@ -61,6 +61,6 @@ public class DashboardSource : AggregateRoot, IWorkspaceScoped
         Filter = newFilter;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardSourceUpdatedDomainEvent(AccountId, WorkspaceId, DashboardId, Id, updatedBy, updatedAt));
+        RaiseDomainEvent(new DashboardSourceUpdatedDomainEvent(AccountId, WorkspaceId, DashboardId, Id, updatedBy, updatedAt));
     }
 }

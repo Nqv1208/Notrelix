@@ -20,6 +20,20 @@ public class FormSubmission : Entity, IWorkspaceScoped
 
     private FormSubmission() : base() { }
 
+    private static string ValidateJson(string? value)
+    {
+        var json = value ?? "{}";
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FormQuestion_InvalidConfigJson, "Payload must be valid JSON.");
+        }
+        return json;
+    }
+
     public static FormSubmission Create(
         Guid accountId,
         Guid workspaceId,
@@ -47,14 +61,14 @@ public class FormSubmission : Entity, IWorkspaceScoped
             CreatedItemId = createdItemId,
             SubmitterUserId = submitterUserId,
             SubmitterEmail = submitterEmail,
-            PayloadJson = payloadJson ?? "{}",
+            PayloadJson = ValidateJson(payloadJson),
             SourceIp = sourceIp,
             UserAgent = userAgent,
             Status = FormSubmissionStatus.Accepted,
             SubmittedAt = submittedAt
         };
 
-        submission.AddDomainEvent(new FormSubmissionCreatedDomainEvent(accountId, workspaceId, submission.Id, formId, boardId, submitterUserId, submittedAt));
+        submission.RaiseDomainEvent(new FormSubmissionCreatedDomainEvent(accountId, workspaceId, submission.Id, formId, boardId, submitterUserId, submittedAt));
 
         return submission;
     }
@@ -62,39 +76,39 @@ public class FormSubmission : Entity, IWorkspaceScoped
     public void Reject(DateTimeOffset processedAt)
     {
         if (Status != FormSubmissionStatus.Accepted)
-            throw new BusinessRuleException("Only accepted submissions can be rejected.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FormSubmission_CannotRejectUnlessAccepted, "Only accepted submissions can be rejected.");
 
         Status = FormSubmissionStatus.Rejected;
         ProcessedAt = processedAt;
-        AddDomainEvent(new FormSubmissionRejectedDomainEvent(AccountId, WorkspaceId, Id, FormId, processedAt));
+        RaiseDomainEvent(new FormSubmissionRejectedDomainEvent(AccountId, WorkspaceId, Id, FormId, processedAt));
     }
 
     public void MarkAsSpam(DateTimeOffset processedAt)
     {
         if (Status != FormSubmissionStatus.Accepted)
-            throw new BusinessRuleException("Only accepted submissions can be marked as spam.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FormSubmission_CannotMarkSpamUnlessAccepted, "Only accepted submissions can be marked as spam.");
 
         Status = FormSubmissionStatus.Spam;
         ProcessedAt = processedAt;
-        AddDomainEvent(new FormSubmissionMarkedAsSpamDomainEvent(AccountId, WorkspaceId, Id, FormId, processedAt));
+        RaiseDomainEvent(new FormSubmissionMarkedAsSpamDomainEvent(AccountId, WorkspaceId, Id, FormId, processedAt));
     }
 
     public void MarkProcessed(Guid createdItemId, DateTimeOffset processedAt)
     {
         if (Status != FormSubmissionStatus.Accepted)
-            throw new BusinessRuleException("Only accepted submissions can be processed.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FormSubmission_CannotProcessUnlessAccepted, "Only accepted submissions can be processed.");
 
         CreatedItemId = createdItemId;
         ProcessedAt = processedAt;
-        AddDomainEvent(new FormSubmissionProcessedDomainEvent(AccountId, WorkspaceId, Id, FormId, createdItemId, processedAt));
+        RaiseDomainEvent(new FormSubmissionProcessedDomainEvent(AccountId, WorkspaceId, Id, FormId, createdItemId, processedAt));
     }
 
     public void Delete(Guid deletedBy, DateTimeOffset deletedAt)
     {
         if (Status == FormSubmissionStatus.Deleted)
-            throw new BusinessRuleException("Submission is already deleted.");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FormSubmission_AlreadyDeleted, "Submission is already deleted.");
 
         Status = FormSubmissionStatus.Deleted;
-        AddDomainEvent(new FormSubmissionDeletedDomainEvent(AccountId, WorkspaceId, Id, FormId, deletedBy, deletedAt));
+        RaiseDomainEvent(new FormSubmissionDeletedDomainEvent(AccountId, WorkspaceId, Id, FormId, deletedBy, deletedAt));
     }
 }
