@@ -1,4 +1,3 @@
-using Notrelix.Domain.Automation.RulesEngine;
 using System.Text.Json;
 
 namespace Notrelix.Domain.Automation.RulesEngine;

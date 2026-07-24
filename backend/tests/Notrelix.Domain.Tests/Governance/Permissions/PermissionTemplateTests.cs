@@ -16,7 +16,7 @@ public class PermissionTemplateTests
         template.Name.Should().Be("Admin Template");
         template.Status.Should().Be(PermissionTemplateStatus.Active);
         template.IsSystem.Should().BeFalse();
-        template.DomainEvents.Should().ContainSingle(e => e is PermissionTemplateCreatedEvent);
+        template.DomainEvents.Should().ContainSingle(e => e is PermissionTemplateCreatedDomainEvent);
     }
 
     [Fact]

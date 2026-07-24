@@ -1,5 +1,4 @@
 using Notrelix.Domain.Integrations.Calendar.Events;
-using Notrelix.Domain.Common.Exceptions;
 using static Notrelix.Domain.Common.Exceptions.BusinessRuleCodes;
 
 namespace Notrelix.Domain.Integrations.Calendar;

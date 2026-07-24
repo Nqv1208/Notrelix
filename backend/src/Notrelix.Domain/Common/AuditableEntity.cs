@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common.Exceptions;
-
 namespace Notrelix.Domain.Common;
 
 public abstract class AuditableEntity : Entity

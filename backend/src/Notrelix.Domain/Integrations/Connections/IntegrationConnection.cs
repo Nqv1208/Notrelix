@@ -1,5 +1,4 @@
 using Notrelix.Domain.Integrations.Connections.Events;
-using Notrelix.Domain.Common.Exceptions;
 using static Notrelix.Domain.Common.Exceptions.BusinessRuleCodes;
 
 namespace Notrelix.Domain.Integrations.Connections;
@@ -179,7 +178,7 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new IntegrationScopeAddedDomainEvent(AccountId, WorkspaceId, Id, scope, addedBy, occurredAt));
     }
 
-public void RemoveScope(string scope, Guid removedBy, DateTimeOffset occurredAt)
+    public void RemoveScope(string scope, Guid removedBy, DateTimeOffset occurredAt)
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(scope);

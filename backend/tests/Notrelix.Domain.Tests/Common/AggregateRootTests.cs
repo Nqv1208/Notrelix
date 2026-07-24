@@ -10,7 +10,7 @@ public class AggregateRootTests
     {
         public void DoSomething()
         {
-            AddDomainEvent(new TestEvent());
+            RaiseDomainEvent(new TestEvent());
         }
     }
 

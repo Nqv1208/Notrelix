@@ -1,5 +1,4 @@
 using Notrelix.Domain.Documents.Templates.Events;
-using Notrelix.Domain.Common.Exceptions;
 namespace Notrelix.Domain.Documents.Templates;
 
 public class PageTemplate : AggregateRoot

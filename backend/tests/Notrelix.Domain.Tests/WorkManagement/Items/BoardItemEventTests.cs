@@ -99,7 +99,11 @@ public class BoardItemEventTests
     {
         var item = BoardItem.Create(AccountId, WsA, BoardA, GroupA, "Item", FractionalIndex.Create("a0"), Actor, Now);
 
-        var act = () => item.AssignParentItem(item.Id, 0, new Dictionary<Guid, ItemParentSnapshot>(), Actor, Now);
+        var chain = new Dictionary<Guid, ItemParentSnapshot>
+        {
+            [item.Id] = new ItemParentSnapshot(item.Id, BoardA, null)
+        };
+        var act = () => item.AssignParentItem(item.Id, 0, chain, Actor, Now);
         act.Should().Throw<BusinessRuleException>().WithMessage("*own parent*");
     }
 

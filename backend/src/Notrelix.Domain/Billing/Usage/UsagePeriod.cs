@@ -1,4 +1,3 @@
-using Notrelix.Domain.Common.Exceptions;
 using static Notrelix.Domain.Common.Exceptions.BusinessRuleCodes;
 
 namespace Notrelix.Domain.Billing.Usage;

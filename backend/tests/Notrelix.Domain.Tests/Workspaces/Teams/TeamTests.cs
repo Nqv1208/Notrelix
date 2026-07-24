@@ -97,14 +97,17 @@ public class TeamTests
     }
 
     [Fact]
-    public void AddMember_DuplicateActiveMember_ShouldThrow()
+    public void AddMember_DuplicateActiveMember_ShouldBeNoOp()
     {
         var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
         var userId = Guid.NewGuid();
         team.AddMember(userId, TeamMemberRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        team.ClearDomainEvents();
 
-        var act = () => team.AddMember(userId, TeamMemberRole.Lead, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        act.Should().Throw<BusinessRuleException>().WithMessage("*already a member of this team*");
+        team.AddMember(userId, TeamMemberRole.Lead, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        team.Members.Should().HaveCount(1);
+        team.DomainEvents.Should().BeEmpty();
     }
 
     [Fact]

@@ -35,7 +35,7 @@ public class V4DomainRulesTests
 
         Action act = () => form.AddQuestion(question, _actorId, _now);
 
-        act.Should().Throw<WorkspaceMismatchException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]

@@ -5,6 +5,7 @@ global using Xunit;
 global using Notrelix.Domain.Common;
 global using Notrelix.Domain.Common.Exceptions;
 global using Notrelix.Domain.SharedKernel;
+global using Notrelix.Domain.SharedKernel.Ordering;
 global using Notrelix.Domain.Identity.Users;
 global using Notrelix.Domain.Identity.Users.Events;
 global using Notrelix.Domain.Identity.Profiles;

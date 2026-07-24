@@ -1,5 +1,4 @@
 using Notrelix.Domain.Billing.Payments.Events;
-using Notrelix.Domain.Common.Exceptions;
 using static Notrelix.Domain.Common.Exceptions.BusinessRuleCodes;
 
 namespace Notrelix.Domain.Billing.Payments;

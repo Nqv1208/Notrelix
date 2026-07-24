@@ -59,7 +59,7 @@ public class BoardItemTests
         item.ClearDomainEvents();
 
         var newGroup = Guid.NewGuid();
-        var newPosition = FractionalIndex.Create("b0");
+        var newPosition = FractionalIndex.Create("a1");
         var updatedBy = Guid.NewGuid();
 
         var boardGroupRef = new BoardGroupRef(Guid.NewGuid(), item.WorkspaceId, item.BoardId, newGroup);
@@ -123,7 +123,7 @@ public class BoardItemTests
         item.ClearDomainEvents();
 
         var field = BoardField.Create(Guid.NewGuid(), workspaceId, boardId, "Status", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("b0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         var nonExistentOptionId = Guid.NewGuid().ToString();
         var value = FieldValue.Create(JsonValue.Create($"\"{nonExistentOptionId}\""));
 
@@ -141,7 +141,7 @@ public class BoardItemTests
         item.ClearDomainEvents();
 
         var field = BoardField.Create(Guid.NewGuid(), workspaceId, boardId, "Status", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("b0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         var optionId = field.Options.First().Id.ToString();
         var value = FieldValue.Create(JsonValue.Create($"\"{optionId}\""));
 

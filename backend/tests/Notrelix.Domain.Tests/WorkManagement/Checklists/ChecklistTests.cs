@@ -18,11 +18,11 @@ public class ChecklistTests
     {
         var checklist = Checklist.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Checklist", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        checklist.AddItem("Item 1", FractionalIndex.Create("b0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        checklist.AddItem("Item 1", FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         checklist.Items.Should().HaveCount(1);
         checklist.Items.First().Title.Should().Be("Item 1");
-        checklist.Items.First().Position.Should().Be(FractionalIndex.Create("b0"));
+        checklist.Items.First().Position.Should().Be(FractionalIndex.Create("a1"));
     }
 
     [Fact]
@@ -30,9 +30,9 @@ public class ChecklistTests
     {
         var checklist = Checklist.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Checklist", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        checklist.AddItem("First", FractionalIndex.Create("b0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        checklist.AddItem("Between", FractionalIndex.Create("b1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        checklist.AddItem("Last", FractionalIndex.Create("c0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        checklist.AddItem("First", FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        checklist.AddItem("Between", FractionalIndex.Create("a2"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        checklist.AddItem("Last", FractionalIndex.Create("a3"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         checklist.Items.Should().HaveCount(3);
         var ordered = checklist.Items.OrderBy(i => i.Position).ToList();

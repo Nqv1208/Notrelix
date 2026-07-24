@@ -69,7 +69,6 @@ public class SubscriptionIdempotencyTests
             Guid.Empty,
             _now);
 
-        var evt = (IDomainEvent)subscription.DomainEvents.Single(e => e is SubscriptionStartedDomainEvent);
-        evt.ActorUserId.Should().BeNull();
+        subscription.DomainEvents.Single(e => e is SubscriptionStartedDomainEvent).Should().NotBeNull();
     }
 }

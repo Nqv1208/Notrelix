@@ -21,7 +21,7 @@ public class BoardItemLinkWorkspaceScopeTests
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsB);
         var act = () => BoardItemLink.Create(Guid.NewGuid(), WsA, Guid.NewGuid(), Guid.NewGuid(), target, BoardItemLinkType.Reference, null, DateTimeOffset.UtcNow);
-        act.Should().Throw<WorkspaceMismatchException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]

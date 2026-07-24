@@ -112,7 +112,7 @@ public class BlockTests
         var block = Block.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), BlockType.Text, BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         block.ClearDomainEvents();
 
-        var newPosition = FractionalIndex.Create("b0");
+        var newPosition = FractionalIndex.Create("a1");
 
         block.Move(null, newPosition, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -137,7 +137,7 @@ public class BlockTests
         var block = Block.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), BlockType.Text, BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         block.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        var act = () => block.Move(null, FractionalIndex.Create("b0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var act = () => block.Move(null, FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 

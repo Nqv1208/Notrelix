@@ -38,7 +38,7 @@ public class UserTests
         var user = User.Create("test@example.com", "Test User", "hash123", now);
         user.ClearDomainEvents();
 
-        var loginTime = new DateTimeOffset(2026, 6, 11, 10, 0, 0, TimeSpan.Zero);
+        var loginTime = now.AddHours(1);
         user.RecordLogin(loginTime);
 
         user.LastLoginAt.Should().Be(loginTime);
@@ -54,7 +54,7 @@ public class UserTests
         var user = User.Create("test@example.com", "Test User", "hash123", now);
         user.ClearDomainEvents();
 
-        var updateTime = new DateTimeOffset(2026, 6, 11, 12, 0, 0, TimeSpan.Zero);
+        var updateTime = now.AddHours(1);
         user.UpdateProfile("New Name", "avatar.png", updateTime);
 
         user.Name.Should().Be("New Name");

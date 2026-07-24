@@ -21,8 +21,8 @@ public class ShareLinkLifecycleTests
 
         link.IsDeleted.Should().BeTrue();
         link.Version.Should().Be(version + 1);
-        link.DomainEvents.Should().ContainSingle(e => e is ShareLinkSoftDeletedEvent);
-        var evt = (ShareLinkSoftDeletedEvent)link.DomainEvents.Single(e => e is ShareLinkSoftDeletedEvent);
+        link.DomainEvents.Should().ContainSingle(e => e is ShareLinkSoftDeletedDomainEvent);
+        var evt = (ShareLinkSoftDeletedDomainEvent)link.DomainEvents.Single(e => e is ShareLinkSoftDeletedDomainEvent);
         evt.LinkId.Should().Be(link.Id);
         evt.DeletedBy.Should().Be(Actor);
     }
@@ -40,8 +40,8 @@ public class ShareLinkLifecycleTests
 
         link.IsDeleted.Should().BeFalse();
         link.Version.Should().Be(version + 1);
-        link.DomainEvents.Should().ContainSingle(e => e is ShareLinkRestoredEvent);
-        var evt = (ShareLinkRestoredEvent)link.DomainEvents.Single(e => e is ShareLinkRestoredEvent);
+        link.DomainEvents.Should().ContainSingle(e => e is ShareLinkRestoredDomainEvent);
+        var evt = (ShareLinkRestoredDomainEvent)link.DomainEvents.Single(e => e is ShareLinkRestoredDomainEvent);
         evt.LinkId.Should().Be(link.Id);
         evt.RestoredBy.Should().Be(Actor);
     }
@@ -58,7 +58,7 @@ public class ShareLinkLifecycleTests
         link.SoftDelete(Actor, Now);
 
         link.Version.Should().Be(version);
-        link.DomainEvents.Should().NotContain(e => e is ShareLinkSoftDeletedEvent);
+        link.DomainEvents.Should().NotContain(e => e is ShareLinkSoftDeletedDomainEvent);
     }
 
     [Fact]
@@ -72,6 +72,6 @@ public class ShareLinkLifecycleTests
         link.Restore(Actor, Now);
 
         link.Version.Should().Be(version);
-        link.DomainEvents.Should().NotContain(e => e is ShareLinkRestoredEvent);
+        link.DomainEvents.Should().NotContain(e => e is ShareLinkRestoredDomainEvent);
     }
 }

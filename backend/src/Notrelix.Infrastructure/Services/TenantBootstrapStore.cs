@@ -3,7 +3,6 @@ using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Domain.Accounts.Members;
-using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Workspaces.Workspaces;
 

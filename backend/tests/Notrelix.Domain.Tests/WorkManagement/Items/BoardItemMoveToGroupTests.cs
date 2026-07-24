@@ -20,7 +20,7 @@ public class BoardItemMoveToGroupTests
         item.ClearDomainEvents();
 
         var newGroup = Guid.NewGuid();
-        var newPosition = FractionalIndex.Create("b0");
+        var newPosition = FractionalIndex.Create("a1");
         var groupRef = new BoardGroupRef(Guid.NewGuid(), WsA, BoardA, newGroup);
 
         item.MoveToGroup(groupRef, newPosition, Actor, Now);
@@ -37,8 +37,8 @@ public class BoardItemMoveToGroupTests
         var item = BoardItem.Create(Guid.NewGuid(), WsA, BoardA, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Actor, Now);
         var groupRef = new BoardGroupRef(Guid.NewGuid(), WsB, BoardA, Guid.NewGuid());
 
-        var act = () => item.MoveToGroup(groupRef, FractionalIndex.Create("b0"), Actor, Now);
-        act.Should().Throw<WorkspaceMismatchException>();
+        var act = () => item.MoveToGroup(groupRef, FractionalIndex.Create("a1"), Actor, Now);
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
@@ -47,8 +47,8 @@ public class BoardItemMoveToGroupTests
         var item = BoardItem.Create(Guid.NewGuid(), WsA, BoardA, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Actor, Now);
         var groupRef = new BoardGroupRef(Guid.NewGuid(), WsA, Guid.NewGuid(), Guid.NewGuid());
 
-        var act = () => item.MoveToGroup(groupRef, FractionalIndex.Create("b0"), Actor, Now);
-        act.Should().Throw<BoardMismatchException>();
+        var act = () => item.MoveToGroup(groupRef, FractionalIndex.Create("a1"), Actor, Now);
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]

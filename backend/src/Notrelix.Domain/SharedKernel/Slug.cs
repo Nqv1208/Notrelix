@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.SharedKernel;
 

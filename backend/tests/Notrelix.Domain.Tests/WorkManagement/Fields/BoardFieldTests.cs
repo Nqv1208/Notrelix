@@ -31,7 +31,7 @@ public class BoardFieldTests
         var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Select, settings, position, Guid.NewGuid(), DateTimeOffset.UtcNow);
         field.ClearDomainEvents();
 
-        field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("b0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         field.Options.Should().HaveCount(1);
         field.Options.First().Name.Should().Be("Done");
@@ -42,9 +42,9 @@ public class BoardFieldTests
     public void AddOption_ShouldThrow_WhenDuplicateName()
     {
         var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("b0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        Action act = () => field.AddOption("Done", Color.Create("#FF0000"), FractionalIndex.Create("c0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        Action act = () => field.AddOption("Done", Color.Create("#FF0000"), FractionalIndex.Create("a3"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         act.Should().Throw<BusinessRuleException>().WithMessage("*duplicate*");
     }
@@ -53,9 +53,9 @@ public class BoardFieldTests
     public void AddOption_ShouldAllow_WhenSameNameDifferentCase()
     {
         var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("b0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        Action act = () => field.AddOption("done", Color.Create("#FF0000"), FractionalIndex.Create("c0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        Action act = () => field.AddOption("done", Color.Create("#FF0000"), FractionalIndex.Create("a3"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         act.Should().Throw<BusinessRuleException>().WithMessage("*duplicate*");
     }
@@ -65,7 +65,7 @@ public class BoardFieldTests
     {
         var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Title", FieldType.Text, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        Action act = () => field.AddOption("Option", Color.Create("#00FF00"), FractionalIndex.Create("b0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        Action act = () => field.AddOption("Option", Color.Create("#00FF00"), FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         act.Should().Throw<BusinessRuleException>().WithMessage("*cannot add options*");
     }
@@ -74,7 +74,7 @@ public class BoardFieldTests
     public void RemoveOption_ShouldSucceed_AndRaiseEvent()
     {
         var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("b0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         var optionId = field.Options.First().Id;
         field.ClearDomainEvents();
 
@@ -91,14 +91,14 @@ public class BoardFieldTests
 
         Action act = () => field.RemoveOption(Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        act.Should().Throw<NotFoundException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
     public void UpdateOption_ShouldSucceed_AndRaiseEvent()
     {
         var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("b0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         var optionId = field.Options.First().Id;
         field.ClearDomainEvents();
 
@@ -112,8 +112,8 @@ public class BoardFieldTests
     public void UpdateOption_ShouldThrow_WhenDuplicateName()
     {
         var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("b0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        field.AddOption("In Progress", Color.Create("#FFFF00"), FractionalIndex.Create("c0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        field.AddOption("In Progress", Color.Create("#FFFF00"), FractionalIndex.Create("a3"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         var optionId = field.Options.First().Id;
 
         Action act = () => field.UpdateOption(optionId, "In Progress", Color.Create("#FF0000"), Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -125,8 +125,8 @@ public class BoardFieldTests
     public void ReorderOptions_ShouldSucceed_AndRaiseEvent()
     {
         var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        field.AddOption("A", Color.Create("#FF0000"), FractionalIndex.Create("b0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        field.AddOption("B", Color.Create("#00FF00"), FractionalIndex.Create("c0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        field.AddOption("A", Color.Create("#FF0000"), FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        field.AddOption("B", Color.Create("#00FF00"), FractionalIndex.Create("a3"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         var optionA = field.Options.First(o => o.Name == "A");
         var optionB = field.Options.First(o => o.Name == "B");
         field.ClearDomainEvents();
@@ -142,7 +142,7 @@ public class BoardFieldTests
     public void ReorderOptions_ShouldThrow_WhenCountMismatch()
     {
         var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        field.AddOption("A", Color.Create("#FF0000"), FractionalIndex.Create("b0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        field.AddOption("A", Color.Create("#FF0000"), FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         Action act = () => field.ReorderOptions(new List<Guid>(), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -153,12 +153,12 @@ public class BoardFieldTests
     public void ReorderOptions_ShouldThrow_WhenMissingOption()
     {
         var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        field.AddOption("A", Color.Create("#FF0000"), FractionalIndex.Create("b0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        field.AddOption("B", Color.Create("#00FF00"), FractionalIndex.Create("c0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        field.AddOption("A", Color.Create("#FF0000"), FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        field.AddOption("B", Color.Create("#00FF00"), FractionalIndex.Create("a3"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         var optionA = field.Options.First(o => o.Name == "A");
 
         Action act = () => field.ReorderOptions(new List<Guid> { optionA.Id, Guid.NewGuid() }, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        act.Should().Throw<NotFoundException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 }

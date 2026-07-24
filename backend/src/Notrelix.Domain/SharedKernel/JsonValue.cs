@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.SharedKernel;
 

@@ -43,7 +43,7 @@ public class BoardViewTests
     [Fact]
     public void KanbanViewConfig_ShouldReject_EmptyVisibleFieldIds()
     {
-        var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Status, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Status, FieldSettings.Create(JsonValue.Create("{\"transitions\":[]}")), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         Action act = () => KanbanViewConfig.Create(field, new[] { Guid.Empty }, Guid.NewGuid());
 
@@ -53,7 +53,7 @@ public class BoardViewTests
     [Fact]
     public void KanbanViewConfig_ShouldDeduplicate_VisibleFieldIds()
     {
-        var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Status, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Status, FieldSettings.Create(JsonValue.Create("{\"transitions\":[]}")), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         var id1 = Guid.NewGuid();
         var id2 = Guid.NewGuid();
 
@@ -67,7 +67,7 @@ public class BoardViewTests
     [Fact]
     public void KanbanViewConfig_ShouldReject_EmptySwimlaneFieldId()
     {
-        var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Status, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Status, FieldSettings.Create(JsonValue.Create("{\"transitions\":[]}")), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         Action act = () => KanbanViewConfig.Create(field, new[] { Guid.NewGuid() }, Guid.Empty);
 

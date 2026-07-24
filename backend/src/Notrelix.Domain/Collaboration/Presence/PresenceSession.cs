@@ -1,4 +1,3 @@
-using Notrelix.Domain.Collaboration.Presence;
 namespace Notrelix.Domain.Collaboration.Presence;
 
 public class PresenceSession : Entity, IWorkspaceScoped

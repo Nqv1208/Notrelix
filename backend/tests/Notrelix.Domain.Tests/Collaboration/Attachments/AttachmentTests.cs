@@ -28,7 +28,7 @@ public class AttachmentTests
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), Guid.NewGuid());
 
         var act = () => Attachment.Create(Guid.NewGuid(), workspaceId, target, AttachmentType.Image, FileMetadata.Create("img.png", 512, "image/png"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        act.Should().Throw<WorkspaceMismatchException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]

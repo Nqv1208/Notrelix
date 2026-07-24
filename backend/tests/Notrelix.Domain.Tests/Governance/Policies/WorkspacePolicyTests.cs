@@ -44,7 +44,7 @@ public class WorkspacePolicyTests
         policy.ResourcePolicy.AllowPublicSharing.Should().BeTrue();
         policy.SharingPolicy.AllowPublicSharing.Should().BeTrue();
         policy.SharingPolicy.AllowExternalInvite.Should().BeTrue();
-        policy.DomainEvents.Should().ContainSingle(e => e is WorkspacePolicyUpdatedEvent);
+        policy.DomainEvents.Should().ContainSingle(e => e is WorkspacePolicyUpdatedDomainEvent);
     }
 
     [Fact]

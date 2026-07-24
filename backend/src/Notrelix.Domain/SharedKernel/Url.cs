@@ -1,5 +1,3 @@
-using Notrelix.Domain.Common.Exceptions;
-
 namespace Notrelix.Domain.SharedKernel;
 
 public sealed class Url : ValueObject
