@@ -74,7 +74,7 @@ public sealed class AiAgentInstruction : ValueObject
         }
         catch (JsonException ex)
         {
-            throw new BusinessRuleException($"Invalid AiAgentInstruction JSON: {ex.Message}");
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_Agent_InvalidInstructionJson, $"Invalid AiAgentInstruction JSON: {ex.Message}");
         }
     }
 

@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Analytics.Dashboards.Events;
 
+[EventName("analytics.dashboard-renamed")]
 public sealed record DashboardRenamedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

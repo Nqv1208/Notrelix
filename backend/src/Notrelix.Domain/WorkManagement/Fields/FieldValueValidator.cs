@@ -42,12 +42,12 @@ public static class FieldValueValidator
                 case FieldType.LongText:
                 case FieldType.Link:
                     if (kind != JsonValueKind.String)
-                        throw new BusinessRuleException($"Value for field type {type} must be a string.");
+                        throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldValue_InvalidStringFormat, $"Value for field type {type} must be a string.");
                     if (settingsDoc != null && settingsDoc.RootElement.TryGetProperty("maxLength", out var maxLenToken) && maxLenToken.TryGetInt32(out var maxLen))
                     {
                         var strVal = element.GetString() ?? string.Empty;
                         if (strVal.Length > maxLen)
-                            throw new BusinessRuleException($"Text value exceeds maximum length of {maxLen} characters.");
+                            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldValue_TextExceedsMaxLength, $"Text value exceeds maximum length of {maxLen} characters.");
                     }
                     break;
 
@@ -60,12 +60,12 @@ public static class FieldValueValidator
                         if (settingsDoc.RootElement.TryGetProperty("min", out var minToken) && minToken.TryGetDouble(out var minVal))
                         {
                             if (numVal < minVal)
-                                throw new BusinessRuleException($"Number value must be at least {minVal}.");
+                                throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldValue_NumberBelowMin, $"Number value must be at least {minVal}.");
                         }
                         if (settingsDoc.RootElement.TryGetProperty("max", out var maxToken) && maxToken.TryGetDouble(out var maxVal))
                         {
                             if (numVal > maxVal)
-                                throw new BusinessRuleException($"Number value must be at most {maxVal}.");
+                                throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldValue_NumberAboveMax, $"Number value must be at most {maxVal}.");
                         }
                     }
                     break;
@@ -79,17 +79,28 @@ public static class FieldValueValidator
                 case FieldType.Select:
                 case FieldType.Person:
                     if (kind != JsonValueKind.String)
-                        throw new BusinessRuleException($"Value for field type {type} must be a string representing an option ID or user ID.");
+                        throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldValue_InvalidSelectValue, $"Value for field type {type} must be a string representing an option ID or user ID.");
                     break;
 
                 case FieldType.MultiSelect:
                     if (kind != JsonValueKind.Array)
                         throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldValue_InvalidMultiSelectValue, "Value for field type MultiSelect must be an array of option IDs.");
+                    // Validate uniqueness of entries
+                    var seen = new HashSet<string>();
+                    foreach (var item in element.EnumerateArray())
+                    {
+                        var itemId = item.GetString();
+                        if (itemId is not null && !seen.Add(itemId))
+                            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldValue_InvalidMultiSelectValue, "MultiSelect value contains duplicate option IDs.");
+                    }
                     break;
 
                 case FieldType.Date:
                     if (kind != JsonValueKind.String)
                         throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldValue_InvalidDateValue, "Value for field type Date must be a string representation of DateTimeOffset.");
+                    var dateStr = element.GetString();
+                    if (dateStr is not null && !DateTimeOffset.TryParse(dateStr, out _))
+                        throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldValue_InvalidDateValue, $"Value '{dateStr}' is not a valid date.");
                     break;
 
                 default:

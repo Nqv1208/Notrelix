@@ -1,3 +1,7 @@
+using Notrelix.Domain.Integrations.Calendar.Events;
+using Notrelix.Domain.Common.Exceptions;
+using static Notrelix.Domain.Common.Exceptions.BusinessRuleCodes;
+
 namespace Notrelix.Domain.Integrations.Calendar;
 
 public class CalendarEventLink : Entity
@@ -73,6 +77,7 @@ public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
 
         IsActive = true;
         SetAuditOnUpdate(updatedBy, occurredAt);
+        IncrementVersion();
         RaiseDomainEvent(new CalendarIntegrationActivatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
     }
 
@@ -83,6 +88,7 @@ public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
 
         IsActive = false;
         SetAuditOnUpdate(updatedBy, occurredAt);
+        IncrementVersion();
         RaiseDomainEvent(new CalendarIntegrationDeactivatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
     }
 
@@ -90,11 +96,12 @@ public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (!IsActive)
-            throw new DomainException("Cannot change sync direction on a deactivated calendar integration.");
+            throw new BusinessRuleException(Integrations_Calendar_CannotChangeDirectionDeactivated, "Cannot change sync direction on a deactivated calendar integration.");
         if (SyncDirection == newDirection) return;
 
         SyncDirection = newDirection;
         SetAuditOnUpdate(updatedBy, occurredAt);
+        IncrementVersion();
         RaiseDomainEvent(new CalendarIntegrationSyncDirectionChangedDomainEvent(AccountId, WorkspaceId, Id, newDirection, updatedBy, occurredAt));
     }
 
@@ -102,13 +109,13 @@ public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (!IsActive)
-            throw new DomainException("Cannot link events on a deactivated calendar integration.");
+            throw new BusinessRuleException(Integrations_Calendar_CannotLinkEventsDeactivated, "Cannot link events on a deactivated calendar integration.");
         Guard.NotEmpty(internalEventId);
         Guard.NotNullOrWhiteSpace(externalEventId);
 
         if (_eventLinks.Any(l => l.InternalEventId == internalEventId || l.ExternalEventId == externalEventId))
         {
-            throw new DomainException("An event link already exists for this internal or external event.");
+            throw new BusinessRuleException(Integrations_Calendar_EventLinkAlreadyExists, "An event link already exists for this internal or external event.");
         }
 
         _eventLinks.Add(CalendarEventLink.Create(Id, internalEventId, externalEventId, eTag));
@@ -120,8 +127,25 @@ public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
         var link = _eventLinks.FirstOrDefault(l => l.InternalEventId == internalEventId);
         if (link == null)
         {
-            throw new DomainException($"No event link found for internal event '{internalEventId}'.");
+            throw new BusinessRuleException(Integrations_Calendar_EventLinkNotFound, $"No event link found for internal event '{internalEventId}'.");
         }
         link.UpdateETag(newETag);
+    }
+
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        IsActive = false;
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
+        IncrementVersion();
+        RaiseDomainEvent(new CalendarIntegrationDeactivatedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+    }
+
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        if (!MarkRestored(restoredBy, restoredAt)) return;
+        IncrementVersion();
+        RaiseDomainEvent(new CalendarIntegrationActivatedDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

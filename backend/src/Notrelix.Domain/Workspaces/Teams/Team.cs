@@ -1,3 +1,5 @@
+using Notrelix.Domain.Workspaces.Teams.Events;
+using Notrelix.Domain.Workspaces.Rules;
 namespace Notrelix.Domain.Workspaces.Teams;
 
 public class Team : AggregateRoot, IWorkspaceScoped
@@ -101,6 +103,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
 
         if (Status != TeamStatus.Archived)
             throw new BusinessRuleException(
+                BusinessRuleCodes.Workspaces_Team_CannotUnarchiveNonArchived,
                 "Only an archived team can be unarchived.");
 
         Status = TeamStatus.Active;
@@ -121,8 +124,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
         var existing = _members.FirstOrDefault(m => m.UserId == userId);
         if (existing != null)
         {
-            if (existing.Status == TeamMemberStatus.Active)
-                throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Team_UserAlreadyMember, "User is already a member of this team.");
+            if (existing.Status == TeamMemberStatus.Active) return;
 
             existing.Reactivate(role, workspaceMemberId, addedBy, addedAt);
         }
@@ -187,23 +189,23 @@ public class Team : AggregateRoot, IWorkspaceScoped
             AccountId, WorkspaceId, Id, userId, oldRole, newRole, updatedBy, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         Status = TeamStatus.SoftDeleted;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
         RaiseDomainEvent(new TeamSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         Status = TeamStatus.Active;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
         RaiseDomainEvent(new TeamRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));

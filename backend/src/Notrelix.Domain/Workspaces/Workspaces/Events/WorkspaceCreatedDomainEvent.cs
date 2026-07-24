@@ -1,8 +1,8 @@
 namespace Notrelix.Domain.Workspaces.Workspaces.Events;
 
-public sealed record WorkspaceCreatedDomainEvent : WorkspaceRootDomainEvent
+[EventName("workspaces.workspace-created")]
+public sealed record WorkspaceCreatedDomainEvent : WorkspaceScopedDomainEvent
 {
-    public Guid AccountId { get; }
     public string Name { get; }
     public string Slug { get; }
     public Guid CreatedBy { get; }
@@ -14,9 +14,8 @@ public sealed record WorkspaceCreatedDomainEvent : WorkspaceRootDomainEvent
         string slug,
         Guid createdBy,
         DateTimeOffset occurredAt)
-        : base(workspaceId, occurredAt)
+        : base(accountId, workspaceId, occurredAt)
     {
-        AccountId = accountId;
         Name = name;
         Slug = slug;
         CreatedBy = createdBy;

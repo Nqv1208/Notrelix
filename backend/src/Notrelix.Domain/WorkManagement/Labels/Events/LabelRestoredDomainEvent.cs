@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Labels.Events;
 
+[EventName("work-management.label-restored")]
 public sealed record LabelRestoredDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

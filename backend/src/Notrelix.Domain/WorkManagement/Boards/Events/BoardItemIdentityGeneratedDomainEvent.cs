@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Boards.Events;
 
+[EventName("work-management.board-item-identity-generated")]
 public sealed record BoardItemIdentityGeneratedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

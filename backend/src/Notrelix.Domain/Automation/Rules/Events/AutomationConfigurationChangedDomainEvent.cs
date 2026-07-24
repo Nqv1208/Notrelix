@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Automation.Rules.Events;
 
+[EventName("automation.automation-configuration-changed")]
 public sealed record AutomationConfigurationChangedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

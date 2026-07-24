@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.Governance.Templates.Events;
 
-public sealed record PermissionTemplateAppliedEvent(
+[EventName("governance.permission-template-applied")]
+public sealed record PermissionTemplateAppliedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
     Guid TemplateId,

@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Views.Events;
 
+[EventName("work-management.board-view-archived")]
 public sealed record BoardViewArchivedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

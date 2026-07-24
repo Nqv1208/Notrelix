@@ -230,12 +230,11 @@ public class User : AggregateRoot
         {
             if (existing.ProviderId != providerId.Trim())
             {
-                throw new BusinessRuleException($"Provider {provider} is already linked with a different account.");
+                throw new BusinessRuleException(BusinessRuleCodes.Identity_User_OAuthProviderAlreadyLinked, $"Provider {provider} is already linked with a different account.");
             }
-            if (token != null)
-            {
-                existing.UpdateToken(token);
-            }
+            // No-op: same provider, same providerId, no token update needed
+            if (token == null) return;
+            existing.UpdateToken(token);
         }
         else
         {
@@ -267,7 +266,7 @@ public class User : AggregateRoot
         var existing = _oauthAccounts.FirstOrDefault(x => x.Provider == provider);
         if (existing == null)
         {
-            throw new BusinessRuleException($"No OAuth account linked for provider {provider}.");
+            throw new BusinessRuleException(BusinessRuleCodes.Identity_User_NoOAuthAccountForProvider, $"No OAuth account linked for provider {provider}.");
         }
 
         existing.UpdateToken(newToken);
@@ -276,19 +275,19 @@ public class User : AggregateRoot
         RaiseDomainEvent(new OAuthTokenReferenceRotatedDomainEvent(Id, provider, rotatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
         RaiseDomainEvent(new UserSoftDeletedDomainEvent(Id, deletedBy, deletedAt, reason));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
         RaiseDomainEvent(new UserRestoredDomainEvent(Id, restoredBy, restoredAt));

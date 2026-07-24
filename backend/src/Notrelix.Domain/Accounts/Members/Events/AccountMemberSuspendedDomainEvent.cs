@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Accounts.Members.Events;
 
+[EventName("accounts.account-member-suspended")]
 public sealed record AccountMemberSuspendedDomainEvent(
     Guid AccountId,
     Guid MemberId,

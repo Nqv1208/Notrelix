@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Billing.Usage.Events;
 
+[EventName("billing.usage-metric-restored")]
 public sealed record UsageMetricRestoredDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

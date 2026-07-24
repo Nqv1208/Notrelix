@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.Billing.Usage.Events;
 
-public record QuotaExceededDomainEvent : WorkspaceScopedDomainEvent
+[EventName("billing.quota-exceeded")]
+public sealed record QuotaExceededDomainEvent : WorkspaceScopedDomainEvent
 {
     public string FeatureCode { get; }
     public decimal Limit { get; }

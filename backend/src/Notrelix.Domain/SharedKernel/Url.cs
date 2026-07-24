@@ -1,8 +1,10 @@
+using Notrelix.Domain.Common.Exceptions;
+
 namespace Notrelix.Domain.SharedKernel;
 
 public sealed class Url : ValueObject
 {
-    public string Value { get; }
+    public string Value { get; } = null!;
 
     private Url() { }
     private Url(string value)
@@ -15,11 +17,18 @@ public sealed class Url : ValueObject
         Guard.NotNullOrWhiteSpace(value);
         value = value.Trim();
 
-        Guard.Assert(Uri.TryCreate(value, UriKind.Absolute, out var uriResult)
-                     && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps),
-            $"'{value}' is not a valid HTTP or HTTPS URL.");
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uriResult)
+            || (uriResult.Scheme != Uri.UriSchemeHttp && uriResult.Scheme != Uri.UriSchemeHttps))
+            throw new BusinessRuleException(BusinessRuleCodes.SharedKernel_Url_InvalidFormat, $"'{value}' is not a valid HTTP or HTTPS URL.");
 
-        return new Url(value);
+        // Normalize: scheme and host to lowercase for deterministic equality.
+        var builder = new UriBuilder(uriResult)
+        {
+            Scheme = uriResult.Scheme.ToLowerInvariant(),
+            Host = uriResult.Host.ToLowerInvariant()
+        };
+
+        return new Url(builder.Uri.ToString());
     }
 
     protected override IEnumerable<object?> GetEqualityComponents()

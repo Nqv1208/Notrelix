@@ -1,3 +1,5 @@
+using Notrelix.Domain.Accounts.Members.Events;
+using Notrelix.Domain.Accounts.Rules;
 namespace Notrelix.Domain.Accounts.Members;
 
 public class AccountMember : AggregateRoot, IAccountScoped
@@ -80,14 +82,14 @@ public class AccountMember : AggregateRoot, IAccountScoped
         RaiseDomainEvent(new AccountMemberActivatedDomainEvent(AccountId, Id, UserId, updatedBy, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
 
         if (IsDeleted) return;
 
         Status = AccountMemberStatus.Removed;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
         RaiseDomainEvent(new AccountMemberRemovedDomainEvent(AccountId, Id, UserId, deletedBy, deletedAt));
@@ -103,14 +105,14 @@ public class AccountMember : AggregateRoot, IAccountScoped
         SoftDelete(removedBy, removedAt, reason);
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
 
         Guard.NotEmpty(restoredBy);
 
         Status = AccountMemberStatus.Active;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
         RaiseDomainEvent(new AccountMemberRestoredDomainEvent(AccountId, Id, UserId, restoredBy, restoredAt));

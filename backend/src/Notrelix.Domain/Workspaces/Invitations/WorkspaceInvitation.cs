@@ -1,3 +1,5 @@
+using Notrelix.Domain.Workspaces.Invitations.Events;
+using Notrelix.Domain.Workspaces.Members;
 namespace Notrelix.Domain.Workspaces.Invitations;
 
 public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
@@ -27,6 +29,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         TimeSpan? expiry = null)
     {
         Guard.NotEmpty(workspaceId);
+        Guard.NotEmpty(accountId);
         Guard.NotNullOrWhiteSpace(email);
         Guard.NotNull(token);
         Guard.NotEmpty(invitedBy);
@@ -35,6 +38,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
 
         if (role == WorkspaceRole.Owner)
             throw new BusinessRuleException(
+                BusinessRuleCodes.Workspaces_Invitation_CannotInviteAsOwner,
                 "Cannot invite a user as workspace owner.");
 
         if (expiry is not null && expiry <= TimeSpan.Zero)
@@ -65,6 +69,8 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotEmpty(acceptedUserId);
+
+        if (Status == WorkspaceInvitationStatus.Accepted) return;
 
         if (Status != WorkspaceInvitationStatus.Pending)
             throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Invitation_NotPending, "Invitation is not pending.");
@@ -106,6 +112,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
 
         if (newRole == WorkspaceRole.Owner)
             throw new BusinessRuleException(
+                BusinessRuleCodes.Workspaces_Invitation_CannotInviteAsOwner,
                 "Cannot invite a user as workspace owner.");
 
         if (Role == newRole) return;
@@ -163,6 +170,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
             not WorkspaceInvitationStatus.Expired)
         {
             throw new BusinessRuleException(
+                BusinessRuleCodes.Workspaces_Invitation_CannotResendNonPendingExpired,
                 "Only pending or expired invitations can be resent.");
         }
 
@@ -177,5 +185,19 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
 
         RaiseDomainEvent(new WorkspaceInvitationResentDomainEvent(
             AccountId, Id, WorkspaceId, resentBy, resentAt));
+    }
+
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+    }
+
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!MarkRestored(restoredBy, restoredAt)) return;
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
     }
 }

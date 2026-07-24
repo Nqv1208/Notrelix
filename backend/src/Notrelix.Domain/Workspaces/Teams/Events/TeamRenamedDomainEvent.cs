@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Workspaces.Teams.Events;
 
+[EventName("workspaces.team-renamed")]
 public sealed record TeamRenamedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

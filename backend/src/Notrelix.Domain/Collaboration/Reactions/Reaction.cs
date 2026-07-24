@@ -1,3 +1,4 @@
+using Notrelix.Domain.Collaboration.Reactions.Events;
 namespace Notrelix.Domain.Collaboration.Reactions;
 
 public class Reaction : AggregateRoot, IWorkspaceScoped
@@ -19,7 +20,7 @@ public class Reaction : AggregateRoot, IWorkspaceScoped
         Guard.NotNull(emoji);
 
         if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
-            throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
+            throw new BusinessRuleException(BusinessRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{workspaceId}', got '{target.WorkspaceId.Value}'.");
 
         if (checkDuplicate != null && checkDuplicate(userId))
             throw new BusinessRuleException(BusinessRuleCodes.Collaboration_Reaction_DuplicateReaction, "User has already reacted with this emoji to this target.");
@@ -40,6 +41,7 @@ public class Reaction : AggregateRoot, IWorkspaceScoped
 
     public void Remove(DateTimeOffset removedAt)
     {
+        EnsureNotDeleted();
         RaiseDomainEvent(new ReactionRemovedDomainEvent(AccountId, WorkspaceId, Id, Target, UserId, Emoji, removedAt));
     }
 }

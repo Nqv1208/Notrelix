@@ -1,3 +1,4 @@
+using Notrelix.Domain.Governance.Templates.Events;
 namespace Notrelix.Domain.Governance.Templates;
 
 public class PermissionTemplate : AggregateRoot
@@ -26,7 +27,8 @@ public class PermissionTemplate : AggregateRoot
             Status = PermissionTemplateStatus.Active
         };
 
-        template.RaiseDomainEvent(new PermissionTemplateCreatedEvent(template.Id, template.Name, createdBy, createdAt));
+        template.SetAuditOnCreate(createdBy, createdAt);
+        template.RaiseDomainEvent(new PermissionTemplateCreatedDomainEvent(template.Id, template.Name, createdBy, createdAt));
         return template;
     }
 }

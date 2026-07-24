@@ -1,3 +1,4 @@
+using Notrelix.Domain.Collaboration.Attachments.Events;
 namespace Notrelix.Domain.Collaboration.Attachments;
 
 public class Attachment : AggregateRoot, IWorkspaceScoped
@@ -18,7 +19,7 @@ public class Attachment : AggregateRoot, IWorkspaceScoped
         Guard.NotNull(metadata);
 
         if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
-            throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
+            throw new BusinessRuleException(BusinessRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{workspaceId}', got '{target.WorkspaceId.Value}'.");
 
         var attachment = new Attachment
         {
@@ -34,19 +35,19 @@ public class Attachment : AggregateRoot, IWorkspaceScoped
         return attachment;
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
         RaiseDomainEvent(new AttachmentDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
         RaiseDomainEvent(new AttachmentRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));

@@ -1,3 +1,7 @@
+using Notrelix.Domain.WorkManagement.Items.Events;
+using Notrelix.Domain.WorkManagement.BoardGroups;
+using Notrelix.Domain.WorkManagement.Boards;
+using Notrelix.Domain.WorkManagement.Fields;
 using System.Text.Json;
 
 namespace Notrelix.Domain.WorkManagement.Items;
@@ -74,6 +78,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
     public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        EnsureNotArchived();
         Guard.NotNullOrWhiteSpace(name);
         Guard.MaxLength(name, 500);
 
@@ -90,14 +95,15 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
     public void MoveToGroup(BoardGroupRef group, FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        EnsureNotArchived();
         Guard.NotNull(group);
         Guard.NotNull(newPosition);
 
         if (group.WorkspaceId != WorkspaceId)
-            throw new WorkspaceMismatchException(WorkspaceId, group.WorkspaceId);
+            throw new BusinessRuleException(BusinessRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{WorkspaceId}', got '{group.WorkspaceId}'.");
 
         if (group.BoardId != BoardId)
-            throw new BoardMismatchException(BoardId, group.BoardId);
+            throw new BusinessRuleException(BusinessRuleCodes.Common_BoardScopeMismatch, $"Board scope mismatch. Expected '{BoardId}', got '{group.BoardId}'.");
 
         var oldGroupId = GroupId;
         if (GroupId == group.GroupId && Position == newPosition) return;
@@ -112,6 +118,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
     public void UpdateFieldValue(BoardField field, FieldValue newValue, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        EnsureNotArchived();
         Guard.NotNull(field);
         Guard.NotNull(newValue);
 
@@ -127,13 +134,16 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         if (field.IsSystem)
             throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_CannotUpdateSystem, "Cannot update a system field.");
 
+        if (field.Type is FieldType.Formula or FieldType.Rollup)
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_CannotWriteComputed, "Cannot manually write to a computed field (Formula or Rollup).");
+
         FieldValueValidator.Validate(newValue, field.Type, field.Settings);
 
         if (field.Type is FieldType.Select or FieldType.Status)
         {
             var optionId = newValue.Data.Value.Trim('"');
             if (!field.Options.Any(o => o.Id.ToString() == optionId))
-                throw new BusinessRuleException($"Value '{optionId}' is not a valid option for field '{field.Name}'.");
+                throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_InvalidOptionValue, $"Value '{optionId}' is not a valid option for field '{field.Name}'.");
         }
         else if (field.Type == FieldType.MultiSelect)
         {
@@ -170,6 +180,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
     public void AssignParentItem(Guid? parentItemId, int itemLevel, IReadOnlyDictionary<Guid, ItemParentSnapshot> parentChain, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        EnsureNotArchived();
 
         if (parentItemId.HasValue)
         {
@@ -182,6 +193,8 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
 
         BoardItemRules.EnsureNoCycle(Id, parentItemId, parentChain);
 
+        if (ParentItemId == parentItemId && ItemLevel == itemLevel) return;
+
         ParentItemId = parentItemId;
         ItemLevel = itemLevel;
         SetAuditOnUpdate(updatedBy, updatedAt);
@@ -192,6 +205,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
     public void SetTimeline(DateTimeOffset? startedAt, DateTimeOffset? dueAt, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        EnsureNotArchived();
         if (startedAt != null && dueAt != null && dueAt < startedAt)
             throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Item_DueDateMustBeAfterStartDate, "Due date must be after start date.");
 
@@ -206,6 +220,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
     public void Complete(DateTimeOffset? completedAt, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        EnsureNotArchived();
         if (CompletedAt == completedAt) return;
         CompletedAt = completedAt;
         SetAuditOnUpdate(updatedBy, updatedAt);
@@ -213,10 +228,10 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardItemCompletedDomainEvent(AccountId, WorkspaceId, BoardId, Id, completedAt, updatedBy, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
@@ -242,12 +257,20 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardItemUnarchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, unarchivedBy, unarchivedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemRestoredDomainEvent(AccountId, WorkspaceId, Id, BoardId, restoredBy, restoredAt));
+    }
+
+    private void EnsureNotArchived()
+    {
+        if (IsArchived)
+            throw new BusinessRuleException(
+                BusinessRuleCodes.WorkManagement_Item_CannotModifyArchived,
+                "Cannot modify an archived board item.");
     }
 }

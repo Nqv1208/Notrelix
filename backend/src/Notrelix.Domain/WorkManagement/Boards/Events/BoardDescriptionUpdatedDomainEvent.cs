@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Boards.Events;
 
+[EventName("work-management.board-description-updated")]
 public sealed record BoardDescriptionUpdatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

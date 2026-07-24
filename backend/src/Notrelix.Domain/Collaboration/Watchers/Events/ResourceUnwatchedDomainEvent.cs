@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Collaboration.Watchers.Events;
 
+[EventName("collaboration.resource-unwatched")]
 public sealed record ResourceUnwatchedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

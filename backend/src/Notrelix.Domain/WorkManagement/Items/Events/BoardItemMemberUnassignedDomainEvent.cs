@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Items.Events;
 
+[EventName("work-management.board-item-member-unassigned")]
 public sealed record BoardItemMemberUnassignedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

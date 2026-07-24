@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Integrations.Connections.Events;
 
+[EventName("integrations.integration-secret-rotated")]
 public sealed record IntegrationSecretRotatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

@@ -1,3 +1,4 @@
+using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Forms.Events;
 
 namespace Notrelix.Domain.WorkManagement.Forms;
@@ -65,7 +66,7 @@ public class Form : AggregateRoot, IWorkspaceScoped
         };
 
         form.SetAuditOnCreate(createdBy, createdAt);
-        form.RaiseDomainEvent(new FormCreatedDomainEvent(accountId, workspaceId, form.Id, boardId, form.Name, createdBy, createdAt));
+        form.RaiseDomainEvent(new FormCreatedDomainEvent(accountId, workspaceId, form.Id, boardId, form.Name, createdAt));
         return form;
     }
 
@@ -97,7 +98,7 @@ public class Form : AggregateRoot, IWorkspaceScoped
         Status = FormStatus.Published;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        RaiseDomainEvent(new FormPublishedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
+        RaiseDomainEvent(new FormPublishedDomainEvent(AccountId, WorkspaceId, Id, updatedAt));
     }
 
     public void Close(Guid updatedBy, DateTimeOffset updatedAt)
@@ -108,7 +109,7 @@ public class Form : AggregateRoot, IWorkspaceScoped
         Status = FormStatus.Closed;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        RaiseDomainEvent(new FormClosedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
+        RaiseDomainEvent(new FormClosedDomainEvent(AccountId, WorkspaceId, Id, updatedAt));
     }
 
     public void EnsureAcceptsSubmissions()
@@ -129,7 +130,7 @@ public class Form : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Form_CannotAddQuestionToClosed, "Cannot add a question to a closed form.");
 
         if (question.WorkspaceId != WorkspaceId)
-            throw new WorkspaceMismatchException(WorkspaceId, question.WorkspaceId);
+            throw new BusinessRuleException(BusinessRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{WorkspaceId}', got '{question.WorkspaceId}'.");
 
         if (_questions.Any(q => q.QuestionKey.Equals(question.QuestionKey, StringComparison.OrdinalIgnoreCase)))
             throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Form_DuplicateQuestionKey, $"A question with key '{question.QuestionKey}' already exists.");
@@ -137,22 +138,22 @@ public class Form : AggregateRoot, IWorkspaceScoped
         _questions.Add(question);
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        RaiseDomainEvent(new FormQuestionAddedDomainEvent(AccountId, WorkspaceId, Id, question.QuestionKey, updatedBy, updatedAt));
+        RaiseDomainEvent(new FormQuestionAddedDomainEvent(AccountId, WorkspaceId, Id, question.QuestionKey, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
         RaiseDomainEvent(new FormSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
         RaiseDomainEvent(new FormRestoredDomainEvent(AccountId, WorkspaceId, Id, BoardId, restoredBy, restoredAt));

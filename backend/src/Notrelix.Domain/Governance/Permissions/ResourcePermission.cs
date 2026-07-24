@@ -1,3 +1,4 @@
+using Notrelix.Domain.Governance.Permissions.Events;
 namespace Notrelix.Domain.Governance.Permissions;
 
 public class ResourcePermission : AggregateRoot, IWorkspaceScoped
@@ -73,10 +74,10 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new ResourcePermissionLevelChangedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, oldLevel, newLevel, updatedBy, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
         if (!_suppressSoftDeleteEvent)
@@ -93,10 +94,10 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new ResourcePermissionRevokedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, revokedBy, revokedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
         RaiseDomainEvent(new ResourcePermissionRestoredDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, restoredBy, restoredAt));

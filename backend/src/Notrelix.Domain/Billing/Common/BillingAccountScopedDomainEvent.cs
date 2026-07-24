@@ -1,4 +1,4 @@
-namespace Notrelix.Domain.Common;
+namespace Notrelix.Domain.Billing.Common;
 
 public abstract record BillingAccountScopedDomainEvent : DomainEvent, IAccountScoped
 {
@@ -11,6 +11,8 @@ public abstract record BillingAccountScopedDomainEvent : DomainEvent, IAccountSc
         DateTimeOffset occurredAt)
         : base(occurredAt)
     {
+        if (accountId == Guid.Empty)
+            throw new ArgumentException("Account id cannot be empty.", nameof(accountId));
         AccountId = accountId;
         WorkspaceId = workspaceId;
     }

@@ -1,3 +1,4 @@
+using Notrelix.Domain.Automation.RulesEngine;
 using System.Text.Json;
 
 namespace Notrelix.Domain.Automation.RulesEngine;
@@ -11,7 +12,7 @@ public sealed class AutomationTriggerDefinition : ValueObject
         "ItemAssigned"
     };
 
-    public string Type { get; private set; }
+    public string Type { get; private set; } = null!;
     public string? Configuration { get; private set; }
 
     private AutomationTriggerDefinition() { }
@@ -25,7 +26,8 @@ public sealed class AutomationTriggerDefinition : ValueObject
     public static AutomationTriggerDefinition Create(string type, string? configuration = null)
     {
         Guard.NotNullOrWhiteSpace(type);
-        Guard.Assert(ValidTriggers.Contains(type), $"Invalid trigger type '{type}'. Valid types: {string.Join(", ", ValidTriggers)}");
+        if (!ValidTriggers.Contains(type))
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_Trigger_InvalidType, $"Invalid trigger type '{type}'. Valid types: {string.Join(", ", ValidTriggers)}");
 
         if (configuration is not null)
         {
@@ -37,7 +39,7 @@ public sealed class AutomationTriggerDefinition : ValueObject
             }
             catch (JsonException ex)
             {
-                throw new BusinessRuleException($"Invalid trigger configuration JSON: {ex.Message}");
+                throw new BusinessRuleException(BusinessRuleCodes.Automation_Trigger_InvalidConfigJson, $"Invalid trigger configuration JSON: {ex.Message}");
             }
         }
 

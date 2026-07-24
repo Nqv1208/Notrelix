@@ -1,3 +1,4 @@
+using Notrelix.Domain.Governance.ShareLinks.Events;
 namespace Notrelix.Domain.Governance.ShareLinks;
 
 public class ShareLink : AggregateRoot, IWorkspaceScoped
@@ -45,7 +46,7 @@ public class ShareLink : AggregateRoot, IWorkspaceScoped
         };
 
         link.SetAuditOnCreate(createdBy, createdAt);
-        link.RaiseDomainEvent(new ShareLinkCreatedEvent(accountId, workspaceId, link.Id, resourceType, resourceId, createdBy, createdAt));
+        link.RaiseDomainEvent(new ShareLinkCreatedDomainEvent(accountId, workspaceId, link.Id, resourceType, resourceId, createdBy, createdAt));
 
         return link;
     }
@@ -65,11 +66,12 @@ public class ShareLink : AggregateRoot, IWorkspaceScoped
         Status = ShareLinkStatus.Disabled;
         SetAuditOnUpdate(disabledBy, disabledAt);
         IncrementVersion();
-        RaiseDomainEvent(new ShareLinkDisabledEvent(AccountId, WorkspaceId, Id, disabledBy, disabledAt));
+        RaiseDomainEvent(new ShareLinkDisabledDomainEvent(AccountId, WorkspaceId, Id, disabledBy, disabledAt));
     }
 
     public void RotateTokenHash(ShareLinkTokenHash newHash, Guid rotatedBy, DateTimeOffset rotatedAt)
     {
+        EnsureNotDeleted();
         Guard.NotNull(newHash);
 
         TokenHash = newHash;
@@ -77,34 +79,35 @@ public class ShareLink : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(rotatedBy, rotatedAt);
         IncrementVersion();
 
-        RaiseDomainEvent(new ShareLinkRotatedEvent(AccountId, WorkspaceId, Id, rotatedBy, rotatedAt));
+        RaiseDomainEvent(new ShareLinkRotatedDomainEvent(AccountId, WorkspaceId, Id, rotatedBy, rotatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        RaiseDomainEvent(new ShareLinkSoftDeletedEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new ShareLinkSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        RaiseDomainEvent(new ShareLinkRestoredEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new ShareLinkRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 
     public void Expire(DateTimeOffset expiredAt)
     {
+        EnsureNotDeleted();
         if (Status != ShareLinkStatus.Active) return;
 
         Status = ShareLinkStatus.Expired;
         SetAuditOnUpdate(null, expiredAt);
         IncrementVersion();
-        RaiseDomainEvent(new ShareLinkExpiredEvent(AccountId, WorkspaceId, Id, expiredAt));
+        RaiseDomainEvent(new ShareLinkExpiredDomainEvent(AccountId, WorkspaceId, Id, expiredAt));
     }
 }

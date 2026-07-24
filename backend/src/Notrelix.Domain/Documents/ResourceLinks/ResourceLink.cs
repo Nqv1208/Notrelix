@@ -1,3 +1,4 @@
+using Notrelix.Domain.Documents.ResourceLinks.Events;
 namespace Notrelix.Domain.Documents.ResourceLinks;
 
 public class ResourceLink : AggregateRoot, IWorkspaceScoped
@@ -37,12 +38,21 @@ public class ResourceLink : AggregateRoot, IWorkspaceScoped
         return link;
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
         RaiseDomainEvent(new ResourceLinkDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
+    }
+
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        if (!MarkRestored(restoredBy, restoredAt)) return;
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        RaiseDomainEvent(new ResourceLinkRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

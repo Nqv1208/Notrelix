@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Collaboration.Attachments.Events;
 
+[EventName("collaboration.attachment-created")]
 public sealed record AttachmentCreatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

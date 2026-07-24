@@ -68,17 +68,17 @@ public class AutomationTemplate : AggregateRoot
         RaiseDomainEvent(new Events.AutomationTemplateArchivedDomainEvent(Id, archivedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         EnsureNotDeleted();
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         RaiseDomainEvent(new Events.AutomationTemplateSoftDeletedDomainEvent(Id, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         RaiseDomainEvent(new Events.AutomationTemplateRestoredDomainEvent(Id, restoredAt));
     }
 }

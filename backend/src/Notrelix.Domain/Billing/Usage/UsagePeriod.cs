@@ -1,3 +1,6 @@
+using Notrelix.Domain.Common.Exceptions;
+using static Notrelix.Domain.Common.Exceptions.BusinessRuleCodes;
+
 namespace Notrelix.Domain.Billing.Usage;
 
 public sealed class UsagePeriod : ValueObject
@@ -14,7 +17,7 @@ public sealed class UsagePeriod : ValueObject
 
     public static UsagePeriod Create(DateTimeOffset start, DateTimeOffset end)
     {
-        if (start >= end) throw new DomainException("Usage period start must be before end.");
+        if (start >= end) throw new BusinessRuleException(Billing_Usage_StartMustBeBeforeEnd, "Usage period start must be before end.");
         return new UsagePeriod(start, end);
     }
 

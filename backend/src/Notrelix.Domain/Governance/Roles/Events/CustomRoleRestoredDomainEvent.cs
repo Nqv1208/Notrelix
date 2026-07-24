@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Governance.Roles.Events;
 
+[EventName("governance.custom-role-restored")]
 public sealed record CustomRoleRestoredDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

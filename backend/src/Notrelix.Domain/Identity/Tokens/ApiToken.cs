@@ -47,7 +47,7 @@ public class ApiToken : AggregateRoot, IWorkspaceScoped
         };
 
         token.SetAuditOnCreate(createdBy, createdAt);
-        token.RaiseDomainEvent(new ApiTokenCreatedDomainEvent(accountId, workspaceId, token.Id, name, createdBy, createdAt));
+        token.RaiseDomainEvent(new ApiTokenCreatedDomainEvent(accountId, workspaceId, token.Id, name, createdAt));
         return token;
     }
 
@@ -60,41 +60,43 @@ public class ApiToken : AggregateRoot, IWorkspaceScoped
         RevokedAt = revokedAt;
         RevokedBy = revokedBy;
         SetAuditOnUpdate(revokedBy, revokedAt);
-        RaiseDomainEvent(new ApiTokenRevokedDomainEvent(AccountId, WorkspaceId, Id, revokedBy, revokedAt));
+        RaiseDomainEvent(new ApiTokenRevokedDomainEvent(AccountId, WorkspaceId, Id, revokedAt));
         IncrementVersion();
     }
 
     public void RecordUse(DateTimeOffset usedAt)
     {
         EnsureNotDeleted();
-        if (ExpiresAt.HasValue && usedAt > ExpiresAt.Value)
-        {
-            Status = ApiTokenStatus.Expired;
-            throw new BusinessRuleException(BusinessRuleCodes.Identity_ApiToken_CannotUseExpired, "Cannot use an expired API token.");
-        }
 
         if (Status != ApiTokenStatus.Active)
             throw new BusinessRuleException(BusinessRuleCodes.Identity_ApiToken_CannotUseInactive, "Cannot use an inactive API token.");
+
+        if (ExpiresAt.HasValue && usedAt > ExpiresAt.Value)
+        {
+            Status = ApiTokenStatus.Expired;
+            IncrementVersion();
+            throw new BusinessRuleException(BusinessRuleCodes.Identity_ApiToken_CannotUseExpired, "Cannot use an expired API token.");
+        }
 
         LastUsedAt = usedAt;
         IncrementVersion();
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        RaiseDomainEvent(new ApiTokenSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new ApiTokenSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        RaiseDomainEvent(new ApiTokenRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new ApiTokenRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredAt));
     }
 }

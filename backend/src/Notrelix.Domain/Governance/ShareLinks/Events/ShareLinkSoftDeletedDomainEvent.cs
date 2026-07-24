@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.Governance.ShareLinks.Events;
 
-public sealed record ShareLinkSoftDeletedEvent(
+[EventName("governance.share-link-soft-deleted")]
+public sealed record ShareLinkSoftDeletedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
     Guid LinkId,

@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Documents.Pages.Events;
 
+[EventName("documents.page-created")]
 public sealed record PageCreatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.Governance.Permissions.Events;
 
-public record PermissionRuleCreatedDomainEvent : WorkspaceScopedDomainEvent
+[EventName("governance.permission-rule-created")]
+public sealed record PermissionRuleCreatedDomainEvent : WorkspaceScopedDomainEvent
 {
     public Guid RuleId { get; }
     public string Action { get; }

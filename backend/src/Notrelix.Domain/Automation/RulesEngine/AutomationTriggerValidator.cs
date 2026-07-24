@@ -38,7 +38,7 @@ public static class AutomationTriggerValidator
         }
         catch (JsonException ex)
         {
-            throw new BusinessRuleException($"Invalid trigger configuration JSON: {ex.Message}");
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_Trigger_InvalidConfigJson, $"Invalid trigger configuration JSON: {ex.Message}");
         }
     }
 
@@ -57,7 +57,7 @@ public static class AutomationTriggerValidator
         }
         catch (JsonException ex)
         {
-            throw new BusinessRuleException($"Invalid ScheduleTrigger configuration JSON: {ex.Message}");
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_TriggerValidator_InvalidScheduleTriggerJson, $"Invalid ScheduleTrigger configuration JSON: {ex.Message}");
         }
     }
 
@@ -76,7 +76,7 @@ public static class AutomationTriggerValidator
         }
         catch (JsonException ex)
         {
-            throw new BusinessRuleException($"Invalid FieldChanged configuration JSON: {ex.Message}");
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_TriggerValidator_InvalidFieldChangedJson, $"Invalid FieldChanged configuration JSON: {ex.Message}");
         }
     }
 
@@ -95,7 +95,7 @@ public static class AutomationTriggerValidator
         }
         catch (JsonException ex)
         {
-            throw new BusinessRuleException($"Invalid ItemMovedToGroup configuration JSON: {ex.Message}");
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_TriggerValidator_InvalidItemMovedToGroupJson, $"Invalid ItemMovedToGroup configuration JSON: {ex.Message}");
         }
     }
 }

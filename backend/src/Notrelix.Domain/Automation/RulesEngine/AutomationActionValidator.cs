@@ -49,7 +49,7 @@ public static class AutomationActionValidator
         }
         catch (JsonException ex)
         {
-            throw new BusinessRuleException($"Invalid Webhook configuration JSON: {ex.Message}");
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_ActionValidator_InvalidWebhookJson, $"Invalid Webhook configuration JSON: {ex.Message}");
         }
     }
 
@@ -68,7 +68,7 @@ public static class AutomationActionValidator
         }
         catch (JsonException ex)
         {
-            throw new BusinessRuleException($"Invalid SendEmail configuration JSON: {ex.Message}");
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_ActionValidator_InvalidSendEmailJson, $"Invalid SendEmail configuration JSON: {ex.Message}");
         }
     }
 
@@ -87,7 +87,7 @@ public static class AutomationActionValidator
         }
         catch (JsonException ex)
         {
-            throw new BusinessRuleException($"Invalid SlackMessage configuration JSON: {ex.Message}");
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_ActionValidator_InvalidSlackMessageJson, $"Invalid SlackMessage configuration JSON: {ex.Message}");
         }
     }
 
@@ -106,7 +106,7 @@ public static class AutomationActionValidator
         }
         catch (JsonException ex)
         {
-            throw new BusinessRuleException($"Invalid UpdateField configuration JSON: {ex.Message}");
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_ActionValidator_InvalidUpdateFieldJson, $"Invalid UpdateField configuration JSON: {ex.Message}");
         }
     }
 
@@ -125,7 +125,7 @@ public static class AutomationActionValidator
         }
         catch (JsonException ex)
         {
-            throw new BusinessRuleException($"Invalid CreateItem configuration JSON: {ex.Message}");
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_ActionValidator_InvalidCreateItemJson, $"Invalid CreateItem configuration JSON: {ex.Message}");
         }
     }
 
@@ -144,7 +144,7 @@ public static class AutomationActionValidator
         }
         catch (JsonException ex)
         {
-            throw new BusinessRuleException($"Invalid MoveItem configuration JSON: {ex.Message}");
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_ActionValidator_InvalidMoveItemJson, $"Invalid MoveItem configuration JSON: {ex.Message}");
         }
     }
 
@@ -163,7 +163,7 @@ public static class AutomationActionValidator
         }
         catch (JsonException ex)
         {
-            throw new BusinessRuleException($"Invalid NotifyMember configuration JSON: {ex.Message}");
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_ActionValidator_InvalidNotifyMemberJson, $"Invalid NotifyMember configuration JSON: {ex.Message}");
         }
     }
 }

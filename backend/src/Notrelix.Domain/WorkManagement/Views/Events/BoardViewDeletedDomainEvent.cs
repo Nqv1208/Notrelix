@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Views.Events;
 
+[EventName("work-management.board-view-deleted")]
 public sealed record BoardViewDeletedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

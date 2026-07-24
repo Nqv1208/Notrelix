@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Forms.Events;
 
+[EventName("work-management.form-restored")]
 public sealed record FormRestoredDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

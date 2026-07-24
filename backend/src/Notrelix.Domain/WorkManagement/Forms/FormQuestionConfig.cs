@@ -45,7 +45,7 @@ public sealed class FormQuestionConfig : ValueObject
         }
         catch (JsonException ex)
         {
-            throw new BusinessRuleException($"Invalid config JSON: {ex.Message}");
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FormQuestion_InvalidConfigJson, $"Invalid config JSON: {ex.Message}");
         }
 
         var required = GetBool(root, "required") ?? false;

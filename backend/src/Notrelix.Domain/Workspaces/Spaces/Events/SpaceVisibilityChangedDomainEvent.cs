@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Workspaces.Spaces.Events;
 
+[EventName("workspaces.space-visibility-changed")]
 public sealed record SpaceVisibilityChangedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.BoardGroups.Events;
 
+[EventName("work-management.board-group-soft-deleted")]
 public sealed record BoardGroupSoftDeletedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

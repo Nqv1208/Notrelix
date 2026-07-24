@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Workspaces.Teams.Events;
 
+[EventName("workspaces.team-member-role-changed")]
 public sealed record TeamMemberRoleChangedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

@@ -1,3 +1,4 @@
+using Notrelix.Domain.Workspaces.Spaces.Events;
 namespace Notrelix.Domain.Workspaces.Spaces;
 
 public class Space : AggregateRoot, IWorkspaceScoped
@@ -146,6 +147,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
 
         if (Status != SpaceStatus.Archived)
             throw new BusinessRuleException(
+                BusinessRuleCodes.Workspaces_Space_CannotUnarchiveNonArchived,
                 "Only an archived space can be unarchived.");
 
         Status = SpaceStatus.Active;
@@ -155,23 +157,23 @@ public class Space : AggregateRoot, IWorkspaceScoped
             AccountId, WorkspaceId, Id, unarchivedBy, unarchivedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         Status = SpaceStatus.SoftDeleted;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
         RaiseDomainEvent(new SpaceSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         Status = SpaceStatus.Active;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
         RaiseDomainEvent(new SpaceRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));

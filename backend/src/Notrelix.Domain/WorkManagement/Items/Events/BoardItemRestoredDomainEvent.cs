@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Items.Events;
 
+[EventName("work-management.board-item-restored")]
 public sealed record BoardItemRestoredDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

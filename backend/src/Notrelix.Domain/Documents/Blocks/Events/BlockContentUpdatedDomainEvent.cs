@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Documents.Blocks.Events;
 
+[EventName("documents.block-content-updated")]
 public sealed record BlockContentUpdatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.Governance.Permissions.Events;
 
-public record PermissionRuleDisabledDomainEvent : WorkspaceScopedDomainEvent
+[EventName("governance.permission-rule-disabled")]
+public sealed record PermissionRuleDisabledDomainEvent : WorkspaceScopedDomainEvent
 {
     public Guid RuleId { get; }
 

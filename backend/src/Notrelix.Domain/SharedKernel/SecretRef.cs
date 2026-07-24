@@ -2,7 +2,7 @@ namespace Notrelix.Domain.SharedKernel;
 
 public sealed class SecretRef : ValueObject
 {
-    public string Value { get; }
+    public string Value { get; } = null!;
 
     private SecretRef() { }
     private SecretRef(string value)
@@ -21,5 +21,5 @@ public sealed class SecretRef : ValueObject
         yield return Value;
     }
 
-    public override string ToString() => Value;
+    public override string ToString() => "[secret-ref]";
 }

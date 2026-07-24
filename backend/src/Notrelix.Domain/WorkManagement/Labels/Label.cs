@@ -1,8 +1,9 @@
+using Notrelix.Domain.WorkManagement.Labels.Events;
 namespace Notrelix.Domain.WorkManagement.Labels;
 
 public sealed class LabelColor : ValueObject
 {
-    public string Hex { get; }
+    public string Hex { get; } = null!;
 
     private LabelColor() { }
     private LabelColor(string hex)
@@ -63,24 +64,30 @@ public class Label : AggregateRoot, IWorkspaceScoped
         Guard.NotNullOrWhiteSpace(name);
         Guard.NotNull(color);
 
-        Name = name.Trim();
+        var normalizedName = name.Trim();
+        if (Name == normalizedName && Color == color) return;
+
+        Name = normalizedName;
         Color = color;
         SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
         RaiseDomainEvent(new LabelUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         Status = LabelStatus.SoftDeleted;
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
         RaiseDomainEvent(new LabelSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         Status = LabelStatus.Active;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();

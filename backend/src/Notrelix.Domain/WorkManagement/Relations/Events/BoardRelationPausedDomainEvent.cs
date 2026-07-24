@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Relations.Events;
 
+[EventName("work-management.board-relation-paused")]
 public sealed record BoardRelationPausedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

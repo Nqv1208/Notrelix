@@ -1,3 +1,4 @@
+using Notrelix.Domain.WorkManagement.Relations.Events;
 namespace Notrelix.Domain.WorkManagement.Relations;
 
 public class BoardRelation : AggregateRoot, IWorkspaceScoped
@@ -69,7 +70,7 @@ public class BoardRelation : AggregateRoot, IWorkspaceScoped
         };
 
         relation.SetAuditOnCreate(createdBy, createdAt);
-        relation.RaiseDomainEvent(new BoardRelationCreatedDomainEvent(accountId, workspaceId, relation.Id, sourceBoardId, targetBoardId, createdBy, createdAt));
+        relation.RaiseDomainEvent(new BoardRelationCreatedDomainEvent(accountId, workspaceId, relation.Id, sourceBoardId, targetBoardId, createdAt));
         return relation;
     }
 
@@ -87,6 +88,8 @@ public class BoardRelation : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (Status == BoardRelationStatus.Active) return;
+        if (Status == BoardRelationStatus.Broken)
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Relation_CannotResumeBroken, "Cannot resume a broken relation. Repair it first.");
         Status = BoardRelationStatus.Active;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
@@ -103,21 +106,21 @@ public class BoardRelation : AggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardRelationMarkedBrokenDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         Status = BoardRelationStatus.Deleted;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
         RaiseDomainEvent(new BoardRelationDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
         Status = BoardRelationStatus.Active;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
         RaiseDomainEvent(new BoardRelationRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));

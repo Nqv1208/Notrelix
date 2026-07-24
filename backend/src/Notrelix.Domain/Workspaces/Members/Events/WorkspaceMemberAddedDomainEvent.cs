@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Workspaces.Members.Events;
 
+[EventName("workspaces.workspace-member-added")]
 public sealed record WorkspaceMemberAddedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

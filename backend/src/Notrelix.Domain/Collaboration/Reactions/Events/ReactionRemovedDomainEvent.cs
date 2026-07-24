@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Collaboration.Reactions.Events;
 
+[EventName("collaboration.reaction-removed")]
 public sealed record ReactionRemovedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

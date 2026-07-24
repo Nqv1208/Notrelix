@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.BoardGroups.Events;
 
+[EventName("work-management.board-group-reordered")]
 public sealed record BoardGroupReorderedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.Governance.Templates.Events;
 
-public sealed record PermissionTemplateCreatedEvent(
+[EventName("governance.permission-template-created")]
+public sealed record PermissionTemplateCreatedDomainEvent(
     Guid TemplateId,
     string Name,
     Guid CreatedBy,

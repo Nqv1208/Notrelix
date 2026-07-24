@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Items.Events;
 
+[EventName("work-management.board-item-created")]
 public sealed record BoardItemCreatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

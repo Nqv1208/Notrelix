@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Items.Events;
 
+[EventName("work-management.board-item-renamed")]
 public sealed record BoardItemRenamedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Integrations.Webhooks.Events;
 
+[EventName("integrations.webhook-subscription-disabled")]
 public sealed record WebhookSubscriptionDisabledDomainEvent(
     Guid AccountId,
     Guid SubscriptionId,

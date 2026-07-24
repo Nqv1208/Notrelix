@@ -1,3 +1,4 @@
+using Notrelix.Domain.Governance.Permissions.Events;
 namespace Notrelix.Domain.Governance.Permissions;
 
 public class PermissionRule : AggregateRoot, IWorkspaceScoped
@@ -61,35 +62,37 @@ public class PermissionRule : AggregateRoot, IWorkspaceScoped
         };
 
         rule.SetAuditOnCreate(createdBy, createdAt);
-        rule.RaiseDomainEvent(new PermissionRuleCreatedDomainEvent(accountId, workspaceId, rule.Id, action.ToString(), createdBy, createdAt));
+        rule.RaiseDomainEvent(new PermissionRuleCreatedDomainEvent(accountId, workspaceId, rule.Id, action.ToString(), createdAt));
         return rule;
     }
 
     public void Disable(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (Status == PermissionRuleStatus.Disabled) return;
+
         Status = PermissionRuleStatus.Disabled;
         SetAuditOnUpdate(updatedBy, updatedAt);
-        RaiseDomainEvent(new PermissionRuleDisabledDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
+        RaiseDomainEvent(new PermissionRuleDisabledDomainEvent(AccountId, WorkspaceId, Id, updatedAt));
         IncrementVersion();
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        RaiseDomainEvent(new PermissionRuleSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new PermissionRuleSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        RaiseDomainEvent(new PermissionRuleRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new PermissionRuleRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredAt));
     }
 
     public bool IsActive(DateTimeOffset now)

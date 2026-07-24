@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Views.Events;
 
+[EventName("work-management.saved-filter-renamed")]
 public sealed record SavedFilterRenamedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

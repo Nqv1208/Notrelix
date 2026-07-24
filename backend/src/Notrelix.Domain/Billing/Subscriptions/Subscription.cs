@@ -1,3 +1,4 @@
+using Notrelix.Domain.Billing.Subscriptions.Events;
 namespace Notrelix.Domain.Billing.Subscriptions;
 
 public class Subscription : AggregateRoot, IAccountScoped
@@ -69,7 +70,7 @@ public class Subscription : AggregateRoot, IAccountScoped
         Status = SubscriptionStatus.Canceled;
         SetAuditOnUpdate(updatedBy, cancelledAt);
         IncrementVersion();
-        RaiseDomainEvent(new SubscriptionCanceledDomainEvent(AccountId, WorkspaceId, Id, updatedBy, cancelledAt));
+        RaiseDomainEvent(new SubscriptionCanceledDomainEvent(AccountId, WorkspaceId, Id, cancelledAt));
     }
 
     public void Renew(DateTimeOffset newStart, DateTimeOffset newEnd, Guid updatedBy, DateTimeOffset renewedAt)
@@ -107,18 +108,18 @@ public class Subscription : AggregateRoot, IAccountScoped
         RaiseDomainEvent(new SubscriptionPastDueDomainEvent(AccountId, WorkspaceId, Id, occurredAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         IncrementVersion();
         RaiseDomainEvent(new SubscriptionSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         IncrementVersion();
         RaiseDomainEvent(new SubscriptionRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }

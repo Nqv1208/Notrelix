@@ -1,4 +1,7 @@
+using Notrelix.Domain.Billing.Usage.Events;
 using Notrelix.Domain.Billing.Rules;
+using Notrelix.Domain.Common.Exceptions;
+using static Notrelix.Domain.Common.Exceptions.BusinessRuleCodes;
 
 namespace Notrelix.Domain.Billing.Usage;
 
@@ -58,7 +61,7 @@ public class UsageMetric : AggregateRoot, IWorkspaceScoped
 
         if (CurrentValue - amount < 0)
         {
-            throw new DomainException("Usage value cannot be negative.");
+            throw new BusinessRuleException(Billing_Usage_ValueCannotBeNegative, "Usage value cannot be negative.");
         }
 
         CurrentValue -= amount;
@@ -78,18 +81,18 @@ public class UsageMetric : AggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new UsageMetricResetDomainEvent(AccountId, WorkspaceId, Key, occurredAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         IncrementVersion();
         RaiseDomainEvent(new UsageMetricSoftDeletedDomainEvent(AccountId, WorkspaceId, Key, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         IncrementVersion();
         RaiseDomainEvent(new UsageMetricRestoredDomainEvent(AccountId, WorkspaceId, Key, restoredBy, restoredAt));
     }

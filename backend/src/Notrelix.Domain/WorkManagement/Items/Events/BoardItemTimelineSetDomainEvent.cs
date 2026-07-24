@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Items.Events;
 
+[EventName("work-management.board-item-timeline-set")]
 public sealed record BoardItemTimelineSetDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

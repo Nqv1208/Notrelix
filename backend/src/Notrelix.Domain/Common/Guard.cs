@@ -7,7 +7,7 @@ public static class Guard
     public static void NotNull<T>(T? value, [CallerArgumentExpression(nameof(value))] string? paramName = null) where T : class
     {
         if (value is null)
-            throw new BusinessRuleException($"Parameter '{paramName}' cannot be null.");
+            throw new BusinessRuleException(BusinessRuleCodes.Guard_Null, $"Parameter '{paramName}' cannot be null.");
     }
 
     public static void NotNullOrWhiteSpace(string? value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
@@ -25,7 +25,7 @@ public static class Guard
     public static void Positive(double value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
     {
         if (value <= 0)
-            throw new BusinessRuleException(BusinessRuleCodes.Guard_Negative, "Value must be positive.");
+            throw new BusinessRuleException(BusinessRuleCodes.Guard_Positive, "Value must be positive.");
     }
 
     public static void NotNegative(double value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
@@ -37,18 +37,12 @@ public static class Guard
     public static void MaxLength(string? value, int maxLength, [CallerArgumentExpression(nameof(value))] string? paramName = null)
     {
         if (value is not null && value.Length > maxLength)
-            throw new BusinessRuleException($"Value exceeds maximum length of {maxLength}.");
+            throw new BusinessRuleException(BusinessRuleCodes.Guard_MaxLength, $"Value exceeds maximum length of {maxLength}.");
     }
 
     public static void InRange<T>(T value, T min, T max, [CallerArgumentExpression(nameof(value))] string? paramName = null) where T : IComparable<T>
     {
         if (value.CompareTo(min) < 0 || value.CompareTo(max) > 0)
-            throw new BusinessRuleException($"Value must be between {min} and {max}.");
-    }
-
-    public static void Assert(bool condition, string message)
-    {
-        if (!condition)
-            throw new BusinessRuleException(message);
+            throw new BusinessRuleException(BusinessRuleCodes.Guard_InRange, $"Value must be between {min} and {max}.");
     }
 }

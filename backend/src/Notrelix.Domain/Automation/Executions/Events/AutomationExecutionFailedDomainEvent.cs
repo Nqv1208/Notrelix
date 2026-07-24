@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Automation.Executions.Events;
 
+[EventName("automation.automation-execution-failed")]
 public sealed record AutomationExecutionFailedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

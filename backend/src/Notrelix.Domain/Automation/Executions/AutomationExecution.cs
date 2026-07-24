@@ -1,3 +1,4 @@
+using Notrelix.Domain.Automation.Executions.Events;
 namespace Notrelix.Domain.Automation.Executions;
 
 public class AutomationExecutionStep : Entity
@@ -84,6 +85,7 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
             AttemptCount = 0
         };
 
+        execution.SetAuditOnCreate(null, startedAt);
         execution.RaiseDomainEvent(new AutomationExecutionQueuedDomainEvent(accountId, workspaceId, execution.Id, ruleId, startedAt));
         return execution;
     }

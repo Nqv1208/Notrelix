@@ -1,3 +1,4 @@
+using Notrelix.Domain.Accounts.Members;
 namespace Notrelix.Domain.Accounts.Rules;
 
 public static class AccountOwnerRules

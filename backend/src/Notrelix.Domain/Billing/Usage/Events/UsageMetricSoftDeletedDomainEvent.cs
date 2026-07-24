@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Billing.Usage.Events;
 
+[EventName("billing.usage-metric-soft-deleted")]
 public sealed record UsageMetricSoftDeletedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Analytics.Dashboards.Events;
 
+[EventName("analytics.dashboard-restored")]
 public sealed record DashboardRestoredDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

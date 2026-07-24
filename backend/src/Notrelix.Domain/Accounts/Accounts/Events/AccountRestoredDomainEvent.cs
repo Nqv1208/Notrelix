@@ -1,7 +1,8 @@
 namespace Notrelix.Domain.Accounts.Accounts.Events;
 
+[EventName("accounts.account-restored")]
 public sealed record AccountRestoredDomainEvent(
     Guid AccountId,
     Guid RestoredBy,
     DateTimeOffset OccurredAt
-) : AccountRootDomainEvent(AccountId, OccurredAt);
+) : AccountScopedDomainEvent(AccountId, OccurredAt);

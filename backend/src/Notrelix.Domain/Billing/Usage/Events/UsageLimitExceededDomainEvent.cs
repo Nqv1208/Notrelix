@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Billing.Usage.Events;
 
+[EventName("billing.usage-limit-exceeded")]
 public sealed record UsageLimitExceededDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

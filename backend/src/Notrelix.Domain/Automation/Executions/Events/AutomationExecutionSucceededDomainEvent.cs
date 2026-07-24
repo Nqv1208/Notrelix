@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Automation.Executions.Events;
 
+[EventName("automation.automation-execution-succeeded")]
 public sealed record AutomationExecutionSucceededDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

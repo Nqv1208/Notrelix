@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Integrations.Calendar.Events;
 
+[EventName("integrations.calendar-conflict-detected")]
 public sealed record CalendarConflictDetectedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

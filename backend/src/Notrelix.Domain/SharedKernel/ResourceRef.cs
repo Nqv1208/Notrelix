@@ -16,7 +16,7 @@ public sealed class ResourceRef : ValueObject
 
     public static ResourceRef Create(ResourceType resourceType, Guid resourceId, Guid? workspaceId = null)
     {
-        Guard.Assert(resourceId != Guid.Empty, "ResourceId cannot be empty.");
+        Guard.NotEmpty(resourceId);
         return new ResourceRef(resourceType, resourceId, workspaceId);
     }
 
@@ -30,7 +30,7 @@ public sealed class ResourceRef : ValueObject
     public void EnsureSameWorkspace(Guid workspaceId)
     {
         if (WorkspaceId.HasValue && WorkspaceId.Value != workspaceId)
-            throw new WorkspaceMismatchException(workspaceId, WorkspaceId.Value);
+            throw new BusinessRuleException(BusinessRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{workspaceId}', got '{WorkspaceId.Value}'.");
     }
 
     public override string ToString() => $"{ResourceType}:{ResourceId}";

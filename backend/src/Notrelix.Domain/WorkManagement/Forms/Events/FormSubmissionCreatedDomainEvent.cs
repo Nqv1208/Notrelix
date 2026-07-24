@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Forms.Events;
 
+[EventName("work-management.form-submission-created")]
 public sealed record FormSubmissionCreatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

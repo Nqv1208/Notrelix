@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Workspaces.Spaces.Events;
 
+[EventName("workspaces.space-soft-deleted")]
 public sealed record SpaceSoftDeletedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

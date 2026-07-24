@@ -1,3 +1,5 @@
+using Notrelix.Domain.Billing.Entitlements.Events;
+using Notrelix.Domain.Billing.Plans;
 namespace Notrelix.Domain.Billing.Entitlements;
 
 public class Entitlement : AggregateRoot, IAccountScoped
@@ -52,7 +54,7 @@ public class Entitlement : AggregateRoot, IAccountScoped
         };
 
         entitlement.RaiseDomainEvent(new EntitlementGrantedDomainEvent(
-            accountId, targetWorkspaceId, entitlement.Id, feature.Code, limit, null, createdAt));
+            accountId, targetWorkspaceId, entitlement.Id, feature.Code, limit, createdAt));
         return entitlement;
     }
 
@@ -75,7 +77,7 @@ public class Entitlement : AggregateRoot, IAccountScoped
         IncrementVersion();
 
         RaiseDomainEvent(new EntitlementLimitChangedDomainEvent(
-            AccountId, WorkspaceId, Id, Feature.Code, oldLimit, newLimit, actorUserId, occurredAt));
+            AccountId, WorkspaceId, Id, Feature.Code, oldLimit, newLimit, occurredAt));
     }
 
     public void Disable(Guid actorUserId, DateTimeOffset occurredAt)
@@ -93,7 +95,7 @@ public class Entitlement : AggregateRoot, IAccountScoped
         IncrementVersion();
 
         RaiseDomainEvent(new EntitlementDisabledDomainEvent(
-            AccountId, WorkspaceId, Id, Feature.Code, actorUserId, occurredAt));
+            AccountId, WorkspaceId, Id, Feature.Code, occurredAt));
     }
 
     public void Revoke(Guid actorUserId, DateTimeOffset occurredAt)
@@ -110,7 +112,7 @@ public class Entitlement : AggregateRoot, IAccountScoped
         IncrementVersion();
 
         RaiseDomainEvent(new EntitlementRevokedDomainEvent(
-            AccountId, WorkspaceId, Id, Feature.Code, actorUserId, occurredAt));
+            AccountId, WorkspaceId, Id, Feature.Code, occurredAt));
     }
 
     public void MarkExpired(DateTimeOffset occurredAt)
@@ -138,18 +140,18 @@ public class Entitlement : AggregateRoot, IAccountScoped
         return true;
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         IncrementVersion();
         RaiseDomainEvent(new EntitlementSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, Feature.Code, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         Status = EntitlementStatus.Active;
         IncrementVersion();
         RaiseDomainEvent(new EntitlementRestoredDomainEvent(AccountId, WorkspaceId, Id, Feature.Code, restoredBy, restoredAt));

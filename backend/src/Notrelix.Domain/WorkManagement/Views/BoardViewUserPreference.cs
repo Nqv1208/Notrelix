@@ -1,3 +1,4 @@
+using Notrelix.Domain.WorkManagement.Views.Events;
 namespace Notrelix.Domain.WorkManagement.Views;
 
 public class BoardViewUserPreference : AggregateRoot, IWorkspaceScoped

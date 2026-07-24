@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Views.Events;
 
+[EventName("work-management.board-view-user-preference-created")]
 public sealed record BoardViewUserPreferenceCreatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

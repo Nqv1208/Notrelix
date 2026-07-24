@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Approvals.Events;
 
+[EventName("work-management.approval-request-rejected")]
 public sealed record ApprovalRequestRejectedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

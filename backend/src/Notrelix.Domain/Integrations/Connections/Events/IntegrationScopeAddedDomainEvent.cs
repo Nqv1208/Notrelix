@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Integrations.Connections.Events;
 
+[EventName("integrations.integration-scope-added")]
 public sealed record IntegrationScopeAddedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

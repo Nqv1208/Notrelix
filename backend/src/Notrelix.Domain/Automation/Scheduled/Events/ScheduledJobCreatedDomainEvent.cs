@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Automation.Scheduled.Events;
 
+[EventName("automation.scheduled-job-created")]
 public sealed record ScheduledJobCreatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

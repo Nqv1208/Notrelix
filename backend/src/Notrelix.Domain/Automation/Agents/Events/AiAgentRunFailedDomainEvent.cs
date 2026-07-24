@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Automation.Agents.Events;
 
+[EventName("automation.ai-agent-run-failed")]
 public sealed record AiAgentRunFailedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

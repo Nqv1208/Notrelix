@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Documents.ResourceLinks.Events;
 
+[EventName("documents.resource-link-created")]
 public sealed record ResourceLinkCreatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

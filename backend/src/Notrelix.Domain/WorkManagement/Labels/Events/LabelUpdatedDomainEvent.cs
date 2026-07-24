@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Labels.Events;
 
+[EventName("work-management.label-updated")]
 public sealed record LabelUpdatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

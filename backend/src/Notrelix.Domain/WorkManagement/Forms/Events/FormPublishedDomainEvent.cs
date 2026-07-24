@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.WorkManagement.Forms.Events;
 
-public record FormPublishedDomainEvent : WorkspaceScopedDomainEvent
+[EventName("work-management.form-published")]
+public sealed record FormPublishedDomainEvent : WorkspaceScopedDomainEvent
 {
     public Guid FormId { get; }
 

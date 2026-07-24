@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Automation.Agents.Events;
 
+[EventName("automation.ai-agent-run-queued")]
 public sealed record AiAgentRunQueuedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

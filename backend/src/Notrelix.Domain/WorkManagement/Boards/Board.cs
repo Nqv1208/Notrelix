@@ -1,3 +1,4 @@
+using Notrelix.Domain.WorkManagement.Boards.Events;
 namespace Notrelix.Domain.WorkManagement.Boards;
 
 public class Board : AggregateRoot, IWorkspaceScoped
@@ -142,10 +143,10 @@ public class Board : AggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardUnarchivedDomainEvent(AccountId, WorkspaceId, Id, unarchivedBy, unarchivedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
         RaiseDomainEvent(new BoardSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
@@ -154,6 +155,8 @@ public class Board : AggregateRoot, IWorkspaceScoped
     public void SetDefaultGroup(Guid groupId, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        if (IsArchived)
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Board_CannotRenameArchived, "Cannot modify an archived board.");
         if (DefaultItemGroupId == groupId) return;
         DefaultItemGroupId = groupId;
         SetAuditOnUpdate(updatedBy, updatedAt);
@@ -176,10 +179,10 @@ public class Board : AggregateRoot, IWorkspaceScoped
         return (ItemSequence, key);
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
         RaiseDomainEvent(new BoardRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));

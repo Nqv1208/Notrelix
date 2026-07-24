@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Integrations.Sync;
 
 public sealed class SyncCursorValue : ValueObject
 {
-    public string Value { get; }
+    public string Value { get; } = null!;
 
     private SyncCursorValue() { }
     private SyncCursorValue(string value)

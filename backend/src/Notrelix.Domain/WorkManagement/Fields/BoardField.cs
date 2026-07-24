@@ -1,3 +1,4 @@
+using Notrelix.Domain.WorkManagement.Fields.Events;
 namespace Notrelix.Domain.WorkManagement.Fields;
 
 public class BoardField : AggregateRoot, IWorkspaceScoped
@@ -72,6 +73,8 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         Guard.NotNull(settings);
         FieldSettingsValidator.Validate(settings, Type);
 
+        if (Settings == settings) return;
+
         Settings = settings;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
@@ -99,7 +102,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         var option = _options.FirstOrDefault(o => o.Id == optionId);
         if (option is null)
-            throw new NotFoundException(nameof(FieldOption), optionId);
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_OptionNotFound, $"Field option '{optionId}' not found.");
 
         _options.Remove(option);
         SetAuditOnUpdate(removedBy, removedAt);
@@ -114,52 +117,69 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
 
         var option = _options.FirstOrDefault(o => o.Id == optionId);
         if (option is null)
-            throw new NotFoundException(nameof(FieldOption), optionId);
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_OptionNotFound, $"Field option '{optionId}' not found.");
 
         if (_options.Any(o => o.Id != optionId && string.Equals(o.Name, name, StringComparison.OrdinalIgnoreCase)))
             throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_DuplicateOptionName, $"Duplicate option name '{name}'.");
+
+        var trimmedName = name.Trim();
+        if (option.Name == trimmedName && option.Color == color) return;
 
         option.Update(name, color);
 
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        RaiseDomainEvent(new FieldOptionUpdatedDomainEvent(AccountId, WorkspaceId, Id, optionId, name.Trim(), updatedBy, updatedAt));
+        RaiseDomainEvent(new FieldOptionUpdatedDomainEvent(AccountId, WorkspaceId, Id, optionId, trimmedName, updatedBy, updatedAt));
     }
 
     public void ReorderOptions(List<Guid> orderedOptionIds, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+
+        // ── Validate the complete input set BEFORE any mutation ──────────
         if (orderedOptionIds.Count != _options.Count)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_ReorderMustContainAllOptions, "Reorder list must contain all options.");
+            throw new BusinessRuleException(
+                BusinessRuleCodes.WorkManagement_Field_ReorderMustContainAllOptions,
+                "Reorder list must contain all options.");
 
-        var sorted = _options.OrderBy(o => o.Position).ToList();
-        var n = sorted.Count;
-        var positions = new List<string> { "a0" };
-        for (var i = 1; i < n; i++)
-            positions.Add(FractionalIndexMidpoint.Between(positions[i - 1], "a1"));
+        if (orderedOptionIds.Distinct().Count() != orderedOptionIds.Count)
+            throw new BusinessRuleException(
+                BusinessRuleCodes.WorkManagement_Field_ReorderMustContainAllOptions,
+                "Reorder list must not contain duplicate option IDs.");
 
+        var existingIds = _options.Select(o => o.Id).ToHashSet();
+        if (!existingIds.SetEquals(orderedOptionIds))
+            throw new BusinessRuleException(
+                BusinessRuleCodes.WorkManagement_Field_OptionNotFound,
+                "Reorder list must contain every field option exactly once.");
+
+        // ── No-op check ──────────────────────────────────────────────────
+        var currentOrder = _options.OrderBy(o => o.Position).Select(o => o.Id).ToList();
+        if (currentOrder.SequenceEqual(orderedOptionIds)) return;
+
+        // ── Generate evenly distributed positions ────────────────────────
+        var positions = FractionalIndexGenerator.GenerateNKeysBetween(
+            lower: null,
+            upper: null,
+            count: orderedOptionIds.Count);
+
+        var optionsById = _options.ToDictionary(o => o.Id);
         for (var i = 0; i < orderedOptionIds.Count; i++)
-        {
-            var option = _options.FirstOrDefault(o => o.Id == orderedOptionIds[i]);
-            if (option is null)
-                throw new NotFoundException(nameof(FieldOption), orderedOptionIds[i]);
-
-            option.UpdatePosition(FractionalIndex.Create(positions[i]));
-        }
+            optionsById[orderedOptionIds[i]].UpdatePosition(positions[i]);
 
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
         RaiseDomainEvent(new BoardFieldReorderedDomainEvent(AccountId, WorkspaceId, Id, BoardId, 0, updatedBy, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
 
         if (IsSystem)
             throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_CannotDeleteSystem, "Cannot delete a system field.");
 
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
         RaiseDomainEvent(new BoardFieldDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
@@ -195,10 +215,10 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         IncrementVersion();
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
         RaiseDomainEvent(new BoardFieldRestoredDomainEvent(AccountId, WorkspaceId, BoardId, Id, restoredBy, restoredAt));

@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Workspaces.Teams.Events;
 
+[EventName("workspaces.team-created")]
 public sealed record TeamCreatedDomainEvent(
     Guid TeamId,
     Guid AccountId,

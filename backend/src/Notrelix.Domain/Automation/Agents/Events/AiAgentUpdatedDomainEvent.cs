@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Automation.Agents.Events;
 
+[EventName("automation.ai-agent-updated")]
 public sealed record AiAgentUpdatedDomainEvent : WorkspaceScopedDomainEvent
 {
     public Guid AgentId { get; }

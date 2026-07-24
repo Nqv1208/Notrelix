@@ -6,7 +6,7 @@ namespace Notrelix.Domain.WorkManagement.Formulas;
 /// </summary>
 public sealed class FormulaExpression : ValueObject
 {
-    public string Expression { get; }
+    public string Expression { get; } = null!;
 
     private FormulaExpression() { }
     private FormulaExpression(string expression)

@@ -74,7 +74,7 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
         };
 
         agent.SetAuditOnCreate(createdBy, createdAt);
-        agent.RaiseDomainEvent(new AiAgentCreatedDomainEvent(accountId, workspaceId, agent.Id, name, createdBy, createdAt));
+        agent.RaiseDomainEvent(new AiAgentCreatedDomainEvent(accountId, workspaceId, agent.Id, name, createdAt));
         return agent;
     }
 
@@ -101,7 +101,7 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
 
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        RaiseDomainEvent(new AiAgentUpdatedDomainEvent(AccountId, WorkspaceId, Id, Name, updatedBy, updatedAt));
+        RaiseDomainEvent(new AiAgentUpdatedDomainEvent(AccountId, WorkspaceId, Id, Name, updatedAt));
     }
 
     public void ChangeStatus(AiAgentStatus newStatus, Guid updatedBy, DateTimeOffset updatedAt)
@@ -125,31 +125,31 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
         };
 
         if (!validTransitions.Contains(newStatus))
-            throw new BusinessRuleException($"Cannot transition from {Status} to {newStatus}.");
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_Agent_InvalidStatusTransition, $"Cannot transition from {Status} to {newStatus}.");
 
         Status = newStatus;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        RaiseDomainEvent(new AiAgentStatusChangedDomainEvent(AccountId, WorkspaceId, Id, Status, updatedBy, updatedAt));
+        RaiseDomainEvent(new AiAgentStatusChangedDomainEvent(AccountId, WorkspaceId, Id, Status, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (Status == AiAgentStatus.Deleted) return;
         Status = AiAgentStatus.Deleted;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        RaiseDomainEvent(new AiAgentStatusChangedDomainEvent(AccountId, WorkspaceId, Id, Status, deletedBy, deletedAt));
+        RaiseDomainEvent(new AiAgentStatusChangedDomainEvent(AccountId, WorkspaceId, Id, Status, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (Status != AiAgentStatus.Deleted) return;
         Status = AiAgentStatus.Draft;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        RaiseDomainEvent(new AiAgentStatusChangedDomainEvent(AccountId, WorkspaceId, Id, Status, restoredBy, restoredAt));
+        RaiseDomainEvent(new AiAgentStatusChangedDomainEvent(AccountId, WorkspaceId, Id, Status, restoredAt));
     }
 }

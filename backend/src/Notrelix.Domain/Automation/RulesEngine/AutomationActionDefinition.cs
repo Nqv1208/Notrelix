@@ -24,7 +24,8 @@ public sealed class AutomationActionDefinition : ValueObject
     public static AutomationActionDefinition Create(string type, string? configuration = null)
     {
         Guard.NotNullOrWhiteSpace(type);
-        Guard.Assert(ValidActions.Contains(type), $"Invalid action type '{type}'. Valid types: {string.Join(", ", ValidActions)}");
+        if (!ValidActions.Contains(type))
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_Action_InvalidType, $"Invalid action type '{type}'. Valid types: {string.Join(", ", ValidActions)}");
 
         if (configuration is not null)
         {
@@ -36,7 +37,7 @@ public sealed class AutomationActionDefinition : ValueObject
             }
             catch (JsonException ex)
             {
-                throw new BusinessRuleException($"Invalid action configuration JSON: {ex.Message}");
+                throw new BusinessRuleException(BusinessRuleCodes.Automation_Action_InvalidConfigJson, $"Invalid action configuration JSON: {ex.Message}");
             }
         }
 

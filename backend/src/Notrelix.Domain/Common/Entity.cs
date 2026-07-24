@@ -14,10 +14,17 @@ public abstract class Entity : IHasDomainEvents
 
     protected Entity(Guid id)
     {
+        if (id == Guid.Empty)
+            throw new ArgumentException("Entity id cannot be empty.", nameof(id));
         Id = id;
     }
 
-    protected void RaiseDomainEvent(IDomainEvent domainEvent) => _domainEvents.Add(domainEvent);
+    protected void RaiseDomainEvent(IDomainEvent domainEvent)
+    {
+        ArgumentNullException.ThrowIfNull(domainEvent);
+        _domainEvents.Add(domainEvent);
+    }
+
     internal void ClearDomainEvents() => _domainEvents.Clear();
 
     public override bool Equals(object? obj)

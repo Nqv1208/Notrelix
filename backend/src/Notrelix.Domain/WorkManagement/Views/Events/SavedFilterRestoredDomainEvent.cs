@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Views.Events;
 
+[EventName("work-management.saved-filter-restored")]
 public sealed record SavedFilterRestoredDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

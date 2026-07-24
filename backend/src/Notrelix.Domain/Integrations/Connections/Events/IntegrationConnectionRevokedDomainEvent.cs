@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Integrations.Connections.Events;
 
+[EventName("integrations.integration-connection-revoked")]
 public sealed record IntegrationConnectionRevokedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

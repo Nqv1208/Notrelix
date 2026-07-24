@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Billing.Usage.Events;
 
+[EventName("billing.usage-metric-decreased")]
 public sealed record UsageMetricDecreasedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

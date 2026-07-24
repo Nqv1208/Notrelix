@@ -1,3 +1,4 @@
+using Notrelix.Domain.Integrations.Webhooks.Events;
 namespace Notrelix.Domain.Integrations.Webhooks;
 
 public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
@@ -65,11 +66,11 @@ public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new WebhookSubscriptionSecretRotatedDomainEvent(AccountId, Id, WorkspaceId, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
         IsActive = false;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
     }

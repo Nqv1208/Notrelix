@@ -5,7 +5,7 @@ public static class AttachmentRules
     public static void EnsureMaxAttachments(int currentCount, int maxAllowed)
     {
         if (currentCount >= maxAllowed)
-            throw new BusinessRuleException($"Cannot exceed maximum of {maxAllowed} attachments per resource.");
+            throw new BusinessRuleException(BusinessRuleCodes.Collaboration_Attachment_MaxAttachmentsExceeded, $"Cannot exceed maximum of {maxAllowed} attachments per resource.");
     }
 
     public static void EnsureValidFileSize(long fileSizeBytes, long maxFileSizeBytes)
@@ -14,6 +14,6 @@ public static class AttachmentRules
             throw new BusinessRuleException(BusinessRuleCodes.Collaboration_Attachment_FileSizeMustBePositive, "File size must be greater than zero.");
 
         if (fileSizeBytes > maxFileSizeBytes)
-            throw new BusinessRuleException($"File size exceeds maximum allowed size of {maxFileSizeBytes} bytes.");
+            throw new BusinessRuleException(BusinessRuleCodes.Collaboration_Attachment_FileSizeExceeded, $"File size exceeds maximum allowed size of {maxFileSizeBytes} bytes.");
     }
 }

@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Accounts.Members.Events;
 
+[EventName("accounts.account-member-activated")]
 public sealed record AccountMemberActivatedDomainEvent(
     Guid AccountId,
     Guid MemberId,

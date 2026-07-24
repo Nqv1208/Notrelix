@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.WorkManagement.Forms.Events;
 
-public record FormClosedDomainEvent : WorkspaceScopedDomainEvent
+[EventName("work-management.form-closed")]
+public sealed record FormClosedDomainEvent : WorkspaceScopedDomainEvent
 {
     public Guid FormId { get; }
 

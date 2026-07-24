@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Analytics.Dashboards.Events;
 
+[EventName("analytics.dashboard-source-added")]
 public sealed record DashboardSourceAddedDomainEvent : WorkspaceScopedDomainEvent
 {
     public Guid DashboardId { get; }

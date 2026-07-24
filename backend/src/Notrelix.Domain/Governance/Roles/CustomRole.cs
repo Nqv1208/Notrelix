@@ -1,3 +1,4 @@
+using Notrelix.Domain.Governance.Roles.Events;
 namespace Notrelix.Domain.Governance.Roles;
 
 public class CustomRole : AggregateRoot, IWorkspaceScoped
@@ -59,7 +60,7 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
 
         if (_permissions.Any(p => p.Action == action))
-            throw new BusinessRuleException($"Permission '{action}' is already assigned to this role.");
+            throw new BusinessRuleException(BusinessRuleCodes.Governance_Role_PermissionAlreadyAssigned, $"Permission '{action}' is already assigned to this role.");
 
         _permissions.Add(CustomRolePermission.Create(Id, action));
         SetAuditOnUpdate(updatedBy, updatedAt);
@@ -117,23 +118,23 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new CustomRoleActivatedDomainEvent(AccountId, WorkspaceId, Id, activatedBy, activatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
         if (IsSystem)
             throw new BusinessRuleException(BusinessRuleCodes.Governance_Role_CannotDeleteSystem, "Cannot delete a system role.");
         Status = CustomRoleStatus.Archived;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
         RaiseDomainEvent(new CustomRoleSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
         Status = CustomRoleStatus.Active;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
         RaiseDomainEvent(new CustomRoleRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));

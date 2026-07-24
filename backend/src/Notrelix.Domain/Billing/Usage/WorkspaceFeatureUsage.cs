@@ -1,3 +1,5 @@
+using Notrelix.Domain.Billing.Usage.Events;
+using Notrelix.Domain.Billing.Plans;
 namespace Notrelix.Domain.Billing.Usage;
 
 public class WorkspaceFeatureUsage : AggregateRoot, IWorkspaceScoped
@@ -70,7 +72,7 @@ public class WorkspaceFeatureUsage : AggregateRoot, IWorkspaceScoped
         if (HardLimit.HasValue && !OverageAllowed && CurrentUsage + amount > HardLimit.Value)
         {
             RaiseDomainEvent(new QuotaExceededDomainEvent(AccountId, WorkspaceId, Feature.Code, HardLimit.Value, occurredAt));
-            throw new BusinessRuleException($"Feature usage limit exceeded for '{Feature.Code}'. Limit: {HardLimit.Value}, Requested total: {CurrentUsage + amount}.");
+            throw new BusinessRuleException(BusinessRuleCodes.Billing_Usage_FeatureLimitExceeded, $"Feature usage limit exceeded for '{Feature.Code}'. Limit: {HardLimit.Value}, Requested total: {CurrentUsage + amount}.");
         }
 
         var oldUsage = CurrentUsage;
@@ -78,7 +80,7 @@ public class WorkspaceFeatureUsage : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(actorUserId, occurredAt);
         IncrementVersion();
 
-        RaiseDomainEvent(new FeatureUsageConsumedDomainEvent(AccountId, WorkspaceId, Feature.Code, amount, actorUserId, occurredAt));
+        RaiseDomainEvent(new FeatureUsageConsumedDomainEvent(AccountId, WorkspaceId, Feature.Code, amount, occurredAt));
     }
 
     public void Release(decimal amount, Guid actorUserId, DateTimeOffset occurredAt)
@@ -94,7 +96,7 @@ public class WorkspaceFeatureUsage : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(actorUserId, occurredAt);
         IncrementVersion();
 
-        RaiseDomainEvent(new FeatureUsageReleasedDomainEvent(AccountId, WorkspaceId, Feature.Code, amount, actorUserId, occurredAt));
+        RaiseDomainEvent(new FeatureUsageReleasedDomainEvent(AccountId, WorkspaceId, Feature.Code, amount, occurredAt));
     }
 
     public void Reset(DateTimeOffset resetAt, Guid actorUserId)
@@ -107,18 +109,18 @@ public class WorkspaceFeatureUsage : AggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new WorkspaceFeatureUsageResetDomainEvent(AccountId, WorkspaceId, Feature, resetAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceFeatureUsageSoftDeletedDomainEvent(AccountId, WorkspaceId, Feature, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceFeatureUsageRestoredDomainEvent(AccountId, WorkspaceId, Feature, restoredBy, restoredAt));
     }

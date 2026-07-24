@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Integrations.Connections.Events;
 
+[EventName("integrations.integration-connection-created")]
 public sealed record IntegrationConnectionCreatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Workspaces.Spaces.Events;
 
+[EventName("workspaces.space-unarchived")]
 public sealed record SpaceUnarchivedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

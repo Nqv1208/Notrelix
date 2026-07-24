@@ -1,3 +1,6 @@
+using Notrelix.Domain.Common.Exceptions;
+using static Notrelix.Domain.Common.Exceptions.BusinessRuleCodes;
+
 namespace Notrelix.Domain.Common;
 
 public abstract class SoftDeletableEntity : AuditableEntity
@@ -12,29 +15,45 @@ public abstract class SoftDeletableEntity : AuditableEntity
     protected SoftDeletableEntity() : base() { }
     protected SoftDeletableEntity(Guid id) : base(id) { }
 
-    public virtual void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    /// <summary>
+    /// Marks the entity as deleted. Returns false if already deleted (no-op).
+    /// Only changes deletion state — concrete aggregates own audit, version, and events.
+    /// </summary>
+    protected bool MarkDeleted(Guid? deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
-        if (IsDeleted) return;
+        if (deletedAt == default || deletedAt == DateTimeOffset.MinValue)
+            throw new BusinessRuleException(Common_EntityHasBeenDeleted, "Deleted timestamp must be a valid date.");
+
+        if (IsDeleted) return false;
+
         DeletedAt = deletedAt;
         DeletedBy = deletedBy;
         DeleteReason = reason;
+        return true;
     }
 
-    public virtual void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    /// <summary>
+    /// Marks the entity as restored. Returns false if not deleted (no-op).
+    /// Only changes deletion state — concrete aggregates own audit, version, and events.
+    /// </summary>
+    protected bool MarkRestored(Guid? restoredBy, DateTimeOffset restoredAt)
     {
-        if (!IsDeleted) return;
+        if (restoredAt == default || restoredAt == DateTimeOffset.MinValue)
+            throw new BusinessRuleException(Common_EntityHasBeenDeleted, "Restored timestamp must be a valid date.");
+
+        if (!IsDeleted) return false;
+
         DeletedAt = null;
         DeletedBy = null;
         DeleteReason = null;
         RestoredAt = restoredAt;
         RestoredBy = restoredBy;
-        UpdatedBy = restoredBy;
-        UpdatedAt = restoredAt;
+        return true;
     }
 
     protected void EnsureNotDeleted()
     {
         if (IsDeleted)
-            throw new DomainException($"{GetType().Name} with Id '{Id}' has been deleted and cannot be modified.");
+            throw new BusinessRuleException(Common_EntityHasBeenDeleted, $"{GetType().Name} with Id '{Id}' has been deleted and cannot be modified.");
     }
 }

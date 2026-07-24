@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Forms.Events;
 
+[EventName("work-management.form-submission-processed")]
 public sealed record FormSubmissionProcessedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

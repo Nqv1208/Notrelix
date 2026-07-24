@@ -1,6 +1,8 @@
+using Notrelix.Domain.Billing.Common;
 namespace Notrelix.Domain.Billing.Entitlements.Events;
 
-public record EntitlementDisabledDomainEvent : BillingAccountScopedDomainEvent
+[EventName("billing.entitlement-disabled")]
+public sealed record EntitlementDisabledDomainEvent : BillingAccountScopedDomainEvent
 {
     public Guid EntitlementId { get; }
     public string FeatureCode { get; }

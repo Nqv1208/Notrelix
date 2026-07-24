@@ -53,7 +53,7 @@ public class UserProfile : AggregateRoot
         {
             if (!UserProfileTheme.IsValid(theme))
             {
-                throw new BusinessRuleException($"Invalid profile theme: {theme}.");
+                throw new BusinessRuleException(BusinessRuleCodes.Identity_Profile_InvalidTheme, $"Invalid profile theme: {theme}.");
             }
             Theme = theme.Trim().ToLowerInvariant();
         }
@@ -78,5 +78,19 @@ public class UserProfile : AggregateRoot
         SetAuditOnUpdate(UserId, updatedAt);
         IncrementVersion();
         RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, updatedAt));
+    }
+
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+    }
+
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!MarkRestored(restoredBy, restoredAt)) return;
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
     }
 }

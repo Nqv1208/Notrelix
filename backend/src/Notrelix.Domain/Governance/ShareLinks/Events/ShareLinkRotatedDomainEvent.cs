@@ -1,9 +1,10 @@
 namespace Notrelix.Domain.Governance.ShareLinks.Events;
 
-public sealed record ShareLinkRestoredEvent(
+[EventName("governance.share-link-rotated")]
+public sealed record ShareLinkRotatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
     Guid LinkId,
-    Guid RestoredBy,
+    Guid RotatedBy,
     DateTimeOffset OccurredAt
 ) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

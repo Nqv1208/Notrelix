@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Workspaces.Spaces.Events;
 
+[EventName("workspaces.space-restored")]
 public sealed record SpaceRestoredDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

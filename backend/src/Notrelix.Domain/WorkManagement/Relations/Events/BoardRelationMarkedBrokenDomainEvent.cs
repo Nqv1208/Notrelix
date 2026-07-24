@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Relations.Events;
 
+[EventName("work-management.board-relation-marked-broken")]
 public sealed record BoardRelationMarkedBrokenDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

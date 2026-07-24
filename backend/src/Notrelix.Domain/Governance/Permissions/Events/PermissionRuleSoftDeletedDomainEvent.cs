@@ -1,8 +1,8 @@
 namespace Notrelix.Domain.Governance.Permissions.Events;
 
-public record PermissionRuleSoftDeletedDomainEvent : WorkspaceScopedDomainEvent
+[EventName("governance.permission-rule-soft-deleted")]
+public sealed record PermissionRuleSoftDeletedDomainEvent : WorkspaceScopedDomainEvent
 {
-    public Guid AccountId { get; }
     public Guid RuleId { get; }
 
     public PermissionRuleSoftDeletedDomainEvent(
@@ -12,7 +12,6 @@ public record PermissionRuleSoftDeletedDomainEvent : WorkspaceScopedDomainEvent
         DateTimeOffset occurredAt)
         : base(accountId, workspaceId, occurredAt)
     {
-        AccountId = accountId;
         RuleId = ruleId;
     }
 }

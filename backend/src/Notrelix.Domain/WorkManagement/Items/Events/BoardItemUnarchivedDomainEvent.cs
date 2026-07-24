@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Items.Events;
 
+[EventName("work-management.board-item-unarchived")]
 public sealed record BoardItemUnarchivedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

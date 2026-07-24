@@ -1,3 +1,4 @@
+using Notrelix.Domain.WorkManagement.Fields;
 namespace Notrelix.Domain.WorkManagement.Views;
 
 public sealed class KanbanViewConfig : BoardViewConfig

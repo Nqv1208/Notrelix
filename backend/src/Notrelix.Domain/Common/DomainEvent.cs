@@ -2,17 +2,13 @@ namespace Notrelix.Domain.Common;
 
 public abstract record DomainEvent : IDomainEvent
 {
-    public Guid EventId { get; protected set; }
-    public DateTimeOffset OccurredAt { get; protected set; }
-
-    protected DomainEvent()
-    {
-        EventId = Guid.CreateVersion7();
-        OccurredAt = DateTimeOffset.UtcNow;
-    }
+    public Guid EventId { get; }
+    public DateTimeOffset OccurredAt { get; }
 
     protected DomainEvent(DateTimeOffset occurredAt)
     {
+        if (occurredAt == default)
+            throw new ArgumentOutOfRangeException(nameof(occurredAt));
         EventId = Guid.CreateVersion7();
         OccurredAt = occurredAt;
     }

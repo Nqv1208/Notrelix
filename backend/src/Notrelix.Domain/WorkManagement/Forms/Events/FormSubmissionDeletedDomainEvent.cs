@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Forms.Events;
 
+[EventName("work-management.form-submission-deleted")]
 public sealed record FormSubmissionDeletedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

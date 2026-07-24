@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.BoardGroups.Events;
 
+[EventName("work-management.board-group-created")]
 public sealed record BoardGroupCreatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

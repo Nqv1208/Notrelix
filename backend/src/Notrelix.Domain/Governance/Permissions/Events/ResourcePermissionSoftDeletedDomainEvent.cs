@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Governance.Permissions.Events;
 
+[EventName("governance.resource-permission-soft-deleted")]
 public sealed record ResourcePermissionSoftDeletedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

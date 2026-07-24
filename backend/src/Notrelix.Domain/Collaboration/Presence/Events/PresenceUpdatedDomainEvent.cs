@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Collaboration.Presence.Events;
 
+[EventName("collaboration.presence-updated")]
 public sealed record PresenceUpdatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

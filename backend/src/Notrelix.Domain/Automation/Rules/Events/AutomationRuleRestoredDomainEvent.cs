@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Automation.Rules.Events;
 
+[EventName("automation.automation-rule-restored")]
 public sealed record AutomationRuleRestoredDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

@@ -1,3 +1,4 @@
+using Notrelix.Domain.Billing.Plans.Events;
 namespace Notrelix.Domain.Billing.Plans;
 
 public class PlanLimit : Entity
@@ -67,14 +68,14 @@ public class Plan : AggregateRoot
     public void AddLimit(FeatureCode feature, int limit, DateTimeOffset occurredAt)
     {
         if (_limits.Any(l => l.Feature == feature))
-            throw new BusinessRuleException($"Feature '{feature}' is already added to this plan.");
+            throw new BusinessRuleException(BusinessRuleCodes.Billing_Plan_FeatureAlreadyAdded, $"Feature '{feature}' is already added to this plan.");
 
         _limits.Add(PlanLimit.Create(Id, feature, limit));
         IncrementVersion();
         RaiseDomainEvent(new PlanLimitAddedDomainEvent(Id, feature, limit, occurredAt));
     }
 
-    public void UpdateDescription(string description, DateTimeOffset updatedAt)
+    public void UpdateDescription(string? description, DateTimeOffset updatedAt)
     {
         Description = description?.Trim();
         IncrementVersion();
@@ -97,18 +98,18 @@ public class Plan : AggregateRoot
         RaiseDomainEvent(new PlanDeprecatedDomainEvent(Id, deprecatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         IncrementVersion();
         RaiseDomainEvent(new PlanSoftDeletedDomainEvent(Id, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         IncrementVersion();
         RaiseDomainEvent(new PlanRestoredDomainEvent(Id, restoredBy, restoredAt));
     }

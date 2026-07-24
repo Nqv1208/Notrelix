@@ -1,3 +1,5 @@
+using Notrelix.Domain.Accounts.Invitations.Events;
+using Notrelix.Domain.Accounts.Members;
 namespace Notrelix.Domain.Accounts.Invitations;
 
 public class AccountInvitation : AggregateRoot, IAccountScoped
@@ -58,6 +60,7 @@ public class AccountInvitation : AggregateRoot, IAccountScoped
 
         Status = AccountInvitationStatus.Accepted;
         SetAuditOnUpdate(acceptedUserId, acceptedAt);
+        IncrementVersion();
 
         RaiseDomainEvent(new AccountInvitationAcceptedDomainEvent(
             Id, AccountId, acceptedUserId, acceptedUserId, acceptedAt));
@@ -71,6 +74,7 @@ public class AccountInvitation : AggregateRoot, IAccountScoped
 
         Status = AccountInvitationStatus.Expired;
         SetAuditOnUpdate(null, expiredAt);
+        IncrementVersion();
 
         RaiseDomainEvent(new AccountInvitationExpiredDomainEvent(Id, AccountId, expiredAt));
     }
@@ -87,6 +91,7 @@ public class AccountInvitation : AggregateRoot, IAccountScoped
 
         Status = AccountInvitationStatus.Revoked;
         SetAuditOnUpdate(revokedBy, revokedAt);
+        IncrementVersion();
 
         RaiseDomainEvent(new AccountInvitationRevokedDomainEvent(Id, AccountId, revokedBy, revokedAt));
     }

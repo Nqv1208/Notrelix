@@ -1,7 +1,9 @@
+using Notrelix.Domain.Accounts.Accounts.Events;
 namespace Notrelix.Domain.Accounts.Accounts;
 
-public class Account : AggregateRoot
+public class Account : AggregateRoot, IAccountScoped
 {
+    public Guid AccountId => Id;
     public string Name { get; private set; } = null!;
     public string Slug { get; private set; } = null!;
     public string? LegalName { get; private set; }
@@ -93,21 +95,21 @@ public class Account : AggregateRoot
         IncrementVersion();
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
         Status = AccountStatus.SoftDeleted;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
         RaiseDomainEvent(new AccountSoftDeletedDomainEvent(Id, deletedBy, deletedAt, reason));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
         Status = AccountStatus.Active;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
         RaiseDomainEvent(new AccountRestoredDomainEvent(Id, restoredBy, restoredAt));

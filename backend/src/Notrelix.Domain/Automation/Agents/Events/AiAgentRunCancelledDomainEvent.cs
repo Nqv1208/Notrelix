@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Automation.Agents.Events;
 
+[EventName("automation.ai-agent-run-cancelled")]
 public sealed record AiAgentRunCancelledDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

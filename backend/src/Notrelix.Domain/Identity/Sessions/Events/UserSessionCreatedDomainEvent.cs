@@ -1,7 +1,6 @@
-using Notrelix.Domain.Common.Constants;
-
 namespace Notrelix.Domain.Identity.Sessions.Events;
 
+[EventName("identity.user-session-created")]
 public sealed record UserSessionCreatedDomainEvent : GlobalDomainEvent
 {
     public Guid SessionId { get; }
@@ -17,10 +16,5 @@ public sealed record UserSessionCreatedDomainEvent : GlobalDomainEvent
         SessionId = sessionId;
         UserId = userId;
         CreatedAt = createdAt;
-
-        SourceContext = SourceContexts.Identity;
-        AggregateType = AggregateTypes.UserSession;
-        AggregateId = sessionId;
-        SubjectType = SubjectTypes.UserSession;
     }
 }

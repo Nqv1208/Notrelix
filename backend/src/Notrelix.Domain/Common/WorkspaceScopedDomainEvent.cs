@@ -1,17 +1,17 @@
 namespace Notrelix.Domain.Common;
 
-public abstract record WorkspaceScopedDomainEvent : DomainEvent, IWorkspaceScoped
+public abstract record WorkspaceScopedDomainEvent : AccountScopedDomainEvent, IWorkspaceScoped
 {
-    public Guid AccountId { get; }
     public Guid WorkspaceId { get; }
 
     protected WorkspaceScopedDomainEvent(
         Guid accountId,
         Guid workspaceId,
         DateTimeOffset occurredAt)
-        : base(occurredAt)
+        : base(accountId, occurredAt)
     {
-        AccountId = accountId;
+        if (workspaceId == Guid.Empty)
+            throw new ArgumentException("Workspace id cannot be empty.", nameof(workspaceId));
         WorkspaceId = workspaceId;
     }
 }

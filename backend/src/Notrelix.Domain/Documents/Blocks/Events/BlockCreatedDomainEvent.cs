@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Documents.Blocks.Events;
 
+[EventName("documents.block-created")]
 public sealed record BlockCreatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

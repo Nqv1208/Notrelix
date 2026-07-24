@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Collaboration.Comments.Events;
 
+[EventName("collaboration.comment-resolved")]
 public sealed record CommentResolvedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

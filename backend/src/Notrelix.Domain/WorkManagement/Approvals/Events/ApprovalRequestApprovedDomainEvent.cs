@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Approvals.Events;
 
+[EventName("work-management.approval-request-approved")]
 public sealed record ApprovalRequestApprovedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

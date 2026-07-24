@@ -1,3 +1,5 @@
+using Notrelix.Domain.Workspaces.Members.Events;
+using Notrelix.Domain.Workspaces.Rules;
 namespace Notrelix.Domain.Workspaces.Members;
 
 public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
@@ -43,6 +45,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         if (newRole == WorkspaceRole.Owner)
         {
             throw new BusinessRuleException(
+                BusinessRuleCodes.Workspaces_Member_CannotDirectlyAssignOwner,
                 "Ownership must be transferred through the ownership transfer workflow.");
         }
 
@@ -91,9 +94,9 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
 
-        WorkspaceOwnerRules.EnsureCanSuspendOwner(Role, activeOwnerCount);
-
         if (Status == WorkspaceMemberStatus.Suspended) return;
+
+        WorkspaceOwnerRules.EnsureCanSuspendOwner(Role, activeOwnerCount);
 
         Status = WorkspaceMemberStatus.Suspended;
 
@@ -121,14 +124,14 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new WorkspaceMemberActivatedDomainEvent(AccountId, WorkspaceId, Id, UserId, updatedBy, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
 
         if (IsDeleted) return;
 
         Status = WorkspaceMemberStatus.Removed;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceMemberRemovedDomainEvent(AccountId, WorkspaceId, Id, UserId, deletedBy, deletedAt));
@@ -144,14 +147,14 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         SoftDelete(removedBy, removedAt, reason);
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
 
         Guard.NotEmpty(restoredBy);
 
         Status = WorkspaceMemberStatus.Active;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceMemberRestoredDomainEvent(

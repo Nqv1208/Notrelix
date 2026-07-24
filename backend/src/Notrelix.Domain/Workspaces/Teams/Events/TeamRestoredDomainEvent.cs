@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Workspaces.Teams.Events;
 
+[EventName("workspaces.team-restored")]
 public sealed record TeamRestoredDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

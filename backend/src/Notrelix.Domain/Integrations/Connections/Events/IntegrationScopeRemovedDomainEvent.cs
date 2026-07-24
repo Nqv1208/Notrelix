@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Integrations.Connections.Events;
 
+[EventName("integrations.integration-scope-removed")]
 public sealed record IntegrationScopeRemovedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

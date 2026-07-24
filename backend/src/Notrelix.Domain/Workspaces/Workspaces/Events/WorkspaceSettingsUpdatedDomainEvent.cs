@@ -1,14 +1,16 @@
 namespace Notrelix.Domain.Workspaces.Workspaces.Events;
 
-public sealed record WorkspaceSettingsUpdatedDomainEvent : WorkspaceRootDomainEvent
+[EventName("workspaces.workspace-settings-updated")]
+public sealed record WorkspaceSettingsUpdatedDomainEvent : WorkspaceScopedDomainEvent
 {
     public Guid UpdatedBy { get; }
 
     public WorkspaceSettingsUpdatedDomainEvent(
+        Guid accountId,
         Guid workspaceId,
         Guid updatedBy,
         DateTimeOffset occurredAt)
-        : base(workspaceId, occurredAt)
+        : base(accountId, workspaceId, occurredAt)
     {
         UpdatedBy = updatedBy;
     }

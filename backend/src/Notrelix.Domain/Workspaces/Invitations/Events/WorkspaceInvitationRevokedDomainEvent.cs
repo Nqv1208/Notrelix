@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Workspaces.Invitations.Events;
 
+[EventName("workspaces.workspace-invitation-revoked")]
 public sealed record WorkspaceInvitationRevokedDomainEvent(
     Guid AccountId,
     Guid InvitationId,

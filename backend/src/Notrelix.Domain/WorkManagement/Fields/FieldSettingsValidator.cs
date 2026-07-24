@@ -8,6 +8,10 @@ public static class FieldSettingsValidator
 
         var data = settings.Data.Value;
 
+        // Status fields require transitions even with empty settings.
+        if (type == FieldType.Status && (string.IsNullOrWhiteSpace(data) || data == "{}"))
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldSettings_StatusMustIncludeTransitions, "Status field settings must include 'transitions'.");
+
         if (string.IsNullOrWhiteSpace(data) || data == "{}")
             return;
 

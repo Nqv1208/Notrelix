@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Workspaces.Teams.Events;
 
+[EventName("workspaces.team-description-updated")]
 public sealed record TeamDescriptionUpdatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

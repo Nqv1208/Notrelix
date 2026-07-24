@@ -1,3 +1,4 @@
+using Notrelix.Domain.Integrations.Webhooks.Events;
 namespace Notrelix.Domain.Integrations.Webhooks;
 
 public class WebhookDelivery : AggregateRoot, IWorkspaceScoped
@@ -37,6 +38,7 @@ public class WebhookDelivery : AggregateRoot, IWorkspaceScoped
             MaxRetries = maxRetries
         };
 
+        delivery.SetAuditOnCreate(null, createdAt);
         delivery.RaiseDomainEvent(new WebhookDeliveryRecordedDomainEvent(accountId, workspaceId, subscriptionId, delivery.Id, WebhookDeliveryStatus.Pending, createdAt));
         return delivery;
     }
@@ -44,7 +46,7 @@ public class WebhookDelivery : AggregateRoot, IWorkspaceScoped
     public void MarkDelivered(int statusCode, string? responseBody, DateTimeOffset deliveredAt)
     {
         if (Status != WebhookDeliveryStatus.Pending && Status != WebhookDeliveryStatus.Retrying)
-            throw new BusinessRuleException($"Cannot mark delivery as sent from status {Status}.");
+            throw new BusinessRuleException(BusinessRuleCodes.Integrations_WebhookDelivery_CannotMarkSentFromStatus, $"Cannot mark delivery as sent from status {Status}.");
 
         Status = WebhookDeliveryStatus.Sent;
         ResponseStatusCode = statusCode;
@@ -57,7 +59,7 @@ public class WebhookDelivery : AggregateRoot, IWorkspaceScoped
     public void MarkFailed(int? statusCode, string? responseBody, DateTimeOffset failedAt, string? reason = null)
     {
         if (Status != WebhookDeliveryStatus.Pending && Status != WebhookDeliveryStatus.Retrying)
-            throw new BusinessRuleException($"Cannot mark delivery as failed from status {Status}.");
+            throw new BusinessRuleException(BusinessRuleCodes.Integrations_WebhookDelivery_CannotMarkFailedFromStatus, $"Cannot mark delivery as failed from status {Status}.");
 
         Status = WebhookDeliveryStatus.Failed;
         ResponseStatusCode = statusCode;
@@ -74,7 +76,7 @@ public class WebhookDelivery : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(BusinessRuleCodes.Integrations_WebhookDelivery_CannotScheduleRetryUnlessFailed, "Can only schedule retry for a failed delivery.");
 
         if (RetryCount >= MaxRetries)
-            throw new BusinessRuleException($"Maximum retry count ({MaxRetries}) reached.");
+            throw new BusinessRuleException(BusinessRuleCodes.Integrations_WebhookDelivery_MaxRetriesReached, $"Maximum retry count ({MaxRetries}) reached.");
 
         Status = WebhookDeliveryStatus.Retrying;
         RetryCount++;

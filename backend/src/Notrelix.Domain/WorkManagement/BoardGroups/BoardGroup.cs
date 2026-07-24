@@ -1,3 +1,4 @@
+using Notrelix.Domain.WorkManagement.BoardGroups.Events;
 namespace Notrelix.Domain.WorkManagement.BoardGroups;
 
 public class BoardGroup : AggregateRoot, IWorkspaceScoped
@@ -43,6 +44,7 @@ public class BoardGroup : AggregateRoot, IWorkspaceScoped
     public void Rename(string title, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        EnsureNotArchived();
         Guard.NotNullOrWhiteSpace(title);
         Guard.MaxLength(title, 255);
 
@@ -59,6 +61,7 @@ public class BoardGroup : AggregateRoot, IWorkspaceScoped
     public void UpdateColor(Color color, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        EnsureNotArchived();
         Guard.NotNull(color);
         if (Color == color) return;
 
@@ -72,6 +75,7 @@ public class BoardGroup : AggregateRoot, IWorkspaceScoped
     public void UpdatePosition(FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        EnsureNotArchived();
         Guard.NotNull(newPosition);
         if (Position == newPosition) return;
 
@@ -81,10 +85,11 @@ public class BoardGroup : AggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardGroupReorderedDomainEvent(AccountId, WorkspaceId, Id, BoardId, newPosition.Value, updatedBy, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
+        SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
         RaiseDomainEvent(new BoardGroupSoftDeletedDomainEvent(AccountId, WorkspaceId, BoardId, Id, deletedBy, deletedAt));
     }
@@ -95,10 +100,11 @@ public class BoardGroup : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Board_CannotDeleteDefaultGroup, "Cannot delete the board's default group.");
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
+        SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
         RaiseDomainEvent(new BoardGroupRestoredDomainEvent(AccountId, WorkspaceId, BoardId, Id, restoredBy, restoredAt));
     }
@@ -121,5 +127,11 @@ public class BoardGroup : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(unarchivedBy, unarchivedAt);
         IncrementVersion();
         RaiseDomainEvent(new BoardGroupUnarchivedDomainEvent(AccountId, WorkspaceId, Id, unarchivedBy, unarchivedAt));
+    }
+
+    private void EnsureNotArchived()
+    {
+        if (IsArchived)
+            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Board_CannotRenameArchived, "Cannot modify an archived board group.");
     }
 }

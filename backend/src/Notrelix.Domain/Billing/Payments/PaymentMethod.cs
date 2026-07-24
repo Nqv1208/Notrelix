@@ -1,3 +1,7 @@
+using Notrelix.Domain.Billing.Payments.Events;
+using Notrelix.Domain.Common.Exceptions;
+using static Notrelix.Domain.Common.Exceptions.BusinessRuleCodes;
+
 namespace Notrelix.Domain.Billing.Payments;
 
 public class PaymentMethod : AggregateRoot, IWorkspaceScoped
@@ -18,6 +22,7 @@ public class PaymentMethod : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(providerMethodId);
+        Guard.NotEmpty(createdBy);
 
         var method = new PaymentMethod
         {
@@ -76,17 +81,17 @@ public class PaymentMethod : AggregateRoot, IWorkspaceScoped
         IncrementVersion();
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         IncrementVersion();
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         IncrementVersion();
     }
 }

@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Items.Events;
 
+[EventName("work-management.board-item-label-added")]
 public sealed record BoardItemLabelAddedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

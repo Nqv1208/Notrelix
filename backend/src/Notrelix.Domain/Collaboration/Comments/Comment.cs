@@ -1,3 +1,4 @@
+using Notrelix.Domain.Collaboration.Comments.Events;
 namespace Notrelix.Domain.Collaboration.Comments;
 
 public class Comment : AggregateRoot, IWorkspaceScoped
@@ -31,7 +32,7 @@ public class Comment : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(createdBy);
 
         if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
-            throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
+            throw new BusinessRuleException(BusinessRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{workspaceId}', got '{target.WorkspaceId.Value}'.");
 
         if (parentId.HasValue && getParentTarget != null)
         {
@@ -80,20 +81,20 @@ public class Comment : AggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new CommentResolvedDomainEvent(AccountId, WorkspaceId, Id, resolvedBy, resolvedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
         CommentStatus = CommentStatus.SoftDeleted;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
         RaiseDomainEvent(new CommentSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         CommentStatus = CommentStatus.Active;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();

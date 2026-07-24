@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Collaboration.Mentions.Events;
 
+[EventName("collaboration.mention-created")]
 public sealed record MentionCreatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

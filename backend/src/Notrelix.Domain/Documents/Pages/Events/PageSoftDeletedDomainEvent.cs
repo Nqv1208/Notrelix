@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Documents.Pages.Events;
 
+[EventName("documents.page-soft-deleted")]
 public sealed record PageSoftDeletedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.Billing.Usage.Events;
 
-public record FeatureUsageReleasedDomainEvent : WorkspaceScopedDomainEvent
+[EventName("billing.feature-usage-released")]
+public sealed record FeatureUsageReleasedDomainEvent : WorkspaceScopedDomainEvent
 {
     public string FeatureCode { get; }
     public decimal Amount { get; }

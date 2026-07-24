@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Documents.Pages.Events;
 
+[EventName("documents.page-moved")]
 public sealed record PageMovedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

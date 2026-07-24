@@ -1,6 +1,8 @@
+using Notrelix.Domain.Billing.Common;
 namespace Notrelix.Domain.Billing.Subscriptions.Events;
 
-public record SubscriptionActivatedDomainEvent : BillingAccountScopedDomainEvent
+[EventName("billing.subscription-activated")]
+public sealed record SubscriptionActivatedDomainEvent : BillingAccountScopedDomainEvent
 {
     public Guid SubscriptionId { get; }
     public Guid PlanId { get; }

@@ -1,3 +1,4 @@
+using Notrelix.Domain.Workspaces.Members;
 namespace Notrelix.Domain.Workspaces.Rules;
 
 public static class WorkspaceOwnerRules

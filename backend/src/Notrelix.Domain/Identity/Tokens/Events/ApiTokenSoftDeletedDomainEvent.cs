@@ -1,8 +1,8 @@
 namespace Notrelix.Domain.Identity.Tokens.Events;
 
-public record ApiTokenSoftDeletedDomainEvent : WorkspaceScopedDomainEvent
+[EventName("identity.api-token-soft-deleted")]
+public sealed record ApiTokenSoftDeletedDomainEvent : WorkspaceScopedDomainEvent
 {
-    public Guid AccountId { get; }
     public Guid TokenId { get; }
 
     public ApiTokenSoftDeletedDomainEvent(
@@ -12,7 +12,6 @@ public record ApiTokenSoftDeletedDomainEvent : WorkspaceScopedDomainEvent
         DateTimeOffset occurredAt)
         : base(accountId, workspaceId, occurredAt)
     {
-        AccountId = accountId;
         TokenId = tokenId;
     }
 }

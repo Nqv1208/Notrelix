@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Integrations.Connections.Events;
 
+[EventName("integrations.integration-connection-expired")]
 public sealed record IntegrationConnectionExpiredDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

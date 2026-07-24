@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Documents.Blocks.Events;
 
+[EventName("documents.block-moved")]
 public sealed record BlockMovedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

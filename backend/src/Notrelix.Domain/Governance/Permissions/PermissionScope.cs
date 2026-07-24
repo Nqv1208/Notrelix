@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Governance.Permissions;
 
 public sealed class PermissionScope : ValueObject
 {
-    public string Value { get; }
+    public string Value { get; } = null!;
 
     private PermissionScope() { }
     private PermissionScope(string value)

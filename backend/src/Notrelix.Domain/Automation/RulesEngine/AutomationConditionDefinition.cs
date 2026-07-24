@@ -4,7 +4,7 @@ namespace Notrelix.Domain.Automation.RulesEngine;
 
 public sealed class AutomationConditionDefinition : ValueObject
 {
-    public string RawJson { get; private set; }
+    public string RawJson { get; private set; } = null!;
 
     private AutomationConditionDefinition() { }
 
@@ -25,7 +25,7 @@ public sealed class AutomationConditionDefinition : ValueObject
         }
         catch (JsonException ex)
         {
-            throw new BusinessRuleException($"Invalid condition configuration JSON: {ex.Message}");
+            throw new BusinessRuleException(BusinessRuleCodes.Automation_Condition_InvalidConfigJson, $"Invalid condition configuration JSON: {ex.Message}");
         }
 
         return new AutomationConditionDefinition(json);

@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Approvals.Events;
 
+[EventName("work-management.approval-request-cancelled")]
 public sealed record ApprovalRequestCancelledDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

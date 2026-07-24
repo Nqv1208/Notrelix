@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Workspaces.Teams.Events;
 
+[EventName("workspaces.team-member-removed")]
 public sealed record TeamMemberRemovedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

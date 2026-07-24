@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Fields.Events;
 
+[EventName("work-management.board-field-restored")]
 public sealed record BoardFieldRestoredDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

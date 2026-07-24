@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Workspaces.Members.Events;
 
+[EventName("workspaces.workspace-member-removed")]
 public sealed record WorkspaceMemberRemovedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

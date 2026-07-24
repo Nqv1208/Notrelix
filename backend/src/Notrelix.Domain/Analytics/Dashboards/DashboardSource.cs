@@ -1,3 +1,4 @@
+using Notrelix.Domain.Analytics.Dashboards.Events;
 namespace Notrelix.Domain.Analytics.Dashboards;
 
 public class DashboardSource : AggregateRoot, IWorkspaceScoped
@@ -49,7 +50,7 @@ public class DashboardSource : AggregateRoot, IWorkspaceScoped
         };
 
         source.SetAuditOnCreate(createdBy, createdAt);
-        source.RaiseDomainEvent(new DashboardSourceAddedDomainEvent(accountId, workspaceId, dashboardId, source.Id, createdBy, createdAt));
+        source.RaiseDomainEvent(new DashboardSourceAddedDomainEvent(accountId, workspaceId, dashboardId, source.Id, createdAt));
         return source;
     }
 
@@ -61,6 +62,6 @@ public class DashboardSource : AggregateRoot, IWorkspaceScoped
         Filter = newFilter;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        RaiseDomainEvent(new DashboardSourceUpdatedDomainEvent(AccountId, WorkspaceId, DashboardId, Id, updatedBy, updatedAt));
+        RaiseDomainEvent(new DashboardSourceUpdatedDomainEvent(AccountId, WorkspaceId, DashboardId, Id, updatedAt));
     }
 }

@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Collaboration.Reactions.Events;
 
+[EventName("collaboration.reaction-created")]
 public sealed record ReactionCreatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

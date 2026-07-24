@@ -1,4 +1,7 @@
+using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
+using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.SharedKernel;
 
@@ -8,7 +11,7 @@ public sealed class Slug : ValueObject
         @"^[a-z0-9]+(?:-[a-z0-9]+)*$",
         RegexOptions.Compiled);
 
-    public string Value { get; }
+    public string Value { get; } = null!;
 
     private Slug() { }
     private Slug(string value)
@@ -22,7 +25,8 @@ public sealed class Slug : ValueObject
 
         value = value.Trim().ToLowerInvariant();
 
-        Guard.Assert(SlugRegex.IsMatch(value), $"'{value}' is not a valid slug. Only lowercase letters, numbers, and hyphens are allowed.");
+        if (!SlugRegex.IsMatch(value))
+            throw new BusinessRuleException(BusinessRuleCodes.SharedKernel_Slug_InvalidFormat, $"'{value}' is not a valid slug. Only lowercase letters, numbers, and hyphens are allowed.");
 
         return new Slug(value);
     }
@@ -30,11 +34,27 @@ public sealed class Slug : ValueObject
     public static Slug GenerateFromName(string name)
     {
         Guard.NotNullOrWhiteSpace(name);
-        var value = name.Trim().ToLowerInvariant();
+
+        // Unicode normalization: FormD decomposes characters, then remove
+        // combining marks (accents, diacritics) to get ASCII-compatible base.
+        var normalized = name.Normalize(NormalizationForm.FormD);
+        var sb = new StringBuilder(normalized.Length);
+        foreach (var c in normalized)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                sb.Append(c);
+        }
+
+        var value = sb.ToString().ToLowerInvariant();
         value = Regex.Replace(value, @"[^a-z0-9\s-]", "");
         value = Regex.Replace(value, @"\s+", "-");
         value = Regex.Replace(value, @"-+", "-");
-        return new Slug(value.Trim('-'));
+        value = value.Trim('-');
+
+        if (string.IsNullOrWhiteSpace(value))
+            throw new BusinessRuleException(BusinessRuleCodes.SharedKernel_Slug_InvalidFormat, "Name does not contain any characters that can form a valid slug.");
+
+        return Create(value);
     }
 
     protected override IEnumerable<object?> GetEqualityComponents()

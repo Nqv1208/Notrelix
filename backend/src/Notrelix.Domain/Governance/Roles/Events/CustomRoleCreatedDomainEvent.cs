@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Governance.Roles.Events;
 
+[EventName("governance.custom-role-created")]
 public sealed record CustomRoleCreatedDomainEvent(
     Guid AccountId,
     Guid RoleId,

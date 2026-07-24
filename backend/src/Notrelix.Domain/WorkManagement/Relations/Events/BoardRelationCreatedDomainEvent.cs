@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.WorkManagement.Relations.Events;
 
-public record BoardRelationCreatedDomainEvent : WorkspaceScopedDomainEvent
+[EventName("work-management.board-relation-created")]
+public sealed record BoardRelationCreatedDomainEvent : WorkspaceScopedDomainEvent
 {
     public Guid RelationId { get; }
     public Guid SourceBoardId { get; }

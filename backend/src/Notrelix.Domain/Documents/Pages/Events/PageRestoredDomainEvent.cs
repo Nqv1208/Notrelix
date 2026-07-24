@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Documents.Pages.Events;
 
+[EventName("documents.page-restored")]
 public sealed record PageRestoredDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

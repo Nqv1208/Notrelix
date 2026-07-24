@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Workspaces.Members.Events;
 
+[EventName("workspaces.workspace-member-suspended")]
 public sealed record WorkspaceMemberSuspendedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

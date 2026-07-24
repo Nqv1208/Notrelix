@@ -23,7 +23,7 @@ public class DashboardWidget : Entity, IWorkspaceScoped
 
         var (isValid, error) = WidgetConfigValidator.Validate(type, config);
         if (!isValid)
-            throw new BusinessRuleException($"Invalid widget config: {error}");
+            throw new BusinessRuleException(BusinessRuleCodes.Analytics_Dashboard_InvalidWidgetConfig, $"Invalid widget config: {error}");
 
         WidgetRules.ValidatePosition(position);
 

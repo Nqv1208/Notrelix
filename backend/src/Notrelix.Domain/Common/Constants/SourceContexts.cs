@@ -14,5 +14,7 @@ public static class SourceContexts
     public const string Integrations = "integrations";
     public const string Billing = "billing";
     public const string Analytics = "analytics";
+
+    // Legacy alias used by Infrastructure outbox. Prefer Integrations.
     public const string Integration = "integration";
 }

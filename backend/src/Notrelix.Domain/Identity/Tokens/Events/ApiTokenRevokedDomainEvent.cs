@@ -1,8 +1,8 @@
 namespace Notrelix.Domain.Identity.Tokens.Events;
 
-public record ApiTokenRevokedDomainEvent : WorkspaceScopedDomainEvent
+[EventName("identity.api-token-revoked")]
+public sealed record ApiTokenRevokedDomainEvent : WorkspaceScopedDomainEvent
 {
-    public Guid AccountId { get; }
     public Guid TokenId { get; }
 
     public ApiTokenRevokedDomainEvent(
@@ -12,7 +12,6 @@ public record ApiTokenRevokedDomainEvent : WorkspaceScopedDomainEvent
         DateTimeOffset occurredAt)
         : base(accountId, workspaceId, occurredAt)
     {
-        AccountId = accountId;
         TokenId = tokenId;
     }
 }

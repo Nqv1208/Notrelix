@@ -2,6 +2,7 @@ using Notrelix.Domain.Identity.Mfa;
 
 namespace Notrelix.Domain.Identity.Security.Events;
 
+[EventName("identity.user-mfa-requirement-disabled")]
 public sealed record UserMfaRequirementDisabledDomainEvent(
     Guid UserId,
     MfaMethodType? PreviousMethod,

@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Items.Events;
 
+[EventName("work-management.board-item-parent-assigned")]
 public sealed record BoardItemParentAssignedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

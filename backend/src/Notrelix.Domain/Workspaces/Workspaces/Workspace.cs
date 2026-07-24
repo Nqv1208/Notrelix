@@ -1,7 +1,9 @@
+using Notrelix.Domain.Workspaces.Workspaces.Events;
 namespace Notrelix.Domain.Workspaces.Workspaces;
 
-public class Workspace : AggregateRoot
+public class Workspace : AggregateRoot, IWorkspaceScoped
 {
+    public Guid WorkspaceId => Id;
     public string Name { get; private set; } = null!;
     public string Slug { get; private set; } = null!;
     public string? Description { get; private set; }
@@ -73,7 +75,7 @@ public class Workspace : AggregateRoot
         Name = newName.Trim();
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        RaiseDomainEvent(new WorkspaceRenamedDomainEvent(Id, oldName, Name, updatedBy, updatedAt));
+        RaiseDomainEvent(new WorkspaceRenamedDomainEvent(AccountId, Id, oldName, Name, updatedBy, updatedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
@@ -85,7 +87,7 @@ public class Workspace : AggregateRoot
         Status = WorkspaceStatus.Archived;
         SetAuditOnUpdate(archivedBy, archivedAt);
         IncrementVersion();
-        RaiseDomainEvent(new WorkspaceArchivedDomainEvent(Id, archivedBy, archivedAt));
+        RaiseDomainEvent(new WorkspaceArchivedDomainEvent(AccountId, Id, archivedBy, archivedAt));
     }
 
     public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
@@ -97,32 +99,33 @@ public class Workspace : AggregateRoot
 
         if (Status != WorkspaceStatus.Archived)
             throw new BusinessRuleException(
+                BusinessRuleCodes.Workspaces_Workspace_CannotUnarchiveNonArchived,
                 "Only an archived workspace can be unarchived.");
 
         Status = WorkspaceStatus.Active;
         SetAuditOnUpdate(unarchivedBy, unarchivedAt);
         IncrementVersion();
-        RaiseDomainEvent(new WorkspaceUnarchivedDomainEvent(Id, unarchivedBy, unarchivedAt));
+        RaiseDomainEvent(new WorkspaceUnarchivedDomainEvent(AccountId, Id, unarchivedBy, unarchivedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
         Status = WorkspaceStatus.SoftDeleted;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        RaiseDomainEvent(new WorkspaceSoftDeletedDomainEvent(Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new WorkspaceSoftDeletedDomainEvent(AccountId, Id, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
         Status = WorkspaceStatus.Active;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        RaiseDomainEvent(new WorkspaceRestoredDomainEvent(Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new WorkspaceRestoredDomainEvent(AccountId, Id, restoredBy, restoredAt));
     }
 
     public void UpdateDescription(string? newDescription, Guid updatedBy, DateTimeOffset updatedAt)
@@ -147,7 +150,7 @@ public class Workspace : AggregateRoot
         Description = normalized;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        RaiseDomainEvent(new WorkspaceDescriptionUpdatedDomainEvent(Id, oldDescription, Description, updatedBy, updatedAt));
+        RaiseDomainEvent(new WorkspaceDescriptionUpdatedDomainEvent(AccountId, Id, oldDescription, Description, updatedBy, updatedAt));
     }
 
     public void UpdateSettings(WorkspaceSettings newSettings, Guid updatedBy, DateTimeOffset updatedAt)
@@ -164,6 +167,6 @@ public class Workspace : AggregateRoot
         Settings = newSettings;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        RaiseDomainEvent(new WorkspaceSettingsUpdatedDomainEvent(Id, updatedBy, updatedAt));
+        RaiseDomainEvent(new WorkspaceSettingsUpdatedDomainEvent(AccountId, Id, updatedBy, updatedAt));
     }
 }

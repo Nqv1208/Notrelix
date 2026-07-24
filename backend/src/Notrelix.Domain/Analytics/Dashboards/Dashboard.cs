@@ -1,5 +1,8 @@
+using Notrelix.Domain.Analytics.Dashboards.Events;
 using Notrelix.Domain.Analytics.Rules;
 using Notrelix.Domain.Analytics.Widgets;
+using Notrelix.Domain.Common.Exceptions;
+using static Notrelix.Domain.Common.Exceptions.BusinessRuleCodes;
 
 namespace Notrelix.Domain.Analytics.Dashboards;
 
@@ -70,7 +73,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         WidgetRules.ValidatePosition(position);
 
         if (_widgets.Count >= MaxWidgets)
-            throw new BusinessRuleException($"Cannot add more than {MaxWidgets} widgets to a dashboard.");
+            throw new BusinessRuleException(Common_WidgetCoordinatesMustBeNonNegative, $"Cannot add more than {MaxWidgets} widgets to a dashboard.");
 
         var widget = DashboardWidget.Create(Id, title, type, config, position);
         _widgets.Add(widget);
@@ -97,7 +100,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         var widget = _widgets.FirstOrDefault(w => w.Id == widgetId);
         if (widget is null)
         {
-            throw new DomainException($"Widget '{widgetId}' not found on this dashboard.");
+            throw new BusinessRuleException(Analytics_Dashboard_WidgetNotFound, $"Widget '{widgetId}' not found on this dashboard.");
         }
 
         widget.UpdatePosition(newPosition);
@@ -106,21 +109,21 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new DashboardWidgetMovedDomainEvent(AccountId, WorkspaceId, Id, widgetId, newPosition, updatedBy, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
         Status = DashboardStatus.Archived;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
         RaiseDomainEvent(new DashboardDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
         Status = DashboardStatus.Active;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
         RaiseDomainEvent(new DashboardRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));

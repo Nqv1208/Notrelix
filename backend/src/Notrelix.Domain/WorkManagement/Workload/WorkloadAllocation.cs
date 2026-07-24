@@ -11,12 +11,12 @@ public class WorkloadAllocation : Entity, IWorkspaceScoped
     public Guid? BoardId { get; private set; }
     public Guid? ItemId { get; private set; }
     public Guid UserId { get; private set; }
-    public DateTime AllocationDate { get; private set; }
+    public DateTimeOffset AllocationDate { get; private set; }
     public int AllocatedMinutes { get; private set; }
 
     private WorkloadAllocation() : base() { }
 
-    public static WorkloadAllocation Create(Guid accountId, Guid workspaceId, Guid userId, DateTime date, int minutes)
+    public static WorkloadAllocation Create(Guid accountId, Guid workspaceId, Guid userId, DateTimeOffset date, int minutes)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(userId);

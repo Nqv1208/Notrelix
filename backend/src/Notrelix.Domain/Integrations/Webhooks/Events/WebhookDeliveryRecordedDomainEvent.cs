@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Integrations.Webhooks.Events;
 
+[EventName("integrations.webhook-delivery-recorded")]
 public sealed record WebhookDeliveryRecordedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
