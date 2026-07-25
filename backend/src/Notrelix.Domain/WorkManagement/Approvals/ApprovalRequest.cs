@@ -113,8 +113,8 @@ public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         if (step.ApproverUserId.HasValue && step.ApproverUserId.Value != decidedBy)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_StepNotAssignedToYou, "This step is not assigned to you.");
-        if (step.ApproverTeamId.HasValue && step.ApproverTeamId.Value != decidedBy)
-            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_StepNotAssignedToYou, "This step is assigned to a team, not an individual user.");
+        if (step.ApproverTeamId.HasValue)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_TeamDecisionNotSupported, "Team-assigned approval steps require team membership resolution, which is not yet supported.");
 
         step.Approve(decidedAt, note);
 
@@ -144,8 +144,8 @@ public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         if (step.ApproverUserId.HasValue && step.ApproverUserId.Value != decidedBy)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_StepNotAssignedToYou, "This step is not assigned to you.");
-        if (step.ApproverTeamId.HasValue && step.ApproverTeamId.Value != decidedBy)
-            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_StepNotAssignedToYou, "This step is assigned to a team, not an individual user.");
+        if (step.ApproverTeamId.HasValue)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_TeamDecisionNotSupported, "Team-assigned approval steps require team membership resolution, which is not yet supported.");
 
         step.Reject(decidedAt, note);
         Status = ApprovalStatus.Rejected;

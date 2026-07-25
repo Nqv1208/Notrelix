@@ -109,7 +109,22 @@ public class ApprovalMutationContractTests
         var stepId = request.Steps.First().Id;
         Action act = () => request.Approve(stepId, userId, Now);
 
-        act.Should().Throw<BusinessRuleException>().WithMessage("*assigned to a team*");
+        act.Should().Throw<BusinessRuleException>().WithMessage("*Team membership resolution*");
+    }
+
+    [Fact]
+    public void Reject_ShouldThrow_WhenTeamStepAndDecidedByIsUserId()
+    {
+        var teamId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WorkspaceId);
+        var request = ApprovalRequest.Create(AccountId, WorkspaceId, target, "Approve", Actor, Now);
+        request.AddStep(1, Actor, Now, approverTeamId: teamId);
+
+        var stepId = request.Steps.First().Id;
+        Action act = () => request.Reject(stepId, userId, Now);
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*Team membership resolution*");
     }
 
     [Fact]

@@ -114,6 +114,7 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Approval_DuplicateStepPosition = "WorkManagement_Approval_DuplicateStepPosition";
     public const string WorkManagement_Approval_DuplicateApprover = "WorkManagement_Approval_DuplicateApprover";
     public const string WorkManagement_Approval_StepNotAssignedToYou = "WorkManagement_Approval_StepNotAssignedToYou";
+    public const string WorkManagement_Approval_TeamDecisionNotSupported = "WorkManagement_Approval_TeamDecisionNotSupported";
 
     // ── Template ──────────────────────────────────────────────────────────
     public const string WorkManagement_BoardTemplate_CannotDraftArchived = "WorkManagement_BoardTemplate_CannotDraftArchived";
