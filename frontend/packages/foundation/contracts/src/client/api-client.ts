@@ -251,3 +251,5 @@ export function createNotrelixClient(config: { baseUrl: string }) {
     endpoints,
   }
 }
+
+export type NotrelixClient = ReturnType<typeof createNotrelixClient>;

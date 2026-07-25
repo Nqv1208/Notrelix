@@ -5,7 +5,7 @@
  * No React, no DOM dependencies.
  */
 
-export { api, apiFetch, configureApi, createNotrelixClient, type ApiRequestOptions } from './client'
+export { api, apiFetch, configureApi, createNotrelixClient, type ApiRequestOptions, type NotrelixClient } from './client'
 export { getCsrfToken } from './client'
 export { endpoints } from './endpoints'
 export type { ApiError, ValidationError, PaginationParams, PaginatedResponse } from './types'

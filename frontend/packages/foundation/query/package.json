@@ -14,10 +14,10 @@
   },
   "dependencies": {
     "@notrelix/kernel": "workspace:*",
-    "@tanstack/react-query": "^5.0.0"
+    "@tanstack/react-query": "catalog:"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
+    "typescript": "catalog:",
     "@types/node": "^20.0.0"
   }
 }

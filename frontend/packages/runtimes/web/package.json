@@ -13,9 +13,19 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@notrelix/contracts": "workspace:*",
+    "@notrelix/kernel": "workspace:*",
     "@notrelix/platform": "workspace:*"
   },
+  "peerDependencies": {
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "typescript": "catalog:"
   }
 }
