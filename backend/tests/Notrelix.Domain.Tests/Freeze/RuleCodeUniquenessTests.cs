@@ -9,6 +9,7 @@ using Notrelix.Domain.Documents;
 using Notrelix.Domain.Governance;
 using Notrelix.Domain.Identity;
 using Notrelix.Domain.Integrations;
+using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.WorkManagement;
 using Notrelix.Domain.Workspaces;
 
@@ -23,6 +24,7 @@ public class RuleCodeUniquenessTests
     private static readonly Type[] RuleCodeTypes =
     [
         typeof(CommonRuleCodes),
+        typeof(SharedKernelRuleCodes),
         typeof(AccountRuleCodes),
         typeof(IdentityRuleCodes),
         typeof(WorkspaceRuleCodes),

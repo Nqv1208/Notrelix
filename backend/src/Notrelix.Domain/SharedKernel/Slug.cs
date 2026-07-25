@@ -25,7 +25,7 @@ public sealed class Slug : ValueObject
         value = value.Trim().ToLowerInvariant();
 
         if (!SlugRegex.IsMatch(value))
-            throw new BusinessRuleException(CommonRuleCodes.SharedKernel_Slug_InvalidFormat, $"'{value}' is not a valid slug. Only lowercase letters, numbers, and hyphens are allowed.");
+            throw new BusinessRuleException(SharedKernelRuleCodes.SharedKernel_Slug_InvalidFormat, $"'{value}' is not a valid slug. Only lowercase letters, numbers, and hyphens are allowed.");
 
         return new Slug(value);
     }
@@ -51,7 +51,7 @@ public sealed class Slug : ValueObject
         value = value.Trim('-');
 
         if (string.IsNullOrWhiteSpace(value))
-            throw new BusinessRuleException(CommonRuleCodes.SharedKernel_Slug_InvalidFormat, "Name does not contain any characters that can form a valid slug.");
+            throw new BusinessRuleException(SharedKernelRuleCodes.SharedKernel_Slug_InvalidFormat, "Name does not contain any characters that can form a valid slug.");
 
         return Create(value);
     }

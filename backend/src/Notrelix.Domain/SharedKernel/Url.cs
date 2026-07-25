@@ -17,7 +17,7 @@ public sealed class Url : ValueObject
 
         if (!Uri.TryCreate(value, UriKind.Absolute, out var uriResult)
             || (uriResult.Scheme != Uri.UriSchemeHttp && uriResult.Scheme != Uri.UriSchemeHttps))
-            throw new BusinessRuleException(CommonRuleCodes.SharedKernel_Url_InvalidFormat, $"'{value}' is not a valid HTTP or HTTPS URL.");
+            throw new BusinessRuleException(SharedKernelRuleCodes.SharedKernel_Url_InvalidFormat, $"'{value}' is not a valid HTTP or HTTPS URL.");
 
         // Normalize: scheme and host to lowercase for deterministic equality.
         var builder = new UriBuilder(uriResult)

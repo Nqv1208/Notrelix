@@ -15,12 +15,12 @@ public sealed class DateRange : ValueObject
     public static DateRange Create(DateTimeOffset start, DateTimeOffset? end = null)
     {
         if (start == default || start == DateTimeOffset.MinValue)
-            throw new BusinessRuleException(CommonRuleCodes.SharedKernel_DateRange_StartAfterEnd, "Start date must be a valid date.");
+            throw new BusinessRuleException(SharedKernelRuleCodes.SharedKernel_DateRange_StartAfterEnd, "Start date must be a valid date.");
 
         if (end.HasValue)
         {
             if (start > end.Value)
-                throw new BusinessRuleException(CommonRuleCodes.SharedKernel_DateRange_StartAfterEnd, "Start date must be before or equal to the end date.");
+                throw new BusinessRuleException(SharedKernelRuleCodes.SharedKernel_DateRange_StartAfterEnd, "Start date must be before or equal to the end date.");
         }
 
         return new DateRange(start, end);

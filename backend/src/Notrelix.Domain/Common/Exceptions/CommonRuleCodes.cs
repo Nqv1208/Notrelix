@@ -1,19 +1,12 @@
 namespace Notrelix.Domain.Common.Exceptions;
 
 /// <summary>
-/// Rule codes for SharedKernel, Guard, and Common (lifecycle + scope) contexts.
+/// Rule codes for Guard and Common (lifecycle + scope) contexts.
+/// SharedKernel codes live in SharedKernelRuleCodes.
+/// Context-specific codes live in their respective bounded context RuleCodes.
 /// </summary>
 public static class CommonRuleCodes
 {
-    // ── SharedKernel / ValueObjects ───────────────────────────────────────
-    public const string SharedKernel_Json_InvalidFormat = "SharedKernel_Json_InvalidFormat";
-    public const string SharedKernel_Email_InvalidFormat = "SharedKernel_Email_InvalidFormat";
-    public const string SharedKernel_Url_InvalidFormat = "SharedKernel_Url_InvalidFormat";
-    public const string SharedKernel_Slug_InvalidFormat = "SharedKernel_Slug_InvalidFormat";
-    public const string SharedKernel_Color_InvalidFormat = "SharedKernel_Color_InvalidFormat";
-    public const string SharedKernel_Money_InvalidCurrency = "SharedKernel_Money_InvalidCurrency";
-    public const string SharedKernel_DateRange_StartAfterEnd = "SharedKernel_DateRange_StartAfterEnd";
-
     // ── Guard ─────────────────────────────────────────────────────────────
     public const string Guard_Null = "Guard_Null";
     public const string Guard_NullOrWhiteSpace = "Guard_NullOrWhiteSpace";
@@ -40,8 +33,4 @@ public static class CommonRuleCodes
     public const string Common_WorkspaceScopeMismatch = "Common_WorkspaceScopeMismatch";
     public const string Common_BoardScopeMismatch = "Common_BoardScopeMismatch";
     public const string Common_ChildNotFound = "Common_ChildNotFound";
-    public const string Common_WidgetCoordinatesMustBeNonNegative = "Common_WidgetCoordinatesMustBeNonNegative";
-    public const string Common_WidgetDimensionsMustBePositive = "Common_WidgetDimensionsMustBePositive";
-    public const string Common_DefaultMemberRoleMustBeGuestOrMember = "Common_DefaultMemberRoleMustBeGuestOrMember";
-    public const string Common_InvitationExpiryDaysOutOfRange = "Common_InvitationExpiryDaysOutOfRange";
 }
