@@ -30,7 +30,7 @@ public class AggregateRootTests
         var aggregate = new TestAggregate();
         aggregate.DoSomething();
 
-        aggregate.ClearDomainEvents();
+        ((IHasDomainEvents)aggregate).ClearDomainEvents();
 
         aggregate.DomainEvents.Should().BeEmpty();
     }

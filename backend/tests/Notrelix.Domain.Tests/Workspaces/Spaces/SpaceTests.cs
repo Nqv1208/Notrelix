@@ -46,7 +46,7 @@ public class SpaceTests
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
         space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
         var actor = Guid.NewGuid();
 
         space.Unarchive(actor, DateTimeOffset.UtcNow);
@@ -59,7 +59,7 @@ public class SpaceTests
     public void Unarchive_WhenAlreadyActive_ShouldBeNoOp()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
 
         space.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -81,7 +81,7 @@ public class SpaceTests
     public void UpdateDescription_ShouldSucceed_AndRaiseEvent()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
         var actor = Guid.NewGuid();
 
         space.UpdateDescription("Campaign tracking", actor, DateTimeOffset.UtcNow);
@@ -98,7 +98,7 @@ public class SpaceTests
     public void UpdateDescription_ShouldClearDescription_WhenSetToNull()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow, description: "Initial");
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
 
         space.UpdateDescription(null, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -110,7 +110,7 @@ public class SpaceTests
     public void UpdateDescription_WhenSameValue_ShouldBeNoOp()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow, description: "Same");
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
 
         space.UpdateDescription("Same", Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -131,7 +131,7 @@ public class SpaceTests
     public void ChangeVisibility_ShouldSucceed_AndRaiseEvent()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
         var actor = Guid.NewGuid();
 
         space.ChangeVisibility(SpaceVisibility.Private, actor, DateTimeOffset.UtcNow);
@@ -148,7 +148,7 @@ public class SpaceTests
     public void ChangeVisibility_WhenSameValue_ShouldBeNoOp()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
 
         space.ChangeVisibility(SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -169,7 +169,7 @@ public class SpaceTests
     public void ChangeType_ShouldSucceed_AndRaiseEvent()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
         var actor = Guid.NewGuid();
 
         space.ChangeType(SpaceType.Portfolio, actor, DateTimeOffset.UtcNow);
@@ -186,7 +186,7 @@ public class SpaceTests
     public void ChangeType_WhenSameValue_ShouldBeNoOp()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
 
         space.ChangeType(SpaceType.Folder, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -220,7 +220,7 @@ public class SpaceTests
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
         space.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
 
         space.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

@@ -5,7 +5,8 @@ namespace Notrelix.Domain.Tests.Identity;
 
 public class OAuthAccountTests
 {
-    private static readonly JsonValue EmptyProfile = JsonValue.EmptyObject();
+    private static readonly OAuthProfileSnapshot TestSnapshot =
+        OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, JsonValue.EmptyObject());
     private static readonly SecretRef AccessRef = SecretRef.Create("access-token-ref-123");
     private static readonly SecretRef RefreshRef = SecretRef.Create("refresh-token-ref-456");
 
@@ -15,7 +16,7 @@ public class OAuthAccountTests
         var userId = Guid.NewGuid();
         var token = OAuthToken.Create(AccessRef, RefreshRef, DateTimeOffset.UtcNow.AddDays(30));
 
-        var account = OAuthAccount.Create(userId, OAuthProvider.Google, "provider-id-123", EmptyProfile, token);
+        var account = OAuthAccount.Create(userId, OAuthProvider.Google, "provider-id-123", TestSnapshot, token);
 
         account.Provider.Should().Be(OAuthProvider.Google);
         account.ProviderId.Should().Be("provider-id-123");
@@ -29,9 +30,21 @@ public class OAuthAccountTests
     {
         var userId = Guid.NewGuid();
 
-        var account = OAuthAccount.Create(userId, OAuthProvider.GitHub, "github-123", EmptyProfile);
+        var account = OAuthAccount.Create(userId, OAuthProvider.GitHub, "github-123", TestSnapshot);
 
         account.Token.Should().BeNull();
+    }
+
+    [Fact]
+    public void Account_ShouldStoreProfileSnapshot()
+    {
+        var userId = Guid.NewGuid();
+
+        var account = OAuthAccount.Create(userId, OAuthProvider.Google, "provider-id-123", TestSnapshot);
+
+        account.ProfileSnapshot.Should().Be(TestSnapshot);
+        account.ProfileSnapshot.Provider.Should().Be(OAuthProvider.Google);
+        account.ProfileSnapshot.SchemaVersion.Should().Be(1);
     }
 
     [Fact]
@@ -54,10 +67,10 @@ public class OAuthAccountTests
     {
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hash123", now);
-        user.ClearDomainEvents();
+        ((IHasDomainEvents)user).ClearDomainEvents();
 
         var token = OAuthToken.Create(AccessRef, RefreshRef);
-        user.LinkOAuthAccount(OAuthProvider.Google, "provider-id-123", EmptyProfile, token, now.AddMinutes(5));
+        user.LinkOAuthAccount(OAuthProvider.Google, "provider-id-123", TestSnapshot, token, now.AddMinutes(5));
 
         user.OAuthAccounts.Should().ContainSingle();
         var account = user.OAuthAccounts.Single();
@@ -78,9 +91,9 @@ public class OAuthAccountTests
     {
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hash123", now);
-        user.LinkOAuthAccount(OAuthProvider.Google, "id-1", EmptyProfile, null, now);
+        user.LinkOAuthAccount(OAuthProvider.Google, "id-1", TestSnapshot, null, now);
 
-        var act = () => user.LinkOAuthAccount(OAuthProvider.Google, "id-2", EmptyProfile, null, now);
+        var act = () => user.LinkOAuthAccount(OAuthProvider.Google, "id-2", TestSnapshot, null, now);
 
         act.Should().Throw<BusinessRuleException>().WithMessage("*already linked with a different account*");
     }
@@ -90,8 +103,8 @@ public class OAuthAccountTests
     {
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hash123", now);
-        user.LinkOAuthAccount(OAuthProvider.Google, "provider-id-123", EmptyProfile, null, now);
-        user.ClearDomainEvents();
+        user.LinkOAuthAccount(OAuthProvider.Google, "provider-id-123", TestSnapshot, null, now);
+        ((IHasDomainEvents)user).ClearDomainEvents();
 
         user.UnlinkOAuthAccount(OAuthProvider.Google, now.AddMinutes(5));
 
@@ -110,8 +123,8 @@ public class OAuthAccountTests
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hash123", now);
         var oldToken = OAuthToken.Create(AccessRef);
-        user.LinkOAuthAccount(OAuthProvider.Google, "provider-id-123", EmptyProfile, oldToken, now);
-        user.ClearDomainEvents();
+        user.LinkOAuthAccount(OAuthProvider.Google, "provider-id-123", TestSnapshot, oldToken, now);
+        ((IHasDomainEvents)user).ClearDomainEvents();
 
         var newToken = OAuthToken.Create(SecretRef.Create("new-access-ref"));
         user.RotateOAuthToken(OAuthProvider.Google, newToken, now.AddMinutes(5));

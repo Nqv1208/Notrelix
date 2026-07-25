@@ -25,7 +25,7 @@ public class BoardIdempotencyTests
     public void UpdateDescription_ShouldNotIncrementVersion_WhenDescriptionIsSame()
     {
         var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", "Same Desc", _now);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
         var version = board.Version;
 
         board.UpdateDescription("Same Desc", _actorId, _now);
@@ -37,7 +37,7 @@ public class BoardIdempotencyTests
     public void ChangeVisibility_ShouldNotIncrementVersion_WhenVisibilityIsSame()
     {
         var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
         var version = board.Version;
 
         board.ChangeVisibility(BoardVisibility.Workspace, _actorId, _now);
@@ -61,7 +61,7 @@ public class BoardIdempotencyTests
     public void Unarchive_ShouldNotIncrementVersion_WhenNotArchived()
     {
         var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
         var version = board.Version;
 
         board.Unarchive(_actorId, _now);
@@ -87,7 +87,7 @@ public class BoardIdempotencyTests
     {
         var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
         board.SoftDelete(_actorId, _now);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
         var version = board.Version;
 
         board.Restore(_actorId, _now);
@@ -102,7 +102,7 @@ public class BoardIdempotencyTests
     {
         var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
         board.SoftDelete(_actorId, _now);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
         var version = board.Version;
 
         board.SoftDelete(_actorId, _now);
@@ -115,7 +115,7 @@ public class BoardIdempotencyTests
     public void Restore_ShouldNotIncrementOrRaiseEvent_WhenNotDeleted()
     {
         var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
         var version = board.Version;
 
         board.Restore(_actorId, _now);
@@ -128,7 +128,7 @@ public class BoardIdempotencyTests
     public void DomainEvent_ShouldRaiseCorrectType_WhenAggregateMethodProvidesActor()
     {
         var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
 
         board.Rename("Renamed", _actorId, _now);
 
@@ -139,7 +139,7 @@ public class BoardIdempotencyTests
     public void DomainEvent_ShouldRaiseCorrectType_ForSoftDelete()
     {
         var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
 
         board.SoftDelete(_actorId, _now);
 
@@ -151,7 +151,7 @@ public class BoardIdempotencyTests
     {
         var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
         board.SoftDelete(_actorId, _now);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
 
         board.Restore(_actorId, _now);
 
@@ -171,7 +171,7 @@ public class BoardIdempotencyTests
     public void DomainEvent_ShouldCarryCorrectWorkspaceId_AfterMutation()
     {
         var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
 
         board.Rename("Renamed", _actorId, _now);
 

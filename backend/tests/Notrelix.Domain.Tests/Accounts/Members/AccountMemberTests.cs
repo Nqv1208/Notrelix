@@ -33,7 +33,7 @@ public class AccountMemberTests
     public void ChangeRole_ShouldSucceed()
     {
         var member = AccountMember.Create(_accountId, _userId, AccountRole.Member, _actorId, _now);
-        member.ClearDomainEvents();
+        ((IHasDomainEvents)member).ClearDomainEvents();
 
         member.ChangeRole(AccountRole.Admin, _actorId, 2, _now);
 
@@ -45,7 +45,7 @@ public class AccountMemberTests
     public void ChangeRole_OwnerToMember_WithSingleOwner_ShouldThrow()
     {
         var member = AccountMember.Create(_accountId, _userId, AccountRole.Owner, _actorId, _now);
-        member.ClearDomainEvents();
+        ((IHasDomainEvents)member).ClearDomainEvents();
 
         var act = () => member.ChangeRole(AccountRole.Member, _actorId, 1, _now);
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot downgrade the last owner of the account.");
@@ -55,7 +55,7 @@ public class AccountMemberTests
     public void ChangeRole_OwnerToMember_WithMultipleOwners_ShouldSucceed()
     {
         var member = AccountMember.Create(_accountId, _userId, AccountRole.Owner, _actorId, _now);
-        member.ClearDomainEvents();
+        ((IHasDomainEvents)member).ClearDomainEvents();
 
         member.ChangeRole(AccountRole.Member, _actorId, 2, _now);
 
@@ -66,7 +66,7 @@ public class AccountMemberTests
     public void Suspend_ShouldSucceed()
     {
         var member = AccountMember.Create(_accountId, _userId, AccountRole.Member, _actorId, _now);
-        member.ClearDomainEvents();
+        ((IHasDomainEvents)member).ClearDomainEvents();
 
         member.Suspend(_actorId, _now, 2);
 
@@ -78,7 +78,7 @@ public class AccountMemberTests
     public void Suspend_LastOwner_ShouldThrow()
     {
         var member = AccountMember.Create(_accountId, _userId, AccountRole.Owner, _actorId, _now);
-        member.ClearDomainEvents();
+        ((IHasDomainEvents)member).ClearDomainEvents();
 
         var act = () => member.Suspend(_actorId, _now, 1);
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot suspend the last owner of the account.");
@@ -89,7 +89,7 @@ public class AccountMemberTests
     {
         var member = AccountMember.Create(_accountId, _userId, AccountRole.Member, _actorId, _now);
         member.Suspend(_actorId, _now, 2);
-        member.ClearDomainEvents();
+        ((IHasDomainEvents)member).ClearDomainEvents();
 
         member.Activate(_actorId, _now);
 
@@ -102,7 +102,7 @@ public class AccountMemberTests
     {
         var member = AccountMember.Create(_accountId, _userId, AccountRole.Member, _actorId, _now);
         member.Remove(2, _actorId, _now);
-        member.ClearDomainEvents();
+        ((IHasDomainEvents)member).ClearDomainEvents();
 
         var act = () => member.Activate(_actorId, _now);
         var exception = act.Should().Throw<DomainException>().Which;
@@ -113,7 +113,7 @@ public class AccountMemberTests
     public void Remove_ShouldSucceed()
     {
         var member = AccountMember.Create(_accountId, _userId, AccountRole.Member, _actorId, _now);
-        member.ClearDomainEvents();
+        ((IHasDomainEvents)member).ClearDomainEvents();
 
         member.Remove(2, _actorId, _now);
 
@@ -126,7 +126,7 @@ public class AccountMemberTests
     public void Remove_LastOwner_ShouldThrow()
     {
         var member = AccountMember.Create(_accountId, _userId, AccountRole.Owner, _actorId, _now);
-        member.ClearDomainEvents();
+        ((IHasDomainEvents)member).ClearDomainEvents();
 
         var act = () => member.Remove(1, _actorId, _now);
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot remove the last owner of the account.");
@@ -137,7 +137,7 @@ public class AccountMemberTests
     {
         var member = AccountMember.Create(_accountId, _userId, AccountRole.Member, _actorId, _now);
         member.Remove(2, _actorId, _now);
-        member.ClearDomainEvents();
+        ((IHasDomainEvents)member).ClearDomainEvents();
 
         member.Restore(_actorId, _now);
 
@@ -150,7 +150,7 @@ public class AccountMemberTests
     public void SoftDelete_ShouldMarkAsRemoved()
     {
         var member = AccountMember.Create(_accountId, _userId, AccountRole.Member, _actorId, _now);
-        member.ClearDomainEvents();
+        ((IHasDomainEvents)member).ClearDomainEvents();
 
         member.SoftDelete(_actorId, _now);
 

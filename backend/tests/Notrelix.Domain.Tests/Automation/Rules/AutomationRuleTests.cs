@@ -31,7 +31,7 @@ public class AutomationRuleTests
     {
         var createdBy = Guid.NewGuid();
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), createdBy, DateTimeOffset.UtcNow);
-        rule.ClearDomainEvents();
+        ((IHasDomainEvents)rule).ClearDomainEvents();
 
         rule.Enable(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -44,7 +44,7 @@ public class AutomationRuleTests
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
         rule.Enable(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        rule.ClearDomainEvents();
+        ((IHasDomainEvents)rule).ClearDomainEvents();
 
         rule.Enable(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -66,7 +66,7 @@ public class AutomationRuleTests
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
         rule.Enable(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        rule.ClearDomainEvents();
+        ((IHasDomainEvents)rule).ClearDomainEvents();
 
         rule.Disable(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -79,7 +79,7 @@ public class AutomationRuleTests
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
         rule.Disable(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        rule.ClearDomainEvents();
+        ((IHasDomainEvents)rule).ClearDomainEvents();
 
         rule.Disable(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -87,15 +87,13 @@ public class AutomationRuleTests
     }
 
     [Fact]
-    public void Disable_WhenDeleted_ShouldBeNoOp()
+    public void Disable_WhenDeleted_ShouldThrow()
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
         rule.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        rule.ClearDomainEvents();
 
-        rule.Disable(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        rule.DomainEvents.Should().BeEmpty();
+        var act = () => rule.Disable(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
     [Fact]
@@ -115,7 +113,7 @@ public class AutomationRuleTests
     {
         var config = CreateConfig("ItemCreated", "Webhook");
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", config, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        rule.ClearDomainEvents();
+        ((IHasDomainEvents)rule).ClearDomainEvents();
 
         rule.UpdateConfiguration(config, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -136,7 +134,7 @@ public class AutomationRuleTests
     public void UpdateConfiguration_ShouldRaiseConfigurationChangedEvent()
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        rule.ClearDomainEvents();
+        ((IHasDomainEvents)rule).ClearDomainEvents();
 
         rule.UpdateConfiguration(CreateConfig("ItemUpdated", "SlackMessage"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -147,7 +145,7 @@ public class AutomationRuleTests
     public void SoftDelete_ShouldSetStatus_AndRaiseEvent()
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        rule.ClearDomainEvents();
+        ((IHasDomainEvents)rule).ClearDomainEvents();
 
         rule.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -161,7 +159,7 @@ public class AutomationRuleTests
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
         rule.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        rule.ClearDomainEvents();
+        ((IHasDomainEvents)rule).ClearDomainEvents();
 
         rule.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -173,7 +171,7 @@ public class AutomationRuleTests
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
         rule.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        rule.ClearDomainEvents();
+        ((IHasDomainEvents)rule).ClearDomainEvents();
 
         rule.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -186,7 +184,7 @@ public class AutomationRuleTests
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        rule.ClearDomainEvents();
+        ((IHasDomainEvents)rule).ClearDomainEvents();
 
         rule.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

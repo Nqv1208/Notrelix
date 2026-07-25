@@ -29,7 +29,7 @@ public class BoardFieldTests
         var settings = FieldSettings.Create(JsonValue.EmptyObject());
         var position = FractionalIndex.Create("a0");
         var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Select, settings, position, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        field.ClearDomainEvents();
+        ((IHasDomainEvents)field).ClearDomainEvents();
 
         field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -76,7 +76,7 @@ public class BoardFieldTests
         var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         var optionId = field.Options.First().Id;
-        field.ClearDomainEvents();
+        ((IHasDomainEvents)field).ClearDomainEvents();
 
         field.RemoveOption(optionId, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -100,7 +100,7 @@ public class BoardFieldTests
         var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Status", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         var optionId = field.Options.First().Id;
-        field.ClearDomainEvents();
+        ((IHasDomainEvents)field).ClearDomainEvents();
 
         field.UpdateOption(optionId, "Completed", Color.Create("#FF0000"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -129,13 +129,15 @@ public class BoardFieldTests
         field.AddOption("B", Color.Create("#00FF00"), FractionalIndex.Create("a3"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         var optionA = field.Options.First(o => o.Name == "A");
         var optionB = field.Options.First(o => o.Name == "B");
-        field.ClearDomainEvents();
+        ((IHasDomainEvents)field).ClearDomainEvents();
 
         field.ReorderOptions(new List<Guid> { optionB.Id, optionA.Id }, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         field.Options.First(o => o.Id == optionB.Id).Position.Value.Should().Be("a0");
         field.Options.First(o => o.Id == optionA.Id).Position.Value.Should().Be("a1");
-        field.DomainEvents.Should().ContainSingle(e => e is BoardFieldReorderedDomainEvent);
+        field.DomainEvents.Should().ContainSingle(e => e is FieldOptionsReorderedDomainEvent);
+        var reorderEvt = (FieldOptionsReorderedDomainEvent)field.DomainEvents.Single(e => e is FieldOptionsReorderedDomainEvent);
+        reorderEvt.OrderedOptionIds.Should().BeEquivalentTo(new[] { optionB.Id, optionA.Id });
     }
 
     [Fact]

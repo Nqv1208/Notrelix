@@ -15,7 +15,7 @@ public class SavedFilterEventTests
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
         var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
-        filter.ClearDomainEvents();
+        ((IHasDomainEvents)filter).ClearDomainEvents();
         var version = filter.Version;
 
         filter.Rename("Renamed", Actor, Now);
@@ -31,7 +31,7 @@ public class SavedFilterEventTests
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
         var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
-        filter.ClearDomainEvents();
+        ((IHasDomainEvents)filter).ClearDomainEvents();
         var version = filter.Version;
 
         filter.UpdateVisibility(SavedFilterVisibility.Public, Actor, Now);
@@ -45,7 +45,7 @@ public class SavedFilterEventTests
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
         var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
-        filter.ClearDomainEvents();
+        ((IHasDomainEvents)filter).ClearDomainEvents();
         var version = filter.Version;
 
         filter.UpdateFilters(new[] { FilterRule.Create(Guid.NewGuid(), FilterOperator.NotEquals, "other") }, Actor, Now);
@@ -59,7 +59,7 @@ public class SavedFilterEventTests
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
         var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
-        filter.ClearDomainEvents();
+        ((IHasDomainEvents)filter).ClearDomainEvents();
         var version = filter.Version;
 
         filter.UpdateSorts(new[] { SortRule.Create(Guid.NewGuid(), SortDirection.Ascending) }, Actor, Now);
@@ -73,7 +73,7 @@ public class SavedFilterEventTests
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
         var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
-        filter.ClearDomainEvents();
+        ((IHasDomainEvents)filter).ClearDomainEvents();
         var version = filter.Version;
 
         filter.UpdateGroup(GroupRule.Create(Guid.NewGuid()), Actor, Now);
@@ -87,7 +87,7 @@ public class SavedFilterEventTests
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
         var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
-        filter.ClearDomainEvents();
+        ((IHasDomainEvents)filter).ClearDomainEvents();
         var version = filter.Version;
 
         filter.SoftDelete(Actor, Now);
@@ -103,7 +103,7 @@ public class SavedFilterEventTests
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
         var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
         filter.SoftDelete(Actor, Now);
-        filter.ClearDomainEvents();
+        ((IHasDomainEvents)filter).ClearDomainEvents();
         var version = filter.Version;
 
         filter.SoftDelete(Actor, Now);
@@ -118,7 +118,7 @@ public class SavedFilterEventTests
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
         var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
         filter.SoftDelete(Actor, Now);
-        filter.ClearDomainEvents();
+        ((IHasDomainEvents)filter).ClearDomainEvents();
         var version = filter.Version;
 
         filter.Restore(Actor, Now);
@@ -133,7 +133,7 @@ public class SavedFilterEventTests
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
         var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
-        filter.ClearDomainEvents();
+        ((IHasDomainEvents)filter).ClearDomainEvents();
         var version = filter.Version;
 
         filter.Restore(Actor, Now);

@@ -7,6 +7,8 @@ public class UserVersionTests
 {
     private readonly Guid _actorId = Guid.NewGuid();
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
+    private static readonly OAuthProfileSnapshot TestSnapshot =
+        OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, JsonValue.EmptyObject());
 
     [Fact]
     public void UpdateProfile_ShouldIncrementVersion_AndEmitEvent()
@@ -100,7 +102,7 @@ public class UserVersionTests
         var user = User.Create("test@test.com", "Test", "hash", _now);
         var version = user.Version;
 
-        user.LinkOAuthAccount(OAuthProvider.Google, "pid123", JsonValue.Null(), null, _now);
+        user.LinkOAuthAccount(OAuthProvider.Google, "pid123", TestSnapshot, null, _now);
 
         user.Version.Should().Be(version + 1);
         user.DomainEvents.Should().Contain(e => e is OAuthAccountLinkedDomainEvent);
@@ -110,8 +112,8 @@ public class UserVersionTests
     public void UnlinkOAuthAccount_ShouldIncrementVersion()
     {
         var user = User.Create("test@test.com", "Test", "hash", _now);
-        user.LinkOAuthAccount(OAuthProvider.Google, "pid123", JsonValue.Null(), null, _now);
-        user.ClearDomainEvents();
+        user.LinkOAuthAccount(OAuthProvider.Google, "pid123", TestSnapshot, null, _now);
+        ((IHasDomainEvents)user).ClearDomainEvents();
         var version = user.Version;
 
         user.UnlinkOAuthAccount(OAuthProvider.Google, _now);
@@ -125,8 +127,8 @@ public class UserVersionTests
     {
         var user = User.Create("test@test.com", "Test", "hash", _now);
         var token = OAuthToken.Create(SecretRef.Create("access"), SecretRef.Create("refresh"), _now.AddHours(1));
-        user.LinkOAuthAccount(OAuthProvider.Google, "pid123", JsonValue.Null(), token, _now);
-        user.ClearDomainEvents();
+        user.LinkOAuthAccount(OAuthProvider.Google, "pid123", TestSnapshot, token, _now);
+        ((IHasDomainEvents)user).ClearDomainEvents();
         var version = user.Version;
         var newToken = OAuthToken.Create(SecretRef.Create("new-access"), SecretRef.Create("new-refresh"), _now.AddHours(2));
 
@@ -140,7 +142,7 @@ public class UserVersionTests
     public void Activate_WhenAlreadyActive_ShouldNotIncrementVersion()
     {
         var user = User.Create("test@test.com", "Test", "hash", _now);
-        user.ClearDomainEvents();
+        ((IHasDomainEvents)user).ClearDomainEvents();
         var version = user.Version;
 
         user.Activate(_actorId, _now);

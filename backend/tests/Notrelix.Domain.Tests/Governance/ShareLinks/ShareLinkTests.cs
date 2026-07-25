@@ -34,7 +34,7 @@ public class ShareLinkTests
     {
         var workspaceId = Guid.NewGuid();
         var link = ShareLink.Create(Guid.NewGuid(), workspaceId, ResourceType.Board, Guid.NewGuid(), ShareLinkTokenHash.Create("token"), ShareLinkAccessMode.WorkspaceOnly, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        link.ClearDomainEvents();
+        ((IHasDomainEvents)link).ClearDomainEvents();
 
         var disabledBy = Guid.NewGuid();
         link.Disable(disabledBy, DateTimeOffset.UtcNow);
@@ -48,7 +48,7 @@ public class ShareLinkTests
     {
         var workspaceId = Guid.NewGuid();
         var link = ShareLink.Create(Guid.NewGuid(), workspaceId, ResourceType.Board, Guid.NewGuid(), ShareLinkTokenHash.Create("token1"), ShareLinkAccessMode.WorkspaceOnly, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        link.ClearDomainEvents();
+        ((IHasDomainEvents)link).ClearDomainEvents();
 
         var newHash = ShareLinkTokenHash.Create("token2");
         var rotatedBy = Guid.NewGuid();

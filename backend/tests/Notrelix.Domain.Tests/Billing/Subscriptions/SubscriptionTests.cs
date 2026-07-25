@@ -124,7 +124,7 @@ public class SubscriptionTests
         var actor = Guid.NewGuid();
         var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
         subscription.ScheduleCancellation(actor, now);
-        subscription.ClearDomainEvents();
+        ((IHasDomainEvents)subscription).ClearDomainEvents();
 
         subscription.ScheduleCancellation(actor, now);
 
@@ -138,7 +138,7 @@ public class SubscriptionTests
         var actor = Guid.NewGuid();
         var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
         subscription.CancelImmediately(actor, now);
-        subscription.ClearDomainEvents();
+        ((IHasDomainEvents)subscription).ClearDomainEvents();
 
         subscription.CancelImmediately(actor, now);
 
@@ -152,7 +152,7 @@ public class SubscriptionTests
         var actor = Guid.NewGuid();
         var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
         subscription.Expire(actor, now);
-        subscription.ClearDomainEvents();
+        ((IHasDomainEvents)subscription).ClearDomainEvents();
 
         subscription.Expire(actor, now);
 
@@ -166,7 +166,7 @@ public class SubscriptionTests
         var actor = Guid.NewGuid();
         var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
         subscription.MarkPastDue(actor, now);
-        subscription.ClearDomainEvents();
+        ((IHasDomainEvents)subscription).ClearDomainEvents();
 
         subscription.MarkPastDue(actor, now);
 
@@ -227,7 +227,7 @@ public class SubscriptionTests
         var now = DateTimeOffset.UtcNow;
         var actor = Guid.NewGuid();
         var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
-        subscription.ClearDomainEvents();
+        ((IHasDomainEvents)subscription).ClearDomainEvents();
 
         subscription.SoftDelete(actor, now);
 
@@ -242,7 +242,7 @@ public class SubscriptionTests
         var actor = Guid.NewGuid();
         var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
         subscription.SoftDelete(actor, now);
-        subscription.ClearDomainEvents();
+        ((IHasDomainEvents)subscription).ClearDomainEvents();
 
         subscription.SoftDelete(actor, now);
 
@@ -256,7 +256,7 @@ public class SubscriptionTests
         var actor = Guid.NewGuid();
         var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
         subscription.SoftDelete(actor, now);
-        subscription.ClearDomainEvents();
+        ((IHasDomainEvents)subscription).ClearDomainEvents();
 
         subscription.Restore(actor, now);
 
@@ -270,7 +270,7 @@ public class SubscriptionTests
         var now = DateTimeOffset.UtcNow;
         var actor = Guid.NewGuid();
         var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
-        subscription.ClearDomainEvents();
+        ((IHasDomainEvents)subscription).ClearDomainEvents();
 
         subscription.Restore(actor, now);
 

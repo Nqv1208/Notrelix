@@ -66,7 +66,7 @@ public class SubscriptionIdempotencyTests
             SubscriptionTier.Pro,
             _now,
             _now.AddDays(30),
-            Guid.Empty,
+            null,
             _now);
 
         subscription.DomainEvents.Single(e => e is SubscriptionStartedDomainEvent).Should().NotBeNull();

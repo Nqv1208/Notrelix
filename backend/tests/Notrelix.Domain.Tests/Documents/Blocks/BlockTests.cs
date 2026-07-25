@@ -36,7 +36,7 @@ public class BlockTests
     {
         var workspaceId = Guid.NewGuid();
         var block = Block.Create(Guid.NewGuid(), workspaceId, Guid.NewGuid(), BlockType.Text, BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        block.ClearDomainEvents();
+        ((IHasDomainEvents)block).ClearDomainEvents();
 
         var newContent = BlockContent.Create(JsonValue.Create("{\"text\":\"New\"}"));
         var updatedBy = Guid.NewGuid();
@@ -53,7 +53,7 @@ public class BlockTests
     {
         var content = BlockContent.Create(JsonValue.EmptyObject());
         var block = Block.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), BlockType.Text, content, FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        block.ClearDomainEvents();
+        ((IHasDomainEvents)block).ClearDomainEvents();
 
         block.UpdateContent(content, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -74,7 +74,7 @@ public class BlockTests
     public void UpdateProperties_ShouldUpdate_AndRaiseEvent()
     {
         var block = Block.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), BlockType.Text, BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        block.ClearDomainEvents();
+        ((IHasDomainEvents)block).ClearDomainEvents();
 
         var newProps = BlockProperties.Create(JsonValue.Create("{\"color\":\"red\"}"));
 
@@ -89,7 +89,7 @@ public class BlockTests
     {
         var block = Block.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), BlockType.Text, BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         var existingProps = block.Properties;
-        block.ClearDomainEvents();
+        ((IHasDomainEvents)block).ClearDomainEvents();
 
         block.UpdateProperties(existingProps, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -107,37 +107,41 @@ public class BlockTests
     }
 
     [Fact]
-    public void Move_ShouldSucceed_AndRaiseEvent()
+    public void MoveToRoot_ShouldSucceed_AndRaiseEvent()
     {
         var block = Block.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), BlockType.Text, BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        block.ClearDomainEvents();
+        block.MoveUnder(
+            BlockAncestorPath.Create(Guid.NewGuid(), new[] { Guid.NewGuid() }),
+            FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)block).ClearDomainEvents();
 
-        var newPosition = FractionalIndex.Create("a1");
+        var newPosition = FractionalIndex.Create("a2");
 
-        block.Move(null, newPosition, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        block.MoveToRoot(newPosition, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
+        block.ParentId.Should().BeNull();
         block.Position.Should().Be(newPosition);
         block.DomainEvents.Should().ContainSingle(e => e is BlockMovedDomainEvent);
     }
 
     [Fact]
-    public void Move_WhenSamePositionAndParent_ShouldBeNoOp()
+    public void MoveToRoot_WhenSamePositionAndParent_ShouldBeNoOp()
     {
         var block = Block.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), BlockType.Text, BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        block.ClearDomainEvents();
+        ((IHasDomainEvents)block).ClearDomainEvents();
 
-        block.Move(null, FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        block.MoveToRoot(FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         block.DomainEvents.Should().BeEmpty();
     }
 
     [Fact]
-    public void Move_WhenDeleted_ShouldThrow()
+    public void MoveToRoot_WhenDeleted_ShouldThrow()
     {
         var block = Block.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), BlockType.Text, BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         block.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        var act = () => block.Move(null, FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var act = () => block.MoveToRoot(FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
@@ -145,7 +149,7 @@ public class BlockTests
     public void SoftDelete_ShouldSucceed_AndRaiseEvent()
     {
         var block = Block.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), BlockType.Text, BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        block.ClearDomainEvents();
+        ((IHasDomainEvents)block).ClearDomainEvents();
 
         block.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -158,7 +162,7 @@ public class BlockTests
     {
         var block = Block.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), BlockType.Text, BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         block.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        block.ClearDomainEvents();
+        ((IHasDomainEvents)block).ClearDomainEvents();
 
         block.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -170,7 +174,7 @@ public class BlockTests
     {
         var block = Block.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), BlockType.Text, BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         block.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        block.ClearDomainEvents();
+        ((IHasDomainEvents)block).ClearDomainEvents();
 
         block.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -182,7 +186,7 @@ public class BlockTests
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {
         var block = Block.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), BlockType.Text, BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        block.ClearDomainEvents();
+        ((IHasDomainEvents)block).ClearDomainEvents();
 
         block.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

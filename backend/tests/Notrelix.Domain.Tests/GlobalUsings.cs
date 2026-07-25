@@ -69,3 +69,8 @@ global using Notrelix.Domain.Workspaces.Members.Events;
 global using Notrelix.Domain.Workspaces.Invitations.Events;
 global using Notrelix.Domain.Workspaces.Spaces.Events;
 global using Notrelix.Domain.Workspaces.Teams.Events;
+global using Notrelix.Domain.Workspaces.Workspaces;
+global using Notrelix.Domain.Workspaces.Members;
+global using Notrelix.Domain.Workspaces.Invitations;
+global using Notrelix.Domain.Workspaces.Spaces;
+global using Notrelix.Domain.Workspaces.Teams;

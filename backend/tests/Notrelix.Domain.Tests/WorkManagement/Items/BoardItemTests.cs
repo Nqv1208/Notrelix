@@ -20,7 +20,7 @@ public class BoardItemTests
         var groupId = Guid.NewGuid();
 
         var item = BoardItem.Create(Guid.NewGuid(), workspaceId, boardId, groupId, "Item 1", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        item.ClearDomainEvents();
+        ((IHasDomainEvents)item).ClearDomainEvents();
 
         var field = BoardField.Create(Guid.NewGuid(), workspaceId, boardId, "My Field", FieldType.Text, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         var value = FieldValue.Create(JsonValue.Create("\"Hello\""));
@@ -56,7 +56,7 @@ public class BoardItemTests
     public void MoveToGroup_ShouldUpdateGroupAndPosition()
     {
         var item = CreateValidItem();
-        item.ClearDomainEvents();
+        ((IHasDomainEvents)item).ClearDomainEvents();
 
         var newGroup = Guid.NewGuid();
         var newPosition = FractionalIndex.Create("a1");
@@ -74,13 +74,13 @@ public class BoardItemTests
     public void SoftDeleteAndRestore_ShouldWorkCorrectly()
     {
         var item = CreateValidItem();
-        item.ClearDomainEvents();
+        ((IHasDomainEvents)item).ClearDomainEvents();
 
         item.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         item.IsDeleted.Should().BeTrue();
         item.DomainEvents.Should().ContainSingle(e => e is BoardItemSoftDeletedDomainEvent);
 
-        item.ClearDomainEvents();
+        ((IHasDomainEvents)item).ClearDomainEvents();
         item.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
         item.IsDeleted.Should().BeFalse();
         item.DomainEvents.Should().ContainSingle(e => e is BoardItemRestoredDomainEvent);
@@ -90,7 +90,7 @@ public class BoardItemTests
     public void UpdateFieldValue_ShouldThrow_WhenFieldFromDifferentWorkspace()
     {
         var item = BoardItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        item.ClearDomainEvents();
+        ((IHasDomainEvents)item).ClearDomainEvents();
 
         var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), item.BoardId, "Field", FieldType.Text, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         var value = FieldValue.Create(JsonValue.Create("\"Hello\""));
@@ -104,7 +104,7 @@ public class BoardItemTests
     public void UpdateFieldValue_ShouldThrow_WhenFieldFromDifferentBoard()
     {
         var item = BoardItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        item.ClearDomainEvents();
+        ((IHasDomainEvents)item).ClearDomainEvents();
 
         var field = BoardField.Create(Guid.NewGuid(), item.WorkspaceId, Guid.NewGuid(), "Field", FieldType.Text, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         var value = FieldValue.Create(JsonValue.Create("\"Hello\""));
@@ -120,7 +120,7 @@ public class BoardItemTests
         var workspaceId = Guid.NewGuid();
         var boardId = Guid.NewGuid();
         var item = BoardItem.Create(Guid.NewGuid(), workspaceId, boardId, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        item.ClearDomainEvents();
+        ((IHasDomainEvents)item).ClearDomainEvents();
 
         var field = BoardField.Create(Guid.NewGuid(), workspaceId, boardId, "Status", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -138,7 +138,7 @@ public class BoardItemTests
         var workspaceId = Guid.NewGuid();
         var boardId = Guid.NewGuid();
         var item = BoardItem.Create(Guid.NewGuid(), workspaceId, boardId, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        item.ClearDomainEvents();
+        ((IHasDomainEvents)item).ClearDomainEvents();
 
         var field = BoardField.Create(Guid.NewGuid(), workspaceId, boardId, "Status", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         field.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -155,7 +155,7 @@ public class BoardItemTests
     public void Archive_ShouldSetIsArchived_AndRaiseEvent()
     {
         var item = CreateValidItem();
-        item.ClearDomainEvents();
+        ((IHasDomainEvents)item).ClearDomainEvents();
 
         item.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -168,7 +168,7 @@ public class BoardItemTests
     {
         var item = CreateValidItem();
         item.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        item.ClearDomainEvents();
+        ((IHasDomainEvents)item).ClearDomainEvents();
 
         item.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -191,7 +191,7 @@ public class BoardItemTests
     {
         var item = CreateValidItem();
         item.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        item.ClearDomainEvents();
+        ((IHasDomainEvents)item).ClearDomainEvents();
 
         item.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -203,7 +203,7 @@ public class BoardItemTests
     public void Unarchive_ShouldBeIdempotent()
     {
         var item = CreateValidItem();
-        item.ClearDomainEvents();
+        ((IHasDomainEvents)item).ClearDomainEvents();
 
         item.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

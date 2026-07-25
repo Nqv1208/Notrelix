@@ -32,7 +32,7 @@ public class WorkspacePolicyTests
     public void UpdatePolicy_ShouldReplacePoliciesAndRaiseEvent()
     {
         var policy = WorkspacePolicy.Create(AccountId, WorkspaceId, Actor, Now);
-        policy.ClearDomainEvents();
+        ((IHasDomainEvents)policy).ClearDomainEvents();
 
         var newGuestPolicy = GuestAccessPolicy.Create(false);
         var newResourcePolicy = ResourcePolicy.Create(true);

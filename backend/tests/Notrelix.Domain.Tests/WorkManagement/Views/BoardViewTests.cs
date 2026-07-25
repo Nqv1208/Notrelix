@@ -29,7 +29,7 @@ public class BoardViewTests
         var config = TableViewConfig.Create(JsonValue.EmptyObject());
         var createdBy = Guid.NewGuid();
         var view = BoardView.Create(Guid.NewGuid(), workspaceId, boardId, "View", ViewType.Table, config, createdBy, DateTimeOffset.UtcNow);
-        view.ClearDomainEvents();
+        ((IHasDomainEvents)view).ClearDomainEvents();
 
         var newConfig = TableViewConfig.Create(JsonValue.Create("{\"sorts\":[]}"));
         var updatedBy = Guid.NewGuid();
@@ -114,7 +114,7 @@ public class BoardViewTests
     public void Archive_ShouldSetIsArchived_AndRaiseEvent()
     {
         var view = BoardView.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "View", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        view.ClearDomainEvents();
+        ((IHasDomainEvents)view).ClearDomainEvents();
 
         view.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -127,7 +127,7 @@ public class BoardViewTests
     {
         var view = BoardView.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "View", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), Guid.NewGuid(), DateTimeOffset.UtcNow);
         view.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        view.ClearDomainEvents();
+        ((IHasDomainEvents)view).ClearDomainEvents();
 
         view.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -150,7 +150,7 @@ public class BoardViewTests
     {
         var view = BoardView.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "View", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), Guid.NewGuid(), DateTimeOffset.UtcNow);
         view.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        view.ClearDomainEvents();
+        ((IHasDomainEvents)view).ClearDomainEvents();
 
         view.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -162,7 +162,7 @@ public class BoardViewTests
     public void Unarchive_ShouldBeIdempotent()
     {
         var view = BoardView.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "View", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        view.ClearDomainEvents();
+        ((IHasDomainEvents)view).ClearDomainEvents();
 
         view.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

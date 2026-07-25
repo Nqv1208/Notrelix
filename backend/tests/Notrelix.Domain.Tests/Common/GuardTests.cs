@@ -35,7 +35,7 @@ public class GuardTests
         Action act = () => Guard.Positive(0);
 
         var ex = act.Should().Throw<BusinessRuleException>().Which;
-        ex.RuleCode.Should().Be(BusinessRuleCodes.Guard_Positive);
+        ex.RuleCode.Should().Be(CommonRuleCodes.Guard_Positive);
     }
 
     [Fact]
@@ -44,6 +44,6 @@ public class GuardTests
         Action act = () => Guard.NotEmpty(Guid.Empty);
 
         var ex = act.Should().Throw<BusinessRuleException>().Which;
-        ex.RuleCode.Should().Be(BusinessRuleCodes.Guard_Empty);
+        ex.RuleCode.Should().Be(CommonRuleCodes.Guard_Empty);
     }
 }

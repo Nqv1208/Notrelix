@@ -1,7 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
+using Notrelix.Domain.Identity.Users;
 
 namespace Notrelix.Domain.Tests.Identity;
 
+[CoversAggregate(typeof(User))]
 public class UserTests
 {
     [Fact]
@@ -36,7 +39,7 @@ public class UserTests
     {
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hash123", now);
-        user.ClearDomainEvents();
+        ((IHasDomainEvents)user).ClearDomainEvents();
 
         var loginTime = now.AddHours(1);
         user.RecordLogin(loginTime);
@@ -52,7 +55,7 @@ public class UserTests
     {
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hash123", now);
-        user.ClearDomainEvents();
+        ((IHasDomainEvents)user).ClearDomainEvents();
 
         var updateTime = now.AddHours(1);
         user.UpdateProfile("New Name", "avatar.png", updateTime);

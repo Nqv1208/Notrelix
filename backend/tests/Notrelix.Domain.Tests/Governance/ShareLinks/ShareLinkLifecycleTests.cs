@@ -14,7 +14,7 @@ public class ShareLinkLifecycleTests
     {
         var tokenHash = ShareLinkTokenHash.Create("test-hash");
         var link = ShareLink.Create(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.WorkspaceOnly, Actor, Now);
-        link.ClearDomainEvents();
+        ((IHasDomainEvents)link).ClearDomainEvents();
         var version = link.Version;
 
         link.SoftDelete(Actor, Now);
@@ -33,7 +33,7 @@ public class ShareLinkLifecycleTests
         var tokenHash = ShareLinkTokenHash.Create("test-hash");
         var link = ShareLink.Create(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.WorkspaceOnly, Actor, Now);
         link.SoftDelete(Actor, Now);
-        link.ClearDomainEvents();
+        ((IHasDomainEvents)link).ClearDomainEvents();
         var version = link.Version;
 
         link.Restore(Actor, Now);
@@ -52,7 +52,7 @@ public class ShareLinkLifecycleTests
         var tokenHash = ShareLinkTokenHash.Create("test-hash");
         var link = ShareLink.Create(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.WorkspaceOnly, Actor, Now);
         link.SoftDelete(Actor, Now);
-        link.ClearDomainEvents();
+        ((IHasDomainEvents)link).ClearDomainEvents();
         var version = link.Version;
 
         link.SoftDelete(Actor, Now);
@@ -66,7 +66,7 @@ public class ShareLinkLifecycleTests
     {
         var tokenHash = ShareLinkTokenHash.Create("test-hash");
         var link = ShareLink.Create(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), tokenHash, ShareLinkAccessMode.WorkspaceOnly, Actor, Now);
-        link.ClearDomainEvents();
+        ((IHasDomainEvents)link).ClearDomainEvents();
         var version = link.Version;
 
         link.Restore(Actor, Now);

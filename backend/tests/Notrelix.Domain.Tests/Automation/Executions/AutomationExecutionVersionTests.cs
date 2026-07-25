@@ -13,7 +13,7 @@ public class AutomationExecutionVersionTests
     public void SetPayload_ShouldIncrementVersion()
     {
         var execution = AutomationExecution.Create(Guid.NewGuid(), _workspaceId, Guid.NewGuid(), Guid.NewGuid(), _now);
-        execution.ClearDomainEvents();
+        ((IHasDomainEvents)execution).ClearDomainEvents();
         var version = execution.Version;
 
         execution.SetPayload("{\"key\":\"value\"}");
@@ -25,7 +25,7 @@ public class AutomationExecutionVersionTests
     public void Start_ShouldIncrementVersion()
     {
         var execution = AutomationExecution.Create(Guid.NewGuid(), _workspaceId, Guid.NewGuid(), Guid.NewGuid(), _now);
-        execution.ClearDomainEvents();
+        ((IHasDomainEvents)execution).ClearDomainEvents();
         var version = execution.Version;
 
         execution.Start(_now);
@@ -39,7 +39,7 @@ public class AutomationExecutionVersionTests
     {
         var execution = AutomationExecution.Create(Guid.NewGuid(), _workspaceId, Guid.NewGuid(), Guid.NewGuid(), _now);
         execution.Start(_now);
-        execution.ClearDomainEvents();
+        ((IHasDomainEvents)execution).ClearDomainEvents();
         var version = execution.Version;
 
         execution.Succeed(_now);
@@ -53,7 +53,7 @@ public class AutomationExecutionVersionTests
     {
         var execution = AutomationExecution.Create(Guid.NewGuid(), _workspaceId, Guid.NewGuid(), Guid.NewGuid(), _now);
         execution.Start(_now);
-        execution.ClearDomainEvents();
+        ((IHasDomainEvents)execution).ClearDomainEvents();
         var version = execution.Version;
 
         execution.Fail("error", _now);
@@ -66,7 +66,7 @@ public class AutomationExecutionVersionTests
     public void Cancel_ShouldIncrementVersion()
     {
         var execution = AutomationExecution.Create(Guid.NewGuid(), _workspaceId, Guid.NewGuid(), Guid.NewGuid(), _now);
-        execution.ClearDomainEvents();
+        ((IHasDomainEvents)execution).ClearDomainEvents();
         var version = execution.Version;
 
         execution.Cancel(_actorId, _now);

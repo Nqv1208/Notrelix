@@ -16,7 +16,7 @@ public class BoardItemEventTests
     public void BoardItem_Complete_ShouldRaiseEvent()
     {
         var item = BoardItem.Create(AccountId, WsA, BoardA, GroupA, "Item", FractionalIndex.Create("a0"), Actor, Now);
-        item.ClearDomainEvents();
+        ((IHasDomainEvents)item).ClearDomainEvents();
         var version = item.Version;
 
         item.Complete(Now, Actor, Now);
@@ -33,7 +33,7 @@ public class BoardItemEventTests
     {
         var item = BoardItem.Create(AccountId, WsA, BoardA, GroupA, "Item", FractionalIndex.Create("a0"), Actor, Now);
         item.Complete(Now, Actor, Now);
-        item.ClearDomainEvents();
+        ((IHasDomainEvents)item).ClearDomainEvents();
         var version = item.Version;
 
         item.Complete(Now, Actor, Now);
@@ -46,7 +46,7 @@ public class BoardItemEventTests
     public void BoardItem_SetTimeline_ShouldRaiseEvent()
     {
         var item = BoardItem.Create(AccountId, WsA, BoardA, GroupA, "Item", FractionalIndex.Create("a0"), Actor, Now);
-        item.ClearDomainEvents();
+        ((IHasDomainEvents)item).ClearDomainEvents();
         var version = item.Version;
 
         item.SetTimeline(Now, Now.AddDays(7), Actor, Now);
@@ -62,7 +62,7 @@ public class BoardItemEventTests
     public void BoardItem_SetTimeline_WhenSameValue_ShouldNotRaiseEvent()
     {
         var item = BoardItem.Create(AccountId, WsA, BoardA, GroupA, "Item", FractionalIndex.Create("a0"), Actor, Now, startedAt: Now, dueAt: Now.AddDays(7));
-        item.ClearDomainEvents();
+        ((IHasDomainEvents)item).ClearDomainEvents();
         var version = item.Version;
 
         item.SetTimeline(Now, Now.AddDays(7), Actor, Now);
@@ -75,7 +75,7 @@ public class BoardItemEventTests
     public void BoardItem_AssignParentItem_ShouldRaiseEvent()
     {
         var item = BoardItem.Create(AccountId, WsA, BoardA, GroupA, "Item", FractionalIndex.Create("a0"), Actor, Now);
-        item.ClearDomainEvents();
+        ((IHasDomainEvents)item).ClearDomainEvents();
         var version = item.Version;
         var parentId = Guid.NewGuid();
 
@@ -134,7 +134,7 @@ public class BoardItemEventTests
             [parentId] = new ItemParentSnapshot(parentId, BoardA, null)
         };
         item.AssignParentItem(parentId, 1, chain, Actor, Now);
-        item.ClearDomainEvents();
+        ((IHasDomainEvents)item).ClearDomainEvents();
         var version = item.Version;
 
         item.AssignParentItem(null, 0, new Dictionary<Guid, ItemParentSnapshot>(), Actor, Now);

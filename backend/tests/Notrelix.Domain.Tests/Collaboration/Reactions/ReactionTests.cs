@@ -36,7 +36,7 @@ public class ReactionTests
     public void Remove_ShouldRaiseEvent()
     {
         var reaction = CreateReaction();
-        reaction.ClearDomainEvents();
+        ((IHasDomainEvents)reaction).ClearDomainEvents();
 
         reaction.Remove(DateTimeOffset.UtcNow);
 

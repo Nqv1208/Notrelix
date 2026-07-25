@@ -46,7 +46,7 @@ public class AccountInvitationTests
     public void Accept_ShouldSucceed()
     {
         var invitation = AccountInvitation.Create(_accountId, "user@example.com", AccountRole.Member, _invitedBy, _now);
-        invitation.ClearDomainEvents();
+        ((IHasDomainEvents)invitation).ClearDomainEvents();
 
         invitation.Accept(Guid.NewGuid(), _now);
 
@@ -58,7 +58,7 @@ public class AccountInvitationTests
     public void Accept_ExpiredInvitation_ShouldThrow()
     {
         var invitation = AccountInvitation.Create(_accountId, "user@example.com", AccountRole.Member, _invitedBy, _now, TimeSpan.FromDays(1));
-        invitation.ClearDomainEvents();
+        ((IHasDomainEvents)invitation).ClearDomainEvents();
 
         var act = () => invitation.Accept(Guid.NewGuid(), _now.AddDays(2));
         act.Should().Throw<BusinessRuleException>().WithMessage("Invitation has expired.");
@@ -69,7 +69,7 @@ public class AccountInvitationTests
     {
         var invitation = AccountInvitation.Create(_accountId, "user@example.com", AccountRole.Member, _invitedBy, _now);
         invitation.Accept(Guid.NewGuid(), _now);
-        invitation.ClearDomainEvents();
+        ((IHasDomainEvents)invitation).ClearDomainEvents();
 
         var act = () => invitation.Accept(Guid.NewGuid(), _now);
         act.Should().Throw<BusinessRuleException>().WithMessage("Invitation is not pending.");
@@ -79,7 +79,7 @@ public class AccountInvitationTests
     public void Expire_ShouldSucceed()
     {
         var invitation = AccountInvitation.Create(_accountId, "user@example.com", AccountRole.Member, _invitedBy, _now);
-        invitation.ClearDomainEvents();
+        ((IHasDomainEvents)invitation).ClearDomainEvents();
 
         invitation.Expire(_now.AddDays(8));
 
@@ -92,7 +92,7 @@ public class AccountInvitationTests
     {
         var invitation = AccountInvitation.Create(_accountId, "user@example.com", AccountRole.Member, _invitedBy, _now);
         invitation.Accept(Guid.NewGuid(), _now);
-        invitation.ClearDomainEvents();
+        ((IHasDomainEvents)invitation).ClearDomainEvents();
 
         invitation.Expire(_now.AddDays(8));
 
@@ -104,7 +104,7 @@ public class AccountInvitationTests
     public void Revoke_ShouldSucceed()
     {
         var invitation = AccountInvitation.Create(_accountId, "user@example.com", AccountRole.Member, _invitedBy, _now);
-        invitation.ClearDomainEvents();
+        ((IHasDomainEvents)invitation).ClearDomainEvents();
 
         invitation.Revoke(_invitedBy, _now);
 
@@ -116,7 +116,7 @@ public class AccountInvitationTests
     public void Revoke_ExpiredInvitation_ShouldThrow()
     {
         var invitation = AccountInvitation.Create(_accountId, "user@example.com", AccountRole.Member, _invitedBy, _now, TimeSpan.FromDays(1));
-        invitation.ClearDomainEvents();
+        ((IHasDomainEvents)invitation).ClearDomainEvents();
 
         var act = () => invitation.Revoke(_invitedBy, _now.AddDays(2));
         act.Should().Throw<BusinessRuleException>().WithMessage("Invitation has expired.");
@@ -127,7 +127,7 @@ public class AccountInvitationTests
     {
         var invitation = AccountInvitation.Create(_accountId, "user@example.com", AccountRole.Member, _invitedBy, _now);
         invitation.Accept(Guid.NewGuid(), _now);
-        invitation.ClearDomainEvents();
+        ((IHasDomainEvents)invitation).ClearDomainEvents();
 
         invitation.Revoke(_invitedBy, _now);
 

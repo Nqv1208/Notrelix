@@ -12,7 +12,7 @@ public class BoardGroupTests
         var workspaceId = Guid.NewGuid();
         var boardId = Guid.NewGuid();
         var group = BoardGroup.Create(accountId, workspaceId, boardId, "Group", Color.Create("#000000"), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        group.ClearDomainEvents();
+        ((IHasDomainEvents)group).ClearDomainEvents();
 
         group.UpdateColor(Color.Create("#FF0000"), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -27,7 +27,7 @@ public class BoardGroupTests
         var workspaceId = Guid.NewGuid();
         var boardId = Guid.NewGuid();
         var group = BoardGroup.Create(accountId, workspaceId, boardId, "Group", Color.Create("#000000"), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        group.ClearDomainEvents();
+        ((IHasDomainEvents)group).ClearDomainEvents();
 
         group.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -42,7 +42,7 @@ public class BoardGroupTests
         var group = BoardGroup.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Group", Color.Create("#000000"), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         group.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         group.IsDeleted.Should().BeTrue();
-        group.ClearDomainEvents();
+        ((IHasDomainEvents)group).ClearDomainEvents();
 
         group.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -54,7 +54,7 @@ public class BoardGroupTests
     public void Archive_ShouldSetIsArchived_AndRaiseEvent()
     {
         var group = BoardGroup.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Group", Color.Create("#000000"), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        group.ClearDomainEvents();
+        ((IHasDomainEvents)group).ClearDomainEvents();
 
         group.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -67,7 +67,7 @@ public class BoardGroupTests
     {
         var group = BoardGroup.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Group", Color.Create("#000000"), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         group.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        group.ClearDomainEvents();
+        ((IHasDomainEvents)group).ClearDomainEvents();
 
         group.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -90,7 +90,7 @@ public class BoardGroupTests
     {
         var group = BoardGroup.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Group", Color.Create("#000000"), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         group.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        group.ClearDomainEvents();
+        ((IHasDomainEvents)group).ClearDomainEvents();
 
         group.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -102,7 +102,7 @@ public class BoardGroupTests
     public void Unarchive_ShouldBeIdempotent()
     {
         var group = BoardGroup.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Group", Color.Create("#000000"), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        group.ClearDomainEvents();
+        ((IHasDomainEvents)group).ClearDomainEvents();
 
         group.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

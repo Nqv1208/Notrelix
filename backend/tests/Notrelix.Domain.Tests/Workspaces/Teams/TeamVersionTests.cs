@@ -15,7 +15,7 @@ public class TeamVersionTests
     public void Rename_ShouldIncrementVersion()
     {
         var team = Team.Create(_accountId, _workspaceId, "Original", _actorId, _now);
-        team.ClearDomainEvents();
+        ((IHasDomainEvents)team).ClearDomainEvents();
         var version = team.Version;
 
         team.Rename("Renamed", _actorId, _now);
@@ -28,7 +28,7 @@ public class TeamVersionTests
     public void Archive_ShouldIncrementVersion()
     {
         var team = Team.Create(_accountId, _workspaceId, "Team", _actorId, _now);
-        team.ClearDomainEvents();
+        ((IHasDomainEvents)team).ClearDomainEvents();
         var version = team.Version;
 
         team.Archive(_actorId, _now);
@@ -41,7 +41,7 @@ public class TeamVersionTests
     public void AddMember_ShouldIncrementVersion()
     {
         var team = Team.Create(_accountId, _workspaceId, "Team", _actorId, _now);
-        team.ClearDomainEvents();
+        ((IHasDomainEvents)team).ClearDomainEvents();
         var version = team.Version;
 
         team.AddMember(_userId, TeamMemberRole.Member, _actorId, _now);
@@ -55,7 +55,7 @@ public class TeamVersionTests
     {
         var team = Team.Create(_accountId, _workspaceId, "Team", _actorId, _now);
         team.AddMember(_userId, TeamMemberRole.Member, _actorId, _now);
-        team.ClearDomainEvents();
+        ((IHasDomainEvents)team).ClearDomainEvents();
         var version = team.Version;
 
         team.RemoveMember(_userId, _actorId, _now);
@@ -68,7 +68,7 @@ public class TeamVersionTests
     public void SoftDelete_ShouldIncrementVersion()
     {
         var team = Team.Create(_accountId, _workspaceId, "Team", _actorId, _now);
-        team.ClearDomainEvents();
+        ((IHasDomainEvents)team).ClearDomainEvents();
         var version = team.Version;
 
         team.SoftDelete(_actorId, _now);
@@ -83,7 +83,7 @@ public class TeamVersionTests
     {
         var team = Team.Create(_accountId, _workspaceId, "Team", _actorId, _now);
         team.SoftDelete(_actorId, _now);
-        team.ClearDomainEvents();
+        ((IHasDomainEvents)team).ClearDomainEvents();
         var version = team.Version;
 
         team.Restore(_actorId, _now);

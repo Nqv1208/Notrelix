@@ -41,7 +41,7 @@ public class ResourceWatcherTests
     public void Unwatch_ShouldRaiseEvent_AndSetDeleted()
     {
         var watcher = CreateWatcher();
-        watcher.ClearDomainEvents();
+        ((IHasDomainEvents)watcher).ClearDomainEvents();
 
         watcher.Unwatch(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

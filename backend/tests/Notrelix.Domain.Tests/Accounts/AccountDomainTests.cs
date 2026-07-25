@@ -1,11 +1,14 @@
 using FluentAssertions;
 using Notrelix.Domain.Accounts.Domains;
+using Notrelix.Domain.Accounts.Domains.Events;
 
 namespace Notrelix.Domain.Tests.Accounts;
 
 public class AccountDomainTests
 {
     private readonly Guid _accountId = Guid.NewGuid();
+    private readonly Guid _actorId = Guid.NewGuid();
+    private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
 
     [Fact]
     public void Create_WithValidData_ShouldSucceed()
@@ -36,39 +39,53 @@ public class AccountDomainTests
     }
 
     [Fact]
-    public void Verify_ShouldChangeStatusToVerified()
+    public void Verify_ShouldChangeStatusToVerified_AndRaiseEvent()
     {
         var domain = AccountDomain.Create(_accountId, "example.com");
-        var verifiedAt = DateTimeOffset.UtcNow;
 
-        domain.Verify(verifiedAt);
+        domain.Verify(_now, _actorId);
 
         domain.VerificationStatus.Should().Be(DomainVerificationStatus.Verified);
-        domain.VerifiedAt.Should().Be(verifiedAt);
+        domain.VerifiedAt.Should().Be(_now);
+        domain.DomainEvents.Should().ContainSingle(e => e is AccountDomainVerifiedDomainEvent);
     }
 
     [Fact]
     public void Verify_WhenAlreadyVerified_ShouldBeIdempotent()
     {
         var domain = AccountDomain.Create(_accountId, "example.com");
-        var firstVerifiedAt = DateTimeOffset.UtcNow;
-        domain.Verify(firstVerifiedAt);
+        domain.Verify(_now, _actorId);
+        ((IHasDomainEvents)domain).ClearDomainEvents();
 
-        var secondVerifiedAt = firstVerifiedAt.AddHours(1);
-        domain.Verify(secondVerifiedAt);
+        domain.Verify(_now.AddHours(1), _actorId);
 
         domain.VerificationStatus.Should().Be(DomainVerificationStatus.Verified);
-        domain.VerifiedAt.Should().Be(firstVerifiedAt);
+        domain.VerifiedAt.Should().Be(_now);
+        domain.DomainEvents.Should().BeEmpty();
     }
 
     [Fact]
-    public void Reject_ShouldChangeStatusToRejected()
+    public void Reject_ShouldChangeStatusToRejected_AndRaiseEvent()
     {
         var domain = AccountDomain.Create(_accountId, "example.com");
 
-        domain.Reject();
+        domain.Reject(_actorId, _now);
 
         domain.VerificationStatus.Should().Be(DomainVerificationStatus.Rejected);
+        domain.DomainEvents.Should().ContainSingle(e => e is AccountDomainRejectedDomainEvent);
+    }
+
+    [Fact]
+    public void Reject_WhenAlreadyRejected_ShouldBeIdempotent()
+    {
+        var domain = AccountDomain.Create(_accountId, "example.com");
+        domain.Reject(_actorId, _now);
+        ((IHasDomainEvents)domain).ClearDomainEvents();
+
+        domain.Reject(_actorId, _now);
+
+        domain.VerificationStatus.Should().Be(DomainVerificationStatus.Rejected);
+        domain.DomainEvents.Should().BeEmpty();
     }
 
     [Fact]
@@ -76,7 +93,7 @@ public class AccountDomainTests
     {
         var domain = AccountDomain.Create(_accountId, "example.com");
 
-        var act = () => domain.EnableAutoJoin();
+        var act = () => domain.EnableAutoJoin(_actorId, _now);
 
         act.Should().Throw<BusinessRuleException>()
             .WithMessage("*unverified*");
@@ -86,33 +103,85 @@ public class AccountDomainTests
     public void EnableAutoJoin_WhenRejected_ShouldThrow()
     {
         var domain = AccountDomain.Create(_accountId, "example.com");
-        domain.Reject();
+        domain.Reject(_actorId, _now);
 
-        var act = () => domain.EnableAutoJoin();
+        var act = () => domain.EnableAutoJoin(_actorId, _now);
 
         act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
-    public void EnableAutoJoin_WhenVerified_ShouldSucceed()
+    public void EnableAutoJoin_WhenVerified_ShouldSucceed_AndRaiseEvent()
     {
         var domain = AccountDomain.Create(_accountId, "example.com");
-        domain.Verify(DateTimeOffset.UtcNow);
+        domain.Verify(_now, _actorId);
+        ((IHasDomainEvents)domain).ClearDomainEvents();
 
-        domain.EnableAutoJoin();
+        domain.EnableAutoJoin(_actorId, _now);
 
         domain.AutoJoinEnabled.Should().BeTrue();
+        domain.DomainEvents.Should().ContainSingle(e => e is AccountDomainAutoJoinEnabledDomainEvent);
     }
 
     [Fact]
-    public void DisableAutoJoin_ShouldSetToFalse()
+    public void EnableAutoJoin_WhenAlreadyEnabled_ShouldBeIdempotent()
     {
         var domain = AccountDomain.Create(_accountId, "example.com");
-        domain.Verify(DateTimeOffset.UtcNow);
-        domain.EnableAutoJoin();
+        domain.Verify(_now, _actorId);
+        domain.EnableAutoJoin(_actorId, _now);
+        ((IHasDomainEvents)domain).ClearDomainEvents();
 
-        domain.DisableAutoJoin();
+        domain.EnableAutoJoin(_actorId, _now);
+
+        domain.AutoJoinEnabled.Should().BeTrue();
+        domain.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void DisableAutoJoin_ShouldSetToFalse_AndRaiseEvent()
+    {
+        var domain = AccountDomain.Create(_accountId, "example.com");
+        domain.Verify(_now, _actorId);
+        domain.EnableAutoJoin(_actorId, _now);
+        ((IHasDomainEvents)domain).ClearDomainEvents();
+
+        domain.DisableAutoJoin(_actorId, _now);
 
         domain.AutoJoinEnabled.Should().BeFalse();
+        domain.DomainEvents.Should().ContainSingle(e => e is AccountDomainAutoJoinDisabledDomainEvent);
+    }
+
+    [Fact]
+    public void DisableAutoJoin_WhenAlreadyDisabled_ShouldBeIdempotent()
+    {
+        var domain = AccountDomain.Create(_accountId, "example.com");
+        ((IHasDomainEvents)domain).ClearDomainEvents();
+
+        domain.DisableAutoJoin(_actorId, _now);
+
+        domain.AutoJoinEnabled.Should().BeFalse();
+        domain.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Verify_ShouldSetAuditOnUpdate()
+    {
+        var domain = AccountDomain.Create(_accountId, "example.com");
+
+        domain.Verify(_now, _actorId);
+
+        domain.UpdatedAt.Should().Be(_now);
+        domain.UpdatedBy.Should().Be(_actorId);
+    }
+
+    [Fact]
+    public void Verify_ShouldIncrementVersion()
+    {
+        var domain = AccountDomain.Create(_accountId, "example.com");
+        var versionBefore = domain.Version;
+
+        domain.Verify(_now, _actorId);
+
+        domain.Version.Should().Be(versionBefore + 1);
     }
 }

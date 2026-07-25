@@ -17,7 +17,7 @@ public class BoardItemMoveToGroupTests
     {
         var groupId = Guid.NewGuid();
         var item = BoardItem.Create(Guid.NewGuid(), WsA, BoardA, groupId, "Item", FractionalIndex.Create("a0"), Actor, Now);
-        item.ClearDomainEvents();
+        ((IHasDomainEvents)item).ClearDomainEvents();
 
         var newGroup = Guid.NewGuid();
         var newPosition = FractionalIndex.Create("a1");

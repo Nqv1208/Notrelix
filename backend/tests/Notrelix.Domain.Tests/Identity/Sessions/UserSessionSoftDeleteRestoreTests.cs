@@ -12,7 +12,7 @@ public class UserSessionSoftDeleteRestoreTests
     {
         var tokenHash = RefreshTokenHash.Create("refresh-token");
         var session = UserSession.Create(_actorId, tokenHash, _now.AddDays(30), _now);
-        session.ClearDomainEvents();
+        ((IHasDomainEvents)session).ClearDomainEvents();
         var version = session.Version;
 
         var newHash = RefreshTokenHash.Create("new-refresh-token");
@@ -45,7 +45,7 @@ public class UserSessionSoftDeleteRestoreTests
         var tokenHash = RefreshTokenHash.Create("refresh-token");
         var session = UserSession.Create(_actorId, tokenHash, _now.AddDays(30), _now);
         session.SoftDelete(_actorId, _now);
-        session.ClearDomainEvents();
+        ((IHasDomainEvents)session).ClearDomainEvents();
         var version = session.Version;
 
         session.Restore(_actorId, _now);

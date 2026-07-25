@@ -37,7 +37,7 @@ public class ResourcePermissionTests
         var permission = ResourcePermission.Grant(Guid.NewGuid(),
             workspaceId, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Guid.NewGuid(), PermissionLevel.Viewer, PermissionLevel.Owner, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        permission.ClearDomainEvents();
+        ((IHasDomainEvents)permission).ClearDomainEvents();
 
         var updatedBy = Guid.NewGuid();
         permission.ChangeLevel(PermissionLevel.Editor, updatedBy, DateTimeOffset.UtcNow);
@@ -54,7 +54,7 @@ public class ResourcePermissionTests
         var permission = ResourcePermission.Grant(Guid.NewGuid(),
             workspaceId, ResourceType.Workspace, Guid.NewGuid(), PermissionSubjectType.Team, Guid.NewGuid(), PermissionLevel.Viewer, PermissionLevel.Owner, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        permission.ClearDomainEvents();
+        ((IHasDomainEvents)permission).ClearDomainEvents();
 
         var revokedBy = Guid.NewGuid();
         permission.Revoke(revokedBy, DateTimeOffset.UtcNow);

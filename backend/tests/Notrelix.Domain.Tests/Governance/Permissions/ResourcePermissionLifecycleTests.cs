@@ -13,7 +13,7 @@ public class ResourcePermissionLifecycleTests
     public void ResourcePermission_SoftDelete_ShouldRaiseEvent()
     {
         var permission = ResourcePermission.Grant(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Actor, PermissionLevel.Editor, PermissionLevel.Owner, Actor, Now);
-        permission.ClearDomainEvents();
+        ((IHasDomainEvents)permission).ClearDomainEvents();
         var version = permission.Version;
 
         permission.SoftDelete(Actor, Now);
@@ -31,7 +31,7 @@ public class ResourcePermissionLifecycleTests
     {
         var permission = ResourcePermission.Grant(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Actor, PermissionLevel.Editor, PermissionLevel.Owner, Actor, Now);
         permission.SoftDelete(Actor, Now);
-        permission.ClearDomainEvents();
+        ((IHasDomainEvents)permission).ClearDomainEvents();
         var version = permission.Version;
 
         permission.Restore(Actor, Now);
@@ -49,7 +49,7 @@ public class ResourcePermissionLifecycleTests
     {
         var permission = ResourcePermission.Grant(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Actor, PermissionLevel.Editor, PermissionLevel.Owner, Actor, Now);
         permission.SoftDelete(Actor, Now);
-        permission.ClearDomainEvents();
+        ((IHasDomainEvents)permission).ClearDomainEvents();
         var version = permission.Version;
 
         permission.SoftDelete(Actor, Now);
@@ -62,7 +62,7 @@ public class ResourcePermissionLifecycleTests
     public void ResourcePermission_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
         var permission = ResourcePermission.Grant(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Actor, PermissionLevel.Editor, PermissionLevel.Owner, Actor, Now);
-        permission.ClearDomainEvents();
+        ((IHasDomainEvents)permission).ClearDomainEvents();
         var version = permission.Version;
 
         permission.Restore(Actor, Now);
@@ -75,7 +75,7 @@ public class ResourcePermissionLifecycleTests
     public void ResourcePermission_Revoke_ShouldEmitOnlyRevokedEvent()
     {
         var permission = ResourcePermission.Grant(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Actor, PermissionLevel.Editor, PermissionLevel.Owner, Actor, Now);
-        permission.ClearDomainEvents();
+        ((IHasDomainEvents)permission).ClearDomainEvents();
         var version = permission.Version;
 
         permission.Revoke(Actor, Now);

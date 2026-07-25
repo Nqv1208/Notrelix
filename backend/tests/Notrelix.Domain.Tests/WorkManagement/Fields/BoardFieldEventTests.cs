@@ -15,7 +15,7 @@ public class BoardFieldEventTests
     {
         var position = FractionalIndex.Create("a0");
         var field = BoardField.Create(Guid.NewGuid(), WsA, BoardA, "Field", FieldType.Text, FieldSettings.Empty(), position, Actor, Now);
-        field.ClearDomainEvents();
+        ((IHasDomainEvents)field).ClearDomainEvents();
         var version = field.Version;
 
         field.UpdateClassification(DataClassification.Confidential, true, Actor, Now);
@@ -33,7 +33,7 @@ public class BoardFieldEventTests
         var position = FractionalIndex.Create("a0");
         var field = BoardField.Create(Guid.NewGuid(), WsA, BoardA, "Field", FieldType.Text, FieldSettings.Empty(), position, Actor, Now,
             dataClassification: DataClassification.Confidential, isSensitive: true);
-        field.ClearDomainEvents();
+        ((IHasDomainEvents)field).ClearDomainEvents();
         var version = field.Version;
 
         field.UpdateClassification(DataClassification.Confidential, true, Actor, Now);
@@ -48,7 +48,7 @@ public class BoardFieldEventTests
         var position = FractionalIndex.Create("a0");
         var field = BoardField.Create(Guid.NewGuid(), WsA, BoardA, "Field", FieldType.Text, FieldSettings.Empty(), position, Actor, Now);
         field.SoftDelete(Actor, Now);
-        field.ClearDomainEvents();
+        ((IHasDomainEvents)field).ClearDomainEvents();
         var version = field.Version;
 
         field.Restore(Actor, Now);
@@ -63,7 +63,7 @@ public class BoardFieldEventTests
     {
         var position = FractionalIndex.Create("a0");
         var field = BoardField.Create(Guid.NewGuid(), WsA, BoardA, "Field", FieldType.Text, FieldSettings.Empty(), position, Actor, Now);
-        field.ClearDomainEvents();
+        ((IHasDomainEvents)field).ClearDomainEvents();
         var version = field.Version;
 
         field.Restore(Actor, Now);

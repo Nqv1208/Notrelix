@@ -2,48 +2,93 @@ using FluentAssertions;
 
 namespace Notrelix.Domain.Tests.SharedKernel.Ordering;
 
+/// <summary>
+/// Tests ported from upstream rocicorp/fractional-indexing v4.0.0 test.js.
+/// Only default-alphabet tests (BASE_62 digits, A-Z/a-z heads) are included.
+/// Custom digits/intDigits tests are omitted since our API does not expose them.
+/// </summary>
 public class FractionalIndexGeneratorTests
 {
-    // ── Official fixtures ─────────────────────────────────────────────────
+    // ── Official upstream fixtures (test.js) ──────────────────────────────
+
+    [Fact] public void Upstream_Null_Null() => AssertGenerate(null, null, "a0");
+    [Fact] public void Upstream_Null_a0() => AssertGenerate(null, "a0", "Zz");
+    [Fact] public void Upstream_Null_Zz() => AssertGenerate(null, "Zz", "Zy");
+    [Fact] public void Upstream_a0_Null() => AssertGenerate("a0", null, "a1");
+    [Fact] public void Upstream_a1_Null() => AssertGenerate("a1", null, "a2");
+    [Fact] public void Upstream_a0_a1() => AssertGenerate("a0", "a1", "a0V");
+    [Fact] public void Upstream_a1_a2() => AssertGenerate("a1", "a2", "a1V");
+    [Fact] public void Upstream_a0V_a1() => AssertGenerate("a0V", "a1", "a0l");
+    [Fact] public void Upstream_Zz_a0() => AssertGenerate("Zz", "a0", "ZzV");
+    [Fact] public void Upstream_Zz_a1() => AssertGenerate("Zz", "a1", "a0");
+    [Fact] public void Upstream_Null_Y00() => AssertGenerate(null, "Y00", "Xzzz");
+    [Fact] public void Upstream_bzz_Null() => AssertGenerate("bzz", null, "c000");
+    [Fact] public void Upstream_a0_a0V() => AssertGenerate("a0", "a0V", "a0G");
+    [Fact] public void Upstream_a0_a0G() => AssertGenerate("a0", "a0G", "a08");
+    [Fact] public void Upstream_b125_b129() => AssertGenerate("b125", "b129", "b127");
+    [Fact] public void Upstream_a0_a1V() => AssertGenerate("a0", "a1V", "a1");
+    [Fact] public void Upstream_Zz_a01() => AssertGenerate("Zz", "a01", "a0");
+    [Fact] public void Upstream_Null_a0V() => AssertGenerate(null, "a0V", "a0");
+    [Fact] public void Upstream_Null_b999() => AssertGenerate(null, "b999", "b99");
+    [Fact] public void Upstream_Reversed_a1_a0() => AssertGenerate("a1", "a0", "a0V");
 
     [Fact]
-    public void GenerateKeyBetween_Null_Null_Returns_a0()
+    public void Upstream_Null_A00000000000000000000000000_Throws()
     {
-        var key = FractionalIndexGenerator.GenerateKeyBetween(null, null);
-        key.Value.Should().Be("a0");
+        var act = () => FractionalIndexGenerator.GenerateKeyBetween(null, FractionalIndex.Create("A00000000000000000000000000"));
+        act.Should().Throw<ArgumentException>();
     }
 
     [Fact]
-    public void GenerateKeyBetween_a0_Null_Returns_a1()
+    public void Upstream_Null_A000000000000000000000000001()
     {
-        var key = FractionalIndexGenerator.GenerateKeyBetween(FractionalIndex.Create("a0"), null);
-        key.Value.Should().Be("a1");
+        AssertGenerate(null, "A000000000000000000000000001", "A000000000000000000000000000V");
     }
 
     [Fact]
-    public void GenerateKeyBetween_a1_Null_Returns_a2()
+    public void Upstream_zzzzzzzzzzzzzzzzzzzzzzzzz_y()
     {
-        var key = FractionalIndexGenerator.GenerateKeyBetween(FractionalIndex.Create("a1"), null);
-        key.Value.Should().Be("a2");
+        AssertGenerate(
+            "zzzzzzzzzzzzzzzzzzzzzzzzzzy",
+            null,
+            "zzzzzzzzzzzzzzzzzzzzzzzzzzz");
     }
 
     [Fact]
-    public void GenerateKeyBetween_Null_a0_Returns_Zz()
+    public void Upstream_zzzzzzzzzzzzzzzzzzzzzzzzz_z()
     {
-        var key = FractionalIndexGenerator.GenerateKeyBetween(null, FractionalIndex.Create("a0"));
-        key.Value.Should().Be("Zz");
+        AssertGenerate(
+            "zzzzzzzzzzzzzzzzzzzzzzzzzzz",
+            null,
+            "zzzzzzzzzzzzzzzzzzzzzzzzzzzV");
     }
 
     [Fact]
-    public void GenerateKeyBetween_a1_a2_Returns_a1V()
+    public void Upstream_a00_Null_Throws()
     {
-        var key = FractionalIndexGenerator.GenerateKeyBetween(
-            FractionalIndex.Create("a1"), FractionalIndex.Create("a2"));
-        key.Value.Should().Be("a1V");
+        var act = () => FractionalIndexGenerator.GenerateKeyBetween(FractionalIndex.Create("a00"), (FractionalIndex?)null);
+        act.Should().Throw<ArgumentException>();
     }
 
     [Fact]
-    public void GenerateNKeysBetween_Null_Null_2_Returns_a0_a1()
+    public void Upstream_a00_a1_Throws()
+    {
+        var act = () => FractionalIndexGenerator.GenerateKeyBetween(FractionalIndex.Create("a00"), FractionalIndex.Create("a1"));
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void Upstream_InvalidHead_0_Rejected()
+    {
+        // "0" is not a valid head character in the A-Z/a-z alphabet
+        var act = () => FractionalIndex.Create("0");
+        act.Should().Throw<ArgumentException>();
+    }
+
+    // ── Existing custom fixtures ─────────────────────────────────────────
+
+    [Fact]
+    public void GenerateNKeysBetween_Null_Null_2()
     {
         var keys = FractionalIndexGenerator.GenerateNKeysBetween(null, null, 2);
         keys.Should().HaveCount(2);
@@ -51,7 +96,7 @@ public class FractionalIndexGeneratorTests
         keys[1].Value.Should().Be("a1");
     }
 
-    // ── Ordering invariants ───────────────────────────────────────────────
+    // ── Ordering invariants ──────────────────────────────────────────────
 
     [Fact]
     public void GeneratedKey_IsStrictlyBetweenBounds()
@@ -80,13 +125,11 @@ public class FractionalIndexGeneratorTests
         keys.Select(k => k.Value).Distinct().Should().HaveCount(20);
     }
 
-    // ── Prefix crash regression ───────────────────────────────────────────
+    // ── Prefix crash regression ──────────────────────────────────────────
 
     [Fact]
     public void PrefixBounds_DoNotCrash()
     {
-        // This crashed the old algorithm: Between("a", "a0")
-        // "a" is not a valid key, but the generator should handle valid prefix pairs.
         var lower = FractionalIndex.Create("a0");
         var upper = FractionalIndex.Create("a0V");
         var key = FractionalIndexGenerator.GenerateKeyBetween(lower, upper);
@@ -111,7 +154,7 @@ public class FractionalIndexGeneratorTests
         }
     }
 
-    // ── Out-of-alphabet regression ────────────────────────────────────────
+    // ── Out-of-alphabet regression ───────────────────────────────────────
 
     [Fact]
     public void GeneratedKeys_OnlyContainValidCharacters()
@@ -126,7 +169,7 @@ public class FractionalIndexGeneratorTests
         }
     }
 
-    // ── Validation ────────────────────────────────────────────────────────
+    // ── Validation ───────────────────────────────────────────────────────
 
     [Fact]
     public void InvalidKey_IsRejected()
@@ -150,20 +193,12 @@ public class FractionalIndexGeneratorTests
     }
 
     [Fact]
-    public void InvalidBounds_LowerEqualsUpper_IsRejected()
-    {
-        var key = FractionalIndex.Create("a0");
-        var act = () => FractionalIndexGenerator.GenerateKeyBetween(key, key);
-        act.Should().Throw<ArgumentException>();
-    }
-
-    [Fact]
-    public void InvalidBounds_LowerGreaterThanUpper_IsRejected()
+    public void ReversedBounds_AreAutoSwapped()
     {
         var lower = FractionalIndex.Create("a1");
         var upper = FractionalIndex.Create("a0");
-        var act = () => FractionalIndexGenerator.GenerateKeyBetween(lower, upper);
-        act.Should().Throw<ArgumentException>();
+        var key = FractionalIndexGenerator.GenerateKeyBetween(lower, upper);
+        key.Value.Should().Be("a0V");
     }
 
     [Fact]
@@ -180,7 +215,7 @@ public class FractionalIndexGeneratorTests
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    // ── Existing key compatibility ────────────────────────────────────────
+    // ── Existing key compatibility ───────────────────────────────────────
 
     [Theory]
     [InlineData("a0")]
@@ -196,7 +231,7 @@ public class FractionalIndexGeneratorTests
         index.Value.Should().Be(value);
     }
 
-    // ── Ordinal comparison ────────────────────────────────────────────────
+    // ── Ordinal comparison ───────────────────────────────────────────────
 
     [Fact]
     public void OrdinalSorting_MatchesGenerationOrder()
@@ -208,7 +243,7 @@ public class FractionalIndexGeneratorTests
             keys[i].Value.Should().Be(sorted[i].Value);
     }
 
-    // ── No trimming ───────────────────────────────────────────────────────
+    // ── No trimming ──────────────────────────────────────────────────────
 
     [Fact]
     public void Create_DoesNotTrim_WhitespaceIsRejected()
@@ -217,7 +252,7 @@ public class FractionalIndexGeneratorTests
         act.Should().Throw<ArgumentException>();
     }
 
-    // ── Large batch ───────────────────────────────────────────────────────
+    // ── Large batch ──────────────────────────────────────────────────────
 
     [Fact]
     public void GenerateNKeys_100_AllValidAndOrdered()
@@ -229,5 +264,15 @@ public class FractionalIndexGeneratorTests
 
         for (var i = 1; i < keys.Count; i++)
             keys[i - 1].CompareTo(keys[i]).Should().BeNegative();
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────
+
+    private static void AssertGenerate(string? a, string? b, string expected)
+    {
+        FractionalIndex? fa = a != null ? FractionalIndex.Create(a) : null;
+        FractionalIndex? fb = b != null ? FractionalIndex.Create(b) : null;
+        var key = FractionalIndexGenerator.GenerateKeyBetween(fa, fb);
+        key.Value.Should().Be(expected);
     }
 }

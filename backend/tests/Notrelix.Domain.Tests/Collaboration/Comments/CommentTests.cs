@@ -31,12 +31,11 @@ public class CommentTests
     }
 
     [Fact]
-    public void Create_WithParentId_ShouldSetParent()
+    public void Create_ShouldNotSetParentId()
     {
-        var parentId = Guid.NewGuid();
-        var comment = Comment.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceType.Page, Guid.NewGuid()), "Reply", Guid.NewGuid(), DateTimeOffset.UtcNow, parentId: parentId);
+        var comment = Comment.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceType.Page, Guid.NewGuid()), "Reply", Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        comment.ParentId.Should().Be(parentId);
+        comment.ParentId.Should().BeNull();
     }
 
     [Fact]
@@ -52,7 +51,7 @@ public class CommentTests
     public void UpdateContent_ShouldUpdate_AndRaiseEvent()
     {
         var comment = Comment.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceType.Page, Guid.NewGuid()), "Original", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        comment.ClearDomainEvents();
+        ((IHasDomainEvents)comment).ClearDomainEvents();
 
         comment.UpdateContent("Updated", Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -64,7 +63,7 @@ public class CommentTests
     public void UpdateContent_WhenSameContent_ShouldBeNoOp()
     {
         var comment = Comment.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceType.Page, Guid.NewGuid()), "Same", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        comment.ClearDomainEvents();
+        ((IHasDomainEvents)comment).ClearDomainEvents();
 
         comment.UpdateContent("Same", Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -85,7 +84,7 @@ public class CommentTests
     public void Resolve_ShouldUpdateStatus_AndRaiseEvent()
     {
         var comment = Comment.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceType.Page, Guid.NewGuid()), "Content", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        comment.ClearDomainEvents();
+        ((IHasDomainEvents)comment).ClearDomainEvents();
 
         var resolvedBy = Guid.NewGuid();
         comment.Resolve(resolvedBy, DateTimeOffset.UtcNow);
@@ -100,7 +99,7 @@ public class CommentTests
     {
         var comment = Comment.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceType.Page, Guid.NewGuid()), "Content", Guid.NewGuid(), DateTimeOffset.UtcNow);
         comment.Resolve(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        comment.ClearDomainEvents();
+        ((IHasDomainEvents)comment).ClearDomainEvents();
 
         comment.Resolve(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -121,7 +120,7 @@ public class CommentTests
     public void SoftDelete_ShouldSetStatus_AndRaiseEvent()
     {
         var comment = Comment.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceType.Page, Guid.NewGuid()), "Content", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        comment.ClearDomainEvents();
+        ((IHasDomainEvents)comment).ClearDomainEvents();
 
         comment.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -135,7 +134,7 @@ public class CommentTests
     {
         var comment = Comment.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceType.Page, Guid.NewGuid()), "Content", Guid.NewGuid(), DateTimeOffset.UtcNow);
         comment.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        comment.ClearDomainEvents();
+        ((IHasDomainEvents)comment).ClearDomainEvents();
 
         comment.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -147,7 +146,7 @@ public class CommentTests
     {
         var comment = Comment.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceType.Page, Guid.NewGuid()), "Content", Guid.NewGuid(), DateTimeOffset.UtcNow);
         comment.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        comment.ClearDomainEvents();
+        ((IHasDomainEvents)comment).ClearDomainEvents();
 
         comment.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -160,7 +159,7 @@ public class CommentTests
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {
         var comment = Comment.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceType.Page, Guid.NewGuid()), "Content", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        comment.ClearDomainEvents();
+        ((IHasDomainEvents)comment).ClearDomainEvents();
 
         comment.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

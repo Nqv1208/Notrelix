@@ -29,7 +29,7 @@ public class AutomationExecutionTests
     public void Start_ShouldTransition_AndRaiseEvent()
     {
         var execution = CreateExecution();
-        execution.ClearDomainEvents();
+        ((IHasDomainEvents)execution).ClearDomainEvents();
 
         execution.Start(DateTimeOffset.UtcNow);
 
@@ -52,7 +52,7 @@ public class AutomationExecutionTests
     {
         var execution = CreateExecution();
         execution.Start(DateTimeOffset.UtcNow);
-        execution.ClearDomainEvents();
+        ((IHasDomainEvents)execution).ClearDomainEvents();
 
         execution.Succeed(DateTimeOffset.UtcNow);
 
@@ -74,7 +74,7 @@ public class AutomationExecutionTests
     {
         var execution = CreateExecution();
         execution.Start(DateTimeOffset.UtcNow);
-        execution.ClearDomainEvents();
+        ((IHasDomainEvents)execution).ClearDomainEvents();
 
         execution.Fail("Timeout", DateTimeOffset.UtcNow);
 
@@ -118,7 +118,7 @@ public class AutomationExecutionTests
     {
         var execution = CreateExecution();
         execution.Start(DateTimeOffset.UtcNow);
-        execution.ClearDomainEvents();
+        ((IHasDomainEvents)execution).ClearDomainEvents();
 
         execution.Cancel(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

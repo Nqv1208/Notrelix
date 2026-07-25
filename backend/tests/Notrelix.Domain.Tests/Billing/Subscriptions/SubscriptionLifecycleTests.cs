@@ -13,7 +13,7 @@ public class SubscriptionLifecycleTests
     public void Subscription_ScheduleCancellation_ShouldRaiseEvent()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now, WsA);
-        sub.ClearDomainEvents();
+        ((IHasDomainEvents)sub).ClearDomainEvents();
         var version = sub.Version;
 
         sub.ScheduleCancellation(Actor, Now);
@@ -31,7 +31,7 @@ public class SubscriptionLifecycleTests
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now, WsA);
         sub.ScheduleCancellation(Actor, Now);
-        sub.ClearDomainEvents();
+        ((IHasDomainEvents)sub).ClearDomainEvents();
         var version = sub.Version;
 
         sub.ScheduleCancellation(Actor, Now);
@@ -62,7 +62,7 @@ public class SubscriptionLifecycleTests
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now, WsA);
         sub.SoftDelete(Actor, Now);
-        sub.ClearDomainEvents();
+        ((IHasDomainEvents)sub).ClearDomainEvents();
         var version = sub.Version;
 
         sub.Restore(Actor, Now);
@@ -80,7 +80,7 @@ public class SubscriptionLifecycleTests
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now, WsA);
         sub.SoftDelete(Actor, Now);
-        sub.ClearDomainEvents();
+        ((IHasDomainEvents)sub).ClearDomainEvents();
         var version = sub.Version;
 
         sub.SoftDelete(Actor, Now);
@@ -93,7 +93,7 @@ public class SubscriptionLifecycleTests
     public void Subscription_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now, WsA);
-        sub.ClearDomainEvents();
+        ((IHasDomainEvents)sub).ClearDomainEvents();
         var version = sub.Version;
 
         sub.Restore(Actor, Now);

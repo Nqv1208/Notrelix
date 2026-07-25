@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.WorkManagement.Boards;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 
+[CoversAggregate(typeof(Board))]
 public class BoardTests
 {
     [Fact]
@@ -41,7 +43,7 @@ public class BoardTests
     public void Rename_ShouldUpdateTitleAndRaiseEvent()
     {
         var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Old Title", null, DateTimeOffset.UtcNow);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
 
         var updatedBy = Guid.NewGuid();
         board.Rename("New Title", updatedBy, DateTimeOffset.UtcNow);
@@ -77,7 +79,7 @@ public class BoardTests
     public void Archive_ShouldSetIsArchivedAndRaiseEvent()
     {
         var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Valid Title", null, DateTimeOffset.UtcNow);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
 
         var archivedBy = Guid.NewGuid();
         board.Archive(archivedBy, DateTimeOffset.UtcNow);
@@ -92,7 +94,7 @@ public class BoardTests
     {
         var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Valid Title", null, DateTimeOffset.UtcNow);
         board.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
 
         board.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -104,7 +106,7 @@ public class BoardTests
     {
         var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Valid Title", null, DateTimeOffset.UtcNow);
         board.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
 
         var unarchivedBy = Guid.NewGuid();
         board.Unarchive(unarchivedBy, DateTimeOffset.UtcNow);
@@ -118,7 +120,7 @@ public class BoardTests
     public void Unarchive_ShouldBeNoOp_WhenNotArchived()
     {
         var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Valid Title", null, DateTimeOffset.UtcNow);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
 
         board.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -129,7 +131,7 @@ public class BoardTests
     public void SoftDelete_ShouldSetIsDeletedAndRaiseEvent()
     {
         var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Valid Title", null, DateTimeOffset.UtcNow);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
 
         var deletedBy = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
@@ -147,7 +149,7 @@ public class BoardTests
     {
         var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Valid Title", null, DateTimeOffset.UtcNow);
         board.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
 
         board.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -159,7 +161,7 @@ public class BoardTests
     {
         var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Valid Title", null, DateTimeOffset.UtcNow);
         board.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
 
         var restoredBy = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
@@ -176,7 +178,7 @@ public class BoardTests
     public void Restore_ShouldBeNoOp_WhenNotDeleted()
     {
         var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Valid Title", null, DateTimeOffset.UtcNow);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
 
         board.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -209,7 +211,7 @@ public class BoardTests
     public void UpdateDescription_ShouldRaiseEvent()
     {
         var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Valid Title", null, DateTimeOffset.UtcNow);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
 
         var updatedBy = Guid.NewGuid();
         board.UpdateDescription("New description", updatedBy, DateTimeOffset.UtcNow);
@@ -234,7 +236,7 @@ public class BoardTests
     public void ChangeVisibility_ShouldRaiseEvent()
     {
         var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Valid Title", null, DateTimeOffset.UtcNow);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
 
         var updatedBy = Guid.NewGuid();
         board.ChangeVisibility(BoardVisibility.PublicLink, updatedBy, DateTimeOffset.UtcNow);
@@ -248,7 +250,7 @@ public class BoardTests
     public void SetDefaultGroup_ShouldRaiseEvent()
     {
         var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Valid Title", null, DateTimeOffset.UtcNow);
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
 
         var groupId = Guid.NewGuid();
         board.SetDefaultGroup(groupId, Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -262,7 +264,7 @@ public class BoardTests
     public void GenerateNextItemIdentity_ShouldIncrementSequence()
     {
         var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Valid Title", null, DateTimeOffset.UtcNow, itemKeyPrefix: "TASK");
-        board.ClearDomainEvents();
+        ((IHasDomainEvents)board).ClearDomainEvents();
 
         var (seq1, key1) = board.GenerateNextItemIdentity(Guid.NewGuid(), DateTimeOffset.UtcNow);
         var (seq2, key2) = board.GenerateNextItemIdentity(Guid.NewGuid(), DateTimeOffset.UtcNow);

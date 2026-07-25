@@ -41,7 +41,7 @@ public class UserSecuritySettingsTests
         var now = DateTimeOffset.UtcNow;
         var settings = UserSecuritySettings.Create(Guid.NewGuid(), now);
         settings.EnableMfa(MfaMethodType.AuthenticatorApp, now);
-        settings.ClearDomainEvents();
+        ((IHasDomainEvents)settings).ClearDomainEvents();
 
         settings.DisableMfa(now.AddMinutes(1));
 
@@ -75,7 +75,7 @@ public class UserSecuritySettingsTests
         var now = DateTimeOffset.UtcNow;
         var settings = UserSecuritySettings.Create(Guid.NewGuid(), now);
         settings.RequirePasswordChangeNow(now);
-        settings.ClearDomainEvents();
+        ((IHasDomainEvents)settings).ClearDomainEvents();
 
         settings.MarkPasswordChanged(now.AddMinutes(1));
 

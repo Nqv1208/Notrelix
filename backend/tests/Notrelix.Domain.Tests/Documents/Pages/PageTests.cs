@@ -23,7 +23,7 @@ public class PageTests
     public void Rename_ShouldSucceed_AndRaiseEvent()
     {
         var page = Page.Create(Guid.NewGuid(), Guid.NewGuid(), "Old Title", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        page.ClearDomainEvents();
+        ((IHasDomainEvents)page).ClearDomainEvents();
 
         page.Rename("New Title", Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -45,7 +45,7 @@ public class PageTests
     public void Move_ShouldSucceed_AndRaiseEvent()
     {
         var page = Page.Create(Guid.NewGuid(), Guid.NewGuid(), "Child", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        page.ClearDomainEvents();
+        ((IHasDomainEvents)page).ClearDomainEvents();
         var newParentId = Guid.NewGuid();
 
         page.Move(newParentId, Guid.NewGuid(), DateTimeOffset.UtcNow, _ => null);
@@ -59,7 +59,7 @@ public class PageTests
     {
         var page = Page.Create(Guid.NewGuid(), Guid.NewGuid(), "Child", Guid.NewGuid(), DateTimeOffset.UtcNow, parentId: Guid.NewGuid());
         var currentParent = page.ParentId;
-        page.ClearDomainEvents();
+        ((IHasDomainEvents)page).ClearDomainEvents();
 
         page.Move(currentParent, Guid.NewGuid(), DateTimeOffset.UtcNow, _ => null);
 
@@ -98,7 +98,7 @@ public class PageTests
     public void Archive_ShouldSetStatus_AndRaiseEvent()
     {
         var page = Page.Create(Guid.NewGuid(), Guid.NewGuid(), "Title", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        page.ClearDomainEvents();
+        ((IHasDomainEvents)page).ClearDomainEvents();
 
         page.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -111,7 +111,7 @@ public class PageTests
     {
         var page = Page.Create(Guid.NewGuid(), Guid.NewGuid(), "Title", Guid.NewGuid(), DateTimeOffset.UtcNow);
         page.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        page.ClearDomainEvents();
+        ((IHasDomainEvents)page).ClearDomainEvents();
 
         page.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -122,7 +122,7 @@ public class PageTests
     public void SoftDelete_ShouldSetStatus_AndRaiseEvent()
     {
         var page = Page.Create(Guid.NewGuid(), Guid.NewGuid(), "Title", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        page.ClearDomainEvents();
+        ((IHasDomainEvents)page).ClearDomainEvents();
 
         page.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -136,7 +136,7 @@ public class PageTests
     {
         var page = Page.Create(Guid.NewGuid(), Guid.NewGuid(), "Title", Guid.NewGuid(), DateTimeOffset.UtcNow);
         page.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        page.ClearDomainEvents();
+        ((IHasDomainEvents)page).ClearDomainEvents();
 
         page.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -148,7 +148,7 @@ public class PageTests
     {
         var page = Page.Create(Guid.NewGuid(), Guid.NewGuid(), "Title", Guid.NewGuid(), DateTimeOffset.UtcNow);
         page.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        page.ClearDomainEvents();
+        ((IHasDomainEvents)page).ClearDomainEvents();
 
         page.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -161,7 +161,7 @@ public class PageTests
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {
         var page = Page.Create(Guid.NewGuid(), Guid.NewGuid(), "Title", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        page.ClearDomainEvents();
+        ((IHasDomainEvents)page).ClearDomainEvents();
 
         page.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
