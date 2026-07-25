@@ -162,7 +162,7 @@ public class FieldValueValidatorContractTests
 
         Action act = () => FieldValueValidator.Validate(value, FieldType.Date, settings);
 
-        act.Should().Throw<BusinessRuleException>().WithMessage("*valid date*");
+        act.Should().Throw<BusinessRuleException>().WithMessage("*ISO-8601*");
     }
 
     [Fact]

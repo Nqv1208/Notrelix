@@ -1,6 +1,6 @@
 # Domain Event Contract Snapshot
 # Format: LogicalName|Version|ClrType|Scope|PropertyName|PropertyType|IsNullable
-# Generated: 2026-07-25T17:12:26Z
+# Generated: 2026-07-25T17:21:46Z
 
 accounts.account-activated|1|Notrelix.Domain.Accounts.Accounts.Events.AccountActivatedDomainEvent|Accounts|AccountId|Guid|False
 accounts.account-activated|1|Notrelix.Domain.Accounts.Accounts.Events.AccountActivatedDomainEvent|Accounts|ActivatedBy|Guid|False

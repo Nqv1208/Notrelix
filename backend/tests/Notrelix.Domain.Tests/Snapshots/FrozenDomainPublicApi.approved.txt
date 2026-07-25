@@ -1,6 +1,6 @@
 # Frozen Domain Public API Snapshot
 # Format: Type|Member|MemberType|Visibility|IsAbstract|IsVirtual|Parameters
-# Generated: 2026-07-25T17:12:26Z
+# Generated: 2026-07-25T17:21:46Z
 
 Notrelix.Domain.Accounts.Accounts.Account|Activate|Method|public|False|False|Guid activatedBy, DateTimeOffset activatedAt
 Notrelix.Domain.Accounts.Accounts.Account|Archive|Method|public|False|False|Guid archivedBy, DateTimeOffset archivedAt
@@ -2992,7 +2992,7 @@ Notrelix.Domain.WorkManagement.Checklists.Events.ChecklistSoftDeletedDomainEvent
 Notrelix.Domain.WorkManagement.Fields.BoardField|AddOption|Method|public|False|False|String name, Color color, FractionalIndex position, Guid addedBy, DateTimeOffset addedAt
 Notrelix.Domain.WorkManagement.Fields.BoardField|CanBeUsedAsKanbanColumn|Method|public|False|False|
 Notrelix.Domain.WorkManagement.Fields.BoardField|RemoveOption|Method|public|False|False|Guid optionId, Guid removedBy, DateTimeOffset removedAt
-Notrelix.Domain.WorkManagement.Fields.BoardField|ReorderOptions|Method|public|False|False|List`1 orderedOptionIds, Guid updatedBy, DateTimeOffset updatedAt
+Notrelix.Domain.WorkManagement.Fields.BoardField|ReorderOptions|Method|public|False|False|IReadOnlyList`1 orderedOptionIds, Guid updatedBy, DateTimeOffset updatedAt
 Notrelix.Domain.WorkManagement.Fields.BoardField|Restore|Method|public|False|False|Guid restoredBy, DateTimeOffset restoredAt
 Notrelix.Domain.WorkManagement.Fields.BoardField|SoftDelete|Method|public|False|False|Guid deletedBy, DateTimeOffset deletedAt, String reason
 Notrelix.Domain.WorkManagement.Fields.BoardField|UpdateClassification|Method|public|False|False|DataClassification classification, Boolean isSensitive, Guid updatedBy, DateTimeOffset updatedAt

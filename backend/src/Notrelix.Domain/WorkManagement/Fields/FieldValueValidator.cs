@@ -5,7 +5,16 @@ namespace Notrelix.Domain.WorkManagement.Fields;
 
 public static class FieldValueValidator
 {
-    private static readonly string[] DateFormats = ["O"];
+    // ISO-8601 formats: full round-trip, date-time with offset, date-only
+    private static readonly string[] DateFormats =
+    [
+        "O",                                // Round-trip: yyyy-MM-ddTHH:mm:ss.fffffffK
+        "yyyy-MM-ddTHH:mm:ss.fffK",         // With milliseconds
+        "yyyy-MM-ddTHH:mm:ssK",             // Without fractional seconds
+        "yyyy-MM-ddTHH:mm:ss.fff",          // Without timezone
+        "yyyy-MM-ddTHH:mm:ss",              // Without fractional or timezone
+        "yyyy-MM-dd",                       // Date only
+    ];
 
     public static void Validate(FieldValue value, FieldType type, FieldSettings settings)
     {
@@ -44,7 +53,6 @@ public static class FieldValueValidator
             {
                 case FieldType.Text:
                 case FieldType.LongText:
-                case FieldType.Link:
                     if (kind != JsonValueKind.String)
                         throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidStringFormat, $"Value for field type {type} must be a string.");
                     if (settingsDoc != null && settingsDoc.RootElement.TryGetProperty("maxLength", out var maxLenToken) && maxLenToken.TryGetInt32(out var maxLen))
@@ -52,6 +60,22 @@ public static class FieldValueValidator
                         var strVal = element.GetString() ?? string.Empty;
                         if (strVal.Length > maxLen)
                             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_TextExceedsMaxLength, $"Text value exceeds maximum length of {maxLen} characters.");
+                    }
+                    break;
+
+                case FieldType.Link:
+                    if (kind != JsonValueKind.String)
+                        throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidStringFormat, "Value for field type Link must be a string.");
+                    var linkVal = element.GetString();
+                    if (!string.IsNullOrWhiteSpace(linkVal))
+                    {
+                        if (!Uri.TryCreate(linkVal, UriKind.Absolute, out var uri) ||
+                            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+                        {
+                            throw new BusinessRuleException(
+                                WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidLinkValue,
+                                "Link value must be a valid HTTP or HTTPS URL.");
+                        }
                     }
                     break;
 
@@ -85,8 +109,10 @@ public static class FieldValueValidator
                     if (kind != JsonValueKind.String)
                         throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidSelectValue, $"Value for field type {type} must be a string representing an option ID or user ID.");
                     var idStr = element.GetString();
-                    if (string.IsNullOrWhiteSpace(idStr) || !Guid.TryParse(idStr, out _))
+                    if (string.IsNullOrWhiteSpace(idStr) || !Guid.TryParse(idStr, out var parsedId))
                         throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidSelectValue, $"Value for field type {type} must be a valid GUID.");
+                    if (parsedId == Guid.Empty)
+                        throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidSelectValue, $"Value for field type {type} cannot be an empty GUID.");
                     break;
 
                 case FieldType.MultiSelect:
@@ -98,8 +124,10 @@ public static class FieldValueValidator
                         if (item.ValueKind != JsonValueKind.String)
                             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidMultiSelectValue, "MultiSelect items must be strings.");
                         var itemId = item.GetString();
-                        if (string.IsNullOrWhiteSpace(itemId) || !Guid.TryParse(itemId, out _))
+                        if (string.IsNullOrWhiteSpace(itemId) || !Guid.TryParse(itemId, out var parsedItemId))
                             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidMultiSelectValue, "MultiSelect items must be valid GUIDs.");
+                        if (parsedItemId == Guid.Empty)
+                            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidMultiSelectValue, "MultiSelect items cannot be empty GUIDs.");
                         if (!seen.Add(itemId))
                             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidMultiSelectValue, "MultiSelect value contains duplicate option IDs.");
                     }
@@ -109,8 +137,8 @@ public static class FieldValueValidator
                     if (kind != JsonValueKind.String)
                         throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidDateValue, "Value for field type Date must be a string representation of DateTimeOffset.");
                     var dateStr = element.GetString();
-                    if (dateStr is not null && !DateTimeOffset.TryParse(dateStr, CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
-                        throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidDateValue, $"Value '{dateStr}' is not a valid date.");
+                    if (dateStr is not null && !DateTimeOffset.TryParseExact(dateStr, DateFormats, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _))
+                        throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidDateValue, $"Value '{dateStr}' is not a valid ISO-8601 date.");
                     break;
 
                 case FieldType.Formula:

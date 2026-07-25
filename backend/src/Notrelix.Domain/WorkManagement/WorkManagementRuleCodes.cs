@@ -39,6 +39,7 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_FieldValue_InvalidJsonFormat = "WorkManagement_FieldValue_InvalidJsonFormat";
     public const string WorkManagement_FieldValue_InvalidStringValue = "WorkManagement_FieldValue_InvalidStringValue";
     public const string WorkManagement_FieldValue_InvalidStringFormat = "WorkManagement_FieldValue_InvalidStringFormat";
+    public const string WorkManagement_FieldValue_InvalidLinkValue = "WorkManagement_FieldValue_InvalidLinkValue";
     public const string WorkManagement_FieldValue_TextExceedsMaxLength = "WorkManagement_FieldValue_TextExceedsMaxLength";
     public const string WorkManagement_FieldValue_NumberBelowMin = "WorkManagement_FieldValue_NumberBelowMin";
     public const string WorkManagement_FieldValue_NumberAboveMax = "WorkManagement_FieldValue_NumberAboveMax";

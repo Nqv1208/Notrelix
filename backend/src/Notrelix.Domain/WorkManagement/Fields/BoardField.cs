@@ -132,7 +132,7 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new FieldOptionUpdatedDomainEvent(AccountId, WorkspaceId, Id, optionId, trimmedName, updatedBy, updatedAt));
     }
 
-    public void ReorderOptions(List<Guid> orderedOptionIds, Guid updatedBy, DateTimeOffset updatedAt)
+    public void ReorderOptions(IReadOnlyList<Guid> orderedOptionIds, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
 
@@ -169,7 +169,10 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        RaiseDomainEvent(new FieldOptionsReorderedDomainEvent(AccountId, WorkspaceId, BoardId, Id, orderedOptionIds.AsReadOnly(), updatedBy, updatedAt));
+
+        // Defensive copy: event payload must not reference caller's mutable list
+        var orderedCopy = orderedOptionIds.ToArray();
+        RaiseDomainEvent(new FieldOptionsReorderedDomainEvent(AccountId, WorkspaceId, BoardId, Id, orderedCopy, updatedBy, updatedAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
