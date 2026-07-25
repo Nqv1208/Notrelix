@@ -725,14 +725,14 @@ importers:
         specifier: workspace:*
         version: link:../kernel
       '@tanstack/react-query':
-        specifier: ^5.0.0
+        specifier: 'catalog:'
         version: 5.101.2(react@19.2.7)
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.43
       typescript:
-        specifier: ^5.0.0
+        specifier: 'catalog:'
         version: 5.9.3
 
   packages/foundation/realtime:
