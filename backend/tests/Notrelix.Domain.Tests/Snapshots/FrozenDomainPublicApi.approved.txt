@@ -1,6 +1,6 @@
 # Frozen Domain Public API Snapshot
 # Format: Type|Member|MemberType|Visibility|IsAbstract|IsVirtual|Parameters
-# Generated: 2026-07-25T16:34:02Z
+# Generated: 2026-07-25T16:51:56Z
 
 Notrelix.Domain.Accounts.Accounts.Account|Activate|Method|public|False|False|Guid activatedBy, DateTimeOffset activatedAt
 Notrelix.Domain.Accounts.Accounts.Account|Archive|Method|public|False|False|Guid archivedBy, DateTimeOffset archivedAt
@@ -98,6 +98,13 @@ Notrelix.Domain.Accounts.Domains.Events.AccountDomainAutoJoinEnabledDomainEvent|
 Notrelix.Domain.Accounts.Domains.Events.AccountDomainAutoJoinEnabledDomainEvent|Equals|Method|public|False|True|AccountDomainAutoJoinEnabledDomainEvent other
 Notrelix.Domain.Accounts.Domains.Events.AccountDomainAutoJoinEnabledDomainEvent|Domain|Property|public|False|False|readwrite
 Notrelix.Domain.Accounts.Domains.Events.AccountDomainAutoJoinEnabledDomainEvent|DomainId|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.Domains.Events.AccountDomainCreatedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid DomainId, String Domain, Guid CreatedBy, DateTimeOffset OccurredAt
+Notrelix.Domain.Accounts.Domains.Events.AccountDomainCreatedDomainEvent|<Clone>$|Method|public|False|True|
+Notrelix.Domain.Accounts.Domains.Events.AccountDomainCreatedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& DomainId, String& Domain, Guid& CreatedBy, DateTimeOffset& OccurredAt
+Notrelix.Domain.Accounts.Domains.Events.AccountDomainCreatedDomainEvent|Equals|Method|public|False|True|AccountDomainCreatedDomainEvent other
+Notrelix.Domain.Accounts.Domains.Events.AccountDomainCreatedDomainEvent|CreatedBy|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.Domains.Events.AccountDomainCreatedDomainEvent|Domain|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.Domains.Events.AccountDomainCreatedDomainEvent|DomainId|Property|public|False|False|readwrite
 Notrelix.Domain.Accounts.Domains.Events.AccountDomainRejectedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid DomainId, String Domain, DateTimeOffset OccurredAt
 Notrelix.Domain.Accounts.Domains.Events.AccountDomainRejectedDomainEvent|<Clone>$|Method|public|False|True|
 Notrelix.Domain.Accounts.Domains.Events.AccountDomainRejectedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& DomainId, String& Domain, DateTimeOffset& OccurredAt
@@ -254,10 +261,64 @@ Notrelix.Domain.Accounts.Settings.AccountSettings|UpdateValue|Method|public|Fals
 Notrelix.Domain.Accounts.Settings.AccountSettings|AccountId|Property|public|False|True|readonly
 Notrelix.Domain.Accounts.Settings.AccountSettings|SettingKey|Property|public|False|False|readonly
 Notrelix.Domain.Accounts.Settings.AccountSettings|SettingValue|Property|public|False|False|readonly
-Notrelix.Domain.Accounts.WorkspaceRoutes.WorkspaceRoute|.ctor|Constructor|public|False|False|Guid accountId, String routeSlug, Nullable`1 workspaceId, Boolean isDefault
-Notrelix.Domain.Accounts.WorkspaceRoutes.WorkspaceRoute|LinkWorkspace|Method|public|False|False|Guid workspaceId
-Notrelix.Domain.Accounts.WorkspaceRoutes.WorkspaceRoute|SetAsDefault|Method|public|False|False|
-Notrelix.Domain.Accounts.WorkspaceRoutes.WorkspaceRoute|UnsetDefault|Method|public|False|False|
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteCreatedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid RouteId, String RouteSlug, Nullable`1 WorkspaceId, Boolean IsDefault, Guid CreatedBy, DateTimeOffset OccurredAt
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteCreatedDomainEvent|<Clone>$|Method|public|False|True|
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteCreatedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& RouteId, String& RouteSlug, Nullable`1& WorkspaceId, Boolean& IsDefault, Guid& CreatedBy, DateTimeOffset& OccurredAt
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteCreatedDomainEvent|Equals|Method|public|False|True|WorkspaceRouteCreatedDomainEvent other
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteCreatedDomainEvent|CreatedBy|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteCreatedDomainEvent|IsDefault|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteCreatedDomainEvent|RouteId|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteCreatedDomainEvent|RouteSlug|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteCreatedDomainEvent|WorkspaceId|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteLinkedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid RouteId, String RouteSlug, Guid WorkspaceId, Guid ActorId, DateTimeOffset OccurredAt
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteLinkedDomainEvent|<Clone>$|Method|public|False|True|
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteLinkedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& RouteId, String& RouteSlug, Guid& WorkspaceId, Guid& ActorId, DateTimeOffset& OccurredAt
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteLinkedDomainEvent|Equals|Method|public|False|True|WorkspaceRouteLinkedDomainEvent other
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteLinkedDomainEvent|ActorId|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteLinkedDomainEvent|RouteId|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteLinkedDomainEvent|RouteSlug|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteLinkedDomainEvent|WorkspaceId|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteRestoredDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid RouteId, String RouteSlug, Guid RestoredBy, DateTimeOffset OccurredAt
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteRestoredDomainEvent|<Clone>$|Method|public|False|True|
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteRestoredDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& RouteId, String& RouteSlug, Guid& RestoredBy, DateTimeOffset& OccurredAt
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteRestoredDomainEvent|Equals|Method|public|False|True|WorkspaceRouteRestoredDomainEvent other
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteRestoredDomainEvent|RestoredBy|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteRestoredDomainEvent|RouteId|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteRestoredDomainEvent|RouteSlug|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSetAsDefaultDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid RouteId, String RouteSlug, Guid ActorId, DateTimeOffset OccurredAt
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSetAsDefaultDomainEvent|<Clone>$|Method|public|False|True|
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSetAsDefaultDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& RouteId, String& RouteSlug, Guid& ActorId, DateTimeOffset& OccurredAt
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSetAsDefaultDomainEvent|Equals|Method|public|False|True|WorkspaceRouteSetAsDefaultDomainEvent other
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSetAsDefaultDomainEvent|ActorId|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSetAsDefaultDomainEvent|RouteId|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSetAsDefaultDomainEvent|RouteSlug|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSoftDeletedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid RouteId, String RouteSlug, Guid DeletedBy, DateTimeOffset OccurredAt
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSoftDeletedDomainEvent|<Clone>$|Method|public|False|True|
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSoftDeletedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& RouteId, String& RouteSlug, Guid& DeletedBy, DateTimeOffset& OccurredAt
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSoftDeletedDomainEvent|Equals|Method|public|False|True|WorkspaceRouteSoftDeletedDomainEvent other
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSoftDeletedDomainEvent|DeletedBy|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSoftDeletedDomainEvent|RouteId|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSoftDeletedDomainEvent|RouteSlug|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnlinkedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid RouteId, String RouteSlug, Guid ActorId, DateTimeOffset OccurredAt
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnlinkedDomainEvent|<Clone>$|Method|public|False|True|
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnlinkedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& RouteId, String& RouteSlug, Guid& ActorId, DateTimeOffset& OccurredAt
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnlinkedDomainEvent|Equals|Method|public|False|True|WorkspaceRouteUnlinkedDomainEvent other
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnlinkedDomainEvent|ActorId|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnlinkedDomainEvent|RouteId|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnlinkedDomainEvent|RouteSlug|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnsetAsDefaultDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid RouteId, String RouteSlug, Guid ActorId, DateTimeOffset OccurredAt
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnsetAsDefaultDomainEvent|<Clone>$|Method|public|False|True|
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnsetAsDefaultDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& RouteId, String& RouteSlug, Guid& ActorId, DateTimeOffset& OccurredAt
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnsetAsDefaultDomainEvent|Equals|Method|public|False|True|WorkspaceRouteUnsetAsDefaultDomainEvent other
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnsetAsDefaultDomainEvent|ActorId|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnsetAsDefaultDomainEvent|RouteId|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnsetAsDefaultDomainEvent|RouteSlug|Property|public|False|False|readwrite
+Notrelix.Domain.Accounts.WorkspaceRoutes.WorkspaceRoute|LinkWorkspace|Method|public|False|False|Guid workspaceId, Guid actorId, DateTimeOffset occurredAt
+Notrelix.Domain.Accounts.WorkspaceRoutes.WorkspaceRoute|Restore|Method|public|False|False|Guid restoredBy, DateTimeOffset restoredAt
+Notrelix.Domain.Accounts.WorkspaceRoutes.WorkspaceRoute|SetAsDefault|Method|public|False|False|Guid actorId, DateTimeOffset occurredAt
+Notrelix.Domain.Accounts.WorkspaceRoutes.WorkspaceRoute|SoftDelete|Method|public|False|False|Guid deletedBy, DateTimeOffset deletedAt, String reason
+Notrelix.Domain.Accounts.WorkspaceRoutes.WorkspaceRoute|UnlinkWorkspace|Method|public|False|False|Guid actorId, DateTimeOffset occurredAt
+Notrelix.Domain.Accounts.WorkspaceRoutes.WorkspaceRoute|UnsetDefault|Method|public|False|False|Guid actorId, DateTimeOffset occurredAt
 Notrelix.Domain.Accounts.WorkspaceRoutes.WorkspaceRoute|AccountId|Property|public|False|True|readonly
 Notrelix.Domain.Accounts.WorkspaceRoutes.WorkspaceRoute|IsDefault|Property|public|False|False|readonly
 Notrelix.Domain.Accounts.WorkspaceRoutes.WorkspaceRoute|RouteSlug|Property|public|False|False|readonly

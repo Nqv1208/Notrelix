@@ -1,6 +1,6 @@
 # Enum Snapshot
 # Format: EnumType|MemberName|NumericValue
-# Generated: 2026-07-25T16:34:02Z
+# Generated: 2026-07-25T16:51:56Z
 
 Notrelix.Domain.Accounts.Accounts.AccountStatus|Active|0
 Notrelix.Domain.Accounts.Accounts.AccountStatus|Trialing|1

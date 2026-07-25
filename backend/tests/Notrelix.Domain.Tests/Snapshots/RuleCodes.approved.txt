@@ -1,6 +1,6 @@
 # Rule Code Snapshot
 # Format: Code|OwnerContext|ConstantName
-# Generated: 2026-07-25T16:34:02Z
+# Generated: 2026-07-25T16:51:56Z
 
 Common_Audit_CreatedAtAlreadySet|Common|Common_Audit_CreatedAtAlreadySet
 Common_Audit_EmptyActor|Common|Common_Audit_EmptyActor
@@ -26,6 +26,7 @@ Guard_Positive|Common|Guard_Positive
 Accounts_Account_CannotRenameClosed|Account|Accounts_Account_CannotRenameClosed
 Accounts_Domain_CannotEnableAutoJoinUnverified|Account|Accounts_Domain_CannotEnableAutoJoinUnverified
 Accounts_IdentityProvider_InvalidProviderType|Account|Accounts_IdentityProvider_InvalidProviderType
+Accounts_WorkspaceRoute_InvalidWorkspaceId|Account|Accounts_WorkspaceRoute_InvalidWorkspaceId
 Identity_ApiToken_CannotUseExpired|Identity|Identity_ApiToken_CannotUseExpired
 Identity_ApiToken_CannotUseInactive|Identity|Identity_ApiToken_CannotUseInactive
 Identity_ApiToken_InvalidScopesFormat|Identity|Identity_ApiToken_InvalidScopesFormat

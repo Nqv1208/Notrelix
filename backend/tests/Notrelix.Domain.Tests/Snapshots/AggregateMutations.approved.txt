@@ -1,6 +1,6 @@
 # Aggregate Mutation Coverage Registry
 # Format: Aggregate|Method|ValidTest|NoOpTest|InvalidTest|AuditTest|VersionTest|EventTest
-# Generated: 2026-07-25T16:34:02Z
+# Generated: 2026-07-25T16:51:56Z
 
 Account|Activate|False|False|False|False|False|False
 Account|Archive|False|False|False|False|False|False
@@ -33,6 +33,12 @@ ScimDirectory|Enable|False|False|False|False|False|False
 ScimDirectory|MarkError|False|False|False|False|False|False
 ScimDirectory|RecordSync|False|False|False|False|False|False
 ScimDirectory|UpdateCredentials|False|False|False|False|False|False
+WorkspaceRoute|LinkWorkspace|False|False|False|False|False|False
+WorkspaceRoute|Restore|False|False|False|False|False|False
+WorkspaceRoute|SetAsDefault|False|False|False|False|False|False
+WorkspaceRoute|SoftDelete|False|False|False|False|False|False
+WorkspaceRoute|UnlinkWorkspace|False|False|False|False|False|False
+WorkspaceRoute|UnsetDefault|False|False|False|False|False|False
 Dashboard|AddWidget|False|False|False|False|False|False
 Dashboard|ChangeVisibility|False|False|False|False|False|False
 Dashboard|MoveWidget|False|False|False|False|False|False

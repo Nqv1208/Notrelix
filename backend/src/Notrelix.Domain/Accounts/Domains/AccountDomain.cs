@@ -13,12 +13,18 @@ public class AccountDomain : AggregateRoot, IAccountScoped
 
     private AccountDomain() : base() { }
 
-    public static AccountDomain Create(Guid accountId, string domain, string? verificationTokenHash = null)
+    public static AccountDomain Create(
+        Guid accountId,
+        string domain,
+        Guid createdBy,
+        DateTimeOffset createdAt,
+        string? verificationTokenHash = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotNullOrWhiteSpace(domain);
+        Guard.NotEmpty(createdBy);
 
-        return new AccountDomain
+        var entity = new AccountDomain
         {
             AccountId = accountId,
             Domain = domain.Trim().ToLowerInvariant(),
@@ -26,6 +32,12 @@ public class AccountDomain : AggregateRoot, IAccountScoped
             VerificationTokenHash = verificationTokenHash,
             AutoJoinEnabled = false
         };
+
+        entity.SetAuditOnCreate(createdBy, createdAt);
+        entity.RaiseDomainEvent(new AccountDomainCreatedDomainEvent(
+            accountId, entity.Id, entity.Domain, createdBy, createdAt));
+
+        return entity;
     }
 
     public void Verify(DateTimeOffset verifiedAt, Guid verifiedBy)

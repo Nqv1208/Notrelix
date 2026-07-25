@@ -1,6 +1,6 @@
 # Domain Event Contract Snapshot
 # Format: LogicalName|Version|ClrType|Scope|PropertyName|PropertyType|IsNullable
-# Generated: 2026-07-25T16:34:02Z
+# Generated: 2026-07-25T16:51:56Z
 
 accounts.account-activated|1|Notrelix.Domain.Accounts.Accounts.Events.AccountActivatedDomainEvent|Accounts|AccountId|Guid|False
 accounts.account-activated|1|Notrelix.Domain.Accounts.Accounts.Events.AccountActivatedDomainEvent|Accounts|ActivatedBy|Guid|False
@@ -61,6 +61,12 @@ accounts.domain-auto-join-enabled|1|Notrelix.Domain.Accounts.Domains.Events.Acco
 accounts.domain-auto-join-enabled|1|Notrelix.Domain.Accounts.Domains.Events.AccountDomainAutoJoinEnabledDomainEvent|Accounts|DomainId|Guid|False
 accounts.domain-auto-join-enabled|1|Notrelix.Domain.Accounts.Domains.Events.AccountDomainAutoJoinEnabledDomainEvent|Accounts|EventId|Guid|False
 accounts.domain-auto-join-enabled|1|Notrelix.Domain.Accounts.Domains.Events.AccountDomainAutoJoinEnabledDomainEvent|Accounts|OccurredAt|DateTimeOffset|False
+accounts.domain-created|1|Notrelix.Domain.Accounts.Domains.Events.AccountDomainCreatedDomainEvent|Accounts|AccountId|Guid|False
+accounts.domain-created|1|Notrelix.Domain.Accounts.Domains.Events.AccountDomainCreatedDomainEvent|Accounts|CreatedBy|Guid|False
+accounts.domain-created|1|Notrelix.Domain.Accounts.Domains.Events.AccountDomainCreatedDomainEvent|Accounts|Domain|String|False
+accounts.domain-created|1|Notrelix.Domain.Accounts.Domains.Events.AccountDomainCreatedDomainEvent|Accounts|DomainId|Guid|False
+accounts.domain-created|1|Notrelix.Domain.Accounts.Domains.Events.AccountDomainCreatedDomainEvent|Accounts|EventId|Guid|False
+accounts.domain-created|1|Notrelix.Domain.Accounts.Domains.Events.AccountDomainCreatedDomainEvent|Accounts|OccurredAt|DateTimeOffset|False
 accounts.domain-rejected|1|Notrelix.Domain.Accounts.Domains.Events.AccountDomainRejectedDomainEvent|Accounts|AccountId|Guid|False
 accounts.domain-rejected|1|Notrelix.Domain.Accounts.Domains.Events.AccountDomainRejectedDomainEvent|Accounts|Domain|String|False
 accounts.domain-rejected|1|Notrelix.Domain.Accounts.Domains.Events.AccountDomainRejectedDomainEvent|Accounts|DomainId|Guid|False
@@ -132,6 +138,51 @@ accounts.account-member-suspended|1|Notrelix.Domain.Accounts.Members.Events.Acco
 accounts.account-member-suspended|1|Notrelix.Domain.Accounts.Members.Events.AccountMemberSuspendedDomainEvent|Accounts|MemberId|Guid|False
 accounts.account-member-suspended|1|Notrelix.Domain.Accounts.Members.Events.AccountMemberSuspendedDomainEvent|Accounts|OccurredAt|DateTimeOffset|False
 accounts.account-member-suspended|1|Notrelix.Domain.Accounts.Members.Events.AccountMemberSuspendedDomainEvent|Accounts|UserId|Guid|False
+accounts.workspace-route-created|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteCreatedDomainEvent|Accounts|AccountId|Guid|False
+accounts.workspace-route-created|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteCreatedDomainEvent|Accounts|CreatedBy|Guid|False
+accounts.workspace-route-created|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteCreatedDomainEvent|Accounts|EventId|Guid|False
+accounts.workspace-route-created|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteCreatedDomainEvent|Accounts|IsDefault|Boolean|False
+accounts.workspace-route-created|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteCreatedDomainEvent|Accounts|OccurredAt|DateTimeOffset|False
+accounts.workspace-route-created|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteCreatedDomainEvent|Accounts|RouteId|Guid|False
+accounts.workspace-route-created|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteCreatedDomainEvent|Accounts|RouteSlug|String|False
+accounts.workspace-route-created|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteCreatedDomainEvent|Accounts|WorkspaceId|Guid|True
+accounts.workspace-route-linked|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteLinkedDomainEvent|Accounts|AccountId|Guid|False
+accounts.workspace-route-linked|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteLinkedDomainEvent|Accounts|ActorId|Guid|False
+accounts.workspace-route-linked|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteLinkedDomainEvent|Accounts|EventId|Guid|False
+accounts.workspace-route-linked|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteLinkedDomainEvent|Accounts|OccurredAt|DateTimeOffset|False
+accounts.workspace-route-linked|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteLinkedDomainEvent|Accounts|RouteId|Guid|False
+accounts.workspace-route-linked|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteLinkedDomainEvent|Accounts|RouteSlug|String|False
+accounts.workspace-route-linked|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteLinkedDomainEvent|Accounts|WorkspaceId|Guid|False
+accounts.workspace-route-restored|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteRestoredDomainEvent|Accounts|AccountId|Guid|False
+accounts.workspace-route-restored|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteRestoredDomainEvent|Accounts|EventId|Guid|False
+accounts.workspace-route-restored|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteRestoredDomainEvent|Accounts|OccurredAt|DateTimeOffset|False
+accounts.workspace-route-restored|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteRestoredDomainEvent|Accounts|RestoredBy|Guid|False
+accounts.workspace-route-restored|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteRestoredDomainEvent|Accounts|RouteId|Guid|False
+accounts.workspace-route-restored|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteRestoredDomainEvent|Accounts|RouteSlug|String|False
+accounts.workspace-route-set-as-default|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSetAsDefaultDomainEvent|Accounts|AccountId|Guid|False
+accounts.workspace-route-set-as-default|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSetAsDefaultDomainEvent|Accounts|ActorId|Guid|False
+accounts.workspace-route-set-as-default|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSetAsDefaultDomainEvent|Accounts|EventId|Guid|False
+accounts.workspace-route-set-as-default|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSetAsDefaultDomainEvent|Accounts|OccurredAt|DateTimeOffset|False
+accounts.workspace-route-set-as-default|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSetAsDefaultDomainEvent|Accounts|RouteId|Guid|False
+accounts.workspace-route-set-as-default|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSetAsDefaultDomainEvent|Accounts|RouteSlug|String|False
+accounts.workspace-route-soft-deleted|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSoftDeletedDomainEvent|Accounts|AccountId|Guid|False
+accounts.workspace-route-soft-deleted|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSoftDeletedDomainEvent|Accounts|DeletedBy|Guid|False
+accounts.workspace-route-soft-deleted|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSoftDeletedDomainEvent|Accounts|EventId|Guid|False
+accounts.workspace-route-soft-deleted|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSoftDeletedDomainEvent|Accounts|OccurredAt|DateTimeOffset|False
+accounts.workspace-route-soft-deleted|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSoftDeletedDomainEvent|Accounts|RouteId|Guid|False
+accounts.workspace-route-soft-deleted|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteSoftDeletedDomainEvent|Accounts|RouteSlug|String|False
+accounts.workspace-route-unlinked|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnlinkedDomainEvent|Accounts|AccountId|Guid|False
+accounts.workspace-route-unlinked|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnlinkedDomainEvent|Accounts|ActorId|Guid|False
+accounts.workspace-route-unlinked|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnlinkedDomainEvent|Accounts|EventId|Guid|False
+accounts.workspace-route-unlinked|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnlinkedDomainEvent|Accounts|OccurredAt|DateTimeOffset|False
+accounts.workspace-route-unlinked|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnlinkedDomainEvent|Accounts|RouteId|Guid|False
+accounts.workspace-route-unlinked|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnlinkedDomainEvent|Accounts|RouteSlug|String|False
+accounts.workspace-route-unset-as-default|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnsetAsDefaultDomainEvent|Accounts|AccountId|Guid|False
+accounts.workspace-route-unset-as-default|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnsetAsDefaultDomainEvent|Accounts|ActorId|Guid|False
+accounts.workspace-route-unset-as-default|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnsetAsDefaultDomainEvent|Accounts|EventId|Guid|False
+accounts.workspace-route-unset-as-default|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnsetAsDefaultDomainEvent|Accounts|OccurredAt|DateTimeOffset|False
+accounts.workspace-route-unset-as-default|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnsetAsDefaultDomainEvent|Accounts|RouteId|Guid|False
+accounts.workspace-route-unset-as-default|1|Notrelix.Domain.Accounts.WorkspaceRoutes.Events.WorkspaceRouteUnsetAsDefaultDomainEvent|Accounts|RouteSlug|String|False
 analytics.dashboard-created|1|Notrelix.Domain.Analytics.Dashboards.Events.DashboardCreatedDomainEvent|Analytics|AccountId|Guid|False
 analytics.dashboard-created|1|Notrelix.Domain.Analytics.Dashboards.Events.DashboardCreatedDomainEvent|Analytics|CreatedBy|Guid|False
 analytics.dashboard-created|1|Notrelix.Domain.Analytics.Dashboards.Events.DashboardCreatedDomainEvent|Analytics|DashboardId|Guid|False
