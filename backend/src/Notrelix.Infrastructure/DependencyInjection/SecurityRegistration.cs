@@ -1,6 +1,8 @@
+using Notrelix.Application.Common.Tokens;
 using Notrelix.Infrastructure.RateLimiting;
 using Notrelix.Infrastructure.Security.Encryption;
 using Notrelix.Infrastructure.Security.Otp;
+using Notrelix.Infrastructure.Security.Tokens;
 
 namespace Notrelix.Infrastructure;
 
@@ -12,6 +14,7 @@ public static class SecurityRegistration
         services.AddSingleton<IOtpService, OtpService>();
         services.AddSingleton<IRateLimitService, RedisRateLimitService>();
         services.AddSingleton<ISecretEncryptor, SecretEncryptor>();
+        services.AddScoped<IOneTimeTokenService, OneTimeTokenService>();
 
         return services;
     }

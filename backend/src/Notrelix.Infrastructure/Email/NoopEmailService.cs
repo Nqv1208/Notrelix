@@ -3,18 +3,16 @@ namespace Notrelix.Infrastructure.Email
 {
     public sealed class NoopEmailService(ILogger<NoopEmailService> logger) : IEmailService
     {
-        public Task SendAsync(
-            string toEmail,
-            string subject,
-            string htmlBody,
+        public Task<EmailDeliveryResult> SendAsync(
+            EmailDeliveryRequest request,
             CancellationToken cancellationToken = default)
         {
             logger.LogInformation(
                 "Email delivery disabled. Skipped email to {ToEmail} with subject {Subject}",
-                toEmail,
-                subject);
+                request.RecipientEmail,
+                request.Subject);
 
-            return Task.CompletedTask;
+            return Task.FromResult(new EmailDeliveryResult("noop", request.IdempotencyKey));
         }
     }
 }

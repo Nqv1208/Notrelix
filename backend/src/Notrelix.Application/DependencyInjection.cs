@@ -1,5 +1,7 @@
 using System.Reflection;
 using Notrelix.Application.Common.Behaviors;
+using Notrelix.Application.Features.Identity.Verification.Abstractions;
+using Notrelix.Application.Features.Identity.Verification.Services;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -20,7 +22,9 @@ public static class DependencyInjection
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ApplicationTracingBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(RequestContractGuardBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TokenValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TenantBootstrapBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(SystemOperationAuditBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ResourceScopeBehavior<,>));
         // Post-commit scope: wraps DB scope, flushes side effects after commit
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(PostCommitScopeBehavior<,>));
@@ -30,6 +34,7 @@ public static class DependencyInjection
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(DbRequestScopeBehavior<,>));
         // Inner zone: inside DB/RLS scope
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(VerifiedEmailBehavior<,>));
         // Concurrency: version check for IExpectedVersionRequest (inside DB/RLS scope, after auth)
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ConcurrencyBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(SubscriptionGateBehavior<,>));
@@ -58,6 +63,7 @@ public static class DependencyInjection
 
         // Auth session issuer
         services.AddScoped<IAuthSessionIssuer, AuthSessionIssuer>();
+        services.AddScoped<IEmailVerificationTokenIssuer, EmailVerificationTokenIssuer>();
 
         // AutoMapper
         services.AddAutoMapper(cfg => cfg.AddMaps(assembly), assembly);

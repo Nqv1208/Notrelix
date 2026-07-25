@@ -1,13 +1,27 @@
-using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.ItemLinks.Commands.DeleteBoardItemLink;
 
-public record DeleteBoardItemLinkCommand(Guid BoardItemLinkId) : ICommand<Result>;
-
-public class DeleteBoardItemLinkCommandHandler : IRequestHandler<DeleteBoardItemLinkCommand, Result>
+public record DeleteBoardItemLinkCommand(Guid BoardItemLinkId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
-    public Task<Result> Handle(DeleteBoardItemLinkCommand request, CancellationToken cancellationToken)
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemLinkId);
+    public PermissionAction Action => PermissionAction.UpdateItem;
+}
+
+public class DeleteBoardItemLinkCommandHandler(
+    IWorkManagementDbContext context) : IRequestHandler<DeleteBoardItemLinkCommand, Result>
+{
+    public async Task<Result> Handle(DeleteBoardItemLinkCommand request, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var link = await context.BoardItemLinks
+            .FirstOrDefaultAsync(l => l.Id == request.BoardItemLinkId, cancellationToken);
+
+        if (link is null)
+            throw new NotFoundException(nameof(BoardItemLink), request.BoardItemLinkId);
+
+        context.BoardItemLinks.Remove(link);
+
+        return Result.Success();
     }
 }

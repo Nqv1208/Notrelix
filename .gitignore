@@ -4,6 +4,10 @@
 .env.*
 !.env.example
 
-# Skill for Coding Agents
-.codex/*
-.gstack/
+# IDE / tool environment directories
+.cursor/
+.codex/
+.gemini/
+.opencode/
+.antigravitycli/
+.mimicode/

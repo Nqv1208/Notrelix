@@ -5,5 +5,6 @@ public class RestoreWorkspaceCommandValidator : AbstractValidator<RestoreWorkspa
     public RestoreWorkspaceCommandValidator()
     {
         RuleFor(x => x.WorkspaceId).NotEmpty();
+        RuleFor(x => x.ExpectedVersion).GreaterThan(0);
     }
 }

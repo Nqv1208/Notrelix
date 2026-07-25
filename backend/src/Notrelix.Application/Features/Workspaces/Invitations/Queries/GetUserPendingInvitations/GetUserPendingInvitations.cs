@@ -20,25 +20,25 @@ public class GetUserPendingInvitationsQueryHandler : IRequestHandler<GetUserPend
 {
     private readonly IWorkspaceDbContext _context;
     private readonly IActorLookupService _actorLookup;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public GetUserPendingInvitationsQueryHandler(IWorkspaceDbContext context, IActorLookupService actorLookup, ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
+    public GetUserPendingInvitationsQueryHandler(IWorkspaceDbContext context, IActorLookupService actorLookup, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _actorLookup = actorLookup;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<List<UserPendingInvitationDto>>> Handle(GetUserPendingInvitationsQuery request, CancellationToken ct)
     {
-        if (!_currentUser.IsAuthenticated || string.IsNullOrWhiteSpace(_currentUser.Email))
+        if (!_requestContext.IsAuthenticated)
         {
             return Result<List<UserPendingInvitationDto>>.Success(new List<UserPendingInvitationDto>());
         }
 
-        var userEmail = _currentUser.Email.Trim().ToLowerInvariant();
+        var userEmail = _requestContext.Email.Trim().ToLowerInvariant();
         var now = _dateTimeProvider.UtcNow;
 
         var invitations = await _context.WorkspaceInvitations

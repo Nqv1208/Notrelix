@@ -4,11 +4,16 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
     where TRequest : notnull
 {
     private readonly IIdempotencyStore _idempotencyStore;
+    private readonly IPostCommitActionQueue _postCommitQueue;
     private readonly ILogger<IdempotencyBehavior<TRequest, TResponse>> _logger;
 
-    public IdempotencyBehavior(IIdempotencyStore idempotencyStore, ILogger<IdempotencyBehavior<TRequest, TResponse>> logger)
+    public IdempotencyBehavior(
+        IIdempotencyStore idempotencyStore,
+        IPostCommitActionQueue postCommitQueue,
+        ILogger<IdempotencyBehavior<TRequest, TResponse>> logger)
     {
         _idempotencyStore = idempotencyStore;
+        _postCommitQueue = postCommitQueue;
         _logger = logger;
     }
 
@@ -34,7 +39,8 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
             {
                 var response = await next();
 
-                await _idempotencyStore.SetResultAsync(key, response);
+                _postCommitQueue.Enqueue(new DelegatePostCommitAction(async ct =>
+                    await _idempotencyStore.SetResultAsync(key, response)));
 
                 return response;
             }

@@ -34,6 +34,20 @@ public interface ICurrentTenantContext
     Guid RequireUserId();
 
     /// <summary>
+    /// Seed user identity from JWT without setting account/workspace.
+    /// Called by HttpRequestContextMiddleware before pipeline behaviors run.
+    /// TenantBootstrapBehavior will later resolve account/workspace context.
+    /// </summary>
+    void SetUser(Guid userId);
+
+    /// <summary>
+    /// Seed account context from header/route without clearing workspace.
+    /// Called by HttpRequestContextMiddleware before pipeline behaviors run.
+    /// TenantBootstrapBehavior will verify access and call SetAccount/SetWorkspace.
+    /// </summary>
+    void SetAccountHint(Guid accountId);
+
+    /// <summary>
     /// Set account-level context (no workspace).
     /// For account commands, login, register, webhooks.
     /// </summary>

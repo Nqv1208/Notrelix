@@ -2,9 +2,18 @@ namespace Notrelix.Domain.Governance.Permissions;
 
 public enum PermissionAction
 {
+    CreateWorkspace,
     ViewWorkspace,
     ManageWorkspace,
+    ArchiveWorkspace,
+    RestoreWorkspace,
     ViewMembers,
+    InviteMember,
+    ChangeMemberRole,
+    RemoveMember,
+    ManageWorkspaceSettings,
+    ManageSpaces,
+    ManageTeams,
     DeleteWorkspace,
     ViewBoard,
     CreateBoard,

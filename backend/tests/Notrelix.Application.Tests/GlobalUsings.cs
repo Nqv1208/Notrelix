@@ -22,5 +22,20 @@ global using Notrelix.Application.Common.Requests.Caching;
 global using Notrelix.Application.Common.Entitlements;
 global using Notrelix.Application.Common.Requests.Security;
 global using Notrelix.Application.Common.Tenancy;
+global using Notrelix.Application.Common.Time;
 global using Notrelix.Domain.SharedKernel;
 global using Notrelix.Domain.Governance.Permissions;
+
+// Workspace domain types
+global using Notrelix.Domain.Workspaces.Members;
+global using Notrelix.Domain.Workspaces.Spaces;
+global using Notrelix.Domain.Workspaces.Teams;
+global using Notrelix.Domain.Workspaces.Workspaces;
+
+// WorkManagement domain types
+global using Notrelix.Domain.WorkManagement.Boards;
+global using Notrelix.Domain.WorkManagement.BoardGroups;
+global using Notrelix.Domain.WorkManagement.Items;
+global using Notrelix.Domain.WorkManagement.Fields;
+global using Notrelix.Domain.WorkManagement.Views;
+global using Notrelix.Domain.WorkManagement.Labels;

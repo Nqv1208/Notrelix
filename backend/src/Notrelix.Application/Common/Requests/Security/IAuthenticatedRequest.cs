@@ -1,6 +1,5 @@
 namespace Notrelix.Application.Common.Requests.Security;
 
-public interface IAuthenticatedRequest : IUseCaseSecurityRequirement
+public interface IAuthenticatedRequest
 {
-    UseCaseSecurityKind IUseCaseSecurityRequirement.SecurityKind => UseCaseSecurityKind.AuthenticatedUser;
 }

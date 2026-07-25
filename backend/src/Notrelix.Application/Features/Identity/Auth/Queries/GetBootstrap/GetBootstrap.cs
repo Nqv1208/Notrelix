@@ -69,7 +69,8 @@ public class GetBootstrapQueryHandler : IRequestHandler<GetBootstrapQuery, Resul
                 Id = user.Id,
                 Email = user.Email.Value,
                 Name = user.Name,
-                AvatarUrl = user.AvatarUrl
+                AvatarUrl = user.AvatarUrl,
+                EmailConfirmed = user.EmailConfirmed
             },
             Workspaces = workspaces,
             PersonalWorkspace = new PersonalWorkspaceStatus

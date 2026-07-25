@@ -62,9 +62,10 @@ public class WorkspaceTests
     }
 
     [Fact]
-    public void UpdateSettings_ShouldSucceed()
+    public void UpdateSettings_ShouldSucceed_AndRaiseEvent()
     {
         var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
+        workspace.ClearDomainEvents();
         var settings = WorkspaceSettings.Create(allowPublicSharing: true, enforceMfa: true);
         var actor = Guid.NewGuid();
 
@@ -72,6 +73,19 @@ public class WorkspaceTests
 
         workspace.Settings.AllowPublicSharing.Should().BeTrue();
         workspace.Settings.EnforceMfa.Should().BeTrue();
+        workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceSettingsUpdatedDomainEvent);
+    }
+
+    [Fact]
+    public void UpdateSettings_WhenSameSettings_ShouldBeNoOp()
+    {
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
+        var settings = workspace.Settings;
+        workspace.ClearDomainEvents();
+
+        workspace.UpdateSettings(settings, Guid.NewGuid(), Now);
+
+        workspace.DomainEvents.Should().BeEmpty();
     }
 
     [Fact]
@@ -137,6 +151,97 @@ public class WorkspaceTests
 
         workspace.Status.Should().Be(WorkspaceStatus.Archived);
         workspace.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Unarchive_ShouldSetStatusToActive_AndRaiseEvent()
+    {
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
+        workspace.Archive(Guid.NewGuid(), Now);
+        workspace.ClearDomainEvents();
+        var actor = Guid.NewGuid();
+
+        workspace.Unarchive(actor, Now);
+
+        workspace.Status.Should().Be(WorkspaceStatus.Active);
+        workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceUnarchivedDomainEvent);
+    }
+
+    [Fact]
+    public void Unarchive_WhenAlreadyActive_ShouldBeNoOp()
+    {
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
+        workspace.ClearDomainEvents();
+
+        workspace.Unarchive(Guid.NewGuid(), Now);
+
+        workspace.Status.Should().Be(WorkspaceStatus.Active);
+        workspace.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Unarchive_SoftDeleted_ShouldThrow()
+    {
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
+        workspace.SoftDelete(Guid.NewGuid(), Now);
+
+        var act = () => workspace.Unarchive(Guid.NewGuid(), Now);
+        act.Should().Throw<DomainException>().WithMessage("*deleted*");
+    }
+
+    [Fact]
+    public void UpdateDescription_ShouldSucceed_AndRaiseEvent()
+    {
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
+        workspace.ClearDomainEvents();
+        var actor = Guid.NewGuid();
+
+        workspace.UpdateDescription("New description", actor, Now);
+
+        workspace.Description.Should().Be("New description");
+        workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceDescriptionUpdatedDomainEvent);
+        var domainEvent = workspace.DomainEvents.OfType<WorkspaceDescriptionUpdatedDomainEvent>().Single();
+        domainEvent.OldDescription.Should().BeNull();
+        domainEvent.NewDescription.Should().Be("New description");
+        domainEvent.WorkspaceId.Should().Be(workspace.Id);
+        domainEvent.UpdatedBy.Should().Be(actor);
+    }
+
+    [Fact]
+    public void UpdateDescription_ShouldClearDescription_WhenSetToNull()
+    {
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now, description: "Initial description");
+        workspace.ClearDomainEvents();
+        var actor = Guid.NewGuid();
+
+        workspace.UpdateDescription(null, actor, Now);
+
+        workspace.Description.Should().BeNull();
+        workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceDescriptionUpdatedDomainEvent);
+        var domainEvent = workspace.DomainEvents.OfType<WorkspaceDescriptionUpdatedDomainEvent>().Single();
+        domainEvent.OldDescription.Should().Be("Initial description");
+        domainEvent.NewDescription.Should().BeNull();
+    }
+
+    [Fact]
+    public void UpdateDescription_WhenSameValue_ShouldBeNoOp()
+    {
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now, description: "Same");
+        workspace.ClearDomainEvents();
+
+        workspace.UpdateDescription("Same", Guid.NewGuid(), Now);
+
+        workspace.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void UpdateDescription_ArchivedWorkspace_ShouldThrow()
+    {
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
+        workspace.Archive(Guid.NewGuid(), Now);
+
+        var act = () => workspace.UpdateDescription("New description", Guid.NewGuid(), Now);
+        act.Should().Throw<BusinessRuleException>().WithMessage("Cannot update description of an archived workspace.");
     }
 
     [Fact]

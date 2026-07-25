@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.Accounts.Abstractions;
+using Notrelix.Application.Features.Accounts.Services;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
@@ -102,6 +103,11 @@ public static class PersistenceRegistration
         services.AddScoped<IRlsSessionContext, RlsSessionContext>();
 
         services.AddScoped<IDateTimeProvider, DateTimeProvider>();
+
+        // Application services (ports in Application, adapters in Infrastructure)
+        services.AddScoped<IIdentityUserLookupService, IdentityUserLookupService>();
+        services.AddScoped<IAccountMembershipProvisioner, AccountMembershipProvisioner>();
+        services.AddScoped<IAccountStatusReader, AccountStatusReader>();
 
         // Outbox persistence infrastructure.
         services.AddSingleton<IEventTypeRegistry, Notrelix.Infrastructure.Messaging.EventTypeRegistry>();

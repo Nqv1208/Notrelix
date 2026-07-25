@@ -1,6 +1,3 @@
-using Notrelix.Domain.WorkManagement.Boards;
-using Notrelix.Domain.WorkManagement.Items;
-
 namespace Notrelix.Application.Tests.Events;
 
 public class DomainEventHandlerTests

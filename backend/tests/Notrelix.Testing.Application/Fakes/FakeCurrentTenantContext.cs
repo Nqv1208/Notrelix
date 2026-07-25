@@ -38,6 +38,16 @@ public sealed class FakeCurrentTenantContext : ICurrentTenantContext
             ?? throw new InvalidOperationException("User context has not been resolved.");
     }
 
+    public void SetUser(Guid userId)
+    {
+        _userId = userId;
+    }
+
+    public void SetAccountHint(Guid accountId)
+    {
+        _accountId = accountId;
+    }
+
     public void SetAccount(Guid accountId, Guid? userId)
     {
         _accountId = accountId;

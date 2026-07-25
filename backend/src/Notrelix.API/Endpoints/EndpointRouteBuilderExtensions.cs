@@ -21,6 +21,9 @@ using Notrelix.API.Endpoints.WorkManagement.Labels;
 using Notrelix.API.Endpoints.Workspaces.Activity;
 using Notrelix.API.Endpoints.Workspaces.Invitations;
 using Notrelix.API.Endpoints.Workspaces.Members;
+using Notrelix.API.Endpoints.Workspaces.Settings;
+using Notrelix.API.Endpoints.Workspaces.Spaces;
+using Notrelix.API.Endpoints.Workspaces.Teams;
 using Notrelix.API.Endpoints.Workspaces.Workspaces;
 
 namespace Notrelix.API.Endpoints;
@@ -36,8 +39,11 @@ public static class EndpointRouteBuilderExtensions
 
         // Workspace
         app.RegisterWorkspaceEndpoints();
+        app.RegisterSettingsEndpoints();
         app.RegisterMemberEndpoints();
         app.RegisterInvitationEndpoints();
+        app.RegisterSpaceEndpoints();
+        app.RegisterTeamEndpoints();
         app.RegisterWorkspaceActivityEndpoints();
 
         // Document

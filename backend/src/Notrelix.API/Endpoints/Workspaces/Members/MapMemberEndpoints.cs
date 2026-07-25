@@ -14,8 +14,12 @@ public static class MapMemberEndpoints
 
         group.MapListMembers();
         group.MapInviteMember();
+        group.MapAddMember();
         group.MapUpdateMemberRole();
         group.MapRemoveMember();
+        group.MapSuspendMember();
+        group.MapActivateMember();
+        group.MapRestoreMember();
 
         return app;
     }

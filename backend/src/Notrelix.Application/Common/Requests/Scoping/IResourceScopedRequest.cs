@@ -1,8 +1,6 @@
 namespace Notrelix.Application.Common.Requests;
 
-public interface IResourceScopedRequest : IUseCaseSecurityRequirement
+public interface IResourceScopedRequest
 {
     ResourceRef Resource { get; }
-
-    UseCaseSecurityKind IUseCaseSecurityRequirement.SecurityKind => UseCaseSecurityKind.WorkspaceScoped;
 }
