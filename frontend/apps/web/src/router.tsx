@@ -83,7 +83,11 @@ const workspaceIndexRoute = createRoute({
   component: WorkspaceHomePage,
 });
 
-const boardSearchSchema = z.object({
+/**
+ * Search params schema for board routes.
+ * Exported for use in tests and typed route hooks.
+ */
+export const boardSearchSchema = z.object({
   view: z.enum(['table', 'kanban', 'calendar', 'timeline']).default('kanban'),
   filter: z.string().optional(),
   sort: z.string().optional(),

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { queryKeys } from "@notrelix/query"
+import { queryKeys } from "@notrelix/work-management-core"
 import { boardApi } from "../api/board.api"
 
 export function useFullBoard(boardId?: string, workspaceId?: string) {

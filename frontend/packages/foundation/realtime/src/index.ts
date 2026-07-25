@@ -1,7 +1,10 @@
 /**
- * @notrelix/realtime — WebSocket client and event contracts
- * 
+ * @notrelix/realtime - WebSocket client and event contracts
+ *
  * Provides realtime communication infrastructure with typed events.
+ *
+ * USAGE: Instantiate RealtimeClient via the AppRuntime composition root,
+ * not as a module-level singleton.
  */
 
 export {

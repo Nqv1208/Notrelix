@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { queryKeys } from "@notrelix/query"
+import { queryKeys } from "@notrelix/work-management-core"
 import { boardApi, defaultTableViewConfig } from "../api/board.api"
 import type { ViewConfig, ViewMode } from "@notrelix/work-management-core"
 

@@ -12,7 +12,7 @@ export { applyServerValidationErrors } from './result/apply-server-validation-er
 export { getFormErrorMessage } from './result/get-form-error-message'
 
 // Environment configuration
-export { env, parseEnv, envSchema, type Env, type ResolvedEnv } from './env/env-schema'
+export { parseEnv, envSchema, envSchemaDefinition, type Env, type ResolvedEnv } from './env/env-schema'
 
 // ID generation
 export { generateCorrelationId } from './ids/correlation-id'
