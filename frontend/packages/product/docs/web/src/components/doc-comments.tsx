@@ -93,11 +93,11 @@ export function DocComments({ api, endpoints, pageId }: DocCommentsProps) {
         ) : comments.length === 0 ? (
           <p className="text-sm text-muted-foreground py-3 italic">No comments yet</p>
         ) : (
-          comments.map((comment) => (
+          comments.map((comment: PageComment) => (
             <CommentItem
               key={comment.id}
               comment={comment}
-              onDelete={(id) => deleteMutation.mutate(id)}
+              onDelete={(id) => deleteMutation.mutate(id as never)}
             />
           ))
         )}

@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createPageApi } from '~/api/page.api';
-import type { DocsApiClient, PageApiEndpoints } from '~/api/page.api';
+import { createPageApi } from '../../api/page.api';
+import type { DocsApiClient, PageApiEndpoints } from '../../api/page.api';
 import { docsQueryKeys } from '../keys';
-import type { UpdatePagePayload } from '~/types/page';
+import type { UpdatePagePayload } from '../../types/page';
 
 export function createUseUpdatePage(api: DocsApiClient, endpoints: PageApiEndpoints) {
   const pageApi = createPageApi(api, endpoints);

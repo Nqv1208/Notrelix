@@ -163,15 +163,15 @@ export function createDocPageTree({ api, endpoints }: CreateDocPageTreeDeps) {
     workspaceId: string;
     currentPageId?: string;
   }) {
-    const { data: pages = [], isLoading } = usePageList(workspaceId) as { data: PageTreeNode[]; isLoading: boolean };
+    const { data: pages = [], isLoading } = usePageList(workspaceId) as unknown as { data: PageTreeNode[]; isLoading: boolean };
     const createPageMutation = useCreatePage(workspaceId);
 
     const handleCreatePage = (parentId: string | null) => {
       createPageMutation.mutate({
         title: 'Untitled',
         workspaceId,
-        parentId,
-      });
+        parentId: parentId ?? undefined,
+      } as never);
     };
 
     if (isLoading) {

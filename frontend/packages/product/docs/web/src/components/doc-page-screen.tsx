@@ -457,6 +457,7 @@ export function createDocPageScreen({ api, endpoints }: CreateDocPageScreenDeps)
   const useDeleteBlock = createUseDeleteBlock(api, endpoints);
   const useReorderBlocks = createUseReorderBlocks(api, endpoints);
   const useUpdatePage = createUseUpdatePage(api, endpoints);
+  const DocPageTree = createDocPageTree({ api, endpoints });
 
   return function DocPageScreen({ workspaceId, pageId }: { workspaceId: string; pageId: string }) {
     const { data: page, isLoading: pageLoading } = usePage(pageId);
@@ -717,7 +718,7 @@ export function createDocPageScreen({ api, endpoints }: CreateDocPageScreenDeps)
                 <DocHistory api={api} endpoints={endpoints} pageId={pageId} />
               )}
               {sidePanel === 'tree' && (
-                <DocPageTree api={api} endpoints={endpoints} workspaceId={workspaceId} currentPageId={pageId} />
+                <DocPageTree workspaceId={workspaceId} currentPageId={pageId} />
               )}
             </div>
           </div>

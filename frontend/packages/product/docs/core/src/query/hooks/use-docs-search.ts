@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { createSearchApi } from '~/api/search.api';
-import type { DocsApiClient, PageApiEndpoints } from '~/api/page.api';
+import { createSearchApi } from '../../api/search.api';
+import type { DocsApiClient, PageApiEndpoints } from '../../api/page.api';
 import { docsQueryKeys } from '../keys';
 
 export function createUseDocsSearch(api: DocsApiClient, endpoints: PageApiEndpoints) {

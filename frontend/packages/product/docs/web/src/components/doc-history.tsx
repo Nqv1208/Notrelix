@@ -51,18 +51,18 @@ export function DocHistory({ api, endpoints, pageId }: DocHistoryProps) {
         <p className="text-sm text-muted-foreground italic">No history yet</p>
       ) : (
         <div className="space-y-1">
-          {history.map((activity) => (
+          {history.map((activity: PageActivity) => (
             <div
               key={activity.id}
               className="flex items-start gap-3 py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors"
             >
               <div className="mt-0.5 text-muted-foreground">
-                {ACTION_ICONS[activity.action]}
+                {ACTION_ICONS[activity.action as keyof typeof ACTION_ICONS]}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm">
                   <span className="font-medium">{activity.actorId}</span>{' '}
-                  <span className="text-muted-foreground">{ACTION_LABELS[activity.action]}</span>
+                  <span className="text-muted-foreground">{ACTION_LABELS[activity.action as keyof typeof ACTION_LABELS]}</span>
                 </p>
                 {activity.targetLabel && (
                   <p className="text-xs text-muted-foreground truncate mt-0.5">

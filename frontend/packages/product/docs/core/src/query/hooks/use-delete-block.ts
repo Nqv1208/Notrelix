@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createBlockApi } from '~/api/block.api';
-import type { DocsApiClient, PageApiEndpoints } from '~/api/page.api';
+import { createBlockApi } from '../../api/block.api';
+import type { DocsApiClient, PageApiEndpoints } from '../../api/page.api';
 import { docsQueryKeys } from '../keys';
 
 export function createUseDeleteBlock(api: DocsApiClient, endpoints: PageApiEndpoints) {

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { createPageApi, type DocsApiClient, type PageApiEndpoints } from '~/api/page.api';
+import { createPageApi, type DocsApiClient, type PageApiEndpoints } from '../../api/page.api';
 import { docsQueryKeys } from '../keys';
 
 export function createUsePageList(api: DocsApiClient, endpoints: PageApiEndpoints) {
