@@ -14,8 +14,8 @@ export const ALLOWED_IMPORTS: Record<string, string[]> = {
   "@notrelix/observability": ["@notrelix/kernel"],
 
   // ── Runtimes ────────────────────────────────────────────────────────
-  "@notrelix/runtime-web": ["@notrelix/platform"],
-  "@notrelix/runtime-mobile": ["@notrelix/platform"],
+  "@notrelix/runtime-web": ["@notrelix/platform", "@notrelix/kernel", "@notrelix/contracts"],
+  "@notrelix/runtime-mobile": ["@notrelix/platform", "@notrelix/kernel", "@notrelix/contracts"],
 
   // ── UI ──────────────────────────────────────────────────────────────
   "@notrelix/ui-tokens": [],

@@ -1,10 +1,10 @@
 services:
-  web:
+  frontend-web:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: frontend/Dockerfile
     ports:
-      - "80:80"
+      - "8080:80"
     environment:
       - NODE_ENV=production
     restart: unless-stopped
@@ -15,10 +15,10 @@ services:
       retries: 3
       start_period: 5s
 
-  marketing:
+  frontend-marketing:
     build:
-      context: .
-      dockerfile: Dockerfile.marketing
+      context: ..
+      dockerfile: frontend/Dockerfile.marketing
     ports:
       - "3000:3000"
     environment:
@@ -34,6 +34,6 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./nginx/ssl:/etc/nginx/ssl
     depends_on:
-      - web
-      - marketing
+      - frontend-web
+      - frontend-marketing
     restart: unless-stopped

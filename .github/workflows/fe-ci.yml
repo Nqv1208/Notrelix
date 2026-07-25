@@ -1,0 +1,220 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'frontend/**'
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Save node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: frontend/node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+
+  typecheck:
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Type check
+        run: pnpm typecheck
+        working-directory: frontend
+
+  lint:
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Lint
+        run: pnpm lint
+        working-directory: frontend
+
+  test:
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Run tests
+        run: pnpm test
+        working-directory: frontend
+
+  check-deps:
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Check dependency boundaries
+        run: pnpm check:deps
+        working-directory: frontend
+
+  build-web:
+    needs: [typecheck, lint, test, check-deps]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Build web app
+        run: pnpm --filter @notrelix/app-web build
+        working-directory: frontend
+
+      - name: Upload web build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: frontend/apps/web/dist
+          retention-days: 7
+
+  build-marketing:
+    needs: [typecheck, lint, test, check-deps]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Build marketing app
+        run: pnpm --filter @notrelix/app-marketing build
+        working-directory: frontend
+
+      - name: Upload marketing build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: marketing-build
+          path: frontend/apps/marketing/.next
+          retention-days: 7
+
+  validate:
+    needs: [build-web, build-marketing]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Full validation
+        run: pnpm validate
+        working-directory: frontend
