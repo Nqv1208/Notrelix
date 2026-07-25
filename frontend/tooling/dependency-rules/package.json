@@ -8,7 +8,7 @@
   "scripts": {
     "check": "node src/check.mjs",
     "check:deps": "node src/check.mjs",
-    "test": "vitest --passWithNoTests",
+    "test": "vitest run",
     "clean": "rm -rf node_modules"
   },
   "devDependencies": {

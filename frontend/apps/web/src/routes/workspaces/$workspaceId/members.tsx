@@ -31,8 +31,7 @@ import {
   TableRow,
 } from '@notrelix/ui-web';
 import { toast } from 'sonner';
-import { UserPlus, Trash2, UserMinus, Mail } from 'lucide-react';
-import { cn } from '@notrelix/ui-web';
+import { Trash2, UserMinus, Mail } from 'lucide-react';
 
 const useWorkspaceMembers = createUseWorkspaceMembers({ api });
 const useWorkspaceInvitations = createUseWorkspaceInvitations({ api, endpoints });

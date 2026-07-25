@@ -21,8 +21,8 @@ export function DashboardPage() {
   const { workspace, isLoading: workspaceLoading } = useWorkspaceContext();
   const { data: boards = [], isLoading: boardsLoading } = useWorkspaceBoards(workspaceId);
   const { data: pages = [], isLoading: pagesLoading } = usePageList(workspaceId);
-  const { data: favorites = [], isLoading: favoritesLoading } = useDocsFavorites(workspaceId);
-  const { data: members = [], isLoading: membersLoading } = useWorkspaceMembers(workspaceId);
+  const { data: _favorites = [], isLoading: _favoritesLoading } = useDocsFavorites(workspaceId);
+  const { data: members = [], isLoading: _membersLoading } = useWorkspaceMembers(workspaceId);
 
   return (
     <div className="p-8 max-w-[1600px]">
