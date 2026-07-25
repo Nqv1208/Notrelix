@@ -24,4 +24,18 @@ public class FieldOption : Entity
             Position = position
         };
     }
+
+    public void Update(string name, Color color)
+    {
+        Guard.NotNullOrWhiteSpace(name);
+        Guard.NotNull(color);
+        Name = name.Trim();
+        Color = color;
+    }
+
+    public void UpdatePosition(FractionalIndex position)
+    {
+        Guard.NotNull(position);
+        Position = position;
+    }
 }

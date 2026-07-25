@@ -31,15 +31,9 @@ public class RequestExecutionClassifierTests
         public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
     }
 
-    private sealed record SystemInternalRequest : IRequest<string>, ISystemInternalRequest
-    {
-        public UseCaseSecurityKind SecurityKind => UseCaseSecurityKind.SystemInternal;
-    }
+    private sealed record SystemInternalRequest : IRequest<string>, ISystemInternalRequest;
 
-    private sealed record AnonymousSystemInternalRequest : IRequest<string>, IAnonymousRequest, ISystemInternalRequest
-    {
-        public UseCaseSecurityKind SecurityKind => UseCaseSecurityKind.SystemInternal;
-    }
+    private sealed record AnonymousSystemInternalRequest : IRequest<string>, IAnonymousRequest, ISystemInternalRequest;
 
     private sealed record SubscriptionRequest : IRequest<string>, IWorkspaceRequest, IRequireSubscription
     {

@@ -7,16 +7,21 @@ namespace Notrelix.Infrastructure.Email
     {
         private readonly SmtpOptions _options = smtpOptions.Value;
 
-        public async Task SendAsync(string toEmail, string subject, string htmlBody, CancellationToken cancellationToken = default)
+        public async Task<EmailDeliveryResult> SendAsync(
+            EmailDeliveryRequest request,
+            CancellationToken cancellationToken = default)
         {
             using var message = new MailMessage
             {
                 From = new MailAddress(_options.FromEmail, _options.FromName),
-                Subject = subject,
-                Body = htmlBody,
+                Subject = request.Subject,
+                Body = request.BodyText ?? request.BodyHtml,
                 IsBodyHtml = true
             };
-            message.To.Add(toEmail);
+            message.To.Add(request.RecipientEmail);
+            message.Headers.Add(
+                "Message-ID",
+                $"<{request.IdempotencyKey}@mail.notrelix>");
 
             using var client = new SmtpClient(_options.Host, _options.Port)
             {
@@ -29,6 +34,7 @@ namespace Notrelix.Infrastructure.Email
             }
 
             await client.SendMailAsync(message, cancellationToken);
+            return new EmailDeliveryResult("smtp", request.IdempotencyKey);
         }
     }
 }

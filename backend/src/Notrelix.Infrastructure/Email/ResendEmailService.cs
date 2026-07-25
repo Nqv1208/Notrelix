@@ -15,24 +15,30 @@ public class ResendEmailService : IEmailService
         _logger = logger;
     }
 
-    public async Task SendAsync(string to, string subject, string htmlBody, CancellationToken ct = default)
+    public async Task<EmailDeliveryResult> SendAsync(
+        EmailDeliveryRequest request,
+        CancellationToken ct = default)
     {
         try
         {
             var message = new EmailMessage
             {
                 From = $"{_options.FromName} <{_options.FromEmail}>",
-                Subject = subject,
-                HtmlBody = htmlBody,
+                Subject = request.Subject,
+                HtmlBody = request.BodyHtml,
             };
-            message.To.Add(to);
+            message.To.Add(request.RecipientEmail);
 
-            await _resend.EmailSendAsync(message, ct);
-            _logger.LogInformation("Email sent to {To}: {Subject}", to, subject);
+            var providerMessageId = await _resend.EmailSendAsync(
+                request.IdempotencyKey,
+                message,
+                ct);
+            _logger.LogInformation("Email sent to {To}: {Subject}", request.RecipientEmail, request.Subject);
+            return new EmailDeliveryResult("resend", providerMessageId.ToString());
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send email to {To}: {Subject}", to, subject);
+            _logger.LogError(ex, "Failed to send email to {To}: {Subject}", request.RecipientEmail, request.Subject);
             throw;
         }
     }

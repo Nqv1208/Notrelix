@@ -7,6 +7,8 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
     public string Email { get; private set; } = null!;
     public WorkspaceRole Role { get; private set; }
     public InvitationTokenHash Token { get; private set; } = null!;
+    public int HashVersion { get; private set; }
+    public int TokenGeneration { get; private set; }
     public WorkspaceInvitationStatus Status { get; private set; }
     public DateTimeOffset ExpiresAt { get; private set; }
     public Guid InvitedBy { get; private set; }
@@ -19,6 +21,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         string email,
         WorkspaceRole role,
         InvitationTokenHash token,
+        int hashVersion,
         Guid invitedBy,
         DateTimeOffset createdAt,
         TimeSpan? expiry = null)
@@ -30,6 +33,10 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
 
         var emailValue = SharedKernel.Email.Create(email);
 
+        if (role == WorkspaceRole.Owner)
+            throw new BusinessRuleException(
+                "Cannot invite a user as workspace owner.");
+
         if (expiry is not null && expiry <= TimeSpan.Zero)
             throw new BusinessRuleException("Invitation expiry must be greater than zero.");
 
@@ -40,6 +47,8 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
             Email = emailValue.Value,
             Role = role,
             Token = token,
+            HashVersion = hashVersion,
+            TokenGeneration = 1,
             Status = WorkspaceInvitationStatus.Pending,
             ExpiresAt = createdAt.Add(expiry ?? TimeSpan.FromDays(7)),
             InvitedBy = invitedBy
@@ -65,9 +74,49 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
 
         Status = WorkspaceInvitationStatus.Accepted;
         SetAuditOnUpdate(acceptedUserId, acceptedAt);
+        IncrementVersion();
 
         AddDomainEvent(new WorkspaceInvitationAcceptedDomainEvent(
             AccountId, Id, WorkspaceId, acceptedUserId, acceptedUserId, acceptedAt));
+    }
+
+    public void Decline(Guid declinedBy, DateTimeOffset declinedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(declinedBy);
+
+        if (Status != WorkspaceInvitationStatus.Pending)
+            throw new BusinessRuleException("Invitation is not pending.");
+
+        Status = WorkspaceInvitationStatus.Declined;
+        SetAuditOnUpdate(declinedBy, declinedAt);
+        IncrementVersion();
+
+        AddDomainEvent(new WorkspaceInvitationDeclinedDomainEvent(
+            AccountId, Id, WorkspaceId, declinedBy, declinedAt));
+    }
+
+    public void ChangeRole(WorkspaceRole newRole, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+
+        if (Status != WorkspaceInvitationStatus.Pending)
+            throw new BusinessRuleException("Invitation is not pending.");
+
+        if (newRole == WorkspaceRole.Owner)
+            throw new BusinessRuleException(
+                "Cannot invite a user as workspace owner.");
+
+        if (Role == newRole) return;
+
+        var oldRole = Role;
+        Role = newRole;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+
+        AddDomainEvent(new WorkspaceInvitationRoleChangedDomainEvent(
+            AccountId, Id, WorkspaceId, oldRole, newRole, updatedBy, updatedAt));
     }
 
     public void Expire(DateTimeOffset expiredAt)
@@ -78,6 +127,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
 
         Status = WorkspaceInvitationStatus.Expired;
         SetAuditOnUpdate(null, expiredAt);
+        IncrementVersion();
 
         AddDomainEvent(new WorkspaceInvitationExpiredDomainEvent(
             AccountId, Id, WorkspaceId, expiredAt));
@@ -90,13 +140,42 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
 
         if (Status != WorkspaceInvitationStatus.Pending) return;
 
-        if (revokedAt >= ExpiresAt)
-            throw new BusinessRuleException("Invitation has expired.");
-
         Status = WorkspaceInvitationStatus.Revoked;
         SetAuditOnUpdate(revokedBy, revokedAt);
+        IncrementVersion();
 
         AddDomainEvent(new WorkspaceInvitationRevokedDomainEvent(
             AccountId, Id, WorkspaceId, revokedBy, revokedAt));
+    }
+
+    public void Resend(
+        InvitationTokenHash newTokenHash,
+        int newHashVersion,
+        DateTimeOffset resentAt,
+        TimeSpan expiry,
+        Guid resentBy)
+    {
+        EnsureNotDeleted();
+        Guard.NotNull(newTokenHash);
+        Guard.NotEmpty(resentBy);
+
+        if (Status is not WorkspaceInvitationStatus.Pending and
+            not WorkspaceInvitationStatus.Expired)
+        {
+            throw new BusinessRuleException(
+                "Only pending or expired invitations can be resent.");
+        }
+
+        Token = newTokenHash;
+        HashVersion = newHashVersion;
+        TokenGeneration = checked(TokenGeneration + 1);
+        Status = WorkspaceInvitationStatus.Pending;
+        ExpiresAt = resentAt.Add(expiry);
+
+        SetAuditOnUpdate(resentBy, resentAt);
+        IncrementVersion();
+
+        AddDomainEvent(new WorkspaceInvitationResentDomainEvent(
+            AccountId, Id, WorkspaceId, resentBy, resentAt));
     }
 }

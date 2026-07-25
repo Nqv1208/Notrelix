@@ -56,6 +56,16 @@ public class TeamMember : AuditableEntity, IWorkspaceScoped
         SetAuditOnUpdate(activatedBy, activatedAt);
     }
 
+    public void ChangeRole(TeamMemberRole newRole, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        Guard.NotEmpty(updatedBy);
+        if (Status != TeamMemberStatus.Active)
+            throw new BusinessRuleException("Cannot change the role of an inactive team member.");
+        if (Role == newRole) return;
+        Role = newRole;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+    }
+
     public void Remove(Guid removedBy, DateTimeOffset removedAt)
     {
         Guard.NotEmpty(removedBy);

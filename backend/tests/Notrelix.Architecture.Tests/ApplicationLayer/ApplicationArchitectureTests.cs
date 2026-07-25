@@ -148,7 +148,7 @@ public class ApplicationArchitectureTests
             .Where(l => l.Contains("AddTransient(typeof(IPipelineBehavior<"))
             .ToList();
 
-        lines.Should().HaveCount(16, "expected exactly 16 pipeline behaviors");
+        lines.Should().HaveCount(19, "expected exactly 19 pipeline behaviors");
 
         var expectedOrder = new[]
         {
@@ -156,12 +156,15 @@ public class ApplicationArchitectureTests
             "ApplicationTracingBehavior",
             "ValidationBehavior",
             "RequestContractGuardBehavior",
+            "TokenValidationBehavior",
             "TenantBootstrapBehavior",
+            "SystemOperationAuditBehavior",
             "ResourceScopeBehavior",
             "PostCommitScopeBehavior",
             "PublicCacheBehavior",
             "DbRequestScopeBehavior",
             "AuthorizationBehavior",
+            "VerifiedEmailBehavior",
             "ConcurrencyBehavior",
             "SubscriptionGateBehavior",
             "FeatureGateBehavior",
@@ -790,6 +793,54 @@ public class ApplicationArchitectureTests
         violations.Should().BeEmpty(
             "Cacheable queries must not construct raw cache key strings: " +
             string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void SystemInternalRequests_MustAlsoImplementSystemOperation()
+    {
+        var files = GetApplicationFeatureFiles();
+        var violations = new List<string>();
+
+        foreach (var file in files)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            if (!content.Contains("ISystemInternalRequest")) continue;
+
+            if (!content.Contains("ISystemOperation"))
+                violations.Add(Path.GetFileName(file));
+        }
+
+        violations.Should().BeEmpty(
+            "Every ISystemInternalRequest must also implement ISystemOperation — " +
+            "system operations require structured audit metadata. Violations: " +
+            string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void RlsReadRequests_MustAlsoImplementTenantScoping()
+    {
+        var files = GetApplicationFeatureFiles();
+        var violations = new List<string>();
+
+        foreach (var file in files)
+        {
+            var content = RemoveComments(File.ReadAllText(file));
+            if (!content.Contains("IRlsReadRequest")) continue;
+
+            var hasTenantScoping =
+                content.Contains("IAccountRequest")
+                || content.Contains("IWorkspaceRequest")
+                || content.Contains("IResourceScopedRequest");
+
+            if (!hasTenantScoping)
+                violations.Add(Path.GetFileName(file));
+        }
+
+        violations.Should().BeEmpty(
+            "Every IRlsReadRequest must also implement a tenant-scoping interface " +
+            "(IAccountRequest, IWorkspaceRequest, or IResourceScopedRequest) — " +
+            "RlsSessionContext requires AccountId which is only resolved for tenant-scoped requests. " +
+            "Violations: " + string.Join(", ", violations));
     }
 
     [Fact]

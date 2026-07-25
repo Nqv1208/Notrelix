@@ -70,6 +70,15 @@ public class IgnoreQueryFiltersArchitectureTests
         ["RestoreWorkspace.cs"] = new("RestoreWorkspace.cs", AllowlistClassification.Intentional,
             "Restore operation must see soft-deleted workspaces to restore them",
             "Keep as Intentional — restore requires IgnoreQueryFilters"),
+        ["RestoreSpace.cs"] = new("RestoreSpace.cs", AllowlistClassification.Intentional,
+            "Restore operation must see soft-deleted spaces to restore them",
+            "Keep as Intentional — restore requires IgnoreQueryFilters"),
+        ["RestoreTeam.cs"] = new("RestoreTeam.cs", AllowlistClassification.Intentional,
+            "Restore operation must see soft-deleted teams to restore them",
+            "Keep as Intentional — restore requires IgnoreQueryFilters"),
+        ["RestoreMember.cs"] = new("RestoreMember.cs", AllowlistClassification.Intentional,
+            "Restore operation must see soft-deleted members to restore them",
+            "Keep as Intentional — restore requires IgnoreQueryFilters"),
         ["ApplicationDbContextInitialiser.cs"] = new("ApplicationDbContextInitialiser.cs", AllowlistClassification.SystemCommand,
             "Database seed/reset must clear all tables regardless of query filters",
             "Keep as SystemCommand — infrastructure maintenance operation"),
@@ -83,6 +92,12 @@ public class IgnoreQueryFiltersArchitectureTests
         ["ResourceScopeResolver.cs"] = new("ResourceScopeResolver.cs", AllowlistClassification.InfrastructureBootstrap,
             "Resource scope resolver bypasses EF query filter to resolve resource tenant context before RLS is set",
             "Keep as InfrastructureBootstrap — resolver runs before RLS session is established"),
+        ["EmailTemplateMaterialization.cs"] = new("EmailTemplateMaterialization.cs", AllowlistClassification.Intentional,
+            "Email template materialization bypasses EF query filter to resolve templates across tenant boundaries",
+            "Keep as Intentional — cross-tenant template resolution"),
+        ["EmailVerificationTokenIssuer.cs"] = new("EmailVerificationTokenIssuer.cs", AllowlistClassification.Intentional,
+            "Token issuer bypasses EF query filter to revoke prior tokens across tenant boundaries",
+            "Keep as Intentional — cross-tenant token revocation"),
     };
 
     [Fact]

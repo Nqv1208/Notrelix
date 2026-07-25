@@ -86,12 +86,14 @@ public class CreateWorkspaceCommandHandlerTests : IAsyncLifetime
     public async Task Handle_WhenSlugAlreadyExists_ShouldAppendUniqueSuffix()
     {
         await using var context = _db.CreateContext();
+        var accountId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
+        _requestContextMock.Setup(r => r.RequireAccountId()).Returns(accountId);
         _requestContextMock.Setup(r => r.UserId).Returns(userId);
         _dateTimeMock.Setup(d => d.UtcNow).Returns(now);
 
-        var existingWorkspace = Workspace.Create(Guid.NewGuid(), userId, "Awesome Project", "awesome-project", now);
+        var existingWorkspace = Workspace.Create(accountId, userId, "Awesome Project", "awesome-project", now);
         context.Workspaces.Add(existingWorkspace);
         await context.SaveChangesAsync();
 

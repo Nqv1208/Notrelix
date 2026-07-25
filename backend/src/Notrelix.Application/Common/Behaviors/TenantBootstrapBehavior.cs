@@ -41,27 +41,36 @@ public class TenantBootstrapBehavior<TRequest, TResponse> : IPipelineBehavior<TR
                 throw new ForbiddenException("Access to workspace denied.");
             }
 
-            _tenant.SetWorkspace(snapshot.AccountId, snapshot.WorkspaceId, snapshot.ActorUserId);
-        }
-        else if (request is IAccountRequest accountRequest)
-        {
-            var accountId = accountRequest.AccountId;
-            if (accountId == Guid.Empty)
-                throw new ForbiddenException("Invalid account context.");
-
-            var canAccess = await _tenantBootstrapStore.HasAccountAccessAsync(accountId, cancellationToken);
-            if (!canAccess)
+            if (!snapshot.IsWorkspaceActive)
             {
                 _logger.LogWarning(
-                    "Cross-tenant account access denied: UserId={UserId} RequestedAccountId={AccountId} RequestType={RequestType}",
-                    _tenant.UserId,
-                    accountId,
+                    "Request to inactive workspace: UserId={UserId} WorkspaceId={WorkspaceId} RequestType={RequestType}",
+                    actorUserId,
+                    workspaceId,
                     typeof(TRequest).Name);
-
-                throw new ForbiddenException("Access to account denied.");
             }
 
-            _tenant.SetAccount(accountId, _tenant.UserId);
+            _tenant.SetWorkspace(snapshot.AccountId, snapshot.WorkspaceId, snapshot.ActorUserId);
+        }
+        else if (request is IAccountRequest)
+        {
+            var actorUserId = _tenant.UserId
+                ?? throw new UnauthorizedAccessException("Account-scoped request requires authenticated user.");
+
+            var accountId = _tenant.AccountId
+                ?? throw new AccountSelectionRequiredException(
+                    $"{typeof(TRequest).Name} is account-scoped but no AccountId is selected. " +
+                    "Provide account context via route, header, or session.");
+
+            await _tenantBootstrapStore.VerifyAccountAccessAsync(accountId, actorUserId, cancellationToken);
+
+            _logger.LogInformation(
+                "Verified account access: UserId={UserId} AccountId={AccountId} RequestType={RequestType}",
+                actorUserId,
+                accountId,
+                typeof(TRequest).Name);
+
+            _tenant.SetAccount(accountId, actorUserId);
         }
 
         return await next();

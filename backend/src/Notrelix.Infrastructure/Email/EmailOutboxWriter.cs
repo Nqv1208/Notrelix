@@ -16,44 +16,30 @@ internal sealed class EmailOutboxWriter : IEmailOutboxWriter
         _dateTimeProvider = dateTimeProvider;
     }
 
-    public ValueTask QueueEmailAsync(
-        string recipientEmail,
-        string? recipientName,
-        string subject,
-        string htmlBody,
-        Guid? workspaceId,
-        Guid? recipientUserId,
-        string sourceContext,
-        string templateName,
-        int templateVersion = 1,
-        int priority = 100,
-        string? deduplicationKey = null,
-        Guid? sourceEventId = null,
-        Guid? sourceMessageId = null,
-        CancellationToken cancellationToken = default)
+    public Task QueueRenderedEmailAsync(
+        QueueRenderedEmailRequest request,
+        CancellationToken cancellationToken)
     {
-        var now = _dateTimeProvider.UtcNow;
-
-        var message = new EmailOutboxMessage(
-            deduplicationKey: deduplicationKey ?? $"{sourceContext}:{recipientEmail}:{templateName}:{now:yyyyMMddHHmmss}",
-            sourceContext: sourceContext,
-            sourceEventId: sourceEventId,
-            sourceMessageId: sourceMessageId,
-            workspaceId: workspaceId,
-            recipientUserId: recipientUserId,
-            recipientEmail: recipientEmail,
-            recipientName: recipientName,
-            templateName: templateName,
-            templateVersion: templateVersion,
-            subject: subject,
-            bodyHtml: htmlBody,
-            bodyText: null,
-            templateDataJson: null,
-            headersJson: null,
-            priority: priority,
-            createdAt: now);
+        cancellationToken.ThrowIfCancellationRequested();
+        var message = EmailOutboxMessage.CreateRendered(
+            request,
+            _dateTimeProvider.UtcNow);
 
         _context.EmailOutboxMessages.Add(message);
-        return ValueTask.CompletedTask;
+        return Task.CompletedTask;
+    }
+
+    public Task QueueTemplatedEmailAsync<TPayload>(
+        QueueTemplatedEmailRequest<TPayload> request,
+        CancellationToken cancellationToken)
+        where TPayload : IEmailTemplatePayload
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var message = EmailOutboxMessage.CreateTemplated(
+            request,
+            _dateTimeProvider.UtcNow);
+
+        _context.EmailOutboxMessages.Add(message);
+        return Task.CompletedTask;
     }
 }

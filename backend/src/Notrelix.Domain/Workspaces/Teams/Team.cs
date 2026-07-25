@@ -55,6 +55,31 @@ public class Team : AggregateRoot, IWorkspaceScoped
         AddDomainEvent(new TeamRenamedDomainEvent(AccountId, WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
     }
 
+    public void UpdateDescription(string? newDescription, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+
+        if (Status == TeamStatus.Archived)
+            throw new BusinessRuleException("Cannot update description of an archived team.");
+
+        var normalized = string.IsNullOrWhiteSpace(newDescription)
+            ? null
+            : newDescription.Trim();
+
+        if (normalized is not null)
+            Guard.MaxLength(normalized, 1024);
+
+        if (Description == normalized) return;
+
+        var oldDescription = Description;
+        Description = normalized;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+        AddDomainEvent(new TeamDescriptionUpdatedDomainEvent(
+            AccountId, WorkspaceId, Id, oldDescription, Description, updatedBy, updatedAt));
+    }
+
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();
@@ -65,6 +90,24 @@ public class Team : AggregateRoot, IWorkspaceScoped
         SetAuditOnUpdate(archivedBy, archivedAt);
         IncrementVersion();
         AddDomainEvent(new TeamArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
+    }
+
+    public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(unarchivedBy);
+
+        if (Status == TeamStatus.Active) return;
+
+        if (Status != TeamStatus.Archived)
+            throw new BusinessRuleException(
+                "Only an archived team can be unarchived.");
+
+        Status = TeamStatus.Active;
+        SetAuditOnUpdate(unarchivedBy, unarchivedAt);
+        IncrementVersion();
+        AddDomainEvent(new TeamUnarchivedDomainEvent(
+            AccountId, WorkspaceId, Id, unarchivedBy, unarchivedAt));
     }
 
     public void AddMember(Guid userId, TeamMemberRole role, Guid addedBy, DateTimeOffset addedAt, Guid? workspaceMemberId = null)
@@ -102,13 +145,46 @@ public class Team : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(userId);
         Guard.NotEmpty(removedBy);
 
-        var member = _members.FirstOrDefault(m => m.UserId == userId);
+        var member = _members.FirstOrDefault(m => m.UserId == userId && m.Status == TeamMemberStatus.Active);
         if (member == null) return;
+
+        if (member.Role == TeamMemberRole.Lead)
+        {
+            var activeLeadCount = _members.Count(m => m.Status == TeamMemberStatus.Active && m.Role == TeamMemberRole.Lead);
+            TeamLeadRules.EnsureCanRemoveLead(activeLeadCount);
+        }
 
         member.Remove(removedBy, removedAt);
         SetAuditOnUpdate(removedBy, removedAt);
         IncrementVersion();
         AddDomainEvent(new TeamMemberRemovedDomainEvent(AccountId, WorkspaceId, Id, userId, removedBy, removedAt));
+    }
+
+    public void ChangeMemberRole(Guid userId, TeamMemberRole newRole, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(userId);
+        Guard.NotEmpty(updatedBy);
+
+        if (Status == TeamStatus.Archived)
+            throw new BusinessRuleException("Cannot change member role in an archived team.");
+
+        var member = _members.FirstOrDefault(m => m.UserId == userId && m.Status == TeamMemberStatus.Active);
+        if (member == null)
+            throw new BusinessRuleException("User is not an active member of this team.");
+
+        var activeLeadCount = _members.Count(m => m.Status == TeamMemberStatus.Active && m.Role == TeamMemberRole.Lead);
+        TeamLeadRules.EnsureCanDowngradeLead(member.Role, newRole, activeLeadCount);
+
+        if (member.Role == newRole) return;
+
+        var oldRole = member.Role;
+        member.ChangeRole(newRole, updatedBy, updatedAt);
+
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+        AddDomainEvent(new TeamMemberRoleChangedDomainEvent(
+            AccountId, WorkspaceId, Id, userId, oldRole, newRole, updatedBy, updatedAt));
     }
 
     public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)

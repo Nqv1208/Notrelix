@@ -20,12 +20,14 @@ public static class RequestExecutionClassifier
             IsAccountScoped: request is IAccountRequest,
             IsWorkspaceScoped: request is IWorkspaceRequest,
             IsResourceScoped: request is IResourceScopedRequest,
+            IsTokenScoped: request is ITokenScopedRequest,
             IsTransactional: request is ITransactionalRequest,
             IsRlsRead: request is IRlsReadRequest,
             RequiresPermission: request is IRequirePermission,
             RequiresSubscription: request is IRequireSubscription,
             RequiresFeature: request is IRequireFeature,
             IsPublicCacheable: isPublicCacheable,
-            IsAuthorizedCacheable: request is IAuthorizedCacheableRequest);
+            IsAuthorizedCacheable: request is IAuthorizedCacheableRequest,
+            IsRealtimeRequest: request is IRealtimeRequest);
     }
 }

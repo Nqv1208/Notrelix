@@ -69,7 +69,8 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
                 Id = user.Id,
                 Email = user.Email.Value,
                 Name = user.Name,
-                AvatarUrl = user.AvatarUrl
+                AvatarUrl = user.AvatarUrl,
+                EmailConfirmed = user.EmailConfirmed
             }
         });
     }

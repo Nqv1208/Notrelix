@@ -8,6 +8,8 @@ public class IgnoreQueryFiltersArchitectureTests
         "src/Notrelix.Infrastructure/Services/TenantBootstrapStore.cs",
         "src/Notrelix.Infrastructure/Services/WorkspaceAccessResolver.cs",
         "src/Notrelix.Infrastructure/Services/ResourceScopeResolver.cs",
+        "src/Notrelix.Infrastructure/Notifications/Email/EmailTemplateMaterialization.cs",
+        "src/Notrelix.Application/Features/Identity/Verification/Services/EmailVerificationTokenIssuer.cs",
     };
 
     [Fact]

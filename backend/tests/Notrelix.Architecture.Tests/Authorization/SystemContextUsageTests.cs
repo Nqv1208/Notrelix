@@ -23,8 +23,13 @@ public class SystemContextUsageTests
         "ApplicationDbContextInitialiser.cs",
         "WorkspaceAccessResolver.cs",
         "RestoreWorkspace.cs",
+        "RestoreSpace.cs",
+        "RestoreTeam.cs",
+        "RestoreMember.cs",
         "TenantBootstrapStore.cs",
         "ResourceScopeResolver.cs",
+        "EmailTemplateMaterialization.cs",
+        "EmailVerificationTokenIssuer.cs",
     ];
 
     [Fact]

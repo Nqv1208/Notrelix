@@ -46,10 +46,14 @@ public sealed class AuthenticatedRateLimitMiddleware
                 partitionKey = context.User.FindFirst("sub")?.Value
                     ?? throw new UnauthorizedAccessException("User ID required for rate limiting");
                 break;
+            case PartitionKey.ApiKey:
+                partitionKey = context.Request.Headers["X-API-Key"].FirstOrDefault()
+                    ?? throw new UnauthorizedAccessException("API key required for rate limiting");
+                break;
             default:
                 throw new InvalidOperationException(
                     $"Unsupported PartitionKey '{policy.PartitionBy}' in authenticated rate limiting. " +
-                    "Only PartitionKey.UserId is supported at the API middleware level.");
+                    "Only PartitionKey.UserId and PartitionKey.ApiKey are supported at the API middleware level.");
         }
 
         var rateLimitService = context.RequestServices.GetRequiredService<IRateLimitService>();

@@ -12,4 +12,4 @@ public sealed record ResourcePermissionLevelChangedDomainEvent(
     PermissionLevel NewLevel,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, UpdatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, UpdatedBy, subjectId: SubjectId);

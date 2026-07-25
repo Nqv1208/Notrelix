@@ -1,4 +1,6 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Tokens;
+using Notrelix.Application.Events.Workspaces;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember;
@@ -7,9 +9,9 @@ public record InviteMemberCommand(
     Guid WorkspaceId,
     string Email,
     WorkspaceRole Role
-) : ICommand<Result<Guid>>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission
+) : ICommand<Result<Guid>>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission, IRequireVerifiedEmail
 {
-    PermissionAction IRequirePermission.Action => PermissionAction.ManageWorkspace;
+    PermissionAction IRequirePermission.Action => PermissionAction.InviteMember;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
 }
 
@@ -17,19 +19,28 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
 {
     private readonly IWorkspaceDbContext _workspaceContext;
     private readonly IActorLookupService _actorLookup;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IOneTimeTokenService _oneTimeTokenService;
+    private readonly ISecretEncryptor _secretEncryptor;
+    private readonly IIntegrationEventCollector _integrationEventCollector;
 
     public InviteMemberCommandHandler(
         IWorkspaceDbContext workspaceContext,
         IActorLookupService actorLookup,
-        ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider)
+        ICurrentRequestContext requestContext,
+        IDateTimeProvider dateTimeProvider,
+        IOneTimeTokenService oneTimeTokenService,
+        ISecretEncryptor secretEncryptor,
+        IIntegrationEventCollector integrationEventCollector)
     {
         _workspaceContext = workspaceContext;
         _actorLookup = actorLookup;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
+        _oneTimeTokenService = oneTimeTokenService;
+        _secretEncryptor = secretEncryptor;
+        _integrationEventCollector = integrationEventCollector;
     }
 
     public async Task<Result<Guid>> Handle(InviteMemberCommand request, CancellationToken ct)
@@ -44,17 +55,6 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         var cleanEmail = request.Email.Trim().ToLowerInvariant();
         var now = _dateTimeProvider.UtcNow;
 
-        // Check if user with this email exists via actor lookup
-        // We cannot look up by email directly; the invitation flow does not require the user to exist yet.
-        // The InviteMemberCommand checks for existing membership using workspace members only.
-
-        var isAlreadyMember = await _workspaceContext.WorkspaceMembers
-            .AnyAsync(m => m.WorkspaceId == request.WorkspaceId, ct);
-
-        // Note: We can't check if the target user is already a member without their UserId.
-        // The email-based invite flow creates an invitation; duplicate-membership is checked at Accept time.
-        // For a stricter check, a IUserLookupByEmailService port could be introduced in the future.
-
         var hasActiveInvitation = await _workspaceContext.WorkspaceInvitations
             .AnyAsync(i => i.WorkspaceId == request.WorkspaceId
                            && i.Email == cleanEmail
@@ -64,10 +64,41 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         if (hasActiveInvitation)
             return Result<Guid>.Failure("Đã có một lời mời đang chờ xử lý dành cho email này.");
 
-        var token = InvitationTokenHash.Create(Guid.NewGuid().ToString("N"));
-        var invitation = WorkspaceInvitation.Create(workspace.AccountId, request.WorkspaceId, cleanEmail, request.Role, token, _currentUser.UserId, now);
+        var issuedToken = _oneTimeTokenService.Generate(TokenPurpose.WorkspaceInvitation);
+        var invitationTokenHash = InvitationTokenHash.Create(issuedToken.TokenHash);
+
+        var invitation = WorkspaceInvitation.Create(
+            workspace.AccountId,
+            request.WorkspaceId,
+            cleanEmail,
+            request.Role,
+            invitationTokenHash,
+            issuedToken.HashVersion,
+            _requestContext.UserId,
+            now);
 
         _workspaceContext.WorkspaceInvitations.Add(invitation);
+
+        var protectedToken = _secretEncryptor.Protect(
+            issuedToken.RawToken,
+            OneTimeTokenProtectionPurposes.WorkspaceInvitation);
+
+        _integrationEventCollector.Add(
+            new WorkspaceInvitationDeliveryRequestedIntegrationEventV1(
+                EventId: Guid.CreateVersion7(),
+                InvitationId: invitation.Id,
+                AccountId: workspace.AccountId,
+                WorkspaceId: workspace.Id,
+                RecipientEmail: cleanEmail,
+                ProtectedToken: protectedToken,
+                HashVersion: issuedToken.HashVersion,
+                TokenGeneration: invitation.TokenGeneration,
+                ExpiresAt: invitation.ExpiresAt,
+                InvitedBy: _requestContext.UserId,
+                CorrelationId: Guid.CreateVersion7(),
+                ActorUserId: _requestContext.UserId,
+                OccurredAt: now));
+
         return Result<Guid>.Success(invitation.Id);
     }
 }

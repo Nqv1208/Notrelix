@@ -19,6 +19,7 @@ public static class MapAuthEndpoints
         publicGroup.MapRefreshToken();
         publicGroup.MapStartOAuthLogin();
         publicGroup.MapCompleteOAuthLogin();
+        publicGroup.MapEmailVerification();
 
         var authGroup = app
             .MapGroup("/api/v1/auth")

@@ -7,21 +7,25 @@ public record UpdateMemberRoleCommand(
     Guid WorkspaceId,
     Guid UserId,
     WorkspaceRole Role
-) : ICommand<Result>, ITransactionalRequest;
+) : ICommand<Result>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.ChangeMemberRole;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
+}
 
 public class UpdateMemberRoleCommandHandler : IRequestHandler<UpdateMemberRoleCommand, Result>
 {
     private readonly IWorkspaceDbContext _context;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public UpdateMemberRoleCommandHandler(
         IWorkspaceDbContext context,
-        ICurrentUser currentUser,
+        ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider)
     {
         _context = context;
-        _currentUser = currentUser;
+        _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
 
@@ -42,7 +46,7 @@ public class UpdateMemberRoleCommandHandler : IRequestHandler<UpdateMemberRoleCo
         var activeOwnerCount = await _context.WorkspaceMembers
             .CountAsync(m => m.WorkspaceId == workspace.Id && m.Role == WorkspaceRole.Owner && m.Status == WorkspaceMemberStatus.Active, ct);
 
-        member.ChangeRole(request.Role, _currentUser.UserId, activeOwnerCount, _dateTimeProvider.UtcNow);
+        member.ChangeRole(request.Role, _requestContext.UserId, activeOwnerCount, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }

@@ -16,8 +16,9 @@ public abstract record WorkspaceScopedDomainEvent : DomainEvent, IWorkspaceScope
         DateTimeOffset occurredAt,
         Guid? actorUserId = null,
         string? correlationId = null,
-        string? causationId = null)
-        : base(occurredAt, workspaceId, actorUserId)
+        string? causationId = null,
+        Guid subjectId = default)
+        : base(occurredAt, workspaceId, actorUserId, subjectId)
     {
         AccountId = accountId;
         WorkspaceId = workspaceId;

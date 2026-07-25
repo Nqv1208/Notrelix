@@ -18,6 +18,12 @@ public sealed class DataProtectionOptionsValidator : IValidateOptions<DataProtec
         if (string.IsNullOrWhiteSpace(options.ApplicationName))
             failures.Add("DataProtection:ApplicationName is required.");
 
+        if (IsProduction() && !options.PersistKeys)
+        {
+            failures.Add(
+                "DataProtection:PersistKeys must be true in production so API and workers share a persistent key ring.");
+        }
+
         if (options.PersistKeys && string.IsNullOrWhiteSpace(options.KeysPath))
             failures.Add("DataProtection:KeysPath is required when PersistKeys is true.");
 
