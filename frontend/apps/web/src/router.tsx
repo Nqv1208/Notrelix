@@ -1,4 +1,5 @@
-import { createRouter as createTanStackRouter, createRoute, createRootRoute } from '@tanstack/react-router';
+import { createRouter as createTanStackRouter, createRoute, createRootRoute, redirect } from '@tanstack/react-router';
+import { z } from 'zod';
 
 // Import route components
 import { SignInPage } from './routes/sign-in';
@@ -69,6 +70,11 @@ const workspaceRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/workspaces/$workspaceId',
   component: WorkspaceLayout,
+  beforeLoad: ({ params }) => {
+    if (!params.workspaceId || params.workspaceId.trim() === '') {
+      throw redirect({ to: '/home' });
+    }
+  },
 });
 
 const workspaceIndexRoute = createRoute({
@@ -77,9 +83,17 @@ const workspaceIndexRoute = createRoute({
   component: WorkspaceHomePage,
 });
 
+const boardSearchSchema = z.object({
+  view: z.enum(['table', 'kanban', 'calendar', 'timeline']).default('kanban'),
+  filter: z.string().optional(),
+  sort: z.string().optional(),
+  item: z.string().optional(),
+});
+
 const boardRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: '/boards/$boardId',
+  validateSearch: (search) => boardSearchSchema.parse(search),
   component: BoardPage,
 });
 
