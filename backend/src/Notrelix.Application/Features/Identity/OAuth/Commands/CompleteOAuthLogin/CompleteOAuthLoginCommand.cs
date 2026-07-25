@@ -7,6 +7,7 @@ using Notrelix.Application.Features.Identity.OAuth.DTOs;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
+using Notrelix.Domain.Identity.OAuth;
 
 namespace Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthLogin;
 
@@ -167,7 +168,8 @@ public sealed class CompleteOAuthLoginCommandHandler
             return Result<AuthResult>.Failure("Account is not active.");
         }
 
-        user.LinkOAuthAccount(profile.Provider, profile.Subject, profile.RawProfile, null, now);
+        user.LinkOAuthAccount(profile.Provider, profile.Subject,
+            OAuthProfileSnapshot.Create(profile.Provider, 1, profile.RawProfile), null, now);
         var oauthAccount = user.OAuthAccounts.Last();
         _identityContext.OAuthAccounts.Add(oauthAccount);
         user.RecordLogin(now);
@@ -201,7 +203,8 @@ public sealed class CompleteOAuthLoginCommandHandler
             account.Id, user.Id, AccountRole.Owner, user.Id, now);
         _accountContext.AccountMembers.Add(accountMember);
 
-        user.LinkOAuthAccount(profile.Provider, profile.Subject, profile.RawProfile, null, now);
+        user.LinkOAuthAccount(profile.Provider, profile.Subject,
+            OAuthProfileSnapshot.Create(profile.Provider, 1, profile.RawProfile), null, now);
         var oauthAccount = user.OAuthAccounts.Last();
         _identityContext.OAuthAccounts.Add(oauthAccount);
 
