@@ -9,7 +9,7 @@
     "preview": "vite preview --port 5173",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "vitest",
+    "test": "vitest run",
     "clean": "rm -rf dist node_modules"
   },
   "dependencies": {

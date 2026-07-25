@@ -26,7 +26,7 @@ const NOTIFICATION_CHANNELS = [
 ];
 
 export function AccountNotificationsPage() {
-  const { preferences, isLoading } = usePreferences();
+  const { preferences: _preferences, isLoading } = usePreferences();
   const updateMutation = useUpdatePreferences();
 
   const [settings, setSettings] = useState({

@@ -2,7 +2,7 @@ import { useParams } from '@tanstack/react-router';
 import { MessageSquare } from 'lucide-react';
 
 export function ChatPage() {
-  const { workspaceId } = useParams({ from: '/workspaces/$workspaceId/chat' });
+  const { _workspaceId } = useParams({ from: '/workspaces/$workspaceId/chat' });
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-8">

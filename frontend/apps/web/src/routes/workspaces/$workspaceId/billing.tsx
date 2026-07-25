@@ -28,7 +28,7 @@ const PLANS = [
 ];
 
 export function BillingPage() {
-  const { workspaceId } = useParams({ from: '/workspaces/$workspaceId' });
+  const { _workspaceId } = useParams({ from: '/workspaces/$workspaceId' });
   const { workspace } = useWorkspaceContext();
   const currentPlan = workspace?.plan ?? 'free';
 

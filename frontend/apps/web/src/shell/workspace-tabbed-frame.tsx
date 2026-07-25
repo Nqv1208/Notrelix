@@ -10,7 +10,7 @@ import {
   WorkspaceContextualToolbar,
   createUseReorderWorkspaceViews,
 } from '@notrelix/features-workspace/web';
-import { api, endpoints } from '@notrelix/contracts';
+import { api } from '@notrelix/contracts';
 
 const useReorderWorkspaceViews = createUseReorderWorkspaceViews({ api });
 

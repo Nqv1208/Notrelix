@@ -9,7 +9,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "vitest --passWithNoTests",
+    "test": "vitest run",
     "clean": "rm -rf node_modules dist",
     "typecheck": "tsc --noEmit"
   },

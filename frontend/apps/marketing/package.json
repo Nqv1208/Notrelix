@@ -29,6 +29,9 @@
     "@tailwindcss/postcss": "^4",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@eslint/eslintrc": "catalog:",
+    "eslint": "catalog:",
+    "eslint-config-next": "catalog:",
     "tailwindcss": "^4",
     "typescript": "^5.0.0"
   }
