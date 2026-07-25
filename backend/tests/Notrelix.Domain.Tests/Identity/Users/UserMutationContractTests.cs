@@ -17,7 +17,7 @@ public class UserMutationContractTests
         var versionBefore = user.Version;
         var now = DateTimeOffset.UtcNow;
 
-        user.UpdateProfile(user.Name, user.Avatar, now);
+        user.UpdateProfile(user.Name, user.Avatar, user.Id, now);
 
         user.Version.Should().Be(versionBefore);
     }
@@ -29,7 +29,7 @@ public class UserMutationContractTests
         ((IHasDomainEvents)user).ClearDomainEvents();
         var now = DateTimeOffset.UtcNow;
 
-        user.UpdateProfile(user.Name, user.Avatar, now);
+        user.UpdateProfile(user.Name, user.Avatar, user.Id, now);
 
         user.DomainEvents.Should().BeEmpty();
     }
@@ -41,7 +41,7 @@ public class UserMutationContractTests
         var updatedAtBefore = user.UpdatedAt;
         var now = DateTimeOffset.UtcNow;
 
-        user.UpdateProfile(user.Name, user.Avatar, now);
+        user.UpdateProfile(user.Name, user.Avatar, user.Id, now);
 
         user.UpdatedAt.Should().Be(updatedAtBefore);
     }
@@ -54,7 +54,7 @@ public class UserMutationContractTests
         var now = DateTimeOffset.UtcNow;
         ((IHasDomainEvents)user).ClearDomainEvents();
 
-        user.UpdateProfile("New Name", user.Avatar, now);
+        user.UpdateProfile("New Name", user.Avatar, user.Id, now);
 
         user.Name.Should().Be("New Name");
         user.Version.Should().Be(versionBefore + 1);
@@ -69,7 +69,7 @@ public class UserMutationContractTests
         var now = DateTimeOffset.UtcNow;
         ((IHasDomainEvents)user).ClearDomainEvents();
 
-        user.UpdateProfile(user.Name, "new-avatar.png", now);
+        user.UpdateProfile(user.Name, "new-avatar.png", user.Id, now);
 
         user.Avatar.Should().Be("new-avatar.png");
         user.Version.Should().Be(versionBefore + 1);

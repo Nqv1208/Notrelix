@@ -7,6 +7,7 @@ public static class IdentityRuleCodes
 {
     // ── Users ─────────────────────────────────────────────────────────────
     public const string Identity_User_OAuthProviderAlreadyLinked = "Identity_User_OAuthProviderAlreadyLinked";
+    public const string Identity_User_OAuthProviderMismatch = "Identity_User_OAuthProviderMismatch";
     public const string Identity_User_NoOAuthAccountForProvider = "Identity_User_NoOAuthAccountForProvider";
     public const string Identity_Login_TimeCannotMoveBackwards = "Identity_Login_TimeCannotMoveBackwards";
 

@@ -70,7 +70,7 @@ public class OAuthAccountTests
         ((IHasDomainEvents)user).ClearDomainEvents();
 
         var token = OAuthToken.Create(AccessRef, RefreshRef);
-        user.LinkOAuthAccount(OAuthProvider.Google, "provider-id-123", TestSnapshot, token, now.AddMinutes(5));
+        user.LinkOAuthAccount(OAuthProvider.Google, "provider-id-123", TestSnapshot, token, user.Id, now.AddMinutes(5));
 
         user.OAuthAccounts.Should().ContainSingle();
         var account = user.OAuthAccounts.Single();
@@ -87,15 +87,15 @@ public class OAuthAccountTests
     }
 
     [Fact]
-    public void User_LinkDuplicateProviderDifferentId_ShouldThrow()
+    public void User_LinkDuplicateProvider_ShouldThrow()
     {
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hash123", now);
-        user.LinkOAuthAccount(OAuthProvider.Google, "id-1", TestSnapshot, null, now);
+        user.LinkOAuthAccount(OAuthProvider.Google, "id-1", TestSnapshot, null, user.Id, now);
 
-        var act = () => user.LinkOAuthAccount(OAuthProvider.Google, "id-2", TestSnapshot, null, now);
+        var act = () => user.LinkOAuthAccount(OAuthProvider.Google, "id-2", TestSnapshot, null, user.Id, now);
 
-        act.Should().Throw<BusinessRuleException>().WithMessage("*already linked with a different account*");
+        act.Should().Throw<BusinessRuleException>().WithMessage("*already linked*");
     }
 
     [Fact]
@@ -103,7 +103,7 @@ public class OAuthAccountTests
     {
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hash123", now);
-        user.LinkOAuthAccount(OAuthProvider.Google, "provider-id-123", TestSnapshot, null, now);
+        user.LinkOAuthAccount(OAuthProvider.Google, "provider-id-123", TestSnapshot, null, user.Id, now);
         ((IHasDomainEvents)user).ClearDomainEvents();
 
         user.UnlinkOAuthAccount(OAuthProvider.Google, now.AddMinutes(5));
@@ -123,11 +123,11 @@ public class OAuthAccountTests
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hash123", now);
         var oldToken = OAuthToken.Create(AccessRef);
-        user.LinkOAuthAccount(OAuthProvider.Google, "provider-id-123", TestSnapshot, oldToken, now);
+        user.LinkOAuthAccount(OAuthProvider.Google, "provider-id-123", TestSnapshot, oldToken, user.Id, now);
         ((IHasDomainEvents)user).ClearDomainEvents();
 
         var newToken = OAuthToken.Create(SecretRef.Create("new-access-ref"));
-        user.RotateOAuthToken(OAuthProvider.Google, newToken, now.AddMinutes(5));
+        user.RotateOAuthToken(OAuthProvider.Google, newToken, user.Id, now.AddMinutes(5));
 
         user.OAuthAccounts.Single().Token.Should().Be(newToken);
         user.DomainEvents.Should().ContainSingle(e => e is OAuthTokenReferenceRotatedDomainEvent);

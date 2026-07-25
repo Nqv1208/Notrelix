@@ -36,4 +36,10 @@ public class OAuthAccount : Entity
         Guard.NotNull(token);
         Token = token;
     }
+
+    internal void UpdateProfileSnapshot(OAuthProfileSnapshot profileSnapshot)
+    {
+        Guard.NotNull(profileSnapshot);
+        ProfileSnapshot = profileSnapshot;
+    }
 }

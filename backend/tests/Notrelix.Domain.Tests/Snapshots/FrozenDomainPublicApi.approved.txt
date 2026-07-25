@@ -1,6 +1,6 @@
 # Frozen Domain Public API Snapshot
 # Format: Type|Member|MemberType|Visibility|IsAbstract|IsVirtual|Parameters
-# Generated: 2026-07-25T16:51:56Z
+# Generated: 2026-07-25T17:12:26Z
 
 Notrelix.Domain.Accounts.Accounts.Account|Activate|Method|public|False|False|Guid activatedBy, DateTimeOffset activatedAt
 Notrelix.Domain.Accounts.Accounts.Account|Archive|Method|public|False|False|Guid archivedBy, DateTimeOffset archivedAt
@@ -1975,11 +1975,12 @@ Notrelix.Domain.Identity.Mfa.UserMfaMethod|Status|Property|public|False|False|re
 Notrelix.Domain.Identity.Mfa.UserMfaMethod|Type|Property|public|False|False|readonly
 Notrelix.Domain.Identity.Mfa.UserMfaMethod|UserId|Property|public|False|False|readonly
 Notrelix.Domain.Identity.Mfa.UserMfaMethod|VerifiedAt|Property|public|False|False|readonly
-Notrelix.Domain.Identity.OAuth.Events.OAuthAccountLinkedDomainEvent|.ctor|Constructor|public|False|False|Guid UserId, OAuthProvider Provider, String ProviderId, DateTimeOffset LinkedAt
+Notrelix.Domain.Identity.OAuth.Events.OAuthAccountLinkedDomainEvent|.ctor|Constructor|public|False|False|Guid UserId, OAuthProvider Provider, String ProviderId, Guid LinkedBy, DateTimeOffset LinkedAt
 Notrelix.Domain.Identity.OAuth.Events.OAuthAccountLinkedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Identity.OAuth.Events.OAuthAccountLinkedDomainEvent|Deconstruct|Method|public|False|False|Guid& UserId, OAuthProvider& Provider, String& ProviderId, DateTimeOffset& LinkedAt
+Notrelix.Domain.Identity.OAuth.Events.OAuthAccountLinkedDomainEvent|Deconstruct|Method|public|False|False|Guid& UserId, OAuthProvider& Provider, String& ProviderId, Guid& LinkedBy, DateTimeOffset& LinkedAt
 Notrelix.Domain.Identity.OAuth.Events.OAuthAccountLinkedDomainEvent|Equals|Method|public|False|True|OAuthAccountLinkedDomainEvent other
 Notrelix.Domain.Identity.OAuth.Events.OAuthAccountLinkedDomainEvent|LinkedAt|Property|public|False|False|readwrite
+Notrelix.Domain.Identity.OAuth.Events.OAuthAccountLinkedDomainEvent|LinkedBy|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.OAuth.Events.OAuthAccountLinkedDomainEvent|Provider|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.OAuth.Events.OAuthAccountLinkedDomainEvent|ProviderId|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.OAuth.Events.OAuthAccountLinkedDomainEvent|UserId|Property|public|False|False|readwrite
@@ -1991,12 +1992,20 @@ Notrelix.Domain.Identity.OAuth.Events.OAuthAccountUnlinkedDomainEvent|Provider|P
 Notrelix.Domain.Identity.OAuth.Events.OAuthAccountUnlinkedDomainEvent|ProviderId|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.OAuth.Events.OAuthAccountUnlinkedDomainEvent|UnlinkedAt|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.OAuth.Events.OAuthAccountUnlinkedDomainEvent|UserId|Property|public|False|False|readwrite
-Notrelix.Domain.Identity.OAuth.Events.OAuthTokenReferenceRotatedDomainEvent|.ctor|Constructor|public|False|False|Guid UserId, OAuthProvider Provider, DateTimeOffset RotatedAt
+Notrelix.Domain.Identity.OAuth.Events.OAuthProfileUpdatedDomainEvent|.ctor|Constructor|public|False|False|Guid UserId, OAuthProvider Provider, Guid UpdatedBy, DateTimeOffset OccurredAt
+Notrelix.Domain.Identity.OAuth.Events.OAuthProfileUpdatedDomainEvent|<Clone>$|Method|public|False|True|
+Notrelix.Domain.Identity.OAuth.Events.OAuthProfileUpdatedDomainEvent|Deconstruct|Method|public|False|False|Guid& UserId, OAuthProvider& Provider, Guid& UpdatedBy, DateTimeOffset& OccurredAt
+Notrelix.Domain.Identity.OAuth.Events.OAuthProfileUpdatedDomainEvent|Equals|Method|public|False|True|OAuthProfileUpdatedDomainEvent other
+Notrelix.Domain.Identity.OAuth.Events.OAuthProfileUpdatedDomainEvent|Provider|Property|public|False|False|readwrite
+Notrelix.Domain.Identity.OAuth.Events.OAuthProfileUpdatedDomainEvent|UpdatedBy|Property|public|False|False|readwrite
+Notrelix.Domain.Identity.OAuth.Events.OAuthProfileUpdatedDomainEvent|UserId|Property|public|False|False|readwrite
+Notrelix.Domain.Identity.OAuth.Events.OAuthTokenReferenceRotatedDomainEvent|.ctor|Constructor|public|False|False|Guid UserId, OAuthProvider Provider, Guid RotatedBy, DateTimeOffset RotatedAt
 Notrelix.Domain.Identity.OAuth.Events.OAuthTokenReferenceRotatedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Identity.OAuth.Events.OAuthTokenReferenceRotatedDomainEvent|Deconstruct|Method|public|False|False|Guid& UserId, OAuthProvider& Provider, DateTimeOffset& RotatedAt
+Notrelix.Domain.Identity.OAuth.Events.OAuthTokenReferenceRotatedDomainEvent|Deconstruct|Method|public|False|False|Guid& UserId, OAuthProvider& Provider, Guid& RotatedBy, DateTimeOffset& RotatedAt
 Notrelix.Domain.Identity.OAuth.Events.OAuthTokenReferenceRotatedDomainEvent|Equals|Method|public|False|True|OAuthTokenReferenceRotatedDomainEvent other
 Notrelix.Domain.Identity.OAuth.Events.OAuthTokenReferenceRotatedDomainEvent|Provider|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.OAuth.Events.OAuthTokenReferenceRotatedDomainEvent|RotatedAt|Property|public|False|False|readwrite
+Notrelix.Domain.Identity.OAuth.Events.OAuthTokenReferenceRotatedDomainEvent|RotatedBy|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.OAuth.Events.OAuthTokenReferenceRotatedDomainEvent|UserId|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.OAuth.OAuthAccount|ProfileSnapshot|Property|public|False|False|readonly
 Notrelix.Domain.Identity.OAuth.OAuthAccount|Provider|Property|public|False|False|readonly
@@ -2031,10 +2040,11 @@ Notrelix.Domain.Identity.Profiles.Events.UserProfileSoftDeletedDomainEvent|Delet
 Notrelix.Domain.Identity.Profiles.Events.UserProfileSoftDeletedDomainEvent|Reason|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.Profiles.Events.UserProfileSoftDeletedDomainEvent|UserId|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.Profiles.Events.UserProfileSoftDeletedDomainEvent|UserProfileId|Property|public|False|False|readwrite
-Notrelix.Domain.Identity.Profiles.Events.UserProfileUpdatedDomainEvent|.ctor|Constructor|public|False|False|Guid UserId, DateTimeOffset OccurredAt
+Notrelix.Domain.Identity.Profiles.Events.UserProfileUpdatedDomainEvent|.ctor|Constructor|public|False|False|Guid UserId, Nullable`1 UpdatedBy, DateTimeOffset OccurredAt
 Notrelix.Domain.Identity.Profiles.Events.UserProfileUpdatedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Identity.Profiles.Events.UserProfileUpdatedDomainEvent|Deconstruct|Method|public|False|False|Guid& UserId, DateTimeOffset& OccurredAt
+Notrelix.Domain.Identity.Profiles.Events.UserProfileUpdatedDomainEvent|Deconstruct|Method|public|False|False|Guid& UserId, Nullable`1& UpdatedBy, DateTimeOffset& OccurredAt
 Notrelix.Domain.Identity.Profiles.Events.UserProfileUpdatedDomainEvent|Equals|Method|public|False|True|UserProfileUpdatedDomainEvent other
+Notrelix.Domain.Identity.Profiles.Events.UserProfileUpdatedDomainEvent|UpdatedBy|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.Profiles.Events.UserProfileUpdatedDomainEvent|UserId|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.Profiles.UserPreferences|Data|Property|public|False|False|readonly
 Notrelix.Domain.Identity.Profiles.UserProfile|Restore|Method|public|False|False|Guid restoredBy, DateTimeOffset restoredAt
@@ -2322,18 +2332,20 @@ Notrelix.Domain.Identity.Users.Events.UserDeactivatedDomainEvent|DeactivatedBy|P
 Notrelix.Domain.Identity.Users.Events.UserDeactivatedDomainEvent|PreviousStatus|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.Users.Events.UserDeactivatedDomainEvent|Reason|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.Users.Events.UserDeactivatedDomainEvent|UserId|Property|public|False|False|readwrite
-Notrelix.Domain.Identity.Users.Events.UserEmailChangedDomainEvent|.ctor|Constructor|public|False|False|Guid UserId, Email OldEmail, Email NewEmail, DateTimeOffset OccurredAt
+Notrelix.Domain.Identity.Users.Events.UserEmailChangedDomainEvent|.ctor|Constructor|public|False|False|Guid UserId, Email OldEmail, Email NewEmail, Guid ChangedBy, DateTimeOffset OccurredAt
 Notrelix.Domain.Identity.Users.Events.UserEmailChangedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Identity.Users.Events.UserEmailChangedDomainEvent|Deconstruct|Method|public|False|False|Guid& UserId, Email& OldEmail, Email& NewEmail, DateTimeOffset& OccurredAt
+Notrelix.Domain.Identity.Users.Events.UserEmailChangedDomainEvent|Deconstruct|Method|public|False|False|Guid& UserId, Email& OldEmail, Email& NewEmail, Guid& ChangedBy, DateTimeOffset& OccurredAt
 Notrelix.Domain.Identity.Users.Events.UserEmailChangedDomainEvent|Equals|Method|public|False|True|UserEmailChangedDomainEvent other
+Notrelix.Domain.Identity.Users.Events.UserEmailChangedDomainEvent|ChangedBy|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.Users.Events.UserEmailChangedDomainEvent|NewEmail|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.Users.Events.UserEmailChangedDomainEvent|OldEmail|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.Users.Events.UserEmailChangedDomainEvent|UserId|Property|public|False|False|readwrite
-Notrelix.Domain.Identity.Users.Events.UserEmailConfirmedDomainEvent|.ctor|Constructor|public|False|False|Guid UserId, String Email, DateTimeOffset ConfirmedAt
+Notrelix.Domain.Identity.Users.Events.UserEmailConfirmedDomainEvent|.ctor|Constructor|public|False|False|Guid UserId, String Email, Nullable`1 ConfirmedBy, DateTimeOffset ConfirmedAt
 Notrelix.Domain.Identity.Users.Events.UserEmailConfirmedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Identity.Users.Events.UserEmailConfirmedDomainEvent|Deconstruct|Method|public|False|False|Guid& UserId, String& Email, DateTimeOffset& ConfirmedAt
+Notrelix.Domain.Identity.Users.Events.UserEmailConfirmedDomainEvent|Deconstruct|Method|public|False|False|Guid& UserId, String& Email, Nullable`1& ConfirmedBy, DateTimeOffset& ConfirmedAt
 Notrelix.Domain.Identity.Users.Events.UserEmailConfirmedDomainEvent|Equals|Method|public|False|True|UserEmailConfirmedDomainEvent other
 Notrelix.Domain.Identity.Users.Events.UserEmailConfirmedDomainEvent|ConfirmedAt|Property|public|False|False|readwrite
+Notrelix.Domain.Identity.Users.Events.UserEmailConfirmedDomainEvent|ConfirmedBy|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.Users.Events.UserEmailConfirmedDomainEvent|Email|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.Users.Events.UserEmailConfirmedDomainEvent|UserId|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.Users.Events.UserLoggedInDomainEvent|.ctor|Constructor|public|False|False|Guid UserId, DateTimeOffset LoggedInAt
@@ -2342,10 +2354,11 @@ Notrelix.Domain.Identity.Users.Events.UserLoggedInDomainEvent|Deconstruct|Method
 Notrelix.Domain.Identity.Users.Events.UserLoggedInDomainEvent|Equals|Method|public|False|True|UserLoggedInDomainEvent other
 Notrelix.Domain.Identity.Users.Events.UserLoggedInDomainEvent|LoggedInAt|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.Users.Events.UserLoggedInDomainEvent|UserId|Property|public|False|False|readwrite
-Notrelix.Domain.Identity.Users.Events.UserPasswordChangedDomainEvent|.ctor|Constructor|public|False|False|Guid UserId, DateTimeOffset OccurredAt
+Notrelix.Domain.Identity.Users.Events.UserPasswordChangedDomainEvent|.ctor|Constructor|public|False|False|Guid UserId, Guid ChangedBy, DateTimeOffset OccurredAt
 Notrelix.Domain.Identity.Users.Events.UserPasswordChangedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Identity.Users.Events.UserPasswordChangedDomainEvent|Deconstruct|Method|public|False|False|Guid& UserId, DateTimeOffset& OccurredAt
+Notrelix.Domain.Identity.Users.Events.UserPasswordChangedDomainEvent|Deconstruct|Method|public|False|False|Guid& UserId, Guid& ChangedBy, DateTimeOffset& OccurredAt
 Notrelix.Domain.Identity.Users.Events.UserPasswordChangedDomainEvent|Equals|Method|public|False|True|UserPasswordChangedDomainEvent other
+Notrelix.Domain.Identity.Users.Events.UserPasswordChangedDomainEvent|ChangedBy|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.Users.Events.UserPasswordChangedDomainEvent|UserId|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.Users.Events.UserRegisteredDomainEvent|.ctor|Constructor|public|False|False|Guid userId, String email, String displayName, DateTimeOffset registeredAt
 Notrelix.Domain.Identity.Users.Events.UserRegisteredDomainEvent|<Clone>$|Method|public|False|True|
@@ -2377,18 +2390,19 @@ Notrelix.Domain.Identity.Users.Events.UserSuspendedDomainEvent|SuspendedAt|Prope
 Notrelix.Domain.Identity.Users.Events.UserSuspendedDomainEvent|SuspendedBy|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.Users.Events.UserSuspendedDomainEvent|UserId|Property|public|False|False|readwrite
 Notrelix.Domain.Identity.Users.User|Activate|Method|public|False|False|Guid activatedBy, DateTimeOffset activatedAt, String reason
-Notrelix.Domain.Identity.Users.User|ConfirmEmail|Method|public|False|False|DateTimeOffset confirmedAt
+Notrelix.Domain.Identity.Users.User|ConfirmEmail|Method|public|False|False|Nullable`1 confirmedBy, DateTimeOffset confirmedAt
 Notrelix.Domain.Identity.Users.User|Deactivate|Method|public|False|False|Guid deactivatedBy, DateTimeOffset deactivatedAt, String reason
-Notrelix.Domain.Identity.Users.User|LinkOAuthAccount|Method|public|False|False|OAuthProvider provider, String providerId, OAuthProfileSnapshot profileSnapshot, OAuthToken token, DateTimeOffset linkedAt
+Notrelix.Domain.Identity.Users.User|LinkOAuthAccount|Method|public|False|False|OAuthProvider provider, String providerId, OAuthProfileSnapshot profileSnapshot, OAuthToken token, Guid linkedBy, DateTimeOffset linkedAt
 Notrelix.Domain.Identity.Users.User|RecordLogin|Method|public|False|False|DateTimeOffset loggedInAt
 Notrelix.Domain.Identity.Users.User|Restore|Method|public|False|False|Guid restoredBy, DateTimeOffset restoredAt
-Notrelix.Domain.Identity.Users.User|RotateOAuthToken|Method|public|False|False|OAuthProvider provider, OAuthToken newToken, DateTimeOffset rotatedAt
+Notrelix.Domain.Identity.Users.User|RotateOAuthToken|Method|public|False|False|OAuthProvider provider, OAuthToken newToken, Guid rotatedBy, DateTimeOffset rotatedAt
 Notrelix.Domain.Identity.Users.User|SoftDelete|Method|public|False|False|Guid deletedBy, DateTimeOffset deletedAt, String reason
 Notrelix.Domain.Identity.Users.User|Suspend|Method|public|False|False|Guid suspendedBy, DateTimeOffset suspendedAt, String reason
 Notrelix.Domain.Identity.Users.User|UnlinkOAuthAccount|Method|public|False|False|OAuthProvider provider, DateTimeOffset unlinkedAt
-Notrelix.Domain.Identity.Users.User|UpdateEmail|Method|public|False|False|String email, DateTimeOffset updatedAt
-Notrelix.Domain.Identity.Users.User|UpdatePassword|Method|public|False|False|String passwordHash, DateTimeOffset updatedAt
-Notrelix.Domain.Identity.Users.User|UpdateProfile|Method|public|False|False|String name, String avatar, DateTimeOffset updatedAt
+Notrelix.Domain.Identity.Users.User|UpdateEmail|Method|public|False|False|String email, Guid updatedBy, DateTimeOffset updatedAt
+Notrelix.Domain.Identity.Users.User|UpdateOAuthProfile|Method|public|False|False|OAuthProvider provider, OAuthProfileSnapshot profileSnapshot, Guid updatedBy, DateTimeOffset updatedAt
+Notrelix.Domain.Identity.Users.User|UpdatePassword|Method|public|False|False|String passwordHash, Guid updatedBy, DateTimeOffset updatedAt
+Notrelix.Domain.Identity.Users.User|UpdateProfile|Method|public|False|False|String name, String avatar, Guid updatedBy, DateTimeOffset updatedAt
 Notrelix.Domain.Identity.Users.User|Avatar|Property|public|False|False|readonly
 Notrelix.Domain.Identity.Users.User|AvatarUrl|Property|public|False|False|readonly
 Notrelix.Domain.Identity.Users.User|Email|Property|public|False|False|readonly

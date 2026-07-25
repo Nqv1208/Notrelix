@@ -58,11 +58,13 @@ public class User : SoftDeletableAggregateRoot
     public void UpdateProfile(
         string name,
         string? avatar,
+        Guid updatedBy,
         DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(name);
         Guard.MaxLength(name, 100);
+        Guard.NotEmpty(updatedBy);
 
         var trimmedName = name.Trim();
         var normalizedAvatar = avatar?.Trim();
@@ -73,16 +75,18 @@ public class User : SoftDeletableAggregateRoot
         Name = trimmedName;
         Avatar = normalizedAvatar;
 
-        SetAuditOnUpdate(Id, updatedAt);
+        SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(Id, updatedAt));
+        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(Id, updatedBy, updatedAt));
     }
 
     public void UpdateEmail(
         string email,
+        Guid updatedBy,
         DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
 
         var emailValue = Email.Create(email);
 
@@ -95,27 +99,30 @@ public class User : SoftDeletableAggregateRoot
         EmailConfirmed = false;
         EmailConfirmedAt = null;
 
-        SetAuditOnUpdate(Id, updatedAt);
+        SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
         RaiseDomainEvent(new UserEmailChangedDomainEvent(
             Id,
             oldEmail,
             Email,
+            updatedBy,
             updatedAt));
     }
 
     public void UpdatePassword(
         string passwordHash,
+        Guid updatedBy,
         DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(passwordHash);
+        Guard.NotEmpty(updatedBy);
 
         PasswordHash = passwordHash;
 
-        SetAuditOnUpdate(Id, updatedAt);
+        SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        RaiseDomainEvent(new UserPasswordChangedDomainEvent(Id, updatedAt));
+        RaiseDomainEvent(new UserPasswordChangedDomainEvent(Id, updatedBy, updatedAt));
     }
 
     public void RecordLogin(DateTimeOffset loggedInAt)
@@ -203,7 +210,7 @@ public class User : SoftDeletableAggregateRoot
             string.IsNullOrWhiteSpace(reason) ? null : reason.Trim()));
     }
 
-    public void ConfirmEmail(DateTimeOffset confirmedAt)
+    public void ConfirmEmail(Guid? confirmedBy, DateTimeOffset confirmedAt)
     {
         EnsureNotDeleted();
 
@@ -218,11 +225,11 @@ public class User : SoftDeletableAggregateRoot
             Status = UserStatus.Active;
         }
 
-        SetAuditOnUpdate(Id, confirmedAt);
+        SetAuditOnUpdate(confirmedBy, confirmedAt);
         IncrementVersion();
 
         RaiseDomainEvent(new UserEmailConfirmedDomainEvent(
-            Id, Email.Value, confirmedAt));
+            Id, Email.Value, confirmedBy, confirmedAt));
     }
 
     public void LinkOAuthAccount(
@@ -230,32 +237,61 @@ public class User : SoftDeletableAggregateRoot
         string providerId,
         OAuthProfileSnapshot profileSnapshot,
         OAuthToken? token,
+        Guid linkedBy,
         DateTimeOffset linkedAt)
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(providerId);
         Guard.NotNull(profileSnapshot);
+        Guard.NotEmpty(linkedBy);
+
+        if (profileSnapshot.Provider != provider)
+            throw new BusinessRuleException(
+                IdentityRuleCodes.Identity_User_OAuthProviderMismatch,
+                $"Profile snapshot provider ({profileSnapshot.Provider}) does not match link provider ({provider}).");
 
         var existing = _oauthAccounts.FirstOrDefault(x => x.Provider == provider);
         if (existing != null)
-        {
-            if (existing.ProviderId != providerId.Trim())
-            {
-                throw new BusinessRuleException(IdentityRuleCodes.Identity_User_OAuthProviderAlreadyLinked, $"Provider {provider} is already linked with a different account.");
-            }
-            // No-op: same provider, same providerId, no token update needed
-            if (token == null) return;
-            existing.UpdateToken(token);
-        }
-        else
-        {
-            var oauth = OAuthAccount.Create(Id, provider, providerId, profileSnapshot, token);
-            _oauthAccounts.Add(oauth);
-        }
+            throw new BusinessRuleException(
+                IdentityRuleCodes.Identity_User_OAuthProviderAlreadyLinked,
+                $"Provider {provider} is already linked. Use UpdateOAuthProfile or RotateOAuthToken instead.");
 
-        SetAuditOnUpdate(Id, linkedAt);
+        var oauth = OAuthAccount.Create(Id, provider, providerId, profileSnapshot, token);
+        _oauthAccounts.Add(oauth);
+
+        SetAuditOnUpdate(linkedBy, linkedAt);
         IncrementVersion();
-        RaiseDomainEvent(new OAuthAccountLinkedDomainEvent(Id, provider, providerId, linkedAt));
+        RaiseDomainEvent(new OAuthAccountLinkedDomainEvent(Id, provider, providerId, linkedBy, linkedAt));
+    }
+
+    public void UpdateOAuthProfile(
+        OAuthProvider provider,
+        OAuthProfileSnapshot profileSnapshot,
+        Guid updatedBy,
+        DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotNull(profileSnapshot);
+        Guard.NotEmpty(updatedBy);
+
+        if (profileSnapshot.Provider != provider)
+            throw new BusinessRuleException(
+                IdentityRuleCodes.Identity_User_OAuthProviderMismatch,
+                $"Profile snapshot provider ({profileSnapshot.Provider}) does not match provider ({provider}).");
+
+        var existing = _oauthAccounts.FirstOrDefault(x => x.Provider == provider);
+        if (existing == null)
+            throw new BusinessRuleException(
+                IdentityRuleCodes.Identity_User_NoOAuthAccountForProvider,
+                $"No OAuth account linked for provider {provider}.");
+
+        if (existing.ProfileSnapshot == profileSnapshot)
+            return;
+
+        existing.UpdateProfileSnapshot(profileSnapshot);
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+        RaiseDomainEvent(new OAuthProfileUpdatedDomainEvent(Id, provider, updatedBy, updatedAt));
     }
 
     public void UnlinkOAuthAccount(OAuthProvider provider, DateTimeOffset unlinkedAt)
@@ -270,10 +306,12 @@ public class User : SoftDeletableAggregateRoot
         RaiseDomainEvent(new OAuthAccountUnlinkedDomainEvent(Id, provider, existing.ProviderId, unlinkedAt));
     }
 
-    public void RotateOAuthToken(OAuthProvider provider, OAuthToken newToken, DateTimeOffset rotatedAt)
+    public void RotateOAuthToken(OAuthProvider provider, OAuthToken newToken, Guid rotatedBy, DateTimeOffset rotatedAt)
     {
         EnsureNotDeleted();
         Guard.NotNull(newToken);
+        Guard.NotEmpty(rotatedBy);
+
         var existing = _oauthAccounts.FirstOrDefault(x => x.Provider == provider);
         if (existing == null)
         {
@@ -281,9 +319,9 @@ public class User : SoftDeletableAggregateRoot
         }
 
         existing.UpdateToken(newToken);
-        SetAuditOnUpdate(Id, rotatedAt);
+        SetAuditOnUpdate(rotatedBy, rotatedAt);
         IncrementVersion();
-        RaiseDomainEvent(new OAuthTokenReferenceRotatedDomainEvent(Id, provider, rotatedAt));
+        RaiseDomainEvent(new OAuthTokenReferenceRotatedDomainEvent(Id, provider, rotatedBy, rotatedAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)

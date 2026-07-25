@@ -4,5 +4,6 @@ namespace Notrelix.Domain.Identity.OAuth.Events;
 public sealed record OAuthTokenReferenceRotatedDomainEvent(
     Guid UserId,
     OAuthProvider Provider,
+    Guid RotatedBy,
     DateTimeOffset RotatedAt
 ) : GlobalDomainEvent(RotatedAt);

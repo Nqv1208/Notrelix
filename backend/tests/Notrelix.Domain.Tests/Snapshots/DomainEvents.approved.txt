@@ -1,6 +1,6 @@
 # Domain Event Contract Snapshot
 # Format: LogicalName|Version|ClrType|Scope|PropertyName|PropertyType|IsNullable
-# Generated: 2026-07-25T16:51:56Z
+# Generated: 2026-07-25T17:12:26Z
 
 accounts.account-activated|1|Notrelix.Domain.Accounts.Accounts.Events.AccountActivatedDomainEvent|Accounts|AccountId|Guid|False
 accounts.account-activated|1|Notrelix.Domain.Accounts.Accounts.Events.AccountActivatedDomainEvent|Accounts|ActivatedBy|Guid|False
@@ -1167,6 +1167,7 @@ identity.user-mfa-method-verified|1|Notrelix.Domain.Identity.Mfa.Events.UserMfaM
 identity.user-mfa-method-verified|1|Notrelix.Domain.Identity.Mfa.Events.UserMfaMethodVerifiedDomainEvent|Identity|VerifiedAt|DateTimeOffset|False
 identity.o-auth-account-linked|1|Notrelix.Domain.Identity.OAuth.Events.OAuthAccountLinkedDomainEvent|Identity|EventId|Guid|False
 identity.o-auth-account-linked|1|Notrelix.Domain.Identity.OAuth.Events.OAuthAccountLinkedDomainEvent|Identity|LinkedAt|DateTimeOffset|False
+identity.o-auth-account-linked|1|Notrelix.Domain.Identity.OAuth.Events.OAuthAccountLinkedDomainEvent|Identity|LinkedBy|Guid|False
 identity.o-auth-account-linked|1|Notrelix.Domain.Identity.OAuth.Events.OAuthAccountLinkedDomainEvent|Identity|OccurredAt|DateTimeOffset|False
 identity.o-auth-account-linked|1|Notrelix.Domain.Identity.OAuth.Events.OAuthAccountLinkedDomainEvent|Identity|Provider|OAuthProvider|False
 identity.o-auth-account-linked|1|Notrelix.Domain.Identity.OAuth.Events.OAuthAccountLinkedDomainEvent|Identity|ProviderId|String|False
@@ -1177,10 +1178,16 @@ identity.o-auth-account-unlinked|1|Notrelix.Domain.Identity.OAuth.Events.OAuthAc
 identity.o-auth-account-unlinked|1|Notrelix.Domain.Identity.OAuth.Events.OAuthAccountUnlinkedDomainEvent|Identity|ProviderId|String|False
 identity.o-auth-account-unlinked|1|Notrelix.Domain.Identity.OAuth.Events.OAuthAccountUnlinkedDomainEvent|Identity|UnlinkedAt|DateTimeOffset|False
 identity.o-auth-account-unlinked|1|Notrelix.Domain.Identity.OAuth.Events.OAuthAccountUnlinkedDomainEvent|Identity|UserId|Guid|False
+identity.o-auth-profile-updated|1|Notrelix.Domain.Identity.OAuth.Events.OAuthProfileUpdatedDomainEvent|Identity|EventId|Guid|False
+identity.o-auth-profile-updated|1|Notrelix.Domain.Identity.OAuth.Events.OAuthProfileUpdatedDomainEvent|Identity|OccurredAt|DateTimeOffset|False
+identity.o-auth-profile-updated|1|Notrelix.Domain.Identity.OAuth.Events.OAuthProfileUpdatedDomainEvent|Identity|Provider|OAuthProvider|False
+identity.o-auth-profile-updated|1|Notrelix.Domain.Identity.OAuth.Events.OAuthProfileUpdatedDomainEvent|Identity|UpdatedBy|Guid|False
+identity.o-auth-profile-updated|1|Notrelix.Domain.Identity.OAuth.Events.OAuthProfileUpdatedDomainEvent|Identity|UserId|Guid|False
 identity.o-auth-token-reference-rotated|1|Notrelix.Domain.Identity.OAuth.Events.OAuthTokenReferenceRotatedDomainEvent|Identity|EventId|Guid|False
 identity.o-auth-token-reference-rotated|1|Notrelix.Domain.Identity.OAuth.Events.OAuthTokenReferenceRotatedDomainEvent|Identity|OccurredAt|DateTimeOffset|False
 identity.o-auth-token-reference-rotated|1|Notrelix.Domain.Identity.OAuth.Events.OAuthTokenReferenceRotatedDomainEvent|Identity|Provider|OAuthProvider|False
 identity.o-auth-token-reference-rotated|1|Notrelix.Domain.Identity.OAuth.Events.OAuthTokenReferenceRotatedDomainEvent|Identity|RotatedAt|DateTimeOffset|False
+identity.o-auth-token-reference-rotated|1|Notrelix.Domain.Identity.OAuth.Events.OAuthTokenReferenceRotatedDomainEvent|Identity|RotatedBy|Guid|False
 identity.o-auth-token-reference-rotated|1|Notrelix.Domain.Identity.OAuth.Events.OAuthTokenReferenceRotatedDomainEvent|Identity|UserId|Guid|False
 identity.user-profile-created|1|Notrelix.Domain.Identity.Profiles.Events.UserProfileCreatedDomainEvent|Identity|EventId|Guid|False
 identity.user-profile-created|1|Notrelix.Domain.Identity.Profiles.Events.UserProfileCreatedDomainEvent|Identity|OccurredAt|DateTimeOffset|False
@@ -1199,6 +1206,7 @@ identity.user-profile-soft-deleted|1|Notrelix.Domain.Identity.Profiles.Events.Us
 identity.user-profile-soft-deleted|1|Notrelix.Domain.Identity.Profiles.Events.UserProfileSoftDeletedDomainEvent|Identity|UserProfileId|Guid|False
 identity.user-profile-updated|1|Notrelix.Domain.Identity.Profiles.Events.UserProfileUpdatedDomainEvent|Identity|EventId|Guid|False
 identity.user-profile-updated|1|Notrelix.Domain.Identity.Profiles.Events.UserProfileUpdatedDomainEvent|Identity|OccurredAt|DateTimeOffset|False
+identity.user-profile-updated|1|Notrelix.Domain.Identity.Profiles.Events.UserProfileUpdatedDomainEvent|Identity|UpdatedBy|Guid|True
 identity.user-profile-updated|1|Notrelix.Domain.Identity.Profiles.Events.UserProfileUpdatedDomainEvent|Identity|UserId|Guid|False
 identity.login-attempt-recorded|1|Notrelix.Domain.Identity.Security.Events.LoginAttemptRecordedDomainEvent|Identity|AttemptedEmail|String|False
 identity.login-attempt-recorded|1|Notrelix.Domain.Identity.Security.Events.LoginAttemptRecordedDomainEvent|Identity|EventId|Guid|False
@@ -1355,12 +1363,14 @@ identity.user-deactivated|1|Notrelix.Domain.Identity.Users.Events.UserDeactivate
 identity.user-deactivated|1|Notrelix.Domain.Identity.Users.Events.UserDeactivatedDomainEvent|Identity|PreviousStatus|UserStatus|False
 identity.user-deactivated|1|Notrelix.Domain.Identity.Users.Events.UserDeactivatedDomainEvent|Identity|Reason|String|False
 identity.user-deactivated|1|Notrelix.Domain.Identity.Users.Events.UserDeactivatedDomainEvent|Identity|UserId|Guid|False
+identity.user-email-changed|1|Notrelix.Domain.Identity.Users.Events.UserEmailChangedDomainEvent|Identity|ChangedBy|Guid|False
 identity.user-email-changed|1|Notrelix.Domain.Identity.Users.Events.UserEmailChangedDomainEvent|Identity|EventId|Guid|False
 identity.user-email-changed|1|Notrelix.Domain.Identity.Users.Events.UserEmailChangedDomainEvent|Identity|NewEmail|Email|False
 identity.user-email-changed|1|Notrelix.Domain.Identity.Users.Events.UserEmailChangedDomainEvent|Identity|OccurredAt|DateTimeOffset|False
 identity.user-email-changed|1|Notrelix.Domain.Identity.Users.Events.UserEmailChangedDomainEvent|Identity|OldEmail|Email|False
 identity.user-email-changed|1|Notrelix.Domain.Identity.Users.Events.UserEmailChangedDomainEvent|Identity|UserId|Guid|False
 identity.user-email-confirmed|1|Notrelix.Domain.Identity.Users.Events.UserEmailConfirmedDomainEvent|Identity|ConfirmedAt|DateTimeOffset|False
+identity.user-email-confirmed|1|Notrelix.Domain.Identity.Users.Events.UserEmailConfirmedDomainEvent|Identity|ConfirmedBy|Guid|True
 identity.user-email-confirmed|1|Notrelix.Domain.Identity.Users.Events.UserEmailConfirmedDomainEvent|Identity|Email|String|False
 identity.user-email-confirmed|1|Notrelix.Domain.Identity.Users.Events.UserEmailConfirmedDomainEvent|Identity|EventId|Guid|False
 identity.user-email-confirmed|1|Notrelix.Domain.Identity.Users.Events.UserEmailConfirmedDomainEvent|Identity|OccurredAt|DateTimeOffset|False
@@ -1369,6 +1379,7 @@ identity.user-logged-in|1|Notrelix.Domain.Identity.Users.Events.UserLoggedInDoma
 identity.user-logged-in|1|Notrelix.Domain.Identity.Users.Events.UserLoggedInDomainEvent|Identity|LoggedInAt|DateTimeOffset|False
 identity.user-logged-in|1|Notrelix.Domain.Identity.Users.Events.UserLoggedInDomainEvent|Identity|OccurredAt|DateTimeOffset|False
 identity.user-logged-in|1|Notrelix.Domain.Identity.Users.Events.UserLoggedInDomainEvent|Identity|UserId|Guid|False
+identity.user-password-changed|1|Notrelix.Domain.Identity.Users.Events.UserPasswordChangedDomainEvent|Identity|ChangedBy|Guid|False
 identity.user-password-changed|1|Notrelix.Domain.Identity.Users.Events.UserPasswordChangedDomainEvent|Identity|EventId|Guid|False
 identity.user-password-changed|1|Notrelix.Domain.Identity.Users.Events.UserPasswordChangedDomainEvent|Identity|OccurredAt|DateTimeOffset|False
 identity.user-password-changed|1|Notrelix.Domain.Identity.Users.Events.UserPasswordChangedDomainEvent|Identity|UserId|Guid|False

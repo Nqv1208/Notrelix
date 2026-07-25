@@ -1,6 +1,6 @@
 # Aggregate Mutation Coverage Registry
 # Format: Aggregate|Method|ValidTest|NoOpTest|InvalidTest|AuditTest|VersionTest|EventTest
-# Generated: 2026-07-25T16:51:56Z
+# Generated: 2026-07-25T17:12:26Z
 
 Account|Activate|False|False|False|False|False|False
 Account|Archive|False|False|False|False|False|False
@@ -218,6 +218,7 @@ User|SoftDelete|True|False|True|False|False|True
 User|Suspend|True|False|True|False|False|True
 User|UnlinkOAuthAccount|True|False|True|False|False|True
 User|UpdateEmail|True|False|True|False|False|True
+User|UpdateOAuthProfile|True|False|True|False|False|True
 User|UpdatePassword|True|False|True|False|False|True
 User|UpdateProfile|True|False|True|False|False|True
 CalendarIntegration|Activate|False|False|False|False|False|False

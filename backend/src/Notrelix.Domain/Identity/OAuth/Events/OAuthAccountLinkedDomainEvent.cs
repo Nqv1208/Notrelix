@@ -5,5 +5,6 @@ public sealed record OAuthAccountLinkedDomainEvent(
     Guid UserId,
     OAuthProvider Provider,
     string ProviderId,
+    Guid LinkedBy,
     DateTimeOffset LinkedAt
 ) : GlobalDomainEvent(LinkedAt);

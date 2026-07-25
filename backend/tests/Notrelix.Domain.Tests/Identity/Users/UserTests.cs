@@ -57,7 +57,7 @@ public class UserTests
         ((IHasDomainEvents)user).ClearDomainEvents();
 
         var updateTime = now.AddHours(1);
-        user.UpdateProfile("New Name", "avatar.png", updateTime);
+        user.UpdateProfile("New Name", "avatar.png", user.Id, updateTime);
 
         user.Name.Should().Be("New Name");
         user.Avatar.Should().Be("avatar.png");
@@ -71,7 +71,7 @@ public class UserTests
         var user = User.Create("test@example.com", "Test User", "hash123", now);
         user.SoftDelete(Guid.NewGuid(), now);
 
-        var act = () => user.UpdateProfile("New Name", null, now);
+        var act = () => user.UpdateProfile("New Name", null, user.Id, now);
 
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
@@ -82,7 +82,7 @@ public class UserTests
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("old@example.com", "Test User", "hash123", now);
 
-        user.UpdateEmail("new@example.com", now);
+        user.UpdateEmail("new@example.com", user.Id, now);
 
         user.Email.Value.Should().Be("new@example.com");
     }
@@ -93,7 +93,7 @@ public class UserTests
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "oldhash", now);
 
-        user.UpdatePassword("newhash", now);
+        user.UpdatePassword("newhash", user.Id, now);
 
         user.PasswordHash.Should().Be("newhash");
     }

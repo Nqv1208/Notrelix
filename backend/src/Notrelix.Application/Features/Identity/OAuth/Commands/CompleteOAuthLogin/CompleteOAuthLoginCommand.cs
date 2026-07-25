@@ -168,7 +168,7 @@ public sealed class CompleteOAuthLoginCommandHandler
         }
 
         user.LinkOAuthAccount(profile.Provider, profile.Subject,
-            OAuthProfileSnapshot.Create(profile.Provider, 1, profile.RawProfile), null, now);
+            OAuthProfileSnapshot.Create(profile.Provider, 1, profile.RawProfile), null, user.Id, now);
         var oauthAccount = user.OAuthAccounts.Last();
         _identityContext.OAuthAccounts.Add(oauthAccount);
         user.RecordLogin(now);
@@ -203,7 +203,7 @@ public sealed class CompleteOAuthLoginCommandHandler
         _accountContext.AccountMembers.Add(accountMember);
 
         user.LinkOAuthAccount(profile.Provider, profile.Subject,
-            OAuthProfileSnapshot.Create(profile.Provider, 1, profile.RawProfile), null, now);
+            OAuthProfileSnapshot.Create(profile.Provider, 1, profile.RawProfile), null, user.Id, now);
         var oauthAccount = user.OAuthAccounts.Last();
         _identityContext.OAuthAccounts.Add(oauthAccount);
 

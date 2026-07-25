@@ -30,7 +30,7 @@ public class UserProfile : SoftDeletableAggregateRoot
         Timezone = string.IsNullOrWhiteSpace(timezone) ? "UTC" : timezone.Trim();
         SetAuditOnUpdate(UserId, updatedAt);
         IncrementVersion();
-        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, updatedAt));
+        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, UserId, updatedAt));
     }
 
     public void UpdateLocale(string locale, DateTimeOffset updatedAt)
@@ -39,7 +39,7 @@ public class UserProfile : SoftDeletableAggregateRoot
         Locale = string.IsNullOrWhiteSpace(locale) ? "vi" : locale.Trim();
         SetAuditOnUpdate(UserId, updatedAt);
         IncrementVersion();
-        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, updatedAt));
+        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, UserId, updatedAt));
     }
 
     public void UpdateTheme(string theme, DateTimeOffset updatedAt)
@@ -59,7 +59,7 @@ public class UserProfile : SoftDeletableAggregateRoot
         }
         SetAuditOnUpdate(UserId, updatedAt);
         IncrementVersion();
-        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, updatedAt));
+        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, UserId, updatedAt));
     }
 
     public void UpdatePreferences(string preferences, DateTimeOffset updatedAt)
@@ -77,7 +77,7 @@ public class UserProfile : SoftDeletableAggregateRoot
         Preferences = json;
         SetAuditOnUpdate(UserId, updatedAt);
         IncrementVersion();
-        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, updatedAt));
+        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, UserId, updatedAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
