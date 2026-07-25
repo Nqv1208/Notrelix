@@ -117,7 +117,10 @@ internal static class InitDb
     private static void ClearDomainEvents(ApplicationDbContext context)
     {
         foreach (var entity in context.ChangeTracker.Entries<Entity>().Select(e => e.Entity))
-            entity.ClearDomainEvents();
+        {
+            if (entity is IHasDomainEvents hasDomainEvents)
+                hasDomainEvents.ClearDomainEvents();
+        }
     }
 
     private static async Task<List<User>> CreateUsersAsync(

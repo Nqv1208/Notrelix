@@ -67,7 +67,8 @@ public class DomainEventInterceptor : SaveChangesInterceptor
 
         foreach (var entry in entries)
         {
-            entry.Entity.ClearDomainEvents();
+            if (entry.Entity is IHasDomainEvents hasDomainEvents)
+                hasDomainEvents.ClearDomainEvents();
         }
 
         // Persist use-case integration events (collected at Application layer)

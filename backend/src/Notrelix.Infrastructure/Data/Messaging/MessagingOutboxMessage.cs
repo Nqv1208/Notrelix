@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Notrelix.Domain.Common.Constants;
 
 namespace Notrelix.Infrastructure.Data.Messaging;
 
@@ -173,9 +172,9 @@ public sealed class MessagingOutboxMessage
             messageName: integrationEvent.MessageName,
             schemaVersion: integrationEvent.SchemaVersion,
             destination: null,
-            subjectType: SubjectTypes.User,
+            subjectType: OutboxConstants.SubjectTypes.User,
             subjectId: integrationEvent.ActorUserId,
-            aggregateType: AggregateTypes.User,
+            aggregateType: OutboxConstants.AggregateTypes.User,
             aggregateId: integrationEvent.ActorUserId,
             workspaceId: integrationEvent.WorkspaceId,
             actorUserId: integrationEvent.ActorUserId,
@@ -206,19 +205,19 @@ public sealed class MessagingOutboxMessage
             var prefix = messageName[..dotIndex];
             return prefix switch
             {
-                "identity" => SourceContexts.Identity,
-                "account" => SourceContexts.Accounts,
-                "workspace" => SourceContexts.Workspaces,
-                "board" => SourceContexts.Work,
-                "page" => SourceContexts.Docs,
-                "comment" => SourceContexts.Collaboration,
-                "mention" => SourceContexts.Collaboration,
-                "permission" => SourceContexts.Governance,
-                "role" => SourceContexts.Governance,
-                "subscription" => SourceContexts.Billing,
-                _ => SourceContexts.Integration,
+                "identity" => OutboxConstants.SourceContexts.Identity,
+                "account" => OutboxConstants.SourceContexts.Accounts,
+                "workspace" => OutboxConstants.SourceContexts.Workspaces,
+                "board" => OutboxConstants.SourceContexts.Work,
+                "page" => OutboxConstants.SourceContexts.Docs,
+                "comment" => OutboxConstants.SourceContexts.Collaboration,
+                "mention" => OutboxConstants.SourceContexts.Collaboration,
+                "permission" => OutboxConstants.SourceContexts.Governance,
+                "role" => OutboxConstants.SourceContexts.Governance,
+                "subscription" => OutboxConstants.SourceContexts.Billing,
+                _ => OutboxConstants.SourceContexts.Integration,
             };
         }
-        return SourceContexts.Integration;
+        return OutboxConstants.SourceContexts.Integration;
     }
 }
