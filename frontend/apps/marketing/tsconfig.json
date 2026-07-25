@@ -1,0 +1,16 @@
+{
+  "extends": "@notrelix/tsconfig/base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@/*": ["./*"],
+      "@notrelix/ui-web": ["../../packages/ui/web/src/index.ts"],
+      "@notrelix/ui-web/*": ["../../packages/ui/web/src/*"],
+      "@notrelix/ui-tokens": ["../../packages/ui/tokens/src/index.ts"],
+      "@notrelix/ui-tokens/*": ["../../packages/ui/tokens/src/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", "next-env.d.ts"],
+  "exclude": ["node_modules"]
+}

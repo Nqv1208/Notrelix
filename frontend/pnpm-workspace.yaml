@@ -1,7 +1,31 @@
-allowBuilds:
-  '@parcel/watcher': set this to true or false
-  '@swc/core': set this to true or false
-  msgpackr-extract: set this to true or false
-  msw: set this to true or false
-  sharp: set this to true or false
-  unrs-resolver: set this to true or false
+packages:
+  - "apps/*"
+  - "packages/foundation/*"
+  - "packages/runtimes/*"
+  - "packages/ui/*"
+  - "packages/product/*/*"
+  - "packages/features/*"
+  - "tooling/*"
+
+catalog:
+  "react": "^19.0.0"
+  "react-dom": "^19.0.0"
+  "typescript": "^5.7.0"
+  "vite": "^8.0.0"
+  "turbo": "^2.4.0"
+  "eslint": "^9.16.0"
+  "@eslint/eslintrc": "^3.2.0"
+  "eslint-config-next": "^15.1.0"
+  "prettier": "^3.4.2"
+  "vitest": "^3.0.0"
+  "zod": "^3.23.8"
+  "@tanstack/react-query": "^5.62.0"
+  "@tanstack/react-router": "^1.90.0"
+  "@tanstack/router-plugin": "^1.90.0"
+  "@tanstack/react-router-devtools": "^1.90.0"
+  "@vitejs/plugin-react": "^6.0.0"
+  "class-variance-authority": "^0.7.1"
+  "clsx": "^2.1.1"
+  "lucide-react": "^0.469.0"
+  "sonner": "^1.7.1"
+  "tailwind-merge": "^2.6.0"
