@@ -57,16 +57,26 @@ services:
         max-size: "20m"
         max-file: "5"
 
-  frontend:
+  frontend-marketing:
     build:
-      context: ./frontend
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
-        NEXT_PUBLIC_APP_ENV: production
+      context: .
+      dockerfile: frontend/Dockerfile.marketing
     restart: unless-stopped
     environment:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: "1"
+    depends_on:
+      - backend
+    networks:
+      - frontend-network
+
+  frontend-web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
     depends_on:
       - backend
     networks:
@@ -97,7 +107,8 @@ services:
       - ./infra/nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       - backend
-      - frontend
+      - frontend-marketing
+      - frontend-web
     networks:
       - backend-network
       - frontend-network

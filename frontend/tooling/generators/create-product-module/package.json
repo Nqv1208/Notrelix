@@ -1,0 +1,11 @@
+{
+  "name": "@notrelix/generator-product-module",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "generate": "node index.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

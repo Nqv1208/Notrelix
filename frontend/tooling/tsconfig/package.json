@@ -1,0 +1,12 @@
+{
+  "name": "@notrelix/tsconfig",
+  "version": "0.0.1",
+  "private": true,
+  "files": [
+    "base.json",
+    "react-library.json",
+    "web-app.json",
+    "mobile-app.json",
+    "node-tooling.json"
+  ]
+}

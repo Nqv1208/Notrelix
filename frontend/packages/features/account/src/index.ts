@@ -1,0 +1,12 @@
+/**
+ * @notrelix/features-account — Account feature package.
+ *
+ * Core types, services, query keys, and hooks.
+ */
+
+// Core exports
+export * from './core';
+export { accountQueryKeys } from './core/query/keys';
+
+// Web exports
+export { createUseUpdateProfile, createUseUpdatePreferences } from './web';
