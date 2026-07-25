@@ -1,15 +1,8 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import { Navigate, useParams } from '@tanstack/react-router';
+import { useAppRuntime } from '@notrelix/runtime-web';
 import { createUseWorkspaceList } from '@notrelix/features-workspace';
-import { env } from '@/config/env';
-import { api, endpoints } from '@notrelix/contracts';
 import { LoadingState } from '@notrelix/ui-web';
-
-const useWorkspaceList = createUseWorkspaceList({
-  api,
-  endpoints,
-  options: { mockMode: env.mockApi },
-});
 
 interface WorkspaceGuardProps {
   workspaceId?: string;
@@ -19,6 +12,23 @@ interface WorkspaceGuardProps {
 export function WorkspaceGuard({ workspaceId: propWorkspaceId, children }: WorkspaceGuardProps) {
   const { workspaceId: paramWorkspaceId } = useParams({ strict: false });
   const workspaceId = propWorkspaceId ?? paramWorkspaceId;
+
+  const { api: runtimeClient } = useAppRuntime();
+
+  /**
+   * Create the workspace list hook using the injected API client.
+   * `runtimeClient` is stable for the app lifetime, so this only runs once.
+   */
+  const useWorkspaceList = useMemo(
+    () =>
+      createUseWorkspaceList({
+        api: runtimeClient.api,
+        endpoints: runtimeClient.endpoints,
+        options: { mockMode: false },
+      }),
+    [runtimeClient],
+  );
+
   const { data: workspaces = [], isLoading } = useWorkspaceList();
 
   if (isLoading) {

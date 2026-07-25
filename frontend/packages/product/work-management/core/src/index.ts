@@ -30,3 +30,7 @@ export * from './mock/mock-delay'
 
 // Kanban types
 export * from './types/kanban-types'
+
+// Query keys (domain-owned, not in @notrelix/query)
+export { wmQueryKeys, queryKeys } from './queries/keys'
+

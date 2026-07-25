@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { queryKeys } from "@notrelix/query"
+import { queryKeys } from "@notrelix/work-management-core"
 import { cardApi } from "../api/item.api"
 import type { CardDetail } from "@notrelix/work-management-core"
 

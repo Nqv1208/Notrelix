@@ -22,6 +22,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
   }
 
   public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // Report to telemetry (error contains full detail — safe server-side)
     console.error('[GlobalErrorBoundary] Uncaught React Error:', error, errorInfo);
   }
 
@@ -44,7 +45,9 @@ export class GlobalErrorBoundary extends Component<Props, State> {
             </p>
             {this.state.error && (
               <pre className="text-xs bg-muted p-3 rounded-lg text-left overflow-auto max-h-32 font-mono">
-                {this.state.error.message}
+                {import.meta.env.PROD
+                  ? 'Error details are redacted in production. Check the browser console.'
+                  : this.state.error.message}
               </pre>
             )}
             <Button onClick={this.handleReset} className="w-full flex items-center justify-center gap-2">

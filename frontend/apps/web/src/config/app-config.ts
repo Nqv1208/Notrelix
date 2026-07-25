@@ -5,7 +5,7 @@ export const appConfig = {
     baseUrl: env.apiUrl,
   },
   realtime: {
-    url: env.realtimeUrl,
+    url: env.wsUrl,
   },
   urls: {
     app: env.appUrl,

@@ -2,7 +2,6 @@
  * @notrelix/wm-core — Work Management query keys.
  *
  * Type B data keys for boards, cards, and work management state.
- * These will eventually move to wm-state once the state package matures.
  */
 
 export const wmQueryKeys = {
@@ -23,4 +22,25 @@ export const wmQueryKeys = {
   cardFiles: (cardId: string) => ['cards', 'files', cardId] as const,
   cardComments: (cardId: string) => ['cards', 'comments', cardId] as const,
   cardActivity: (cardId: string) => ['cards', 'activity', cardId] as const,
+} as const;
+
+export const queryKeys = {
+  boards: {
+    all: wmQueryKeys.all,
+    list: wmQueryKeys.list,
+    workspaceList: wmQueryKeys.workspaceList,
+    fullBoard: wmQueryKeys.fullBoard,
+    view: (workspaceId: string, boardId: string) =>
+      ['boards', 'view', workspaceId, boardId] as const,
+    groups: wmQueryKeys.groups,
+    columns: wmQueryKeys.columns,
+  },
+  cards: {
+    detail: wmQueryKeys.cardDetail,
+    updates: wmQueryKeys.cardUpdates,
+    files: wmQueryKeys.cardFiles,
+    comments: wmQueryKeys.cardComments,
+    activity: wmQueryKeys.cardActivity,
+    checklists: (cardId: string) => ['cards', 'checklists', cardId] as const,
+  },
 } as const;

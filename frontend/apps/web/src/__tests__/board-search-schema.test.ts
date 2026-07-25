@@ -1,28 +1,48 @@
+/**
+ * Board Route Search Schema — Unit Tests
+ *
+ * Tests validate the PRODUCTION schema defined in router.tsx, not a local copy.
+ * This ensures tests actually guard the behavior of the deployed application.
+ */
 import { describe, it, expect } from 'vitest';
-import { z } from 'zod';
+import { boardSearchSchema } from '../router';
 
-const boardSearchSchema = z.object({
-  view: z.enum(['table', 'kanban', 'calendar', 'timeline']).default('table'),
-  filter: z.string().optional(),
-  sort: z.string().optional(),
-  item: z.string().optional(),
-});
+describe('boardSearchSchema (from router.tsx)', () => {
+  describe('view param', () => {
+    it('defaults to "kanban" when not provided', () => {
+      const parsed = boardSearchSchema.parse({});
+      expect(parsed.view).toBe('kanban');
+    });
 
-describe('Board Route Search Schema', () => {
-  it('parses empty search params with default view table', () => {
-    const parsed = boardSearchSchema.parse({});
-    expect(parsed.view).toBe('table');
+    it('accepts all valid view enum values', () => {
+      expect(boardSearchSchema.parse({ view: 'table' }).view).toBe('table');
+      expect(boardSearchSchema.parse({ view: 'kanban' }).view).toBe('kanban');
+      expect(boardSearchSchema.parse({ view: 'calendar' }).view).toBe('calendar');
+      expect(boardSearchSchema.parse({ view: 'timeline' }).view).toBe('timeline');
+    });
+
+    it('rejects invalid view values', () => {
+      expect(() => boardSearchSchema.parse({ view: 'list' })).toThrow();
+      expect(() => boardSearchSchema.parse({ view: 'gantt' })).toThrow();
+      expect(() => boardSearchSchema.parse({ view: '' })).toThrow();
+    });
   });
 
-  it('validates view enum values', () => {
-    expect(boardSearchSchema.parse({ view: 'kanban' }).view).toBe('kanban');
-    expect(boardSearchSchema.parse({ view: 'timeline' }).view).toBe('timeline');
-    expect(() => boardSearchSchema.parse({ view: 'invalid_view' })).toThrow();
-  });
+  describe('optional params', () => {
+    it('omits filter when not provided', () => {
+      const parsed = boardSearchSchema.parse({});
+      expect(parsed.filter).toBeUndefined();
+    });
 
-  it('parses optional filter and item params', () => {
-    const parsed = boardSearchSchema.parse({ filter: 'status=done', item: 'item-100' });
-    expect(parsed.filter).toBe('status=done');
-    expect(parsed.item).toBe('item-100');
+    it('preserves filter, sort and item when provided', () => {
+      const parsed = boardSearchSchema.parse({
+        filter: 'status=done',
+        sort: 'priority:asc',
+        item: 'item-100',
+      });
+      expect(parsed.filter).toBe('status=done');
+      expect(parsed.sort).toBe('priority:asc');
+      expect(parsed.item).toBe('item-100');
+    });
   });
 });

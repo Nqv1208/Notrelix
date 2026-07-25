@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { queryKeys } from "@notrelix/query"
+import { queryKeys } from "@notrelix/work-management-core"
 import { commentApi } from "../api/item-comments.api"
 import type { CreateCardUpdateInput } from "@notrelix/work-management-core"
 

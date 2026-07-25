@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { queryKeys } from "@notrelix/query"
+import { queryKeys } from "@notrelix/work-management-core"
 import { commentApi } from "../api/item-comments.api"
 
 export function useCardComments(cardId: string) {

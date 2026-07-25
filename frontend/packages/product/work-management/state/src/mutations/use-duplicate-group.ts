@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { queryKeys } from "@notrelix/query"
+import { queryKeys } from "@notrelix/work-management-core"
 import { groupApi } from "../api/group.api"
 
 export function useDuplicateGroup(boardId: string, workspaceId?: string) {

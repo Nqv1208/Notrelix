@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { queryKeys } from "@notrelix/query"
+import { queryKeys } from "@notrelix/work-management-core"
 import { cardApi } from "../api/item.api"
 import type { FullBoardResponse } from "@notrelix/work-management-core"
 

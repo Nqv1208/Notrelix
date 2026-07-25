@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { queryKeys } from "@notrelix/query"
+import { queryKeys } from "@notrelix/work-management-core"
 import { columnApi, type CreateColumnInput } from "../api/field.api"
 
 export function useCreateColumn(boardId: string, workspaceId?: string) {
