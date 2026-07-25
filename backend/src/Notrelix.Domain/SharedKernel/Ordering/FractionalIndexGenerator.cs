@@ -29,7 +29,7 @@ public static class FractionalIndexGenerator
     /// <summary>
     /// Generates a key strictly between <paramref name="lower"/> and
     /// <paramref name="upper"/>. Either bound may be null (unbounded).
-    /// If both bounds are provided and lower >= upper, they are auto-swapped.
+    /// Throws if both bounds are provided and lower >= upper.
     /// </summary>
     public static FractionalIndex GenerateKeyBetween(
         FractionalIndex? lower,
@@ -38,8 +38,7 @@ public static class FractionalIndexGenerator
         var a = lower?.Value;
         var b = upper?.Value;
 
-        if (a != null && b != null && StringComparer.Ordinal.Compare(a, b) >= 0)
-            (a, b) = (b, a);
+        ValidateBounds(a, b);
 
         var value = GenerateKeyBetweenCore(a, b);
 
@@ -49,6 +48,7 @@ public static class FractionalIndexGenerator
     /// <summary>
     /// Generates <paramref name="count"/> keys strictly between
     /// <paramref name="lower"/> and <paramref name="upper"/>, evenly distributed.
+    /// Throws if both bounds are provided and lower >= upper.
     /// </summary>
     public static IReadOnlyList<FractionalIndex> GenerateNKeysBetween(
         FractionalIndex? lower,
@@ -61,8 +61,7 @@ public static class FractionalIndexGenerator
         var a = lower?.Value;
         var b = upper?.Value;
 
-        if (a != null && b != null && StringComparer.Ordinal.Compare(a, b) >= 0)
-            (a, b) = (b, a);
+        ValidateBounds(a, b);
 
         var values = GenerateNKeysBetweenCore(a, b, count);
 
@@ -71,6 +70,13 @@ public static class FractionalIndexGenerator
             results[i] = FractionalIndex.Create(values[i]);
 
         return results;
+    }
+
+    private static void ValidateBounds(string? a, string? b)
+    {
+        if (a != null && b != null && StringComparer.Ordinal.Compare(a, b) >= 0)
+            throw new ArgumentException(
+                $"Lower bound ({a}) must be less than upper bound ({b}).");
     }
 
     /// <summary>
@@ -163,7 +169,6 @@ public static class FractionalIndexGenerator
             {
                 result[i] = GenerateKeyBetweenCore(a, result[i + 1]);
             }
-            result.Reverse();
             return result;
         }
 

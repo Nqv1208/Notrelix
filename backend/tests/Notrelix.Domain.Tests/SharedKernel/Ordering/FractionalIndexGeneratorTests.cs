@@ -30,7 +30,13 @@ public class FractionalIndexGeneratorTests
     [Fact] public void Upstream_Zz_a01() => AssertGenerate("Zz", "a01", "a0");
     [Fact] public void Upstream_Null_a0V() => AssertGenerate(null, "a0V", "a0");
     [Fact] public void Upstream_Null_b999() => AssertGenerate(null, "b999", "b99");
-    [Fact] public void Upstream_Reversed_a1_a0() => AssertGenerate("a1", "a0", "a0V");
+    [Fact] public void Upstream_Reversed_a1_a0_Throws()
+    {
+        var act = () => FractionalIndexGenerator.GenerateKeyBetween(
+            FractionalIndex.Create("a1"), FractionalIndex.Create("a0"));
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*Lower bound*must be less than upper bound*");
+    }
 
     [Fact]
     public void Upstream_Null_A00000000000000000000000000_Throws()
@@ -193,12 +199,27 @@ public class FractionalIndexGeneratorTests
     }
 
     [Fact]
-    public void ReversedBounds_AreAutoSwapped()
+    public void ReversedBounds_Throw()
     {
         var lower = FractionalIndex.Create("a1");
         var upper = FractionalIndex.Create("a0");
-        var key = FractionalIndexGenerator.GenerateKeyBetween(lower, upper);
-        key.Value.Should().Be("a0V");
+
+        var act = () => FractionalIndexGenerator.GenerateKeyBetween(lower, upper);
+
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*Lower bound*must be less than upper bound*");
+    }
+
+    [Fact]
+    public void EqualBounds_Throw()
+    {
+        var lower = FractionalIndex.Create("a0");
+        var upper = FractionalIndex.Create("a0");
+
+        var act = () => FractionalIndexGenerator.GenerateKeyBetween(lower, upper);
+
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*Lower bound*must be less than upper bound*");
     }
 
     [Fact]
