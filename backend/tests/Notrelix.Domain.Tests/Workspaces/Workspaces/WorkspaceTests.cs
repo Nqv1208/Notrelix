@@ -1,7 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Tests.Freeze;
-using Notrelix.Domain.Workspaces.Workspaces;
-using Notrelix.Domain.Workspaces.Members;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 

@@ -1,7 +1,6 @@
 using Notrelix.Domain.Analytics.Dashboards.Events;
 using Notrelix.Domain.Analytics.Rules;
 using Notrelix.Domain.Analytics.Widgets;
-using static Notrelix.Domain.Common.Exceptions.CommonRuleCodes;
 using static Notrelix.Domain.Analytics.AnalyticsRuleCodes;
 
 namespace Notrelix.Domain.Analytics.Dashboards;

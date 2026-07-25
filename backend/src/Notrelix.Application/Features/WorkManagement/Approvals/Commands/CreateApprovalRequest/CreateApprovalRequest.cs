@@ -62,7 +62,7 @@ public class CreateApprovalRequestCommandHandler : IRequestHandler<CreateApprova
             for (var i = 0; i < request.Steps.Count; i++)
             {
                 var step = request.Steps[i];
-                approvalRequest.AddStep(i, step.ApproverUserId, step.ApproverTeamId);
+                approvalRequest.AddStep(i + 1, _requestContext.UserId, now, step.ApproverUserId, step.ApproverTeamId);
             }
         }
 

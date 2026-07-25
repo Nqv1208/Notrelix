@@ -1,6 +1,7 @@
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DeleteBoardGroup;
 using NotFoundException = Notrelix.Application.Common.Exceptions.NotFoundException;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement.BoardGroups;
 
 public class DeleteBoardGroupTests : WorkManagementHandlerTestBase

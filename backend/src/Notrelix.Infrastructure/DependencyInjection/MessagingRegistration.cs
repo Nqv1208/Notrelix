@@ -1,6 +1,8 @@
+using Notrelix.Application.Common.Exceptions;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Infrastructure.Messaging;
 using Notrelix.Infrastructure.Messaging.Options;
+using BusinessRuleException = Notrelix.Domain.Common.Exceptions.BusinessRuleException;
 
 namespace Notrelix.Infrastructure;
 
@@ -89,7 +91,7 @@ public static class MessagingRegistration
                             r.Ignore<DomainException>();
                             r.Ignore<NotFoundException>();
                             r.Ignore<ForbiddenException>();
-                            r.Ignore<BusinessRuleException>();
+                            r.Ignore<Domain.Common.Exceptions.BusinessRuleException>();
                         });
 
                         rbt.UseCircuitBreaker(cb =>

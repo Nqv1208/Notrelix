@@ -242,7 +242,7 @@ public class PermissionServiceTests : IAsyncLifetime
         var groupId = Guid.NewGuid();
         var creatorId = Guid.NewGuid();
 
-        var item = BoardItem.Create(Guid.NewGuid(), workspaceId, boardId, groupId, "Enterprise Item", Notrelix.Domain.SharedKernel.FractionalIndex.Initial(), creatorId, Now);
+        var item = BoardItem.Create(Guid.NewGuid(), workspaceId, boardId, groupId, "Enterprise Item", Notrelix.Domain.SharedKernel.Ordering.FractionalIndex.Initial(), creatorId, Now);
 
         item.Rename("Renamed Item", creatorId, Now);
 

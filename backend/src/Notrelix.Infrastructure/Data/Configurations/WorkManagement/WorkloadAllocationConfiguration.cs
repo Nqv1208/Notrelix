@@ -18,7 +18,6 @@ public class WorkloadAllocationConfiguration : IEntityTypeConfiguration<Workload
         builder.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(x => x.AllocationDate).HasColumnName("allocation_date").HasColumnType("date").IsRequired();
         builder.Property(x => x.AllocatedMinutes).HasColumnName("allocated_minutes");
-        builder.Property(x => x.Version).HasColumnName("version");
 
         builder.HasIndex(x => new { x.UserId, x.AllocationDate }).HasDatabaseName("idx_workload_allocations_user_date");
         builder.HasIndex(x => x.ItemId).HasDatabaseName("idx_workload_allocations_item_id");

@@ -2,6 +2,7 @@ using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ReorderBoardGroups;
 
 public record ReorderBoardGroupsCommand(Guid BoardId, List<ReorderItem> Items, string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
@@ -38,7 +39,7 @@ public class ReorderBoardGroupsCommandHandler : IRequestHandler<ReorderBoardGrou
             throw new NotFoundException(nameof(BoardGroup), string.Join(",", itemIds));
 
         if (lists.Any(list => list.BoardId != request.BoardId))
-            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleViolationException("ListBoardMismatch", "All reordered groups must belong to the requested board.");
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException("ListBoardMismatch", "All reordered groups must belong to the requested board.");
 
         var now = _dateTimeProvider.UtcNow;
         var positionsById = request.Items.ToDictionary(item => item.Id, item => item.NewPosition);

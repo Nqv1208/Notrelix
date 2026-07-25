@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.WorkManagement.Checklists.Queries.GetChecklists;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement.Checklists;
 
 public class GetChecklistsTests : WorkManagementHandlerTestBase

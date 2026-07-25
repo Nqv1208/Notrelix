@@ -1,6 +1,7 @@
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem;
 
 public record MoveBoardItemCommand(

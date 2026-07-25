@@ -22,12 +22,6 @@ public class EmailVerificationTokenConfiguration : IEntityTypeConfiguration<Emai
         builder.Property(x => x.RevokedAt).HasColumnName("revoked_at");
         builder.Property(x => x.RevocationReason).HasColumnName("revocation_reason").HasMaxLength(256);
 
-        builder.Ignore(x => x.IsDeleted);
-        builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
-        builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
-        builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
-        builder.Property(x => x.RestoredAt).HasColumnName("restored_at");
-        builder.Property(x => x.RestoredBy).HasColumnName("restored_by");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
@@ -36,8 +30,8 @@ public class EmailVerificationTokenConfiguration : IEntityTypeConfiguration<Emai
         builder.HasIndex(x => x.UserId).HasDatabaseName("idx_email_verification_tokens_user_id");
         builder.HasIndex(x => x.UserId)
             .IsUnique()
-            .HasFilter("status = 'Active' AND deleted_at IS NULL")
+            .HasFilter("status = 'Active'")
             .HasDatabaseName("ux_email_verification_tokens_one_active_per_user");
-        builder.HasIndex(x => x.ExpiresAt).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_email_verification_tokens_expires");
+        builder.HasIndex(x => x.ExpiresAt).HasDatabaseName("idx_email_verification_tokens_expires");
     }
 }

@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Workspaces.Workspaces;

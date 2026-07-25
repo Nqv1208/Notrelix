@@ -1,5 +1,4 @@
 using Notrelix.Domain.Collaboration.Comments.Events;
-using static Notrelix.Domain.Common.Exceptions.CommonRuleCodes;
 namespace Notrelix.Domain.Collaboration.Comments;
 
 public class Comment : SoftDeletableAggregateRoot, IWorkspaceScoped

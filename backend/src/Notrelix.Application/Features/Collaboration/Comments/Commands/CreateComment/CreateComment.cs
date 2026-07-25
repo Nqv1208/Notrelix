@@ -1,5 +1,6 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Collaboration.Abstractions;
+using Notrelix.Domain.Collaboration.Comments;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 
@@ -30,7 +31,25 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
             ?? throw new NotFoundException(request.ResourceType.ToString(), request.ResourceId);
 
         var target = ResourceRef.Create(request.ResourceType, request.ResourceId, workspaceId);
-        var comment = Comment.Create(_requestContext.RequireAccountId(), workspaceId, target, request.ContentMd, _requestContext.UserId, _dateTimeProvider.UtcNow, parentId: request.ParentCommentId);
+        var now = _dateTimeProvider.UtcNow;
+        var accountId = _requestContext.RequireAccountId();
+        var userId = _requestContext.UserId;
+
+        Comment comment;
+        if (request.ParentCommentId is null)
+        {
+            comment = Comment.Create(accountId, workspaceId, target, request.ContentMd, userId, now);
+        }
+        else
+        {
+            var parentComment = await _context.Comments
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == request.ParentCommentId.Value && !c.IsDeleted, ct)
+                ?? throw new NotFoundException(nameof(Comment), request.ParentCommentId.Value);
+
+            var parentContext = ParentCommentContext.Create(parentComment.Id, parentComment.Target);
+            comment = Comment.CreateReply(accountId, workspaceId, target, request.ContentMd, userId, now, parentContext);
+        }
 
         _context.Comments.Add(comment);
         return Result<Guid>.Success(comment.Id);

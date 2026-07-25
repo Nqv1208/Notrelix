@@ -1,7 +1,5 @@
 using FluentAssertions;
-using Notrelix.Domain.Integrations;
 using Notrelix.Domain.Integrations.Connections;
-using Notrelix.Domain.Integrations.Connections.Events;
 
 namespace Notrelix.Domain.Tests.Integrations.Connections;
 

@@ -7,7 +7,6 @@ using Notrelix.Application.Features.Identity.OAuth.DTOs;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
-using Notrelix.Domain.Identity.OAuth;
 
 namespace Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthLogin;
 

@@ -5,7 +5,6 @@ using Notrelix.Domain.Analytics;
 using Notrelix.Domain.Automation;
 using Notrelix.Domain.Billing;
 using Notrelix.Domain.Collaboration;
-using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Documents;
 using Notrelix.Domain.Governance;
 using Notrelix.Domain.Identity;

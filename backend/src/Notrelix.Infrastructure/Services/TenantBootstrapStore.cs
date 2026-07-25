@@ -1,4 +1,5 @@
 using System.Data;
+using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Infrastructure.Data;

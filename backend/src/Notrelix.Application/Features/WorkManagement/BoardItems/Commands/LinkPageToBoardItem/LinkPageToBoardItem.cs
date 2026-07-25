@@ -42,7 +42,7 @@ public class LinkPageToBoardItemCommandHandler : IRequestHandler<LinkPageToBoard
             throw new NotFoundException(nameof(Page), request.PageId);
 
         if (card.WorkspaceId != pageWorkspaceId.Value)
-            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleViolationException("CardPageWorkspaceMismatch", "BoardItem chỉ được link với page cùng workspace.");
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException("CardPageWorkspaceMismatch", "BoardItem chỉ được link với page cùng workspace.");
 
         var now = _timeProvider.UtcNow;
 

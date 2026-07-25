@@ -132,7 +132,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
             throw new NotFoundException(nameof(Page), pageId);
 
         if (pageWorkspaceId.Value != boardWorkspaceId)
-            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleViolationException(
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
                 "CardPageSameWorkspace",
                 "BoardItem can only be linked to a page in the same workspace.");
     }

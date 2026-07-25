@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Workspaces.Teams;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 

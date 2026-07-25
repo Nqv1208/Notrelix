@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Notrelix.Domain.Identity;
 
 namespace Notrelix.Domain.Identity.OAuth;
 

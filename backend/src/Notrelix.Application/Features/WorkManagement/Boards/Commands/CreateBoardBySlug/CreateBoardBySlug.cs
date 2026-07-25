@@ -3,6 +3,7 @@ using BoardFieldEntity = global::Notrelix.Domain.WorkManagement.Fields.BoardFiel
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardBySlug;
 
 public record CreateBoardBySlugCommand(string Slug, string Title, string? Description, string? Background, BoardVisibility? Visibility, string? IdempotencyKey = null) : ICommand<Result<Guid>>, ITransactionalRequest, IIdempotentRequest

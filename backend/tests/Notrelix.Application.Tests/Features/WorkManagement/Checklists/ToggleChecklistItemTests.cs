@@ -1,6 +1,7 @@
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.ToggleChecklistItem;
 using Notrelix.Domain.WorkManagement.Checklists;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement.Checklists;
 
 public class ToggleChecklistItemTests : WorkManagementHandlerTestBase

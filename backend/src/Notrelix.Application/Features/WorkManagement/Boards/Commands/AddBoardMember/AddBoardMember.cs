@@ -41,7 +41,7 @@ public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberComman
         var access = await _workspaceAccess.ResolveAsync(board.WorkspaceId, request.UserId, ct);
         if (!access.CanAccess)
         {
-            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleViolationException(
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
                 "BoardMemberMustBelongToWorkspace",
                 "Board member must belong to the same workspace.");
         }

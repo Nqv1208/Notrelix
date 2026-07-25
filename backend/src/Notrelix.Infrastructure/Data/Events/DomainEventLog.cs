@@ -74,21 +74,20 @@ public sealed class DomainEventLog
         var payloadJson = JsonSerializer.SerializeToDocument(domainEvent, domainEvent.GetType(), JsonOptions);
 
         Guid? workspaceId = domainEvent is IWorkspaceScoped ws ? ws.WorkspaceId : null;
-        Guid? actorUserId = null;
 
         return new DomainEventLog(
             eventId: domainEvent.EventId,
-            sourceContext: domainEvent.SourceContext,
+            sourceContext: domainEvent.GetType().Namespace ?? "Notrelix.Domain",
             eventName: eventName,
-            eventVersion: domainEvent.EventVersion,
-            aggregateType: domainEvent.AggregateType,
-            aggregateId: domainEvent.AggregateId,
-            subjectType: domainEvent.SubjectType,
-            subjectId: domainEvent.SubjectId,
+            eventVersion: 1,
+            aggregateType: null,
+            aggregateId: null,
+            subjectType: null,
+            subjectId: null,
             workspaceId: workspaceId,
-            actorUserId: actorUserId,
-            correlationId: domainEvent.CorrelationId,
-            causationId: domainEvent.CausationId,
+            actorUserId: null,
+            correlationId: null,
+            causationId: null,
             occurredAt: domainEvent.OccurredAt,
             recordedAt: now,
             payloadJson: payloadJson,

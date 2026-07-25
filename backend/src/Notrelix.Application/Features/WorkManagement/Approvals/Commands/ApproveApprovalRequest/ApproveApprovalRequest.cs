@@ -39,7 +39,14 @@ public class ApproveApprovalRequestCommandHandler : IRequestHandler<ApproveAppro
             .FirstOrDefaultAsync(r => r.Id == request.RequestId, ct);
         if (approvalRequest is null) throw new NotFoundException("ApprovalRequest", request.RequestId);
 
-        approvalRequest.Approve(_requestContext.UserId, _dateTimeProvider.UtcNow, request.Note);
+        var userId = _requestContext.UserId;
+        var now = _dateTimeProvider.UtcNow;
+        var step = approvalRequest.Steps
+            .FirstOrDefault(s => s.Status == ApprovalStatus.Pending && s.ApproverUserId == userId);
+        if (step is null)
+            return Result.Failure("No pending approval step assigned to the current user.");
+
+        approvalRequest.Approve(step.Id, userId, now, request.Note);
         return Result.Success();
     }
 }

@@ -1,5 +1,3 @@
-using System;
-
 namespace Notrelix.Domain.Tests.Freeze;
 
 /// <summary>

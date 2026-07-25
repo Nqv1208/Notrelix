@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using static Notrelix.Domain.Common.Exceptions.CommonRuleCodes;
 
 namespace Notrelix.Domain.Common;
 

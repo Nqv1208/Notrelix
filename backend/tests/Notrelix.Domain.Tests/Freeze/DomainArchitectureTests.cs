@@ -249,10 +249,10 @@ public class DomainArchitectureTests
         foreach (var type in domainTypes)
         {
             // Skip records, DTOs, snapshots, and attribute classes
-            if (IsRecord(type) || 
-                type.Name.EndsWith("Result") || 
-                type.Name.EndsWith("Response") || 
-                type.Name.EndsWith("Output") || 
+            if (IsRecord(type) ||
+                type.Name.EndsWith("Result") ||
+                type.Name.EndsWith("Response") ||
+                type.Name.EndsWith("Output") ||
                 type.Name.EndsWith("Dto") ||
                 type.Name.EndsWith("Snapshot") ||
                 type.Name.EndsWith("Attribute") ||
@@ -463,7 +463,7 @@ public class DomainArchitectureTests
             return false;
 
         var name = type.Name;
-        if (name.EndsWith("Result") || name.EndsWith("Response") || name.EndsWith("Output") || 
+        if (name.EndsWith("Result") || name.EndsWith("Response") || name.EndsWith("Output") ||
             name.EndsWith("Dto") || name.EndsWith("Snapshot") || name.EndsWith("ViewModel"))
             return true;
 
@@ -480,22 +480,22 @@ public class DomainArchitectureTests
         // They also typically have init-only properties and are sealed
         if (!type.IsClass || !type.IsSealed)
             return false;
-        
+
         // Check for record-specific Clone method
         var hasClone = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .Any(m => m.Name.Contains("Clone"));
-        
+
         // Records typically have IEquatable<T> where T is the record type itself
         var hasEquatable = type.GetInterfaces()
             .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEquatable<>) && i.GetGenericArguments()[0] == type);
-        
+
         return hasClone || hasEquatable;
     }
 
     private static bool IsConcreteEntityOrAggregate(Type type)
     {
         if (!type.IsClass || type.IsAbstract) return false;
-        
+
         // Allow DTO/Result/Snapshot types to hold entity references
         if (IsDtoOrResultType(type))
             return false;

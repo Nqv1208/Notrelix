@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.WorkManagement.BoardSchema.Queries.GetBoardSchema;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement.BoardSchema;
 
 public class GetBoardSchemaTests : WorkManagementHandlerTestBase

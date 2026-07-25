@@ -11,6 +11,8 @@ using Notrelix.Infrastructure.Data;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
+using Notrelix.Domain.Common;
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Integration.Tests.Boards;
 
 [Collection("Database")]
@@ -77,7 +79,7 @@ public class UpdateBoardItemFieldValuesCommandHandlerTests : IAsyncLifetime
         context.FieldOptions.Add(doneOption);
         await context.SaveChangesAsync();
 
-        boardItem.ClearDomainEvents();
+        ((IHasDomainEvents)boardItem).ClearDomainEvents();
 
         return (boardItem, statusField, doneOption);
     }

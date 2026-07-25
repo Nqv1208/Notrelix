@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.WorkManagement.FieldOptions.Commands.UpdateFieldOption;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement.FieldOptions;
 
 public class UpdateFieldOptionTests : WorkManagementHandlerTestBase
@@ -47,7 +48,7 @@ public class UpdateFieldOptionTests : WorkManagementHandlerTestBase
         var command = new UpdateFieldOptionCommand(field.Id, Guid.CreateVersion7(), "New Name", "#00FF00");
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
-            .Should().ThrowAsync<Domain.Common.Exceptions.NotFoundException>();
+            .Should().ThrowAsync<Application.Common.Exceptions.NotFoundException>();
     }
 
     private BoardField CreateBoardField(FieldType type)

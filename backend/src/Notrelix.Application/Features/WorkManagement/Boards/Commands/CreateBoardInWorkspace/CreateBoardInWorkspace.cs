@@ -3,6 +3,7 @@ using BoardFieldEntity = global::Notrelix.Domain.WorkManagement.Fields.BoardFiel
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace;
 
 public record CreateBoardInWorkspaceCommand(

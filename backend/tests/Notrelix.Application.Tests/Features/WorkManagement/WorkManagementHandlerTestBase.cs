@@ -7,6 +7,7 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Domain.WorkManagement.Checklists;
 using Notrelix.Domain.WorkManagement.Forms;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement;
 
 public abstract class WorkManagementHandlerTestBase
@@ -123,10 +124,15 @@ public abstract class WorkManagementHandlerTestBase
             TestNow);
         if (id.HasValue)
             request.GetType().GetProperty(nameof(ApprovalRequest.Id))!.SetValue(request, id.Value);
-        if (status == ApprovalStatus.Approved)
-            request.Approve(TestUserId, TestNow);
-        else if (status == ApprovalStatus.Rejected)
-            request.Reject(TestUserId, TestNow);
+        if (status == ApprovalStatus.Approved || status == ApprovalStatus.Rejected)
+        {
+            request.AddStep(1, TestUserId, TestNow, approverUserId: TestUserId);
+            var step = request.Steps.First();
+            if (status == ApprovalStatus.Approved)
+                request.Approve(step.Id, TestUserId, TestNow);
+            else
+                request.Reject(step.Id, TestUserId, TestNow);
+        }
         else if (status == ApprovalStatus.Cancelled)
             request.Cancel(TestUserId, TestNow);
         if (isDeleted)

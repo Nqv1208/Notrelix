@@ -1,4 +1,5 @@
 using System.Reflection;
+using Notrelix.Domain.Billing.Common;
 using Notrelix.Domain.Common;
 
 namespace Notrelix.Architecture.Tests;
@@ -141,9 +142,6 @@ public class DomainHardeningArchitectureTests
             if (typeof(IWorkspaceScoped).IsAssignableFrom(type))
                 continue;
 
-            if (typeof(WorkspaceRootDomainEvent).IsAssignableFrom(type))
-                continue;
-
             if (WorkspaceScopeAllowlist.ContainsKey(type.Name))
                 continue;
 
@@ -151,8 +149,8 @@ public class DomainHardeningArchitectureTests
         }
 
         violations.Should().BeEmpty(
-            "Domain types with required WorkspaceId must implement IWorkspaceScoped, " +
-            "inherit WorkspaceRootDomainEvent, or be classified. " +
+            "Domain types with required WorkspaceId must implement IWorkspaceScoped " +
+            "or be classified. " +
             $"Violations: {string.Join(", ", violations)}");
     }
 
@@ -166,19 +164,18 @@ public class DomainHardeningArchitectureTests
                                                    && typeof(DomainEvent).IsAssignableFrom(t)))
         {
             var inheritsScoped = typeof(WorkspaceScopedDomainEvent).IsAssignableFrom(type);
-            var inheritsRoot = typeof(WorkspaceRootDomainEvent).IsAssignableFrom(type);
             var inheritsGlobal = typeof(GlobalDomainEvent).IsAssignableFrom(type);
             var inheritsBillingAccount = typeof(BillingAccountScopedDomainEvent).IsAssignableFrom(type);
             var inheritsAccount = typeof(AccountScopedDomainEvent).IsAssignableFrom(type);
 
-            if (!inheritsScoped && !inheritsRoot && !inheritsGlobal && !inheritsBillingAccount && !inheritsAccount)
+            if (!inheritsScoped && !inheritsGlobal && !inheritsBillingAccount && !inheritsAccount)
             {
                 violations.Add($"{type.FullName} inherits DomainEvent directly — should use scoped base");
             }
         }
 
         violations.Should().BeEmpty(
-            "All concrete DomainEvents must inherit from GlobalDomainEvent, WorkspaceRootDomainEvent, " +
+            "All concrete DomainEvents must inherit from GlobalDomainEvent, " +
             "WorkspaceScopedDomainEvent, AccountScopedDomainEvent, or BillingAccountScopedDomainEvent — not directly from DomainEvent. " +
             $"Violations: {string.Join(", ", violations)}");
     }

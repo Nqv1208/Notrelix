@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Tests.Freeze;
-using Notrelix.Domain.Identity.Users;
 
 namespace Notrelix.Domain.Tests.Identity;
 

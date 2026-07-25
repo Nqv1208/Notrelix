@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.WorkManagement.FieldOptions.Commands.DeleteFieldOption;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement.FieldOptions;
 
 public class DeleteFieldOptionTests : WorkManagementHandlerTestBase
@@ -47,7 +48,7 @@ public class DeleteFieldOptionTests : WorkManagementHandlerTestBase
         var command = new DeleteFieldOptionCommand(field.Id, Guid.CreateVersion7());
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
-            .Should().ThrowAsync<Domain.Common.Exceptions.NotFoundException>();
+            .Should().ThrowAsync<Application.Common.Exceptions.NotFoundException>();
     }
 
     private BoardField CreateBoardField(FieldType type)

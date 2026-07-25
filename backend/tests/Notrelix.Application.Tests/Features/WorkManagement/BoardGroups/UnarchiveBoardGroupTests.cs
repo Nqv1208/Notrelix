@@ -2,6 +2,7 @@ using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.Unarchiv
 using DomainException = Notrelix.Domain.Common.Exceptions.DomainException;
 using NotFoundException = Notrelix.Application.Common.Exceptions.NotFoundException;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement.BoardGroups;
 
 public class UnarchiveBoardGroupTests : WorkManagementHandlerTestBase

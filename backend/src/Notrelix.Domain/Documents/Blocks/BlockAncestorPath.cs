@@ -16,9 +16,6 @@ public sealed class BlockAncestorPath : ValueObject
         Guard.NotEmpty(targetParentId);
         Guard.NotNull(ancestorIds);
 
-        if (ancestorIds.Count == 0)
-            throw new BusinessRuleException(DocumentRuleCodes.Documents_BlockTree_AncestorPathEmpty, "Ancestor path must not be empty.");
-
         if (ancestorIds.Any(id => id == Guid.Empty))
             throw new BusinessRuleException(DocumentRuleCodes.Documents_BlockTree_AncestorPathContainsEmptyId, "Ancestor path must not contain empty GUIDs.");
 
