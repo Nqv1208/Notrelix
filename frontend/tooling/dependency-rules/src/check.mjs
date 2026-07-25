@@ -40,6 +40,13 @@ function walkDir(dir, exts = [".ts", ".tsx"]) {
   return results
 }
 
+function stripComments(code) {
+  return code
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\/\/.*/g, "")
+}
+
+
 function findPackageDirs(base, depth = 0) {
   const results = []
   try {
@@ -156,7 +163,8 @@ function main() {
     const files = walkDir(pkgDir);
 
     for (const file of files) {
-      const content = readFileSync(file, "utf8")
+      const rawContent = readFileSync(file, "utf8")
+      const content = stripComments(rawContent)
       const relPath = file.replace(root, "")
 
       if (isPackageSourceFile(file, root)) {
