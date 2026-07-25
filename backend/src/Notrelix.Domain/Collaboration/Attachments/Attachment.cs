@@ -1,7 +1,7 @@
 using Notrelix.Domain.Collaboration.Attachments.Events;
 namespace Notrelix.Domain.Collaboration.Attachments;
 
-public class Attachment : AggregateRoot, IWorkspaceScoped
+public class Attachment : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -19,7 +19,7 @@ public class Attachment : AggregateRoot, IWorkspaceScoped
         Guard.NotNull(metadata);
 
         if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
-            throw new BusinessRuleException(BusinessRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{workspaceId}', got '{target.WorkspaceId.Value}'.");
+            throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{workspaceId}', got '{target.WorkspaceId.Value}'.");
 
         var attachment = new Attachment
         {

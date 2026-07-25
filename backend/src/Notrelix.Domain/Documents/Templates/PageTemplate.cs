@@ -27,16 +27,15 @@ public class PageTemplate : AggregateRoot
             Status = PageTemplateStatus.Draft
         };
 
-        template.SetAuditOnCreate(createdBy ?? Guid.Empty, createdAt);
+        template.SetAuditOnCreate(createdBy, createdAt);
         template.RaiseDomainEvent(new PageTemplateCreatedDomainEvent(template.Id, template.Name, createdAt));
         return template;
     }
 
     public void Publish(Guid publishedBy, DateTimeOffset publishedAt)
     {
-        EnsureNotDeleted();
         if (Status == PageTemplateStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.Documents_PageTemplate_CannotPublishArchived, "Cannot publish an archived template.");
+            throw new BusinessRuleException(DocumentRuleCodes.Documents_PageTemplate_CannotPublishArchived, "Cannot publish an archived template.");
 
         if (Status == PageTemplateStatus.Published) return;
 
@@ -48,7 +47,6 @@ public class PageTemplate : AggregateRoot
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
-        EnsureNotDeleted();
         if (Status == PageTemplateStatus.Archived) return;
 
         Status = PageTemplateStatus.Archived;

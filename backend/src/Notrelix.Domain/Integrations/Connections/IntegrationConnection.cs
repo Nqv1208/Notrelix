@@ -1,5 +1,5 @@
 using Notrelix.Domain.Integrations.Connections.Events;
-using static Notrelix.Domain.Common.Exceptions.BusinessRuleCodes;
+using static Notrelix.Domain.Integrations.IntegrationRuleCodes;
 
 namespace Notrelix.Domain.Integrations.Connections;
 
@@ -48,13 +48,14 @@ public class IntegrationSecretVersion : Entity
     }
 }
 
-public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
+public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public IntegrationProvider Provider { get; private set; }
     public IntegrationConnectionStatus Status { get; private set; }
     public string? ProviderAccountId { get; private set; }
+    public string? ErrorDetail { get; private set; }
     public DateTimeOffset? ExpiresAt { get; private set; }
 
     private readonly List<IntegrationScope> _scopes = new();
@@ -140,8 +141,9 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
     public void MarkError(string error, Guid updatedBy, DateTimeOffset occurredAt)
     {
         EnsureNotDeleted();
-        if (Status == IntegrationConnectionStatus.Error) return;
+        Guard.NotNullOrWhiteSpace(error);
 
+        ErrorDetail = error;
         Status = IntegrationConnectionStatus.Error;
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
@@ -170,25 +172,27 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(scope);
-        if (_scopes.Any(s => s.Scope == scope)) return;
+        var trimmedScope = scope.Trim();
+        if (_scopes.Any(s => s.Scope == trimmedScope)) return;
 
-        _scopes.Add(IntegrationScope.Create(Id, scope));
+        _scopes.Add(IntegrationScope.Create(Id, trimmedScope));
         SetAuditOnUpdate(addedBy, occurredAt);
         IncrementVersion();
-        RaiseDomainEvent(new IntegrationScopeAddedDomainEvent(AccountId, WorkspaceId, Id, scope, addedBy, occurredAt));
+        RaiseDomainEvent(new IntegrationScopeAddedDomainEvent(AccountId, WorkspaceId, Id, trimmedScope, addedBy, occurredAt));
     }
 
     public void RemoveScope(string scope, Guid removedBy, DateTimeOffset occurredAt)
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(scope);
-        var scopeObj = _scopes.FirstOrDefault(s => s.Scope == scope);
+        var trimmedScope = scope.Trim();
+        var scopeObj = _scopes.FirstOrDefault(s => s.Scope == trimmedScope);
         if (scopeObj == null) return;
 
         _scopes.Remove(scopeObj);
         SetAuditOnUpdate(removedBy, occurredAt);
         IncrementVersion();
-        RaiseDomainEvent(new IntegrationScopeRemovedDomainEvent(AccountId, WorkspaceId, Id, scope, removedBy, occurredAt));
+        RaiseDomainEvent(new IntegrationScopeRemovedDomainEvent(AccountId, WorkspaceId, Id, trimmedScope, removedBy, occurredAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -196,8 +200,9 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
         if (IsDeleted) return;
         Status = IntegrationConnectionStatus.Revoked;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
+        SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        RaiseDomainEvent(new IntegrationConnectionRevokedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new IntegrationConnectionDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -205,7 +210,8 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
         if (!IsDeleted) return;
         Status = IntegrationConnectionStatus.Active;
         if (!MarkRestored(restoredBy, restoredAt)) return;
+        SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        RaiseDomainEvent(new IntegrationConnectionReauthorizedDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new IntegrationConnectionRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

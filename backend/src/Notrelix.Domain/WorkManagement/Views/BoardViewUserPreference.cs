@@ -1,7 +1,7 @@
 using Notrelix.Domain.WorkManagement.Views.Events;
 namespace Notrelix.Domain.WorkManagement.Views;
 
-public class BoardViewUserPreference : AggregateRoot, IWorkspaceScoped
+public class BoardViewUserPreference : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     private readonly List<FilterRule> _filterRules = new();
     private readonly List<SortRule> _sortRules = new();

@@ -5,7 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Notrelix.Infrastructure" />
     <InternalsVisibleTo Include="Notrelix.Domain.Tests" />
   </ItemGroup>
 

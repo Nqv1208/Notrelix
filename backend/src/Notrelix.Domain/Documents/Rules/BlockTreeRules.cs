@@ -1,21 +1,18 @@
+using Notrelix.Domain.Documents.Blocks;
+
 namespace Notrelix.Domain.Documents.Rules;
 
 public static class BlockTreeRules
 {
-    public static void EnsureNoCycle(Guid blockId, Guid? targetParentId, Func<Guid, Guid?> getParentId)
+    public static void EnsureNoCycle(Guid blockId, BlockAncestorPath ancestorPath)
     {
-        if (targetParentId is null) return;
-        if (blockId == targetParentId.Value)
-            throw new BusinessRuleException(BusinessRuleCodes.Documents_BlockTree_CannotBeOwnParent, "A block cannot be its own parent.");
+        if (blockId == ancestorPath.TargetParentId)
+            throw new BusinessRuleException(DocumentRuleCodes.Documents_BlockTree_CannotBeOwnParent, "A block cannot be its own parent.");
 
-        var current = targetParentId.Value;
-        while (true)
+        foreach (var ancestorId in ancestorPath.AncestorIds)
         {
-            var parentId = getParentId(current);
-            if (parentId is null) break;
-            if (parentId == blockId)
-                throw new BusinessRuleException(BusinessRuleCodes.Documents_BlockTree_MoveWouldCreateCycle, "Block move would create a cycle.");
-            current = parentId.Value;
+            if (ancestorId == blockId)
+                throw new BusinessRuleException(DocumentRuleCodes.Documents_BlockTree_MoveWouldCreateCycle, "Block move would create a cycle.");
         }
     }
 
@@ -25,9 +22,9 @@ public static class BlockTreeRules
 
         var scope = getBlockScope(parentBlockId.Value);
         if (scope is null)
-            throw new BusinessRuleException(BusinessRuleCodes.Documents_BlockTree_ParentNotFound, "Parent block not found.");
+            throw new BusinessRuleException(DocumentRuleCodes.Documents_BlockTree_ParentNotFound, "Parent block not found.");
 
         if (scope.Value.PageId != pageId || scope.Value.WorkspaceId != workspaceId)
-            throw new BusinessRuleException(BusinessRuleCodes.Documents_BlockTree_ParentMustBeInSamePage, "Parent block must belong to the same page and workspace.");
+            throw new BusinessRuleException(DocumentRuleCodes.Documents_BlockTree_ParentMustBeInSamePage, "Parent block must belong to the same page and workspace.");
     }
 }

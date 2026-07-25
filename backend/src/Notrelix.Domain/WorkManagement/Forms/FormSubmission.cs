@@ -29,7 +29,7 @@ public class FormSubmission : Entity, IWorkspaceScoped
         }
         catch (System.Text.Json.JsonException)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FormQuestion_InvalidConfigJson, "Payload must be valid JSON.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FormQuestion_InvalidConfigJson, "Payload must be valid JSON.");
         }
         return json;
     }
@@ -76,7 +76,7 @@ public class FormSubmission : Entity, IWorkspaceScoped
     public void Reject(DateTimeOffset processedAt)
     {
         if (Status != FormSubmissionStatus.Accepted)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FormSubmission_CannotRejectUnlessAccepted, "Only accepted submissions can be rejected.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FormSubmission_CannotRejectUnlessAccepted, "Only accepted submissions can be rejected.");
 
         Status = FormSubmissionStatus.Rejected;
         ProcessedAt = processedAt;
@@ -86,7 +86,7 @@ public class FormSubmission : Entity, IWorkspaceScoped
     public void MarkAsSpam(DateTimeOffset processedAt)
     {
         if (Status != FormSubmissionStatus.Accepted)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FormSubmission_CannotMarkSpamUnlessAccepted, "Only accepted submissions can be marked as spam.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FormSubmission_CannotMarkSpamUnlessAccepted, "Only accepted submissions can be marked as spam.");
 
         Status = FormSubmissionStatus.Spam;
         ProcessedAt = processedAt;
@@ -96,7 +96,7 @@ public class FormSubmission : Entity, IWorkspaceScoped
     public void MarkProcessed(Guid createdItemId, DateTimeOffset processedAt)
     {
         if (Status != FormSubmissionStatus.Accepted)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FormSubmission_CannotProcessUnlessAccepted, "Only accepted submissions can be processed.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FormSubmission_CannotProcessUnlessAccepted, "Only accepted submissions can be processed.");
 
         CreatedItemId = createdItemId;
         ProcessedAt = processedAt;
@@ -106,7 +106,7 @@ public class FormSubmission : Entity, IWorkspaceScoped
     public void Delete(Guid deletedBy, DateTimeOffset deletedAt)
     {
         if (Status == FormSubmissionStatus.Deleted)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FormSubmission_AlreadyDeleted, "Submission is already deleted.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FormSubmission_AlreadyDeleted, "Submission is already deleted.");
 
         Status = FormSubmissionStatus.Deleted;
         RaiseDomainEvent(new FormSubmissionDeletedDomainEvent(AccountId, WorkspaceId, Id, FormId, deletedBy, deletedAt));

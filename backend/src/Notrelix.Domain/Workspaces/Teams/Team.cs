@@ -2,7 +2,7 @@ using Notrelix.Domain.Workspaces.Teams.Events;
 using Notrelix.Domain.Workspaces.Rules;
 namespace Notrelix.Domain.Workspaces.Teams;
 
-public class Team : AggregateRoot, IWorkspaceScoped
+public class Team : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -45,7 +45,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(updatedBy);
 
         if (Status == TeamStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Team_CannotRenameArchived, "Cannot rename an archived team.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Team_CannotRenameArchived, "Cannot rename an archived team.");
 
         var oldName = Name;
         var normalizedName = name.Trim();
@@ -63,7 +63,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(updatedBy);
 
         if (Status == TeamStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Team_CannotUpdateDescriptionArchived, "Cannot update description of an archived team.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Team_CannotUpdateDescriptionArchived, "Cannot update description of an archived team.");
 
         var normalized = string.IsNullOrWhiteSpace(newDescription)
             ? null
@@ -103,7 +103,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
 
         if (Status != TeamStatus.Archived)
             throw new BusinessRuleException(
-                BusinessRuleCodes.Workspaces_Team_CannotUnarchiveNonArchived,
+                WorkspaceRuleCodes.Workspaces_Team_CannotUnarchiveNonArchived,
                 "Only an archived team can be unarchived.");
 
         Status = TeamStatus.Active;
@@ -117,7 +117,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (Status == TeamStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Team_CannotAddMemberArchived, "Cannot add a member to an archived team.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Team_CannotAddMemberArchived, "Cannot add a member to an archived team.");
         Guard.NotEmpty(userId);
         Guard.NotEmpty(addedBy);
 
@@ -143,7 +143,7 @@ public class Team : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (Status == TeamStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Team_CannotRemoveMemberArchived, "Cannot remove a member from an archived team.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Team_CannotRemoveMemberArchived, "Cannot remove a member from an archived team.");
         Guard.NotEmpty(userId);
         Guard.NotEmpty(removedBy);
 
@@ -169,11 +169,11 @@ public class Team : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(updatedBy);
 
         if (Status == TeamStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Team_CannotChangeMemberRoleArchived, "Cannot change member role in an archived team.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Team_CannotChangeMemberRoleArchived, "Cannot change member role in an archived team.");
 
         var member = _members.FirstOrDefault(m => m.UserId == userId && m.Status == TeamMemberStatus.Active);
         if (member == null)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Team_UserNotActiveMember, "User is not an active member of this team.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Team_UserNotActiveMember, "User is not an active member of this team.");
 
         var activeLeadCount = _members.Count(m => m.Status == TeamMemberStatus.Active && m.Role == TeamMemberRole.Lead);
         TeamLeadRules.EnsureCanDowngradeLead(member.Role, newRole, activeLeadCount);

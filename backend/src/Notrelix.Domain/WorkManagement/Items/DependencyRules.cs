@@ -15,7 +15,7 @@ public static class DependencyRules
         Guard.NotEmpty(targetDependencyId);
 
         if (itemId == targetDependencyId)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Dependency_CannotDependOnSelf, "An item cannot depend on itself.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Dependency_CannotDependOnSelf, "An item cannot depend on itself.");
 
         var visited = new HashSet<Guid>();
         var stack = new HashSet<Guid> { itemId };
@@ -41,6 +41,6 @@ public static class DependencyRules
         }
 
         if (HasCycle(targetDependencyId))
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Dependency_CannotCreateCycle, "Adding this dependency would create a cycle.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Dependency_CannotCreateCycle, "Adding this dependency would create a cycle.");
     }
 }

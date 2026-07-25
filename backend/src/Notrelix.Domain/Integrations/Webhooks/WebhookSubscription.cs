@@ -1,7 +1,7 @@
 using Notrelix.Domain.Integrations.Webhooks.Events;
 namespace Notrelix.Domain.Integrations.Webhooks;
 
-public class WebhookSubscription : AggregateRoot, IWorkspaceScoped
+public class WebhookSubscription : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }

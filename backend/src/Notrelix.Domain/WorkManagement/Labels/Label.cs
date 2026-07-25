@@ -23,7 +23,7 @@ public sealed class LabelColor : ValueObject
     }
 }
 
-public class Label : AggregateRoot, IWorkspaceScoped
+public class Label : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }

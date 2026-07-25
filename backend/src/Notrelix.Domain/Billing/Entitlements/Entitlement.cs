@@ -2,7 +2,7 @@ using Notrelix.Domain.Billing.Entitlements.Events;
 using Notrelix.Domain.Billing.Plans;
 namespace Notrelix.Domain.Billing.Entitlements;
 
-public class Entitlement : AggregateRoot, IAccountScoped
+public class Entitlement : SoftDeletableAggregateRoot, IAccountScoped
 {
     public Guid AccountId { get; private set; }
     public Guid? WorkspaceId { get; private set; }
@@ -32,13 +32,13 @@ public class Entitlement : AggregateRoot, IAccountScoped
         Guard.NotNull(feature);
 
         if (limit < 0)
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Entitlement_LimitCannotBeNegative, "Entitlement limit cannot be negative.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Entitlement_LimitCannotBeNegative, "Entitlement limit cannot be negative.");
 
         if (targetScope == EntitlementTargetScope.Workspace && targetWorkspaceId is null)
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Entitlement_WorkspaceScopedRequiresTarget, "Workspace-scoped entitlement requires a target workspace id.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Entitlement_WorkspaceScopedRequiresTarget, "Workspace-scoped entitlement requires a target workspace id.");
 
         if (targetScope == EntitlementTargetScope.Account && targetWorkspaceId is not null)
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Entitlement_AccountScopedMustNotSpecifyTarget, "Account-scoped entitlement must not specify a target workspace id.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Entitlement_AccountScopedMustNotSpecifyTarget, "Account-scoped entitlement must not specify a target workspace id.");
 
         var entitlement = new Entitlement
         {
@@ -64,10 +64,10 @@ public class Entitlement : AggregateRoot, IAccountScoped
         Guard.NotEmpty(actorUserId);
 
         if (newLimit < 0)
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Entitlement_LimitCannotBeNegative, "Entitlement limit cannot be negative.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Entitlement_LimitCannotBeNegative, "Entitlement limit cannot be negative.");
 
         if (Status != EntitlementStatus.Active)
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Entitlement_CannotChangeLimitOfNonActive, "Cannot change the limit of a non-active entitlement.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Entitlement_CannotChangeLimitOfNonActive, "Cannot change the limit of a non-active entitlement.");
 
         if (Limit == newLimit) return;
 
@@ -86,7 +86,7 @@ public class Entitlement : AggregateRoot, IAccountScoped
         Guard.NotEmpty(actorUserId);
 
         if (Status == EntitlementStatus.Revoked)
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Entitlement_CannotDisableRevoked, "Cannot disable a revoked entitlement.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Entitlement_CannotDisableRevoked, "Cannot disable a revoked entitlement.");
 
         if (Status == EntitlementStatus.Disabled) return;
 
@@ -122,7 +122,7 @@ public class Entitlement : AggregateRoot, IAccountScoped
         if (Status == EntitlementStatus.Expired) return;
 
         if (Status == EntitlementStatus.Revoked)
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Entitlement_CannotExpireRevoked, "Cannot expire a revoked entitlement.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Entitlement_CannotExpireRevoked, "Cannot expire a revoked entitlement.");
 
         Status = EntitlementStatus.Expired;
         SetAuditOnUpdate(null, occurredAt);

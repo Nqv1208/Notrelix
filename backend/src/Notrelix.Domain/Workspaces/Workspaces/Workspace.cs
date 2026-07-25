@@ -1,7 +1,7 @@
 using Notrelix.Domain.Workspaces.Workspaces.Events;
 namespace Notrelix.Domain.Workspaces.Workspaces;
 
-public class Workspace : AggregateRoot, IWorkspaceScoped
+public class Workspace : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid WorkspaceId => Id;
     public string Name { get; private set; } = null!;
@@ -48,18 +48,6 @@ public class Workspace : AggregateRoot, IWorkspaceScoped
         return workspace;
     }
 
-    public void UpdateAccountId(Guid newAccountId, Guid updatedBy, DateTimeOffset updatedAt)
-    {
-        EnsureNotDeleted();
-        Guard.NotEmpty(newAccountId);
-
-        if (AccountId == newAccountId) return;
-
-        AccountId = newAccountId;
-        SetAuditOnUpdate(updatedBy, updatedAt);
-        IncrementVersion();
-    }
-
     public void Rename(string newName, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
@@ -67,7 +55,7 @@ public class Workspace : AggregateRoot, IWorkspaceScoped
         Guard.MaxLength(newName, 160);
 
         if (Status == WorkspaceStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Workspace_CannotRenameArchived, "Cannot rename an archived workspace.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Workspace_CannotRenameArchived, "Cannot rename an archived workspace.");
 
         var oldName = Name;
         if (Name == newName.Trim()) return;
@@ -81,6 +69,7 @@ public class Workspace : AggregateRoot, IWorkspaceScoped
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(archivedBy);
 
         if (Status == WorkspaceStatus.Archived) return;
 
@@ -99,7 +88,7 @@ public class Workspace : AggregateRoot, IWorkspaceScoped
 
         if (Status != WorkspaceStatus.Archived)
             throw new BusinessRuleException(
-                BusinessRuleCodes.Workspaces_Workspace_CannotUnarchiveNonArchived,
+                WorkspaceRuleCodes.Workspaces_Workspace_CannotUnarchiveNonArchived,
                 "Only an archived workspace can be unarchived.");
 
         Status = WorkspaceStatus.Active;
@@ -111,6 +100,7 @@ public class Workspace : AggregateRoot, IWorkspaceScoped
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
+        Guard.NotEmpty(deletedBy);
         Status = WorkspaceStatus.SoftDeleted;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
@@ -121,6 +111,7 @@ public class Workspace : AggregateRoot, IWorkspaceScoped
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
+        Guard.NotEmpty(restoredBy);
         Status = WorkspaceStatus.Active;
         if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
@@ -134,7 +125,7 @@ public class Workspace : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(updatedBy);
 
         if (Status == WorkspaceStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Workspace_CannotUpdateDescriptionArchived, "Cannot update description of an archived workspace.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Workspace_CannotUpdateDescriptionArchived, "Cannot update description of an archived workspace.");
 
         var normalized = string.IsNullOrWhiteSpace(newDescription)
             ? null
@@ -160,7 +151,7 @@ public class Workspace : AggregateRoot, IWorkspaceScoped
         Guard.NotNull(newSettings);
 
         if (Status == WorkspaceStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Workspace_CannotUpdateSettingsArchived, "Cannot update settings of an archived workspace.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Workspace_CannotUpdateSettingsArchived, "Cannot update settings of an archived workspace.");
 
         if (Settings == newSettings) return;
 

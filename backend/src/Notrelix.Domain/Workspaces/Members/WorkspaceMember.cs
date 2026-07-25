@@ -2,7 +2,7 @@ using Notrelix.Domain.Workspaces.Members.Events;
 using Notrelix.Domain.Workspaces.Rules;
 namespace Notrelix.Domain.Workspaces.Members;
 
-public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
+public class WorkspaceMember : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -45,13 +45,13 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         if (newRole == WorkspaceRole.Owner)
         {
             throw new BusinessRuleException(
-                BusinessRuleCodes.Workspaces_Member_CannotDirectlyAssignOwner,
+                WorkspaceRuleCodes.Workspaces_Member_CannotDirectlyAssignOwner,
                 "Ownership must be transferred through the ownership transfer workflow.");
         }
 
         if (Status != WorkspaceMemberStatus.Active)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Member_CannotChangeRoleOfInactive, "Cannot change role of an inactive or suspended member.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotChangeRoleOfInactive, "Cannot change role of an inactive or suspended member.");
         }
 
         WorkspaceOwnerRules.EnsureCanDowngradeOwner(Role, newRole, activeOwnerCount);
@@ -73,7 +73,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(promotedBy);
 
         if (Status != WorkspaceMemberStatus.Active)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Member_CannotPromoteInactiveToOwner, "Cannot promote an inactive member to owner.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotPromoteInactiveToOwner, "Cannot promote an inactive member to owner.");
 
         if (Role == WorkspaceRole.Owner) return;
 
@@ -115,7 +115,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
 
         if (Status == WorkspaceMemberStatus.Removed)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Member_CannotActivateRemoved, "Cannot activate a removed member. Restore the member first.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotActivateRemoved, "Cannot activate a removed member. Restore the member first.");
         }
 
         Status = WorkspaceMemberStatus.Active;

@@ -46,7 +46,7 @@ public class WebhookDelivery : AggregateRoot, IWorkspaceScoped
     public void MarkDelivered(int statusCode, string? responseBody, DateTimeOffset deliveredAt)
     {
         if (Status != WebhookDeliveryStatus.Pending && Status != WebhookDeliveryStatus.Retrying)
-            throw new BusinessRuleException(BusinessRuleCodes.Integrations_WebhookDelivery_CannotMarkSentFromStatus, $"Cannot mark delivery as sent from status {Status}.");
+            throw new BusinessRuleException(IntegrationRuleCodes.Integrations_WebhookDelivery_CannotMarkSentFromStatus, $"Cannot mark delivery as sent from status {Status}.");
 
         Status = WebhookDeliveryStatus.Sent;
         ResponseStatusCode = statusCode;
@@ -59,7 +59,7 @@ public class WebhookDelivery : AggregateRoot, IWorkspaceScoped
     public void MarkFailed(int? statusCode, string? responseBody, DateTimeOffset failedAt, string? reason = null)
     {
         if (Status != WebhookDeliveryStatus.Pending && Status != WebhookDeliveryStatus.Retrying)
-            throw new BusinessRuleException(BusinessRuleCodes.Integrations_WebhookDelivery_CannotMarkFailedFromStatus, $"Cannot mark delivery as failed from status {Status}.");
+            throw new BusinessRuleException(IntegrationRuleCodes.Integrations_WebhookDelivery_CannotMarkFailedFromStatus, $"Cannot mark delivery as failed from status {Status}.");
 
         Status = WebhookDeliveryStatus.Failed;
         ResponseStatusCode = statusCode;
@@ -73,10 +73,10 @@ public class WebhookDelivery : AggregateRoot, IWorkspaceScoped
     public void ScheduleRetry(DateTimeOffset nextRetryAt)
     {
         if (Status != WebhookDeliveryStatus.Failed)
-            throw new BusinessRuleException(BusinessRuleCodes.Integrations_WebhookDelivery_CannotScheduleRetryUnlessFailed, "Can only schedule retry for a failed delivery.");
+            throw new BusinessRuleException(IntegrationRuleCodes.Integrations_WebhookDelivery_CannotScheduleRetryUnlessFailed, "Can only schedule retry for a failed delivery.");
 
         if (RetryCount >= MaxRetries)
-            throw new BusinessRuleException(BusinessRuleCodes.Integrations_WebhookDelivery_MaxRetriesReached, $"Maximum retry count ({MaxRetries}) reached.");
+            throw new BusinessRuleException(IntegrationRuleCodes.Integrations_WebhookDelivery_MaxRetriesReached, $"Maximum retry count ({MaxRetries}) reached.");
 
         Status = WebhookDeliveryStatus.Retrying;
         RetryCount++;

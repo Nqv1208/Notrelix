@@ -1,7 +1,7 @@
 using Notrelix.Domain.WorkManagement.Boards.Events;
 namespace Notrelix.Domain.WorkManagement.Boards;
 
-public class Board : AggregateRoot, IWorkspaceScoped
+public class Board : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -67,7 +67,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
         Guard.MaxLength(title, 255);
 
         if (IsArchived)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Board_CannotRenameArchived, "Cannot rename an archived board.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotRenameArchived, "Cannot rename an archived board.");
 
         var oldTitle = Title;
         var normalizedTitle = title.Trim();
@@ -85,7 +85,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
         Guard.MaxLength(description, 5000);
 
         if (IsArchived)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Board_CannotUpdateDescriptionArchived, "Cannot update description of an archived board.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotUpdateDescriptionArchived, "Cannot update description of an archived board.");
         var normalized = description?.Trim();
         if (Description == normalized) return;
         var oldDescription = Description;
@@ -99,7 +99,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (IsArchived)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Board_CannotUpdateBackgroundArchived, "Cannot update background of an archived board.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotUpdateBackgroundArchived, "Cannot update background of an archived board.");
         if (string.IsNullOrWhiteSpace(background) || Background == background) return;
         var oldBackground = Background;
         Background = background;
@@ -113,7 +113,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
 
         if (IsArchived)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Board_CannotChangeVisibilityArchived, "Cannot change visibility of an archived board.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotChangeVisibilityArchived, "Cannot change visibility of an archived board.");
         var oldVisibility = Visibility;
         if (Visibility == visibility) return;
 
@@ -156,7 +156,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (IsArchived)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Board_CannotRenameArchived, "Cannot modify an archived board.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotRenameArchived, "Cannot modify an archived board.");
         if (DefaultItemGroupId == groupId) return;
         DefaultItemGroupId = groupId;
         SetAuditOnUpdate(updatedBy, updatedAt);
@@ -168,7 +168,7 @@ public class Board : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (IsArchived)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Board_CannotGenerateIdentityArchived, "Cannot generate item identity for an archived board.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotGenerateIdentityArchived, "Cannot generate item identity for an archived board.");
         ItemSequence++;
         var key = string.IsNullOrWhiteSpace(ItemKeyPrefix)
             ? ItemSequence.ToString()

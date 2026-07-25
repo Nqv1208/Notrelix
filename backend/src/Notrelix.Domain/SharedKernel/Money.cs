@@ -23,7 +23,7 @@ public sealed class Money : ValueObject
         Guard.NotNullOrWhiteSpace(currency);
         currency = currency.Trim().ToUpperInvariant();
         if (!CurrencyRegex.IsMatch(currency))
-            throw new BusinessRuleException(BusinessRuleCodes.SharedKernel_Money_InvalidCurrency, "Currency must be a 3-letter uppercase ISO code.");
+            throw new BusinessRuleException(CommonRuleCodes.SharedKernel_Money_InvalidCurrency, "Currency must be a 3-letter uppercase ISO code.");
 
         return new Money(amount, currency);
     }

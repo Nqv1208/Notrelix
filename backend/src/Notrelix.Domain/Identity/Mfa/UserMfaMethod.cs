@@ -2,7 +2,7 @@ using Notrelix.Domain.Identity.Mfa.Events;
 
 namespace Notrelix.Domain.Identity.Mfa;
 
-public class UserMfaMethod : AggregateRoot
+public class UserMfaMethod : SoftDeletableAggregateRoot
 {
     public Guid UserId { get; private set; }
     public MfaMethodType Type { get; private set; }
@@ -50,7 +50,7 @@ public class UserMfaMethod : AggregateRoot
 
         if (Status == MfaMethodStatus.Disabled)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.Identity_Mfa_CannotVerifyDisabled, "Cannot verify a disabled MFA method.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_Mfa_CannotVerifyDisabled, "Cannot verify a disabled MFA method.");
         }
 
         Status = MfaMethodStatus.Active;
@@ -66,7 +66,7 @@ public class UserMfaMethod : AggregateRoot
         EnsureNotDeleted();
         if (Status != MfaMethodStatus.Active)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.Identity_Mfa_CannotSetPrimaryUnlessVerifiedActive, "Only verified and active MFA methods can be set as primary.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_Mfa_CannotSetPrimaryUnlessVerifiedActive, "Only verified and active MFA methods can be set as primary.");
         }
 
         if (IsPrimary) return;

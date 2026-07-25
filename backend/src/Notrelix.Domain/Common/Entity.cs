@@ -25,7 +25,7 @@ public abstract class Entity : IHasDomainEvents
         _domainEvents.Add(domainEvent);
     }
 
-    internal void ClearDomainEvents() => _domainEvents.Clear();
+    void IHasDomainEvents.ClearDomainEvents() => _domainEvents.Clear();
 
     public override bool Equals(object? obj)
     {

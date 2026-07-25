@@ -56,7 +56,6 @@ public class DashboardSource : AggregateRoot, IWorkspaceScoped
 
     public void UpdateFilter(JsonValue newFilter, Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotNull(newFilter);
 
         Filter = newFilter;

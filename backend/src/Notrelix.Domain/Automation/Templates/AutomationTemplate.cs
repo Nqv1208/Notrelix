@@ -1,6 +1,6 @@
 namespace Notrelix.Domain.Automation.Templates;
 
-public class AutomationTemplate : AggregateRoot
+public class AutomationTemplate : SoftDeletableAggregateRoot
 {
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
@@ -62,7 +62,7 @@ public class AutomationTemplate : AggregateRoot
     {
         EnsureNotDeleted();
         if (Status == AutomationTemplateStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_Template_AlreadyArchived, "Template is already archived.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Template_AlreadyArchived, "Template is already archived.");
         Status = AutomationTemplateStatus.Archived;
         SetAuditOnUpdate(null, archivedAt);
         RaiseDomainEvent(new Events.AutomationTemplateArchivedDomainEvent(Id, archivedAt));

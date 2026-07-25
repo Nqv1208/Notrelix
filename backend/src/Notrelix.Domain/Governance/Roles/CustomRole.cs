@@ -1,7 +1,7 @@
 using Notrelix.Domain.Governance.Roles.Events;
 namespace Notrelix.Domain.Governance.Roles;
 
-public class CustomRole : AggregateRoot, IWorkspaceScoped
+public class CustomRole : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -42,7 +42,7 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (IsSystem)
-            throw new BusinessRuleException(BusinessRuleCodes.Governance_Role_CannotRenameSystem, "Cannot rename a system role.");
+            throw new BusinessRuleException(GovernanceRuleCodes.Governance_Role_CannotRenameSystem, "Cannot rename a system role.");
         Guard.NotNullOrWhiteSpace(name);
         Guard.MaxLength(name, 100);
 
@@ -60,7 +60,7 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
 
         if (_permissions.Any(p => p.Action == action))
-            throw new BusinessRuleException(BusinessRuleCodes.Governance_Role_PermissionAlreadyAssigned, $"Permission '{action}' is already assigned to this role.");
+            throw new BusinessRuleException(GovernanceRuleCodes.Governance_Role_PermissionAlreadyAssigned, $"Permission '{action}' is already assigned to this role.");
 
         _permissions.Add(CustomRolePermission.Create(Id, action));
         SetAuditOnUpdate(updatedBy, updatedAt);
@@ -122,7 +122,7 @@ public class CustomRole : AggregateRoot, IWorkspaceScoped
     {
         if (IsDeleted) return;
         if (IsSystem)
-            throw new BusinessRuleException(BusinessRuleCodes.Governance_Role_CannotDeleteSystem, "Cannot delete a system role.");
+            throw new BusinessRuleException(GovernanceRuleCodes.Governance_Role_CannotDeleteSystem, "Cannot delete a system role.");
         Status = CustomRoleStatus.Archived;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);

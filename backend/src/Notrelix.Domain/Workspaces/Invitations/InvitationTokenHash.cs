@@ -22,7 +22,7 @@ public sealed class InvitationTokenHash : ValueObject
             normalized.Any(c => !Uri.IsHexDigit(c)))
         {
             throw new BusinessRuleException(
-                BusinessRuleCodes.Workspaces_InvitationTokenHash_InvalidFormat,
+                WorkspaceRuleCodes.Workspaces_InvitationTokenHash_InvalidFormat,
                 "Invitation token hash must be a valid SHA-256 hexadecimal value.");
         }
 

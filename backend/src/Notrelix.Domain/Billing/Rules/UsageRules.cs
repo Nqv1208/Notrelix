@@ -6,7 +6,7 @@ public static class UsageRules
     {
         if (isHardLimit && currentUsage + amount > limit)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Usage_LimitExceeded, $"Usage limit exceeded. Current: {currentUsage}, Attempted: {amount}, Limit: {limit}");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_LimitExceeded, $"Usage limit exceeded. Current: {currentUsage}, Attempted: {amount}, Limit: {limit}");
         }
     }
 }

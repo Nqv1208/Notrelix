@@ -45,7 +45,7 @@ public sealed class FormQuestionConfig : ValueObject
         }
         catch (JsonException ex)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FormQuestion_InvalidConfigJson, $"Invalid config JSON: {ex.Message}");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FormQuestion_InvalidConfigJson, $"Invalid config JSON: {ex.Message}");
         }
 
         var required = GetBool(root, "required") ?? false;
@@ -64,22 +64,22 @@ public sealed class FormQuestionConfig : ValueObject
     private static void ValidateConfig(FormQuestionType type, int? maxLength, int? minValue, int? maxValue, int? maxFileSizeMb)
     {
         if (maxLength.HasValue && type != FormQuestionType.ShortText && type != FormQuestionType.LongText)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FormQuestion_MaxLengthInvalidForType, "MaxLength is not supported for this field type.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FormQuestion_MaxLengthInvalidForType, "MaxLength is not supported for this field type.");
 
         if ((minValue.HasValue || maxValue.HasValue) && type != FormQuestionType.Number)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FormQuestion_MinMaxInvalidForType, "MinValue/MaxValue are not supported for this field type.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FormQuestion_MinMaxInvalidForType, "MinValue/MaxValue are not supported for this field type.");
 
         if (maxFileSizeMb.HasValue && type != FormQuestionType.FileUpload)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FormQuestion_MaxFileSizeInvalidForType, "MaxFileSizeMb is not supported for this field type.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FormQuestion_MaxFileSizeInvalidForType, "MaxFileSizeMb is not supported for this field type.");
 
         if (maxLength.HasValue && maxLength.Value <= 0)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FormQuestion_MaxLengthMustBePositive, "MaxLength must be positive.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FormQuestion_MaxLengthMustBePositive, "MaxLength must be positive.");
 
         if (maxFileSizeMb.HasValue && maxFileSizeMb.Value <= 0)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FormQuestion_MaxFileSizeMustBePositive, "MaxFileSizeMb must be positive.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FormQuestion_MaxFileSizeMustBePositive, "MaxFileSizeMb must be positive.");
 
         if (minValue.HasValue && maxValue.HasValue && minValue.Value > maxValue.Value)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FormQuestion_MinCannotExceedMax, "MinValue cannot be greater than MaxValue.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FormQuestion_MinCannotExceedMax, "MinValue cannot be greater than MaxValue.");
     }
 
     private static bool? GetBool(JsonElement root, string property)

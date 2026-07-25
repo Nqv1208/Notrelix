@@ -3,7 +3,7 @@ using Notrelix.Domain.Identity.Security.Events;
 
 namespace Notrelix.Domain.Identity.Security;
 
-public class UserSecuritySettings : AggregateRoot
+public class UserSecuritySettings : SoftDeletableAggregateRoot
 {
     public Guid UserId { get; private set; }
     public bool IsMfaEnabled { get; private set; }

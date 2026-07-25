@@ -1,3 +1,5 @@
+using Notrelix.Domain.Accounts.Domains.Events;
+
 namespace Notrelix.Domain.Accounts.Domains;
 
 public class AccountDomain : AggregateRoot, IAccountScoped
@@ -26,27 +28,42 @@ public class AccountDomain : AggregateRoot, IAccountScoped
         };
     }
 
-    public void Verify(DateTimeOffset verifiedAt)
+    public void Verify(DateTimeOffset verifiedAt, Guid verifiedBy)
     {
         if (VerificationStatus == DomainVerificationStatus.Verified) return;
         VerificationStatus = DomainVerificationStatus.Verified;
         VerifiedAt = verifiedAt;
+        SetAuditOnUpdate(verifiedBy, verifiedAt);
+        IncrementVersion();
+        RaiseDomainEvent(new AccountDomainVerifiedDomainEvent(AccountId, Id, Domain, verifiedAt));
     }
 
-    public void Reject()
+    public void Reject(Guid rejectedBy, DateTimeOffset rejectedAt)
     {
+        if (VerificationStatus == DomainVerificationStatus.Rejected) return;
         VerificationStatus = DomainVerificationStatus.Rejected;
+        SetAuditOnUpdate(rejectedBy, rejectedAt);
+        IncrementVersion();
+        RaiseDomainEvent(new AccountDomainRejectedDomainEvent(AccountId, Id, Domain, rejectedAt));
     }
 
-    public void EnableAutoJoin()
+    public void EnableAutoJoin(Guid enabledBy, DateTimeOffset enabledAt)
     {
+        if (AutoJoinEnabled) return;
         if (VerificationStatus != DomainVerificationStatus.Verified)
-            throw new BusinessRuleException(BusinessRuleCodes.Accounts_Domain_CannotEnableAutoJoinUnverified, "Cannot enable auto-join for an unverified domain.");
+            throw new BusinessRuleException(AccountRuleCodes.Accounts_Domain_CannotEnableAutoJoinUnverified, "Cannot enable auto-join for an unverified domain.");
         AutoJoinEnabled = true;
+        SetAuditOnUpdate(enabledBy, enabledAt);
+        IncrementVersion();
+        RaiseDomainEvent(new AccountDomainAutoJoinEnabledDomainEvent(AccountId, Id, Domain, enabledAt));
     }
 
-    public void DisableAutoJoin()
+    public void DisableAutoJoin(Guid disabledBy, DateTimeOffset disabledAt)
     {
+        if (!AutoJoinEnabled) return;
         AutoJoinEnabled = false;
+        SetAuditOnUpdate(disabledBy, disabledAt);
+        IncrementVersion();
+        RaiseDomainEvent(new AccountDomainAutoJoinDisabledDomainEvent(AccountId, Id, Domain, disabledAt));
     }
 }

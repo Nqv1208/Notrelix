@@ -25,10 +25,10 @@ public abstract class OneTimeUseToken : AggregateRoot
         Guard.NotNull(tokenHash);
 
         if (hashVersion <= 0)
-            throw new BusinessRuleException(BusinessRuleCodes.Identity_OneTimeToken_HashVersionMustBePositive, "Token hash version must be positive.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_OneTimeToken_HashVersionMustBePositive, "Token hash version must be positive.");
 
         if (expiresAt <= createdAt)
-            throw new BusinessRuleException(BusinessRuleCodes.Identity_OneTimeToken_ExpirationMustBeAfterCreation, "Token expiration time must be after creation time.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_OneTimeToken_ExpirationMustBeAfterCreation, "Token expiration time must be after creation time.");
 
         UserId = userId;
         TokenHash = tokenHash;
@@ -39,13 +39,11 @@ public abstract class OneTimeUseToken : AggregateRoot
 
     public void MarkUsed(DateTimeOffset usedAt, DomainEvent? domainEvent = null)
     {
-        EnsureNotDeleted();
-
         if (Status == UserTokenStatus.Used)
-            throw new BusinessRuleException(BusinessRuleCodes.Identity_OneTimeToken_AlreadyUsed, "Token has already been used.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_OneTimeToken_AlreadyUsed, "Token has already been used.");
 
         if (Status is UserTokenStatus.Expired or UserTokenStatus.Revoked || usedAt >= ExpiresAt)
-            throw new BusinessRuleException(BusinessRuleCodes.Identity_OneTimeToken_CannotUseExpired, "Cannot use an expired token.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_OneTimeToken_CannotUseExpired, "Cannot use an expired token.");
 
         Status = UserTokenStatus.Used;
         UsedAt = usedAt;
@@ -56,12 +54,10 @@ public abstract class OneTimeUseToken : AggregateRoot
 
     public bool TryExpire(DateTimeOffset expiredAt, DomainEvent? domainEvent = null)
     {
-        EnsureNotDeleted();
-
         if (Status == UserTokenStatus.Expired) return false;
 
         if (Status == UserTokenStatus.Used)
-            throw new BusinessRuleException(BusinessRuleCodes.Identity_OneTimeToken_CannotExpireUsed, "Cannot expire a used token.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_OneTimeToken_CannotExpireUsed, "Cannot expire a used token.");
 
         if (Status == UserTokenStatus.Revoked) return false;
 
@@ -78,7 +74,6 @@ public abstract class OneTimeUseToken : AggregateRoot
         string revocationReason,
         DomainEvent? domainEvent = null)
     {
-        EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(revocationReason);
         Guard.MaxLength(revocationReason, 256);
 

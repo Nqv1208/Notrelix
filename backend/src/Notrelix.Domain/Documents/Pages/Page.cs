@@ -1,7 +1,7 @@
 using Notrelix.Domain.Documents.Pages.Events;
 namespace Notrelix.Domain.Documents.Pages;
 
-public class Page : AggregateRoot, IWorkspaceScoped
+public class Page : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -42,7 +42,7 @@ public class Page : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (Status == PageStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.Documents_Page_CannotRenameArchived, "Cannot rename an archived page.");
+            throw new BusinessRuleException(DocumentRuleCodes.Documents_Page_CannotRenameArchived, "Cannot rename an archived page.");
         Guard.NotNullOrWhiteSpace(newTitle);
         Guard.MaxLength(newTitle, 500);
 
@@ -59,7 +59,7 @@ public class Page : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (Status == PageStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.Documents_Page_CannotMoveArchived, "Cannot move an archived page.");
+            throw new BusinessRuleException(DocumentRuleCodes.Documents_Page_CannotMoveArchived, "Cannot move an archived page.");
         if (ParentId == newParentId) return;
 
         if (newParentId.HasValue)

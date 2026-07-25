@@ -25,7 +25,7 @@ public sealed class AutomationActionDefinition : ValueObject
     {
         Guard.NotNullOrWhiteSpace(type);
         if (!ValidActions.Contains(type))
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_Action_InvalidType, $"Invalid action type '{type}'. Valid types: {string.Join(", ", ValidActions)}");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Action_InvalidType, $"Invalid action type '{type}'. Valid types: {string.Join(", ", ValidActions)}");
 
         if (configuration is not null)
         {
@@ -33,11 +33,11 @@ public sealed class AutomationActionDefinition : ValueObject
             {
                 using var document = JsonDocument.Parse(configuration);
                 if (document.RootElement.ValueKind == JsonValueKind.Null)
-                    throw new BusinessRuleException(BusinessRuleCodes.Automation_Action_ConfigCannotBeNullJson, "Action configuration cannot be null JSON.");
+                    throw new BusinessRuleException(AutomationRuleCodes.Automation_Action_ConfigCannotBeNullJson, "Action configuration cannot be null JSON.");
             }
             catch (JsonException ex)
             {
-                throw new BusinessRuleException(BusinessRuleCodes.Automation_Action_InvalidConfigJson, $"Invalid action configuration JSON: {ex.Message}");
+                throw new BusinessRuleException(AutomationRuleCodes.Automation_Action_InvalidConfigJson, $"Invalid action configuration JSON: {ex.Message}");
             }
         }
 

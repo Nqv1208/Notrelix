@@ -1,11 +1,12 @@
 using Notrelix.Domain.Analytics.Dashboards.Events;
 using Notrelix.Domain.Analytics.Rules;
 using Notrelix.Domain.Analytics.Widgets;
-using static Notrelix.Domain.Common.Exceptions.BusinessRuleCodes;
+using static Notrelix.Domain.Common.Exceptions.CommonRuleCodes;
+using static Notrelix.Domain.Analytics.AnalyticsRuleCodes;
 
 namespace Notrelix.Domain.Analytics.Dashboards;
 
-public class Dashboard : AggregateRoot, IWorkspaceScoped
+public class Dashboard : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -72,7 +73,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         WidgetRules.ValidatePosition(position);
 
         if (_widgets.Count >= MaxWidgets)
-            throw new BusinessRuleException(Common_WidgetCoordinatesMustBeNonNegative, $"Cannot add more than {MaxWidgets} widgets to a dashboard.");
+            throw new BusinessRuleException(Analytics_Dashboard_WidgetLimitExceeded, $"Cannot add more than {MaxWidgets} widgets to a dashboard.");
 
         var widget = DashboardWidget.Create(Id, title, type, config, position);
         _widgets.Add(widget);
@@ -101,6 +102,8 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         {
             throw new BusinessRuleException(Analytics_Dashboard_WidgetNotFound, $"Widget '{widgetId}' not found on this dashboard.");
         }
+
+        if (widget.Position == newPosition) return;
 
         widget.UpdatePosition(newPosition);
         SetAuditOnUpdate(updatedBy, updatedAt);

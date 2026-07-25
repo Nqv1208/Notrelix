@@ -1,7 +1,7 @@
 using Notrelix.Domain.Automation.Scheduled.Events;
 namespace Notrelix.Domain.Automation.Scheduled;
 
-public class ScheduledJob : AggregateRoot, IWorkspaceScoped
+public class ScheduledJob : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -65,7 +65,7 @@ public class ScheduledJob : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         if (Status == ScheduledJobStatus.Completed) return;
         if (Status == ScheduledJobStatus.Cancelled || Status == ScheduledJobStatus.Failed)
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_ScheduledJob_CannotCompleteFromStatus, $"Cannot complete a job in '{Status}' status.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_ScheduledJob_CannotCompleteFromStatus, $"Cannot complete a job in '{Status}' status.");
         Status = ScheduledJobStatus.Completed;
         SetAuditOnUpdate(null, completedAt);
         RaiseDomainEvent(new ScheduledJobCompletedDomainEvent(AccountId, WorkspaceId, Id, completedAt));
@@ -76,7 +76,7 @@ public class ScheduledJob : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         if (Status == ScheduledJobStatus.Failed) return;
         if (Status == ScheduledJobStatus.Completed || Status == ScheduledJobStatus.Cancelled)
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_ScheduledJob_CannotFailFromStatus, $"Cannot fail a job in '{Status}' status.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_ScheduledJob_CannotFailFromStatus, $"Cannot fail a job in '{Status}' status.");
         Status = ScheduledJobStatus.Failed;
         SetAuditOnUpdate(null, failedAt);
         RaiseDomainEvent(new ScheduledJobFailedDomainEvent(AccountId, WorkspaceId, Id, reason, failedAt));

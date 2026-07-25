@@ -26,7 +26,7 @@ public class BoardItemConnection : Entity, IWorkspaceScoped
         }
         catch (System.Text.Json.JsonException)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldSettings_InvalidJsonFormat, "MetadataJson must be valid JSON.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldSettings_InvalidJsonFormat, "MetadataJson must be valid JSON.");
         }
         return json;
     }
@@ -52,7 +52,7 @@ public class BoardItemConnection : Entity, IWorkspaceScoped
         Guard.NotEmpty(targetItemId);
 
         if (sourceItemId == targetItemId)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Connection_CannotConnectToSelf, "Cannot connect an item to itself.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Connection_CannotConnectToSelf, "Cannot connect an item to itself.");
 
         Guard.NotEmpty(accountId);
 

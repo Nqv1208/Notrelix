@@ -1,7 +1,8 @@
 // Ported from rocicorp/fractional-indexing v4.0.0.
-// Default classic key format only.
+// Default classic key format only (BASE_62 digits, A-Z/a-z heads).
 // Custom digits/intDigits intentionally unsupported.
 // Original project license: CC0-1.0.
+// Commit: f1193a7 (v4.0.0 tag).
 
 namespace Notrelix.Domain.SharedKernel.Ordering;
 
@@ -14,26 +15,33 @@ public static class FractionalIndexGenerator
     private const string Digits =
         "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-    private const string IntegerHeads =
+    private const string IntDigits =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-    private static readonly int DigitsLength = Digits.Length; // 62
+    private static readonly int DigitsLength = Digits.Length;
+    private static readonly int IntDigitsLength = IntDigits.Length;
+
+    private static readonly int[] DigitLookup = BuildLookup(Digits);
+    private static readonly int[] IntLookup = BuildLookup(IntDigits);
 
     // ── Public API ────────────────────────────────────────────────────────
 
     /// <summary>
     /// Generates a key strictly between <paramref name="lower"/> and
     /// <paramref name="upper"/>. Either bound may be null (unbounded).
+    /// If both bounds are provided and lower >= upper, they are auto-swapped.
     /// </summary>
     public static FractionalIndex GenerateKeyBetween(
         FractionalIndex? lower,
         FractionalIndex? upper)
     {
-        ValidateBounds(lower, upper);
+        var a = lower?.Value;
+        var b = upper?.Value;
 
-        var value = GenerateKeyBetweenCore(lower?.Value, upper?.Value);
+        if (a != null && b != null && StringComparer.Ordinal.Compare(a, b) >= 0)
+            (a, b) = (b, a);
 
-        ValidateGeneratedKey(value, lower, upper);
+        var value = GenerateKeyBetweenCore(a, b);
 
         return FractionalIndex.Create(value);
     }
@@ -50,15 +58,17 @@ public static class FractionalIndexGenerator
         if (count <= 0)
             throw new ArgumentOutOfRangeException(nameof(count), "Count must be greater than zero.");
 
-        ValidateBounds(lower, upper);
+        var a = lower?.Value;
+        var b = upper?.Value;
 
-        var values = GenerateNKeysBetweenCore(lower?.Value, upper?.Value, count);
+        if (a != null && b != null && StringComparer.Ordinal.Compare(a, b) >= 0)
+            (a, b) = (b, a);
+
+        var values = GenerateNKeysBetweenCore(a, b, count);
 
         var results = new FractionalIndex[values.Length];
         for (var i = 0; i < values.Length; i++)
             results[i] = FractionalIndex.Create(values[i]);
-
-        ValidateGeneratedKeys(results, lower, upper, count);
 
         return results;
     }
@@ -72,135 +82,159 @@ public static class FractionalIndexGenerator
         if (string.IsNullOrEmpty(key))
             throw new ArgumentException("Order key cannot be null or empty.", nameof(key));
 
-        // The null character is explicitly forbidden.
-        if (key[0] == '\0')
-            throw new ArgumentException($"Invalid order key: '{key}'.", nameof(key));
-
-        // Validate the integer part (head + digits).
-        GetIntegerPart(key);
-
-        // Validate all characters are in the digit set.
-        for (var i = 0; i < key.Length; i++)
-        {
-            if (Digits.IndexOf(key[i]) < 0)
-                throw new ArgumentException(
-                    $"Invalid order key '{key}': character '{key[i]}' is not in the digit set.",
-                    nameof(key));
-        }
+        ValidateOrderKey(key);
     }
 
-    // ── Core algorithm ────────────────────────────────────────────────────
+    // ── Core algorithm (port of upstream generateKeyBetween) ──────────────
 
     private static string GenerateKeyBetweenCore(string? a, string? b)
     {
-        if (a is not null && b is not null && StringComparer.Ordinal.Compare(a, b) >= 0)
-            throw new ArgumentException($"lower ({a}) must be less than upper ({b}).");
+        if (a == null && b == null)
+        {
+            var head = IntDigits[IntDigitsLength / 2];
+            return new string([head, Digits[0]]);
+        }
 
-        if (a is null && b is null)
-            return "a0";
+        if (a == null)
+        {
+            var ib = GetIntegerPart(b!);
+            var fb = b![ib.Length..];
+            if (IsSmallestInteger(ib))
+                return ib + Midpoint("", fb);
+            if (StringComparer.Ordinal.Compare(ib, b) < 0)
+                return ib;
+            var res = DecrementInteger(ib);
+            if (res == null)
+                throw new ArgumentException("Cannot decrement any more.");
+            return res;
+        }
 
-        if (a is null)
-            return GenerateBefore(b!);
+        if (b == null)
+        {
+            var ia = GetIntegerPart(a);
+            var fa = a[ia.Length..];
+            var i = IncrementInteger(ia);
+            return i == null ? ia + Midpoint(fa, null) : i;
+        }
 
-        if (b is null)
-            return GenerateAfter(a);
+        var ia2 = GetIntegerPart(a);
+        var fa2 = a[ia2.Length..];
+        var ib2 = GetIntegerPart(b);
+        var fb2 = b[ib2.Length..];
+        if (ia2 == ib2)
+            return ia2 + Midpoint(fa2, fb2);
 
-        return GenerateBetween(a, b);
+        var inc = IncrementInteger(ia2);
+        if (inc == null)
+            throw new ArgumentException("Cannot increment any more.");
+        if (inc != null && StringComparer.Ordinal.Compare(inc, b) < 0)
+            return inc;
+
+        return ia2 + Midpoint(fa2, null);
     }
 
     private static string[] GenerateNKeysBetweenCore(string? a, string? b, int n)
     {
+        if (n == 0)
+            return [];
+
         if (n == 1)
             return [GenerateKeyBetweenCore(a, b)];
 
-        if (b is null)
+        if (b == null)
         {
             var c = GenerateKeyBetweenCore(a, b);
             var result = new string[n];
             result[0] = c;
             for (var i = 1; i < n; i++)
-                result[i] = GenerateKeyBetweenCore(result[i - 1], b);
+            {
+                c = GenerateKeyBetweenCore(c, b);
+                result[i] = c;
+            }
             return result;
         }
 
-        if (a is null)
+        if (a == null)
         {
             var c = GenerateKeyBetweenCore(a, b);
             var result = new string[n];
             result[^1] = c;
             for (var i = n - 2; i >= 0; i--)
+            {
                 result[i] = GenerateKeyBetweenCore(a, result[i + 1]);
+            }
+            result.Reverse();
             return result;
         }
 
-        var mid = (n - 1) / 2;
-        var left = GenerateNKeysBetweenCore(a, b, mid + 1);
-        var right = GenerateNKeysBetweenCore(left[^1], b, n - mid - 1);
-        return [.. left, .. right];
+        var mid = n / 2;
+        var left = GenerateNKeysBetweenCore(a, b, mid);
+        var c2 = GenerateKeyBetweenCore(left[^1], b);
+        var right = GenerateNKeysBetweenCore(c2, b, n - mid - 1);
+        return [.. left, c2, .. right];
     }
 
-    private static string GenerateBefore(string b)
+    // ── Midpoint (port of upstream midpoint) ──────────────────────────────
+
+    private static string Midpoint(string? a, string? b)
     {
-        var integerPart = GetIntegerPart(b);
-        var head = integerPart[0];
+        var zero = Digits[0];
 
-        // Try to decrement the integer part.
-        var decremented = DecrementInteger(integerPart);
-        if (decremented is not null)
-            return decremented;
+        if (b != null && a != null && StringComparer.Ordinal.Compare(a, b) >= 0)
+            throw new ArgumentException($"lower ({a}) must be less than upper ({b}).");
 
-        // Cannot decrement further — use the fractional part.
-        // Prepend a digit before b's fractional part.
-        var fractionalPart = b[integerPart.Length..];
-        return integerPart + Midpoint(null, fractionalPart);
-    }
+        if (a != null && a.Length > 0 && a[^1] == zero)
+            throw new ArgumentException("Trailing zero in key.", nameof(a));
 
-    private static string GenerateAfter(string a)
-    {
-        var integerPart = GetIntegerPart(a);
+        if (b != null && b.Length > 0 && b[^1] == zero)
+            throw new ArgumentException("Trailing zero in key.", nameof(b));
 
-        // Try to increment the integer part.
-        var incremented = IncrementInteger(integerPart);
-        if (incremented is not null)
-            return incremented;
-
-        // Cannot increment further — use the fractional part.
-        var fractionalPart = a[integerPart.Length..];
-        return integerPart + Midpoint(fractionalPart, null);
-    }
-
-    private static string GenerateBetween(string a, string b)
-    {
-        var intA = GetIntegerPart(a);
-        var intB = GetIntegerPart(b);
-
-        if (intA != intB)
+        if (b != null)
         {
-            // Different integer parts — try to find an integer between them.
-            var incremented = IncrementInteger(intA);
-            if (incremented is not null && StringComparer.Ordinal.Compare(incremented, intB) < 0)
-                return incremented;
+            var n = 0;
+            while (true)
+            {
+                var aDigit = n < (a?.Length ?? 0) ? a![n] : zero;
+                var bDigit = b[n];
+                if (aDigit != bDigit)
+                    break;
+                n++;
+            }
 
-            // No integer between them — use a's integer + fractional midpoint.
-            var fracA = a[intA.Length..];
-            return intA + Midpoint(fracA, null);
+            if (n > 0)
+            {
+                var prefix = b[..n];
+                var aSlice = n < (a?.Length ?? 0) ? a![n..] : null;
+                var bSlice = b[n..];
+                return prefix + Midpoint(aSlice, bSlice);
+            }
         }
 
-        // Same integer part — find midpoint of fractional parts.
-        var fracPartA = a[intA.Length..];
-        var fracPartB = b[intB.Length..];
-        return intA + Midpoint(fracPartA, fracPartB);
+        var digitA = a != null && a.Length > 0 ? DigitLookup[a[0]] : 0;
+        var digitB = b != null && b.Length > 0 ? DigitLookup[b[0]] : DigitsLength;
+
+        if (digitB - digitA > 1)
+        {
+            var midDigit = (int)Math.Round(0.5 * (digitA + digitB), MidpointRounding.AwayFromZero);
+            return Digits[midDigit].ToString();
+        }
+
+        if (b != null && b.Length > 1)
+            return b[..1];
+
+        return Digits[digitA] + Midpoint(a?.Length > 0 ? a[1..] : null, null);
     }
 
     // ── Integer part helpers ──────────────────────────────────────────────
 
     private static int GetIntegerLength(char head)
     {
-        if (head is >= 'a' and <= 'z')
-            return head - 'a' + 2;
-
-        if (head is >= 'A' and <= 'Z')
-            return 'Z' - head + 2;
+        var i = IntLookup[head];
+        if (IntDigits[i] == head)
+        {
+            var half = IntDigitsLength / 2;
+            return i < half ? half - i + 1 : i - half + 2;
+        }
 
         throw new ArgumentException($"Invalid order key head: '{head}'.");
     }
@@ -210,207 +244,106 @@ public static class FractionalIndexGenerator
         if (key.Length == 0)
             throw new ArgumentException("Order key cannot be empty.");
 
-        var integerPartLength = GetIntegerLength(key[0]);
-        if (key.Length < integerPartLength)
+        var length = GetIntegerLength(key[0]);
+        if (length > key.Length)
             throw new ArgumentException($"Invalid order key: '{key}'.");
 
-        return key[..integerPartLength];
+        return key[..length];
     }
 
     private static string? IncrementInteger(string x)
     {
         var head = x[0];
-        var digits = x[1..];
+        var trailing = "";
 
-        var newDigits = IncrementDigits(digits);
-        if (newDigits is not null)
-            return head + newDigits;
-
-        // Carry: move to the next head.
-        if (head is >= 'a' and < 'z')
+        for (var i = x.Length - 1; i >= 1; i--)
         {
-            var newHead = (char)(head + 1);
-            return newHead + new string('0', GetIntegerLength(newHead) - 1);
+            var d = DigitLookup[x[i]] + 1;
+            if (d == DigitsLength)
+            {
+                trailing = Digits[0] + trailing;
+            }
+            else
+            {
+                return x[..i] + Digits[d] + trailing;
+            }
         }
 
-        if (head is >= 'A' and > 'Z')
-        {
-            // This branch is unreachable for valid heads, but guards against corruption.
+        var headIndex = IntLookup[head];
+        if (headIndex == IntDigitsLength - 1)
             return null;
-        }
 
-        if (head == 'Z')
-        {
-            // Z is the smallest positive head. Incrementing wraps to 'a' (zero).
-            return "a" + new string('0', GetIntegerLength('a') - 1);
-        }
+        var h = IntDigits[headIndex + 1];
+        var lengthDelta = GetIntegerLength(h) - GetIntegerLength(head);
 
-        if (head is >= 'A' and < 'Z')
-        {
-            // A-Y: decrement head (toward A = larger integer length).
-            var newHead = (char)(head - 1);
-            return newHead + new string('0', GetIntegerLength(newHead) - 1);
-        }
-
-        // head == 'z': overflow, cannot increment.
-        return null;
+        return lengthDelta > 0
+            ? h + trailing + Digits[0]
+            : lengthDelta < 0
+                ? h + trailing[1..]
+                : h + trailing;
     }
 
     private static string? DecrementInteger(string x)
     {
         var head = x[0];
-        var digits = x[1..];
+        var last = Digits[DigitsLength - 1];
+        var trailing = "";
 
-        var newDigits = DecrementDigits(digits);
-        if (newDigits is not null)
-            return head + newDigits;
-
-        // Borrow: move to the previous head.
-        if (head is > 'a' and <= 'z')
+        for (var i = x.Length - 1; i >= 1; i--)
         {
-            var newHead = (char)(head - 1);
-            return newHead + new string('z', GetIntegerLength(newHead) - 1);
-        }
-
-        if (head == 'a')
-        {
-            // 'a' is the zero head. Decrementing wraps to 'Z' (negative one).
-            return "Z" + new string('z', GetIntegerLength('Z') - 1);
-        }
-
-        if (head is >= 'A' and < 'Z')
-        {
-            var newHead = (char)(head + 1);
-            return newHead + new string('z', GetIntegerLength(newHead) - 1);
-        }
-
-        // head == 'A': underflow, cannot decrement.
-        return null;
-    }
-
-    private static string? IncrementDigits(string digits)
-    {
-        var chars = digits.ToCharArray();
-        for (var i = chars.Length - 1; i >= 0; i--)
-        {
-            var idx = Digits.IndexOf(chars[i]);
-            if (idx < DigitsLength - 1)
+            var d = DigitLookup[x[i]] - 1;
+            if (d == -1)
             {
-                chars[i] = Digits[idx + 1];
-                return new string(chars);
+                trailing = last + trailing;
             }
-            chars[i] = Digits[0]; // carry
-        }
-        return null; // all digits were max → overflow
-    }
-
-    private static string? DecrementDigits(string digits)
-    {
-        var chars = digits.ToCharArray();
-        for (var i = chars.Length - 1; i >= 0; i--)
-        {
-            var idx = Digits.IndexOf(chars[i]);
-            if (idx > 0)
+            else
             {
-                chars[i] = Digits[idx - 1];
-                return new string(chars);
+                return x[..i] + Digits[d] + trailing;
             }
-            chars[i] = Digits[DigitsLength - 1]; // borrow
-        }
-        return null; // all digits were min → underflow
-    }
-
-    // ── Midpoint ──────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Computes a digit string strictly between <paramref name="a"/> and
-    /// <paramref name="b"/>. Either may be null (unbounded).
-    /// </summary>
-    private static string Midpoint(string? a, string? b)
-    {
-        if (a is not null && b is not null && StringComparer.Ordinal.Compare(a, b) >= 0)
-            throw new ArgumentException($"lower ({a}) must be less than upper ({b}).");
-
-        // Pad a with implicit zeros; b with implicit max-digits.
-        var maxLen = Math.Max(a?.Length ?? 0, b?.Length ?? 0);
-
-        for (var i = 0; i < maxLen; i++)
-        {
-            var digitA = i < (a?.Length ?? 0) ? Digits.IndexOf(a![i]) : 0;
-            var digitB = i < (b?.Length ?? 0) ? Digits.IndexOf(b![i]) : DigitsLength;
-
-            if (digitA == digitB)
-                continue;
-
-            if (digitB - digitA > 1)
-            {
-                // There is room between these digits.
-                var mid = (digitA + digitB) / 2;
-                var prefix = (a?[..i]) ?? "";
-                return prefix + Digits[mid];
-            }
-
-            // digitB - digitA == 1: no room. Take digitA and recurse into
-            // the next position with a's suffix as lower bound.
-            var prefix2 = (a?[..(i + 1)]) ?? Digits[digitA].ToString();
-            var suffixA = (a is not null && i + 1 < a.Length) ? a[(i + 1)..] : null;
-            return prefix2 + Midpoint(suffixA, null);
         }
 
-        // a is a prefix of b (or both empty up to maxLen).
-        // Append a midpoint digit after a.
-        var baseStr = a ?? "";
-        return baseStr + Digits[DigitsLength / 2]; // 'V'
+        var headIndex = IntLookup[head];
+        if (headIndex == 0)
+            return null;
+
+        var h = IntDigits[headIndex - 1];
+        var lengthDelta = GetIntegerLength(h) - GetIntegerLength(head);
+
+        return lengthDelta > 0
+            ? h + trailing + last
+            : lengthDelta < 0
+                ? h + trailing[1..]
+                : h + trailing;
     }
 
-    // ── Validation helpers ────────────────────────────────────────────────
+    // ── Validation (port of upstream validateOrderKey + helpers) ──────────
 
-    private static void ValidateBounds(FractionalIndex? lower, FractionalIndex? upper)
+    private static bool IsSmallestInteger(string key)
     {
-        if (lower is not null && upper is not null && lower.CompareTo(upper) >= 0)
-            throw new ArgumentException(
-                $"Lower bound ({lower.Value}) must be less than upper bound ({upper.Value}).");
+        var head = IntDigits[0];
+        var zero = Digits[0];
+        var half = IntDigitsLength / 2;
+        var expected = head + new string(zero, half);
+        return key == expected;
     }
 
-    private static void ValidateGeneratedKey(
-        string value,
-        FractionalIndex? lower,
-        FractionalIndex? upper)
+    private static void ValidateOrderKey(string key)
     {
-        ValidateKey(value);
+        if (IsSmallestInteger(key))
+            throw new ArgumentException($"Invalid order key: '{key}'.", nameof(key));
 
-        if (lower is not null && StringComparer.Ordinal.Compare(lower.Value, value) >= 0)
-            throw new InvalidOperationException(
-                $"Generated key '{value}' must be greater than lower bound '{lower.Value}'.");
+        var i = GetIntegerPart(key);
+        var f = key[i.Length..];
 
-        if (upper is not null && StringComparer.Ordinal.Compare(value, upper.Value) >= 0)
-            throw new InvalidOperationException(
-                $"Generated key '{value}' must be less than upper bound '{upper.Value}'.");
+        if (f.Length > 0 && f[^1] == Digits[0])
+            throw new ArgumentException($"Invalid order key: '{key}'.", nameof(key));
     }
 
-    private static void ValidateGeneratedKeys(
-        IReadOnlyList<FractionalIndex> keys,
-        FractionalIndex? lower,
-        FractionalIndex? upper,
-        int expectedCount)
+    private static int[] BuildLookup(string alphabet)
     {
-        if (keys.Count != expectedCount)
-            throw new InvalidOperationException("Generated key count is invalid.");
-
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        for (var i = 0; i < keys.Count; i++)
-        {
-            if (!seen.Add(keys[i].Value))
-                throw new InvalidOperationException("Generated keys must be unique.");
-
-            if (i > 0 && keys[i - 1].CompareTo(keys[i]) >= 0)
-                throw new InvalidOperationException("Generated keys must be strictly ordered.");
-        }
-
-        if (keys.Count > 0)
-        {
-            ValidateGeneratedKey(keys[0].Value, lower, upper);
-            ValidateGeneratedKey(keys[^1].Value, lower, upper);
-        }
+        var lookup = new int[256];
+        for (var i = 0; i < alphabet.Length; i++)
+            lookup[alphabet[i]] = i;
+        return lookup;
     }
 }

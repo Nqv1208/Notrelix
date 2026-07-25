@@ -30,7 +30,7 @@ public sealed class ResourceRef : ValueObject
     public void EnsureSameWorkspace(Guid workspaceId)
     {
         if (WorkspaceId.HasValue && WorkspaceId.Value != workspaceId)
-            throw new BusinessRuleException(BusinessRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{workspaceId}', got '{WorkspaceId.Value}'.");
+            throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{workspaceId}', got '{WorkspaceId.Value}'.");
     }
 
     public override string ToString() => $"{ResourceType}:{ResourceId}";

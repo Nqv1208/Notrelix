@@ -17,14 +17,14 @@ public class ApprovalStep : Entity
     {
         Guard.NotEmpty(requestId);
         if (position <= 0)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Approval_StepPositionInvalid, "Step position must be greater than zero.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_StepPositionInvalid, "Step position must be greater than zero.");
 
         var hasUser = userId.HasValue && userId.Value != Guid.Empty;
         var hasTeam = teamId.HasValue && teamId.Value != Guid.Empty;
         if (!hasUser && !hasTeam)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Approval_StepRequiresApprover, "Step must have exactly one approver (user or team).");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_StepRequiresApprover, "Step must have exactly one approver (user or team).");
         if (hasUser && hasTeam)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Approval_StepRequiresApprover, "Step must have exactly one approver (user or team), not both.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_StepRequiresApprover, "Step must have exactly one approver (user or team), not both.");
 
         return new ApprovalStep
         {
@@ -39,9 +39,9 @@ public class ApprovalStep : Entity
     public void Approve(DateTimeOffset decidedAt, string? note = null)
     {
         if (Status != ApprovalStatus.Pending)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Approval_Step_CannotApproveUnlessPending, "Only pending steps can be approved.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_Step_CannotApproveUnlessPending, "Only pending steps can be approved.");
         if (decidedAt == default)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Approval_DecisionTimeRequired, "Decision time must be provided.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_DecisionTimeRequired, "Decision time must be provided.");
 
         Status = ApprovalStatus.Approved;
         DecidedAt = decidedAt;
@@ -51,9 +51,9 @@ public class ApprovalStep : Entity
     public void Reject(DateTimeOffset decidedAt, string? note = null)
     {
         if (Status != ApprovalStatus.Pending)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Approval_Step_CannotRejectUnlessPending, "Only pending steps can be rejected.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_Step_CannotRejectUnlessPending, "Only pending steps can be rejected.");
         if (decidedAt == default)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Approval_DecisionTimeRequired, "Decision time must be provided.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_DecisionTimeRequired, "Decision time must be provided.");
 
         Status = ApprovalStatus.Rejected;
         DecidedAt = decidedAt;
@@ -61,7 +61,7 @@ public class ApprovalStep : Entity
     }
 }
 
-public class ApprovalRequest : AggregateRoot, IWorkspaceScoped
+public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -76,43 +76,45 @@ public class ApprovalRequest : AggregateRoot, IWorkspaceScoped
 
     private ApprovalRequest() : base() { }
 
-    public void AddStep(int position, Guid? approverUserId = null, Guid? approverTeamId = null, Guid? addedBy = null, DateTimeOffset addedAt = default)
+    public void AddStep(int position, Guid addedBy, DateTimeOffset addedAt, Guid? approverUserId = null, Guid? approverTeamId = null)
     {
         EnsureNotDeleted();
         if (Status != ApprovalStatus.Pending)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Approval_CannotAddStepsNonPending, "Cannot add steps to a non-pending approval request.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_CannotAddStepsNonPending, "Cannot add steps to a non-pending approval request.");
 
         if (_steps.Any(s => s.Position == position))
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Approval_DuplicateStepPosition, $"Step position {position} already exists.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_DuplicateStepPosition, $"Step position {position} already exists.");
 
         if (approverUserId.HasValue && _steps.Any(s => s.ApproverUserId == approverUserId))
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Approval_DuplicateApprover, "Duplicate approver user in approval steps.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_DuplicateApprover, "Duplicate approver user in approval steps.");
         if (approverTeamId.HasValue && _steps.Any(s => s.ApproverTeamId == approverTeamId))
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Approval_DuplicateApprover, "Duplicate approver team in approval steps.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_DuplicateApprover, "Duplicate approver team in approval steps.");
 
         var step = ApprovalStep.Create(Id, position, approverUserId, approverTeamId);
         _steps.Add(step);
 
-        if (addedAt != default)
-        {
-            SetAuditOnUpdate(addedBy, addedAt);
-            IncrementVersion();
-        }
+        SetAuditOnUpdate(addedBy, addedAt);
+        IncrementVersion();
     }
 
     public void Approve(Guid stepId, Guid decidedBy, DateTimeOffset decidedAt, string? note = null)
     {
         EnsureNotDeleted();
         if (Status != ApprovalStatus.Pending)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Approval_CannotApproveUnlessPending, "Only pending approval requests can be approved.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_CannotApproveUnlessPending, "Only pending approval requests can be approved.");
         if (decidedAt == default)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Approval_DecisionTimeRequired, "Decision time must be provided.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_DecisionTimeRequired, "Decision time must be provided.");
 
         var step = _steps.FirstOrDefault(s => s.Id == stepId);
         if (step == null)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Approval_StepNotFound, $"Approval step '{stepId}' not found.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_StepNotFound, $"Approval step '{stepId}' not found.");
         if (step.ApprovalRequestId != Id)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Approval_StepNotFound, $"Approval step '{stepId}' does not belong to this request.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_StepNotFound, $"Approval step '{stepId}' does not belong to this request.");
+
+        if (step.ApproverUserId.HasValue && step.ApproverUserId.Value != decidedBy)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_StepNotAssignedToYou, "This step is not assigned to you.");
+        if (step.ApproverTeamId.HasValue && step.ApproverTeamId.Value != decidedBy)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_StepNotAssignedToYou, "This step is assigned to a team, not an individual user.");
 
         step.Approve(decidedAt, note);
 
@@ -130,15 +132,20 @@ public class ApprovalRequest : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (Status != ApprovalStatus.Pending)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Approval_CannotRejectUnlessPending, "Only pending approval requests can be rejected.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_CannotRejectUnlessPending, "Only pending approval requests can be rejected.");
         if (decidedAt == default)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Approval_DecisionTimeRequired, "Decision time must be provided.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_DecisionTimeRequired, "Decision time must be provided.");
 
         var step = _steps.FirstOrDefault(s => s.Id == stepId);
         if (step == null)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Approval_StepNotFound, $"Approval step '{stepId}' not found.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_StepNotFound, $"Approval step '{stepId}' not found.");
         if (step.ApprovalRequestId != Id)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Approval_StepNotFound, $"Approval step '{stepId}' does not belong to this request.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_StepNotFound, $"Approval step '{stepId}' does not belong to this request.");
+
+        if (step.ApproverUserId.HasValue && step.ApproverUserId.Value != decidedBy)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_StepNotAssignedToYou, "This step is not assigned to you.");
+        if (step.ApproverTeamId.HasValue && step.ApproverTeamId.Value != decidedBy)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_StepNotAssignedToYou, "This step is assigned to a team, not an individual user.");
 
         step.Reject(decidedAt, note);
         Status = ApprovalStatus.Rejected;
@@ -152,7 +159,7 @@ public class ApprovalRequest : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (Status != ApprovalStatus.Pending)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Approval_CannotCancelUnlessPending, "Only pending approval requests can be cancelled.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_CannotCancelUnlessPending, "Only pending approval requests can be cancelled.");
 
         Status = ApprovalStatus.Cancelled;
         SetAuditOnUpdate(cancelledBy, cancelledAt);
@@ -167,7 +174,7 @@ public class ApprovalRequest : AggregateRoot, IWorkspaceScoped
         Guard.NotNullOrWhiteSpace(title);
 
         if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
-            throw new BusinessRuleException(BusinessRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{workspaceId}', got '{target.WorkspaceId.Value}'.");
+            throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{workspaceId}', got '{target.WorkspaceId.Value}'.");
 
         Guard.NotEmpty(accountId);
 

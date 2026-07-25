@@ -8,7 +8,7 @@ public static class TeamLeadRules
     {
         if (activeLeadCount <= 1)
             throw new BusinessRuleException(
-                BusinessRuleCodes.Workspaces_Team_CannotRemoveLastLead,
+                WorkspaceRuleCodes.Workspaces_Team_CannotRemoveLastLead,
                 "Cannot remove the last lead from a team.");
     }
 
@@ -22,7 +22,7 @@ public static class TeamLeadRules
             && activeLeadCount <= 1)
         {
             throw new BusinessRuleException(
-                BusinessRuleCodes.Workspaces_Team_CannotDowngradeLastLead,
+                WorkspaceRuleCodes.Workspaces_Team_CannotDowngradeLastLead,
                 "Cannot downgrade the last lead of a team.");
         }
     }
@@ -33,7 +33,7 @@ public static class TeamLeadRules
     {
         if (role == TeamMemberRole.Lead && activeLeadCount <= 1)
             throw new BusinessRuleException(
-                BusinessRuleCodes.Workspaces_Team_LastLeadCannotLeave,
+                WorkspaceRuleCodes.Workspaces_Team_LastLeadCannotLeave,
                 "The last lead cannot leave the team. Transfer leadership first.");
     }
 }

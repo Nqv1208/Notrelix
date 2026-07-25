@@ -22,7 +22,7 @@ public sealed class Color : ValueObject
         value = value.Trim().ToUpperInvariant();
 
         if (!HexColorRegex.IsMatch(value))
-            throw new BusinessRuleException(BusinessRuleCodes.SharedKernel_Color_InvalidFormat, $"'{value}' is not a valid hex color code.");
+            throw new BusinessRuleException(CommonRuleCodes.SharedKernel_Color_InvalidFormat, $"'{value}' is not a valid hex color code.");
 
         if (value.Length == 4)
             value = $"#{value[1]}{value[1]}{value[2]}{value[2]}{value[3]}{value[3]}";

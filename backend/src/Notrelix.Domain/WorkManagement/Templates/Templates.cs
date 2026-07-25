@@ -1,7 +1,7 @@
 using Notrelix.Domain.WorkManagement.Templates.Events;
 namespace Notrelix.Domain.WorkManagement.Templates;
 
-public class BoardTemplate : AggregateRoot
+public class BoardTemplate : SoftDeletableAggregateRoot
 {
     public Guid? WorkspaceId { get; private set; }
     public string Name { get; private set; } = null!;
@@ -48,7 +48,7 @@ public class BoardTemplate : AggregateRoot
         EnsureNotDeleted();
         if (Status == TemplateStatus.Draft) return;
         if (Status == TemplateStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_BoardTemplate_CannotDraftArchived, "Cannot draft an archived template. Restore it first.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_BoardTemplate_CannotDraftArchived, "Cannot draft an archived template. Restore it first.");
 
         Status = TemplateStatus.Draft;
         SetAuditOnUpdate(updatedBy, updatedAt);
@@ -60,7 +60,7 @@ public class BoardTemplate : AggregateRoot
         EnsureNotDeleted();
         if (Status == TemplateStatus.Published) return;
         if (Status == TemplateStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_BoardTemplate_CannotPublishArchived, "Cannot publish an archived template. Restore it first.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_BoardTemplate_CannotPublishArchived, "Cannot publish an archived template. Restore it first.");
 
         Status = TemplateStatus.Published;
         SetAuditOnUpdate(updatedBy, updatedAt);
@@ -87,7 +87,7 @@ public class BoardTemplate : AggregateRoot
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted && Status != TemplateStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_BoardTemplate_CanOnlyRestoreArchived, "Only archived or deleted templates can be restored.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_BoardTemplate_CanOnlyRestoreArchived, "Only archived or deleted templates can be restored.");
 
         if (!MarkRestored(restoredBy, restoredAt)) return;
         Status = TemplateStatus.Draft;
@@ -96,7 +96,7 @@ public class BoardTemplate : AggregateRoot
     }
 }
 
-public class ItemTemplate : AggregateRoot, IWorkspaceScoped
+public class ItemTemplate : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -149,7 +149,7 @@ public class ItemTemplate : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         if (Status == TemplateStatus.Draft) return;
         if (Status == TemplateStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_BoardTemplate_CannotDraftArchived, "Cannot draft an archived template. Restore it first.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_BoardTemplate_CannotDraftArchived, "Cannot draft an archived template. Restore it first.");
 
         Status = TemplateStatus.Draft;
         SetAuditOnUpdate(updatedBy, updatedAt);
@@ -161,7 +161,7 @@ public class ItemTemplate : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         if (Status == TemplateStatus.Published) return;
         if (Status == TemplateStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_BoardTemplate_CannotPublishArchived, "Cannot publish an archived template. Restore it first.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_BoardTemplate_CannotPublishArchived, "Cannot publish an archived template. Restore it first.");
 
         Status = TemplateStatus.Published;
         SetAuditOnUpdate(updatedBy, updatedAt);
@@ -188,7 +188,7 @@ public class ItemTemplate : AggregateRoot, IWorkspaceScoped
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted && Status != TemplateStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_BoardTemplate_CanOnlyRestoreArchived, "Only archived or deleted templates can be restored.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_BoardTemplate_CanOnlyRestoreArchived, "Only archived or deleted templates can be restored.");
 
         if (!MarkRestored(restoredBy, restoredAt)) return;
         Status = TemplateStatus.Draft;

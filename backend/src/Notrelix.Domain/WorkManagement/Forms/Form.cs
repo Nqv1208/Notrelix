@@ -3,7 +3,7 @@ using Notrelix.Domain.WorkManagement.Forms.Events;
 
 namespace Notrelix.Domain.WorkManagement.Forms;
 
-public class Form : AggregateRoot, IWorkspaceScoped
+public class Form : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -29,7 +29,7 @@ public class Form : AggregateRoot, IWorkspaceScoped
         }
         catch (System.Text.Json.JsonException)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FormQuestion_InvalidConfigJson, $"{propertyName} must be valid JSON.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FormQuestion_InvalidConfigJson, $"{propertyName} must be valid JSON.");
         }
         return json;
     }
@@ -89,10 +89,10 @@ public class Form : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (Status == FormStatus.Closed)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Form_CannotPublishClosed, "Cannot publish a closed form.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Form_CannotPublishClosed, "Cannot publish a closed form.");
 
         if (_questions.Count == 0)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Form_CannotPublishNoQuestions, "Cannot publish a form with no questions.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Form_CannotPublishNoQuestions, "Cannot publish a form with no questions.");
 
         var oldStatus = Status;
         Status = FormStatus.Published;
@@ -116,9 +116,9 @@ public class Form : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (Status == FormStatus.Draft)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Form_CannotSubmitToDraft, "Cannot submit to a draft form.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Form_CannotSubmitToDraft, "Cannot submit to a draft form.");
         if (Status == FormStatus.Closed)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Form_CannotSubmitToClosed, "Cannot submit to a closed form.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Form_CannotSubmitToClosed, "Cannot submit to a closed form.");
     }
 
     public void AddQuestion(FormQuestion question, Guid updatedBy, DateTimeOffset updatedAt)
@@ -127,13 +127,13 @@ public class Form : AggregateRoot, IWorkspaceScoped
         Guard.NotNull(question);
 
         if (Status == FormStatus.Closed)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Form_CannotAddQuestionToClosed, "Cannot add a question to a closed form.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Form_CannotAddQuestionToClosed, "Cannot add a question to a closed form.");
 
         if (question.WorkspaceId != WorkspaceId)
-            throw new BusinessRuleException(BusinessRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{WorkspaceId}', got '{question.WorkspaceId}'.");
+            throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{WorkspaceId}', got '{question.WorkspaceId}'.");
 
         if (_questions.Any(q => q.QuestionKey.Equals(question.QuestionKey, StringComparison.OrdinalIgnoreCase)))
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Form_DuplicateQuestionKey, $"A question with key '{question.QuestionKey}' already exists.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Form_DuplicateQuestionKey, $"A question with key '{question.QuestionKey}' already exists.");
 
         _questions.Add(question);
         SetAuditOnUpdate(updatedBy, updatedAt);

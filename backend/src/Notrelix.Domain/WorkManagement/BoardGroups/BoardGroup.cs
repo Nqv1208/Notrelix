@@ -1,7 +1,7 @@
 using Notrelix.Domain.WorkManagement.BoardGroups.Events;
 namespace Notrelix.Domain.WorkManagement.BoardGroups;
 
-public class BoardGroup : AggregateRoot, IWorkspaceScoped
+public class BoardGroup : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -97,7 +97,7 @@ public class BoardGroup : AggregateRoot, IWorkspaceScoped
     public void ValidateNotDefaultGroup(Guid? defaultGroupId)
     {
         if (defaultGroupId.HasValue && Id == defaultGroupId.Value)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Board_CannotDeleteDefaultGroup, "Cannot delete the board's default group.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotDeleteDefaultGroup, "Cannot delete the board's default group.");
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -132,6 +132,6 @@ public class BoardGroup : AggregateRoot, IWorkspaceScoped
     private void EnsureNotArchived()
     {
         if (IsArchived)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Board_CannotRenameArchived, "Cannot modify an archived board group.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Board_CannotRenameArchived, "Cannot modify an archived board group.");
     }
 }

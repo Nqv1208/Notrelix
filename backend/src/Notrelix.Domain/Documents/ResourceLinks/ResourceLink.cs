@@ -1,7 +1,7 @@
 using Notrelix.Domain.Documents.ResourceLinks.Events;
 namespace Notrelix.Domain.Documents.ResourceLinks;
 
-public class ResourceLink : AggregateRoot, IWorkspaceScoped
+public class ResourceLink : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -19,10 +19,10 @@ public class ResourceLink : AggregateRoot, IWorkspaceScoped
         Guard.NotNull(target);
 
         if (source == target)
-            throw new BusinessRuleException(BusinessRuleCodes.Documents_ResourceLink_CannotCreateSelfReferencing, "Cannot create a self-referencing resource link.");
+            throw new BusinessRuleException(DocumentRuleCodes.Documents_ResourceLink_CannotCreateSelfReferencing, "Cannot create a self-referencing resource link.");
 
         if (target.WorkspaceId.HasValue && target.WorkspaceId != source.WorkspaceId)
-            throw new BusinessRuleException(BusinessRuleCodes.Documents_ResourceLink_TargetMustBeInSameWorkspace, "Target resource must belong to the same workspace as the source resource.");
+            throw new BusinessRuleException(DocumentRuleCodes.Documents_ResourceLink_TargetMustBeInSameWorkspace, "Target resource must belong to the same workspace as the source resource.");
 
         var link = new ResourceLink
         {

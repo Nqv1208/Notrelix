@@ -67,7 +67,7 @@ public sealed class AiAgentModelPolicy : ValueObject
         }
         catch (JsonException ex)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_Agent_InvalidModelPolicyJson, $"Invalid AiAgentModelPolicy JSON: {ex.Message}");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Agent_InvalidModelPolicyJson, $"Invalid AiAgentModelPolicy JSON: {ex.Message}");
         }
     }
 

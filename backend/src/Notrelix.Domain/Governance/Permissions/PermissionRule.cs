@@ -1,7 +1,7 @@
 using Notrelix.Domain.Governance.Permissions.Events;
 namespace Notrelix.Domain.Governance.Permissions;
 
-public class PermissionRule : AggregateRoot, IWorkspaceScoped
+public class PermissionRule : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }

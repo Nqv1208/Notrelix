@@ -1,7 +1,7 @@
 using Notrelix.Domain.WorkManagement.Relations.Events;
 namespace Notrelix.Domain.WorkManagement.Relations;
 
-public class BoardRelation : AggregateRoot, IWorkspaceScoped
+public class BoardRelation : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -26,7 +26,7 @@ public class BoardRelation : AggregateRoot, IWorkspaceScoped
         }
         catch (System.Text.Json.JsonException)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldSettings_InvalidJsonFormat, "ConfigJson must be valid JSON.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldSettings_InvalidJsonFormat, "ConfigJson must be valid JSON.");
         }
         return json;
     }
@@ -50,7 +50,7 @@ public class BoardRelation : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(targetBoardId);
 
         if (sourceBoardId == targetBoardId)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Relation_CannotCreateSelfReferencing, "Cannot create a relation from a board to itself.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Relation_CannotCreateSelfReferencing, "Cannot create a relation from a board to itself.");
 
         Guard.NotEmpty(accountId);
 
@@ -89,7 +89,7 @@ public class BoardRelation : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         if (Status == BoardRelationStatus.Active) return;
         if (Status == BoardRelationStatus.Broken)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Relation_CannotResumeBroken, "Cannot resume a broken relation. Repair it first.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Relation_CannotResumeBroken, "Cannot resume a broken relation. Repair it first.");
         Status = BoardRelationStatus.Active;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();

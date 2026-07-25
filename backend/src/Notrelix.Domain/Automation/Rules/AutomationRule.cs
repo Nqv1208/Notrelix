@@ -2,7 +2,7 @@ using Notrelix.Domain.Automation.Rules.Events;
 using Notrelix.Domain.Automation.RulesEngine;
 namespace Notrelix.Domain.Automation.Rules;
 
-public class AutomationRule : AggregateRoot, IWorkspaceScoped
+public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -46,8 +46,8 @@ public class AutomationRule : AggregateRoot, IWorkspaceScoped
 
     public void Enable(Guid updatedBy, DateTimeOffset updatedAt)
     {
-        if (Status == AutomationRuleStatus.Active) return;
         EnsureNotDeleted();
+        if (Status == AutomationRuleStatus.Active) return;
 
         Status = AutomationRuleStatus.Active;
         SetAuditOnUpdate(updatedBy, updatedAt);
@@ -57,8 +57,8 @@ public class AutomationRule : AggregateRoot, IWorkspaceScoped
 
     public void Disable(Guid updatedBy, DateTimeOffset updatedAt)
     {
-        if (Status == AutomationRuleStatus.Disabled) return;
         EnsureNotDeleted();
+        if (Status == AutomationRuleStatus.Disabled) return;
 
         Status = AutomationRuleStatus.Disabled;
         SetAuditOnUpdate(updatedBy, updatedAt);

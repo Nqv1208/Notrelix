@@ -25,7 +25,7 @@ public static class AutomationTriggerValidator
                 ValidateHasJsonConfig(trigger.Configuration);
                 break;
             default:
-                throw new BusinessRuleException(BusinessRuleCodes.Automation_TriggerValidator_UnknownTriggerType, $"Unknown trigger type '{trigger.Type}'.");
+                throw new BusinessRuleException(AutomationRuleCodes.Automation_TriggerValidator_UnknownTriggerType, $"Unknown trigger type '{trigger.Type}'.");
         }
     }
 
@@ -38,14 +38,14 @@ public static class AutomationTriggerValidator
         }
         catch (JsonException ex)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_Trigger_InvalidConfigJson, $"Invalid trigger configuration JSON: {ex.Message}");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Trigger_InvalidConfigJson, $"Invalid trigger configuration JSON: {ex.Message}");
         }
     }
 
     private static void ValidateScheduleConfig(string? configuration)
     {
         if (string.IsNullOrWhiteSpace(configuration))
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_TriggerValidator_InvalidScheduleTriggerJson, "ScheduleTrigger requires a configuration with 'cron' or 'interval' property.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_TriggerValidator_InvalidScheduleTriggerJson, "ScheduleTrigger requires a configuration with 'cron' or 'interval' property.");
 
         try
         {
@@ -53,18 +53,18 @@ public static class AutomationTriggerValidator
             var root = doc.RootElement;
 
             if (!root.TryGetProperty("cron", out _) && !root.TryGetProperty("interval", out _))
-                throw new BusinessRuleException(BusinessRuleCodes.Automation_TriggerValidator_InvalidScheduleTriggerJson, "ScheduleTrigger configuration must contain 'cron' or 'interval'.");
+                throw new BusinessRuleException(AutomationRuleCodes.Automation_TriggerValidator_InvalidScheduleTriggerJson, "ScheduleTrigger configuration must contain 'cron' or 'interval'.");
         }
         catch (JsonException ex)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_TriggerValidator_InvalidScheduleTriggerJson, $"Invalid ScheduleTrigger configuration JSON: {ex.Message}");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_TriggerValidator_InvalidScheduleTriggerJson, $"Invalid ScheduleTrigger configuration JSON: {ex.Message}");
         }
     }
 
     private static void ValidateFieldChangedConfig(string? configuration)
     {
         if (string.IsNullOrWhiteSpace(configuration))
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_TriggerValidator_InvalidFieldChangedJson, "FieldChanged trigger requires a configuration with 'fieldId' property.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_TriggerValidator_InvalidFieldChangedJson, "FieldChanged trigger requires a configuration with 'fieldId' property.");
 
         try
         {
@@ -72,18 +72,18 @@ public static class AutomationTriggerValidator
             var root = doc.RootElement;
 
             if (!root.TryGetProperty("fieldId", out _))
-                throw new BusinessRuleException(BusinessRuleCodes.Automation_TriggerValidator_InvalidFieldChangedJson, "FieldChanged trigger configuration must contain 'fieldId'.");
+                throw new BusinessRuleException(AutomationRuleCodes.Automation_TriggerValidator_InvalidFieldChangedJson, "FieldChanged trigger configuration must contain 'fieldId'.");
         }
         catch (JsonException ex)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_TriggerValidator_InvalidFieldChangedJson, $"Invalid FieldChanged configuration JSON: {ex.Message}");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_TriggerValidator_InvalidFieldChangedJson, $"Invalid FieldChanged configuration JSON: {ex.Message}");
         }
     }
 
     private static void ValidateItemMovedToGroupConfig(string? configuration)
     {
         if (string.IsNullOrWhiteSpace(configuration))
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_TriggerValidator_InvalidItemMovedToGroupJson, "ItemMovedToGroup trigger requires a configuration with 'groupId' or 'fromGroupId' property.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_TriggerValidator_InvalidItemMovedToGroupJson, "ItemMovedToGroup trigger requires a configuration with 'groupId' or 'fromGroupId' property.");
 
         try
         {
@@ -91,11 +91,11 @@ public static class AutomationTriggerValidator
             var root = doc.RootElement;
 
             if (!root.TryGetProperty("groupId", out _) && !root.TryGetProperty("fromGroupId", out _))
-                throw new BusinessRuleException(BusinessRuleCodes.Automation_TriggerValidator_InvalidItemMovedToGroupJson, "ItemMovedToGroup trigger configuration must contain 'groupId' or 'fromGroupId'.");
+                throw new BusinessRuleException(AutomationRuleCodes.Automation_TriggerValidator_InvalidItemMovedToGroupJson, "ItemMovedToGroup trigger configuration must contain 'groupId' or 'fromGroupId'.");
         }
         catch (JsonException ex)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_TriggerValidator_InvalidItemMovedToGroupJson, $"Invalid ItemMovedToGroup configuration JSON: {ex.Message}");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_TriggerValidator_InvalidItemMovedToGroupJson, $"Invalid ItemMovedToGroup configuration JSON: {ex.Message}");
         }
     }
 }

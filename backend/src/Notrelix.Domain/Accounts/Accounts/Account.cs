@@ -1,7 +1,7 @@
 using Notrelix.Domain.Accounts.Accounts.Events;
 namespace Notrelix.Domain.Accounts.Accounts;
 
-public class Account : AggregateRoot, IAccountScoped
+public class Account : SoftDeletableAggregateRoot, IAccountScoped
 {
     public Guid AccountId => Id;
     public string Name { get; private set; } = null!;
@@ -51,7 +51,7 @@ public class Account : AggregateRoot, IAccountScoped
         Guard.MaxLength(newName, 160);
 
         if (Status == AccountStatus.Closed)
-            throw new BusinessRuleException(BusinessRuleCodes.Accounts_Account_CannotRenameClosed, "Cannot rename a closed account.");
+            throw new BusinessRuleException(AccountRuleCodes.Accounts_Account_CannotRenameClosed, "Cannot rename a closed account.");
 
         var oldName = Name;
         if (Name == newName.Trim()) return;
@@ -90,9 +90,11 @@ public class Account : AggregateRoot, IAccountScoped
         EnsureNotDeleted();
         if (Status == AccountStatus.Active || Status == AccountStatus.Trialing) return;
 
+        var previousStatus = Status;
         Status = AccountStatus.Active;
         SetAuditOnUpdate(activatedBy, activatedAt);
         IncrementVersion();
+        RaiseDomainEvent(new AccountActivatedDomainEvent(Id, previousStatus, activatedBy, activatedAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -118,16 +120,26 @@ public class Account : AggregateRoot, IAccountScoped
     public void UpdatePlanCode(string? planCode, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        PlanCode = planCode;
+        var normalized = planCode?.Trim();
+        if (PlanCode == normalized) return;
+
+        var oldPlanCode = PlanCode;
+        PlanCode = normalized;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        RaiseDomainEvent(new AccountPlanCodeChangedDomainEvent(Id, oldPlanCode, PlanCode, updatedBy, updatedAt));
     }
 
     public void UpdateDefaultRegion(string? regionCode, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        DefaultRegionCode = regionCode;
+        var normalized = regionCode?.Trim();
+        if (DefaultRegionCode == normalized) return;
+
+        var oldRegionCode = DefaultRegionCode;
+        DefaultRegionCode = normalized;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        RaiseDomainEvent(new AccountDefaultRegionChangedDomainEvent(Id, oldRegionCode, DefaultRegionCode, updatedBy, updatedAt));
     }
 }

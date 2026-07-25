@@ -2,7 +2,7 @@ using Notrelix.Domain.Workspaces.Invitations.Events;
 using Notrelix.Domain.Workspaces.Members;
 namespace Notrelix.Domain.Workspaces.Invitations;
 
-public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
+public class WorkspaceInvitation : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -38,11 +38,11 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
 
         if (role == WorkspaceRole.Owner)
             throw new BusinessRuleException(
-                BusinessRuleCodes.Workspaces_Invitation_CannotInviteAsOwner,
+                WorkspaceRuleCodes.Workspaces_Invitation_CannotInviteAsOwner,
                 "Cannot invite a user as workspace owner.");
 
         if (expiry is not null && expiry <= TimeSpan.Zero)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Invitation_ExpiryMustBePositive, "Invitation expiry must be greater than zero.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Invitation_ExpiryMustBePositive, "Invitation expiry must be greater than zero.");
 
         var invitation = new WorkspaceInvitation
         {
@@ -73,10 +73,10 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         if (Status == WorkspaceInvitationStatus.Accepted) return;
 
         if (Status != WorkspaceInvitationStatus.Pending)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Invitation_NotPending, "Invitation is not pending.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Invitation_NotPending, "Invitation is not pending.");
 
         if (acceptedAt >= ExpiresAt)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Invitation_HasExpired, "Invitation has expired.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Invitation_HasExpired, "Invitation has expired.");
 
         Status = WorkspaceInvitationStatus.Accepted;
         SetAuditOnUpdate(acceptedUserId, acceptedAt);
@@ -92,7 +92,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(declinedBy);
 
         if (Status != WorkspaceInvitationStatus.Pending)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Invitation_NotPending, "Invitation is not pending.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Invitation_NotPending, "Invitation is not pending.");
 
         Status = WorkspaceInvitationStatus.Declined;
         SetAuditOnUpdate(declinedBy, declinedAt);
@@ -108,11 +108,11 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(updatedBy);
 
         if (Status != WorkspaceInvitationStatus.Pending)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Invitation_NotPending, "Invitation is not pending.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Invitation_NotPending, "Invitation is not pending.");
 
         if (newRole == WorkspaceRole.Owner)
             throw new BusinessRuleException(
-                BusinessRuleCodes.Workspaces_Invitation_CannotInviteAsOwner,
+                WorkspaceRuleCodes.Workspaces_Invitation_CannotInviteAsOwner,
                 "Cannot invite a user as workspace owner.");
 
         if (Role == newRole) return;
@@ -170,7 +170,7 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
             not WorkspaceInvitationStatus.Expired)
         {
             throw new BusinessRuleException(
-                BusinessRuleCodes.Workspaces_Invitation_CannotResendNonPendingExpired,
+                WorkspaceRuleCodes.Workspaces_Invitation_CannotResendNonPendingExpired,
                 "Only pending or expired invitations can be resent.");
         }
 
@@ -189,15 +189,21 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        if (IsDeleted) return;
+        Guard.NotEmpty(deletedBy);
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
+        RaiseDomainEvent(new WorkspaceInvitationSoftDeletedDomainEvent(AccountId, Id, WorkspaceId, deletedBy, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        if (!IsDeleted) return;
+        Guard.NotEmpty(restoredBy);
         if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
+        RaiseDomainEvent(new WorkspaceInvitationRestoredDomainEvent(AccountId, Id, WorkspaceId, restoredBy, restoredAt));
     }
 }

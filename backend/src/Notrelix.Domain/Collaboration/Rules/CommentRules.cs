@@ -8,9 +8,9 @@ public static class CommentRules
 
         var parentTarget = getTarget(parentId.Value);
         if (parentTarget == null)
-            throw new BusinessRuleException(BusinessRuleCodes.Collaboration_Comment_ParentNotFound, "Parent comment does not exist.");
+            throw new BusinessRuleException(CollaborationRuleCodes.Collaboration_Comment_ParentNotFound, "Parent comment does not exist.");
 
         if (parentTarget.ResourceType != target.ResourceType || parentTarget.ResourceId != target.ResourceId)
-            throw new BusinessRuleException(BusinessRuleCodes.Collaboration_Comment_ParentMustBeInSameTarget, "Parent comment must belong to the same target resource.");
+            throw new BusinessRuleException(CollaborationRuleCodes.Collaboration_Comment_ParentMustBeInSameTarget, "Parent comment must belong to the same target resource.");
     }
 }

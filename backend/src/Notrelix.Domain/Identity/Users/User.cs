@@ -5,7 +5,7 @@ using Notrelix.Domain.Identity.Users.Events;
 
 namespace Notrelix.Domain.Identity.Users;
 
-public class User : AggregateRoot
+public class User : SoftDeletableAggregateRoot
 {
     public Email Email { get; private set; } = null!;
     public string NormalizedEmail { get; private set; } = string.Empty;
@@ -64,8 +64,14 @@ public class User : AggregateRoot
         Guard.NotNullOrWhiteSpace(name);
         Guard.MaxLength(name, 100);
 
-        Name = name.Trim();
-        Avatar = avatar?.Trim();
+        var trimmedName = name.Trim();
+        var normalizedAvatar = avatar?.Trim();
+
+        if (trimmedName == Name && normalizedAvatar == Avatar)
+            return;
+
+        Name = trimmedName;
+        Avatar = normalizedAvatar;
 
         SetAuditOnUpdate(Id, updatedAt);
         IncrementVersion();
@@ -115,6 +121,11 @@ public class User : AggregateRoot
     public void RecordLogin(DateTimeOffset loggedInAt)
     {
         EnsureNotDeleted();
+
+        if (LastLoginAt.HasValue && loggedInAt <= LastLoginAt.Value)
+            throw new BusinessRuleException(
+                IdentityRuleCodes.Identity_Login_TimeCannotMoveBackwards,
+                "Login timestamp cannot move backwards.");
 
         LastLoginAt = loggedInAt;
 
@@ -217,20 +228,20 @@ public class User : AggregateRoot
     public void LinkOAuthAccount(
         OAuthProvider provider,
         string providerId,
-        JsonValue rawProfile,
+        OAuthProfileSnapshot profileSnapshot,
         OAuthToken? token,
         DateTimeOffset linkedAt)
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(providerId);
-        Guard.NotNull(rawProfile);
+        Guard.NotNull(profileSnapshot);
 
         var existing = _oauthAccounts.FirstOrDefault(x => x.Provider == provider);
         if (existing != null)
         {
             if (existing.ProviderId != providerId.Trim())
             {
-                throw new BusinessRuleException(BusinessRuleCodes.Identity_User_OAuthProviderAlreadyLinked, $"Provider {provider} is already linked with a different account.");
+                throw new BusinessRuleException(IdentityRuleCodes.Identity_User_OAuthProviderAlreadyLinked, $"Provider {provider} is already linked with a different account.");
             }
             // No-op: same provider, same providerId, no token update needed
             if (token == null) return;
@@ -238,7 +249,7 @@ public class User : AggregateRoot
         }
         else
         {
-            var oauth = OAuthAccount.Create(Id, provider, providerId, rawProfile, token);
+            var oauth = OAuthAccount.Create(Id, provider, providerId, profileSnapshot, token);
             _oauthAccounts.Add(oauth);
         }
 
@@ -266,7 +277,7 @@ public class User : AggregateRoot
         var existing = _oauthAccounts.FirstOrDefault(x => x.Provider == provider);
         if (existing == null)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.Identity_User_NoOAuthAccountForProvider, $"No OAuth account linked for provider {provider}.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_User_NoOAuthAccountForProvider, $"No OAuth account linked for provider {provider}.");
         }
 
         existing.UpdateToken(newToken);

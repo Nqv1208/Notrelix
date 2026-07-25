@@ -94,7 +94,7 @@ public sealed class AiAgentToolPermissions : ValueObject
         }
         catch (JsonException ex)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_Agent_InvalidToolPermissionsJson, $"Invalid AiAgentToolPermissions JSON: {ex.Message}");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Agent_InvalidToolPermissionsJson, $"Invalid AiAgentToolPermissions JSON: {ex.Message}");
         }
     }
 

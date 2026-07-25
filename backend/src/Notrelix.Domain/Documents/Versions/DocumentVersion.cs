@@ -37,7 +37,6 @@ public class DocumentVersion : AggregateRoot, IWorkspaceScoped
 
     public void ApplyRestore(Guid restoredBy, DateTimeOffset restoredAt)
     {
-        EnsureNotDeleted();
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
         RaiseDomainEvent(new DocumentVersionRestoredDomainEvent(AccountId, WorkspaceId, PageId, VersionNumber, restoredAt));

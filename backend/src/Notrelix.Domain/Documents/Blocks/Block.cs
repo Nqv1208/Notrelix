@@ -2,7 +2,7 @@ using Notrelix.Domain.Documents.Rules;
 using Notrelix.Domain.Documents.Blocks.Events;
 namespace Notrelix.Domain.Documents.Blocks;
 
-public class Block : AggregateRoot, IWorkspaceScoped
+public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -81,22 +81,37 @@ public class Block : AggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BlockPropertiesUpdatedDomainEvent(AccountId, WorkspaceId, Id, PageId, updatedBy, updatedAt));
     }
 
-    public void Move(Guid? newParentId, FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt, Func<Guid, Guid?>? getParentId = null)
+    public void MoveToRoot(FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Guard.NotNull(newPosition);
 
-        if (getParentId != null)
-            BlockTreeRules.EnsureNoCycle(Id, newParentId, getParentId);
-
-        if (ParentId == newParentId && Position == newPosition) return;
+        if (ParentId == null && Position == newPosition) return;
 
         var oldParentId = ParentId;
-        ParentId = newParentId;
+        ParentId = null;
         Position = newPosition;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        RaiseDomainEvent(new BlockMovedDomainEvent(AccountId, WorkspaceId, Id, PageId, oldParentId, newParentId, newPosition.Value, updatedBy, updatedAt));
+        RaiseDomainEvent(new BlockMovedDomainEvent(AccountId, WorkspaceId, Id, PageId, oldParentId, null, newPosition.Value, updatedBy, updatedAt));
+    }
+
+    public void MoveUnder(BlockAncestorPath parentPath, FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotNull(parentPath);
+        Guard.NotNull(newPosition);
+
+        BlockTreeRules.EnsureNoCycle(Id, parentPath);
+
+        if (ParentId == parentPath.TargetParentId && Position == newPosition) return;
+
+        var oldParentId = ParentId;
+        ParentId = parentPath.TargetParentId;
+        Position = newPosition;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+        RaiseDomainEvent(new BlockMovedDomainEvent(AccountId, WorkspaceId, Id, PageId, oldParentId, parentPath.TargetParentId, newPosition.Value, updatedBy, updatedAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)

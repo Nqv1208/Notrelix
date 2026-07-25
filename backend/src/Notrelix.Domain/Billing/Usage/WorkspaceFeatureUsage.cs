@@ -2,7 +2,7 @@ using Notrelix.Domain.Billing.Usage.Events;
 using Notrelix.Domain.Billing.Plans;
 namespace Notrelix.Domain.Billing.Usage;
 
-public class WorkspaceFeatureUsage : AggregateRoot, IWorkspaceScoped
+public class WorkspaceFeatureUsage : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -32,19 +32,19 @@ public class WorkspaceFeatureUsage : AggregateRoot, IWorkspaceScoped
         Guard.NotNull(feature);
 
         if (currentUsage < 0)
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Usage_CurrentCannotBeNegative, "Current usage cannot be negative.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_CurrentCannotBeNegative, "Current usage cannot be negative.");
 
         if (hardLimit < 0)
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Usage_HardLimitCannotBeNegative, "Hard limit cannot be negative.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_HardLimitCannotBeNegative, "Hard limit cannot be negative.");
 
         if (softLimit < 0)
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Usage_SoftLimitCannotBeNegative, "Soft limit cannot be negative.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_SoftLimitCannotBeNegative, "Soft limit cannot be negative.");
 
         if (softLimit.HasValue && hardLimit.HasValue && softLimit > hardLimit)
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Usage_SoftLimitCannotExceedHard, "Soft limit cannot exceed hard limit.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_SoftLimitCannotExceedHard, "Soft limit cannot exceed hard limit.");
 
         if (!overageAllowed && hardLimit.HasValue && currentUsage > hardLimit.Value)
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Usage_ExceedsHardLimitNoOverage, "Current usage exceeds hard limit and overage is not allowed.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_ExceedsHardLimitNoOverage, "Current usage exceeds hard limit and overage is not allowed.");
 
         var usage = new WorkspaceFeatureUsage
         {
@@ -67,12 +67,12 @@ public class WorkspaceFeatureUsage : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (amount <= 0)
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Usage_ConsumeAmountMustBePositive, "Amount to consume must be positive.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_ConsumeAmountMustBePositive, "Amount to consume must be positive.");
 
         if (HardLimit.HasValue && !OverageAllowed && CurrentUsage + amount > HardLimit.Value)
         {
             RaiseDomainEvent(new QuotaExceededDomainEvent(AccountId, WorkspaceId, Feature.Code, HardLimit.Value, occurredAt));
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Usage_FeatureLimitExceeded, $"Feature usage limit exceeded for '{Feature.Code}'. Limit: {HardLimit.Value}, Requested total: {CurrentUsage + amount}.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_FeatureLimitExceeded, $"Feature usage limit exceeded for '{Feature.Code}'. Limit: {HardLimit.Value}, Requested total: {CurrentUsage + amount}.");
         }
 
         var oldUsage = CurrentUsage;
@@ -87,10 +87,10 @@ public class WorkspaceFeatureUsage : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (amount <= 0)
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Usage_ReleaseAmountMustBePositive, "Amount to release must be positive.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_ReleaseAmountMustBePositive, "Amount to release must be positive.");
 
         if (CurrentUsage - amount < 0)
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Usage_CannotReleaseBelowZero, "Usage cannot be released below zero.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_CannotReleaseBelowZero, "Usage cannot be released below zero.");
 
         CurrentUsage -= amount;
         SetAuditOnUpdate(actorUserId, occurredAt);

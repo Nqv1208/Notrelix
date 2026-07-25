@@ -1,7 +1,8 @@
 using Notrelix.Domain.Collaboration.Comments.Events;
+using static Notrelix.Domain.Common.Exceptions.CommonRuleCodes;
 namespace Notrelix.Domain.Collaboration.Comments;
 
-public class Comment : AggregateRoot, IWorkspaceScoped
+public class Comment : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -20,9 +21,7 @@ public class Comment : AggregateRoot, IWorkspaceScoped
         string content,
         Guid createdBy,
         DateTimeOffset createdAt,
-        Guid? parentId = null,
-        CommentAnchor? anchor = null,
-        Func<Guid, ResourceRef?>? getParentTarget = null)
+        CommentAnchor? anchor = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
@@ -32,19 +31,55 @@ public class Comment : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(createdBy);
 
         if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
-            throw new BusinessRuleException(BusinessRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{workspaceId}', got '{target.WorkspaceId.Value}'.");
-
-        if (parentId.HasValue && getParentTarget != null)
-        {
-            Rules.CommentRules.EnsureParentSameTarget(target, parentId, getParentTarget);
-        }
+            throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{workspaceId}', got '{target.WorkspaceId.Value}'.");
 
         var comment = new Comment
         {
             AccountId = accountId,
             WorkspaceId = workspaceId,
             Target = target,
-            ParentId = parentId,
+            ParentId = null,
+            Content = content.Trim(),
+            Anchor = anchor ?? CommentAnchor.None(),
+            CommentStatus = CommentStatus.Active
+        };
+
+        comment.SetAuditOnCreate(createdBy, createdAt);
+        comment.RaiseDomainEvent(new CommentCreatedDomainEvent(accountId, workspaceId, comment.Id, target, createdBy, createdAt));
+
+        return comment;
+    }
+
+    public static Comment CreateReply(
+        Guid accountId,
+        Guid workspaceId,
+        ResourceRef target,
+        string content,
+        Guid createdBy,
+        DateTimeOffset createdAt,
+        ParentCommentContext parentContext,
+        CommentAnchor? anchor = null)
+    {
+        Guard.NotEmpty(accountId);
+        Guard.NotEmpty(workspaceId);
+        Guard.NotNull(target);
+        Guard.NotNullOrWhiteSpace(content);
+        Guard.MaxLength(content, 10000);
+        Guard.NotEmpty(createdBy);
+        Guard.NotNull(parentContext);
+
+        if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
+            throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{workspaceId}', got '{target.WorkspaceId.Value}'.");
+
+        if (parentContext.ParentTarget.ResourceType != target.ResourceType || parentContext.ParentTarget.ResourceId != target.ResourceId)
+            throw new BusinessRuleException(CollaborationRuleCodes.Collaboration_Comment_ParentMustBeInSameTarget, "Parent comment must belong to the same target resource.");
+
+        var comment = new Comment
+        {
+            AccountId = accountId,
+            WorkspaceId = workspaceId,
+            Target = target,
+            ParentId = parentContext.ParentCommentId,
             Content = content.Trim(),
             Anchor = anchor ?? CommentAnchor.None(),
             CommentStatus = CommentStatus.Active

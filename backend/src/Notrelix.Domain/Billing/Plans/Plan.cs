@@ -15,7 +15,7 @@ public class PlanLimit : Entity
         Guard.NotNull(feature);
 
         if (limit < 0)
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Plan_LimitCannotBeNegative, "Plan limit cannot be negative.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Plan_LimitCannotBeNegative, "Plan limit cannot be negative.");
 
         return new PlanLimit
         {
@@ -28,12 +28,12 @@ public class PlanLimit : Entity
     public void UpdateLimit(int newLimit)
     {
         if (newLimit < 0)
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Plan_LimitCannotBeNegative, "Plan limit cannot be negative.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Plan_LimitCannotBeNegative, "Plan limit cannot be negative.");
         Limit = newLimit;
     }
 }
 
-public class Plan : AggregateRoot
+public class Plan : SoftDeletableAggregateRoot
 {
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
@@ -68,7 +68,7 @@ public class Plan : AggregateRoot
     public void AddLimit(FeatureCode feature, int limit, DateTimeOffset occurredAt)
     {
         if (_limits.Any(l => l.Feature == feature))
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Plan_FeatureAlreadyAdded, $"Feature '{feature}' is already added to this plan.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Plan_FeatureAlreadyAdded, $"Feature '{feature}' is already added to this plan.");
 
         _limits.Add(PlanLimit.Create(Id, feature, limit));
         IncrementVersion();

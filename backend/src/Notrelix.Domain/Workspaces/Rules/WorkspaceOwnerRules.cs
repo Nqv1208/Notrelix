@@ -9,7 +9,7 @@ public static class WorkspaceOwnerRules
         {
             if (activeOwnerCount <= 1)
             {
-                throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Owner_CannotDowngradeLastOwner, "Cannot downgrade the last owner of the workspace.");
+                throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Owner_CannotDowngradeLastOwner, "Cannot downgrade the last owner of the workspace.");
             }
         }
     }
@@ -18,7 +18,7 @@ public static class WorkspaceOwnerRules
     {
         if (currentRole == WorkspaceRole.Owner && activeOwnerCount <= 1)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Owner_CannotSuspendLastOwner, "Cannot suspend the last owner of the workspace.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Owner_CannotSuspendLastOwner, "Cannot suspend the last owner of the workspace.");
         }
     }
 
@@ -26,7 +26,7 @@ public static class WorkspaceOwnerRules
     {
         if (currentRole == WorkspaceRole.Owner && activeOwnerCount <= 1)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Owner_CannotRemoveLastOwner, "Cannot remove the last owner of the workspace.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Owner_CannotRemoveLastOwner, "Cannot remove the last owner of the workspace.");
         }
     }
 }

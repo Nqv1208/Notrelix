@@ -2,7 +2,7 @@ using Notrelix.Domain.Identity.Tokens.Events;
 
 namespace Notrelix.Domain.Identity.Tokens;
 
-public class ApiToken : AggregateRoot, IWorkspaceScoped
+public class ApiToken : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -69,17 +69,19 @@ public class ApiToken : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
 
         if (Status != ApiTokenStatus.Active)
-            throw new BusinessRuleException(BusinessRuleCodes.Identity_ApiToken_CannotUseInactive, "Cannot use an inactive API token.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_ApiToken_CannotUseInactive, "Cannot use an inactive API token.");
 
         if (ExpiresAt.HasValue && usedAt > ExpiresAt.Value)
         {
             Status = ApiTokenStatus.Expired;
             IncrementVersion();
-            throw new BusinessRuleException(BusinessRuleCodes.Identity_ApiToken_CannotUseExpired, "Cannot use an expired API token.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_ApiToken_CannotUseExpired, "Cannot use an expired API token.");
         }
 
         LastUsedAt = usedAt;
+        SetAuditOnUpdate(AccountId, usedAt);
         IncrementVersion();
+        RaiseDomainEvent(new ApiTokenRecordedUseDomainEvent(AccountId, WorkspaceId, Id, usedAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)

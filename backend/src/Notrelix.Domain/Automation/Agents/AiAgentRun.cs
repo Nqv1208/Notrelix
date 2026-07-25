@@ -70,9 +70,8 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
 
     public void Start(DateTimeOffset startedAt)
     {
-        EnsureNotDeleted();
         if (Status != AiAgentRunStatus.Queued)
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_Agent_InvalidStatusTransition, "Run can only start from Queued state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Agent_InvalidStatusTransition, "Run can only start from Queued state.");
 
         Status = AiAgentRunStatus.Running;
         StartedAt = startedAt;
@@ -83,9 +82,8 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
 
     public void Succeed(JsonValue output, DateTimeOffset finishedAt)
     {
-        EnsureNotDeleted();
         if (Status != AiAgentRunStatus.Running)
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_Agent_InvalidStatusTransition, "Run can only succeed from Running state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Agent_InvalidStatusTransition, "Run can only succeed from Running state.");
         Guard.NotNull(output);
 
         Status = AiAgentRunStatus.Succeeded;
@@ -98,9 +96,8 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
 
     public void Fail(JsonValue error, DateTimeOffset finishedAt)
     {
-        EnsureNotDeleted();
         if (Status != AiAgentRunStatus.Running)
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_Agent_InvalidStatusTransition, "Run can only fail from Running state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Agent_InvalidStatusTransition, "Run can only fail from Running state.");
         Guard.NotNull(error);
 
         Status = AiAgentRunStatus.Failed;
@@ -113,9 +110,8 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
 
     public void Cancel(Guid? cancelledBy, DateTimeOffset cancelledAt)
     {
-        EnsureNotDeleted();
         if (Status != AiAgentRunStatus.Queued && Status != AiAgentRunStatus.Running)
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_Agent_InvalidStatusTransition, "Run can only be cancelled from Queued or Running state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Agent_InvalidStatusTransition, "Run can only be cancelled from Queued or Running state.");
 
         Status = AiAgentRunStatus.Cancelled;
         FinishedAt = cancelledAt;

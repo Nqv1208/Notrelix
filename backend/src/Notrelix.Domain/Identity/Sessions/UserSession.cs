@@ -2,7 +2,7 @@ using Notrelix.Domain.Identity.Sessions.Events;
 
 namespace Notrelix.Domain.Identity.Sessions;
 
-public class UserSession : AggregateRoot
+public class UserSession : SoftDeletableAggregateRoot
 {
     public Guid UserId { get; private set; }
     public RefreshTokenHash RefreshTokenHash { get; private set; } = null!;
@@ -28,7 +28,7 @@ public class UserSession : AggregateRoot
 
         if (expiresAt <= createdAt)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.Identity_Session_ExpirationMustBeAfterCreation, "Session expiration time must be after creation time.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_Session_ExpirationMustBeAfterCreation, "Session expiration time must be after creation time.");
         }
 
         var session = new UserSession
@@ -54,7 +54,7 @@ public class UserSession : AggregateRoot
 
         if (Status != SessionStatus.Active)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.Identity_Session_CannotUpdateRefreshTokenOfInactive, "Cannot update refresh token for an inactive session.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_Session_CannotUpdateRefreshTokenOfInactive, "Cannot update refresh token for an inactive session.");
         }
 
         RefreshTokenHash = newTokenHash;
@@ -70,7 +70,7 @@ public class UserSession : AggregateRoot
 
         if (Status == SessionStatus.Expired)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.Identity_Session_CannotRevokeExpired, "Cannot revoke an expired session.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_Session_CannotRevokeExpired, "Cannot revoke an expired session.");
         }
 
         Status = SessionStatus.Revoked;
@@ -88,7 +88,7 @@ public class UserSession : AggregateRoot
 
         if (Status == SessionStatus.Revoked)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.Identity_Session_CannotExpireRevoked, "Cannot expire a revoked session.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_Session_CannotExpireRevoked, "Cannot expire a revoked session.");
         }
 
         Status = SessionStatus.Expired;

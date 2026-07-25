@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace Notrelix.Domain.WorkManagement.Items;
 
-public class BoardItem : AggregateRoot, IWorkspaceScoped
+public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -99,10 +99,10 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         Guard.NotNull(newPosition);
 
         if (group.WorkspaceId != WorkspaceId)
-            throw new BusinessRuleException(BusinessRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{WorkspaceId}', got '{group.WorkspaceId}'.");
+            throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{WorkspaceId}', got '{group.WorkspaceId}'.");
 
         if (group.BoardId != BoardId)
-            throw new BusinessRuleException(BusinessRuleCodes.Common_BoardScopeMismatch, $"Board scope mismatch. Expected '{BoardId}', got '{group.BoardId}'.");
+            throw new BusinessRuleException(CommonRuleCodes.Common_BoardScopeMismatch, $"Board scope mismatch. Expected '{BoardId}', got '{group.BoardId}'.");
 
         var oldGroupId = GroupId;
         if (GroupId == group.GroupId && Position == newPosition) return;
@@ -122,19 +122,19 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         Guard.NotNull(newValue);
 
         if (field.WorkspaceId != WorkspaceId)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_BelongsToDifferentWorkspace, "Field belongs to a different workspace.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_BelongsToDifferentWorkspace, "Field belongs to a different workspace.");
 
         if (field.BoardId != BoardId)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_DoesNotBelongToBoard, "Field does not belong to this board.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_DoesNotBelongToBoard, "Field does not belong to this board.");
 
         if (field.IsDeleted)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_CannotUpdateDeleted, "Cannot update value for a deleted field.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_CannotUpdateDeleted, "Cannot update value for a deleted field.");
 
         if (field.IsSystem)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_CannotUpdateSystem, "Cannot update a system field.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_CannotUpdateSystem, "Cannot update a system field.");
 
         if (field.Type is FieldType.Formula or FieldType.Rollup)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_CannotWriteComputed, "Cannot manually write to a computed field (Formula or Rollup).");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_CannotWriteComputed, "Cannot manually write to a computed field (Formula or Rollup).");
 
         FieldValueValidator.Validate(newValue, field.Type, field.Settings);
 
@@ -142,19 +142,19 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         {
             var optionId = newValue.Data.Value.Trim('"');
             if (!field.Options.Any(o => o.Id.ToString() == optionId))
-                throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_InvalidOptionValue, $"Value '{optionId}' is not a valid option for field '{field.Name}'.");
+                throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_InvalidOptionValue, $"Value '{optionId}' is not a valid option for field '{field.Name}'.");
         }
         else if (field.Type == FieldType.MultiSelect)
         {
             using var msDoc = JsonDocument.Parse(newValue.Data.Value);
             if (msDoc.RootElement.ValueKind != JsonValueKind.Array)
-                throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldValue_InvalidMultiSelectValue, "Value for field type MultiSelect must be an array of option IDs.");
+                throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidMultiSelectValue, "Value for field type MultiSelect must be an array of option IDs.");
 
             foreach (var element in msDoc.RootElement.EnumerateArray())
             {
                 var optionId = element.GetString();
                 if (!field.Options.Any(o => o.Id.ToString() == optionId))
-                    throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_FieldValue_InvalidSelectValue, $"Value '{optionId}' is not a valid option for field '{field.Name}'.");
+                    throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidSelectValue, $"Value '{optionId}' is not a valid option for field '{field.Name}'.");
             }
         }
 
@@ -184,10 +184,10 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         if (parentItemId.HasValue)
         {
             if (!parentChain.TryGetValue(parentItemId.Value, out var parentSnapshot))
-                throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Item_ParentMustBelongToSameBoard, "Parent item must belong to the same board.");
+                throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_ParentMustBelongToSameBoard, "Parent item must belong to the same board.");
 
             if (parentSnapshot.BoardId != BoardId)
-                throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Item_ParentMustBelongToSameBoard, "Parent item must belong to the same board.");
+                throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_ParentMustBelongToSameBoard, "Parent item must belong to the same board.");
         }
 
         BoardItemRules.EnsureNoCycle(Id, parentItemId, parentChain);
@@ -206,7 +206,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         EnsureNotArchived();
         if (startedAt != null && dueAt != null && dueAt < startedAt)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Item_DueDateMustBeAfterStartDate, "Due date must be after start date.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_DueDateMustBeAfterStartDate, "Due date must be after start date.");
 
         if (StartedAt == startedAt && DueAt == dueAt) return;
         StartedAt = startedAt;
@@ -269,7 +269,7 @@ public class BoardItem : AggregateRoot, IWorkspaceScoped
     {
         if (IsArchived)
             throw new BusinessRuleException(
-                BusinessRuleCodes.WorkManagement_Item_CannotModifyArchived,
+                WorkManagementRuleCodes.WorkManagement_Item_CannotModifyArchived,
                 "Cannot modify an archived board item.");
     }
 }

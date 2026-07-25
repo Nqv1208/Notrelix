@@ -1,7 +1,7 @@
 using Notrelix.Domain.Billing.Subscriptions.Events;
 namespace Notrelix.Domain.Billing.Subscriptions;
 
-public class Subscription : AggregateRoot, IAccountScoped
+public class Subscription : SoftDeletableAggregateRoot, IAccountScoped
 {
     public Guid AccountId { get; private set; }
     public Guid? WorkspaceId { get; private set; }
@@ -14,13 +14,13 @@ public class Subscription : AggregateRoot, IAccountScoped
 
     private Subscription() : base() { }
 
-    public static Subscription Create(Guid accountId, Guid planId, SubscriptionTier tier, DateTimeOffset start, DateTimeOffset end, Guid createdBy, DateTimeOffset createdAt, Guid? workspaceId = null)
+    public static Subscription Create(Guid accountId, Guid planId, SubscriptionTier tier, DateTimeOffset start, DateTimeOffset end, Guid? createdBy, DateTimeOffset createdAt, Guid? workspaceId = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(planId);
 
         if (start >= end)
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Subscription_PeriodStartMustBeBeforeEnd, "Subscription period start must be before end.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_PeriodStartMustBeBeforeEnd, "Subscription period start must be before end.");
 
         var subscription = new Subscription
         {
@@ -44,7 +44,9 @@ public class Subscription : AggregateRoot, IAccountScoped
         Guard.NotEmpty(newPlanId);
 
         if (Status is SubscriptionStatus.Canceled or SubscriptionStatus.Expired)
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Subscription_CannotChangePlanOfInactive, "Cannot change plan of an inactive subscription.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_CannotChangePlanOfInactive, "Cannot change plan of an inactive subscription.");
+
+        if (PlanId == newPlanId) return;
 
         var oldPlanId = PlanId;
         PlanId = newPlanId;
@@ -57,6 +59,10 @@ public class Subscription : AggregateRoot, IAccountScoped
     {
         EnsureNotDeleted();
         if (CancelAtPeriodEnd) return;
+
+        if (Status is not (SubscriptionStatus.Active or SubscriptionStatus.PastDue))
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_InvalidStatusTransition, $"Cannot schedule cancellation from status '{Status}'.");
+
         CancelAtPeriodEnd = true;
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
@@ -67,6 +73,10 @@ public class Subscription : AggregateRoot, IAccountScoped
     {
         EnsureNotDeleted();
         if (Status == SubscriptionStatus.Canceled) return;
+
+        if (Status is not (SubscriptionStatus.Active or SubscriptionStatus.PastDue or SubscriptionStatus.Trialing))
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_InvalidStatusTransition, $"Cannot cancel from status '{Status}'.");
+
         Status = SubscriptionStatus.Canceled;
         SetAuditOnUpdate(updatedBy, cancelledAt);
         IncrementVersion();
@@ -77,7 +87,10 @@ public class Subscription : AggregateRoot, IAccountScoped
     {
         EnsureNotDeleted();
         if (newStart >= newEnd)
-            throw new BusinessRuleException(BusinessRuleCodes.Billing_Subscription_PeriodStartMustBeBeforeEnd, "Renewal period start must be before end.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_PeriodStartMustBeBeforeEnd, "Renewal period start must be before end.");
+
+        if (Status is not (SubscriptionStatus.Active or SubscriptionStatus.PastDue))
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_InvalidStatusTransition, $"Cannot renew from status '{Status}'.");
 
         CurrentPeriodStart = newStart;
         CurrentPeriodEnd = newEnd;
@@ -92,6 +105,10 @@ public class Subscription : AggregateRoot, IAccountScoped
     {
         EnsureNotDeleted();
         if (Status == SubscriptionStatus.Expired) return;
+
+        if (Status is not (SubscriptionStatus.Active or SubscriptionStatus.PastDue))
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_InvalidStatusTransition, $"Cannot expire from status '{Status}'.");
+
         Status = SubscriptionStatus.Expired;
         SetAuditOnUpdate(updatedBy, expiredAt);
         IncrementVersion();
@@ -102,6 +119,10 @@ public class Subscription : AggregateRoot, IAccountScoped
     {
         EnsureNotDeleted();
         if (Status == SubscriptionStatus.PastDue) return;
+
+        if (Status is not SubscriptionStatus.Active)
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_InvalidStatusTransition, $"Cannot mark past due from status '{Status}'.");
+
         Status = SubscriptionStatus.PastDue;
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
@@ -112,6 +133,7 @@ public class Subscription : AggregateRoot, IAccountScoped
     {
         if (IsDeleted) return;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
+        SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
         RaiseDomainEvent(new SubscriptionSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
@@ -120,6 +142,7 @@ public class Subscription : AggregateRoot, IAccountScoped
     {
         if (!IsDeleted) return;
         if (!MarkRestored(restoredBy, restoredAt)) return;
+        SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
         RaiseDomainEvent(new SubscriptionRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }

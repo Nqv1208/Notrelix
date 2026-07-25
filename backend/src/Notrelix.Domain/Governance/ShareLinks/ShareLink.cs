@@ -1,7 +1,7 @@
 using Notrelix.Domain.Governance.ShareLinks.Events;
 namespace Notrelix.Domain.Governance.ShareLinks;
 
-public class ShareLink : AggregateRoot, IWorkspaceScoped
+public class ShareLink : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -31,7 +31,7 @@ public class ShareLink : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(accountId);
 
         if (accessMode == ShareLinkAccessMode.Public && !expiresAt.HasValue)
-            throw new BusinessRuleException(BusinessRuleCodes.Governance_ShareLink_PublicMustHaveExpiry, "Public share links must have an expiration date.");
+            throw new BusinessRuleException(GovernanceRuleCodes.Governance_ShareLink_PublicMustHaveExpiry, "Public share links must have an expiration date.");
 
         var link = new ShareLink
         {

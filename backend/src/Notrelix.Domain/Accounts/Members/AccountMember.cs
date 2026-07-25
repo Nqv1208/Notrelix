@@ -1,8 +1,9 @@
 using Notrelix.Domain.Accounts.Members.Events;
 using Notrelix.Domain.Accounts.Rules;
+using Notrelix.Domain.Workspaces;
 namespace Notrelix.Domain.Accounts.Members;
 
-public class AccountMember : AggregateRoot, IAccountScoped
+public class AccountMember : SoftDeletableAggregateRoot, IAccountScoped
 {
     public Guid AccountId { get; private set; }
     public Guid UserId { get; private set; }
@@ -36,7 +37,7 @@ public class AccountMember : AggregateRoot, IAccountScoped
         Guard.NotEmpty(updatedBy);
 
         if (Status != AccountMemberStatus.Active)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Member_CannotChangeRoleOfInactive, "Cannot change role of an inactive or suspended member.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotChangeRoleOfInactive, "Cannot change role of an inactive or suspended member.");
 
         AccountOwnerRules.EnsureCanDowngradeOwner(Role, newRole, activeOwnerCount);
 
@@ -74,7 +75,7 @@ public class AccountMember : AggregateRoot, IAccountScoped
         if (Status == AccountMemberStatus.Active) return;
 
         if (Status == AccountMemberStatus.Removed)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Member_CannotActivateRemoved, "Cannot activate a removed member. Restore the member first.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotActivateRemoved, "Cannot activate a removed member. Restore the member first.");
 
         Status = AccountMemberStatus.Active;
         SetAuditOnUpdate(updatedBy, updatedAt);

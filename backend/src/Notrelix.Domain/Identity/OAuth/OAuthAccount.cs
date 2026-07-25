@@ -6,7 +6,7 @@ public class OAuthAccount : Entity
     public OAuthProvider Provider { get; private set; }
     public string ProviderId { get; private set; } = null!;
     public OAuthToken? Token { get; private set; }
-    public JsonValue RawProfile { get; private set; } = null!;
+    public OAuthProfileSnapshot ProfileSnapshot { get; private set; } = null!;
 
     private OAuthAccount() : base() { }
 
@@ -14,12 +14,12 @@ public class OAuthAccount : Entity
         Guid userId,
         OAuthProvider provider,
         string providerId,
-        JsonValue rawProfile,
+        OAuthProfileSnapshot profileSnapshot,
         OAuthToken? token = null)
     {
         Guard.NotEmpty(userId);
         Guard.NotNullOrWhiteSpace(providerId);
-        Guard.NotNull(rawProfile);
+        Guard.NotNull(profileSnapshot);
 
         return new OAuthAccount
         {
@@ -27,7 +27,7 @@ public class OAuthAccount : Entity
             Provider = provider,
             ProviderId = providerId.Trim(),
             Token = token,
-            RawProfile = rawProfile
+            ProfileSnapshot = profileSnapshot
         };
     }
 

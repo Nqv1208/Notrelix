@@ -1,5 +1,5 @@
 using Notrelix.Domain.Integrations.Calendar.Events;
-using static Notrelix.Domain.Common.Exceptions.BusinessRuleCodes;
+using static Notrelix.Domain.Integrations.IntegrationRuleCodes;
 
 namespace Notrelix.Domain.Integrations.Calendar;
 
@@ -33,7 +33,7 @@ public class CalendarEventLink : Entity
     }
 }
 
-public class CalendarIntegration : AggregateRoot, IWorkspaceScoped
+public class CalendarIntegration : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }

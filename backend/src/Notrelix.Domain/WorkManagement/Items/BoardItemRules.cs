@@ -13,7 +13,7 @@ public static class BoardItemRules
     {
         if (targetParentId is null) return;
         if (itemId == targetParentId.Value)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Item_CannotBeOwnParent, "An item cannot be its own parent.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_CannotBeOwnParent, "An item cannot be its own parent.");
 
         var current = targetParentId.Value;
         while (true)
@@ -22,7 +22,7 @@ public static class BoardItemRules
                 break;
             if (snapshot.ParentItemId is null) break;
             if (snapshot.ParentItemId == itemId)
-                throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Item_ParentAssignmentWouldCreateCycle, "Item parent assignment would create a cycle.");
+                throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_ParentAssignmentWouldCreateCycle, "Item parent assignment would create a cycle.");
             current = snapshot.ParentItemId.Value;
         }
     }

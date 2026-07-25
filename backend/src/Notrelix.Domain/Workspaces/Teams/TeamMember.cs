@@ -48,7 +48,7 @@ public class TeamMember : AuditableEntity, IWorkspaceScoped
         Guard.NotEmpty(activatedBy);
 
         if (Status == TeamMemberStatus.Active)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_TeamMember_AlreadyActive, "Team member is already active.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_TeamMember_AlreadyActive, "Team member is already active.");
 
         Status = TeamMemberStatus.Active;
         Role = role;
@@ -60,7 +60,7 @@ public class TeamMember : AuditableEntity, IWorkspaceScoped
     {
         Guard.NotEmpty(updatedBy);
         if (Status != TeamMemberStatus.Active)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_TeamMember_CannotChangeRoleOfInactive, "Cannot change the role of an inactive team member.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_TeamMember_CannotChangeRoleOfInactive, "Cannot change the role of an inactive team member.");
         if (Role == newRole) return;
         Role = newRole;
         SetAuditOnUpdate(updatedBy, updatedAt);

@@ -1,7 +1,7 @@
 using Notrelix.Domain.WorkManagement.Views.Events;
 namespace Notrelix.Domain.WorkManagement.Views;
 
-public class SavedFilter : AggregateRoot, IWorkspaceScoped
+public class SavedFilter : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }

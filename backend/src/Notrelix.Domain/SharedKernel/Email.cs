@@ -23,10 +23,10 @@ public sealed class Email : ValueObject
         value = value.Trim().ToLowerInvariant();
 
         if (value.Length > 254)
-            throw new BusinessRuleException(BusinessRuleCodes.SharedKernel_Email_InvalidFormat, "Email address exceeds maximum length of 254 characters.");
+            throw new BusinessRuleException(CommonRuleCodes.SharedKernel_Email_InvalidFormat, "Email address exceeds maximum length of 254 characters.");
 
         if (!EmailRegex.IsMatch(value))
-            throw new BusinessRuleException(BusinessRuleCodes.SharedKernel_Email_InvalidFormat, $"'{value}' is not a valid email address.");
+            throw new BusinessRuleException(CommonRuleCodes.SharedKernel_Email_InvalidFormat, $"'{value}' is not a valid email address.");
 
         return new Email(value);
     }

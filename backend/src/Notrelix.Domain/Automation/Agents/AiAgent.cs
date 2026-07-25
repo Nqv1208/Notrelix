@@ -19,7 +19,7 @@ public enum AiAgentStatus
     Deleted
 }
 
-public class AiAgent : AggregateRoot, IWorkspaceScoped
+public class AiAgent : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -125,7 +125,7 @@ public class AiAgent : AggregateRoot, IWorkspaceScoped
         };
 
         if (!validTransitions.Contains(newStatus))
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_Agent_InvalidStatusTransition, $"Cannot transition from {Status} to {newStatus}.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Agent_InvalidStatusTransition, $"Cannot transition from {Status} to {newStatus}.");
 
         Status = newStatus;
         SetAuditOnUpdate(updatedBy, updatedAt);

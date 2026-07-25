@@ -21,11 +21,11 @@ public sealed class AutomationConditionDefinition : ValueObject
         {
             using var document = JsonDocument.Parse(json);
             if (document.RootElement.ValueKind != JsonValueKind.Object)
-                throw new BusinessRuleException(BusinessRuleCodes.Automation_Condition_ConfigMustBeValidJson, "Condition configuration must be a valid JSON object.");
+                throw new BusinessRuleException(AutomationRuleCodes.Automation_Condition_ConfigMustBeValidJson, "Condition configuration must be a valid JSON object.");
         }
         catch (JsonException ex)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_Condition_InvalidConfigJson, $"Invalid condition configuration JSON: {ex.Message}");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Condition_InvalidConfigJson, $"Invalid condition configuration JSON: {ex.Message}");
         }
 
         return new AutomationConditionDefinition(json);

@@ -1,4 +1,5 @@
-using static Notrelix.Domain.Common.Exceptions.BusinessRuleCodes;
+using static Notrelix.Domain.Common.Exceptions.CommonRuleCodes;
+using static Notrelix.Domain.WorkManagement.WorkManagementRuleCodes;
 
 namespace Notrelix.Domain.WorkManagement.Relations;
 

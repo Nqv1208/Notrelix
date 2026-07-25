@@ -57,12 +57,11 @@ public class TimeTrackingEntry : AggregateRoot, IWorkspaceScoped
 
     public void Stop(DateTimeOffset endedAt, Guid stoppedBy)
     {
-        EnsureNotDeleted();
         if (Status != TimeTrackingStatus.Running)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_TimeTracking_CannotStopNotRunning, "Cannot stop a timer that is not running.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_TimeTracking_CannotStopNotRunning, "Cannot stop a timer that is not running.");
 
         if (endedAt < StartedAt)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_TimeTracking_EndTimeMustBeAfterStart, "End time must be after start time.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_TimeTracking_EndTimeMustBeAfterStart, "End time must be after start time.");
 
         EndedAt = endedAt;
         Status = TimeTrackingStatus.Stopped;

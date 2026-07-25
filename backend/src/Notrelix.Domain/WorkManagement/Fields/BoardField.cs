@@ -1,7 +1,7 @@
 using Notrelix.Domain.WorkManagement.Fields.Events;
 namespace Notrelix.Domain.WorkManagement.Fields;
 
-public class BoardField : AggregateRoot, IWorkspaceScoped
+public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -85,10 +85,10 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (Type != FieldType.Select && Type != FieldType.MultiSelect && Type != FieldType.Status)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_CannotAddOptionsForType, $"Cannot add options to field of type {Type}");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_CannotAddOptionsForType, $"Cannot add options to field of type {Type}");
 
         if (_options.Any(o => string.Equals(o.Name, name, StringComparison.OrdinalIgnoreCase)))
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_DuplicateOptionName, $"Duplicate option name '{name}'.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_DuplicateOptionName, $"Duplicate option name '{name}'.");
 
         var option = FieldOption.Create(Id, name, color, position);
         _options.Add(option);
@@ -102,7 +102,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         var option = _options.FirstOrDefault(o => o.Id == optionId);
         if (option is null)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_OptionNotFound, $"Field option '{optionId}' not found.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_OptionNotFound, $"Field option '{optionId}' not found.");
 
         _options.Remove(option);
         SetAuditOnUpdate(removedBy, removedAt);
@@ -117,10 +117,10 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
 
         var option = _options.FirstOrDefault(o => o.Id == optionId);
         if (option is null)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_OptionNotFound, $"Field option '{optionId}' not found.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_OptionNotFound, $"Field option '{optionId}' not found.");
 
         if (_options.Any(o => o.Id != optionId && string.Equals(o.Name, name, StringComparison.OrdinalIgnoreCase)))
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_DuplicateOptionName, $"Duplicate option name '{name}'.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_DuplicateOptionName, $"Duplicate option name '{name}'.");
 
         var trimmedName = name.Trim();
         if (option.Name == trimmedName && option.Color == color) return;
@@ -139,18 +139,18 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         // ── Validate the complete input set BEFORE any mutation ──────────
         if (orderedOptionIds.Count != _options.Count)
             throw new BusinessRuleException(
-                BusinessRuleCodes.WorkManagement_Field_ReorderMustContainAllOptions,
+                WorkManagementRuleCodes.WorkManagement_Field_ReorderMustContainAllOptions,
                 "Reorder list must contain all options.");
 
         if (orderedOptionIds.Distinct().Count() != orderedOptionIds.Count)
             throw new BusinessRuleException(
-                BusinessRuleCodes.WorkManagement_Field_ReorderMustContainAllOptions,
+                WorkManagementRuleCodes.WorkManagement_Field_ReorderMustContainAllOptions,
                 "Reorder list must not contain duplicate option IDs.");
 
         var existingIds = _options.Select(o => o.Id).ToHashSet();
         if (!existingIds.SetEquals(orderedOptionIds))
             throw new BusinessRuleException(
-                BusinessRuleCodes.WorkManagement_Field_OptionNotFound,
+                WorkManagementRuleCodes.WorkManagement_Field_OptionNotFound,
                 "Reorder list must contain every field option exactly once.");
 
         // ── No-op check ──────────────────────────────────────────────────
@@ -169,7 +169,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
 
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        RaiseDomainEvent(new BoardFieldReorderedDomainEvent(AccountId, WorkspaceId, Id, BoardId, 0, updatedBy, updatedAt));
+        RaiseDomainEvent(new FieldOptionsReorderedDomainEvent(AccountId, WorkspaceId, BoardId, Id, orderedOptionIds.AsReadOnly(), updatedBy, updatedAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -177,7 +177,7 @@ public class BoardField : AggregateRoot, IWorkspaceScoped
         if (IsDeleted) return;
 
         if (IsSystem)
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Field_CannotDeleteSystem, "Cannot delete a system field.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_CannotDeleteSystem, "Cannot delete a system field.");
 
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);

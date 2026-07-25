@@ -6,7 +6,7 @@ public static class BoardViewRules
     {
         if (isDefault && availableViewCount <= 1)
         {
-            throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_View_CannotDeleteDefault, "Cannot delete the default view. Set another view as default first.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_View_CannotDeleteDefault, "Cannot delete the default view. Set another view as default first.");
         }
     }
 }

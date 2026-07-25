@@ -34,7 +34,7 @@ public class ChecklistItem : Entity
     }
 }
 
-public class Checklist : AggregateRoot, IWorkspaceScoped
+public class Checklist : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -85,7 +85,7 @@ public class Checklist : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         var item = _items.FirstOrDefault(x => x.Id == itemId);
-        if (item == null) throw new BusinessRuleException(BusinessRuleCodes.WorkManagement_Checklist_ItemNotFound, $"Item {itemId} not found");
+        if (item == null) throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Checklist_ItemNotFound, $"Item {itemId} not found");
 
         item.Toggle(updatedAt);
         SetAuditOnUpdate(updatedBy, updatedAt);

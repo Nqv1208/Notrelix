@@ -26,7 +26,7 @@ public sealed class AutomationTriggerDefinition : ValueObject
     {
         Guard.NotNullOrWhiteSpace(type);
         if (!ValidTriggers.Contains(type))
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_Trigger_InvalidType, $"Invalid trigger type '{type}'. Valid types: {string.Join(", ", ValidTriggers)}");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Trigger_InvalidType, $"Invalid trigger type '{type}'. Valid types: {string.Join(", ", ValidTriggers)}");
 
         if (configuration is not null)
         {
@@ -34,11 +34,11 @@ public sealed class AutomationTriggerDefinition : ValueObject
             {
                 using var document = JsonDocument.Parse(configuration);
                 if (document.RootElement.ValueKind == JsonValueKind.Null)
-                    throw new BusinessRuleException(BusinessRuleCodes.Automation_Trigger_ConfigCannotBeNullJson, "Trigger configuration cannot be null JSON.");
+                    throw new BusinessRuleException(AutomationRuleCodes.Automation_Trigger_ConfigCannotBeNullJson, "Trigger configuration cannot be null JSON.");
             }
             catch (JsonException ex)
             {
-                throw new BusinessRuleException(BusinessRuleCodes.Automation_Trigger_InvalidConfigJson, $"Invalid trigger configuration JSON: {ex.Message}");
+                throw new BusinessRuleException(AutomationRuleCodes.Automation_Trigger_InvalidConfigJson, $"Invalid trigger configuration JSON: {ex.Message}");
             }
         }
 

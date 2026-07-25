@@ -25,7 +25,7 @@ public class AutomationExecutionStep : Entity
     public void Start(DateTimeOffset startedAt)
     {
         if (Status != AutomationExecutionStatus.Queued)
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_Step_CannotStartUnlessQueued, "Step can only start from Queued state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Step_CannotStartUnlessQueued, "Step can only start from Queued state.");
         Status = AutomationExecutionStatus.Running;
         StartedAt = startedAt;
     }
@@ -33,7 +33,7 @@ public class AutomationExecutionStep : Entity
     public void Succeed(DateTimeOffset finishedAt)
     {
         if (Status != AutomationExecutionStatus.Running)
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_Step_CannotSucceedUnlessRunning, "Step can only succeed from Running state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Step_CannotSucceedUnlessRunning, "Step can only succeed from Running state.");
         Status = AutomationExecutionStatus.Succeeded;
         FinishedAt = finishedAt;
     }
@@ -41,7 +41,7 @@ public class AutomationExecutionStep : Entity
     public void Fail(string error, DateTimeOffset finishedAt)
     {
         if (Status != AutomationExecutionStatus.Running)
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_Step_CannotFailUnlessRunning, "Step can only fail from Running state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Step_CannotFailUnlessRunning, "Step can only fail from Running state.");
         Status = AutomationExecutionStatus.Failed;
         Error = error;
         FinishedAt = finishedAt;
@@ -99,7 +99,7 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
     public void Start(DateTimeOffset startedAt)
     {
         if (Status != AutomationExecutionStatus.Queued)
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_Execution_CannotStartUnlessQueued, "Execution can only start from Queued state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_CannotStartUnlessQueued, "Execution can only start from Queued state.");
         Status = AutomationExecutionStatus.Running;
         StartedAt = startedAt;
         IncrementVersion();
@@ -109,7 +109,7 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
     public void Succeed(DateTimeOffset finishedAt)
     {
         if (Status != AutomationExecutionStatus.Running)
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_Execution_CannotSucceedUnlessRunning, "Execution can only succeed from Running state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_CannotSucceedUnlessRunning, "Execution can only succeed from Running state.");
         Status = AutomationExecutionStatus.Succeeded;
         FinishedAt = finishedAt;
         IncrementVersion();
@@ -119,9 +119,9 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
     public void Fail(string error, DateTimeOffset finishedAt)
     {
         if (Status != AutomationExecutionStatus.Running)
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_Execution_CannotFailUnlessRunning, "Execution can only fail from Running state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_CannotFailUnlessRunning, "Execution can only fail from Running state.");
         if (string.IsNullOrWhiteSpace(error))
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_Execution_ErrorRequiredOnFail, "Error must not be empty when execution fails.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_ErrorRequiredOnFail, "Error must not be empty when execution fails.");
 
         Status = AutomationExecutionStatus.Failed;
         Error = error;
@@ -133,7 +133,7 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
     public void Cancel(Guid cancelledBy, DateTimeOffset cancelledAt)
     {
         if (Status != AutomationExecutionStatus.Queued && Status != AutomationExecutionStatus.Running)
-            throw new BusinessRuleException(BusinessRuleCodes.Automation_Execution_CannotCancelUnlessQueuedOrRunning, "Execution can only be cancelled from Queued or Running state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_CannotCancelUnlessQueuedOrRunning, "Execution can only be cancelled from Queued or Running state.");
 
         Status = AutomationExecutionStatus.Cancelled;
         FinishedAt = cancelledAt;

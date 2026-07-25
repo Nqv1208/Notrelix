@@ -1,7 +1,7 @@
 using Notrelix.Domain.Governance.Permissions.Events;
 namespace Notrelix.Domain.Governance.Permissions;
 
-public class ResourcePermission : AggregateRoot, IWorkspaceScoped
+public class ResourcePermission : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     private bool _suppressSoftDeleteEvent;
 
@@ -39,7 +39,7 @@ public class ResourcePermission : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(accountId);
 
         if (!PermissionRules.CanGrant(granterLevel, level))
-            throw new BusinessRuleException(BusinessRuleCodes.Governance_Permission_CannotGrantHigherThanGranter, "Cannot grant a permission level higher than the granter's own level.");
+            throw new BusinessRuleException(GovernanceRuleCodes.Governance_Permission_CannotGrantHigherThanGranter, "Cannot grant a permission level higher than the granter's own level.");
 
         var permission = new ResourcePermission
         {

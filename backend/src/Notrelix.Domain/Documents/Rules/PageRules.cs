@@ -12,6 +12,6 @@ public static class PageRules
     public static void EnsureCanEdit(PageStatus status)
     {
         if (status == PageStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.Documents_Page_CannotEditArchived, "Cannot edit an archived page.");
+            throw new BusinessRuleException(DocumentRuleCodes.Documents_Page_CannotEditArchived, "Cannot edit an archived page.");
     }
 }

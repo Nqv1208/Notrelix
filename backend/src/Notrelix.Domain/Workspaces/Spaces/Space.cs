@@ -1,7 +1,7 @@
 using Notrelix.Domain.Workspaces.Spaces.Events;
 namespace Notrelix.Domain.Workspaces.Spaces;
 
-public class Space : AggregateRoot, IWorkspaceScoped
+public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -50,7 +50,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (Status == SpaceStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Space_CannotRenameArchived, "Cannot rename an archived space.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Space_CannotRenameArchived, "Cannot rename an archived space.");
         Guard.NotNullOrWhiteSpace(newName);
         Guard.MaxLength(newName, 160);
         Guard.NotEmpty(updatedBy);
@@ -71,7 +71,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(updatedBy);
 
         if (Status == SpaceStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Space_CannotUpdateDescriptionArchived, "Cannot update description of an archived space.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Space_CannotUpdateDescriptionArchived, "Cannot update description of an archived space.");
 
         var normalized = string.IsNullOrWhiteSpace(newDescription)
             ? null
@@ -96,7 +96,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(updatedBy);
 
         if (Status == SpaceStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Space_CannotChangeVisibilityArchived, "Cannot change visibility of an archived space.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Space_CannotChangeVisibilityArchived, "Cannot change visibility of an archived space.");
 
         if (Visibility == newVisibility) return;
 
@@ -114,7 +114,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(updatedBy);
 
         if (Status == SpaceStatus.Archived)
-            throw new BusinessRuleException(BusinessRuleCodes.Workspaces_Space_CannotChangeTypeArchived, "Cannot change type of an archived space.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Space_CannotChangeTypeArchived, "Cannot change type of an archived space.");
 
         if (SpaceType == newType) return;
 
@@ -147,7 +147,7 @@ public class Space : AggregateRoot, IWorkspaceScoped
 
         if (Status != SpaceStatus.Archived)
             throw new BusinessRuleException(
-                BusinessRuleCodes.Workspaces_Space_CannotUnarchiveNonArchived,
+                WorkspaceRuleCodes.Workspaces_Space_CannotUnarchiveNonArchived,
                 "Only an archived space can be unarchived.");
 
         Status = SpaceStatus.Active;

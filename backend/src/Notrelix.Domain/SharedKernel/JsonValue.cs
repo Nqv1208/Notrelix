@@ -26,7 +26,7 @@ public sealed class JsonValue : ValueObject
         catch (JsonException)
         {
             throw new BusinessRuleException(
-                BusinessRuleCodes.SharedKernel_Json_InvalidFormat,
+                CommonRuleCodes.SharedKernel_Json_InvalidFormat,
                 "Invalid JSON format.");
         }
     }

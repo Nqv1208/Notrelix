@@ -2,7 +2,7 @@ using Notrelix.Domain.Billing.Payments.Events;
 
 namespace Notrelix.Domain.Billing.Payments;
 
-public class PaymentMethod : AggregateRoot, IWorkspaceScoped
+public class PaymentMethod : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -83,6 +83,7 @@ public class PaymentMethod : AggregateRoot, IWorkspaceScoped
     {
         if (IsDeleted) return;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
+        SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
     }
 
@@ -90,6 +91,7 @@ public class PaymentMethod : AggregateRoot, IWorkspaceScoped
     {
         if (!IsDeleted) return;
         if (!MarkRestored(restoredBy, restoredAt)) return;
+        SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
     }
 }

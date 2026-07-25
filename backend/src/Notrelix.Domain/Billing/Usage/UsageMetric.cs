@@ -1,10 +1,10 @@
 using Notrelix.Domain.Billing.Usage.Events;
 using Notrelix.Domain.Billing.Rules;
-using static Notrelix.Domain.Common.Exceptions.BusinessRuleCodes;
+using static Notrelix.Domain.Billing.BillingRuleCodes;
 
 namespace Notrelix.Domain.Billing.Usage;
 
-public class UsageMetric : AggregateRoot, IWorkspaceScoped
+public class UsageMetric : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
