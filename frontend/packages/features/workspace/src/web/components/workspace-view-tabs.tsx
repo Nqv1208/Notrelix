@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from '@tanstack/react-router';
 import { MoreHorizontal } from 'lucide-react';
 import { Button, cn } from '@notrelix/ui-web';
-import type { WorkspaceView } from '~/core/types/workspace';
-import { createUseReorderWorkspaceViews } from '~/web';
+import type { WorkspaceView } from '../../core/types/workspace';
+import { createUseReorderWorkspaceViews } from '..';
 import { WorkspaceAddViewMenu } from './workspace-add-view-menu';
 
 import {

@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from '@notrelix/platform/navigation';
-import { createAuthService, type AuthApiClient, type AuthEndpoints } from '~/core/api/auth.service';
+import { createAuthService, type AuthApiClient, type AuthEndpoints } from '../../core/api/auth.service';
 
 interface UseRegisterDeps {
   api: AuthApiClient;

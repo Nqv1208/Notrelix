@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { createCommentService, type CollaborationApiClient, type CollaborationEndpoints } from '../api/comment.service';
-import { collaborationQueryKeys } from './keys';
+import { createCommentService, type CollaborationApiClient, type CollaborationEndpoints } from '../../api/comment.service';
+import { collaborationQueryKeys } from '../keys';
 
 export function createUseComments(api: CollaborationApiClient, endpoints: CollaborationEndpoints) {
   const service = createCommentService(api, endpoints);
@@ -24,7 +24,7 @@ export function createUseCreateComment(api: CollaborationApiClient, endpoints: C
         authorId: string;
         authorName: string;
       }) => service.create(resourceId, body, authorId, authorName),
-      onSuccess: (_data, variables) => {
+      onSuccess: (_data: unknown, variables: { resourceId: string; body: string; authorId: string; authorName: string }) => {
         queryClient.invalidateQueries({
           queryKey: collaborationQueryKeys.comments(variables.resourceId),
         });

@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { UserPlus, Loader2, Check, X, Calendar, User, Briefcase } from 'lucide-react';
 import { Button, Popover, PopoverContent, PopoverTrigger, Avatar, AvatarFallback } from '@notrelix/ui-web';
-import { createUsePendingInvitations, createUseAcceptInvitation } from '@notrelix/features-workspace';
-import type { WorkspaceInvitation } from '@notrelix/features-workspace/core';
+import { createUsePendingInvitations } from '../../core';
+import { createUseAcceptInvitation } from '../hooks/mutations/use-accept-invitation';
+import type { WorkspaceInvitation } from '../../core';
 import { api, endpoints } from '@notrelix/contracts';
 import { cn } from '@notrelix/ui-web';
 
@@ -22,15 +23,11 @@ export function PendingInvitationsMenu() {
   const handleAccept = (token: string) => {
     setAcceptingToken(token);
     acceptMutation.mutate(token, {
-      onSuccess: (data) => {
+      onSuccess: () => {
         setOpen(false);
         setAcceptingToken(null);
         refetch();
-        if (data && data.workspaceId) {
-          navigate({ to: `/workspaces/${data.workspaceId}` });
-        } else {
-          navigate({ to: '/home' });
-        }
+        navigate({ to: '/home' });
       },
       onError: () => {
         setAcceptingToken(null);

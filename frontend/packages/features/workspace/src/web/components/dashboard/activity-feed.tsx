@@ -1,6 +1,6 @@
 import { Activity } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@notrelix/ui-web';
-import type { WorkspaceActivityItem } from '@notrelix/features-workspace/core';
+import type { WorkspaceActivityItem } from '../../../core';
 import { cn } from '@notrelix/ui-web';
 
 const avatarColors = [

@@ -4,8 +4,8 @@ import {
   createUseUnreadCount,
   createUseMarkRead,
   createUseArchiveNotification,
-} from '~/core';
-import type { NotificationsApiClient, NotificationsEndpoints } from '~/core/api/notifications.service';
+} from '../../core';
+import type { NotificationsApiClient, NotificationsEndpoints } from '../../core/api/notifications.service';
 import {
   Button,
   Popover,

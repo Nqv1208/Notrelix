@@ -24,9 +24,9 @@ import {
   type ResetPasswordRequest,
   parseAuthError,
   resolveErrorDisplay,
-} from '~/core';
-import type { AuthApiClient, AuthEndpoints } from '~/core/api/auth.service';
-import { createAuthService } from '~/core/api/auth.service';
+} from '../../core';
+import type { AuthApiClient, AuthEndpoints } from '../../core/api/auth.service';
+import { createAuthService } from '../../core/api/auth.service';
 
 interface ForgotPasswordFormDeps {
   api: AuthApiClient;

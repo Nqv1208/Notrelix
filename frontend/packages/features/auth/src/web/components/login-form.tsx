@@ -8,9 +8,9 @@ import { Button } from '@notrelix/ui-web';
 import { Input } from '@notrelix/ui-web';
 import { Label } from '@notrelix/ui-web';
 import { Checkbox } from '@notrelix/ui-web';
-import { loginSchema, type LoginRequest, parseAuthError, resolveErrorDisplay } from '~/core';
+import { loginSchema, type LoginRequest, parseAuthError, resolveErrorDisplay } from '../../core';
 import { createUseLogin } from '../hooks/use-login';
-import type { AuthApiClient, AuthEndpoints } from '~/core/api/auth.service';
+import type { AuthApiClient, AuthEndpoints } from '../../core/api/auth.service';
 
 interface LoginFormDeps {
   api: AuthApiClient;

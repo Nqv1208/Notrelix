@@ -1,17 +1,20 @@
 import { useNavigate } from '@tanstack/react-router';
 import { Plus } from 'lucide-react';
 import { Badge, Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@notrelix/ui-web';
-import { workspaceViewTemplates } from '~/core/constants/view-templates';
-import type { WorkspaceViewType } from '~/core/types/workspace';
-import { createUseCreateWorkspaceView } from '~/web';
+import { workspaceViewTemplates } from '../../core/constants/view-templates';
+import type { WorkspaceViewType } from '../../core/types/workspace';
+import { api } from '@notrelix/contracts';
+import { createUseCreateWorkspaceView } from '../hooks/mutations/use-create-workspace-view';
+
+const defaultCreateViewHook = createUseCreateWorkspaceView({ api });
 
 export function WorkspaceAddViewMenu({
   workspaceId,
-  createViewHook,
+  createViewHook = defaultCreateViewHook,
   boards = [],
 }: {
   workspaceId: string;
-  createViewHook: ReturnType<typeof createUseCreateWorkspaceView>;
+  createViewHook?: ReturnType<typeof createUseCreateWorkspaceView>;
   boards?: Array<{ id: string }>;
 }) {
   const navigate = useNavigate();

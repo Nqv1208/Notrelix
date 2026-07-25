@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createInvitationsService, type InvitationsEndpoints } from '~/core/api/invitations.service';
-import type { WorkspaceApiClient } from '~/core/api/workspace.service';
-import { workspaceQueryKeys } from '~/core/query/keys';
-import type { CreateWorkspaceInvitationInput } from '~/core/types/workspace';
+import { createInvitationsService, type InvitationsEndpoints } from '../../../core/api/invitations.service';
+import type { WorkspaceApiClient } from '../../../core/api/workspace.service';
+import { workspaceQueryKeys } from '../../../core/query/keys';
+import type { CreateWorkspaceInvitationInput } from '../../../core/types/workspace';
 
 interface UseCreateInvitationDeps {
   api: WorkspaceApiClient;

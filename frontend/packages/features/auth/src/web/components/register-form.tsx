@@ -8,9 +8,9 @@ import { Button } from '@notrelix/ui-web';
 import { Input } from '@notrelix/ui-web';
 import { Label } from '@notrelix/ui-web';
 import { Checkbox } from '@notrelix/ui-web';
-import { registerSchema, type RegisterRequest, parseAuthError, resolveErrorDisplay } from '~/core';
+import { registerSchema, type RegisterRequest, parseAuthError, resolveErrorDisplay } from '../../core';
 import { createUseRegister } from '../hooks/use-register';
-import type { AuthApiClient, AuthEndpoints } from '~/core/api/auth.service';
+import type { AuthApiClient, AuthEndpoints } from '../../core/api/auth.service';
 
 function getPasswordStrength(password: string): { score: number; label: string; color: string } {
   let score = 0;

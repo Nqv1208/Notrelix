@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { createUseComments, createUseCreateComment, createUseDeleteComment } from '~/core';
-import { api, endpoints } from '@notrelix/contracts';
+import React, { useState } from 'react';
+import { createUseComments, createUseCreateComment, createUseDeleteComment, type Comment } from '../../core';
+import { api } from '@notrelix/contracts';
 import { Button, Input, Avatar } from '@notrelix/ui-web';
 import { MessageSquare, Send, Trash2 } from 'lucide-react';
 
@@ -21,7 +21,7 @@ interface ResourceCommentsProps {
 
 export function ResourceComments({
   resourceId,
-  resourceType,
+  resourceType: _resourceType,
   currentUserId = 'current-user',
   currentUserName = 'You',
 }: ResourceCommentsProps) {
@@ -61,7 +61,7 @@ export function ResourceComments({
         </div>
       ) : (
         <div className="space-y-3">
-          {comments.map((comment) => (
+          {comments.map((comment: Comment) => (
             <div key={comment.id} className="flex gap-3 p-3 rounded-lg bg-muted/30">
               <Avatar className="size-8 shrink-0">
                 <div className="flex items-center justify-center size-full text-xs font-medium bg-primary/10 text-primary rounded-full">
@@ -96,7 +96,7 @@ export function ResourceComments({
       <form onSubmit={handleSubmit} className="flex gap-2">
         <Input
           value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewComment(e.target.value)}
           placeholder="Add a comment..."
           className="flex-1"
         />

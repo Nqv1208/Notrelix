@@ -27,7 +27,7 @@ import {
   Separator,
   cn,
 } from '@notrelix/ui-web';
-import type { WorkspaceMember, WorkspaceSummary } from '~/core/types/workspace';
+import type { WorkspaceMember, WorkspaceSummary } from '../../core/types/workspace';
 import { toast } from 'sonner';
 
 const avatarColors = [

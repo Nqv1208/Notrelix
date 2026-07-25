@@ -17,9 +17,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "zod": "^4.3.6",
-    "@tanstack/react-query": "^5.95.2",
-    "@tanstack/react-router": "^1.120.0",
+    "zod": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "@tanstack/react-router": "catalog:",
     "@notrelix/platform": "workspace:*",
     "@notrelix/ui-web": "workspace:*",
     "react-hook-form": "^7.71.2",

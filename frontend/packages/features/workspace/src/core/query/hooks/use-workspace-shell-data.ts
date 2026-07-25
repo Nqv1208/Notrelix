@@ -1,6 +1,6 @@
 import { createUseWorkspace } from './use-workspace';
 import { createUseWorkspaceViews } from './use-workspace-views';
-import type { WorkspaceApiClient, WorkspaceEndpoints } from '~/core/api/workspace.service';
+import type { WorkspaceApiClient, WorkspaceEndpoints } from '../../api/workspace.service';
 
 interface UseWorkspaceShellDataDeps {
   api: WorkspaceApiClient;

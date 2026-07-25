@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
 import { useAuthFailureListener, type PlatformUser } from '@notrelix/platform';
 import { createUseAuthUser } from '../hooks/use-auth-user';
-import type { AuthApiClient, AuthEndpoints } from '~/core/api/auth.service';
+import type { AuthApiClient, AuthEndpoints } from '../../core/api/auth.service';
 
 export interface AuthContextType {
   user: PlatformUser | null;

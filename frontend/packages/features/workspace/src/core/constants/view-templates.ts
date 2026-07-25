@@ -1,4 +1,4 @@
-import type { WorkspaceViewType } from '~/core/types/workspace';
+import type { WorkspaceViewType } from '../types/workspace';
 
 export const workspaceViewTemplates: Array<{
   type: WorkspaceViewType;

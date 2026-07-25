@@ -13,7 +13,7 @@ import {
   UserRound,
 } from 'lucide-react';
 import { Button, Input, ToggleGroup, ToggleGroupItem } from '@notrelix/ui-web';
-import type { WorkspaceView, WorkspaceViewType } from '~/core/types/workspace';
+import type { WorkspaceView, WorkspaceViewType } from '../../core/types/workspace';
 
 export function WorkspaceContextualToolbar({
   activeType,

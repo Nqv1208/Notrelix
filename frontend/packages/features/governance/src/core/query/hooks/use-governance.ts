@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { createGovernanceService, type GovernanceApiClient, type GovernanceEndpoints } from '../api/governance.service';
-import { governanceQueryKeys } from './keys';
+import { createGovernanceService, type GovernanceApiClient, type GovernanceEndpoints } from '../../api/governance.service';
+import { governanceQueryKeys } from '../keys';
 
 export function createUseRoles(api: GovernanceApiClient, endpoints: GovernanceEndpoints) {
   const service = createGovernanceService(api, endpoints);

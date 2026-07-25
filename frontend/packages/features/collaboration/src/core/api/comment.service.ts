@@ -28,7 +28,7 @@ interface CommentDtoApi {
 }
 
 function mapCommentDto(dto: CommentDtoApi): Comment {
-  return {
+  const comment: Comment = {
     id: dto.id,
     resourceId: dto.resourceId,
     resourceType: 'page',
@@ -37,10 +37,13 @@ function mapCommentDto(dto: CommentDtoApi): Comment {
     body: dto.body,
     mentionIds: dto.mentionIds ?? [],
     resolved: dto.resolved ?? false,
-    parentId: dto.parentId,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
   };
+  if (dto.parentId !== undefined) {
+    comment.parentId = dto.parentId;
+  }
+  return comment;
 }
 
 export function createCommentService(api: CollaborationApiClient, endpoints: CollaborationEndpoints) {

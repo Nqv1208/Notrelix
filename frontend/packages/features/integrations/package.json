@@ -12,7 +12,7 @@
     "./web": "./src/web/index.ts"
   },
   "scripts": {
-    "test": "vitest --passWithNoTests",
+    "test": "vitest",
     "clean": "rm -rf node_modules dist",
     "typecheck": "tsc --noEmit"
   },
@@ -20,12 +20,13 @@
     "@notrelix/contracts": "workspace:*",
     "@notrelix/kernel": "workspace:*",
     "@notrelix/platform": "workspace:*",
-    "@notrelix/query": "workspace:*"
+    "@notrelix/query": "workspace:*",
+    "@tanstack/react-query": "catalog:"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
+    "typescript": "catalog:",
     "@types/react": "^19.0.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react": "catalog:",
+    "react-dom": "catalog:"
   }
 }

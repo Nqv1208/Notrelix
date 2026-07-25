@@ -68,7 +68,7 @@ export function MembersPage() {
     }
   };
 
-  const handleRoleChange = (userId: string, newRole: string) => {
+  const handleRoleChange = (userId: string, newRole: 'member' | 'owner' | 'admin' | 'guest') => {
     updateRoleMutation.mutate({ userId, role: newRole });
   };
 
@@ -183,7 +183,7 @@ export function MembersPage() {
                       {member.role === 'owner' ? (
                         <Badge variant="secondary" className="capitalize text-[11px] font-medium bg-muted/65 rounded-md">{member.role}</Badge>
                       ) : (
-                        <Select defaultValue={member.role} onValueChange={(val) => handleRoleChange(member.userId, val)}>
+                        <Select defaultValue={member.role} onValueChange={(val) => handleRoleChange(member.userId, val as 'member' | 'owner' | 'admin' | 'guest')}>
                           <SelectTrigger className="w-28 h-8 rounded-lg text-xs bg-card">
                             <SelectValue />
                           </SelectTrigger>

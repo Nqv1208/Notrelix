@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createAccountService, type AccountApiClient, type AccountEndpoints } from '~/core/api/account.service';
-import { accountQueryKeys } from '~/core/query/keys';
-import type { UserPreferences } from '~/core/types/account';
+import { createAccountService, type AccountApiClient, type AccountEndpoints } from '../../core/api/account.service';
+import { accountQueryKeys } from '../../core/query/keys';
+import type { UserPreferences } from '../../core/types/account';
 
 interface UseUpdatePreferencesDeps {
   api: AccountApiClient;
