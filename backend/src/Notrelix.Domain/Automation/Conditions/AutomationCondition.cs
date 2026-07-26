@@ -1,5 +1,8 @@
 namespace Notrelix.Domain.Automation.Conditions;
 
+/// <summary>
+/// Experimental — runtime condition entity. Discriminator and config schema are not yet finalized.
+/// </summary>
 public class AutomationCondition : Entity
 {
     public Guid RuleId { get; private set; }

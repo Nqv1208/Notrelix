@@ -2,6 +2,7 @@ using FluentAssertions;
 using Notrelix.Domain.Integrations;
 using Notrelix.Domain.Integrations.Calendar;
 using Notrelix.Domain.Integrations.Connections;
+using Notrelix.Domain.Integrations.Connections.Events;
 
 namespace Notrelix.Domain.Tests.Integrations;
 
@@ -66,6 +67,41 @@ public class IntegrationConnectionTests
     }
 
     [Fact]
+    public void Reconnect_WhenAlreadyActiveWithSameValues_ShouldBeNoOp()
+    {
+        var expiresAt = Now.AddDays(1);
+        var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now, "provider-acc-1", expiresAt);
+        ((IHasDomainEvents)connection).ClearDomainEvents();
+        var versionBefore = connection.Version;
+
+        connection.Reconnect("provider-acc-1", expiresAt, Actor, Now);
+
+        connection.Version.Should().Be(versionBefore);
+        connection.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Reconnect_ShouldNormalizeProviderAccountId()
+    {
+        var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now);
+
+        connection.Reconnect("  provider-acc-1  ", Now.AddDays(1), Actor, Now);
+
+        connection.ProviderAccountId.Should().Be("provider-acc-1");
+    }
+
+    [Fact]
+    public void Reconnect_ShouldClearErrorDetail()
+    {
+        var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now);
+        connection.MarkError("Some error", Actor, Now);
+
+        connection.Reconnect("provider-acc-1", Now.AddDays(1), Actor, Now);
+
+        connection.ErrorDetail.Should().BeNull();
+    }
+
+    [Fact]
     public void MarkExpired_ShouldSetExpiredStatus()
     {
         var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now);
@@ -75,18 +111,76 @@ public class IntegrationConnectionTests
     }
 
     [Fact]
-    public void RotateSecret_ShouldAddVersion_AndNotAllowDuplicates()
+    public void MarkError_ShouldSetErrorStatus_AndRaiseEvent()
+    {
+        var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now);
+        ((IHasDomainEvents)connection).ClearDomainEvents();
+
+        connection.MarkError("Connection failed", Actor, Now);
+
+        connection.Status.Should().Be(IntegrationConnectionStatus.Error);
+        connection.ErrorDetail.Should().Be("Connection failed");
+        connection.DomainEvents.Should().ContainSingle(e => e is IntegrationConnectionErrorRecordedDomainEvent);
+    }
+
+    [Fact]
+    public void MarkError_WhenSameErrorAlreadySet_ShouldBeNoOp()
+    {
+        var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now);
+        connection.MarkError("Connection failed", Actor, Now);
+        ((IHasDomainEvents)connection).ClearDomainEvents();
+        var versionBefore = connection.Version;
+
+        connection.MarkError("Connection failed", Actor, Now);
+
+        connection.Version.Should().Be(versionBefore);
+        connection.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void MarkError_ShouldTrimErrorDetail()
+    {
+        var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now);
+
+        connection.MarkError("  Connection failed  ", Actor, Now);
+
+        connection.ErrorDetail.Should().Be("Connection failed");
+    }
+
+    [Fact]
+    public void RotateSecret_ShouldUpdateCurrentSecret_AndRaiseEvent()
     {
         var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now);
         var secretRef1 = SecretRef.Create("secret-key-1");
         var secretRef2 = SecretRef.Create("secret-key-2");
 
         connection.RotateSecret("v1", secretRef1, Actor, Now);
-        connection.SecretVersions.Should().ContainSingle(v => v.Version == "v1" && v.SecretReference.Value == "secret-key-1");
+        connection.CurrentSecretVersion.Should().Be("v1");
+        connection.CurrentSecretRef!.Value.Should().Be("secret-key-1");
         connection.DomainEvents.Should().Contain(e => e is IntegrationSecretRotatedDomainEvent);
 
-        var act = () => connection.RotateSecret("v1", secretRef2, Actor, Now);
-        act.Should().Throw<DomainException>().WithMessage("Secret version 'v1' already exists for this connection.");
+        // Rotating to a new version updates the current secret
+        ((IHasDomainEvents)connection).ClearDomainEvents();
+        connection.RotateSecret("v2", secretRef2, Actor, Now);
+        connection.CurrentSecretVersion.Should().Be("v2");
+        connection.CurrentSecretRef!.Value.Should().Be("secret-key-2");
+        connection.DomainEvents.Should().Contain(e => e is IntegrationSecretRotatedDomainEvent);
+    }
+
+    [Fact]
+    public void RotateSecret_WhenSameVersionAndSecret_ShouldBeNoOp()
+    {
+        var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now);
+        var secretRef = SecretRef.Create("secret-key-1");
+
+        connection.RotateSecret("v1", secretRef, Actor, Now);
+        ((IHasDomainEvents)connection).ClearDomainEvents();
+        var versionBefore = connection.Version;
+
+        connection.RotateSecret("v1", secretRef, Actor, Now);
+
+        connection.Version.Should().Be(versionBefore);
+        connection.DomainEvents.Should().BeEmpty();
     }
 
     [Fact]

@@ -13,13 +13,15 @@ public sealed class AutomationTriggerDefinition : ValueObject
 
     public string Type { get; private set; } = null!;
     public string? Configuration { get; private set; }
+    public int SchemaVersion { get; private set; }
 
     private AutomationTriggerDefinition() { }
 
-    private AutomationTriggerDefinition(string type, string? configuration)
+    private AutomationTriggerDefinition(string type, string? configuration, int schemaVersion)
     {
         Type = type;
         Configuration = configuration;
+        SchemaVersion = schemaVersion;
     }
 
     public static AutomationTriggerDefinition Create(string type, string? configuration = null)
@@ -42,13 +44,14 @@ public sealed class AutomationTriggerDefinition : ValueObject
             }
         }
 
-        return new AutomationTriggerDefinition(type, configuration);
+        return new AutomationTriggerDefinition(type, configuration, 1);
     }
 
     protected override IEnumerable<object?> GetEqualityComponents()
     {
         yield return Type;
         yield return Configuration;
+        yield return SchemaVersion;
     }
 
     public override string ToString() => Type;

@@ -1,5 +1,8 @@
 namespace Notrelix.Domain.Automation.Actions;
 
+/// <summary>
+/// Experimental — runtime action entity. Discriminator and config schema are not yet finalized.
+/// </summary>
 public class AutomationAction : Entity
 {
     public Guid RuleId { get; private set; }

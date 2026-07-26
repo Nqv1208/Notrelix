@@ -58,11 +58,13 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
     public string? ErrorDetail { get; private set; }
     public DateTimeOffset? ExpiresAt { get; private set; }
 
+    // Current secret state (replaces unbounded _secretVersions collection)
+    public string? CurrentSecretVersion { get; private set; }
+    public SecretRef? CurrentSecretRef { get; private set; }
+    public DateTimeOffset? SecretRotatedAt { get; private set; }
+
     private readonly List<IntegrationScope> _scopes = new();
     public IReadOnlyCollection<IntegrationScope> Scopes => _scopes.AsReadOnly();
-
-    private readonly List<IntegrationSecretVersion> _secretVersions = new();
-    public IReadOnlyCollection<IntegrationSecretVersion> SecretVersions => _secretVersions.AsReadOnly();
 
     private IntegrationConnection() : base() { }
 
@@ -119,9 +121,21 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
             throw new BusinessRuleException(Integrations_Connection_ExpirationMustBeFuture, "Expiration time must be in the future.");
         }
 
+        // Normalize provider account ID
+        var normalizedProviderAccountId = providerAccountId?.Trim();
+
+        // No-op detection: already Active with same values
+        if (Status == IntegrationConnectionStatus.Active &&
+            ProviderAccountId == normalizedProviderAccountId &&
+            ExpiresAt == expiresAt)
+        {
+            return;
+        }
+
         Status = IntegrationConnectionStatus.Active;
-        ProviderAccountId = providerAccountId;
+        ProviderAccountId = normalizedProviderAccountId;
         ExpiresAt = expiresAt;
+        ErrorDetail = null;
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
         RaiseDomainEvent(new IntegrationConnectionReauthorizedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
@@ -143,10 +157,19 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(error);
 
-        ErrorDetail = error;
+        var trimmedError = error.Trim();
+
+        // No-op detection: already Error with same detail
+        if (Status == IntegrationConnectionStatus.Error && ErrorDetail == trimmedError)
+        {
+            return;
+        }
+
+        ErrorDetail = trimmedError;
         Status = IntegrationConnectionStatus.Error;
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
+        RaiseDomainEvent(new IntegrationConnectionErrorRecordedDomainEvent(AccountId, WorkspaceId, Id, trimmedError, updatedBy, occurredAt));
     }
 
     public void RotateSecret(string version, SecretRef secretRef, Guid updatedBy, DateTimeOffset occurredAt)
@@ -155,17 +178,21 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
         Guard.NotNullOrWhiteSpace(version);
         Guard.NotNull(secretRef);
 
-        if (_secretVersions.Any(v => v.Version == version))
+        var trimmedVersion = version.Trim();
+
+        // No-op detection: same version and secret ref
+        if (CurrentSecretVersion == trimmedVersion && CurrentSecretRef == secretRef)
         {
-            throw new BusinessRuleException(Integrations_Connection_SecretVersionAlreadyExists, $"Secret version '{version}' already exists for this connection.");
+            return;
         }
 
-        var newVersion = IntegrationSecretVersion.Create(Id, version, secretRef, occurredAt);
-        _secretVersions.Add(newVersion);
+        CurrentSecretVersion = trimmedVersion;
+        CurrentSecretRef = secretRef;
+        SecretRotatedAt = occurredAt;
 
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
-        RaiseDomainEvent(new IntegrationSecretRotatedDomainEvent(AccountId, WorkspaceId, Id, version, updatedBy, occurredAt));
+        RaiseDomainEvent(new IntegrationSecretRotatedDomainEvent(AccountId, WorkspaceId, Id, trimmedVersion, updatedBy, occurredAt));
     }
 
     public void AddScope(string scope, Guid addedBy, DateTimeOffset occurredAt)

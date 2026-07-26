@@ -5,12 +5,14 @@ namespace Notrelix.Domain.Automation.RulesEngine;
 public sealed class AutomationConditionDefinition : ValueObject
 {
     public string RawJson { get; private set; } = null!;
+    public int SchemaVersion { get; private set; }
 
     private AutomationConditionDefinition() { }
 
-    private AutomationConditionDefinition(string rawJson)
+    private AutomationConditionDefinition(string rawJson, int schemaVersion)
     {
         RawJson = rawJson;
+        SchemaVersion = schemaVersion;
     }
 
     public static AutomationConditionDefinition Create(string json)
@@ -28,12 +30,13 @@ public sealed class AutomationConditionDefinition : ValueObject
             throw new BusinessRuleException(AutomationRuleCodes.Automation_Condition_InvalidConfigJson, $"Invalid condition configuration JSON: {ex.Message}");
         }
 
-        return new AutomationConditionDefinition(json);
+        return new AutomationConditionDefinition(json, 1);
     }
 
     protected override IEnumerable<object?> GetEqualityComponents()
     {
         yield return RawJson;
+        yield return SchemaVersion;
     }
 
     public override string ToString() => RawJson;

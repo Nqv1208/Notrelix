@@ -1,5 +1,9 @@
 namespace Notrelix.Domain.Automation.Actions;
 
+/// <summary>
+/// Experimental — runtime action configuration. Schema and required properties are not yet defined.
+/// Frozen automation definitions use AutomationActionDefinition in RulesEngine instead.
+/// </summary>
 public sealed class ActionConfig : ValueObject
 {
     public JsonValue Data { get; private set; } = null!;

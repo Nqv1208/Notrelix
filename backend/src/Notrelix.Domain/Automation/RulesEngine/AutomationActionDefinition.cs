@@ -12,13 +12,15 @@ public sealed class AutomationActionDefinition : ValueObject
 
     public string Type { get; private set; } = null!;
     public string? Configuration { get; private set; }
+    public int SchemaVersion { get; private set; }
 
     private AutomationActionDefinition() { }
 
-    private AutomationActionDefinition(string type, string? configuration)
+    private AutomationActionDefinition(string type, string? configuration, int schemaVersion)
     {
         Type = type;
         Configuration = configuration;
+        SchemaVersion = schemaVersion;
     }
 
     public static AutomationActionDefinition Create(string type, string? configuration = null)
@@ -41,13 +43,14 @@ public sealed class AutomationActionDefinition : ValueObject
             }
         }
 
-        return new AutomationActionDefinition(type, configuration);
+        return new AutomationActionDefinition(type, configuration, 1);
     }
 
     protected override IEnumerable<object?> GetEqualityComponents()
     {
         yield return Type;
         yield return Configuration;
+        yield return SchemaVersion;
     }
 
     public override string ToString() => Type;

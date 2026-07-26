@@ -1,5 +1,9 @@
 namespace Notrelix.Domain.Automation.Conditions;
 
+/// <summary>
+/// Experimental — runtime condition configuration. Schema and required properties are not yet defined.
+/// Frozen automation definitions use AutomationConditionDefinition in RulesEngine instead.
+/// </summary>
 public sealed class ConditionConfig : ValueObject
 {
     public JsonValue Data { get; private set; } = null!;
