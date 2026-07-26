@@ -47,7 +47,7 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
                 .FirstOrDefaultAsync(c => c.Id == request.ParentCommentId.Value && !c.IsDeleted, ct)
                 ?? throw new NotFoundException(nameof(Comment), request.ParentCommentId.Value);
 
-            var parentContext = ParentCommentContext.Create(parentComment.Id, parentComment.Target);
+            var parentContext = ParentCommentContext.Create(parentComment.AccountId, parentComment.WorkspaceId, parentComment.Id, parentComment.Target, parentComment.IsDeleted);
             comment = Comment.CreateReply(accountId, workspaceId, target, request.ContentMd, userId, now, parentContext);
         }
 

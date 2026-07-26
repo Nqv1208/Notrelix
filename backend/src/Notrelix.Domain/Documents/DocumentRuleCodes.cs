@@ -22,6 +22,7 @@ public static class DocumentRuleCodes
     public const string Documents_BlockTree_MoveWouldCreateCycle = "Documents_BlockTree_MoveWouldCreateCycle";
     public const string Documents_BlockTree_ParentNotFound = "Documents_BlockTree_ParentNotFound";
     public const string Documents_BlockTree_ParentMustBeInSamePage = "Documents_BlockTree_ParentMustBeInSamePage";
+    public const string Documents_BlockTree_ScopeMismatch = "Documents_BlockTree_ScopeMismatch";
     public const string Documents_BlockTree_AncestorPathEmpty = "Documents_BlockTree_AncestorPathEmpty";
     public const string Documents_BlockTree_AncestorPathContainsEmptyId = "Documents_BlockTree_AncestorPathContainsEmptyId";
     public const string Documents_BlockTree_AncestorPathContainsDuplicates = "Documents_BlockTree_AncestorPathContainsDuplicates";

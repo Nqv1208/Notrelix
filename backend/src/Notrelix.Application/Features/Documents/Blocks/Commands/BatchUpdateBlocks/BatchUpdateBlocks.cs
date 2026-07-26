@@ -74,7 +74,7 @@ public class BatchUpdateBlocksCommandHandler : IRequestHandler<BatchUpdateBlocks
                         currentParentId = ancestor?.ParentId;
                     }
 
-                    var parentPath = BlockAncestorPath.Create(parentBlock.Id, ancestorIds);
+                    var parentPath = BlockAncestorPath.Create(parentBlock.AccountId, parentBlock.WorkspaceId, parentBlock.PageId, parentBlock.Id, ancestorIds);
                     block.MoveUnder(parentPath, newPosition, _currentUser.UserId, now);
                 }
             }

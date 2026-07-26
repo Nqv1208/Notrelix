@@ -1,6 +1,6 @@
 # Domain Event Contract Snapshot
 # Format: LogicalName|Version|ClrType|Scope|PropertyName|PropertyType|IsNullable
-# Generated: 2026-07-25T17:28:43Z
+# Generated: 2026-07-26T16:23:15Z
 
 accounts.account-activated|1|Notrelix.Domain.Accounts.Accounts.Events.AccountActivatedDomainEvent|Accounts|AccountId|Guid|False
 accounts.account-activated|1|Notrelix.Domain.Accounts.Accounts.Events.AccountActivatedDomainEvent|Accounts|ActivatedBy|Guid|False
@@ -739,6 +739,14 @@ collaboration.comment-created|1|Notrelix.Domain.Collaboration.Comments.Events.Co
 collaboration.comment-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentCreatedDomainEvent|Collaboration|OccurredAt|DateTimeOffset|False
 collaboration.comment-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentCreatedDomainEvent|Collaboration|Target|ResourceRef|False
 collaboration.comment-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentCreatedDomainEvent|Collaboration|WorkspaceId|Guid|False
+collaboration.comment-reply-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|Collaboration|AccountId|Guid|False
+collaboration.comment-reply-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|Collaboration|CommentId|Guid|False
+collaboration.comment-reply-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|Collaboration|CreatedBy|Guid|False
+collaboration.comment-reply-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|Collaboration|EventId|Guid|False
+collaboration.comment-reply-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|Collaboration|OccurredAt|DateTimeOffset|False
+collaboration.comment-reply-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|Collaboration|ParentCommentId|Guid|False
+collaboration.comment-reply-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|Collaboration|Target|ResourceRef|False
+collaboration.comment-reply-created|1|Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|Collaboration|WorkspaceId|Guid|False
 collaboration.comment-resolved|1|Notrelix.Domain.Collaboration.Comments.Events.CommentResolvedDomainEvent|Collaboration|AccountId|Guid|False
 collaboration.comment-resolved|1|Notrelix.Domain.Collaboration.Comments.Events.CommentResolvedDomainEvent|Collaboration|CommentId|Guid|False
 collaboration.comment-resolved|1|Notrelix.Domain.Collaboration.Comments.Events.CommentResolvedDomainEvent|Collaboration|EventId|Guid|False

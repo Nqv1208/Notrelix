@@ -6,12 +6,16 @@ namespace Notrelix.Domain.Tests.Documents;
 
 public class BlockTreeRulesTests
 {
+    private static readonly Guid AccountId = Guid.NewGuid();
+    private static readonly Guid WorkspaceId = Guid.NewGuid();
+    private static readonly Guid PageId = Guid.NewGuid();
+
     [Fact]
     public void EnsureNoCycle_WhenBlockIsOwnParent_ShouldThrow()
     {
         var blockId = Guid.NewGuid();
         var act = () => BlockTreeRules.EnsureNoCycle(blockId,
-            BlockAncestorPath.Create(blockId, new[] { Guid.NewGuid() }));
+            BlockAncestorPath.Create(AccountId, WorkspaceId, PageId, blockId, new[] { Guid.NewGuid() }));
         act.Should().Throw<BusinessRuleException>().WithMessage("*own parent*");
     }
 
@@ -22,7 +26,7 @@ public class BlockTreeRulesTests
         var parentId = Guid.NewGuid();
 
         var act = () => BlockTreeRules.EnsureNoCycle(blockId,
-            BlockAncestorPath.Create(parentId, new[] { blockId }));
+            BlockAncestorPath.Create(AccountId, WorkspaceId, PageId, parentId, new[] { blockId }));
 
         act.Should().Throw<BusinessRuleException>().WithMessage("*cycle*");
     }
@@ -35,7 +39,7 @@ public class BlockTreeRulesTests
         var grandparentId = Guid.NewGuid();
 
         var act = () => BlockTreeRules.EnsureNoCycle(blockId,
-            BlockAncestorPath.Create(parentId, new[] { grandparentId, blockId }));
+            BlockAncestorPath.Create(AccountId, WorkspaceId, PageId, parentId, new[] { grandparentId, blockId }));
 
         act.Should().Throw<BusinessRuleException>().WithMessage("*cycle*");
     }
@@ -47,7 +51,7 @@ public class BlockTreeRulesTests
         var parentId = Guid.NewGuid();
 
         var act = () => BlockTreeRules.EnsureNoCycle(blockId,
-            BlockAncestorPath.Create(parentId, new[] { Guid.NewGuid() }));
+            BlockAncestorPath.Create(AccountId, WorkspaceId, PageId, parentId, new[] { Guid.NewGuid() }));
 
         act.Should().NotThrow();
     }

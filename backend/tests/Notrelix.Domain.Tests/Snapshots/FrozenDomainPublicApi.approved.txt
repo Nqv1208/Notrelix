@@ -1,6 +1,6 @@
 # Frozen Domain Public API Snapshot
 # Format: Type|Member|MemberType|Visibility|IsAbstract|IsVirtual|Parameters
-# Generated: 2026-07-25T17:28:43Z
+# Generated: 2026-07-26T16:23:15Z
 
 Notrelix.Domain.Accounts.Accounts.Account|Activate|Method|public|False|False|Guid activatedBy, DateTimeOffset activatedAt
 Notrelix.Domain.Accounts.Accounts.Account|Archive|Method|public|False|False|Guid archivedBy, DateTimeOffset archivedAt
@@ -1247,6 +1247,14 @@ Notrelix.Domain.Collaboration.Comments.Events.CommentCreatedDomainEvent|Equals|M
 Notrelix.Domain.Collaboration.Comments.Events.CommentCreatedDomainEvent|CommentId|Property|public|False|False|readwrite
 Notrelix.Domain.Collaboration.Comments.Events.CommentCreatedDomainEvent|CreatedBy|Property|public|False|False|readwrite
 Notrelix.Domain.Collaboration.Comments.Events.CommentCreatedDomainEvent|Target|Property|public|False|False|readwrite
+Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid CommentId, Guid ParentCommentId, ResourceRef Target, Guid CreatedBy, DateTimeOffset OccurredAt
+Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|<Clone>$|Method|public|False|True|
+Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& CommentId, Guid& ParentCommentId, ResourceRef& Target, Guid& CreatedBy, DateTimeOffset& OccurredAt
+Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|Equals|Method|public|False|True|CommentReplyCreatedDomainEvent other
+Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|CommentId|Property|public|False|False|readwrite
+Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|CreatedBy|Property|public|False|False|readwrite
+Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|ParentCommentId|Property|public|False|False|readwrite
+Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|Target|Property|public|False|False|readwrite
 Notrelix.Domain.Collaboration.Comments.Events.CommentResolvedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid CommentId, Guid ResolvedBy, DateTimeOffset OccurredAt
 Notrelix.Domain.Collaboration.Comments.Events.CommentResolvedDomainEvent|<Clone>$|Method|public|False|True|
 Notrelix.Domain.Collaboration.Comments.Events.CommentResolvedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& CommentId, Guid& ResolvedBy, DateTimeOffset& OccurredAt
@@ -1271,8 +1279,11 @@ Notrelix.Domain.Collaboration.Comments.Events.CommentUpdatedDomainEvent|Deconstr
 Notrelix.Domain.Collaboration.Comments.Events.CommentUpdatedDomainEvent|Equals|Method|public|False|True|CommentUpdatedDomainEvent other
 Notrelix.Domain.Collaboration.Comments.Events.CommentUpdatedDomainEvent|CommentId|Property|public|False|False|readwrite
 Notrelix.Domain.Collaboration.Comments.Events.CommentUpdatedDomainEvent|UpdatedBy|Property|public|False|False|readwrite
+Notrelix.Domain.Collaboration.Comments.ParentCommentContext|AccountId|Property|public|False|False|readonly
+Notrelix.Domain.Collaboration.Comments.ParentCommentContext|IsDeleted|Property|public|False|False|readonly
 Notrelix.Domain.Collaboration.Comments.ParentCommentContext|ParentCommentId|Property|public|False|False|readonly
 Notrelix.Domain.Collaboration.Comments.ParentCommentContext|ParentTarget|Property|public|False|False|readonly
+Notrelix.Domain.Collaboration.Comments.ParentCommentContext|WorkspaceId|Property|public|False|False|readonly
 Notrelix.Domain.Collaboration.Mentions.Events.MentionCreatedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid MentionId, ResourceRef Source, Guid MentionedId, DateTimeOffset OccurredAt
 Notrelix.Domain.Collaboration.Mentions.Events.MentionCreatedDomainEvent|<Clone>$|Method|public|False|True|
 Notrelix.Domain.Collaboration.Mentions.Events.MentionCreatedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& MentionId, ResourceRef& Source, Guid& MentionedId, DateTimeOffset& OccurredAt
@@ -1434,8 +1445,11 @@ Notrelix.Domain.Documents.Blocks.Block|Position|Property|public|False|False|read
 Notrelix.Domain.Documents.Blocks.Block|Properties|Property|public|False|False|readonly
 Notrelix.Domain.Documents.Blocks.Block|Type|Property|public|False|False|readonly
 Notrelix.Domain.Documents.Blocks.Block|WorkspaceId|Property|public|False|True|readonly
+Notrelix.Domain.Documents.Blocks.BlockAncestorPath|AccountId|Property|public|False|False|readonly
 Notrelix.Domain.Documents.Blocks.BlockAncestorPath|AncestorIds|Property|public|False|False|readonly
+Notrelix.Domain.Documents.Blocks.BlockAncestorPath|PageId|Property|public|False|False|readonly
 Notrelix.Domain.Documents.Blocks.BlockAncestorPath|TargetParentId|Property|public|False|False|readonly
+Notrelix.Domain.Documents.Blocks.BlockAncestorPath|WorkspaceId|Property|public|False|False|readonly
 Notrelix.Domain.Documents.Blocks.BlockContent|Data|Property|public|False|False|readonly
 Notrelix.Domain.Documents.Blocks.BlockProperties|Data|Property|public|False|False|readonly
 Notrelix.Domain.Documents.Blocks.Events.BlockContentUpdatedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid BlockId, Guid PageId, Guid UpdatedBy, DateTimeOffset OccurredAt

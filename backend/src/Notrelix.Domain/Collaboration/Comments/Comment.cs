@@ -70,8 +70,18 @@ public class Comment : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
             throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{workspaceId}', got '{target.WorkspaceId.Value}'.");
 
+        // Validate tenant scope match
+        if (parentContext.AccountId != accountId)
+            throw new BusinessRuleException(CollaborationRuleCodes.Collaboration_Comment_ParentScopeMismatch, "Parent comment must belong to the same account.");
+        if (parentContext.WorkspaceId != workspaceId)
+            throw new BusinessRuleException(CollaborationRuleCodes.Collaboration_Comment_ParentScopeMismatch, "Parent comment must belong to the same workspace.");
+
         if (parentContext.ParentTarget.ResourceType != target.ResourceType || parentContext.ParentTarget.ResourceId != target.ResourceId)
             throw new BusinessRuleException(CollaborationRuleCodes.Collaboration_Comment_ParentMustBeInSameTarget, "Parent comment must belong to the same target resource.");
+
+        // Validate parent is not deleted
+        if (parentContext.IsDeleted)
+            throw new BusinessRuleException(CollaborationRuleCodes.Collaboration_Comment_CannotReplyToDeleted, "Cannot reply to a deleted comment.");
 
         var comment = new Comment
         {
@@ -85,7 +95,8 @@ public class Comment : SoftDeletableAggregateRoot, IWorkspaceScoped
         };
 
         comment.SetAuditOnCreate(createdBy, createdAt);
-        comment.RaiseDomainEvent(new CommentCreatedDomainEvent(accountId, workspaceId, comment.Id, target, createdBy, createdAt));
+        comment.RaiseDomainEvent(new CommentReplyCreatedDomainEvent(
+            accountId, workspaceId, comment.Id, parentContext.ParentCommentId, target, createdBy, createdAt));
 
         return comment;
     }

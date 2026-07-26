@@ -102,6 +102,14 @@ public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.NotNull(parentPath);
         Guard.NotNull(newPosition);
 
+        // Validate scope match: parent must be in the same account/workspace/page
+        if (parentPath.AccountId != AccountId)
+            throw new BusinessRuleException(DocumentRuleCodes.Documents_BlockTree_ScopeMismatch, "Parent block must belong to the same account.");
+        if (parentPath.WorkspaceId != WorkspaceId)
+            throw new BusinessRuleException(DocumentRuleCodes.Documents_BlockTree_ScopeMismatch, "Parent block must belong to the same workspace.");
+        if (parentPath.PageId != PageId)
+            throw new BusinessRuleException(DocumentRuleCodes.Documents_BlockTree_ScopeMismatch, "Parent block must belong to the same page.");
+
         BlockTreeRules.EnsureNoCycle(Id, parentPath);
 
         if (ParentId == parentPath.TargetParentId && Position == newPosition) return;

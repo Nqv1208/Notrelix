@@ -14,6 +14,8 @@ public static class CollaborationRuleCodes
     // ── Comment ───────────────────────────────────────────────────────────
     public const string Collaboration_Comment_ParentNotFound = "Collaboration_Comment_ParentNotFound";
     public const string Collaboration_Comment_ParentMustBeInSameTarget = "Collaboration_Comment_ParentMustBeInSameTarget";
+    public const string Collaboration_Comment_ParentScopeMismatch = "Collaboration_Comment_ParentScopeMismatch";
+    public const string Collaboration_Comment_CannotReplyToDeleted = "Collaboration_Comment_CannotReplyToDeleted";
 
     // ── Attachment ────────────────────────────────────────────────────────
     public const string Collaboration_Attachment_FileSizeMustBePositive = "Collaboration_Attachment_FileSizeMustBePositive";

@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Collaboration.Comments;
+using Notrelix.Domain.Collaboration.Comments.Events;
 
 namespace Notrelix.Domain.Tests.Collaboration.Comments;
 
@@ -25,7 +26,7 @@ public class CommentReplyInvariantTests
     {
         var parentCommentId = Guid.NewGuid();
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
-        var parentContext = ParentCommentContext.Create(parentCommentId, target);
+        var parentContext = ParentCommentContext.Create(_accountId, _workspaceId, parentCommentId, target);
 
         var reply = Comment.CreateReply(_accountId, _workspaceId, target, "Reply", _actorId, _now, parentContext);
 
@@ -38,7 +39,7 @@ public class CommentReplyInvariantTests
         var parentCommentId = Guid.NewGuid();
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
         var differentTarget = ResourceRef.Create(ResourceType.Page, Guid.NewGuid(), _workspaceId);
-        var parentContext = ParentCommentContext.Create(parentCommentId, differentTarget);
+        var parentContext = ParentCommentContext.Create(_accountId, _workspaceId, parentCommentId, differentTarget);
 
         var act = () => Comment.CreateReply(_accountId, _workspaceId, target, "Reply", _actorId, _now, parentContext);
 
@@ -50,12 +51,38 @@ public class CommentReplyInvariantTests
     {
         var parentCommentId = Guid.NewGuid();
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
-        var parentContext = ParentCommentContext.Create(parentCommentId, target);
+        // Parent context has different workspace than the reply
         var otherWorkspaceId = Guid.NewGuid();
+        var parentContext = ParentCommentContext.Create(_accountId, otherWorkspaceId, parentCommentId, target);
 
-        var act = () => Comment.CreateReply(_accountId, otherWorkspaceId, target, "Reply", _actorId, _now, parentContext);
+        var act = () => Comment.CreateReply(_accountId, _workspaceId, target, "Reply", _actorId, _now, parentContext);
 
-        act.Should().Throw<BusinessRuleException>().WithMessage("*scope mismatch*");
+        act.Should().Throw<BusinessRuleException>().WithMessage("*same workspace*");
+    }
+
+    [Fact]
+    public void CreateReply_ShouldThrow_WhenAccountMismatch()
+    {
+        var parentCommentId = Guid.NewGuid();
+        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
+        var parentContext = ParentCommentContext.Create(_accountId, _workspaceId, parentCommentId, target);
+        var otherAccountId = Guid.NewGuid();
+
+        var act = () => Comment.CreateReply(otherAccountId, _workspaceId, target, "Reply", _actorId, _now, parentContext);
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*same account*");
+    }
+
+    [Fact]
+    public void CreateReply_ShouldThrow_WhenParentDeleted()
+    {
+        var parentCommentId = Guid.NewGuid();
+        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
+        var parentContext = ParentCommentContext.Create(_accountId, _workspaceId, parentCommentId, target, isDeleted: true);
+
+        var act = () => Comment.CreateReply(_accountId, _workspaceId, target, "Reply", _actorId, _now, parentContext);
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*deleted*");
     }
 
     [Fact]
@@ -63,7 +90,7 @@ public class CommentReplyInvariantTests
     {
         var parentCommentId = Guid.NewGuid();
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
-        var parentContext = ParentCommentContext.Create(parentCommentId, target);
+        var parentContext = ParentCommentContext.Create(_accountId, _workspaceId, parentCommentId, target);
 
         var reply = Comment.CreateReply(_accountId, _workspaceId, target, "  Reply  ", _actorId, _now, parentContext);
 
@@ -75,7 +102,7 @@ public class CommentReplyInvariantTests
     {
         var parentCommentId = Guid.NewGuid();
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
-        var parentContext = ParentCommentContext.Create(parentCommentId, target);
+        var parentContext = ParentCommentContext.Create(_accountId, _workspaceId, parentCommentId, target);
 
         var reply = Comment.CreateReply(_accountId, _workspaceId, target, "Reply", _actorId, _now, parentContext);
 
@@ -83,15 +110,17 @@ public class CommentReplyInvariantTests
     }
 
     [Fact]
-    public void CreateReply_ShouldRaiseEvent()
+    public void CreateReply_ShouldRaiseReplyEvent()
     {
         var parentCommentId = Guid.NewGuid();
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
-        var parentContext = ParentCommentContext.Create(parentCommentId, target);
+        var parentContext = ParentCommentContext.Create(_accountId, _workspaceId, parentCommentId, target);
 
         var reply = Comment.CreateReply(_accountId, _workspaceId, target, "Reply", _actorId, _now, parentContext);
 
-        reply.DomainEvents.Should().ContainSingle(e => e is CommentCreatedDomainEvent);
+        reply.DomainEvents.Should().ContainSingle(e => e is CommentReplyCreatedDomainEvent);
+        var evt = (CommentReplyCreatedDomainEvent)reply.DomainEvents.First(e => e is CommentReplyCreatedDomainEvent);
+        evt.ParentCommentId.Should().Be(parentCommentId);
     }
 
     [Fact]
@@ -99,7 +128,7 @@ public class CommentReplyInvariantTests
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
 
-        var act = () => ParentCommentContext.Create(Guid.Empty, target);
+        var act = () => ParentCommentContext.Create(_accountId, _workspaceId, Guid.Empty, target);
 
         act.Should().Throw<BusinessRuleException>();
     }
@@ -107,7 +136,7 @@ public class CommentReplyInvariantTests
     [Fact]
     public void ParentCommentContext_ShouldRejectNullTarget()
     {
-        var act = () => ParentCommentContext.Create(Guid.NewGuid(), null!);
+        var act = () => ParentCommentContext.Create(_accountId, _workspaceId, Guid.NewGuid(), null!);
 
         act.Should().Throw<BusinessRuleException>();
     }

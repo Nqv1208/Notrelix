@@ -18,7 +18,7 @@ public class BlockHierarchyTests
         var block = Block.Create(_accountId, _workspaceId, _pageId, BlockType.Text,
             BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), _actorId, _now);
         block.MoveUnder(
-            BlockAncestorPath.Create(Guid.NewGuid(), new[] { Guid.NewGuid() }),
+            BlockAncestorPath.Create(_accountId, _workspaceId, _pageId, Guid.NewGuid(), new[] { Guid.NewGuid() }),
             FractionalIndex.Create("a1"), _actorId, _now);
         ((IHasDomainEvents)block).ClearDomainEvents();
 
@@ -49,7 +49,7 @@ public class BlockHierarchyTests
             BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), _actorId, _now);
 
         block.MoveUnder(
-            BlockAncestorPath.Create(parentId, new[] { Guid.NewGuid() }),
+            BlockAncestorPath.Create(_accountId, _workspaceId, _pageId, parentId, new[] { Guid.NewGuid() }),
             FractionalIndex.Create("a1"), _actorId, _now);
 
         block.ParentId.Should().Be(parentId);
@@ -66,7 +66,7 @@ public class BlockHierarchyTests
             parentId: Guid.NewGuid());
 
         var act = () => BlockTreeRules.EnsureNoCycle(blockId,
-            BlockAncestorPath.Create(childId, new[] { blockId }));
+            BlockAncestorPath.Create(_accountId, _workspaceId, _pageId, childId, new[] { blockId }));
 
         act.Should().Throw<BusinessRuleException>().WithMessage("*cycle*");
     }
@@ -77,7 +77,7 @@ public class BlockHierarchyTests
         var blockId = Guid.NewGuid();
 
         var act = () => BlockTreeRules.EnsureNoCycle(blockId,
-            BlockAncestorPath.Create(blockId, new[] { Guid.NewGuid() }));
+            BlockAncestorPath.Create(_accountId, _workspaceId, _pageId, blockId, new[] { Guid.NewGuid() }));
 
         act.Should().Throw<BusinessRuleException>().WithMessage("*own parent*");
     }
@@ -90,7 +90,7 @@ public class BlockHierarchyTests
         block.SoftDelete(_actorId, _now);
 
         var act = () => block.MoveUnder(
-            BlockAncestorPath.Create(Guid.NewGuid(), new[] { Guid.NewGuid() }),
+            BlockAncestorPath.Create(_accountId, _workspaceId, _pageId, Guid.NewGuid(), new[] { Guid.NewGuid() }),
             FractionalIndex.Create("a1"), _actorId, _now);
 
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
@@ -102,7 +102,7 @@ public class BlockHierarchyTests
         var block = Block.Create(_accountId, _workspaceId, _pageId, BlockType.Text,
             BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), _actorId, _now);
         block.MoveUnder(
-            BlockAncestorPath.Create(Guid.NewGuid(), new[] { Guid.NewGuid() }),
+            BlockAncestorPath.Create(_accountId, _workspaceId, _pageId, Guid.NewGuid(), new[] { Guid.NewGuid() }),
             FractionalIndex.Create("a1"), _actorId, _now);
         ((IHasDomainEvents)block).ClearDomainEvents();
 
@@ -119,7 +119,7 @@ public class BlockHierarchyTests
         ((IHasDomainEvents)block).ClearDomainEvents();
 
         block.MoveUnder(
-            BlockAncestorPath.Create(Guid.NewGuid(), new[] { Guid.NewGuid() }),
+            BlockAncestorPath.Create(_accountId, _workspaceId, _pageId, Guid.NewGuid(), new[] { Guid.NewGuid() }),
             FractionalIndex.Create("a1"), _actorId, _now);
 
         block.DomainEvents.Should().ContainSingle(e => e is BlockMovedDomainEvent);

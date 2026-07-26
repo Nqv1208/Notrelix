@@ -111,7 +111,7 @@ public class BlockTests
     {
         var block = Block.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), BlockType.Text, BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         block.MoveUnder(
-            BlockAncestorPath.Create(Guid.NewGuid(), new[] { Guid.NewGuid() }),
+            BlockAncestorPath.Create(block.AccountId, block.WorkspaceId, block.PageId, Guid.NewGuid(), new[] { Guid.NewGuid() }),
             FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)block).ClearDomainEvents();
 
