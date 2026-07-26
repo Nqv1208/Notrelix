@@ -124,6 +124,22 @@ public class ReconnectNoOpTests
     }
 
     [Fact]
+    public void Reconnect_WhenActiveWithSameValuesButErrorDetail_ShouldNotBeNoOp()
+    {
+        var connection = IntegrationConnection.Create(
+            AccountId, WorkspaceId, IntegrationProvider.Google, Actor, Now,
+            providerAccountId: "provider-1", expiresAt: Now.AddDays(30));
+        connection.MarkError("some error", Actor, Now);
+        ((IHasDomainEvents)connection).ClearDomainEvents();
+
+        connection.Reconnect("provider-1", Now.AddDays(30), Actor, Now);
+
+        connection.Status.Should().Be(IntegrationConnectionStatus.Active);
+        connection.ErrorDetail.Should().BeNull();
+        connection.DomainEvents.Should().ContainSingle(e => e is IntegrationConnectionReauthorizedDomainEvent);
+    }
+
+    [Fact]
     public void Reconnect_PastExpiration_ShouldThrow()
     {
         var connection = IntegrationConnection.Create(

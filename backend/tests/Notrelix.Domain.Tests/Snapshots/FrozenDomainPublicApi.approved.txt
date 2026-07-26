@@ -1,6 +1,6 @@
 # Frozen Domain Public API Snapshot
 # Format: Type|Member|MemberType|Visibility|IsAbstract|IsVirtual|Parameters
-# Generated: 2026-07-26T17:31:47Z
+# Generated: 2026-07-26T18:03:29Z
 
 Notrelix.Domain.Accounts.Accounts.Account|Activate|Method|public|False|False|Guid activatedBy, DateTimeOffset activatedAt
 Notrelix.Domain.Accounts.Accounts.Account|Archive|Method|public|False|False|Guid archivedBy, DateTimeOffset archivedAt

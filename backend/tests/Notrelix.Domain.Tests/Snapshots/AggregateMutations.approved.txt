@@ -1,6 +1,6 @@
 # Aggregate Mutation Coverage Registry
 # Format: Aggregate|Method|ValidTest|NoOpTest|InvalidTest|AuditTest|VersionTest|EventTest
-# Generated: 2026-07-26T17:31:47Z
+# Generated: 2026-07-26T18:03:29Z
 
 Account|Activate|False|False|False|False|False|False
 Account|Archive|False|False|False|False|False|False

@@ -124,10 +124,11 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
         // Normalize provider account ID
         var normalizedProviderAccountId = providerAccountId?.Trim();
 
-        // No-op detection: already Active with same values
+        // No-op detection: already Active with same values and no pending error
         if (Status == IntegrationConnectionStatus.Active &&
             ProviderAccountId == normalizedProviderAccountId &&
-            ExpiresAt == expiresAt)
+            ExpiresAt == expiresAt &&
+            ErrorDetail is null)
         {
             return;
         }
