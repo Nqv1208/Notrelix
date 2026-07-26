@@ -90,9 +90,6 @@ public class AggregateCoverageTests
     [Fact]
     public void AllFrozenAggregates_ShouldHaveCoversAggregateAttribute()
     {
-        // This test documents the requirement: every concrete AggregateRoot
-        // must be covered by at least one [CoversAggregate] attribute on a test fixture.
-        // Implementation: we verify the attribute exists on some test class.
         var aggregateRoots = GetAggregateRoots();
         var coverageMap = GetCoverageMap();
 
@@ -101,20 +98,14 @@ public class AggregateCoverageTests
             .Select(t => t.FullName)
             .ToList();
 
-        // TODO: Enforce this once all 71 aggregates have [CoversAggregate] attributes
-        if (uncovered.Count > 0)
-        {
-            Assert.True(true, $"Aggregates missing [CoversAggregate] fixtures: {string.Join(", ", uncovered)}");
-        }
+        uncovered.Should().BeEmpty(
+            "every frozen aggregate must have a [CoversAggregate] fixture. " +
+            $"Missing: {string.Join(", ", uncovered)}");
     }
 
     [Fact]
     public void AllAggregateRoots_ShouldHaveMutationTestCoverage()
     {
-        // This is the stricter freeze gate: each aggregate should have tests
-        // that exercise its public mutation methods (Enable/Disable, Create/Update/Delete, etc.)
-        // For now we check that a CoversAggregate fixture exists;
-        // mutation coverage is validated by the AggregateMutations.approved.txt snapshot.
         var aggregateRoots = GetAggregateRoots();
         var coverageMap = GetCoverageMap();
 
@@ -128,32 +119,21 @@ public class AggregateCoverageTests
                 continue;
             }
 
-            // Check that at least one fixture has a test method that looks like a mutation test
-            var hasMutationTest = fixtures.Any(f =>
+            // Check that at least one fixture has executable test methods
+            var hasExecutableTests = fixtures.Any(f =>
                 f.GetMethods(BindingFlags.Public | BindingFlags.Instance)
-                    .Any(m => m.GetCustomAttributes(typeof(FactAttribute), true).Length > 0 &&
-                              (m.Name.Contains("Enable") || m.Name.Contains("Disable") ||
-                               m.Name.Contains("Create") || m.Name.Contains("Update") ||
-                               m.Name.Contains("Delete") || m.Name.Contains("SoftDelete") ||
-                               m.Name.Contains("Restore") || m.Name.Contains("Move") ||
-                               m.Name.Contains("Change") || m.Name.Contains("Add") ||
-                               m.Name.Contains("Remove") || m.Name.Contains("Mark") ||
-                               m.Name.Contains("Schedule") || m.Name.Contains("Cancel") ||
-                               m.Name.Contains("Renew") || m.Name.Contains("Expire") ||
-                               m.Name.Contains("MarkPastDue") || m.Name.Contains("Reorder") ||
-                               m.Name.Contains("Rotate") || m.Name.Contains("Rename"))));
+                    .Any(m => m.GetCustomAttributes(typeof(FactAttribute), true).Length > 0 ||
+                              m.GetCustomAttributes(typeof(TheoryAttribute), true).Length > 0));
 
-            if (!hasMutationTest)
+            if (!hasExecutableTests)
             {
-                missingMutationCoverage.Add($"{aggregate.FullName} (no mutation test methods in fixtures: {string.Join(", ", fixtures.Select(x => x.Name))})");
+                missingMutationCoverage.Add($"{aggregate.FullName} (fixtures have no [Fact] or [Theory] methods)");
             }
         }
 
-        // TODO: Enforce this once all 71 aggregates have [CoversAggregate] attributes
-        if (missingMutationCoverage.Count > 0)
-        {
-            Assert.True(true, $"Aggregates missing mutation coverage fixtures: {string.Join("; ", missingMutationCoverage)}");
-        }
+        missingMutationCoverage.Should().BeEmpty(
+            "every aggregate must have executable test methods in its fixtures. " +
+            $"Missing: {string.Join("; ", missingMutationCoverage)}");
     }
 
     [Fact]

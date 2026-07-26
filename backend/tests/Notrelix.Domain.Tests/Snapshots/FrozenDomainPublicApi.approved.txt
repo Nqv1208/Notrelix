@@ -1,6 +1,6 @@
 # Frozen Domain Public API Snapshot
-# Format: Type|Member|MemberType|Visibility|IsAbstract|IsVirtual|Parameters
-# Generated: 2026-07-26T18:13:21Z
+# Snapshot schema: 1
+# Contract: FrozenApi|Type|Member|MemberType|Visibility|IsAbstract|IsVirtual|Parameters
 
 Notrelix.Domain.Accounts.Accounts.Account|Activate|Method|public|False|False|Guid activatedBy, DateTimeOffset activatedAt
 Notrelix.Domain.Accounts.Accounts.Account|Archive|Method|public|False|False|Guid archivedBy, DateTimeOffset archivedAt
@@ -417,184 +417,19 @@ Notrelix.Domain.Analytics.Dashboards.Events.DashboardWidgetRemovedDomainEvent|Eq
 Notrelix.Domain.Analytics.Dashboards.Events.DashboardWidgetRemovedDomainEvent|DashboardId|Property|public|False|False|readwrite
 Notrelix.Domain.Analytics.Dashboards.Events.DashboardWidgetRemovedDomainEvent|UpdatedBy|Property|public|False|False|readwrite
 Notrelix.Domain.Analytics.Dashboards.Events.DashboardWidgetRemovedDomainEvent|WidgetId|Property|public|False|False|readwrite
+Notrelix.Domain.Analytics.Snapshots.ReportSnapshotPayload|Data|Property|public|False|False|readonly
+Notrelix.Domain.Analytics.Snapshots.ReportSnapshotPayload|ReportType|Property|public|False|False|readonly
+Notrelix.Domain.Analytics.Snapshots.ReportSnapshotPayload|SchemaVersion|Property|public|False|False|readonly
 Notrelix.Domain.Analytics.Snapshots.ReportingSnapshot|AccountId|Property|public|False|True|readonly
 Notrelix.Domain.Analytics.Snapshots.ReportingSnapshot|CapturedAt|Property|public|False|False|readonly
 Notrelix.Domain.Analytics.Snapshots.ReportingSnapshot|Data|Property|public|False|False|readonly
 Notrelix.Domain.Analytics.Snapshots.ReportingSnapshot|ReportType|Property|public|False|False|readonly
 Notrelix.Domain.Analytics.Snapshots.ReportingSnapshot|WorkspaceId|Property|public|False|True|readonly
-Notrelix.Domain.Analytics.Snapshots.ReportSnapshotPayload|Data|Property|public|False|False|readonly
-Notrelix.Domain.Analytics.Snapshots.ReportSnapshotPayload|ReportType|Property|public|False|False|readonly
-Notrelix.Domain.Analytics.Snapshots.ReportSnapshotPayload|SchemaVersion|Property|public|False|False|readonly
 Notrelix.Domain.Analytics.Widgets.WidgetConfig|Data|Property|public|False|False|readonly
 Notrelix.Domain.Analytics.Widgets.WidgetPosition|H|Property|public|False|False|readonly
 Notrelix.Domain.Analytics.Widgets.WidgetPosition|W|Property|public|False|False|readonly
 Notrelix.Domain.Analytics.Widgets.WidgetPosition|X|Property|public|False|False|readonly
 Notrelix.Domain.Analytics.Widgets.WidgetPosition|Y|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Actions.ActionConfig|Data|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Actions.AutomationAction|Config|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Actions.AutomationAction|Position|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Actions.AutomationAction|RuleId|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Actions.AutomationAction|Type|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgent|ChangeStatus|Method|public|False|False|AiAgentStatus newStatus, Guid updatedBy, DateTimeOffset updatedAt
-Notrelix.Domain.Automation.Agents.AiAgent|Restore|Method|public|False|False|Guid restoredBy, DateTimeOffset restoredAt
-Notrelix.Domain.Automation.Agents.AiAgent|SoftDelete|Method|public|False|False|Guid deletedBy, DateTimeOffset deletedAt, String reason
-Notrelix.Domain.Automation.Agents.AiAgent|Update|Method|public|False|False|String name, String description, JsonValue modelPolicy, JsonValue instruction, JsonValue toolPermissions, Guid updatedBy, DateTimeOffset updatedAt
-Notrelix.Domain.Automation.Agents.AiAgent|AccountId|Property|public|False|True|readonly
-Notrelix.Domain.Automation.Agents.AiAgent|Description|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgent|Instruction|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgent|ModelPolicy|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgent|Name|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgent|ScopeResourceId|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgent|ScopeType|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgent|Status|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgent|ToolPermissions|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgent|WorkspaceId|Property|public|False|True|readonly
-Notrelix.Domain.Automation.Agents.AiAgentInstruction|ToJson|Method|public|False|False|
-Notrelix.Domain.Automation.Agents.AiAgentInstruction|AgentDescription|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentInstruction|Guidelines|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentInstruction|SystemPrompt|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentInstruction|ToneVoice|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentModelPolicy|ToJson|Method|public|False|False|
-Notrelix.Domain.Automation.Agents.AiAgentModelPolicy|MaxTokens|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentModelPolicy|ModelId|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentModelPolicy|Provider|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentModelPolicy|Temperature|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentRun|Cancel|Method|public|False|False|Nullable`1 cancelledBy, DateTimeOffset cancelledAt
-Notrelix.Domain.Automation.Agents.AiAgentRun|Fail|Method|public|False|False|JsonValue error, DateTimeOffset finishedAt
-Notrelix.Domain.Automation.Agents.AiAgentRun|Start|Method|public|False|False|DateTimeOffset startedAt
-Notrelix.Domain.Automation.Agents.AiAgentRun|Succeed|Method|public|False|False|JsonValue output, DateTimeOffset finishedAt
-Notrelix.Domain.Automation.Agents.AiAgentRun|AccountId|Property|public|False|True|readonly
-Notrelix.Domain.Automation.Agents.AiAgentRun|ActorUserId|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentRun|AiAgentId|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentRun|CorrelationId|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentRun|Error|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentRun|FinishedAt|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentRun|Input|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentRun|Output|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentRun|StartedAt|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentRun|Status|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentRun|TriggerResourceId|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentRun|TriggerResourceType|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentRun|TriggerType|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentRun|WorkspaceId|Property|public|False|True|readonly
-Notrelix.Domain.Automation.Agents.AiAgentToolPermissions|ToJson|Method|public|False|False|
-Notrelix.Domain.Automation.Agents.AiAgentToolPermissions|AllowedWorkflows|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentToolPermissions|CanAccessDocuments|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentToolPermissions|CanCreateItems|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentToolPermissions|CanExecuteAutomations|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentToolPermissions|CanReadBoards|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentToolPermissions|CanSendNotifications|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.AiAgentToolPermissions|CanUpdateItems|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.Events.AiAgentCreatedDomainEvent|.ctor|Constructor|public|False|False|Guid accountId, Guid workspaceId, Guid agentId, String name, DateTimeOffset occurredAt
-Notrelix.Domain.Automation.Agents.Events.AiAgentCreatedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Automation.Agents.Events.AiAgentCreatedDomainEvent|Equals|Method|public|False|True|AiAgentCreatedDomainEvent other
-Notrelix.Domain.Automation.Agents.Events.AiAgentCreatedDomainEvent|AgentId|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.Events.AiAgentCreatedDomainEvent|Name|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunCancelledDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid RunId, Guid AgentId, Nullable`1 ActorUserId, DateTimeOffset OccurredAt
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunCancelledDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunCancelledDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& RunId, Guid& AgentId, Nullable`1& ActorUserId, DateTimeOffset& OccurredAt
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunCancelledDomainEvent|Equals|Method|public|False|True|AiAgentRunCancelledDomainEvent other
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunCancelledDomainEvent|ActorUserId|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunCancelledDomainEvent|AgentId|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunCancelledDomainEvent|RunId|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunFailedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid RunId, Guid AgentId, String ErrorMessage, DateTimeOffset OccurredAt
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunFailedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunFailedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& RunId, Guid& AgentId, String& ErrorMessage, DateTimeOffset& OccurredAt
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunFailedDomainEvent|Equals|Method|public|False|True|AiAgentRunFailedDomainEvent other
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunFailedDomainEvent|AgentId|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunFailedDomainEvent|ErrorMessage|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunFailedDomainEvent|RunId|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunQueuedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid RunId, Guid AgentId, DateTimeOffset OccurredAt
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunQueuedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunQueuedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& RunId, Guid& AgentId, DateTimeOffset& OccurredAt
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunQueuedDomainEvent|Equals|Method|public|False|True|AiAgentRunQueuedDomainEvent other
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunQueuedDomainEvent|AgentId|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunQueuedDomainEvent|RunId|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunStartedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid RunId, Guid AgentId, DateTimeOffset OccurredAt
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunStartedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunStartedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& RunId, Guid& AgentId, DateTimeOffset& OccurredAt
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunStartedDomainEvent|Equals|Method|public|False|True|AiAgentRunStartedDomainEvent other
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunStartedDomainEvent|AgentId|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunStartedDomainEvent|RunId|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunSucceededDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid RunId, Guid AgentId, DateTimeOffset OccurredAt
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunSucceededDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunSucceededDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& RunId, Guid& AgentId, DateTimeOffset& OccurredAt
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunSucceededDomainEvent|Equals|Method|public|False|True|AiAgentRunSucceededDomainEvent other
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunSucceededDomainEvent|AgentId|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Agents.Events.AiAgentRunSucceededDomainEvent|RunId|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Agents.Events.AiAgentStatusChangedDomainEvent|.ctor|Constructor|public|False|False|Guid accountId, Guid workspaceId, Guid agentId, AiAgentStatus status, DateTimeOffset occurredAt
-Notrelix.Domain.Automation.Agents.Events.AiAgentStatusChangedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Automation.Agents.Events.AiAgentStatusChangedDomainEvent|Equals|Method|public|False|True|AiAgentStatusChangedDomainEvent other
-Notrelix.Domain.Automation.Agents.Events.AiAgentStatusChangedDomainEvent|AgentId|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.Events.AiAgentStatusChangedDomainEvent|Status|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.Events.AiAgentUpdatedDomainEvent|.ctor|Constructor|public|False|False|Guid accountId, Guid workspaceId, Guid agentId, String name, DateTimeOffset occurredAt
-Notrelix.Domain.Automation.Agents.Events.AiAgentUpdatedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Automation.Agents.Events.AiAgentUpdatedDomainEvent|Equals|Method|public|False|True|AiAgentUpdatedDomainEvent other
-Notrelix.Domain.Automation.Agents.Events.AiAgentUpdatedDomainEvent|AgentId|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Agents.Events.AiAgentUpdatedDomainEvent|Name|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Conditions.AutomationCondition|Config|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Conditions.AutomationCondition|Position|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Conditions.AutomationCondition|RuleId|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Conditions.AutomationCondition|Type|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Conditions.ConditionConfig|Data|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Executions.AutomationExecution|Cancel|Method|public|False|False|Guid cancelledBy, DateTimeOffset cancelledAt
-Notrelix.Domain.Automation.Executions.AutomationExecution|Fail|Method|public|False|False|String error, DateTimeOffset finishedAt
-Notrelix.Domain.Automation.Executions.AutomationExecution|SetPayload|Method|public|False|False|String payload
-Notrelix.Domain.Automation.Executions.AutomationExecution|Start|Method|public|False|False|DateTimeOffset startedAt
-Notrelix.Domain.Automation.Executions.AutomationExecution|Succeed|Method|public|False|False|DateTimeOffset finishedAt
-Notrelix.Domain.Automation.Executions.AutomationExecution|AccountId|Property|public|False|True|readonly
-Notrelix.Domain.Automation.Executions.AutomationExecution|AttemptCount|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Executions.AutomationExecution|Error|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Executions.AutomationExecution|FinishedAt|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Executions.AutomationExecution|LastResponse|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Executions.AutomationExecution|Payload|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Executions.AutomationExecution|RuleId|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Executions.AutomationExecution|StartedAt|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Executions.AutomationExecution|Status|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Executions.AutomationExecution|Steps|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Executions.AutomationExecution|TriggerId|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Executions.AutomationExecution|WorkspaceId|Property|public|False|True|readonly
-Notrelix.Domain.Automation.Executions.AutomationExecutionStep|Fail|Method|public|False|False|String error, DateTimeOffset finishedAt
-Notrelix.Domain.Automation.Executions.AutomationExecutionStep|Start|Method|public|False|False|DateTimeOffset startedAt
-Notrelix.Domain.Automation.Executions.AutomationExecutionStep|Succeed|Method|public|False|False|DateTimeOffset finishedAt
-Notrelix.Domain.Automation.Executions.AutomationExecutionStep|ActionId|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Executions.AutomationExecutionStep|Error|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Executions.AutomationExecutionStep|ExecutionId|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Executions.AutomationExecutionStep|FinishedAt|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Executions.AutomationExecutionStep|StartedAt|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Executions.AutomationExecutionStep|Status|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionCancelledDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid ExecutionId, Guid RuleId, Guid CancelledBy, DateTimeOffset OccurredAt
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionCancelledDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionCancelledDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& ExecutionId, Guid& RuleId, Guid& CancelledBy, DateTimeOffset& OccurredAt
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionCancelledDomainEvent|Equals|Method|public|False|True|AutomationExecutionCancelledDomainEvent other
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionCancelledDomainEvent|CancelledBy|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionCancelledDomainEvent|ExecutionId|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionCancelledDomainEvent|RuleId|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionFailedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid ExecutionId, Guid RuleId, String Error, DateTimeOffset OccurredAt
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionFailedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionFailedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& ExecutionId, Guid& RuleId, String& Error, DateTimeOffset& OccurredAt
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionFailedDomainEvent|Equals|Method|public|False|True|AutomationExecutionFailedDomainEvent other
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionFailedDomainEvent|Error|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionFailedDomainEvent|ExecutionId|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionFailedDomainEvent|RuleId|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionQueuedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid ExecutionId, Guid RuleId, DateTimeOffset OccurredAt
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionQueuedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionQueuedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& ExecutionId, Guid& RuleId, DateTimeOffset& OccurredAt
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionQueuedDomainEvent|Equals|Method|public|False|True|AutomationExecutionQueuedDomainEvent other
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionQueuedDomainEvent|ExecutionId|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionQueuedDomainEvent|RuleId|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionStartedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid ExecutionId, Guid RuleId, DateTimeOffset OccurredAt
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionStartedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionStartedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& ExecutionId, Guid& RuleId, DateTimeOffset& OccurredAt
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionStartedDomainEvent|Equals|Method|public|False|True|AutomationExecutionStartedDomainEvent other
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionStartedDomainEvent|ExecutionId|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionStartedDomainEvent|RuleId|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionSucceededDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid ExecutionId, Guid RuleId, DateTimeOffset OccurredAt
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionSucceededDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionSucceededDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& ExecutionId, Guid& RuleId, DateTimeOffset& OccurredAt
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionSucceededDomainEvent|Equals|Method|public|False|True|AutomationExecutionSucceededDomainEvent other
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionSucceededDomainEvent|ExecutionId|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Executions.Events.AutomationExecutionSucceededDomainEvent|RuleId|Property|public|False|False|readwrite
 Notrelix.Domain.Automation.Rules.AutomationRule|Disable|Method|public|False|False|Guid updatedBy, DateTimeOffset updatedAt
 Notrelix.Domain.Automation.Rules.AutomationRule|Enable|Method|public|False|False|Guid updatedBy, DateTimeOffset updatedAt
 Notrelix.Domain.Automation.Rules.AutomationRule|Restore|Method|public|False|False|Guid restoredBy, DateTimeOffset restoredAt
@@ -761,10 +596,6 @@ Notrelix.Domain.Automation.Templates.Events.AutomationTemplateUpdatedDomainEvent
 Notrelix.Domain.Automation.Templates.Events.AutomationTemplateUpdatedDomainEvent|Deconstruct|Method|public|False|False|Guid& TemplateId, DateTimeOffset& OccurredAt
 Notrelix.Domain.Automation.Templates.Events.AutomationTemplateUpdatedDomainEvent|Equals|Method|public|False|True|AutomationTemplateUpdatedDomainEvent other
 Notrelix.Domain.Automation.Templates.Events.AutomationTemplateUpdatedDomainEvent|TemplateId|Property|public|False|False|readwrite
-Notrelix.Domain.Automation.Triggers.AutomationTrigger|Config|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Triggers.AutomationTrigger|RuleId|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Triggers.AutomationTrigger|Type|Property|public|False|False|readonly
-Notrelix.Domain.Automation.Triggers.TriggerConfig|Data|Property|public|False|False|readonly
 Notrelix.Domain.Billing.BillingEvents.BillingEvent|MarkFailed|Method|public|False|False|String error, Guid updatedBy, DateTimeOffset failedAt
 Notrelix.Domain.Billing.BillingEvents.BillingEvent|MarkIgnored|Method|public|False|False|Guid updatedBy, DateTimeOffset ignoredAt
 Notrelix.Domain.Billing.BillingEvents.BillingEvent|MarkProcessed|Method|public|False|False|Guid updatedBy, DateTimeOffset processedAt
@@ -1282,8 +1113,8 @@ Notrelix.Domain.Collaboration.Mentions.Events.MentionCreatedDomainEvent|.ctor|Co
 Notrelix.Domain.Collaboration.Mentions.Events.MentionCreatedDomainEvent|<Clone>$|Method|public|False|True|
 Notrelix.Domain.Collaboration.Mentions.Events.MentionCreatedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& MentionId, ResourceRef& Source, Guid& MentionedId, DateTimeOffset& OccurredAt
 Notrelix.Domain.Collaboration.Mentions.Events.MentionCreatedDomainEvent|Equals|Method|public|False|True|MentionCreatedDomainEvent other
-Notrelix.Domain.Collaboration.Mentions.Events.MentionCreatedDomainEvent|MentionedId|Property|public|False|False|readwrite
 Notrelix.Domain.Collaboration.Mentions.Events.MentionCreatedDomainEvent|MentionId|Property|public|False|False|readwrite
+Notrelix.Domain.Collaboration.Mentions.Events.MentionCreatedDomainEvent|MentionedId|Property|public|False|False|readwrite
 Notrelix.Domain.Collaboration.Mentions.Events.MentionCreatedDomainEvent|Source|Property|public|False|False|readwrite
 Notrelix.Domain.Collaboration.Mentions.Mention|AccountId|Property|public|False|True|readonly
 Notrelix.Domain.Collaboration.Mentions.Mention|CreatedAt|Property|public|False|False|readonly
@@ -1291,22 +1122,6 @@ Notrelix.Domain.Collaboration.Mentions.Mention|MentionedId|Property|public|False
 Notrelix.Domain.Collaboration.Mentions.Mention|Source|Property|public|False|False|readonly
 Notrelix.Domain.Collaboration.Mentions.Mention|Type|Property|public|False|False|readonly
 Notrelix.Domain.Collaboration.Mentions.Mention|WorkspaceId|Property|public|False|True|readonly
-Notrelix.Domain.Collaboration.Presence.Events.PresenceUpdatedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid UserId, PresenceStatus Status, DateTimeOffset OccurredAt
-Notrelix.Domain.Collaboration.Presence.Events.PresenceUpdatedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Collaboration.Presence.Events.PresenceUpdatedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& UserId, PresenceStatus& Status, DateTimeOffset& OccurredAt
-Notrelix.Domain.Collaboration.Presence.Events.PresenceUpdatedDomainEvent|Equals|Method|public|False|True|PresenceUpdatedDomainEvent other
-Notrelix.Domain.Collaboration.Presence.Events.PresenceUpdatedDomainEvent|Status|Property|public|False|False|readwrite
-Notrelix.Domain.Collaboration.Presence.Events.PresenceUpdatedDomainEvent|UserId|Property|public|False|False|readwrite
-Notrelix.Domain.Collaboration.Presence.PresenceSession|GoOffline|Method|public|False|False|DateTimeOffset offlineAt
-Notrelix.Domain.Collaboration.Presence.PresenceSession|UpdateHeartbeat|Method|public|False|False|DateTimeOffset lastSeenAt
-Notrelix.Domain.Collaboration.Presence.PresenceSession|AccountId|Property|public|False|True|readonly
-Notrelix.Domain.Collaboration.Presence.PresenceSession|ConnectionId|Property|public|False|False|readonly
-Notrelix.Domain.Collaboration.Presence.PresenceSession|CreatedAt|Property|public|False|False|readonly
-Notrelix.Domain.Collaboration.Presence.PresenceSession|LastSeenAt|Property|public|False|False|readonly
-Notrelix.Domain.Collaboration.Presence.PresenceSession|Status|Property|public|False|False|readonly
-Notrelix.Domain.Collaboration.Presence.PresenceSession|UpdatedAt|Property|public|False|False|readonly
-Notrelix.Domain.Collaboration.Presence.PresenceSession|UserId|Property|public|False|False|readonly
-Notrelix.Domain.Collaboration.Presence.PresenceSession|WorkspaceId|Property|public|False|True|readonly
 Notrelix.Domain.Collaboration.Reactions.Emoji|Code|Property|public|False|False|readonly
 Notrelix.Domain.Collaboration.Reactions.Events.ReactionCreatedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid ReactionId, ResourceRef Target, Guid UserId, Emoji Emoji, DateTimeOffset OccurredAt
 Notrelix.Domain.Collaboration.Reactions.Events.ReactionCreatedDomainEvent|<Clone>$|Method|public|False|True|
@@ -1405,17 +1220,17 @@ Notrelix.Domain.Common.IHasDomainEvents|DomainEvents|Property|public|True|True|r
 Notrelix.Domain.Common.IWorkspaceScoped|WorkspaceId|Property|public|True|True|readonly
 Notrelix.Domain.Common.SoftDeletableAggregateRoot|.ctor|Constructor|protected|False|False|
 Notrelix.Domain.Common.SoftDeletableAggregateRoot|.ctor|Constructor|protected|False|False|Guid id
+Notrelix.Domain.Common.SoftDeletableAggregateRoot|DeleteReason|Property|public|False|False|readonly
 Notrelix.Domain.Common.SoftDeletableAggregateRoot|DeletedAt|Property|public|False|False|readonly
 Notrelix.Domain.Common.SoftDeletableAggregateRoot|DeletedBy|Property|public|False|False|readonly
-Notrelix.Domain.Common.SoftDeletableAggregateRoot|DeleteReason|Property|public|False|False|readonly
 Notrelix.Domain.Common.SoftDeletableAggregateRoot|IsDeleted|Property|public|False|False|readonly
 Notrelix.Domain.Common.SoftDeletableAggregateRoot|RestoredAt|Property|public|False|False|readonly
 Notrelix.Domain.Common.SoftDeletableAggregateRoot|RestoredBy|Property|public|False|False|readonly
 Notrelix.Domain.Common.SoftDeletableEntity|.ctor|Constructor|protected|False|False|
 Notrelix.Domain.Common.SoftDeletableEntity|.ctor|Constructor|protected|False|False|Guid id
+Notrelix.Domain.Common.SoftDeletableEntity|DeleteReason|Property|public|False|False|readonly
 Notrelix.Domain.Common.SoftDeletableEntity|DeletedAt|Property|public|False|False|readonly
 Notrelix.Domain.Common.SoftDeletableEntity|DeletedBy|Property|public|False|False|readonly
-Notrelix.Domain.Common.SoftDeletableEntity|DeleteReason|Property|public|False|False|readonly
 Notrelix.Domain.Common.SoftDeletableEntity|IsDeleted|Property|public|False|False|readonly
 Notrelix.Domain.Common.SoftDeletableEntity|RestoredAt|Property|public|False|False|readonly
 Notrelix.Domain.Common.SoftDeletableEntity|RestoredBy|Property|public|False|False|readonly
@@ -1753,8 +1568,8 @@ Notrelix.Domain.Governance.Policies.Events.WorkspacePolicyUpdatedDomainEvent|<Cl
 Notrelix.Domain.Governance.Policies.Events.WorkspacePolicyUpdatedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& UpdatedBy, DateTimeOffset& OccurredAt
 Notrelix.Domain.Governance.Policies.Events.WorkspacePolicyUpdatedDomainEvent|Equals|Method|public|False|True|WorkspacePolicyUpdatedDomainEvent other
 Notrelix.Domain.Governance.Policies.Events.WorkspacePolicyUpdatedDomainEvent|UpdatedBy|Property|public|False|False|readwrite
-Notrelix.Domain.Governance.Policies.GuestAccessPolicy|AllowedDomains|Property|public|False|False|readonly
 Notrelix.Domain.Governance.Policies.GuestAccessPolicy|AllowGuestInvites|Property|public|False|False|readonly
+Notrelix.Domain.Governance.Policies.GuestAccessPolicy|AllowedDomains|Property|public|False|False|readonly
 Notrelix.Domain.Governance.Policies.ResourcePolicy|AllowPublicSharing|Property|public|False|False|readonly
 Notrelix.Domain.Governance.Policies.SharingPolicy|AllowExternalInvite|Property|public|False|False|readonly
 Notrelix.Domain.Governance.Policies.SharingPolicy|AllowPublicSharing|Property|public|False|False|readonly
@@ -2591,18 +2406,18 @@ Notrelix.Domain.Integrations.Connections.IntegrationSecretVersion|ConnectionId|P
 Notrelix.Domain.Integrations.Connections.IntegrationSecretVersion|CreatedAt|Property|public|False|False|readonly
 Notrelix.Domain.Integrations.Connections.IntegrationSecretVersion|SecretReference|Property|public|False|False|readonly
 Notrelix.Domain.Integrations.Connections.IntegrationSecretVersion|Version|Property|public|False|False|readonly
-Notrelix.Domain.Integrations.Sync.Events.IntegrationSyncedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid SyncCursorId, DateTimeOffset SyncedAt, DateTimeOffset OccurredAt
-Notrelix.Domain.Integrations.Sync.Events.IntegrationSyncedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Integrations.Sync.Events.IntegrationSyncedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& SyncCursorId, DateTimeOffset& SyncedAt, DateTimeOffset& OccurredAt
-Notrelix.Domain.Integrations.Sync.Events.IntegrationSyncedDomainEvent|Equals|Method|public|False|True|IntegrationSyncedDomainEvent other
-Notrelix.Domain.Integrations.Sync.Events.IntegrationSyncedDomainEvent|SyncCursorId|Property|public|False|False|readwrite
-Notrelix.Domain.Integrations.Sync.Events.IntegrationSyncedDomainEvent|SyncedAt|Property|public|False|False|readwrite
 Notrelix.Domain.Integrations.Sync.Events.IntegrationSyncFailedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid SyncCursorId, String Error, DateTimeOffset OccurredAt
 Notrelix.Domain.Integrations.Sync.Events.IntegrationSyncFailedDomainEvent|<Clone>$|Method|public|False|True|
 Notrelix.Domain.Integrations.Sync.Events.IntegrationSyncFailedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& SyncCursorId, String& Error, DateTimeOffset& OccurredAt
 Notrelix.Domain.Integrations.Sync.Events.IntegrationSyncFailedDomainEvent|Equals|Method|public|False|True|IntegrationSyncFailedDomainEvent other
 Notrelix.Domain.Integrations.Sync.Events.IntegrationSyncFailedDomainEvent|Error|Property|public|False|False|readwrite
 Notrelix.Domain.Integrations.Sync.Events.IntegrationSyncFailedDomainEvent|SyncCursorId|Property|public|False|False|readwrite
+Notrelix.Domain.Integrations.Sync.Events.IntegrationSyncedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid SyncCursorId, DateTimeOffset SyncedAt, DateTimeOffset OccurredAt
+Notrelix.Domain.Integrations.Sync.Events.IntegrationSyncedDomainEvent|<Clone>$|Method|public|False|True|
+Notrelix.Domain.Integrations.Sync.Events.IntegrationSyncedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& SyncCursorId, DateTimeOffset& SyncedAt, DateTimeOffset& OccurredAt
+Notrelix.Domain.Integrations.Sync.Events.IntegrationSyncedDomainEvent|Equals|Method|public|False|True|IntegrationSyncedDomainEvent other
+Notrelix.Domain.Integrations.Sync.Events.IntegrationSyncedDomainEvent|SyncCursorId|Property|public|False|False|readwrite
+Notrelix.Domain.Integrations.Sync.Events.IntegrationSyncedDomainEvent|SyncedAt|Property|public|False|False|readwrite
 Notrelix.Domain.Integrations.Sync.IntegrationSyncCursor|UpdateCursor|Method|public|False|False|SyncCursorValue newCursor, DateTimeOffset lastSyncedAt
 Notrelix.Domain.Integrations.Sync.IntegrationSyncCursor|ConnectionId|Property|public|False|False|readonly
 Notrelix.Domain.Integrations.Sync.IntegrationSyncCursor|Cursor|Property|public|False|False|readonly
@@ -2688,67 +2503,6 @@ Notrelix.Domain.SharedKernel.ResourceRef|WorkspaceId|Property|public|False|False
 Notrelix.Domain.SharedKernel.SecretRef|Value|Property|public|False|False|readonly
 Notrelix.Domain.SharedKernel.Slug|Value|Property|public|False|False|readonly
 Notrelix.Domain.SharedKernel.Url|Value|Property|public|False|False|readonly
-Notrelix.Domain.WorkManagement.Approvals.ApprovalRequest|AddStep|Method|public|False|False|Int32 position, Guid addedBy, DateTimeOffset addedAt, Nullable`1 approverUserId, Nullable`1 approverTeamId
-Notrelix.Domain.WorkManagement.Approvals.ApprovalRequest|Approve|Method|public|False|False|Guid stepId, Guid decidedBy, DateTimeOffset decidedAt, String note
-Notrelix.Domain.WorkManagement.Approvals.ApprovalRequest|Cancel|Method|public|False|False|Guid cancelledBy, DateTimeOffset cancelledAt
-Notrelix.Domain.WorkManagement.Approvals.ApprovalRequest|Reject|Method|public|False|False|Guid stepId, Guid decidedBy, DateTimeOffset decidedAt, String note
-Notrelix.Domain.WorkManagement.Approvals.ApprovalRequest|Restore|Method|public|False|False|Guid restoredBy, DateTimeOffset restoredAt
-Notrelix.Domain.WorkManagement.Approvals.ApprovalRequest|SoftDelete|Method|public|False|False|Guid deletedBy, DateTimeOffset deletedAt, String reason
-Notrelix.Domain.WorkManagement.Approvals.ApprovalRequest|AccountId|Property|public|False|True|readonly
-Notrelix.Domain.WorkManagement.Approvals.ApprovalRequest|Description|Property|public|False|False|readonly
-Notrelix.Domain.WorkManagement.Approvals.ApprovalRequest|RequestedByUserId|Property|public|False|False|readonly
-Notrelix.Domain.WorkManagement.Approvals.ApprovalRequest|Status|Property|public|False|False|readonly
-Notrelix.Domain.WorkManagement.Approvals.ApprovalRequest|Steps|Property|public|False|False|readonly
-Notrelix.Domain.WorkManagement.Approvals.ApprovalRequest|Target|Property|public|False|False|readonly
-Notrelix.Domain.WorkManagement.Approvals.ApprovalRequest|Title|Property|public|False|False|readonly
-Notrelix.Domain.WorkManagement.Approvals.ApprovalRequest|WorkspaceId|Property|public|False|True|readonly
-Notrelix.Domain.WorkManagement.Approvals.ApprovalStep|Approve|Method|public|False|False|DateTimeOffset decidedAt, String note
-Notrelix.Domain.WorkManagement.Approvals.ApprovalStep|Reject|Method|public|False|False|DateTimeOffset decidedAt, String note
-Notrelix.Domain.WorkManagement.Approvals.ApprovalStep|ApprovalRequestId|Property|public|False|False|readonly
-Notrelix.Domain.WorkManagement.Approvals.ApprovalStep|ApproverTeamId|Property|public|False|False|readonly
-Notrelix.Domain.WorkManagement.Approvals.ApprovalStep|ApproverUserId|Property|public|False|False|readonly
-Notrelix.Domain.WorkManagement.Approvals.ApprovalStep|DecidedAt|Property|public|False|False|readonly
-Notrelix.Domain.WorkManagement.Approvals.ApprovalStep|Note|Property|public|False|False|readonly
-Notrelix.Domain.WorkManagement.Approvals.ApprovalStep|Position|Property|public|False|False|readonly
-Notrelix.Domain.WorkManagement.Approvals.ApprovalStep|Status|Property|public|False|False|readonly
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestApprovedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid RequestId, Guid DecidedBy, String Note, DateTimeOffset OccurredAt
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestApprovedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestApprovedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& RequestId, Guid& DecidedBy, String& Note, DateTimeOffset& OccurredAt
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestApprovedDomainEvent|Equals|Method|public|False|True|ApprovalRequestApprovedDomainEvent other
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestApprovedDomainEvent|DecidedBy|Property|public|False|False|readwrite
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestApprovedDomainEvent|Note|Property|public|False|False|readwrite
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestApprovedDomainEvent|RequestId|Property|public|False|False|readwrite
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestCancelledDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid RequestId, Guid CancelledBy, DateTimeOffset OccurredAt
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestCancelledDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestCancelledDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& RequestId, Guid& CancelledBy, DateTimeOffset& OccurredAt
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestCancelledDomainEvent|Equals|Method|public|False|True|ApprovalRequestCancelledDomainEvent other
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestCancelledDomainEvent|CancelledBy|Property|public|False|False|readwrite
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestCancelledDomainEvent|RequestId|Property|public|False|False|readwrite
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestCreatedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid RequestId, Guid WorkspaceId, ResourceRef Target, DateTimeOffset OccurredAt
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestCreatedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestCreatedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& RequestId, Guid& WorkspaceId, ResourceRef& Target, DateTimeOffset& OccurredAt
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestCreatedDomainEvent|Equals|Method|public|False|True|ApprovalRequestCreatedDomainEvent other
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestCreatedDomainEvent|RequestId|Property|public|False|False|readwrite
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestCreatedDomainEvent|Target|Property|public|False|False|readwrite
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestRejectedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid RequestId, Guid DecidedBy, String Note, DateTimeOffset OccurredAt
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestRejectedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestRejectedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& RequestId, Guid& DecidedBy, String& Note, DateTimeOffset& OccurredAt
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestRejectedDomainEvent|Equals|Method|public|False|True|ApprovalRequestRejectedDomainEvent other
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestRejectedDomainEvent|DecidedBy|Property|public|False|False|readwrite
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestRejectedDomainEvent|Note|Property|public|False|False|readwrite
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestRejectedDomainEvent|RequestId|Property|public|False|False|readwrite
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestRestoredDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid RequestId, Guid RestoredBy, DateTimeOffset OccurredAt
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestRestoredDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestRestoredDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& RequestId, Guid& RestoredBy, DateTimeOffset& OccurredAt
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestRestoredDomainEvent|Equals|Method|public|False|True|ApprovalRequestRestoredDomainEvent other
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestRestoredDomainEvent|RequestId|Property|public|False|False|readwrite
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestRestoredDomainEvent|RestoredBy|Property|public|False|False|readwrite
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestSoftDeletedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid RequestId, Guid DeletedBy, DateTimeOffset OccurredAt
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestSoftDeletedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestSoftDeletedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& RequestId, Guid& DeletedBy, DateTimeOffset& OccurredAt
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestSoftDeletedDomainEvent|Equals|Method|public|False|True|ApprovalRequestSoftDeletedDomainEvent other
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestSoftDeletedDomainEvent|DeletedBy|Property|public|False|False|readwrite
-Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalRequestSoftDeletedDomainEvent|RequestId|Property|public|False|False|readwrite
 Notrelix.Domain.WorkManagement.BoardGroups.BoardGroup|Archive|Method|public|False|False|Guid archivedBy, DateTimeOffset archivedAt
 Notrelix.Domain.WorkManagement.BoardGroups.BoardGroup|Rename|Method|public|False|False|String title, Guid updatedBy, DateTimeOffset updatedAt
 Notrelix.Domain.WorkManagement.BoardGroups.BoardGroup|Restore|Method|public|False|False|Guid restoredBy, DateTimeOffset restoredAt
@@ -3097,14 +2851,6 @@ Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionRemovedDomainEvent|Equal
 Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionRemovedDomainEvent|FieldId|Property|public|False|False|readwrite
 Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionRemovedDomainEvent|OptionId|Property|public|False|False|readwrite
 Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionRemovedDomainEvent|RemovedBy|Property|public|False|False|readwrite
-Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionsReorderedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid BoardId, Guid FieldId, IReadOnlyList`1 OrderedOptionIds, Guid UpdatedBy, DateTimeOffset OccurredAt
-Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionsReorderedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionsReorderedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& BoardId, Guid& FieldId, IReadOnlyList`1& OrderedOptionIds, Guid& UpdatedBy, DateTimeOffset& OccurredAt
-Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionsReorderedDomainEvent|Equals|Method|public|False|True|FieldOptionsReorderedDomainEvent other
-Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionsReorderedDomainEvent|BoardId|Property|public|False|False|readwrite
-Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionsReorderedDomainEvent|FieldId|Property|public|False|False|readwrite
-Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionsReorderedDomainEvent|OrderedOptionIds|Property|public|False|False|readwrite
-Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionsReorderedDomainEvent|UpdatedBy|Property|public|False|False|readwrite
 Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionUpdatedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid FieldId, Guid OptionId, String NewName, Guid UpdatedBy, DateTimeOffset OccurredAt
 Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionUpdatedDomainEvent|<Clone>$|Method|public|False|True|
 Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionUpdatedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& FieldId, Guid& OptionId, String& NewName, Guid& UpdatedBy, DateTimeOffset& OccurredAt
@@ -3113,6 +2859,14 @@ Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionUpdatedDomainEvent|Field
 Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionUpdatedDomainEvent|NewName|Property|public|False|False|readwrite
 Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionUpdatedDomainEvent|OptionId|Property|public|False|False|readwrite
 Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionUpdatedDomainEvent|UpdatedBy|Property|public|False|False|readwrite
+Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionsReorderedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid BoardId, Guid FieldId, IReadOnlyList`1 OrderedOptionIds, Guid UpdatedBy, DateTimeOffset OccurredAt
+Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionsReorderedDomainEvent|<Clone>$|Method|public|False|True|
+Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionsReorderedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& BoardId, Guid& FieldId, IReadOnlyList`1& OrderedOptionIds, Guid& UpdatedBy, DateTimeOffset& OccurredAt
+Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionsReorderedDomainEvent|Equals|Method|public|False|True|FieldOptionsReorderedDomainEvent other
+Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionsReorderedDomainEvent|BoardId|Property|public|False|False|readwrite
+Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionsReorderedDomainEvent|FieldId|Property|public|False|False|readwrite
+Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionsReorderedDomainEvent|OrderedOptionIds|Property|public|False|False|readwrite
+Notrelix.Domain.WorkManagement.Fields.Events.FieldOptionsReorderedDomainEvent|UpdatedBy|Property|public|False|False|readwrite
 Notrelix.Domain.WorkManagement.Fields.FieldOption|Update|Method|public|False|False|String name, Color color
 Notrelix.Domain.WorkManagement.Fields.FieldOption|UpdatePosition|Method|public|False|False|FractionalIndex position
 Notrelix.Domain.WorkManagement.Fields.FieldOption|Color|Property|public|False|False|readonly
@@ -3251,7 +3005,6 @@ Notrelix.Domain.WorkManagement.Forms.FormSubmission|SubmitterEmail|Property|publ
 Notrelix.Domain.WorkManagement.Forms.FormSubmission|SubmitterUserId|Property|public|False|False|readonly
 Notrelix.Domain.WorkManagement.Forms.FormSubmission|UserAgent|Property|public|False|False|readonly
 Notrelix.Domain.WorkManagement.Forms.FormSubmission|WorkspaceId|Property|public|False|True|readonly
-Notrelix.Domain.WorkManagement.Formulas.FormulaExpression|Expression|Property|public|False|False|readonly
 Notrelix.Domain.WorkManagement.Items.BoardItem|Archive|Method|public|False|False|Guid archivedBy, DateTimeOffset archivedAt
 Notrelix.Domain.WorkManagement.Items.BoardItem|AssignParentItem|Method|public|False|False|Nullable`1 parentItemId, Int32 itemLevel, IReadOnlyDictionary`2 parentChain, Guid updatedBy, DateTimeOffset updatedAt
 Notrelix.Domain.WorkManagement.Items.BoardItem|Complete|Method|public|False|False|Nullable`1 completedAt, Guid updatedBy, DateTimeOffset updatedAt
@@ -3830,14 +3583,6 @@ Notrelix.Domain.WorkManagement.Views.SavedFilter|Visibility|Property|public|Fals
 Notrelix.Domain.WorkManagement.Views.SavedFilter|WorkspaceId|Property|public|False|True|readonly
 Notrelix.Domain.WorkManagement.Views.SortRule|Direction|Property|public|False|False|readonly
 Notrelix.Domain.WorkManagement.Views.SortRule|FieldId|Property|public|False|False|readonly
-Notrelix.Domain.WorkManagement.Workload.WorkloadAllocation|AccountId|Property|public|False|True|readonly
-Notrelix.Domain.WorkManagement.Workload.WorkloadAllocation|AllocatedMinutes|Property|public|False|False|readonly
-Notrelix.Domain.WorkManagement.Workload.WorkloadAllocation|AllocationDate|Property|public|False|False|readonly
-Notrelix.Domain.WorkManagement.Workload.WorkloadAllocation|BoardId|Property|public|False|False|readonly
-Notrelix.Domain.WorkManagement.Workload.WorkloadAllocation|ItemId|Property|public|False|False|readonly
-Notrelix.Domain.WorkManagement.Workload.WorkloadAllocation|UserId|Property|public|False|False|readonly
-Notrelix.Domain.WorkManagement.Workload.WorkloadAllocation|WorkspaceId|Property|public|False|True|readonly
-Notrelix.Domain.WorkManagement.Workload.WorkloadCapacity|DailyMinutes|Property|public|False|False|readonly
 Notrelix.Domain.Workspaces.Invitations.Events.WorkspaceInvitationAcceptedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid InvitationId, Guid WorkspaceId, Guid UserId, Guid AcceptedBy, DateTimeOffset OccurredAt
 Notrelix.Domain.Workspaces.Invitations.Events.WorkspaceInvitationAcceptedDomainEvent|<Clone>$|Method|public|False|True|
 Notrelix.Domain.Workspaces.Invitations.Events.WorkspaceInvitationAcceptedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& InvitationId, Guid& WorkspaceId, Guid& UserId, Guid& AcceptedBy, DateTimeOffset& OccurredAt
