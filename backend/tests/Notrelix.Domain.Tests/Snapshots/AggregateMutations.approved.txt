@@ -1,6 +1,6 @@
 # Aggregate Mutation Coverage Registry
 # Format: Aggregate|Method|ValidTest|NoOpTest|InvalidTest|AuditTest|VersionTest|EventTest
-# Generated: 2026-07-26T16:23:15Z
+# Generated: 2026-07-26T17:31:47Z
 
 Account|Activate|False|False|False|False|False|False
 Account|Archive|False|False|False|False|False|False
@@ -113,9 +113,7 @@ Subscription|ChangePlan|False|False|False|False|False|False
 Subscription|Expire|False|False|False|False|False|False
 Subscription|MarkPastDue|False|False|False|False|False|False
 Subscription|Renew|False|False|False|False|False|False
-Subscription|Restore|False|False|False|False|False|False
 Subscription|ScheduleCancellation|False|False|False|False|False|False
-Subscription|SoftDelete|False|False|False|False|False|False
 UsageMetric|Decrease|False|False|False|False|False|False
 UsageMetric|Increase|False|False|False|False|False|False
 UsageMetric|Reset|False|False|False|False|False|False
@@ -173,6 +171,7 @@ ShareLink|IsExpired|False|False|False|False|False|False
 ShareLink|Restore|False|False|False|False|False|False
 ShareLink|RotateTokenHash|False|False|False|False|False|False
 ShareLink|SoftDelete|False|False|False|False|False|False
+PermissionTemplate|Archive|False|False|False|False|False|False
 UserMfaMethod|Disable|False|False|False|False|False|False
 UserMfaMethod|Restore|False|False|False|False|False|False
 UserMfaMethod|SetAsPrimary|False|False|False|False|False|False

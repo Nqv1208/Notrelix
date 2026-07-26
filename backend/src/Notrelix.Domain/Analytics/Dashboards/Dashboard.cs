@@ -74,7 +74,7 @@ public class Dashboard : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (_widgets.Count >= MaxWidgets)
             throw new BusinessRuleException(Analytics_Dashboard_WidgetLimitExceeded, $"Cannot add more than {MaxWidgets} widgets to a dashboard.");
 
-        var widget = DashboardWidget.Create(Id, title, type, config, position);
+        var widget = DashboardWidget.Create(AccountId, WorkspaceId, Id, title, type, config, position);
         _widgets.Add(widget);
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();

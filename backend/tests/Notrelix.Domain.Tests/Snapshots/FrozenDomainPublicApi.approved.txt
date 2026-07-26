@@ -1,6 +1,6 @@
 # Frozen Domain Public API Snapshot
 # Format: Type|Member|MemberType|Visibility|IsAbstract|IsVirtual|Parameters
-# Generated: 2026-07-26T16:23:15Z
+# Generated: 2026-07-26T17:31:47Z
 
 Notrelix.Domain.Accounts.Accounts.Account|Activate|Method|public|False|False|Guid activatedBy, DateTimeOffset activatedAt
 Notrelix.Domain.Accounts.Accounts.Account|Archive|Method|public|False|False|Guid archivedBy, DateTimeOffset archivedAt
@@ -345,7 +345,7 @@ Notrelix.Domain.Analytics.Dashboards.DashboardSource|Filter|Property|public|Fals
 Notrelix.Domain.Analytics.Dashboards.DashboardSource|SourceType|Property|public|False|False|readonly
 Notrelix.Domain.Analytics.Dashboards.DashboardSource|WorkspaceId|Property|public|False|True|readonly
 Notrelix.Domain.Analytics.Dashboards.DashboardWidget|UpdatePosition|Method|public|False|False|WidgetPosition newPosition
-Notrelix.Domain.Analytics.Dashboards.DashboardWidget|UpdateTitle|Method|public|False|False|String title, Guid updatedBy, DateTimeOffset updatedAt
+Notrelix.Domain.Analytics.Dashboards.DashboardWidget|UpdateTitle|Method|public|False|False|String title
 Notrelix.Domain.Analytics.Dashboards.DashboardWidget|AccountId|Property|public|False|True|readonly
 Notrelix.Domain.Analytics.Dashboards.DashboardWidget|Config|Property|public|False|False|readonly
 Notrelix.Domain.Analytics.Dashboards.DashboardWidget|DashboardId|Property|public|False|False|readonly
@@ -422,6 +422,9 @@ Notrelix.Domain.Analytics.Snapshots.ReportingSnapshot|CapturedAt|Property|public
 Notrelix.Domain.Analytics.Snapshots.ReportingSnapshot|Data|Property|public|False|False|readonly
 Notrelix.Domain.Analytics.Snapshots.ReportingSnapshot|ReportType|Property|public|False|False|readonly
 Notrelix.Domain.Analytics.Snapshots.ReportingSnapshot|WorkspaceId|Property|public|False|True|readonly
+Notrelix.Domain.Analytics.Snapshots.ReportSnapshotPayload|Data|Property|public|False|False|readonly
+Notrelix.Domain.Analytics.Snapshots.ReportSnapshotPayload|ReportType|Property|public|False|False|readonly
+Notrelix.Domain.Analytics.Snapshots.ReportSnapshotPayload|SchemaVersion|Property|public|False|False|readonly
 Notrelix.Domain.Analytics.Widgets.WidgetConfig|Data|Property|public|False|False|readonly
 Notrelix.Domain.Analytics.Widgets.WidgetPosition|H|Property|public|False|False|readonly
 Notrelix.Domain.Analytics.Widgets.WidgetPosition|W|Property|public|False|False|readonly
@@ -643,12 +646,16 @@ Notrelix.Domain.Automation.Rules.Events.AutomationRuleRestoredDomainEvent|Name|P
 Notrelix.Domain.Automation.Rules.Events.AutomationRuleRestoredDomainEvent|RestoredBy|Property|public|False|False|readwrite
 Notrelix.Domain.Automation.Rules.Events.AutomationRuleRestoredDomainEvent|RuleId|Property|public|False|False|readwrite
 Notrelix.Domain.Automation.RulesEngine.AutomationActionDefinition|Configuration|Property|public|False|False|readonly
+Notrelix.Domain.Automation.RulesEngine.AutomationActionDefinition|SchemaVersion|Property|public|False|False|readonly
 Notrelix.Domain.Automation.RulesEngine.AutomationActionDefinition|Type|Property|public|False|False|readonly
 Notrelix.Domain.Automation.RulesEngine.AutomationConditionDefinition|RawJson|Property|public|False|False|readonly
+Notrelix.Domain.Automation.RulesEngine.AutomationConditionDefinition|SchemaVersion|Property|public|False|False|readonly
 Notrelix.Domain.Automation.RulesEngine.AutomationConfiguration|Action|Property|public|False|False|readonly
 Notrelix.Domain.Automation.RulesEngine.AutomationConfiguration|Condition|Property|public|False|False|readonly
+Notrelix.Domain.Automation.RulesEngine.AutomationConfiguration|SchemaVersion|Property|public|False|False|readonly
 Notrelix.Domain.Automation.RulesEngine.AutomationConfiguration|Trigger|Property|public|False|False|readonly
 Notrelix.Domain.Automation.RulesEngine.AutomationTriggerDefinition|Configuration|Property|public|False|False|readonly
+Notrelix.Domain.Automation.RulesEngine.AutomationTriggerDefinition|SchemaVersion|Property|public|False|False|readonly
 Notrelix.Domain.Automation.RulesEngine.AutomationTriggerDefinition|Type|Property|public|False|False|readonly
 Notrelix.Domain.Automation.Scheduled.Events.ScheduledJobCompletedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid JobId, DateTimeOffset OccurredAt
 Notrelix.Domain.Automation.Scheduled.Events.ScheduledJobCompletedDomainEvent|<Clone>$|Method|public|False|True|
@@ -694,6 +701,7 @@ Notrelix.Domain.Automation.Scheduled.Events.ScheduledJobUpdatedDomainEvent|Decon
 Notrelix.Domain.Automation.Scheduled.Events.ScheduledJobUpdatedDomainEvent|Equals|Method|public|False|True|ScheduledJobUpdatedDomainEvent other
 Notrelix.Domain.Automation.Scheduled.Events.ScheduledJobUpdatedDomainEvent|JobId|Property|public|False|False|readwrite
 Notrelix.Domain.Automation.Scheduled.ScheduleDefinition|CronExpression|Property|public|False|False|readonly
+Notrelix.Domain.Automation.Scheduled.ScheduleDefinition|SchemaVersion|Property|public|False|False|readonly
 Notrelix.Domain.Automation.Scheduled.ScheduleDefinition|TimeZone|Property|public|False|False|readonly
 Notrelix.Domain.Automation.Scheduled.ScheduledJob|Cancel|Method|public|False|False|DateTimeOffset cancelledAt
 Notrelix.Domain.Automation.Scheduled.ScheduledJob|Complete|Method|public|False|False|DateTimeOffset completedAt
@@ -1042,18 +1050,6 @@ Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionRenewedDomainEvent|Equa
 Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionRenewedDomainEvent|NewPeriodEnd|Property|public|False|False|readwrite
 Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionRenewedDomainEvent|NewPeriodStart|Property|public|False|False|readwrite
 Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionRenewedDomainEvent|SubscriptionId|Property|public|False|False|readwrite
-Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionRestoredDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Nullable`1 WorkspaceId, Guid SubscriptionId, Guid RestoredBy, DateTimeOffset OccurredAt
-Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionRestoredDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionRestoredDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Nullable`1& WorkspaceId, Guid& SubscriptionId, Guid& RestoredBy, DateTimeOffset& OccurredAt
-Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionRestoredDomainEvent|Equals|Method|public|False|True|SubscriptionRestoredDomainEvent other
-Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionRestoredDomainEvent|RestoredBy|Property|public|False|False|readwrite
-Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionRestoredDomainEvent|SubscriptionId|Property|public|False|False|readwrite
-Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionSoftDeletedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Nullable`1 WorkspaceId, Guid SubscriptionId, Guid DeletedBy, DateTimeOffset OccurredAt
-Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionSoftDeletedDomainEvent|<Clone>$|Method|public|False|True|
-Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionSoftDeletedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Nullable`1& WorkspaceId, Guid& SubscriptionId, Guid& DeletedBy, DateTimeOffset& OccurredAt
-Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionSoftDeletedDomainEvent|Equals|Method|public|False|True|SubscriptionSoftDeletedDomainEvent other
-Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionSoftDeletedDomainEvent|DeletedBy|Property|public|False|False|readwrite
-Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionSoftDeletedDomainEvent|SubscriptionId|Property|public|False|False|readwrite
 Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionStartedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Nullable`1 WorkspaceId, Guid SubscriptionId, Guid PlanId, DateTimeOffset OccurredAt
 Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionStartedDomainEvent|<Clone>$|Method|public|False|True|
 Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionStartedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Nullable`1& WorkspaceId, Guid& SubscriptionId, Guid& PlanId, DateTimeOffset& OccurredAt
@@ -1065,9 +1061,7 @@ Notrelix.Domain.Billing.Subscriptions.Subscription|ChangePlan|Method|public|Fals
 Notrelix.Domain.Billing.Subscriptions.Subscription|Expire|Method|public|False|False|Guid updatedBy, DateTimeOffset expiredAt
 Notrelix.Domain.Billing.Subscriptions.Subscription|MarkPastDue|Method|public|False|False|Guid updatedBy, DateTimeOffset occurredAt
 Notrelix.Domain.Billing.Subscriptions.Subscription|Renew|Method|public|False|False|DateTimeOffset newStart, DateTimeOffset newEnd, Guid updatedBy, DateTimeOffset renewedAt
-Notrelix.Domain.Billing.Subscriptions.Subscription|Restore|Method|public|False|False|Guid restoredBy, DateTimeOffset restoredAt
 Notrelix.Domain.Billing.Subscriptions.Subscription|ScheduleCancellation|Method|public|False|False|Guid updatedBy, DateTimeOffset occurredAt
-Notrelix.Domain.Billing.Subscriptions.Subscription|SoftDelete|Method|public|False|False|Guid deletedBy, DateTimeOffset deletedAt, String reason
 Notrelix.Domain.Billing.Subscriptions.Subscription|AccountId|Property|public|False|True|readonly
 Notrelix.Domain.Billing.Subscriptions.Subscription|CancelAtPeriodEnd|Property|public|False|False|readonly
 Notrelix.Domain.Billing.Subscriptions.Subscription|CurrentPeriodEnd|Property|public|False|False|readonly
@@ -1912,13 +1906,19 @@ Notrelix.Domain.Governance.Templates.Events.PermissionTemplateCreatedDomainEvent
 Notrelix.Domain.Governance.Templates.Events.PermissionTemplateCreatedDomainEvent|CreatedBy|Property|public|False|False|readwrite
 Notrelix.Domain.Governance.Templates.Events.PermissionTemplateCreatedDomainEvent|Name|Property|public|False|False|readwrite
 Notrelix.Domain.Governance.Templates.Events.PermissionTemplateCreatedDomainEvent|TemplateId|Property|public|False|False|readwrite
+Notrelix.Domain.Governance.Templates.PermissionTemplate|Archive|Method|public|False|False|Guid updatedBy, DateTimeOffset updatedAt
+Notrelix.Domain.Governance.Templates.PermissionTemplate|Definition|Property|public|False|False|readonly
 Notrelix.Domain.Governance.Templates.PermissionTemplate|Description|Property|public|False|False|readonly
-Notrelix.Domain.Governance.Templates.PermissionTemplate|IsSystem|Property|public|False|False|readonly
 Notrelix.Domain.Governance.Templates.PermissionTemplate|Name|Property|public|False|False|readonly
-Notrelix.Domain.Governance.Templates.PermissionTemplate|PermissionsJson|Property|public|False|False|readonly
+Notrelix.Domain.Governance.Templates.PermissionTemplate|Scope|Property|public|False|False|readonly
 Notrelix.Domain.Governance.Templates.PermissionTemplate|Status|Property|public|False|False|readonly
 Notrelix.Domain.Governance.Templates.PermissionTemplate|TargetResourceType|Property|public|False|False|readonly
 Notrelix.Domain.Governance.Templates.PermissionTemplate|WorkspaceId|Property|public|False|False|readonly
+Notrelix.Domain.Governance.Templates.PermissionTemplateDefinition|Entries|Property|public|False|False|readonly
+Notrelix.Domain.Governance.Templates.PermissionTemplateDefinition|SchemaVersion|Property|public|False|False|readonly
+Notrelix.Domain.Governance.Templates.PermissionTemplateEntry|Action|Property|public|False|False|readonly
+Notrelix.Domain.Governance.Templates.PermissionTemplateEntry|Effect|Property|public|False|False|readonly
+Notrelix.Domain.Governance.Templates.PermissionTemplateEntry|Resource|Property|public|False|False|readonly
 Notrelix.Domain.Identity.Mfa.Events.UserMfaMethodAddedDomainEvent|.ctor|Constructor|public|False|False|Guid MfaMethodId, Guid UserId, MfaMethodType Type, DateTimeOffset AddedAt
 Notrelix.Domain.Identity.Mfa.Events.UserMfaMethodAddedDomainEvent|<Clone>$|Method|public|False|True|
 Notrelix.Domain.Identity.Mfa.Events.UserMfaMethodAddedDomainEvent|Deconstruct|Method|public|False|False|Guid& MfaMethodId, Guid& UserId, MfaMethodType& Type, DateTimeOffset& AddedAt
@@ -2511,6 +2511,13 @@ Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionDeletedDoma
 Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionDeletedDomainEvent|ConnectionId|Property|public|False|False|readwrite
 Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionDeletedDomainEvent|DeletedBy|Property|public|False|False|readwrite
 Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionDeletedDomainEvent|WorkspaceId|Property|public|False|False|readwrite
+Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionErrorRecordedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid ConnectionId, String ErrorDetail, Guid RecordedBy, DateTimeOffset OccurredAt
+Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionErrorRecordedDomainEvent|<Clone>$|Method|public|False|True|
+Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionErrorRecordedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& ConnectionId, String& ErrorDetail, Guid& RecordedBy, DateTimeOffset& OccurredAt
+Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionErrorRecordedDomainEvent|Equals|Method|public|False|True|IntegrationConnectionErrorRecordedDomainEvent other
+Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionErrorRecordedDomainEvent|ConnectionId|Property|public|False|False|readwrite
+Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionErrorRecordedDomainEvent|ErrorDetail|Property|public|False|False|readwrite
+Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionErrorRecordedDomainEvent|RecordedBy|Property|public|False|False|readwrite
 Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionExpiredDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid ConnectionId, Guid ExpiredBy, DateTimeOffset OccurredAt
 Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionExpiredDomainEvent|<Clone>$|Method|public|False|True|
 Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionExpiredDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& ConnectionId, Guid& ExpiredBy, DateTimeOffset& OccurredAt
@@ -2568,12 +2575,14 @@ Notrelix.Domain.Integrations.Connections.IntegrationConnection|Restore|Method|pu
 Notrelix.Domain.Integrations.Connections.IntegrationConnection|RotateSecret|Method|public|False|False|String version, SecretRef secretRef, Guid updatedBy, DateTimeOffset occurredAt
 Notrelix.Domain.Integrations.Connections.IntegrationConnection|SoftDelete|Method|public|False|False|Guid deletedBy, DateTimeOffset deletedAt, String reason
 Notrelix.Domain.Integrations.Connections.IntegrationConnection|AccountId|Property|public|False|True|readonly
+Notrelix.Domain.Integrations.Connections.IntegrationConnection|CurrentSecretRef|Property|public|False|False|readonly
+Notrelix.Domain.Integrations.Connections.IntegrationConnection|CurrentSecretVersion|Property|public|False|False|readonly
 Notrelix.Domain.Integrations.Connections.IntegrationConnection|ErrorDetail|Property|public|False|False|readonly
 Notrelix.Domain.Integrations.Connections.IntegrationConnection|ExpiresAt|Property|public|False|False|readonly
 Notrelix.Domain.Integrations.Connections.IntegrationConnection|Provider|Property|public|False|False|readonly
 Notrelix.Domain.Integrations.Connections.IntegrationConnection|ProviderAccountId|Property|public|False|False|readonly
 Notrelix.Domain.Integrations.Connections.IntegrationConnection|Scopes|Property|public|False|False|readonly
-Notrelix.Domain.Integrations.Connections.IntegrationConnection|SecretVersions|Property|public|False|False|readonly
+Notrelix.Domain.Integrations.Connections.IntegrationConnection|SecretRotatedAt|Property|public|False|False|readonly
 Notrelix.Domain.Integrations.Connections.IntegrationConnection|Status|Property|public|False|False|readonly
 Notrelix.Domain.Integrations.Connections.IntegrationConnection|WorkspaceId|Property|public|False|True|readonly
 Notrelix.Domain.Integrations.Connections.IntegrationScope|ConnectionId|Property|public|False|False|readonly

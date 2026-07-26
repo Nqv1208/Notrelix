@@ -12,4 +12,8 @@ public static class AnalyticsRuleCodes
     // ── Widget position/dimensions ─────────────────────────────────────────
     public const string Analytics_Widget_CoordinatesMustBeNonNegative = "Analytics_Widget_CoordinatesMustBeNonNegative";
     public const string Analytics_Widget_DimensionsMustBePositive = "Analytics_Widget_DimensionsMustBePositive";
+
+    // ── Snapshot ──────────────────────────────────────────────────────────
+    public const string Analytics_Snapshot_DataMustBeJsonObject = "Analytics_Snapshot_DataMustBeJsonObject";
+    public const string Analytics_Snapshot_InvalidDataJson = "Analytics_Snapshot_InvalidDataJson";
 }

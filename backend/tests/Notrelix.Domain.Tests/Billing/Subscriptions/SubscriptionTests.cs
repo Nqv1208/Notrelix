@@ -57,6 +57,7 @@ public class SubscriptionTests
         subscription.CancelImmediately(actor, now);
 
         subscription.Status.Should().Be(SubscriptionStatus.Canceled);
+        subscription.CancelAtPeriodEnd.Should().BeFalse();
         subscription.DomainEvents.Should().Contain(e => e is SubscriptionCanceledDomainEvent);
     }
 
@@ -222,82 +223,17 @@ public class SubscriptionTests
     }
 
     [Fact]
-    public void SoftDelete_ShouldMarkDeleted_AndRaiseEvent()
+    public void CancelImmediately_ScheduledCancellation_ShouldClearFlag()
     {
         var now = DateTimeOffset.UtcNow;
         var actor = Guid.NewGuid();
         var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
-        ((IHasDomainEvents)subscription).ClearDomainEvents();
+        subscription.ScheduleCancellation(actor, now);
+        subscription.CancelAtPeriodEnd.Should().BeTrue();
 
-        subscription.SoftDelete(actor, now);
+        subscription.CancelImmediately(actor, now);
 
-        subscription.IsDeleted.Should().BeTrue();
-        subscription.DomainEvents.Should().Contain(e => e is SubscriptionSoftDeletedDomainEvent);
-    }
-
-    [Fact]
-    public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var actor = Guid.NewGuid();
-        var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
-        subscription.SoftDelete(actor, now);
-        ((IHasDomainEvents)subscription).ClearDomainEvents();
-
-        subscription.SoftDelete(actor, now);
-
-        subscription.DomainEvents.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void Restore_ShouldRestore_AndRaiseEvent()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var actor = Guid.NewGuid();
-        var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
-        subscription.SoftDelete(actor, now);
-        ((IHasDomainEvents)subscription).ClearDomainEvents();
-
-        subscription.Restore(actor, now);
-
-        subscription.IsDeleted.Should().BeFalse();
-        subscription.DomainEvents.Should().Contain(e => e is SubscriptionRestoredDomainEvent);
-    }
-
-    [Fact]
-    public void Restore_WhenNotDeleted_ShouldBeNoOp()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var actor = Guid.NewGuid();
-        var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
-        ((IHasDomainEvents)subscription).ClearDomainEvents();
-
-        subscription.Restore(actor, now);
-
-        subscription.DomainEvents.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void ChangePlan_WhenDeleted_ShouldThrow()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var actor = Guid.NewGuid();
-        var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
-        subscription.SoftDelete(actor, now);
-
-        var act = () => subscription.ChangePlan(Guid.NewGuid(), actor, now);
-        act.Should().Throw<DomainException>().WithMessage("*deleted*");
-    }
-
-    [Fact]
-    public void Renew_WhenDeleted_ShouldThrow()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var actor = Guid.NewGuid();
-        var subscription = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, now, now.AddDays(30), actor, now);
-        subscription.SoftDelete(actor, now);
-
-        var act = () => subscription.Renew(now.AddDays(30), now.AddDays(60), actor, now);
-        act.Should().Throw<DomainException>().WithMessage("*deleted*");
+        subscription.CancelAtPeriodEnd.Should().BeFalse();
+        subscription.Status.Should().Be(SubscriptionStatus.Canceled);
     }
 }

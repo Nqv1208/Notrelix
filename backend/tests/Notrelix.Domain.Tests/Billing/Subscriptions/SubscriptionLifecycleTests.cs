@@ -41,64 +41,24 @@ public class SubscriptionLifecycleTests
     }
 
     [Fact]
-    public void Subscription_SoftDelete_ShouldRaiseEvent()
+    public void Subscription_CancelImmediately_ShouldClearCancelAtPeriodEnd()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now, WsA);
-        var version = sub.Version;
+        sub.ScheduleCancellation(Actor, Now);
+        sub.CancelAtPeriodEnd.Should().BeTrue();
+        ((IHasDomainEvents)sub).ClearDomainEvents();
 
-        sub.SoftDelete(Actor, Now);
+        sub.CancelImmediately(Actor, Now);
 
-        sub.IsDeleted.Should().BeTrue();
-        sub.Version.Should().Be(version + 1);
-        sub.DomainEvents.Should().ContainSingle(e => e is SubscriptionSoftDeletedDomainEvent);
-        var evt = (SubscriptionSoftDeletedDomainEvent)sub.DomainEvents.Single(e => e is SubscriptionSoftDeletedDomainEvent);
-        evt.WorkspaceId.Should().Be(WsA);
-        evt.SubscriptionId.Should().Be(sub.Id);
-        evt.DeletedBy.Should().Be(Actor);
+        sub.CancelAtPeriodEnd.Should().BeFalse();
+        sub.Status.Should().Be(SubscriptionStatus.Canceled);
     }
 
     [Fact]
-    public void Subscription_Restore_ShouldRaiseEvent()
+    public void Subscription_IsNotDeletedAggregate()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now, WsA);
-        sub.SoftDelete(Actor, Now);
-        ((IHasDomainEvents)sub).ClearDomainEvents();
-        var version = sub.Version;
 
-        sub.Restore(Actor, Now);
-
-        sub.IsDeleted.Should().BeFalse();
-        sub.Version.Should().Be(version + 1);
-        sub.DomainEvents.Should().ContainSingle(e => e is SubscriptionRestoredDomainEvent);
-        var evt = (SubscriptionRestoredDomainEvent)sub.DomainEvents.Single(e => e is SubscriptionRestoredDomainEvent);
-        evt.WorkspaceId.Should().Be(WsA);
-        evt.RestoredBy.Should().Be(Actor);
-    }
-
-    [Fact]
-    public void Subscription_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
-    {
-        var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now, WsA);
-        sub.SoftDelete(Actor, Now);
-        ((IHasDomainEvents)sub).ClearDomainEvents();
-        var version = sub.Version;
-
-        sub.SoftDelete(Actor, Now);
-
-        sub.Version.Should().Be(version);
-        sub.DomainEvents.Should().NotContain(e => e is SubscriptionSoftDeletedDomainEvent);
-    }
-
-    [Fact]
-    public void Subscription_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
-    {
-        var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now, WsA);
-        ((IHasDomainEvents)sub).ClearDomainEvents();
-        var version = sub.Version;
-
-        sub.Restore(Actor, Now);
-
-        sub.Version.Should().Be(version);
-        sub.DomainEvents.Should().NotContain(e => e is SubscriptionRestoredDomainEvent);
+        sub.Should().NotBeAssignableTo<SoftDeletableAggregateRoot>();
     }
 }

@@ -1,7 +1,7 @@
 using Notrelix.Domain.Billing.Subscriptions.Events;
 namespace Notrelix.Domain.Billing.Subscriptions;
 
-public class Subscription : SoftDeletableAggregateRoot, IAccountScoped
+public class Subscription : AggregateRoot, IAccountScoped
 {
     public Guid AccountId { get; private set; }
     public Guid? WorkspaceId { get; private set; }
@@ -40,7 +40,6 @@ public class Subscription : SoftDeletableAggregateRoot, IAccountScoped
 
     public void ChangePlan(Guid newPlanId, Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(newPlanId);
 
         if (Status is SubscriptionStatus.Canceled or SubscriptionStatus.Expired)
@@ -57,7 +56,6 @@ public class Subscription : SoftDeletableAggregateRoot, IAccountScoped
 
     public void ScheduleCancellation(Guid updatedBy, DateTimeOffset occurredAt)
     {
-        EnsureNotDeleted();
         if (CancelAtPeriodEnd) return;
 
         if (Status is not (SubscriptionStatus.Active or SubscriptionStatus.PastDue))
@@ -71,13 +69,13 @@ public class Subscription : SoftDeletableAggregateRoot, IAccountScoped
 
     public void CancelImmediately(Guid updatedBy, DateTimeOffset cancelledAt)
     {
-        EnsureNotDeleted();
         if (Status == SubscriptionStatus.Canceled) return;
 
         if (Status is not (SubscriptionStatus.Active or SubscriptionStatus.PastDue or SubscriptionStatus.Trialing))
             throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_InvalidStatusTransition, $"Cannot cancel from status '{Status}'.");
 
         Status = SubscriptionStatus.Canceled;
+        CancelAtPeriodEnd = false;
         SetAuditOnUpdate(updatedBy, cancelledAt);
         IncrementVersion();
         RaiseDomainEvent(new SubscriptionCanceledDomainEvent(AccountId, WorkspaceId, Id, cancelledAt));
@@ -85,7 +83,6 @@ public class Subscription : SoftDeletableAggregateRoot, IAccountScoped
 
     public void Renew(DateTimeOffset newStart, DateTimeOffset newEnd, Guid updatedBy, DateTimeOffset renewedAt)
     {
-        EnsureNotDeleted();
         if (newStart >= newEnd)
             throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_PeriodStartMustBeBeforeEnd, "Renewal period start must be before end.");
 
@@ -103,7 +100,6 @@ public class Subscription : SoftDeletableAggregateRoot, IAccountScoped
 
     public void Expire(Guid updatedBy, DateTimeOffset expiredAt)
     {
-        EnsureNotDeleted();
         if (Status == SubscriptionStatus.Expired) return;
 
         if (Status is not (SubscriptionStatus.Active or SubscriptionStatus.PastDue))
@@ -117,7 +113,6 @@ public class Subscription : SoftDeletableAggregateRoot, IAccountScoped
 
     public void MarkPastDue(Guid updatedBy, DateTimeOffset occurredAt)
     {
-        EnsureNotDeleted();
         if (Status == SubscriptionStatus.PastDue) return;
 
         if (Status is not SubscriptionStatus.Active)
@@ -127,23 +122,5 @@ public class Subscription : SoftDeletableAggregateRoot, IAccountScoped
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
         RaiseDomainEvent(new SubscriptionPastDueDomainEvent(AccountId, WorkspaceId, Id, occurredAt));
-    }
-
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        if (IsDeleted) return;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
-        IncrementVersion();
-        RaiseDomainEvent(new SubscriptionSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
-    }
-
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        if (!IsDeleted) return;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
-        IncrementVersion();
-        RaiseDomainEvent(new SubscriptionRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

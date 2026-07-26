@@ -1,6 +1,6 @@
 # Domain Event Contract Snapshot
 # Format: LogicalName|Version|ClrType|Scope|PropertyName|PropertyType|IsNullable
-# Generated: 2026-07-26T16:23:15Z
+# Generated: 2026-07-26T17:31:47Z
 
 accounts.account-activated|1|Notrelix.Domain.Accounts.Accounts.Events.AccountActivatedDomainEvent|Accounts|AccountId|Guid|False
 accounts.account-activated|1|Notrelix.Domain.Accounts.Accounts.Events.AccountActivatedDomainEvent|Accounts|ActivatedBy|Guid|False
@@ -615,18 +615,6 @@ billing.subscription-renewed|1|Notrelix.Domain.Billing.Subscriptions.Events.Subs
 billing.subscription-renewed|1|Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionRenewedDomainEvent|Billing|OccurredAt|DateTimeOffset|False
 billing.subscription-renewed|1|Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionRenewedDomainEvent|Billing|SubscriptionId|Guid|False
 billing.subscription-renewed|1|Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionRenewedDomainEvent|Billing|WorkspaceId|Guid|True
-billing.subscription-restored|1|Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionRestoredDomainEvent|Billing|AccountId|Guid|False
-billing.subscription-restored|1|Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionRestoredDomainEvent|Billing|EventId|Guid|False
-billing.subscription-restored|1|Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionRestoredDomainEvent|Billing|OccurredAt|DateTimeOffset|False
-billing.subscription-restored|1|Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionRestoredDomainEvent|Billing|RestoredBy|Guid|False
-billing.subscription-restored|1|Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionRestoredDomainEvent|Billing|SubscriptionId|Guid|False
-billing.subscription-restored|1|Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionRestoredDomainEvent|Billing|WorkspaceId|Guid|True
-billing.subscription-soft-deleted|1|Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionSoftDeletedDomainEvent|Billing|AccountId|Guid|False
-billing.subscription-soft-deleted|1|Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionSoftDeletedDomainEvent|Billing|DeletedBy|Guid|False
-billing.subscription-soft-deleted|1|Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionSoftDeletedDomainEvent|Billing|EventId|Guid|False
-billing.subscription-soft-deleted|1|Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionSoftDeletedDomainEvent|Billing|OccurredAt|DateTimeOffset|False
-billing.subscription-soft-deleted|1|Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionSoftDeletedDomainEvent|Billing|SubscriptionId|Guid|False
-billing.subscription-soft-deleted|1|Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionSoftDeletedDomainEvent|Billing|WorkspaceId|Guid|True
 billing.subscription-started|1|Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionStartedDomainEvent|Billing|AccountId|Guid|False
 billing.subscription-started|1|Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionStartedDomainEvent|Billing|EventId|Guid|False
 billing.subscription-started|1|Notrelix.Domain.Billing.Subscriptions.Events.SubscriptionStartedDomainEvent|Billing|OccurredAt|DateTimeOffset|False
@@ -1467,6 +1455,13 @@ integrations.integration-connection-deleted|1|Notrelix.Domain.Integrations.Conne
 integrations.integration-connection-deleted|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionDeletedDomainEvent|Integrations|EventId|Guid|False
 integrations.integration-connection-deleted|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionDeletedDomainEvent|Integrations|OccurredAt|DateTimeOffset|False
 integrations.integration-connection-deleted|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionDeletedDomainEvent|Integrations|WorkspaceId|Guid|False
+integrations.integration-connection-error-recorded|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionErrorRecordedDomainEvent|Integrations|AccountId|Guid|False
+integrations.integration-connection-error-recorded|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionErrorRecordedDomainEvent|Integrations|ConnectionId|Guid|False
+integrations.integration-connection-error-recorded|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionErrorRecordedDomainEvent|Integrations|ErrorDetail|String|False
+integrations.integration-connection-error-recorded|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionErrorRecordedDomainEvent|Integrations|EventId|Guid|False
+integrations.integration-connection-error-recorded|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionErrorRecordedDomainEvent|Integrations|OccurredAt|DateTimeOffset|False
+integrations.integration-connection-error-recorded|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionErrorRecordedDomainEvent|Integrations|RecordedBy|Guid|False
+integrations.integration-connection-error-recorded|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionErrorRecordedDomainEvent|Integrations|WorkspaceId|Guid|False
 integrations.integration-connection-expired|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionExpiredDomainEvent|Integrations|AccountId|Guid|False
 integrations.integration-connection-expired|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionExpiredDomainEvent|Integrations|ConnectionId|Guid|False
 integrations.integration-connection-expired|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionExpiredDomainEvent|Integrations|EventId|Guid|False

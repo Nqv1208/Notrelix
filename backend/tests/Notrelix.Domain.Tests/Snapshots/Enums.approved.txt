@@ -1,6 +1,6 @@
 # Enum Snapshot
 # Format: EnumType|MemberName|NumericValue
-# Generated: 2026-07-26T16:23:15Z
+# Generated: 2026-07-26T17:31:47Z
 
 Notrelix.Domain.Accounts.Accounts.AccountStatus|Active|0
 Notrelix.Domain.Accounts.Accounts.AccountStatus|Trialing|1
@@ -267,6 +267,8 @@ Notrelix.Domain.Governance.ShareLinks.ShareLinkAccessMode|WorkspaceOnly|2
 Notrelix.Domain.Governance.ShareLinks.ShareLinkStatus|Active|0
 Notrelix.Domain.Governance.ShareLinks.ShareLinkStatus|Disabled|1
 Notrelix.Domain.Governance.ShareLinks.ShareLinkStatus|Expired|2
+Notrelix.Domain.Governance.Templates.PermissionTemplateScope|System|0
+Notrelix.Domain.Governance.Templates.PermissionTemplateScope|Workspace|1
 Notrelix.Domain.Governance.Templates.PermissionTemplateStatus|Active|0
 Notrelix.Domain.Governance.Templates.PermissionTemplateStatus|Archived|1
 Notrelix.Domain.Identity.Mfa.MfaMethodStatus|PendingVerification|0

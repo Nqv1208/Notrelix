@@ -15,8 +15,10 @@ public class DashboardWidget : Entity, IWorkspaceScoped
 
     private DashboardWidget() : base() { }
 
-    public static DashboardWidget Create(Guid dashboardId, string title, DashboardWidgetType type, JsonValue config, WidgetPosition position)
+    public static DashboardWidget Create(Guid accountId, Guid workspaceId, Guid dashboardId, string title, DashboardWidgetType type, JsonValue config, WidgetPosition position)
     {
+        Guard.NotEmpty(accountId);
+        Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(dashboardId);
         Guard.NotNullOrWhiteSpace(title);
         Guard.NotNull(config);
@@ -29,6 +31,8 @@ public class DashboardWidget : Entity, IWorkspaceScoped
 
         return new DashboardWidget
         {
+            AccountId = accountId,
+            WorkspaceId = workspaceId,
             DashboardId = dashboardId,
             Title = title,
             Type = type,
@@ -37,15 +41,20 @@ public class DashboardWidget : Entity, IWorkspaceScoped
         };
     }
 
-    public void UpdatePosition(WidgetPosition newPosition)
+    public bool UpdatePosition(WidgetPosition newPosition)
     {
         WidgetRules.ValidatePosition(newPosition);
+        if (Position == newPosition) return false;
         Position = newPosition;
+        return true;
     }
 
-    public void UpdateTitle(string title, Guid updatedBy, DateTimeOffset updatedAt)
+    public bool UpdateTitle(string title)
     {
         Guard.NotNullOrWhiteSpace(title);
-        Title = title.Trim();
+        var normalizedName = title.Trim();
+        if (Title == normalizedName) return false;
+        Title = normalizedName;
+        return true;
     }
 }
