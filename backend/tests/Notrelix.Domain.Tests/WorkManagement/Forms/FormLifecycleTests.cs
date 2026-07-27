@@ -15,7 +15,7 @@ public class FormLifecycleTests
     {
         var form = Form.Create(Guid.NewGuid(), WsA, BoardA, "Form", "form", Actor, Now);
         form.AddQuestion(FormQuestion.Create(Guid.NewGuid(), WsA, form.Id, null, "q1", "Q1", FormQuestionType.ShortText, true, FractionalIndex.Create("a0")), Actor, Now);
-        form.ClearDomainEvents();
+        ((IHasDomainEvents)form).ClearDomainEvents();
 
         form.Publish(Actor, Now);
 
@@ -48,7 +48,7 @@ public class FormLifecycleTests
     public void Form_Close_ShouldEmitEventAndUpdateStatus()
     {
         var form = Form.Create(Guid.NewGuid(), WsA, BoardA, "Form", "form", Actor, Now);
-        form.ClearDomainEvents();
+        ((IHasDomainEvents)form).ClearDomainEvents();
 
         form.Close(Actor, Now);
 
@@ -73,7 +73,7 @@ public class FormLifecycleTests
     public void Form_AddQuestion_ShouldEmitEvent()
     {
         var form = Form.Create(Guid.NewGuid(), WsA, BoardA, "Form", "form", Actor, Now);
-        form.ClearDomainEvents();
+        ((IHasDomainEvents)form).ClearDomainEvents();
 
         var question = FormQuestion.Create(Guid.NewGuid(), WsA, form.Id, null, "q1", "Q1", FormQuestionType.ShortText, true, FractionalIndex.Create("a0"));
         form.AddQuestion(question, Actor, Now);

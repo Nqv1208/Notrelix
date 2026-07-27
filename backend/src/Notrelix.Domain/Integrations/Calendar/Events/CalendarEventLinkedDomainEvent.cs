@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Integrations.Calendar.Events;
 
+[EventName("integrations.calendar-event-linked")]
 public sealed record CalendarEventLinkedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -7,4 +8,4 @@ public sealed record CalendarEventLinkedDomainEvent(
     Guid CalendarEventId,
     ResourceRef Target,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

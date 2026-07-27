@@ -5,7 +5,7 @@ namespace Notrelix.Domain.Identity.Sessions;
 
 public sealed class RefreshTokenHash : ValueObject
 {
-    public string Hash { get; }
+    public string Hash { get; } = null!;
 
     private RefreshTokenHash() { }
     private RefreshTokenHash(string hash)

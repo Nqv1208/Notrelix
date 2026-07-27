@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.BoardGroups.Events;
 
+[EventName("work-management.board-group-reordered")]
 public sealed record BoardGroupReorderedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -8,4 +9,4 @@ public sealed record BoardGroupReorderedDomainEvent(
     string NewPosition,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, UpdatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

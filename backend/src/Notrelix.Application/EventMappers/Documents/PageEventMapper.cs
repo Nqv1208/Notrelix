@@ -8,16 +8,14 @@ public sealed class PageEventMapper :
 {
     public override PageCreatedIntegrationEvent? Map(PageCreatedDomainEvent domainEvent)
     {
-        var de = (IDomainEvent)domainEvent;
-        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new PageCreatedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
             PageId: domainEvent.PageId,
             WorkspaceId: domainEvent.WorkspaceId,
             Title: domainEvent.Title,
             ParentId: null,
-            CorrelationId: correlationId,
-            ActorUserId: de.ActorUserId,
+            CorrelationId: domainEvent.EventId,
+            ActorUserId: domainEvent.CreatedBy,
             CausationId: null,
             OccurredAt: domainEvent.OccurredAt
         );
@@ -25,14 +23,12 @@ public sealed class PageEventMapper :
 
     public PageArchivedIntegrationEvent? Map(PageArchivedDomainEvent domainEvent)
     {
-        var de = (IDomainEvent)domainEvent;
-        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new PageArchivedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
             PageId: domainEvent.PageId,
             WorkspaceId: domainEvent.WorkspaceId,
-            CorrelationId: correlationId,
-            ActorUserId: de.ActorUserId,
+            CorrelationId: domainEvent.EventId,
+            ActorUserId: domainEvent.ArchivedBy,
             CausationId: null,
             OccurredAt: domainEvent.OccurredAt
         );

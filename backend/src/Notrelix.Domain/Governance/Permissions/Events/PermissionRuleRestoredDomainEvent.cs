@@ -1,19 +1,17 @@
 namespace Notrelix.Domain.Governance.Permissions.Events;
 
-public record PermissionRuleRestoredDomainEvent : WorkspaceScopedDomainEvent
+[EventName("governance.permission-rule-restored")]
+public sealed record PermissionRuleRestoredDomainEvent : WorkspaceScopedDomainEvent
 {
-    public Guid AccountId { get; }
     public Guid RuleId { get; }
 
     public PermissionRuleRestoredDomainEvent(
         Guid accountId,
         Guid workspaceId,
         Guid ruleId,
-        Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(accountId, workspaceId, occurredAt, actorUserId)
+        : base(accountId, workspaceId, occurredAt)
     {
-        AccountId = accountId;
         RuleId = ruleId;
     }
 }

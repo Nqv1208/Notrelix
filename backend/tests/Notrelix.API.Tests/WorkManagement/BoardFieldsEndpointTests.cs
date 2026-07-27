@@ -57,6 +57,42 @@ public class BoardFieldsEndpointTests : IClassFixture<NotrelixApiFactory>
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
     }
 
+    [Fact]
+    public async Task AddFieldOption_WithValidData_ReturnsCreated()
+    {
+        var body = new { Name = "High Priority", Color = "#FF0000", Position = "a0" };
+        var response = await _client.PostAsync($"/api/v1/boards/{BoardId}/fields/{FieldId}/options", JsonContent(body));
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.Created, HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task RemoveFieldOption_ReturnsNoContent()
+    {
+        var optionId = Guid.NewGuid();
+        var response = await _client.DeleteAsync($"/api/v1/boards/{BoardId}/fields/{FieldId}/options/{optionId}");
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task UpdateFieldOption_WithValidData_ReturnsOk()
+    {
+        var optionId = Guid.NewGuid();
+        var body = new { Name = "Updated Option", Color = "#00FF00" };
+        var response = await _client.SendAsync(new HttpRequestMessage(new HttpMethod("PATCH"), $"/api/v1/boards/{BoardId}/fields/{FieldId}/options/{optionId}")
+        {
+            Content = JsonContent(body)
+        });
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task ReorderFieldOptions_WithValidData_ReturnsNoContent()
+    {
+        var body = new { OrderedOptionIds = new[] { Guid.NewGuid().ToString(), Guid.NewGuid().ToString() } };
+        var response = await _client.PostAsync($"/api/v1/boards/{BoardId}/fields/{FieldId}/options/reorder", JsonContent(body));
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
+    }
+
     private static StringContent JsonContent(object body)
     {
         var json = JsonSerializer.Serialize(body, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });

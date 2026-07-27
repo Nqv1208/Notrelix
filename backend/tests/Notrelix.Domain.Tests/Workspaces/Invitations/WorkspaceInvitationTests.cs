@@ -1,6 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Workspaces.Invitations;
-using Notrelix.Domain.Workspaces.Members;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 
@@ -60,7 +58,7 @@ public class WorkspaceInvitationTests
     {
         var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"), 1, Guid.NewGuid(), DateTimeOffset.UtcNow);
         invitation.Expire(DateTimeOffset.UtcNow);
-        invitation.ClearDomainEvents();
+        ((IHasDomainEvents)invitation).ClearDomainEvents();
 
         invitation.Expire(DateTimeOffset.UtcNow);
 
@@ -238,7 +236,7 @@ public class WorkspaceInvitationTests
             1,
             Guid.NewGuid(),
             DateTimeOffset.UtcNow);
-        invitation.ClearDomainEvents();
+        ((IHasDomainEvents)invitation).ClearDomainEvents();
 
         invitation.ChangeRole(WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
 

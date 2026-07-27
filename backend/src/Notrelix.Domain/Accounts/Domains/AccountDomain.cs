@@ -1,52 +1,81 @@
+using Notrelix.Domain.Accounts.Domains.Events;
+
 namespace Notrelix.Domain.Accounts.Domains;
 
 public class AccountDomain : AggregateRoot, IAccountScoped
 {
     public Guid AccountId { get; private set; }
     public string Domain { get; private set; } = null!;
-    public string VerificationStatus { get; private set; } = "Pending";
+    public DomainVerificationStatus VerificationStatus { get; private set; } = DomainVerificationStatus.Pending;
     public string? VerificationTokenHash { get; private set; }
     public DateTimeOffset? VerifiedAt { get; private set; }
     public bool AutoJoinEnabled { get; private set; }
 
     private AccountDomain() : base() { }
 
-    public static AccountDomain Create(Guid accountId, string domain, string? verificationTokenHash = null)
+    public static AccountDomain Create(
+        Guid accountId,
+        string domain,
+        Guid createdBy,
+        DateTimeOffset createdAt,
+        string? verificationTokenHash = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotNullOrWhiteSpace(domain);
+        Guard.NotEmpty(createdBy);
 
-        return new AccountDomain
+        var entity = new AccountDomain
         {
             AccountId = accountId,
             Domain = domain.Trim().ToLowerInvariant(),
-            VerificationStatus = "Pending",
+            VerificationStatus = DomainVerificationStatus.Pending,
             VerificationTokenHash = verificationTokenHash,
             AutoJoinEnabled = false
         };
+
+        entity.SetAuditOnCreate(createdBy, createdAt);
+        entity.RaiseDomainEvent(new AccountDomainCreatedDomainEvent(
+            accountId, entity.Id, entity.Domain, createdBy, createdAt));
+
+        return entity;
     }
 
-    public void Verify(DateTimeOffset verifiedAt)
+    public void Verify(DateTimeOffset verifiedAt, Guid verifiedBy)
     {
-        if (VerificationStatus == "Verified") return;
-        VerificationStatus = "Verified";
+        if (VerificationStatus == DomainVerificationStatus.Verified) return;
+        VerificationStatus = DomainVerificationStatus.Verified;
         VerifiedAt = verifiedAt;
+        SetAuditOnUpdate(verifiedBy, verifiedAt);
+        IncrementVersion();
+        RaiseDomainEvent(new AccountDomainVerifiedDomainEvent(AccountId, Id, Domain, verifiedAt));
     }
 
-    public void Reject()
+    public void Reject(Guid rejectedBy, DateTimeOffset rejectedAt)
     {
-        VerificationStatus = "Rejected";
+        if (VerificationStatus == DomainVerificationStatus.Rejected) return;
+        VerificationStatus = DomainVerificationStatus.Rejected;
+        SetAuditOnUpdate(rejectedBy, rejectedAt);
+        IncrementVersion();
+        RaiseDomainEvent(new AccountDomainRejectedDomainEvent(AccountId, Id, Domain, rejectedAt));
     }
 
-    public void EnableAutoJoin()
+    public void EnableAutoJoin(Guid enabledBy, DateTimeOffset enabledAt)
     {
-        if (VerificationStatus != "Verified")
-            throw new BusinessRuleException("Cannot enable auto-join for an unverified domain.");
+        if (AutoJoinEnabled) return;
+        if (VerificationStatus != DomainVerificationStatus.Verified)
+            throw new BusinessRuleException(AccountRuleCodes.Accounts_Domain_CannotEnableAutoJoinUnverified, "Cannot enable auto-join for an unverified domain.");
         AutoJoinEnabled = true;
+        SetAuditOnUpdate(enabledBy, enabledAt);
+        IncrementVersion();
+        RaiseDomainEvent(new AccountDomainAutoJoinEnabledDomainEvent(AccountId, Id, Domain, enabledAt));
     }
 
-    public void DisableAutoJoin()
+    public void DisableAutoJoin(Guid disabledBy, DateTimeOffset disabledAt)
     {
+        if (!AutoJoinEnabled) return;
         AutoJoinEnabled = false;
+        SetAuditOnUpdate(disabledBy, disabledAt);
+        IncrementVersion();
+        RaiseDomainEvent(new AccountDomainAutoJoinDisabledDomainEvent(AccountId, Id, Domain, disabledAt));
     }
 }

@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Workspaces.Members;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 
@@ -33,7 +32,7 @@ public class WorkspaceMemberTests
     public void ChangeMemberRole_ShouldChangeRole_AndRaiseEvent()
     {
         var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        member.ClearDomainEvents();
+        ((IHasDomainEvents)member).ClearDomainEvents();
         var actor = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -61,7 +60,7 @@ public class WorkspaceMemberTests
     public void Suspend_ShouldSetStatusToSuspended_AndRaiseEvent()
     {
         var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        member.ClearDomainEvents();
+        ((IHasDomainEvents)member).ClearDomainEvents();
         var actor = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -89,7 +88,7 @@ public class WorkspaceMemberTests
     {
         var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
         member.Suspend(Guid.NewGuid(), DateTimeOffset.UtcNow, 2);
-        member.ClearDomainEvents();
+        ((IHasDomainEvents)member).ClearDomainEvents();
         var actor = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -113,7 +112,7 @@ public class WorkspaceMemberTests
     public void RemoveMember_ShouldSetIsDeleted_AndRaiseEvent()
     {
         var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        member.ClearDomainEvents();
+        ((IHasDomainEvents)member).ClearDomainEvents();
         var actor = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -139,7 +138,7 @@ public class WorkspaceMemberTests
     {
         var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
         member.Remove(2, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        member.ClearDomainEvents();
+        ((IHasDomainEvents)member).ClearDomainEvents();
         var actor = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 

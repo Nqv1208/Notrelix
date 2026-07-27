@@ -27,7 +27,7 @@ public class DashboardLifecycleTests
     {
         var dashboard = Dashboard.Create(Guid.NewGuid(), _workspaceId, "Same", _actor, _now);
         var versionBefore = dashboard.Version;
-        dashboard.ClearDomainEvents();
+        ((IHasDomainEvents)dashboard).ClearDomainEvents();
 
         dashboard.Rename("Same", _actor, _now);
 
@@ -51,7 +51,7 @@ public class DashboardLifecycleTests
     public void ChangeVisibility_SameValue_ShouldNotIncrementVersion()
     {
         var dashboard = Dashboard.Create(Guid.NewGuid(), _workspaceId, "D", _actor, _now);
-        dashboard.ClearDomainEvents();
+        ((IHasDomainEvents)dashboard).ClearDomainEvents();
         var versionBefore = dashboard.Version;
 
         dashboard.ChangeVisibility(DashboardVisibility.Private, _actor, _now);
@@ -79,7 +79,7 @@ public class DashboardLifecycleTests
         var dashboard = Dashboard.Create(Guid.NewGuid(), _workspaceId, "D", _actor, _now);
         var pos = WidgetPosition.Create(0, 0, 2, 2);
         dashboard.AddWidget("Stats", DashboardWidgetType.TextWidget, JsonValue.Create("{\"content\":\"stats\"}"), pos, _actor, _now);
-        dashboard.ClearDomainEvents();
+        ((IHasDomainEvents)dashboard).ClearDomainEvents();
         var versionBefore = dashboard.Version;
         var widgetId = dashboard.Widgets.First().Id;
 
@@ -93,7 +93,7 @@ public class DashboardLifecycleTests
     public void RemoveWidget_UnknownId_ShouldNotIncrementVersion()
     {
         var dashboard = Dashboard.Create(Guid.NewGuid(), _workspaceId, "D", _actor, _now);
-        dashboard.ClearDomainEvents();
+        ((IHasDomainEvents)dashboard).ClearDomainEvents();
         var versionBefore = dashboard.Version;
 
         dashboard.RemoveWidget(Guid.NewGuid(), _actor, _now);
@@ -108,7 +108,7 @@ public class DashboardLifecycleTests
         var dashboard = Dashboard.Create(Guid.NewGuid(), _workspaceId, "D", _actor, _now);
         var pos1 = WidgetPosition.Create(0, 0, 2, 2);
         dashboard.AddWidget("Stats", DashboardWidgetType.TextWidget, JsonValue.Create("{\"content\":\"stats\"}"), pos1, _actor, _now);
-        dashboard.ClearDomainEvents();
+        ((IHasDomainEvents)dashboard).ClearDomainEvents();
         var versionBefore = dashboard.Version;
         var widgetId = dashboard.Widgets.First().Id;
         var pos2 = WidgetPosition.Create(2, 2, 4, 4);
@@ -123,7 +123,7 @@ public class DashboardLifecycleTests
     public void SoftDelete_ShouldIncrementVersion_AndRaiseDeletedEvent()
     {
         var dashboard = Dashboard.Create(Guid.NewGuid(), _workspaceId, "D", _actor, _now);
-        dashboard.ClearDomainEvents();
+        ((IHasDomainEvents)dashboard).ClearDomainEvents();
         var versionBefore = dashboard.Version;
 
         dashboard.SoftDelete(_actor, _now);
@@ -139,7 +139,7 @@ public class DashboardLifecycleTests
     {
         var dashboard = Dashboard.Create(Guid.NewGuid(), _workspaceId, "D", _actor, _now);
         dashboard.SoftDelete(_actor, _now);
-        dashboard.ClearDomainEvents();
+        ((IHasDomainEvents)dashboard).ClearDomainEvents();
         var versionBefore = dashboard.Version;
 
         dashboard.Restore(_actor, _now);
@@ -155,7 +155,7 @@ public class DashboardLifecycleTests
     {
         var dashboard = Dashboard.Create(Guid.NewGuid(), _workspaceId, "D", _actor, _now);
         dashboard.SoftDelete(_actor, _now);
-        dashboard.ClearDomainEvents();
+        ((IHasDomainEvents)dashboard).ClearDomainEvents();
         var versionBefore = dashboard.Version;
 
         dashboard.SoftDelete(_actor, _now);
@@ -170,7 +170,7 @@ public class DashboardLifecycleTests
         var dashboard = Dashboard.Create(Guid.NewGuid(), _workspaceId, "D", _actor, _now);
         dashboard.SoftDelete(_actor, _now);
         dashboard.Restore(_actor, _now);
-        dashboard.ClearDomainEvents();
+        ((IHasDomainEvents)dashboard).ClearDomainEvents();
         var versionBefore = dashboard.Version;
 
         dashboard.Restore(_actor, _now);

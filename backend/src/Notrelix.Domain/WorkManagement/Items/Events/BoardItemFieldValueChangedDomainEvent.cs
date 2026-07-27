@@ -1,5 +1,7 @@
+using Notrelix.Domain.WorkManagement.Fields;
 namespace Notrelix.Domain.WorkManagement.Items.Events;
 
+[EventName("work-management.board-item-field-value-changed")]
 public sealed record BoardItemFieldValueChangedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -10,4 +12,4 @@ public sealed record BoardItemFieldValueChangedDomainEvent(
     FieldValue NewValue,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, UpdatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

@@ -42,6 +42,7 @@ public sealed class AccountMembershipProvisioner : IAccountMembershipProvisioner
             return;
 
         throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+            "Accounts_Membership_NotActive",
             "This user cannot join the workspace because their account membership is not active.");
     }
 }

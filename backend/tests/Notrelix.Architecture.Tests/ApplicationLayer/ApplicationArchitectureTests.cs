@@ -57,23 +57,25 @@ public class ApplicationArchitectureTests
                      && (f.Contains($"{Path.DirectorySeparatorChar}Commands{Path.DirectorySeparatorChar}")
                       || f.Contains($"{Path.DirectorySeparatorChar}Queries{Path.DirectorySeparatorChar}")))
             .ToArray();
-        // Result DTOs that live in Commands/Queries folders but are not requests
-        var resultDtoExclusions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        // Build handler registry: collect every TRequest that has an IRequestHandler<,>
+        var applicationAssembly = typeof(ICommand<>).Assembly;
+        var handledRequestTypes = new HashSet<Type>();
+
+        foreach (var type in applicationAssembly.GetTypes())
         {
-            "SendWelcomeEmailResult.cs",
-            "AcceptInvitation.cs",
-            "ReorderBlocks.cs",
-            "GetBoard.cs",
-            "GetBoardSchemaQuery.cs",
-        };
+            foreach (var iface in type.GetInterfaces())
+            {
+                if (!iface.IsGenericType) continue;
+                var def = iface.GetGenericTypeDefinition();
+                if (def == typeof(IRequestHandler<,>))
+                    handledRequestTypes.Add(iface.GetGenericArguments()[0]);
+            }
+        }
 
         var violations = new List<string>();
 
         foreach (var file in requestFiles)
         {
-            if (resultDtoExclusions.Contains(Path.GetFileName(file)))
-                continue;
-
             var content = RemoveComments(File.ReadAllText(file));
 
             var lines = content.Split('\n');
@@ -100,10 +102,21 @@ public class ApplicationArchitectureTests
                 if (declaration.Contains("class ") || declaration.Contains("static "))
                     continue;
 
-                var hasICommand = declaration.Contains(": ICommand") || declaration.Contains(", ICommand");
-                var hasIQuery = declaration.Contains(": IQuery") || declaration.Contains(", IQuery");
+                var recordName = declaration
+                    .Replace("public sealed record", "")
+                    .Replace("public record", "")
+                    .TrimStart()
+                    .Split(' ', '(', ':', '<', ',')[0]
+                    .Trim();
 
-                if (!hasICommand && !hasIQuery)
+                var recordType = applicationAssembly.GetTypes()
+                    .FirstOrDefault(t => t.Name == recordName);
+                if (recordType == null) continue;
+
+                // Only validate if this type is actually handled by a handler
+                if (!handledRequestTypes.Contains(recordType)) continue;
+
+                if (!ImplementsCommandOrQuery(recordType))
                 {
                     violations.Add($"{Path.GetFileName(file)}: {declaration}");
                 }
@@ -866,6 +879,17 @@ public class ApplicationArchitectureTests
 
         violations.Should().BeEmpty(
             "Cache behaviors must use CacheKeyFactory: " + string.Join(", ", violations));
+    }
+
+    private static bool ImplementsCommandOrQuery(Type type)
+    {
+        var commandGeneric = typeof(ICommand<>);
+        var queryGeneric = typeof(IQuery<>);
+        return type.GetInterfaces().Any(i =>
+            i == typeof(ICommand) ||
+            (i.IsGenericType &&
+             (i.GetGenericTypeDefinition() == commandGeneric ||
+              i.GetGenericTypeDefinition() == queryGeneric)));
     }
 
     private static string RemoveComments(string input)

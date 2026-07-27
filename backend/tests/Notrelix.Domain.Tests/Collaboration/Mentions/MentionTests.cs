@@ -41,7 +41,7 @@ public class MentionTests
         var source = ResourceRef.Create(ResourceType.Comment, Guid.NewGuid(), Guid.NewGuid());
 
         var act = () => Mention.Create(Guid.NewGuid(), workspaceId, source, MentionType.User, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        act.Should().Throw<WorkspaceMismatchException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]

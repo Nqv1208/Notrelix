@@ -1,6 +1,7 @@
+using Notrelix.Domain.Collaboration.Comments.Events;
 namespace Notrelix.Domain.Collaboration.Comments;
 
-public class Comment : AggregateRoot, IWorkspaceScoped
+public class Comment : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -19,9 +20,7 @@ public class Comment : AggregateRoot, IWorkspaceScoped
         string content,
         Guid createdBy,
         DateTimeOffset createdAt,
-        Guid? parentId = null,
-        CommentAnchor? anchor = null,
-        Func<Guid, ResourceRef?>? getParentTarget = null)
+        CommentAnchor? anchor = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
@@ -31,26 +30,73 @@ public class Comment : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(createdBy);
 
         if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
-            throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
-
-        if (parentId.HasValue && getParentTarget != null)
-        {
-            Rules.CommentRules.EnsureParentSameTarget(target, parentId, getParentTarget);
-        }
+            throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{workspaceId}', got '{target.WorkspaceId.Value}'.");
 
         var comment = new Comment
         {
             AccountId = accountId,
             WorkspaceId = workspaceId,
             Target = target,
-            ParentId = parentId,
+            ParentId = null,
             Content = content.Trim(),
             Anchor = anchor ?? CommentAnchor.None(),
             CommentStatus = CommentStatus.Active
         };
 
         comment.SetAuditOnCreate(createdBy, createdAt);
-        comment.AddDomainEvent(new CommentCreatedDomainEvent(accountId, workspaceId, comment.Id, target, createdBy, createdAt));
+        comment.RaiseDomainEvent(new CommentCreatedDomainEvent(accountId, workspaceId, comment.Id, target, createdBy, createdAt));
+
+        return comment;
+    }
+
+    public static Comment CreateReply(
+        Guid accountId,
+        Guid workspaceId,
+        ResourceRef target,
+        string content,
+        Guid createdBy,
+        DateTimeOffset createdAt,
+        ParentCommentContext parentContext,
+        CommentAnchor? anchor = null)
+    {
+        Guard.NotEmpty(accountId);
+        Guard.NotEmpty(workspaceId);
+        Guard.NotNull(target);
+        Guard.NotNullOrWhiteSpace(content);
+        Guard.MaxLength(content, 10000);
+        Guard.NotEmpty(createdBy);
+        Guard.NotNull(parentContext);
+
+        if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
+            throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{workspaceId}', got '{target.WorkspaceId.Value}'.");
+
+        // Validate tenant scope match
+        if (parentContext.AccountId != accountId)
+            throw new BusinessRuleException(CollaborationRuleCodes.Collaboration_Comment_ParentScopeMismatch, "Parent comment must belong to the same account.");
+        if (parentContext.WorkspaceId != workspaceId)
+            throw new BusinessRuleException(CollaborationRuleCodes.Collaboration_Comment_ParentScopeMismatch, "Parent comment must belong to the same workspace.");
+
+        if (parentContext.ParentTarget.ResourceType != target.ResourceType || parentContext.ParentTarget.ResourceId != target.ResourceId)
+            throw new BusinessRuleException(CollaborationRuleCodes.Collaboration_Comment_ParentMustBeInSameTarget, "Parent comment must belong to the same target resource.");
+
+        // Validate parent is not deleted
+        if (parentContext.IsDeleted)
+            throw new BusinessRuleException(CollaborationRuleCodes.Collaboration_Comment_CannotReplyToDeleted, "Cannot reply to a deleted comment.");
+
+        var comment = new Comment
+        {
+            AccountId = accountId,
+            WorkspaceId = workspaceId,
+            Target = target,
+            ParentId = parentContext.ParentCommentId,
+            Content = content.Trim(),
+            Anchor = anchor ?? CommentAnchor.None(),
+            CommentStatus = CommentStatus.Active
+        };
+
+        comment.SetAuditOnCreate(createdBy, createdAt);
+        comment.RaiseDomainEvent(new CommentReplyCreatedDomainEvent(
+            accountId, workspaceId, comment.Id, parentContext.ParentCommentId, target, createdBy, createdAt));
 
         return comment;
     }
@@ -66,7 +112,7 @@ public class Comment : AggregateRoot, IWorkspaceScoped
         Content = newContent.Trim();
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new CommentUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
+        RaiseDomainEvent(new CommentUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void Resolve(Guid resolvedBy, DateTimeOffset resolvedAt)
@@ -77,26 +123,26 @@ public class Comment : AggregateRoot, IWorkspaceScoped
         CommentStatus = CommentStatus.Resolved;
         SetAuditOnUpdate(resolvedBy, resolvedAt);
         IncrementVersion();
-        AddDomainEvent(new CommentResolvedDomainEvent(AccountId, WorkspaceId, Id, resolvedBy, resolvedAt));
+        RaiseDomainEvent(new CommentResolvedDomainEvent(AccountId, WorkspaceId, Id, resolvedBy, resolvedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
         CommentStatus = CommentStatus.SoftDeleted;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new CommentSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new CommentSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         CommentStatus = CommentStatus.Active;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new CommentRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new CommentRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

@@ -23,6 +23,8 @@ public static class MapBoardItemEndpoints
         itemGroup.MapGetBoardItem();
         itemGroup.MapUpdateBoardItem();
         itemGroup.MapArchiveBoardItem();
+        itemGroup.MapUnarchiveBoardItem();
+        itemGroup.MapDeleteBoardItem();
         itemGroup.MapDuplicateBoardItem();
         itemGroup.MapMoveBoardItem();
         itemGroup.MapUpdateBoardItemFieldValues();
@@ -33,6 +35,12 @@ public static class MapBoardItemEndpoints
         itemGroup.MapAddLabelToBoardItem();
         itemGroup.MapRemoveLabelFromBoardItem();
         itemGroup.MapUpdateBoardItemFieldValue();
+        itemGroup.MapClearFieldValue();
+        itemGroup.MapRestoreBoardItem();
+        itemGroup.MapCompleteBoardItem();
+        itemGroup.MapSetBoardItemDueDate();
+        itemGroup.MapUpdateBoardItemStatus();
+        itemGroup.MapListBoardItemLinks();
 
         return app;
     }

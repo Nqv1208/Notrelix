@@ -30,7 +30,7 @@ public class AccountIdentityProvider : AggregateRoot, IAccountScoped
         Guard.MaxLength(issuer, 300);
 
         if (providerType != "Saml" && providerType != "Oidc")
-            throw new BusinessRuleException("Provider type must be 'Saml' or 'Oidc'.");
+            throw new BusinessRuleException(AccountRuleCodes.Accounts_IdentityProvider_InvalidProviderType, "Provider type must be 'Saml' or 'Oidc'.");
 
         return new AccountIdentityProvider
         {

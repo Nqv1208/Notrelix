@@ -43,7 +43,7 @@ public class EmailVerificationTokenTests
     {
         var now = DateTimeOffset.UtcNow;
         var token = EmailVerificationToken.Create(Guid.NewGuid(), ValidHash, now.AddHours(24), now);
-        token.ClearDomainEvents();
+        ((IHasDomainEvents)token).ClearDomainEvents();
 
         var useTime = now.AddHours(1);
         token.MarkUsed(useTime);
@@ -75,7 +75,7 @@ public class EmailVerificationTokenTests
     {
         var now = DateTimeOffset.UtcNow;
         var token = EmailVerificationToken.Create(Guid.NewGuid(), ValidHash, now.AddHours(1), now);
-        token.ClearDomainEvents();
+        ((IHasDomainEvents)token).ClearDomainEvents();
 
         var useTime = now.AddHours(2);
         var act = () => token.MarkUsed(useTime);
@@ -91,7 +91,7 @@ public class EmailVerificationTokenTests
     {
         var now = DateTimeOffset.UtcNow;
         var token = EmailVerificationToken.Create(Guid.NewGuid(), ValidHash, now.AddHours(24), now);
-        token.ClearDomainEvents();
+        ((IHasDomainEvents)token).ClearDomainEvents();
 
         var expireTime = now.AddHours(1);
         token.Expire(expireTime);
@@ -112,7 +112,7 @@ public class EmailVerificationTokenTests
         var now = DateTimeOffset.UtcNow;
         var token = EmailVerificationToken.Create(Guid.NewGuid(), ValidHash, now.AddHours(24), now);
         token.Expire(now.AddHours(1));
-        token.ClearDomainEvents();
+        ((IHasDomainEvents)token).ClearDomainEvents();
 
         token.Expire(now.AddHours(2));
 

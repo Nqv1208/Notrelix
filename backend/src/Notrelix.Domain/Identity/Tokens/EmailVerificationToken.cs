@@ -29,7 +29,7 @@ public class EmailVerificationToken : OneTimeUseToken
             ? null
             : SharedKernel.Email.Create(normalizedEmailSnapshot).Value;
         token.SetAuditOnCreate(userId, createdAt);
-        token.AddDomainEvent(new EmailVerificationTokenCreatedDomainEvent(token.Id, userId, createdAt));
+        token.RaiseDomainEvent(new EmailVerificationTokenCreatedDomainEvent(token.Id, userId, createdAt));
         return token;
     }
 

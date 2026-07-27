@@ -32,7 +32,7 @@ public class AiAgentTests
     public void Update_ShouldUpdate_AndRaiseEvent()
     {
         var agent = CreateAgent();
-        agent.ClearDomainEvents();
+        ((IHasDomainEvents)agent).ClearDomainEvents();
 
         agent.Update("Updated", "Desc", JsonValue.EmptyObject(), JsonValue.EmptyObject(), JsonValue.EmptyObject(), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -55,7 +55,7 @@ public class AiAgentTests
     public void ChangeStatus_ShouldUpdateStatus_AndRaiseEvent()
     {
         var agent = CreateAgent();
-        agent.ClearDomainEvents();
+        ((IHasDomainEvents)agent).ClearDomainEvents();
 
         agent.ChangeStatus(AiAgentStatus.Enabled, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -67,7 +67,7 @@ public class AiAgentTests
     public void ChangeStatus_WhenSameStatus_ShouldBeNoOp()
     {
         var agent = CreateAgent();
-        agent.ClearDomainEvents();
+        ((IHasDomainEvents)agent).ClearDomainEvents();
 
         agent.ChangeStatus(AiAgentStatus.Draft, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -78,7 +78,7 @@ public class AiAgentTests
     public void ChangeStatus_ToDeleted_ShouldCallSoftDelete()
     {
         var agent = CreateAgent();
-        agent.ClearDomainEvents();
+        ((IHasDomainEvents)agent).ClearDomainEvents();
 
         agent.ChangeStatus(AiAgentStatus.Deleted, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -101,7 +101,7 @@ public class AiAgentTests
     public void SoftDelete_ShouldSetDeleted_AndRaiseEvent()
     {
         var agent = CreateAgent();
-        agent.ClearDomainEvents();
+        ((IHasDomainEvents)agent).ClearDomainEvents();
 
         agent.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -115,7 +115,7 @@ public class AiAgentTests
     {
         var agent = CreateAgent();
         agent.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        agent.ClearDomainEvents();
+        ((IHasDomainEvents)agent).ClearDomainEvents();
 
         agent.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -127,7 +127,7 @@ public class AiAgentTests
     {
         var agent = CreateAgent();
         agent.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        agent.ClearDomainEvents();
+        ((IHasDomainEvents)agent).ClearDomainEvents();
 
         agent.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -140,7 +140,7 @@ public class AiAgentTests
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {
         var agent = CreateAgent();
-        agent.ClearDomainEvents();
+        ((IHasDomainEvents)agent).ClearDomainEvents();
 
         agent.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

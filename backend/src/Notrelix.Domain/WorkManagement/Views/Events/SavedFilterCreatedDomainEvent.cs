@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Views.Events;
 
+[EventName("work-management.saved-filter-created")]
 public sealed record SavedFilterCreatedDomainEvent(
     Guid AccountId,
     Guid FilterId,
@@ -9,4 +10,4 @@ public sealed record SavedFilterCreatedDomainEvent(
     Guid CreatedBy,
     DateTimeOffset OccurredAt,
     Guid? ViewId = null
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, CreatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

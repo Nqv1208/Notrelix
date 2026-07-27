@@ -4,21 +4,18 @@ public static class DependencyRules
 {
     /// <summary>
     /// Validates that adding a dependency from <paramref name="itemId"/> to <paramref name="targetDependencyId"/>
-    /// does not introduce a cyclic dependency.
+    /// does not introduce a cyclic dependency. Uses pre-loaded snapshot data.
     /// </summary>
     public static void EnsureNoCycle(
         Guid itemId,
         Guid targetDependencyId,
-        Func<Guid, IEnumerable<Guid>> getDependencies)
+        IReadOnlyDictionary<Guid, ItemDependencySnapshot> dependencyGraph)
     {
         Guard.NotEmpty(itemId);
         Guard.NotEmpty(targetDependencyId);
-        Guard.NotNull(getDependencies);
 
         if (itemId == targetDependencyId)
-        {
-            throw new BusinessRuleException("An item cannot depend on itself.");
-        }
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Dependency_CannotDependOnSelf, "An item cannot depend on itself.");
 
         var visited = new HashSet<Guid>();
         var stack = new HashSet<Guid> { itemId };
@@ -31,9 +28,12 @@ public static class DependencyRules
             visited.Add(current);
             stack.Add(current);
 
-            foreach (var child in getDependencies(current))
+            if (dependencyGraph.TryGetValue(current, out var snapshot))
             {
-                if (HasCycle(child)) return true;
+                foreach (var child in snapshot.DependencyIds)
+                {
+                    if (HasCycle(child)) return true;
+                }
             }
 
             stack.Remove(current);
@@ -41,8 +41,6 @@ public static class DependencyRules
         }
 
         if (HasCycle(targetDependencyId))
-        {
-            throw new BusinessRuleException("Adding this dependency would create a cycle.");
-        }
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Dependency_CannotCreateCycle, "Adding this dependency would create a cycle.");
     }
 }

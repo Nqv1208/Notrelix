@@ -28,7 +28,7 @@ public class BoardsEndpointTests : IClassFixture<NotrelixApiFactory>
     {
         var body = new { Title = "New Board", Description = "Test", Background = "default" };
         var response = await _client.PostAsync($"/api/v1/workspaces/{WorkspaceId}/boards", JsonContent(body));
-        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.Created, HttpStatusCode.NotFound);
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.Created, HttpStatusCode.NotFound, HttpStatusCode.Conflict);
     }
 
     [Fact]

@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Items.Events;
 
+[EventName("work-management.board-item-moved")]
 public sealed record BoardItemMovedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -10,4 +11,4 @@ public sealed record BoardItemMovedDomainEvent(
     string NewPosition,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, UpdatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

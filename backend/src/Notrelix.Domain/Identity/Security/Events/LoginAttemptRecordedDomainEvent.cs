@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Identity.Security.Events;
 
+[EventName("identity.login-attempt-recorded")]
 public sealed record LoginAttemptRecordedDomainEvent(
     Guid LoginAttemptId,
     Guid? UserId,

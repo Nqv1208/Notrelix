@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Checklists.Events;
 
+[EventName("work-management.checklist-item-added")]
 public sealed record ChecklistItemAddedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -7,4 +8,4 @@ public sealed record ChecklistItemAddedDomainEvent(
     Guid ItemId,
     string Title,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

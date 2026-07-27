@@ -1,6 +1,8 @@
+using Notrelix.Domain.Billing.Common;
 namespace Notrelix.Domain.Billing.Entitlements.Events;
 
-public record EntitlementLimitChangedDomainEvent : BillingAccountScopedDomainEvent
+[EventName("billing.entitlement-limit-changed")]
+public sealed record EntitlementLimitChangedDomainEvent : BillingAccountScopedDomainEvent
 {
     public Guid EntitlementId { get; }
     public string FeatureCode { get; }
@@ -14,9 +16,8 @@ public record EntitlementLimitChangedDomainEvent : BillingAccountScopedDomainEve
         string featureCode,
         decimal oldLimit,
         decimal newLimit,
-        Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(accountId, workspaceId, occurredAt, actorUserId)
+        : base(accountId, workspaceId, occurredAt)
     {
         EntitlementId = entitlementId;
         FeatureCode = featureCode;

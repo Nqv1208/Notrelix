@@ -28,7 +28,7 @@ public class EntitlementLifecycleTests
     {
         var feature = FeatureCode.Create("boards");
         var entitlement = Entitlement.Create(AccountId, feature, 10, EntitlementSource.Subscription, Now);
-        entitlement.ClearDomainEvents();
+        ((IHasDomainEvents)entitlement).ClearDomainEvents();
         var version = entitlement.Version;
 
         entitlement.SoftDelete(Actor, Now);
@@ -48,7 +48,7 @@ public class EntitlementLifecycleTests
         var feature = FeatureCode.Create("boards");
         var entitlement = Entitlement.Create(AccountId, feature, 10, EntitlementSource.Subscription, Now);
         entitlement.SoftDelete(Actor, Now);
-        entitlement.ClearDomainEvents();
+        ((IHasDomainEvents)entitlement).ClearDomainEvents();
         var version = entitlement.Version;
 
         entitlement.Restore(Actor, Now);
@@ -67,7 +67,7 @@ public class EntitlementLifecycleTests
         var feature = FeatureCode.Create("boards");
         var entitlement = Entitlement.Create(AccountId, feature, 10, EntitlementSource.Subscription, Now);
         entitlement.SoftDelete(Actor, Now);
-        entitlement.ClearDomainEvents();
+        ((IHasDomainEvents)entitlement).ClearDomainEvents();
         var version = entitlement.Version;
 
         entitlement.SoftDelete(Actor, Now);
@@ -81,7 +81,7 @@ public class EntitlementLifecycleTests
     {
         var feature = FeatureCode.Create("boards");
         var entitlement = Entitlement.Create(AccountId, feature, 10, EntitlementSource.Subscription, Now);
-        entitlement.ClearDomainEvents();
+        ((IHasDomainEvents)entitlement).ClearDomainEvents();
         var version = entitlement.Version;
 
         entitlement.Restore(Actor, Now);

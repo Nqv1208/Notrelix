@@ -1,12 +1,5 @@
-using Notrelix.API.Extensions;
-using Notrelix.API.Contracts.WorkManagement.Boards.Requests;
 using Notrelix.API.Endpoints.WorkManagement.Boards.Commands;
 using Notrelix.API.Endpoints.WorkManagement.Boards.Queries;
-using Notrelix.Application.Features.WorkManagement.Boards.Commands.AddBoardMember;
-using Notrelix.Application.Features.WorkManagement.Boards.Commands.ArchiveBoard;
-using Notrelix.Application.Features.WorkManagement.Boards.Commands.UnarchiveBoard;
-using Notrelix.Application.Features.WorkManagement.Boards.Commands.RemoveBoardMember;
-using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMembers;
 
 namespace Notrelix.API.Endpoints.WorkManagement.Boards;
 
@@ -30,71 +23,19 @@ public static class MapBoardEndpoints
         boardGroup.MapGetBoard();
         boardGroup.MapRenameBoard();
         boardGroup.MapGetBoardOverview();
-        boardGroup.MapResourcePost("/archive", HandleArchiveBoard)
-            .WithName("WorkManagement.Boards.Archive");
-        boardGroup.MapResourcePost("/unarchive", HandleUnarchiveBoard)
-            .WithName("WorkManagement.Boards.Unarchive");
+        boardGroup.MapArchiveBoard();
+        boardGroup.MapUnarchiveBoard();
+        boardGroup.MapDeleteBoard();
+        boardGroup.MapRestoreBoard();
+        boardGroup.MapUpdateBoardVisibility();
 
         var members = app
             .MapGroup("/api/v1/boards/{boardId:guid}/members")
             .WithTags("WorkManagement.Boards")
             .WithOpenApi();
 
-        members.MapResourceGet("/", HandleGetBoardMembers)
-            .WithName("WorkManagement.Boards.GetMembers");
-        members.MapResourcePost("/", HandleAddBoardMember)
-            .WithName("WorkManagement.Boards.AddMember");
-        members.MapResourceDelete("/{userId:guid}", HandleRemoveBoardMember)
-            .WithName("WorkManagement.Boards.RemoveMember");
+        members.MapBoardMembers();
 
         return app;
     }
-
-    private static async Task<IResult> HandleArchiveBoard(
-        Guid boardId,
-        ISender sender,
-        CancellationToken cancellationToken)
-    {
-        var result = await sender.Send(new ArchiveBoardCommand(boardId), cancellationToken);
-        return result.ToNoContentResult();
-    }
-
-    private static async Task<IResult> HandleUnarchiveBoard(
-        Guid boardId,
-        ISender sender,
-        CancellationToken cancellationToken)
-    {
-        var result = await sender.Send(new UnarchiveBoardCommand(boardId), cancellationToken);
-        return result.ToNoContentResult();
-    }
-
-    private static async Task<IResult> HandleGetBoardMembers(
-        Guid boardId,
-        ISender sender,
-        CancellationToken cancellationToken)
-    {
-        var result = await sender.Send(new GetBoardMembersQuery(boardId), cancellationToken);
-        return result.ToApiResult();
-    }
-
-    private static async Task<IResult> HandleAddBoardMember(
-        Guid boardId,
-        AddBoardMemberRequest body,
-        ISender sender,
-        CancellationToken cancellationToken)
-    {
-        var result = await sender.Send(new AddBoardMemberCommand(boardId, body.UserId, body.Role is not null ? Enum.Parse<BoardRole>(body.Role, ignoreCase: true) : null), cancellationToken);
-        return result.ToNoContentResult();
-    }
-
-    private static async Task<IResult> HandleRemoveBoardMember(
-        Guid boardId,
-        Guid userId,
-        ISender sender,
-        CancellationToken cancellationToken)
-    {
-        var result = await sender.Send(new RemoveBoardMemberCommand(boardId, userId), cancellationToken);
-        return result.ToNoContentResult();
-    }
 }
-

@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ArchiveBoardGroup;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement.BoardGroups;
 
 public class ArchiveBoardGroupTests : WorkManagementHandlerTestBase
@@ -43,7 +44,7 @@ public class ArchiveBoardGroupTests : WorkManagementHandlerTestBase
     public async Task Handle_AlreadyArchived_IsIdempotent()
     {
         var group = CreateBoardGroup();
-        group.SoftDelete(TestUserId, TestNow);
+        group.Archive(TestUserId, TestNow);
         SetupBoardGroups(group);
 
         var command = new ArchiveBoardGroupCommand(group.Id);

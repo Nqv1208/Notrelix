@@ -7,6 +7,7 @@ using Notrelix.Domain.Identity.Profiles;
 using Notrelix.Domain.Identity.Sessions;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Infrastructure.Data.Notifications;
+using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Fields;
@@ -117,7 +118,10 @@ internal static class InitDb
     private static void ClearDomainEvents(ApplicationDbContext context)
     {
         foreach (var entity in context.ChangeTracker.Entries<Entity>().Select(e => e.Entity))
-            entity.ClearDomainEvents();
+        {
+            if (entity is IHasDomainEvents hasDomainEvents)
+                hasDomainEvents.ClearDomainEvents();
+        }
     }
 
     private static async Task<List<User>> CreateUsersAsync(

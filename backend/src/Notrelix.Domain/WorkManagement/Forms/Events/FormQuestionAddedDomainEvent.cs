@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.WorkManagement.Forms.Events;
 
-public record FormQuestionAddedDomainEvent : WorkspaceScopedDomainEvent
+[EventName("work-management.form-question-added")]
+public sealed record FormQuestionAddedDomainEvent : WorkspaceScopedDomainEvent
 {
     public Guid FormId { get; }
     public string QuestionKey { get; }
@@ -10,9 +11,8 @@ public record FormQuestionAddedDomainEvent : WorkspaceScopedDomainEvent
         Guid workspaceId,
         Guid formId,
         string questionKey,
-        Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(accountId, workspaceId, occurredAt, actorUserId)
+        : base(accountId, workspaceId, occurredAt)
     {
         FormId = formId;
         QuestionKey = questionKey;

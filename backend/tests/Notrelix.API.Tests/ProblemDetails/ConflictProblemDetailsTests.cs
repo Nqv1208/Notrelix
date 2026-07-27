@@ -2,7 +2,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Notrelix.API.ErrorHandling;
-using DomainConflictException = Notrelix.Domain.Common.Exceptions.ConflictException;
+using DomainConflictException = Notrelix.Application.Common.Exceptions.ConflictException;
 
 namespace Notrelix.API.Tests.ProblemDetails;
 

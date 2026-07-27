@@ -29,7 +29,7 @@ public class UserSoftDeleteRestoreTests
     {
         var user = User.Create("test@example.com", "Test", "hash", _now);
         user.SoftDelete(_actorId, _now);
-        user.ClearDomainEvents();
+        ((IHasDomainEvents)user).ClearDomainEvents();
         var version = user.Version;
 
         user.Restore(_actorId, _now);
@@ -47,7 +47,7 @@ public class UserSoftDeleteRestoreTests
     {
         var user = User.Create("test@example.com", "Test", "hash", _now);
         user.SoftDelete(_actorId, _now);
-        user.ClearDomainEvents();
+        ((IHasDomainEvents)user).ClearDomainEvents();
         var version = user.Version;
 
         user.SoftDelete(_actorId, _now);
@@ -60,7 +60,7 @@ public class UserSoftDeleteRestoreTests
     public void Restore_ShouldNotIncrementOrRaiseEvent_WhenNotDeleted()
     {
         var user = User.Create("test@example.com", "Test", "hash", _now);
-        user.ClearDomainEvents();
+        ((IHasDomainEvents)user).ClearDomainEvents();
         var version = user.Version;
 
         user.Restore(_actorId, _now);

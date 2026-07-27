@@ -1,3 +1,6 @@
+using Notrelix.Domain.Integrations.Connections.Events;
+using static Notrelix.Domain.Integrations.IntegrationRuleCodes;
+
 namespace Notrelix.Domain.Integrations.Connections;
 
 public class IntegrationScope : Entity
@@ -45,20 +48,23 @@ public class IntegrationSecretVersion : Entity
     }
 }
 
-public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
+public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public IntegrationProvider Provider { get; private set; }
     public IntegrationConnectionStatus Status { get; private set; }
     public string? ProviderAccountId { get; private set; }
+    public string? ErrorDetail { get; private set; }
     public DateTimeOffset? ExpiresAt { get; private set; }
+
+    // Current secret state (replaces unbounded _secretVersions collection)
+    public string? CurrentSecretVersion { get; private set; }
+    public SecretRef? CurrentSecretRef { get; private set; }
+    public DateTimeOffset? SecretRotatedAt { get; private set; }
 
     private readonly List<IntegrationScope> _scopes = new();
     public IReadOnlyCollection<IntegrationScope> Scopes => _scopes.AsReadOnly();
-
-    private readonly List<IntegrationSecretVersion> _secretVersions = new();
-    public IReadOnlyCollection<IntegrationSecretVersion> SecretVersions => _secretVersions.AsReadOnly();
 
     private IntegrationConnection() : base() { }
 
@@ -77,7 +83,7 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
 
         if (expiresAt.HasValue && expiresAt.Value <= createdAt)
         {
-            throw new DomainException("Expiration time must be in the future.");
+            throw new BusinessRuleException(Integrations_Connection_ExpirationMustBeFuture, "Expiration time must be in the future.");
         }
 
         var connection = new IntegrationConnection
@@ -91,7 +97,7 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
         };
 
         connection.SetAuditOnCreate(createdBy, createdAt);
-        connection.AddDomainEvent(new IntegrationConnectionCreatedDomainEvent(accountId, workspaceId, connection.Id, provider, createdBy, createdAt));
+        connection.RaiseDomainEvent(new IntegrationConnectionCreatedDomainEvent(accountId, workspaceId, connection.Id, provider, createdBy, createdAt));
 
         return connection;
     }
@@ -104,7 +110,7 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
         Status = IntegrationConnectionStatus.Revoked;
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
-        AddDomainEvent(new IntegrationConnectionRevokedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
+        RaiseDomainEvent(new IntegrationConnectionRevokedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
     }
 
     public void Reconnect(string? providerAccountId, DateTimeOffset? expiresAt, Guid updatedBy, DateTimeOffset occurredAt)
@@ -112,15 +118,28 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         if (expiresAt.HasValue && expiresAt.Value <= occurredAt)
         {
-            throw new DomainException("Expiration time must be in the future.");
+            throw new BusinessRuleException(Integrations_Connection_ExpirationMustBeFuture, "Expiration time must be in the future.");
+        }
+
+        // Normalize provider account ID
+        var normalizedProviderAccountId = providerAccountId?.Trim();
+
+        // No-op detection: already Active with same values and no pending error
+        if (Status == IntegrationConnectionStatus.Active &&
+            ProviderAccountId == normalizedProviderAccountId &&
+            ExpiresAt == expiresAt &&
+            ErrorDetail is null)
+        {
+            return;
         }
 
         Status = IntegrationConnectionStatus.Active;
-        ProviderAccountId = providerAccountId;
+        ProviderAccountId = normalizedProviderAccountId;
         ExpiresAt = expiresAt;
+        ErrorDetail = null;
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
-        AddDomainEvent(new IntegrationConnectionReauthorizedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
+        RaiseDomainEvent(new IntegrationConnectionReauthorizedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
     }
 
     public void MarkExpired(Guid updatedBy, DateTimeOffset occurredAt)
@@ -131,17 +150,27 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
         Status = IntegrationConnectionStatus.Expired;
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
-        AddDomainEvent(new IntegrationConnectionExpiredDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
+        RaiseDomainEvent(new IntegrationConnectionExpiredDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
     }
 
     public void MarkError(string error, Guid updatedBy, DateTimeOffset occurredAt)
     {
         EnsureNotDeleted();
-        if (Status == IntegrationConnectionStatus.Error) return;
+        Guard.NotNullOrWhiteSpace(error);
 
+        var trimmedError = error.Trim();
+
+        // No-op detection: already Error with same detail
+        if (Status == IntegrationConnectionStatus.Error && ErrorDetail == trimmedError)
+        {
+            return;
+        }
+
+        ErrorDetail = trimmedError;
         Status = IntegrationConnectionStatus.Error;
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
+        RaiseDomainEvent(new IntegrationConnectionErrorRecordedDomainEvent(AccountId, WorkspaceId, Id, trimmedError, updatedBy, occurredAt));
     }
 
     public void RotateSecret(string version, SecretRef secretRef, Guid updatedBy, DateTimeOffset occurredAt)
@@ -150,41 +179,67 @@ public class IntegrationConnection : AggregateRoot, IWorkspaceScoped
         Guard.NotNullOrWhiteSpace(version);
         Guard.NotNull(secretRef);
 
-        if (_secretVersions.Any(v => v.Version == version))
+        var trimmedVersion = version.Trim();
+
+        // No-op detection: same version and secret ref
+        if (CurrentSecretVersion == trimmedVersion && CurrentSecretRef == secretRef)
         {
-            throw new DomainException($"Secret version '{version}' already exists for this connection.");
+            return;
         }
 
-        var newVersion = IntegrationSecretVersion.Create(Id, version, secretRef, occurredAt);
-        _secretVersions.Add(newVersion);
+        CurrentSecretVersion = trimmedVersion;
+        CurrentSecretRef = secretRef;
+        SecretRotatedAt = occurredAt;
 
         SetAuditOnUpdate(updatedBy, occurredAt);
         IncrementVersion();
-        AddDomainEvent(new IntegrationSecretRotatedDomainEvent(AccountId, WorkspaceId, Id, version, updatedBy, occurredAt));
+        RaiseDomainEvent(new IntegrationSecretRotatedDomainEvent(AccountId, WorkspaceId, Id, trimmedVersion, updatedBy, occurredAt));
     }
 
     public void AddScope(string scope, Guid addedBy, DateTimeOffset occurredAt)
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(scope);
-        if (_scopes.Any(s => s.Scope == scope)) return;
+        var trimmedScope = scope.Trim();
+        if (_scopes.Any(s => s.Scope == trimmedScope)) return;
 
-        _scopes.Add(IntegrationScope.Create(Id, scope));
+        _scopes.Add(IntegrationScope.Create(Id, trimmedScope));
         SetAuditOnUpdate(addedBy, occurredAt);
         IncrementVersion();
-        AddDomainEvent(new IntegrationScopeAddedDomainEvent(AccountId, WorkspaceId, Id, scope, addedBy, occurredAt));
+        RaiseDomainEvent(new IntegrationScopeAddedDomainEvent(AccountId, WorkspaceId, Id, trimmedScope, addedBy, occurredAt));
     }
 
     public void RemoveScope(string scope, Guid removedBy, DateTimeOffset occurredAt)
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(scope);
-        var scopeObj = _scopes.FirstOrDefault(s => s.Scope == scope);
+        var trimmedScope = scope.Trim();
+        var scopeObj = _scopes.FirstOrDefault(s => s.Scope == trimmedScope);
         if (scopeObj == null) return;
 
         _scopes.Remove(scopeObj);
         SetAuditOnUpdate(removedBy, occurredAt);
         IncrementVersion();
-        AddDomainEvent(new IntegrationScopeRemovedDomainEvent(AccountId, WorkspaceId, Id, scope, removedBy, occurredAt));
+        RaiseDomainEvent(new IntegrationScopeRemovedDomainEvent(AccountId, WorkspaceId, Id, trimmedScope, removedBy, occurredAt));
+    }
+
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        Status = IntegrationConnectionStatus.Revoked;
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        RaiseDomainEvent(new IntegrationConnectionDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+    }
+
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        Status = IntegrationConnectionStatus.Active;
+        if (!MarkRestored(restoredBy, restoredAt)) return;
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        RaiseDomainEvent(new IntegrationConnectionRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

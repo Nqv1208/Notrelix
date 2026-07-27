@@ -38,7 +38,7 @@ public class BoardGroupsEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task ArchiveGroup_ReturnsNoContent()
     {
-        var response = await _client.DeleteAsync($"/api/v1/board-groups/{GroupId}");
+        var response = await _client.PostAsync($"/api/v1/board-groups/{GroupId}/archive", null);
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 

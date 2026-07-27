@@ -14,7 +14,7 @@ public class ApprovalRequestEventTests
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsA);
         var request = ApprovalRequest.Create(Guid.NewGuid(), WsA, target, "Approve this", Actor, Now);
-        request.ClearDomainEvents();
+        ((IHasDomainEvents)request).ClearDomainEvents();
         var version = request.Version;
 
         request.SoftDelete(Actor, Now);
@@ -30,7 +30,7 @@ public class ApprovalRequestEventTests
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsA);
         var request = ApprovalRequest.Create(Guid.NewGuid(), WsA, target, "Approve this", Actor, Now);
         request.SoftDelete(Actor, Now);
-        request.ClearDomainEvents();
+        ((IHasDomainEvents)request).ClearDomainEvents();
         var version = request.Version;
 
         request.SoftDelete(Actor, Now);
@@ -45,7 +45,7 @@ public class ApprovalRequestEventTests
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsA);
         var request = ApprovalRequest.Create(Guid.NewGuid(), WsA, target, "Approve this", Actor, Now);
         request.SoftDelete(Actor, Now);
-        request.ClearDomainEvents();
+        ((IHasDomainEvents)request).ClearDomainEvents();
         var version = request.Version;
 
         request.Restore(Actor, Now);
@@ -60,7 +60,7 @@ public class ApprovalRequestEventTests
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsA);
         var request = ApprovalRequest.Create(Guid.NewGuid(), WsA, target, "Approve this", Actor, Now);
-        request.ClearDomainEvents();
+        ((IHasDomainEvents)request).ClearDomainEvents();
         var version = request.Version;
 
         request.Restore(Actor, Now);

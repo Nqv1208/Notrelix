@@ -129,7 +129,7 @@ public class UsageMetricTests
         var now = DateTimeOffset.UtcNow;
         var metric = UsageMetric.Create(Guid.NewGuid(), Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
         metric.Increase(5, 10, isHardLimit: true, now);
-        metric.ClearDomainEvents();
+        ((IHasDomainEvents)metric).ClearDomainEvents();
 
         metric.Decrease(2, now);
 
@@ -141,7 +141,7 @@ public class UsageMetricTests
     {
         var now = DateTimeOffset.UtcNow;
         var metric = UsageMetric.Create(Guid.NewGuid(), Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
-        metric.ClearDomainEvents();
+        ((IHasDomainEvents)metric).ClearDomainEvents();
 
         metric.SoftDelete(Guid.NewGuid(), now);
 
@@ -155,7 +155,7 @@ public class UsageMetricTests
         var now = DateTimeOffset.UtcNow;
         var metric = UsageMetric.Create(Guid.NewGuid(), Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
         metric.SoftDelete(Guid.NewGuid(), now);
-        metric.ClearDomainEvents();
+        ((IHasDomainEvents)metric).ClearDomainEvents();
 
         metric.SoftDelete(Guid.NewGuid(), now);
 
@@ -168,7 +168,7 @@ public class UsageMetricTests
         var now = DateTimeOffset.UtcNow;
         var metric = UsageMetric.Create(Guid.NewGuid(), Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
         metric.SoftDelete(Guid.NewGuid(), now);
-        metric.ClearDomainEvents();
+        ((IHasDomainEvents)metric).ClearDomainEvents();
 
         metric.Restore(Guid.NewGuid(), now);
 
@@ -181,7 +181,7 @@ public class UsageMetricTests
     {
         var now = DateTimeOffset.UtcNow;
         var metric = UsageMetric.Create(Guid.NewGuid(), Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
-        metric.ClearDomainEvents();
+        ((IHasDomainEvents)metric).ClearDomainEvents();
 
         metric.Restore(Guid.NewGuid(), now);
 

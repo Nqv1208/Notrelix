@@ -3,7 +3,10 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemStatus;
 
-public record UpdateBoardItemStatusCommand(Guid BoardItemId, string Status) : ICommand<Result>, ITransactionalRequest;
+public record UpdateBoardItemStatusCommand(Guid BoardItemId, string Status, string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IIdempotentRequest
+{
+    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"update-item-status:{BoardItemId}";
+}
 
 public class UpdateBoardItemStatusCommandHandler : IRequestHandler<UpdateBoardItemStatusCommand, Result>
 {

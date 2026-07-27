@@ -25,6 +25,7 @@ public class BoardBuilder
     public BoardBuilder WithCreatedAt(DateTimeOffset createdAt) { _createdAt = createdAt; return this; }
     public BoardBuilder WithVisibility(BoardVisibility visibility) { _visibility = visibility; return this; }
     public BoardBuilder WithSpaceId(Guid? spaceId) { _spaceId = spaceId; return this; }
+    public BoardBuilder WithItemKeyPrefix(string? itemKeyPrefix) { _itemKeyPrefix = itemKeyPrefix; return this; }
 
     public Board Build()
     {

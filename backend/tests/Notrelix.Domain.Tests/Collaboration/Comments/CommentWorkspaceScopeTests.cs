@@ -21,7 +21,7 @@ public class CommentWorkspaceScopeTests
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsB);
         var act = () => Comment.Create(Guid.NewGuid(), WsA, target, "bad", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        act.Should().Throw<WorkspaceMismatchException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]

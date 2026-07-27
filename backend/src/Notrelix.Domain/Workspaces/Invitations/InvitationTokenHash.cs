@@ -4,7 +4,7 @@ public sealed class InvitationTokenHash : ValueObject
 {
     public const int HashLength = 64;
 
-    public string Value { get; }
+    public string Value { get; } = null!;
 
     private InvitationTokenHash() { }
     private InvitationTokenHash(string value)
@@ -22,6 +22,7 @@ public sealed class InvitationTokenHash : ValueObject
             normalized.Any(c => !Uri.IsHexDigit(c)))
         {
             throw new BusinessRuleException(
+                WorkspaceRuleCodes.Workspaces_InvitationTokenHash_InvalidFormat,
                 "Invitation token hash must be a valid SHA-256 hexadecimal value.");
         }
 

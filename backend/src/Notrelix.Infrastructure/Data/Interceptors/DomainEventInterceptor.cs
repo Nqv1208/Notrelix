@@ -7,30 +7,25 @@ public class DomainEventInterceptor : SaveChangesInterceptor
 {
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IEventTypeRegistry _eventTypeRegistry;
+    private readonly IClassificationPolicy _classificationPolicy;
+    private readonly IDeliveryPolicy _deliveryPolicy;
     private readonly IIntegrationEventMapper _integrationEventMapper;
     private readonly IIntegrationEventCollector _integrationEventCollector;
 
     public DomainEventInterceptor(
         IDateTimeProvider dateTimeProvider,
         IEventTypeRegistry eventTypeRegistry,
+        IClassificationPolicy classificationPolicy,
+        IDeliveryPolicy deliveryPolicy,
         IIntegrationEventMapper integrationEventMapper,
-        IDomainEventDispatchPolicy dispatchPolicy,
         IIntegrationEventCollector integrationEventCollector)
     {
         _dateTimeProvider = dateTimeProvider;
         _eventTypeRegistry = eventTypeRegistry;
+        _classificationPolicy = classificationPolicy;
+        _deliveryPolicy = deliveryPolicy;
         _integrationEventMapper = integrationEventMapper;
         _integrationEventCollector = integrationEventCollector;
-
-        var inlineTypes = dispatchPolicy.GetInlineTypes();
-        if (inlineTypes.Count > 0)
-        {
-            throw new InvalidOperationException(
-                $"Inline domain event dispatch is no longer supported. " +
-                $"The following {inlineTypes.Count} event type(s) are registered as Inline: " +
-                $"{string.Join(", ", inlineTypes.Select(t => t.FullName))}. " +
-                "All domain events must use Outbox dispatch.");
-        }
     }
 
     public override InterceptionResult<int> SavingChanges(
@@ -66,13 +61,14 @@ public class DomainEventInterceptor : SaveChangesInterceptor
             foreach (var domainEvent in entry.Entity.DomainEvents)
             {
                 var messageName = _eventTypeRegistry.GetMessageName(domainEvent.GetType());
-                WriteOutboxEntries(context, domainEvent, messageName, now);
+                WriteOutboxEntries(context, (DomainEvent)domainEvent, messageName, now);
             }
         }
 
         foreach (var entry in entries)
         {
-            entry.Entity.ClearDomainEvents();
+            if (entry.Entity is IHasDomainEvents hasDomainEvents)
+                hasDomainEvents.ClearDomainEvents();
         }
 
         // Persist use-case integration events (collected at Application layer)
@@ -83,7 +79,7 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         }
     }
 
-    private void WriteOutboxEntries(ApplicationDbContext context, IDomainEvent domainEvent, string messageName, DateTimeOffset now)
+    private void WriteOutboxEntries(ApplicationDbContext context, DomainEvent domainEvent, string messageName, DateTimeOffset now)
     {
         var eventLog = DomainEventLog.FromDomainEvent(domainEvent, messageName, now);
         context.Set<DomainEventLog>().Add(eventLog);

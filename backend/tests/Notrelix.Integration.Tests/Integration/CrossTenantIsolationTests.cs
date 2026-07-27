@@ -13,6 +13,7 @@ using Notrelix.Testing.Application.Fakes;
 using Notrelix.Testing.Core;
 using Notrelix.Testing.Domain.Builders;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Integration.Tests.Integration;
 
 /// <summary>

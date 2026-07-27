@@ -1,10 +1,18 @@
 
+using System.Reflection;
+
 namespace Notrelix.Infrastructure.Data.Interceptors;
 
 public class AuditableEntityInterceptor : SaveChangesInterceptor
 {
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
+
+    private static readonly MethodInfo SetAuditOnCreateMethod =
+        typeof(AuditableEntity).GetMethod("SetAuditOnCreate", BindingFlags.NonPublic | BindingFlags.Instance)!;
+
+    private static readonly MethodInfo SetAuditOnUpdateMethod =
+        typeof(AuditableEntity).GetMethod("SetAuditOnUpdate", BindingFlags.NonPublic | BindingFlags.Instance)!;
 
     public AuditableEntityInterceptor(ICurrentUser currentUser, IDateTimeProvider dateTimeProvider)
     {
@@ -41,10 +49,10 @@ public class AuditableEntityInterceptor : SaveChangesInterceptor
             switch (entry.State)
             {
                 case EntityState.Added:
-                    entry.Entity.SetAuditOnCreate(userId, now);
+                    SetAuditOnCreateMethod.Invoke(entry.Entity, [userId, now]);
                     break;
                 case EntityState.Modified:
-                    entry.Entity.SetAuditOnUpdate(userId, now);
+                    SetAuditOnUpdateMethod.Invoke(entry.Entity, [userId, now]);
                     break;
             }
         }

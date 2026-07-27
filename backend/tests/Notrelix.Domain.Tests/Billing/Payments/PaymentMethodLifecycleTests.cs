@@ -27,7 +27,7 @@ public class PaymentMethodLifecycleTests
     public void PaymentMethod_SoftDelete_ShouldIncrementVersion()
     {
         var method = PaymentMethod.Create(Guid.NewGuid(), WsA, PaymentProvider.Stripe, "pm_123", "4242", "Visa", Actor, Now);
-        method.ClearDomainEvents();
+        ((IHasDomainEvents)method).ClearDomainEvents();
         var version = method.Version;
 
         method.SoftDelete(Actor, Now);
@@ -41,7 +41,7 @@ public class PaymentMethodLifecycleTests
     {
         var method = PaymentMethod.Create(Guid.NewGuid(), WsA, PaymentProvider.Stripe, "pm_123", "4242", "Visa", Actor, Now);
         method.SoftDelete(Actor, Now);
-        method.ClearDomainEvents();
+        ((IHasDomainEvents)method).ClearDomainEvents();
         var version = method.Version;
 
         method.Restore(Actor, Now);
@@ -55,7 +55,7 @@ public class PaymentMethodLifecycleTests
     {
         var method = PaymentMethod.Create(Guid.NewGuid(), WsA, PaymentProvider.Stripe, "pm_123", "4242", "Visa", Actor, Now);
         method.SoftDelete(Actor, Now);
-        method.ClearDomainEvents();
+        ((IHasDomainEvents)method).ClearDomainEvents();
         var version = method.Version;
 
         method.SoftDelete(Actor, Now);
@@ -67,7 +67,7 @@ public class PaymentMethodLifecycleTests
     public void PaymentMethod_Restore_WhenNotDeleted_ShouldNotIncrement()
     {
         var method = PaymentMethod.Create(Guid.NewGuid(), WsA, PaymentProvider.Stripe, "pm_123", "4242", "Visa", Actor, Now);
-        method.ClearDomainEvents();
+        ((IHasDomainEvents)method).ClearDomainEvents();
         var version = method.Version;
 
         method.Restore(Actor, Now);

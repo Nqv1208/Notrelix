@@ -28,7 +28,7 @@ public class WorkspaceFeatureUsageLifecycleTests
     {
         var feature = FeatureCode.Create("storage");
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), WsA, feature, 50, 100, null, Now);
-        usage.ClearDomainEvents();
+        ((IHasDomainEvents)usage).ClearDomainEvents();
         var version = usage.Version;
 
         usage.Reset(Now, Actor);
@@ -44,7 +44,7 @@ public class WorkspaceFeatureUsageLifecycleTests
     {
         var feature = FeatureCode.Create("storage");
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), WsA, feature, 0, 100, null, Now);
-        usage.ClearDomainEvents();
+        ((IHasDomainEvents)usage).ClearDomainEvents();
         var version = usage.Version;
 
         usage.SoftDelete(Actor, Now);
@@ -63,7 +63,7 @@ public class WorkspaceFeatureUsageLifecycleTests
         var feature = FeatureCode.Create("storage");
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), WsA, feature, 0, 100, null, Now);
         usage.SoftDelete(Actor, Now);
-        usage.ClearDomainEvents();
+        ((IHasDomainEvents)usage).ClearDomainEvents();
         var version = usage.Version;
 
         usage.Restore(Actor, Now);
@@ -82,7 +82,7 @@ public class WorkspaceFeatureUsageLifecycleTests
         var feature = FeatureCode.Create("storage");
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), WsA, feature, 0, 100, null, Now);
         usage.SoftDelete(Actor, Now);
-        usage.ClearDomainEvents();
+        ((IHasDomainEvents)usage).ClearDomainEvents();
         var version = usage.Version;
 
         usage.SoftDelete(Actor, Now);
@@ -96,7 +96,7 @@ public class WorkspaceFeatureUsageLifecycleTests
     {
         var feature = FeatureCode.Create("storage");
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), WsA, feature, 0, 100, null, Now);
-        usage.ClearDomainEvents();
+        ((IHasDomainEvents)usage).ClearDomainEvents();
         var version = usage.Version;
 
         usage.Restore(Actor, Now);

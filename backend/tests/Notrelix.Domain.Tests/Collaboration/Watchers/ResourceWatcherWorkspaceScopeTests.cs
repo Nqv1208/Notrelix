@@ -21,7 +21,7 @@ public class ResourceWatcherWorkspaceScopeTests
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsB);
         var act = () => ResourceWatcher.Create(Guid.NewGuid(), WsA, target, Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        act.Should().Throw<WorkspaceMismatchException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]

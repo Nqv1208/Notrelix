@@ -2,7 +2,7 @@ namespace Notrelix.Domain.WorkManagement.Views;
 
 public class BoardViewConfig : ValueObject
 {
-    public JsonValue Data { get; }
+    public JsonValue Data { get; } = null!;
 
     private BoardViewConfig() { }
     protected BoardViewConfig(JsonValue data)

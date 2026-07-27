@@ -62,7 +62,7 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
 
         var now = _dateTimeProvider.UtcNow;
         var hash = _passwordHasher.HashPassword(request.NewPassword);
-        user.UpdatePassword(hash, now);
+        user.UpdatePassword(hash, user.Id, now);
 
         var activeSessions = await _context.Sessions
             .Where(s => s.UserId == user.Id && s.Status == SessionStatus.Active)

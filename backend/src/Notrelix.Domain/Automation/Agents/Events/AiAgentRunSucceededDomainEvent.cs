@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Automation.Agents.Events;
 
+[EventName("automation.ai-agent-run-succeeded")]
 public sealed record AiAgentRunSucceededDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
