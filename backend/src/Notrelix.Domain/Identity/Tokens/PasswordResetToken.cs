@@ -15,7 +15,7 @@ public class PasswordResetToken : OneTimeUseToken
         var token = new PasswordResetToken();
         token.Initialize(userId, tokenHash, 1, expiresAt, createdAt);
         token.SetAuditOnCreate(userId, createdAt);
-        token.AddDomainEvent(new PasswordResetTokenCreatedDomainEvent(token.Id, userId, createdAt));
+        token.RaiseDomainEvent(new PasswordResetTokenCreatedDomainEvent(token.Id, userId, createdAt));
         return token;
     }
 

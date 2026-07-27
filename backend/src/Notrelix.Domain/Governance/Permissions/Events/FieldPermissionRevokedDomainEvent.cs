@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Governance.Permissions.Events;
 
+[EventName("governance.field-permission-revoked")]
 public sealed record FieldPermissionRevokedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -8,4 +9,4 @@ public sealed record FieldPermissionRevokedDomainEvent(
     Guid SubjectId,
     Guid RevokedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, RevokedBy, subjectId: SubjectId);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

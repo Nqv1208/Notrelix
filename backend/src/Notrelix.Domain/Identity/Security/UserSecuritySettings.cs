@@ -3,7 +3,7 @@ using Notrelix.Domain.Identity.Security.Events;
 
 namespace Notrelix.Domain.Identity.Security;
 
-public class UserSecuritySettings : AggregateRoot
+public class UserSecuritySettings : SoftDeletableAggregateRoot
 {
     public Guid UserId { get; private set; }
     public bool IsMfaEnabled { get; private set; }
@@ -25,7 +25,7 @@ public class UserSecuritySettings : AggregateRoot
             SettingsJson = JsonValue.Create("{}")
         };
         settings.SetAuditOnCreate(userId, createdAt);
-        settings.AddDomainEvent(new UserSecuritySettingsCreatedDomainEvent(settings.Id, userId, createdAt));
+        settings.RaiseDomainEvent(new UserSecuritySettingsCreatedDomainEvent(settings.Id, userId, createdAt));
         return settings;
     }
 
@@ -41,7 +41,7 @@ public class UserSecuritySettings : AggregateRoot
 
         SetAuditOnUpdate(UserId, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new UserMfaRequirementEnabledDomainEvent(UserId, method, updatedAt));
+        RaiseDomainEvent(new UserMfaRequirementEnabledDomainEvent(UserId, method, updatedAt));
     }
 
     public void DisableMfa(DateTimeOffset updatedAt)
@@ -58,7 +58,7 @@ public class UserSecuritySettings : AggregateRoot
 
         SetAuditOnUpdate(UserId, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new UserMfaRequirementDisabledDomainEvent(UserId, previousMethod, updatedAt));
+        RaiseDomainEvent(new UserMfaRequirementDisabledDomainEvent(UserId, previousMethod, updatedAt));
     }
 
     public void RequirePasswordChangeNow(DateTimeOffset updatedAt)
@@ -70,7 +70,7 @@ public class UserSecuritySettings : AggregateRoot
 
         SetAuditOnUpdate(UserId, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new PasswordChangeRequiredDomainEvent(UserId, updatedAt));
+        RaiseDomainEvent(new PasswordChangeRequiredDomainEvent(UserId, updatedAt));
     }
 
     public void MarkPasswordChanged(DateTimeOffset updatedAt)
@@ -83,7 +83,7 @@ public class UserSecuritySettings : AggregateRoot
 
         SetAuditOnUpdate(UserId, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new UserSecurityPasswordChangedDomainEvent(UserId, updatedAt));
+        RaiseDomainEvent(new UserSecurityPasswordChangedDomainEvent(UserId, updatedAt));
     }
 
     public void UpdateSettings(JsonValue settings, DateTimeOffset updatedAt)
@@ -96,24 +96,24 @@ public class UserSecuritySettings : AggregateRoot
 
         SetAuditOnUpdate(UserId, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new UserSecuritySettingsUpdatedDomainEvent(UserId, updatedAt));
+        RaiseDomainEvent(new UserSecuritySettingsUpdatedDomainEvent(UserId, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new UserSecuritySettingsSoftDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, reason));
+        RaiseDomainEvent(new UserSecuritySettingsSoftDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, reason));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new UserSecuritySettingsRestoredDomainEvent(Id, UserId, restoredBy, restoredAt));
+        RaiseDomainEvent(new UserSecuritySettingsRestoredDomainEvent(Id, UserId, restoredBy, restoredAt));
     }
 }

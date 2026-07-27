@@ -18,8 +18,7 @@ public sealed class DatabaseSubscriptionChecker : ISubscriptionChecker
         return await _db.Subscriptions
             .Where(s => s.AccountId == accountId
                 && s.Status == SubscriptionStatus.Active
-                && s.CurrentPeriodEnd > DateTimeOffset.UtcNow
-                && !s.IsDeleted)
+                && s.CurrentPeriodEnd > DateTimeOffset.UtcNow)
             .AnyAsync(cancellationToken);
     }
 
@@ -32,8 +31,7 @@ public sealed class DatabaseSubscriptionChecker : ISubscriptionChecker
             .Where(s => s.AccountId == accountId
                 && s.Status == SubscriptionStatus.Active
                 && s.CurrentPeriodEnd > DateTimeOffset.UtcNow
-                && s.Tier >= requiredTier
-                && !s.IsDeleted)
+                && s.Tier >= requiredTier)
             .AnyAsync(cancellationToken);
     }
 }

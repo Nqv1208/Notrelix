@@ -1,6 +1,7 @@
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Integration.Tests.Containers;
+using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Workspaces;
 
@@ -30,10 +31,17 @@ public class CreateWorkspaceCommandHandlerTests : IAsyncLifetime
 
     public Task DisposeAsync() => Task.CompletedTask;
 
+    private static ICurrentTenantContext SystemTenant()
+    {
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        return tenant;
+    }
+
     [Fact]
     public async Task Handle_WhenCreatingTeamWorkspace_ShouldSucceed()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateContext(SystemTenant());
         var userId = Guid.NewGuid();
         _requestContextMock.Setup(r => r.UserId).Returns(userId);
 
@@ -60,7 +68,7 @@ public class CreateWorkspaceCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenCreatingPersonalWorkspace_ShouldSucceed()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateContext(SystemTenant());
         var userId = Guid.NewGuid();
         _requestContextMock.Setup(r => r.UserId).Returns(userId);
 
@@ -85,7 +93,7 @@ public class CreateWorkspaceCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenSlugAlreadyExists_ShouldAppendUniqueSuffix()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateContext(SystemTenant());
         var accountId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;

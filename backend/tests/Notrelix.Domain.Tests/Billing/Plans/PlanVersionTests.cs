@@ -11,7 +11,7 @@ public class PlanVersionTests
     public void AddLimit_ShouldIncrementVersion()
     {
         var plan = Plan.Create("Pro", Money.Create(29, "USD"), BillingPeriod.Monthly, _now);
-        plan.ClearDomainEvents();
+        ((IHasDomainEvents)plan).ClearDomainEvents();
         var version = plan.Version;
 
         plan.AddLimit(FeatureCode.Create("seats"), 10, _now);
@@ -23,7 +23,7 @@ public class PlanVersionTests
     public void UpdateDescription_ShouldIncrementVersion()
     {
         var plan = Plan.Create("Pro", Money.Create(29, "USD"), BillingPeriod.Monthly, _now);
-        plan.ClearDomainEvents();
+        ((IHasDomainEvents)plan).ClearDomainEvents();
         var version = plan.Version;
 
         plan.UpdateDescription("New desc", _now);
@@ -35,7 +35,7 @@ public class PlanVersionTests
     public void Archive_ShouldIncrementVersion()
     {
         var plan = Plan.Create("Pro", Money.Create(29, "USD"), BillingPeriod.Monthly, _now);
-        plan.ClearDomainEvents();
+        ((IHasDomainEvents)plan).ClearDomainEvents();
         var version = plan.Version;
 
         plan.Archive(_now);
@@ -47,7 +47,7 @@ public class PlanVersionTests
     public void Deprecate_ShouldIncrementVersion()
     {
         var plan = Plan.Create("Pro", Money.Create(29, "USD"), BillingPeriod.Monthly, _now);
-        plan.ClearDomainEvents();
+        ((IHasDomainEvents)plan).ClearDomainEvents();
         var version = plan.Version;
 
         plan.Deprecate(_now);

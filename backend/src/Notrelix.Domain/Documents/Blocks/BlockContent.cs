@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Documents.Blocks;
 
 public sealed class BlockContent : ValueObject
 {
-    public JsonValue Data { get; }
+    public JsonValue Data { get; } = null!;
 
     private BlockContent() { }
     private BlockContent(JsonValue data)

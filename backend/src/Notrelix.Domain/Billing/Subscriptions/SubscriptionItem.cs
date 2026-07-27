@@ -12,7 +12,7 @@ public class SubscriptionItem : Entity
     {
         Guard.NotEmpty(subscriptionId);
         Guard.NotEmpty(planPriceId);
-        Guard.Assert(quantity > 0, "Quantity must be positive.");
+        Guard.Positive(quantity);
 
         return new SubscriptionItem
         {
@@ -24,7 +24,7 @@ public class SubscriptionItem : Entity
 
     public void UpdateQuantity(int quantity)
     {
-        Guard.Assert(quantity > 0, "Quantity must be positive.");
+        Guard.Positive(quantity);
         Quantity = quantity;
     }
 }

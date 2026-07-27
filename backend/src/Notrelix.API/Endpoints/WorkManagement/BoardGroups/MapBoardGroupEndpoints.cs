@@ -23,6 +23,7 @@ public static class MapBoardGroupEndpoints
         group.MapDuplicateBoardGroup();
         group.MapArchiveBoardGroup();
         group.MapUnarchiveBoardGroup();
+        group.MapDeleteBoardGroup();
 
         return app;
     }

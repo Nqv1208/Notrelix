@@ -111,13 +111,15 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
         integrationEventMapper
             .Setup(x => x.Map(It.IsAny<IDomainEvent>()))
             .Returns(Array.Empty<IntegrationEventMapping>());
-        var dispatchPolicy = new Mock<IDomainEventDispatchPolicy>();
-        dispatchPolicy.Setup(x => x.GetMode(It.IsAny<Type>()))
-            .Returns(DomainEventDispatchMode.Outbox);
-        dispatchPolicy.Setup(x => x.GetInlineTypes()).Returns([]);
+        var classificationPolicy = new Mock<IClassificationPolicy>();
+        classificationPolicy.Setup(x => x.GetClassification(It.IsAny<Type>()))
+            .Returns(new Classification { Value = EventClassification.Business });
+        var deliveryPolicy = new Mock<IDeliveryPolicy>();
+        deliveryPolicy.Setup(x => x.GetDecision(It.IsAny<Type>()))
+            .Returns(new DeliveryDecision { Outbox = true });
         var integrationEventCollector = new Mock<IIntegrationEventCollector>();
         integrationEventCollector.Setup(x => x.DequeueAll()).Returns([]);
-        var interceptor = new DomainEventInterceptor(dateTimeProvider.Object, eventTypeRegistry.Object, integrationEventMapper.Object, dispatchPolicy.Object, integrationEventCollector.Object);
+        var interceptor = new DomainEventInterceptor(dateTimeProvider.Object, eventTypeRegistry.Object, classificationPolicy.Object, deliveryPolicy.Object, integrationEventMapper.Object, integrationEventCollector.Object);
         await using var context = _db.CreateContext(tenant, interceptor);
 
         var passwordHasher = new Mock<IPasswordHasher>();

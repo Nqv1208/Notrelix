@@ -2,12 +2,14 @@ using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderBoardFields;
 
-public record ReorderBoardFieldsCommand(Guid BoardId, List<ReorderItem> Items) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+public record ReorderBoardFieldsCommand(Guid BoardId, List<ReorderItem> Items, string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"reorder-fields:{BoardId}";
 }
 
 public class ReorderBoardFieldsCommandHandler : IRequestHandler<ReorderBoardFieldsCommand, Result>
@@ -28,14 +30,20 @@ public class ReorderBoardFieldsCommandHandler : IRequestHandler<ReorderBoardFiel
 
     public async Task<Result> Handle(ReorderBoardFieldsCommand request, CancellationToken ct)
     {
+        if (request.Items.Count == 0)
+            return Result.Success();
+
         var now = _dateTimeProvider.UtcNow;
-        foreach (var item in request.Items)
+        var sorted = request.Items.OrderBy(x => x.NewPosition).ToList();
+        var newPositions = FractionalIndexGenerator.GenerateNKeysBetween(null, null, sorted.Count);
+        for (var idx = 0; idx < sorted.Count; idx++)
         {
+            var item = sorted[idx];
             var column = await _context.BoardFields
                 .FirstOrDefaultAsync(value => value.Id == item.Id && value.BoardId == request.BoardId, ct);
             if (column is not null)
             {
-                column.UpdatePosition(FractionalIndex.Create(item.NewPosition.ToString("F0")), _currentUser.UserId, now);
+                column.UpdatePosition(newPositions[idx], _currentUser.UserId, now);
             }
         }
 

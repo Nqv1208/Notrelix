@@ -3,6 +3,7 @@ using Notrelix.Domain.Billing.Usage;
 using Notrelix.Domain.Documents.Versions;
 using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Domain.Integrations.Sync;
+using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.Views;
 
 namespace Notrelix.Infrastructure.Data.Converters;
@@ -43,7 +44,7 @@ public class DocumentSnapshotConverter : ValueConverter<DocumentSnapshot, string
 {
     public DocumentSnapshotConverter()
         : base(
-            v => v.Data.Value,
+            v => v.Data!.Value,
             v => DocumentSnapshot.Create(JsonValue.Create(v)))
     {
     }

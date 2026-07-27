@@ -3,7 +3,7 @@ namespace Notrelix.Domain.Governance.Policies;
 public sealed class GuestAccessPolicy : ValueObject
 {
     public bool AllowGuestInvites { get; }
-    public IReadOnlyCollection<string> AllowedDomains { get; }
+    public IReadOnlyCollection<string> AllowedDomains { get; } = Array.Empty<string>();
 
     private GuestAccessPolicy() { }
     private GuestAccessPolicy(bool allowGuestInvites, IEnumerable<string>? allowedDomains)

@@ -1,3 +1,4 @@
+using Notrelix.Domain.Automation.Executions.Events;
 namespace Notrelix.Domain.Automation.Executions;
 
 public class AutomationExecutionStep : Entity
@@ -24,7 +25,7 @@ public class AutomationExecutionStep : Entity
     public void Start(DateTimeOffset startedAt)
     {
         if (Status != AutomationExecutionStatus.Queued)
-            throw new BusinessRuleException("Step can only start from Queued state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Step_CannotStartUnlessQueued, "Step can only start from Queued state.");
         Status = AutomationExecutionStatus.Running;
         StartedAt = startedAt;
     }
@@ -32,7 +33,7 @@ public class AutomationExecutionStep : Entity
     public void Succeed(DateTimeOffset finishedAt)
     {
         if (Status != AutomationExecutionStatus.Running)
-            throw new BusinessRuleException("Step can only succeed from Running state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Step_CannotSucceedUnlessRunning, "Step can only succeed from Running state.");
         Status = AutomationExecutionStatus.Succeeded;
         FinishedAt = finishedAt;
     }
@@ -40,7 +41,7 @@ public class AutomationExecutionStep : Entity
     public void Fail(string error, DateTimeOffset finishedAt)
     {
         if (Status != AutomationExecutionStatus.Running)
-            throw new BusinessRuleException("Step can only fail from Running state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Step_CannotFailUnlessRunning, "Step can only fail from Running state.");
         Status = AutomationExecutionStatus.Failed;
         Error = error;
         FinishedAt = finishedAt;
@@ -84,7 +85,8 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
             AttemptCount = 0
         };
 
-        execution.AddDomainEvent(new AutomationExecutionQueuedDomainEvent(accountId, workspaceId, execution.Id, ruleId, startedAt));
+        execution.SetAuditOnCreate(null, startedAt);
+        execution.RaiseDomainEvent(new AutomationExecutionQueuedDomainEvent(accountId, workspaceId, execution.Id, ruleId, startedAt));
         return execution;
     }
 
@@ -97,45 +99,45 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
     public void Start(DateTimeOffset startedAt)
     {
         if (Status != AutomationExecutionStatus.Queued)
-            throw new BusinessRuleException("Execution can only start from Queued state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_CannotStartUnlessQueued, "Execution can only start from Queued state.");
         Status = AutomationExecutionStatus.Running;
         StartedAt = startedAt;
         IncrementVersion();
-        AddDomainEvent(new AutomationExecutionStartedDomainEvent(AccountId, WorkspaceId, Id, RuleId, startedAt));
+        RaiseDomainEvent(new AutomationExecutionStartedDomainEvent(AccountId, WorkspaceId, Id, RuleId, startedAt));
     }
 
     public void Succeed(DateTimeOffset finishedAt)
     {
         if (Status != AutomationExecutionStatus.Running)
-            throw new BusinessRuleException("Execution can only succeed from Running state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_CannotSucceedUnlessRunning, "Execution can only succeed from Running state.");
         Status = AutomationExecutionStatus.Succeeded;
         FinishedAt = finishedAt;
         IncrementVersion();
-        AddDomainEvent(new AutomationExecutionSucceededDomainEvent(AccountId, WorkspaceId, Id, RuleId, finishedAt));
+        RaiseDomainEvent(new AutomationExecutionSucceededDomainEvent(AccountId, WorkspaceId, Id, RuleId, finishedAt));
     }
 
     public void Fail(string error, DateTimeOffset finishedAt)
     {
         if (Status != AutomationExecutionStatus.Running)
-            throw new BusinessRuleException("Execution can only fail from Running state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_CannotFailUnlessRunning, "Execution can only fail from Running state.");
         if (string.IsNullOrWhiteSpace(error))
-            throw new BusinessRuleException("Error must not be empty when execution fails.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_ErrorRequiredOnFail, "Error must not be empty when execution fails.");
 
         Status = AutomationExecutionStatus.Failed;
         Error = error;
         FinishedAt = finishedAt;
         IncrementVersion();
-        AddDomainEvent(new AutomationExecutionFailedDomainEvent(AccountId, WorkspaceId, Id, RuleId, error, finishedAt));
+        RaiseDomainEvent(new AutomationExecutionFailedDomainEvent(AccountId, WorkspaceId, Id, RuleId, error, finishedAt));
     }
 
     public void Cancel(Guid cancelledBy, DateTimeOffset cancelledAt)
     {
         if (Status != AutomationExecutionStatus.Queued && Status != AutomationExecutionStatus.Running)
-            throw new BusinessRuleException("Execution can only be cancelled from Queued or Running state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_CannotCancelUnlessQueuedOrRunning, "Execution can only be cancelled from Queued or Running state.");
 
         Status = AutomationExecutionStatus.Cancelled;
         FinishedAt = cancelledAt;
         IncrementVersion();
-        AddDomainEvent(new AutomationExecutionCancelledDomainEvent(AccountId, WorkspaceId, Id, RuleId, cancelledBy, cancelledAt));
+        RaiseDomainEvent(new AutomationExecutionCancelledDomainEvent(AccountId, WorkspaceId, Id, RuleId, cancelledBy, cancelledAt));
     }
 }

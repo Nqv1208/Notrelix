@@ -1,6 +1,7 @@
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ReorderBoardGroups;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement.BoardGroups;
 
 public class ReorderBoardGroupsTests : WorkManagementHandlerTestBase
@@ -56,7 +57,7 @@ public class ReorderBoardGroupsTests : WorkManagementHandlerTestBase
     }
 
     [Fact]
-    public async Task Handle_GroupBelongsToDifferentBoard_ThrowsBusinessRuleViolationException()
+    public async Task Handle_GroupBelongsToDifferentBoard_ThrowsBusinessRuleException()
     {
         var board1 = CreateBoard();
         var board2 = CreateBoard();
@@ -71,7 +72,7 @@ public class ReorderBoardGroupsTests : WorkManagementHandlerTestBase
         var command = new ReorderBoardGroupsCommand(board2.Id, items);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
-            .Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleViolationException>();
+            .Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
     }
 
     [Fact]

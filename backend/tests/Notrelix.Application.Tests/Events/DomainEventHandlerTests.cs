@@ -1,3 +1,4 @@
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Events;
 
 public class DomainEventHandlerTests

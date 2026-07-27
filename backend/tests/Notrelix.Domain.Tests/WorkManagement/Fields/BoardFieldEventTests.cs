@@ -15,7 +15,7 @@ public class BoardFieldEventTests
     {
         var position = FractionalIndex.Create("a0");
         var field = BoardField.Create(Guid.NewGuid(), WsA, BoardA, "Field", FieldType.Text, FieldSettings.Empty(), position, Actor, Now);
-        field.ClearDomainEvents();
+        ((IHasDomainEvents)field).ClearDomainEvents();
         var version = field.Version;
 
         field.UpdateClassification(DataClassification.Confidential, true, Actor, Now);
@@ -33,7 +33,7 @@ public class BoardFieldEventTests
         var position = FractionalIndex.Create("a0");
         var field = BoardField.Create(Guid.NewGuid(), WsA, BoardA, "Field", FieldType.Text, FieldSettings.Empty(), position, Actor, Now,
             dataClassification: DataClassification.Confidential, isSensitive: true);
-        field.ClearDomainEvents();
+        ((IHasDomainEvents)field).ClearDomainEvents();
         var version = field.Version;
 
         field.UpdateClassification(DataClassification.Confidential, true, Actor, Now);
@@ -43,29 +43,12 @@ public class BoardFieldEventTests
     }
 
     [Fact]
-    public void BoardField_UpdateFormula_ShouldRaiseEvent()
-    {
-        var position = FractionalIndex.Create("a0");
-        var field = BoardField.Create(Guid.NewGuid(), WsA, BoardA, "Field", FieldType.Text, FieldSettings.Empty(), position, Actor, Now);
-        field.ClearDomainEvents();
-        var version = field.Version;
-
-        field.UpdateFormula(true, "CONCAT(a, b)", Actor, Now);
-
-        field.Version.Should().Be(version + 1);
-        field.DomainEvents.Should().ContainSingle(e => e is BoardFieldFormulaUpdatedDomainEvent);
-        var evt = (BoardFieldFormulaUpdatedDomainEvent)field.DomainEvents.Single(e => e is BoardFieldFormulaUpdatedDomainEvent);
-        evt.IsFormula.Should().BeTrue();
-        evt.Expression.Should().Be("CONCAT(a, b)");
-    }
-
-    [Fact]
     public void BoardField_Restore_ShouldRaiseEvent()
     {
         var position = FractionalIndex.Create("a0");
         var field = BoardField.Create(Guid.NewGuid(), WsA, BoardA, "Field", FieldType.Text, FieldSettings.Empty(), position, Actor, Now);
         field.SoftDelete(Actor, Now);
-        field.ClearDomainEvents();
+        ((IHasDomainEvents)field).ClearDomainEvents();
         var version = field.Version;
 
         field.Restore(Actor, Now);
@@ -80,7 +63,7 @@ public class BoardFieldEventTests
     {
         var position = FractionalIndex.Create("a0");
         var field = BoardField.Create(Guid.NewGuid(), WsA, BoardA, "Field", FieldType.Text, FieldSettings.Empty(), position, Actor, Now);
-        field.ClearDomainEvents();
+        ((IHasDomainEvents)field).ClearDomainEvents();
         var version = field.Version;
 
         field.Restore(Actor, Now);

@@ -36,6 +36,7 @@ public static class MapChecklistEndpoints
 
         clItemGroup.MapUpdateChecklistItem();
         clItemGroup.MapDeleteChecklistItem();
+        clItemGroup.MapToggleChecklistItem();
 
         return app;
     }

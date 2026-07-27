@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Exceptions;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Infrastructure.Messaging;
 using Notrelix.Infrastructure.Messaging.Options;
@@ -24,6 +25,10 @@ public static class MessagingRegistration
 
         // Message deduplication store (Application abstraction -> Infrastructure implementation).
         services.AddScoped<IMessageDeduplicationStore, MessageDeduplicationStore>();
+
+        // Consumer registry (immutable catalog of all registered consumers).
+        services.AddSingleton<IConsumerRegistry>(
+            new ConsumerRegistry(ConsumerRegistrySetup.GetConsumerDefinitions()));
 
         var transport = configuration["Messaging:Transport"] ?? "InMemory";
 
@@ -85,7 +90,7 @@ public static class MessagingRegistration
                             r.Ignore<DomainException>();
                             r.Ignore<NotFoundException>();
                             r.Ignore<ForbiddenException>();
-                            r.Ignore<BusinessRuleException>();
+                            r.Ignore<Domain.Common.Exceptions.BusinessRuleException>();
                         });
 
                         rbt.UseCircuitBreaker(cb =>

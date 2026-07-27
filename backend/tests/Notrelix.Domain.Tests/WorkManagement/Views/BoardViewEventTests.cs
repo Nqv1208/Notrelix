@@ -16,7 +16,7 @@ public class BoardViewEventTests
         var config = BoardViewConfig.Create(JsonValue.EmptyObject());
         var view = BoardView.Create(Guid.NewGuid(), WsA, BoardA, "View", ViewType.Table, config, Actor, Now);
         view.SoftDelete(Actor, Now);
-        view.ClearDomainEvents();
+        ((IHasDomainEvents)view).ClearDomainEvents();
         var version = view.Version;
 
         view.Restore(Actor, Now);
@@ -31,7 +31,7 @@ public class BoardViewEventTests
     {
         var config = BoardViewConfig.Create(JsonValue.EmptyObject());
         var view = BoardView.Create(Guid.NewGuid(), WsA, BoardA, "View", ViewType.Table, config, Actor, Now);
-        view.ClearDomainEvents();
+        ((IHasDomainEvents)view).ClearDomainEvents();
         var version = view.Version;
 
         view.Restore(Actor, Now);

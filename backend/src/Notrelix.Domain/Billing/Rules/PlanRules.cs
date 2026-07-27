@@ -10,6 +10,6 @@ public static class PlanRules
     public static void EnsurePricePositive(Money price)
     {
         if (price.Amount < 0)
-            throw new BusinessRuleException("Plan price cannot be negative.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Plan_PriceCannotBeNegative, "Plan price cannot be negative.");
     }
 }

@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Workspaces.Members.Events;
 
+[EventName("workspaces.workspace-member-added")]
 public sealed record WorkspaceMemberAddedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -8,4 +9,4 @@ public sealed record WorkspaceMemberAddedDomainEvent(
     WorkspaceRole Role,
     Guid ActorId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, ActorId);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

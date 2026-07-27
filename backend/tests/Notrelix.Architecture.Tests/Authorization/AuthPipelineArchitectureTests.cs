@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Requests;
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Common.Requests.Security;
 using Notrelix.Application.Features.Identity.Auth.Commands.Login;

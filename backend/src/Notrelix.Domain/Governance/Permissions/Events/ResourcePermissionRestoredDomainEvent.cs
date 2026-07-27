@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Governance.Permissions.Events;
 
+[EventName("governance.resource-permission-restored")]
 public sealed record ResourcePermissionRestoredDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -8,4 +9,4 @@ public sealed record ResourcePermissionRestoredDomainEvent(
     Guid ResourceId,
     Guid RestoredBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, RestoredBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

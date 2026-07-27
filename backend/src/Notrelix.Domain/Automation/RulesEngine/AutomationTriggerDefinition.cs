@@ -11,21 +11,24 @@ public sealed class AutomationTriggerDefinition : ValueObject
         "ItemAssigned"
     };
 
-    public string Type { get; private set; }
+    public string Type { get; private set; } = null!;
     public string? Configuration { get; private set; }
+    public int SchemaVersion { get; private set; }
 
     private AutomationTriggerDefinition() { }
 
-    private AutomationTriggerDefinition(string type, string? configuration)
+    private AutomationTriggerDefinition(string type, string? configuration, int schemaVersion)
     {
         Type = type;
         Configuration = configuration;
+        SchemaVersion = schemaVersion;
     }
 
     public static AutomationTriggerDefinition Create(string type, string? configuration = null)
     {
         Guard.NotNullOrWhiteSpace(type);
-        Guard.Assert(ValidTriggers.Contains(type), $"Invalid trigger type '{type}'. Valid types: {string.Join(", ", ValidTriggers)}");
+        if (!ValidTriggers.Contains(type))
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Trigger_InvalidType, $"Invalid trigger type '{type}'. Valid types: {string.Join(", ", ValidTriggers)}");
 
         if (configuration is not null)
         {
@@ -33,21 +36,22 @@ public sealed class AutomationTriggerDefinition : ValueObject
             {
                 using var document = JsonDocument.Parse(configuration);
                 if (document.RootElement.ValueKind == JsonValueKind.Null)
-                    throw new BusinessRuleException("Trigger configuration cannot be null JSON.");
+                    throw new BusinessRuleException(AutomationRuleCodes.Automation_Trigger_ConfigCannotBeNullJson, "Trigger configuration cannot be null JSON.");
             }
             catch (JsonException ex)
             {
-                throw new BusinessRuleException($"Invalid trigger configuration JSON: {ex.Message}");
+                throw new BusinessRuleException(AutomationRuleCodes.Automation_Trigger_InvalidConfigJson, $"Invalid trigger configuration JSON: {ex.Message}");
             }
         }
 
-        return new AutomationTriggerDefinition(type, configuration);
+        return new AutomationTriggerDefinition(type, configuration, 1);
     }
 
     protected override IEnumerable<object?> GetEqualityComponents()
     {
         yield return Type;
         yield return Configuration;
+        yield return SchemaVersion;
     }
 
     public override string ToString() => Type;

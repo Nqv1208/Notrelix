@@ -43,7 +43,7 @@ public class PasswordResetTokenTests
     {
         var now = DateTimeOffset.UtcNow;
         var token = PasswordResetToken.Create(Guid.NewGuid(), ValidHash, now.AddHours(1), now);
-        token.ClearDomainEvents();
+        ((IHasDomainEvents)token).ClearDomainEvents();
 
         var useTime = now.AddMinutes(15);
         token.MarkUsed(useTime);
@@ -75,7 +75,7 @@ public class PasswordResetTokenTests
     {
         var now = DateTimeOffset.UtcNow;
         var token = PasswordResetToken.Create(Guid.NewGuid(), ValidHash, now.AddHours(1), now);
-        token.ClearDomainEvents();
+        ((IHasDomainEvents)token).ClearDomainEvents();
 
         var useTime = now.AddHours(2);
         var act = () => token.MarkUsed(useTime);
@@ -91,7 +91,7 @@ public class PasswordResetTokenTests
     {
         var now = DateTimeOffset.UtcNow;
         var token = PasswordResetToken.Create(Guid.NewGuid(), ValidHash, now.AddHours(1), now);
-        token.ClearDomainEvents();
+        ((IHasDomainEvents)token).ClearDomainEvents();
 
         var expireTime = now.AddMinutes(15);
         token.Expire(expireTime);
@@ -112,7 +112,7 @@ public class PasswordResetTokenTests
         var now = DateTimeOffset.UtcNow;
         var token = PasswordResetToken.Create(Guid.NewGuid(), ValidHash, now.AddHours(1), now);
         token.Expire(now.AddMinutes(15));
-        token.ClearDomainEvents();
+        ((IHasDomainEvents)token).ClearDomainEvents();
 
         token.Expire(now.AddMinutes(30));
 

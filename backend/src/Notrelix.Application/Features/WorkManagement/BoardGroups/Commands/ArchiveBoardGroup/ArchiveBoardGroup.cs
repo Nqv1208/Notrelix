@@ -3,10 +3,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ArchiveBoardGroup;
 
-public record ArchiveBoardGroupCommand(Guid GroupId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+public record ArchiveBoardGroupCommand(Guid GroupId, string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardGroup, GroupId);
+    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"archive-group:{GroupId}";
 }
 
 public class ArchiveBoardGroupCommandHandler : IRequestHandler<ArchiveBoardGroupCommand, Result>
@@ -27,9 +28,9 @@ public class ArchiveBoardGroupCommandHandler : IRequestHandler<ArchiveBoardGroup
 
     public async Task<Result> Handle(ArchiveBoardGroupCommand request, CancellationToken ct)
     {
-        var list = await _context.BoardGroups.FirstOrDefaultAsync(l => l.Id == request.GroupId, ct);
-        if (list is null) throw new NotFoundException(nameof(BoardGroup), request.GroupId);
-        list.SoftDelete(_currentUser.UserId, _dateTimeProvider.UtcNow);
+        var group = await _context.BoardGroups.FirstOrDefaultAsync(g => g.Id == request.GroupId, ct);
+        if (group is null) throw new NotFoundException(nameof(BoardGroup), request.GroupId);
+        group.Archive(_currentUser.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }

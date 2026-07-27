@@ -1,6 +1,7 @@
+using Notrelix.Domain.WorkManagement.Views.Events;
 namespace Notrelix.Domain.WorkManagement.Views;
 
-public class BoardView : AggregateRoot, IWorkspaceScoped
+public class BoardView : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -9,6 +10,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
     public ViewType Type { get; private set; }
     public BoardViewConfig Config { get; private set; } = null!;
     public bool IsDefault { get; private set; }
+    public bool IsArchived { get; private set; }
 
     private BoardView() : base() { }
 
@@ -43,7 +45,7 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         };
 
         view.SetAuditOnCreate(createdBy, createdAt);
-        view.AddDomainEvent(new BoardViewCreatedDomainEvent(accountId, workspaceId, boardId, view.Id, view.Name, type, createdBy, createdAt));
+        view.RaiseDomainEvent(new BoardViewCreatedDomainEvent(accountId, workspaceId, boardId, view.Id, view.Name, type, createdBy, createdAt));
 
         return view;
     }
@@ -55,20 +57,20 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
 
         // Ensure the config type matches the view type
         if (Type == ViewType.Kanban && config is not KanbanViewConfig)
-            throw new BusinessRuleException("Kanban view must use KanbanViewConfig");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_View_KanbanMustUseKanbanConfig, "Kanban view must use KanbanViewConfig");
         if (Type == ViewType.Table && config is not TableViewConfig)
-            throw new BusinessRuleException("Table view must use TableViewConfig");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_View_TableMustUseTableConfig, "Table view must use TableViewConfig");
         if (Type == ViewType.Calendar && config is not CalendarViewConfig)
-            throw new BusinessRuleException("Calendar view must use CalendarViewConfig");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_View_CalendarMustUseCalendarConfig, "Calendar view must use CalendarViewConfig");
         if (Type == ViewType.Timeline && config is not TimelineViewConfig)
-            throw new BusinessRuleException("Timeline view must use TimelineViewConfig");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_View_TimelineMustUseTimelineConfig, "Timeline view must use TimelineViewConfig");
 
         if (Config == config) return;
 
         Config = config;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardViewConfigUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardViewConfigUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
 
     public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
@@ -84,25 +86,63 @@ public class BoardView : AggregateRoot, IWorkspaceScoped
         Name = normalizedName;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardViewRenamedDomainEvent(AccountId, WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardViewRenamedDomainEvent(AccountId, WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SetDefault(Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        if (IsDefault) return;
+        IsDefault = true;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+    }
+
+    public void ClearDefault(Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        if (!IsDefault) return;
+        IsDefault = false;
+        SetAuditOnUpdate(updatedBy, updatedAt);
+        IncrementVersion();
+    }
+
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
 
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new BoardViewDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
+        RaiseDomainEvent(new BoardViewDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new BoardViewRestoredDomainEvent(AccountId, WorkspaceId, Id, BoardId, restoredBy, restoredAt));
+        RaiseDomainEvent(new BoardViewRestoredDomainEvent(AccountId, WorkspaceId, Id, BoardId, restoredBy, restoredAt));
+    }
+
+    public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
+    {
+        EnsureNotDeleted();
+        if (IsArchived) return;
+        IsArchived = true;
+        SetAuditOnUpdate(archivedBy, archivedAt);
+        IncrementVersion();
+        RaiseDomainEvent(new BoardViewArchivedDomainEvent(AccountId, WorkspaceId, Id, BoardId, archivedBy, archivedAt));
+    }
+
+    public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
+    {
+        EnsureNotDeleted();
+        if (!IsArchived) return;
+        IsArchived = false;
+        SetAuditOnUpdate(unarchivedBy, unarchivedAt);
+        IncrementVersion();
+        RaiseDomainEvent(new BoardViewUnarchivedDomainEvent(AccountId, WorkspaceId, Id, BoardId, unarchivedBy, unarchivedAt));
     }
 }

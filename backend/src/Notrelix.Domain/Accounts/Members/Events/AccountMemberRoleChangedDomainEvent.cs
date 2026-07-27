@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Accounts.Members.Events;
 
+[EventName("accounts.account-member-role-changed")]
 public sealed record AccountMemberRoleChangedDomainEvent(
     Guid AccountId,
     Guid MemberId,
@@ -8,4 +9,4 @@ public sealed record AccountMemberRoleChangedDomainEvent(
     AccountRole NewRole,
     Guid ActorId,
     DateTimeOffset OccurredAt
-) : AccountScopedDomainEvent(AccountId, OccurredAt, ActorId);
+) : AccountScopedDomainEvent(AccountId, OccurredAt);

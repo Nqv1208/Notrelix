@@ -1,6 +1,7 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Documents.Abstractions;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.Documents.Blocks.Commands.CreateBlock;
 
 public record CreateBlockCommand(

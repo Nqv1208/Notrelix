@@ -1,6 +1,8 @@
+using Notrelix.Domain.Billing.Common;
 namespace Notrelix.Domain.Billing.Subscriptions.Events;
 
-public record SubscriptionCanceledDomainEvent : BillingAccountScopedDomainEvent
+[EventName("billing.subscription-canceled")]
+public sealed record SubscriptionCanceledDomainEvent : BillingAccountScopedDomainEvent
 {
     public Guid SubscriptionId { get; }
 
@@ -8,9 +10,8 @@ public record SubscriptionCanceledDomainEvent : BillingAccountScopedDomainEvent
         Guid accountId,
         Guid? workspaceId,
         Guid subscriptionId,
-        Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(accountId, workspaceId, occurredAt, actorUserId)
+        : base(accountId, workspaceId, occurredAt)
     {
         SubscriptionId = subscriptionId;
     }

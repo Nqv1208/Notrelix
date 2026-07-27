@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Billing.BillingEvents.Events;
 
+[EventName("billing.billing-event-processed")]
 public sealed record BillingEventProcessedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,

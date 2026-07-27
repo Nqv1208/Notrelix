@@ -28,7 +28,6 @@ public class BillingEvent : AggregateRoot
 
     public void MarkProcessed(Guid updatedBy, DateTimeOffset processedAt)
     {
-        EnsureNotDeleted();
         if (Status != BillingEventStatus.Received) return;
 
         Status = BillingEventStatus.Processed;
@@ -38,7 +37,6 @@ public class BillingEvent : AggregateRoot
 
     public void MarkFailed(string error, Guid updatedBy, DateTimeOffset failedAt)
     {
-        EnsureNotDeleted();
         if (Status == BillingEventStatus.Failed) return;
 
         Status = BillingEventStatus.Failed;
@@ -49,7 +47,6 @@ public class BillingEvent : AggregateRoot
 
     public void MarkIgnored(Guid updatedBy, DateTimeOffset ignoredAt)
     {
-        EnsureNotDeleted();
         if (Status != BillingEventStatus.Received) return;
 
         Status = BillingEventStatus.Ignored;

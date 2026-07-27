@@ -1,5 +1,8 @@
 namespace Notrelix.Domain.Automation.Triggers;
 
+/// <summary>
+/// Experimental — runtime trigger entity. Discriminator and config schema are not yet finalized.
+/// </summary>
 public class AutomationTrigger : Entity
 {
     public Guid RuleId { get; private set; }

@@ -137,7 +137,7 @@ public class TenantIsolationTests
         boardFilter.Should().NotBeNull();
         memberFilter.Should().NotBeNull();
         commentFilter.Should().NotBeNull();
-        workspaceFilter.Should().NotBeNull("Workspace extends AggregateRoot which extends SoftDeletableEntity");
+        workspaceFilter.Should().NotBeNull("Workspace extends SoftDeletableAggregateRoot");
         Normalize(workspaceFilter!.Body.ToString()).Should().NotContain("WorkspaceId", "Workspace does not implement IWorkspaceScoped");
     }
 

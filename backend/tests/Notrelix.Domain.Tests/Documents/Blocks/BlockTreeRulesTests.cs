@@ -1,33 +1,45 @@
 using FluentAssertions;
+using Notrelix.Domain.Documents.Blocks;
 using Notrelix.Domain.Documents.Rules;
 
 namespace Notrelix.Domain.Tests.Documents;
 
 public class BlockTreeRulesTests
 {
-    [Fact]
-    public void EnsureNoCycle_WithNullParent_ShouldNotThrow()
-    {
-        var act = () => BlockTreeRules.EnsureNoCycle(Guid.NewGuid(), null, _ => null);
-        act.Should().NotThrow();
-    }
+    private static readonly Guid AccountId = Guid.NewGuid();
+    private static readonly Guid WorkspaceId = Guid.NewGuid();
+    private static readonly Guid PageId = Guid.NewGuid();
 
     [Fact]
     public void EnsureNoCycle_WhenBlockIsOwnParent_ShouldThrow()
     {
         var blockId = Guid.NewGuid();
-        var act = () => BlockTreeRules.EnsureNoCycle(blockId, blockId, _ => null);
+        var act = () => BlockTreeRules.EnsureNoCycle(blockId,
+            BlockAncestorPath.Create(AccountId, WorkspaceId, PageId, blockId, new[] { Guid.NewGuid() }));
         act.Should().Throw<BusinessRuleException>().WithMessage("*own parent*");
     }
 
     [Fact]
-    public void EnsureNoCycle_WhenParentChainReachesBlock_ShouldThrow()
+    public void EnsureNoCycle_WhenAncestorContainsBlock_ShouldThrow()
     {
         var blockId = Guid.NewGuid();
         var parentId = Guid.NewGuid();
 
-        var act = () => BlockTreeRules.EnsureNoCycle(blockId, parentId, id =>
-            id == parentId ? blockId : null);
+        var act = () => BlockTreeRules.EnsureNoCycle(blockId,
+            BlockAncestorPath.Create(AccountId, WorkspaceId, PageId, parentId, new[] { blockId }));
+
+        act.Should().Throw<BusinessRuleException>().WithMessage("*cycle*");
+    }
+
+    [Fact]
+    public void EnsureNoCycle_WhenDeepChainContainsBlock_ShouldThrow()
+    {
+        var blockId = Guid.NewGuid();
+        var parentId = Guid.NewGuid();
+        var grandparentId = Guid.NewGuid();
+
+        var act = () => BlockTreeRules.EnsureNoCycle(blockId,
+            BlockAncestorPath.Create(AccountId, WorkspaceId, PageId, parentId, new[] { grandparentId, blockId }));
 
         act.Should().Throw<BusinessRuleException>().WithMessage("*cycle*");
     }
@@ -38,19 +50,8 @@ public class BlockTreeRulesTests
         var blockId = Guid.NewGuid();
         var parentId = Guid.NewGuid();
 
-        var act = () => BlockTreeRules.EnsureNoCycle(blockId, parentId, id =>
-            id == parentId ? (Guid?)Guid.NewGuid() : null);
-
-        act.Should().NotThrow();
-    }
-
-    [Fact]
-    public void EnsureNoCycle_WhenChainEnds_ShouldNotThrow()
-    {
-        var blockId = Guid.NewGuid();
-        var parentId = Guid.NewGuid();
-
-        var act = () => BlockTreeRules.EnsureNoCycle(blockId, parentId, _ => null);
+        var act = () => BlockTreeRules.EnsureNoCycle(blockId,
+            BlockAncestorPath.Create(AccountId, WorkspaceId, PageId, parentId, new[] { Guid.NewGuid() }));
 
         act.Should().NotThrow();
     }

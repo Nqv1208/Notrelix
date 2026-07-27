@@ -23,7 +23,7 @@ public class UserSecuritySettingsLifecycleTests
     public void SoftDelete_ShouldIncrementVersion_AndRaiseEvent()
     {
         var settings = UserSecuritySettings.Create(_actorId, _now);
-        settings.ClearDomainEvents();
+        ((IHasDomainEvents)settings).ClearDomainEvents();
         var version = settings.Version;
 
         settings.SoftDelete(_actorId, _now);
@@ -38,7 +38,7 @@ public class UserSecuritySettingsLifecycleTests
     {
         var settings = UserSecuritySettings.Create(_actorId, _now);
         settings.SoftDelete(_actorId, _now);
-        settings.ClearDomainEvents();
+        ((IHasDomainEvents)settings).ClearDomainEvents();
         var version = settings.Version;
 
         settings.Restore(_actorId, _now);

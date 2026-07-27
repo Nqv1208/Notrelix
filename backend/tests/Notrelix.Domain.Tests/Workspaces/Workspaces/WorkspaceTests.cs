@@ -1,9 +1,9 @@
 using FluentAssertions;
-using Notrelix.Domain.Workspaces.Workspaces;
-using Notrelix.Domain.Workspaces.Members;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 
+[CoversAggregate(typeof(Workspace))]
 public class WorkspaceTests
 {
     private static readonly Guid AccountId = Guid.NewGuid();
@@ -42,7 +42,7 @@ public class WorkspaceTests
     public void Rename_ShouldSucceed_AndRaiseEvent()
     {
         var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
-        workspace.ClearDomainEvents();
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
         var actor = Guid.NewGuid();
 
         workspace.Rename("New Name", actor, Now);
@@ -65,7 +65,7 @@ public class WorkspaceTests
     public void UpdateSettings_ShouldSucceed_AndRaiseEvent()
     {
         var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
-        workspace.ClearDomainEvents();
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
         var settings = WorkspaceSettings.Create(allowPublicSharing: true, enforceMfa: true);
         var actor = Guid.NewGuid();
 
@@ -81,7 +81,7 @@ public class WorkspaceTests
     {
         var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
         var settings = workspace.Settings;
-        workspace.ClearDomainEvents();
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
 
         workspace.UpdateSettings(settings, Guid.NewGuid(), Now);
 
@@ -103,7 +103,7 @@ public class WorkspaceTests
     public void SoftDelete_ShouldSetStatusToSoftDeleted_AndRaiseEvent()
     {
         var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
-        workspace.ClearDomainEvents();
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
         var actor = Guid.NewGuid();
 
         workspace.SoftDelete(actor, Now);
@@ -118,7 +118,7 @@ public class WorkspaceTests
     {
         var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
         workspace.SoftDelete(Guid.NewGuid(), Now);
-        workspace.ClearDomainEvents();
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
 
         var actor = Guid.NewGuid();
         workspace.Restore(actor, Now);
@@ -132,7 +132,7 @@ public class WorkspaceTests
     public void Archive_ShouldSetStatusToArchived_AndRaiseEvent()
     {
         var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
-        workspace.ClearDomainEvents();
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
 
         workspace.Archive(Guid.NewGuid(), Now);
 
@@ -145,7 +145,7 @@ public class WorkspaceTests
     {
         var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
         workspace.Archive(Guid.NewGuid(), Now);
-        workspace.ClearDomainEvents();
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
 
         workspace.Archive(Guid.NewGuid(), Now);
 
@@ -158,7 +158,7 @@ public class WorkspaceTests
     {
         var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
         workspace.Archive(Guid.NewGuid(), Now);
-        workspace.ClearDomainEvents();
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
         var actor = Guid.NewGuid();
 
         workspace.Unarchive(actor, Now);
@@ -171,7 +171,7 @@ public class WorkspaceTests
     public void Unarchive_WhenAlreadyActive_ShouldBeNoOp()
     {
         var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
-        workspace.ClearDomainEvents();
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
 
         workspace.Unarchive(Guid.NewGuid(), Now);
 
@@ -193,7 +193,7 @@ public class WorkspaceTests
     public void UpdateDescription_ShouldSucceed_AndRaiseEvent()
     {
         var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
-        workspace.ClearDomainEvents();
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
         var actor = Guid.NewGuid();
 
         workspace.UpdateDescription("New description", actor, Now);
@@ -211,7 +211,7 @@ public class WorkspaceTests
     public void UpdateDescription_ShouldClearDescription_WhenSetToNull()
     {
         var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now, description: "Initial description");
-        workspace.ClearDomainEvents();
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
         var actor = Guid.NewGuid();
 
         workspace.UpdateDescription(null, actor, Now);
@@ -227,7 +227,7 @@ public class WorkspaceTests
     public void UpdateDescription_WhenSameValue_ShouldBeNoOp()
     {
         var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now, description: "Same");
-        workspace.ClearDomainEvents();
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
 
         workspace.UpdateDescription("Same", Guid.NewGuid(), Now);
 

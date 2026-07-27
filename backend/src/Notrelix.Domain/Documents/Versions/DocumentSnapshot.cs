@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Documents.Versions;
 
 public sealed class DocumentSnapshot : ValueObject
 {
-    public JsonValue Data { get; }
+    public JsonValue? Data { get; }
 
     private DocumentSnapshot() { }
     private DocumentSnapshot(JsonValue data)

@@ -1,6 +1,7 @@
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.UpdateChecklistItem;
 using Notrelix.Domain.WorkManagement.Checklists;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement.Checklists;
 
 public class UpdateChecklistItemTests : WorkManagementHandlerTestBase
@@ -21,7 +22,7 @@ public class UpdateChecklistItemTests : WorkManagementHandlerTestBase
     public async Task Handle_ToggleIsChecked_TogglesItem()
     {
         var checklist = CreateChecklist();
-        checklist.AddItem("Task", FractionalIndex.Create("b0"), TestUserId, TestNow);
+        checklist.AddItem("Task", FractionalIndex.Create("a1"), TestUserId, TestNow);
         var item = checklist.Items.First();
         SetupChecklists(checklist);
         SetupChecklistItems(item);
@@ -46,7 +47,7 @@ public class UpdateChecklistItemTests : WorkManagementHandlerTestBase
     public async Task Handle_NullIsChecked_ReturnsSuccessWithoutToggle()
     {
         var checklist = CreateChecklist();
-        checklist.AddItem("Task", FractionalIndex.Create("b0"), TestUserId, TestNow);
+        checklist.AddItem("Task", FractionalIndex.Create("a1"), TestUserId, TestNow);
         var item = checklist.Items.First();
         SetupChecklistItems(item);
 
@@ -62,7 +63,7 @@ public class UpdateChecklistItemTests : WorkManagementHandlerTestBase
     public async Task Handle_ChecklistNotFound_ThrowsNotFoundException()
     {
         var checklist = CreateChecklist();
-        checklist.AddItem("Task", FractionalIndex.Create("b0"), TestUserId, TestNow);
+        checklist.AddItem("Task", FractionalIndex.Create("a1"), TestUserId, TestNow);
         var item = checklist.Items.First();
         SetupChecklistItems(item);
         SetupChecklists();

@@ -1,3 +1,4 @@
+using Notrelix.Domain.Billing.Plans.Events;
 namespace Notrelix.Domain.Billing.Plans;
 
 public class PlanLimit : Entity
@@ -14,7 +15,7 @@ public class PlanLimit : Entity
         Guard.NotNull(feature);
 
         if (limit < 0)
-            throw new BusinessRuleException("Plan limit cannot be negative.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Plan_LimitCannotBeNegative, "Plan limit cannot be negative.");
 
         return new PlanLimit
         {
@@ -27,12 +28,12 @@ public class PlanLimit : Entity
     public void UpdateLimit(int newLimit)
     {
         if (newLimit < 0)
-            throw new BusinessRuleException("Plan limit cannot be negative.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Plan_LimitCannotBeNegative, "Plan limit cannot be negative.");
         Limit = newLimit;
     }
 }
 
-public class Plan : AggregateRoot
+public class Plan : SoftDeletableAggregateRoot
 {
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
@@ -60,25 +61,25 @@ public class Plan : AggregateRoot
         };
 
         plan.SetAuditOnCreate(null, createdAt);
-        plan.AddDomainEvent(new PlanCreatedDomainEvent(plan.Id, plan.Name, createdAt));
+        plan.RaiseDomainEvent(new PlanCreatedDomainEvent(plan.Id, plan.Name, createdAt));
         return plan;
     }
 
     public void AddLimit(FeatureCode feature, int limit, DateTimeOffset occurredAt)
     {
         if (_limits.Any(l => l.Feature == feature))
-            throw new BusinessRuleException($"Feature '{feature}' is already added to this plan.");
+            throw new BusinessRuleException(BillingRuleCodes.Billing_Plan_FeatureAlreadyAdded, $"Feature '{feature}' is already added to this plan.");
 
         _limits.Add(PlanLimit.Create(Id, feature, limit));
         IncrementVersion();
-        AddDomainEvent(new PlanLimitAddedDomainEvent(Id, feature, limit, occurredAt));
+        RaiseDomainEvent(new PlanLimitAddedDomainEvent(Id, feature, limit, occurredAt));
     }
 
-    public void UpdateDescription(string description, DateTimeOffset updatedAt)
+    public void UpdateDescription(string? description, DateTimeOffset updatedAt)
     {
         Description = description?.Trim();
         IncrementVersion();
-        AddDomainEvent(new PlanDescriptionUpdatedDomainEvent(Id, description, updatedAt));
+        RaiseDomainEvent(new PlanDescriptionUpdatedDomainEvent(Id, description, updatedAt));
     }
 
     public void Archive(DateTimeOffset archivedAt)
@@ -86,7 +87,7 @@ public class Plan : AggregateRoot
         if (Status == PlanStatus.Archived) return;
         Status = PlanStatus.Archived;
         IncrementVersion();
-        AddDomainEvent(new PlanArchivedDomainEvent(Id, archivedAt));
+        RaiseDomainEvent(new PlanArchivedDomainEvent(Id, archivedAt));
     }
 
     public void Deprecate(DateTimeOffset deprecatedAt)
@@ -94,22 +95,22 @@ public class Plan : AggregateRoot
         if (Status == PlanStatus.Deprecated) return;
         Status = PlanStatus.Deprecated;
         IncrementVersion();
-        AddDomainEvent(new PlanDeprecatedDomainEvent(Id, deprecatedAt));
+        RaiseDomainEvent(new PlanDeprecatedDomainEvent(Id, deprecatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         IncrementVersion();
-        AddDomainEvent(new PlanSoftDeletedDomainEvent(Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new PlanSoftDeletedDomainEvent(Id, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         IncrementVersion();
-        AddDomainEvent(new PlanRestoredDomainEvent(Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new PlanRestoredDomainEvent(Id, restoredBy, restoredAt));
     }
 }

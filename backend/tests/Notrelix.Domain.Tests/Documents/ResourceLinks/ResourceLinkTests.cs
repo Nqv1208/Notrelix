@@ -59,7 +59,7 @@ public class ResourceLinkTests
     public void SoftDelete_ShouldRaiseEvent()
     {
         var link = CreateLink();
-        link.ClearDomainEvents();
+        ((IHasDomainEvents)link).ClearDomainEvents();
 
         link.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -72,7 +72,7 @@ public class ResourceLinkTests
     {
         var link = CreateLink();
         link.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        link.ClearDomainEvents();
+        ((IHasDomainEvents)link).ClearDomainEvents();
 
         link.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

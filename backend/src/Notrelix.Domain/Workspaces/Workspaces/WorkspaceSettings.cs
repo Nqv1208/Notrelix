@@ -1,3 +1,4 @@
+using Notrelix.Domain.Workspaces.Members;
 namespace Notrelix.Domain.Workspaces.Workspaces;
 
 public sealed class WorkspaceSettings : ValueObject
@@ -32,10 +33,12 @@ public sealed class WorkspaceSettings : ValueObject
     {
         if (defaultMemberRole is not WorkspaceRole.Guest and not WorkspaceRole.Member)
             throw new BusinessRuleException(
+                WorkspaceRuleCodes.Workspaces_Settings_DefaultMemberRoleMustBeGuestOrMember,
                 "Default member role must be Guest or Member.");
 
         if (invitationExpiryDays is < 1 or > 30)
             throw new BusinessRuleException(
+                WorkspaceRuleCodes.Workspaces_Settings_InvitationExpiryDaysOutOfRange,
                 "Invitation expiry days must be between 1 and 30.");
 
         return new WorkspaceSettings(

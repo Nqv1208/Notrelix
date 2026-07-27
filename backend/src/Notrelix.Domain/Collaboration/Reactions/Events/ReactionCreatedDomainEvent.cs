@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Collaboration.Reactions.Events;
 
+[EventName("collaboration.reaction-created")]
 public sealed record ReactionCreatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -8,4 +9,4 @@ public sealed record ReactionCreatedDomainEvent(
     Guid UserId,
     Emoji Emoji,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

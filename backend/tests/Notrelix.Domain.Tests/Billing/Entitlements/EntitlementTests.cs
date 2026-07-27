@@ -29,7 +29,7 @@ public class EntitlementTests
     public void ChangeLimit_ShouldUpdate_AndRaiseEvent()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 100, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
-        entitlement.ClearDomainEvents();
+        ((IHasDomainEvents)entitlement).ClearDomainEvents();
 
         entitlement.ChangeLimit(200, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -41,7 +41,7 @@ public class EntitlementTests
     public void ChangeLimit_WhenSameLimit_ShouldBeNoOp()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 100, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
-        entitlement.ClearDomainEvents();
+        ((IHasDomainEvents)entitlement).ClearDomainEvents();
 
         entitlement.ChangeLimit(100, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -80,7 +80,7 @@ public class EntitlementTests
     public void Disable_ShouldTransition_AndRaiseEvent()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
-        entitlement.ClearDomainEvents();
+        ((IHasDomainEvents)entitlement).ClearDomainEvents();
 
         entitlement.Disable(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -93,7 +93,7 @@ public class EntitlementTests
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
         entitlement.Disable(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        entitlement.ClearDomainEvents();
+        ((IHasDomainEvents)entitlement).ClearDomainEvents();
 
         entitlement.Disable(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -114,7 +114,7 @@ public class EntitlementTests
     public void Revoke_ShouldTransition_AndRaiseEvent()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
-        entitlement.ClearDomainEvents();
+        ((IHasDomainEvents)entitlement).ClearDomainEvents();
 
         entitlement.Revoke(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -128,7 +128,7 @@ public class EntitlementTests
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
         entitlement.Revoke(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        entitlement.ClearDomainEvents();
+        ((IHasDomainEvents)entitlement).ClearDomainEvents();
 
         entitlement.Revoke(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -139,7 +139,7 @@ public class EntitlementTests
     public void MarkExpired_ShouldTransition_AndRaiseEvent()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
-        entitlement.ClearDomainEvents();
+        ((IHasDomainEvents)entitlement).ClearDomainEvents();
 
         entitlement.MarkExpired(DateTimeOffset.UtcNow);
 
@@ -152,7 +152,7 @@ public class EntitlementTests
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
         entitlement.MarkExpired(DateTimeOffset.UtcNow);
-        entitlement.ClearDomainEvents();
+        ((IHasDomainEvents)entitlement).ClearDomainEvents();
 
         entitlement.MarkExpired(DateTimeOffset.UtcNow);
 
@@ -207,7 +207,7 @@ public class EntitlementTests
     public void SoftDelete_ShouldMarkDeleted_AndRaiseEvent()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
-        entitlement.ClearDomainEvents();
+        ((IHasDomainEvents)entitlement).ClearDomainEvents();
 
         entitlement.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -220,7 +220,7 @@ public class EntitlementTests
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
         entitlement.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        entitlement.ClearDomainEvents();
+        ((IHasDomainEvents)entitlement).ClearDomainEvents();
 
         entitlement.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -232,7 +232,7 @@ public class EntitlementTests
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
         entitlement.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        entitlement.ClearDomainEvents();
+        ((IHasDomainEvents)entitlement).ClearDomainEvents();
 
         entitlement.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -244,7 +244,7 @@ public class EntitlementTests
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
-        entitlement.ClearDomainEvents();
+        ((IHasDomainEvents)entitlement).ClearDomainEvents();
 
         entitlement.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

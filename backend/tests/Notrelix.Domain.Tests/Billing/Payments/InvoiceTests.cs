@@ -21,7 +21,7 @@ public class InvoiceTests
     public void Issue_ShouldTransition_AndRaiseEvent()
     {
         var invoice = CreateDraftInvoice();
-        invoice.ClearDomainEvents();
+        ((IHasDomainEvents)invoice).ClearDomainEvents();
 
         invoice.Issue(DateTimeOffset.UtcNow);
 
@@ -44,7 +44,7 @@ public class InvoiceTests
     {
         var invoice = CreateDraftInvoice();
         invoice.Issue(DateTimeOffset.UtcNow);
-        invoice.ClearDomainEvents();
+        ((IHasDomainEvents)invoice).ClearDomainEvents();
 
         invoice.MarkPaid(DateTimeOffset.UtcNow);
 
@@ -58,7 +58,7 @@ public class InvoiceTests
         var invoice = CreateDraftInvoice();
         invoice.Issue(DateTimeOffset.UtcNow);
         invoice.MarkPaid(DateTimeOffset.UtcNow);
-        invoice.ClearDomainEvents();
+        ((IHasDomainEvents)invoice).ClearDomainEvents();
 
         invoice.MarkPaid(DateTimeOffset.UtcNow);
 
@@ -80,7 +80,7 @@ public class InvoiceTests
     {
         var invoice = CreateDraftInvoice();
         invoice.Issue(DateTimeOffset.UtcNow);
-        invoice.ClearDomainEvents();
+        ((IHasDomainEvents)invoice).ClearDomainEvents();
 
         invoice.MarkFailed("Payment declined", DateTimeOffset.UtcNow);
 
@@ -114,7 +114,7 @@ public class InvoiceTests
     {
         var invoice = CreateDraftInvoice();
         invoice.Issue(DateTimeOffset.UtcNow);
-        invoice.ClearDomainEvents();
+        ((IHasDomainEvents)invoice).ClearDomainEvents();
 
         invoice.Void(DateTimeOffset.UtcNow);
 
@@ -127,7 +127,7 @@ public class InvoiceTests
     {
         var invoice = CreateDraftInvoice();
         invoice.Void(DateTimeOffset.UtcNow);
-        invoice.ClearDomainEvents();
+        ((IHasDomainEvents)invoice).ClearDomainEvents();
 
         invoice.Void(DateTimeOffset.UtcNow);
 
@@ -149,7 +149,7 @@ public class InvoiceTests
     public void MarkFailed_WhenDraft_ShouldSucceed()
     {
         var invoice = CreateDraftInvoice();
-        invoice.ClearDomainEvents();
+        ((IHasDomainEvents)invoice).ClearDomainEvents();
 
         invoice.MarkFailed("Cancelled by customer", DateTimeOffset.UtcNow);
 
@@ -162,7 +162,7 @@ public class InvoiceTests
     {
         var invoice = CreateDraftInvoice();
         invoice.Issue(DateTimeOffset.UtcNow);
-        invoice.ClearDomainEvents();
+        ((IHasDomainEvents)invoice).ClearDomainEvents();
 
         invoice.Void(DateTimeOffset.UtcNow);
 
@@ -174,7 +174,7 @@ public class InvoiceTests
     {
         var invoice = CreateDraftInvoice();
         invoice.MarkFailed("Retry", DateTimeOffset.UtcNow);
-        invoice.ClearDomainEvents();
+        ((IHasDomainEvents)invoice).ClearDomainEvents();
 
         invoice.MarkPaid(DateTimeOffset.UtcNow);
 
@@ -185,7 +185,7 @@ public class InvoiceTests
     public void SoftDelete_ShouldMarkDeleted_AndRaiseEvent()
     {
         var invoice = CreateDraftInvoice();
-        invoice.ClearDomainEvents();
+        ((IHasDomainEvents)invoice).ClearDomainEvents();
 
         invoice.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -198,7 +198,7 @@ public class InvoiceTests
     {
         var invoice = CreateDraftInvoice();
         invoice.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        invoice.ClearDomainEvents();
+        ((IHasDomainEvents)invoice).ClearDomainEvents();
 
         invoice.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -210,7 +210,7 @@ public class InvoiceTests
     {
         var invoice = CreateDraftInvoice();
         invoice.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        invoice.ClearDomainEvents();
+        ((IHasDomainEvents)invoice).ClearDomainEvents();
 
         invoice.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -222,7 +222,7 @@ public class InvoiceTests
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {
         var invoice = CreateDraftInvoice();
-        invoice.ClearDomainEvents();
+        ((IHasDomainEvents)invoice).ClearDomainEvents();
 
         invoice.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

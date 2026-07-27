@@ -1,6 +1,7 @@
+using Notrelix.Domain.Collaboration.Reactions.Events;
 namespace Notrelix.Domain.Collaboration.Reactions;
 
-public class Reaction : AggregateRoot, IWorkspaceScoped
+public class Reaction : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -19,10 +20,10 @@ public class Reaction : AggregateRoot, IWorkspaceScoped
         Guard.NotNull(emoji);
 
         if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
-            throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
+            throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{workspaceId}', got '{target.WorkspaceId.Value}'.");
 
         if (checkDuplicate != null && checkDuplicate(userId))
-            throw new BusinessRuleException("User has already reacted with this emoji to this target.");
+            throw new BusinessRuleException(CollaborationRuleCodes.Collaboration_Reaction_DuplicateReaction, "User has already reacted with this emoji to this target.");
 
         var reaction = new Reaction
         {
@@ -34,12 +35,13 @@ public class Reaction : AggregateRoot, IWorkspaceScoped
         };
 
         reaction.SetAuditOnCreate(userId, createdAt);
-        reaction.AddDomainEvent(new ReactionCreatedDomainEvent(accountId, workspaceId, reaction.Id, target, userId, emoji, createdAt));
+        reaction.RaiseDomainEvent(new ReactionCreatedDomainEvent(accountId, workspaceId, reaction.Id, target, userId, emoji, createdAt));
         return reaction;
     }
 
     public void Remove(DateTimeOffset removedAt)
     {
-        AddDomainEvent(new ReactionRemovedDomainEvent(AccountId, WorkspaceId, Id, Target, UserId, Emoji, removedAt));
+        EnsureNotDeleted();
+        RaiseDomainEvent(new ReactionRemovedDomainEvent(AccountId, WorkspaceId, Id, Target, UserId, Emoji, removedAt));
     }
 }

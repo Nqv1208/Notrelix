@@ -1,7 +1,9 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Identity;
 
+[CoversAggregate(typeof(User))]
 public class UserTests
 {
     [Fact]
@@ -36,9 +38,9 @@ public class UserTests
     {
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hash123", now);
-        user.ClearDomainEvents();
+        ((IHasDomainEvents)user).ClearDomainEvents();
 
-        var loginTime = new DateTimeOffset(2026, 6, 11, 10, 0, 0, TimeSpan.Zero);
+        var loginTime = now.AddHours(1);
         user.RecordLogin(loginTime);
 
         user.LastLoginAt.Should().Be(loginTime);
@@ -52,10 +54,10 @@ public class UserTests
     {
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hash123", now);
-        user.ClearDomainEvents();
+        ((IHasDomainEvents)user).ClearDomainEvents();
 
-        var updateTime = new DateTimeOffset(2026, 6, 11, 12, 0, 0, TimeSpan.Zero);
-        user.UpdateProfile("New Name", "avatar.png", updateTime);
+        var updateTime = now.AddHours(1);
+        user.UpdateProfile("New Name", "avatar.png", user.Id, updateTime);
 
         user.Name.Should().Be("New Name");
         user.Avatar.Should().Be("avatar.png");
@@ -69,7 +71,7 @@ public class UserTests
         var user = User.Create("test@example.com", "Test User", "hash123", now);
         user.SoftDelete(Guid.NewGuid(), now);
 
-        var act = () => user.UpdateProfile("New Name", null, now);
+        var act = () => user.UpdateProfile("New Name", null, user.Id, now);
 
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
@@ -80,7 +82,7 @@ public class UserTests
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("old@example.com", "Test User", "hash123", now);
 
-        user.UpdateEmail("new@example.com", now);
+        user.UpdateEmail("new@example.com", user.Id, now);
 
         user.Email.Value.Should().Be("new@example.com");
     }
@@ -91,7 +93,7 @@ public class UserTests
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "oldhash", now);
 
-        user.UpdatePassword("newhash", now);
+        user.UpdatePassword("newhash", user.Id, now);
 
         user.PasswordHash.Should().Be("newhash");
     }

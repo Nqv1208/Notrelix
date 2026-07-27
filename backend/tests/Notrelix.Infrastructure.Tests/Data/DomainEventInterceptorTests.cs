@@ -22,14 +22,16 @@ public class DomainEventInterceptorTests
         eventTypeRegistry.Setup(x => x.GetMessageName(It.IsAny<Type>())).Returns("test.event");
         var integrationEventMapper = new Mock<IIntegrationEventMapper>();
         integrationEventMapper.Setup(x => x.Map(It.IsAny<IDomainEvent>())).Returns([]);
-        var dispatchPolicy = new Mock<IDomainEventDispatchPolicy>();
-        dispatchPolicy.Setup(x => x.GetMode(typeof(WorkspaceCreatedDomainEvent)))
-            .Returns(DomainEventDispatchMode.Outbox);
-        dispatchPolicy.Setup(x => x.GetInlineTypes()).Returns([]);
+        var classificationPolicy = new Mock<IClassificationPolicy>();
+        classificationPolicy.Setup(x => x.GetClassification(It.IsAny<Type>()))
+            .Returns(new Classification { Value = EventClassification.Business });
+        var deliveryPolicy = new Mock<IDeliveryPolicy>();
+        deliveryPolicy.Setup(x => x.GetDecision(It.IsAny<Type>()))
+            .Returns(new DeliveryDecision { Outbox = true });
         var integrationEventCollector = new Mock<IIntegrationEventCollector>();
         integrationEventCollector.Setup(x => x.DequeueAll()).Returns([]);
         var interceptor = new DomainEventInterceptor(
-            dateTimeProvider.Object, eventTypeRegistry.Object, integrationEventMapper.Object, dispatchPolicy.Object, integrationEventCollector.Object);
+            dateTimeProvider.Object, eventTypeRegistry.Object, classificationPolicy.Object, deliveryPolicy.Object, integrationEventMapper.Object, integrationEventCollector.Object);
         await using var context = CreateContext(interceptor);
 
         var workspace = Workspace.Create(

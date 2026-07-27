@@ -13,7 +13,7 @@ public class PlanLifecycleTests
     public void Plan_AddLimit_ShouldRaiseEvent()
     {
         var plan = Plan.Create("Pro", Money.Create(29, "USD"), BillingPeriod.Monthly, Now);
-        plan.ClearDomainEvents();
+        ((IHasDomainEvents)plan).ClearDomainEvents();
         var version = plan.Version;
 
         plan.AddLimit(FeatureCode.Create("seats"), 10, Now);
@@ -29,7 +29,7 @@ public class PlanLifecycleTests
     public void Plan_UpdateDescription_ShouldRaiseEvent()
     {
         var plan = Plan.Create("Pro", Money.Create(29, "USD"), BillingPeriod.Monthly, Now);
-        plan.ClearDomainEvents();
+        ((IHasDomainEvents)plan).ClearDomainEvents();
         var version = plan.Version;
 
         plan.UpdateDescription("New desc", Now);
@@ -45,7 +45,7 @@ public class PlanLifecycleTests
     public void Plan_Archive_ShouldRaiseEvent()
     {
         var plan = Plan.Create("Pro", Money.Create(29, "USD"), BillingPeriod.Monthly, Now);
-        plan.ClearDomainEvents();
+        ((IHasDomainEvents)plan).ClearDomainEvents();
         var version = plan.Version;
 
         plan.Archive(Now);
@@ -59,7 +59,7 @@ public class PlanLifecycleTests
     {
         var plan = Plan.Create("Pro", Money.Create(29, "USD"), BillingPeriod.Monthly, Now);
         plan.Archive(Now);
-        plan.ClearDomainEvents();
+        ((IHasDomainEvents)plan).ClearDomainEvents();
         var version = plan.Version;
 
         plan.Archive(Now);
@@ -72,7 +72,7 @@ public class PlanLifecycleTests
     public void Plan_Deprecate_ShouldRaiseEvent()
     {
         var plan = Plan.Create("Pro", Money.Create(29, "USD"), BillingPeriod.Monthly, Now);
-        plan.ClearDomainEvents();
+        ((IHasDomainEvents)plan).ClearDomainEvents();
         var version = plan.Version;
 
         plan.Deprecate(Now);
@@ -86,7 +86,7 @@ public class PlanLifecycleTests
     {
         var plan = Plan.Create("Pro", Money.Create(29, "USD"), BillingPeriod.Monthly, Now);
         plan.Deprecate(Now);
-        plan.ClearDomainEvents();
+        ((IHasDomainEvents)plan).ClearDomainEvents();
         var version = plan.Version;
 
         plan.Deprecate(Now);
@@ -116,7 +116,7 @@ public class PlanLifecycleTests
     {
         var plan = Plan.Create("Pro", Money.Create(29, "USD"), BillingPeriod.Monthly, Now);
         plan.SoftDelete(Actor, Now);
-        plan.ClearDomainEvents();
+        ((IHasDomainEvents)plan).ClearDomainEvents();
         var version = plan.Version;
 
         plan.Restore(Actor, Now);
@@ -134,7 +134,7 @@ public class PlanLifecycleTests
     {
         var plan = Plan.Create("Pro", Money.Create(29, "USD"), BillingPeriod.Monthly, Now);
         plan.SoftDelete(Actor, Now);
-        plan.ClearDomainEvents();
+        ((IHasDomainEvents)plan).ClearDomainEvents();
         var version = plan.Version;
 
         plan.SoftDelete(Actor, Now);
@@ -147,7 +147,7 @@ public class PlanLifecycleTests
     public void Plan_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
         var plan = Plan.Create("Pro", Money.Create(29, "USD"), BillingPeriod.Monthly, Now);
-        plan.ClearDomainEvents();
+        ((IHasDomainEvents)plan).ClearDomainEvents();
         var version = plan.Version;
 
         plan.Restore(Actor, Now);

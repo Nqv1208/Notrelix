@@ -1,6 +1,6 @@
 namespace Notrelix.Domain.Billing.Customers;
 
-public class BillingCustomer : AggregateRoot
+public class BillingCustomer : AggregateRoot, IAccountScoped
 {
     public Guid AccountId { get; private set; }
     public string ProviderCustomerId { get; private set; } = null!;
@@ -8,15 +8,19 @@ public class BillingCustomer : AggregateRoot
 
     private BillingCustomer() { }
 
-    public static BillingCustomer Create(Guid accountId, string providerCustomerId)
+    public static BillingCustomer Create(Guid accountId, string providerCustomerId, Guid createdBy, DateTimeOffset createdAt)
     {
         Guard.NotEmpty(accountId);
         Guard.NotNullOrWhiteSpace(providerCustomerId);
+        Guard.NotEmpty(createdBy);
 
-        return new BillingCustomer
+        var customer = new BillingCustomer
         {
             AccountId = accountId,
             ProviderCustomerId = providerCustomerId
         };
+
+        customer.SetAuditOnCreate(createdBy, createdAt);
+        return customer;
     }
 }

@@ -29,11 +29,12 @@ public class IntegrationConnectionConfiguration : IEntityTypeConfiguration<Integ
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasMany(x => x.Scopes)
-            .WithOne()
-            .HasForeignKey(x => x.ConnectionId);
+        builder.Property(x => x.CurrentSecretVersion).HasColumnName("current_secret_version").HasMaxLength(256);
+        builder.Property(x => x.SecretRotatedAt).HasColumnName("secret_rotated_at");
 
-        builder.HasMany(x => x.SecretVersions)
+        builder.Ignore(x => x.CurrentSecretRef);
+
+        builder.HasMany(x => x.Scopes)
             .WithOne()
             .HasForeignKey(x => x.ConnectionId);
 

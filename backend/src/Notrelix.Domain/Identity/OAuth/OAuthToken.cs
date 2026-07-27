@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Identity.OAuth;
 
 public sealed class OAuthToken : ValueObject
 {
-    public SecretRef AccessTokenRef { get; }
+    public SecretRef AccessTokenRef { get; } = null!;
     public SecretRef? RefreshTokenRef { get; }
     public DateTimeOffset? ExpiresAt { get; }
 

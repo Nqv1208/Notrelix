@@ -2,6 +2,7 @@ using Notrelix.Domain.Analytics.Widgets;
 
 namespace Notrelix.Domain.Analytics.Dashboards.Events;
 
+[EventName("analytics.dashboard-widget-moved")]
 public sealed record DashboardWidgetMovedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -10,4 +11,4 @@ public sealed record DashboardWidgetMovedDomainEvent(
     WidgetPosition NewPosition,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, UpdatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

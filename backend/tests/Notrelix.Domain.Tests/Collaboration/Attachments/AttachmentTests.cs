@@ -28,14 +28,14 @@ public class AttachmentTests
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), Guid.NewGuid());
 
         var act = () => Attachment.Create(Guid.NewGuid(), workspaceId, target, AttachmentType.Image, FileMetadata.Create("img.png", 512, "image/png"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        act.Should().Throw<WorkspaceMismatchException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
     public void SoftDelete_ShouldSucceed_AndRaiseEvent()
     {
         var attachment = CreateAttachment();
-        attachment.ClearDomainEvents();
+        ((IHasDomainEvents)attachment).ClearDomainEvents();
 
         attachment.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -48,7 +48,7 @@ public class AttachmentTests
     {
         var attachment = CreateAttachment();
         attachment.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        attachment.ClearDomainEvents();
+        ((IHasDomainEvents)attachment).ClearDomainEvents();
 
         attachment.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -60,7 +60,7 @@ public class AttachmentTests
     {
         var attachment = CreateAttachment();
         attachment.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        attachment.ClearDomainEvents();
+        ((IHasDomainEvents)attachment).ClearDomainEvents();
 
         attachment.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -72,7 +72,7 @@ public class AttachmentTests
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {
         var attachment = CreateAttachment();
-        attachment.ClearDomainEvents();
+        ((IHasDomainEvents)attachment).ClearDomainEvents();
 
         attachment.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

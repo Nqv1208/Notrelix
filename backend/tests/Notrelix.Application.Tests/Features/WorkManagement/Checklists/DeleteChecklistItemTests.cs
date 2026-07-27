@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.WorkManagement.Checklists.Commands.DeleteChecklistItem;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement.Checklists;
 
 public class DeleteChecklistItemTests : WorkManagementHandlerTestBase
@@ -15,7 +16,7 @@ public class DeleteChecklistItemTests : WorkManagementHandlerTestBase
     public async Task Handle_ValidCommand_DeletesChecklistItem()
     {
         var checklist = CreateChecklist();
-        checklist.AddItem("Task", FractionalIndex.Create("b0"), TestUserId, TestNow);
+        checklist.AddItem("Task", FractionalIndex.Create("a1"), TestUserId, TestNow);
         var item = checklist.Items.First();
         SetupChecklistItems(item);
 

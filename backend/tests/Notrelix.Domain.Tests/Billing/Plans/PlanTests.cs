@@ -44,7 +44,7 @@ public class PlanTests
     public void AddLimit_ShouldRaiseEvent()
     {
         var plan = Plan.Create("Pro", SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
-        plan.ClearDomainEvents();
+        ((IHasDomainEvents)plan).ClearDomainEvents();
 
         plan.AddLimit(SampleFeature, 5, DateTimeOffset.UtcNow);
 
@@ -76,7 +76,7 @@ public class PlanTests
     public void Archive_ShouldTransition_AndRaiseEvent()
     {
         var plan = Plan.Create("Legacy", SamplePrice, BillingPeriod.Yearly, DateTimeOffset.UtcNow);
-        plan.ClearDomainEvents();
+        ((IHasDomainEvents)plan).ClearDomainEvents();
 
         plan.Archive(DateTimeOffset.UtcNow);
 
@@ -89,7 +89,7 @@ public class PlanTests
     {
         var plan = Plan.Create("Legacy", SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
         plan.Archive(DateTimeOffset.UtcNow);
-        plan.ClearDomainEvents();
+        ((IHasDomainEvents)plan).ClearDomainEvents();
 
         plan.Archive(DateTimeOffset.UtcNow);
 
@@ -100,7 +100,7 @@ public class PlanTests
     public void Deprecate_ShouldTransition_AndRaiseEvent()
     {
         var plan = Plan.Create("Old", SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
-        plan.ClearDomainEvents();
+        ((IHasDomainEvents)plan).ClearDomainEvents();
 
         plan.Deprecate(DateTimeOffset.UtcNow);
 
@@ -113,7 +113,7 @@ public class PlanTests
     {
         var plan = Plan.Create("Old", SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
         plan.Deprecate(DateTimeOffset.UtcNow);
-        plan.ClearDomainEvents();
+        ((IHasDomainEvents)plan).ClearDomainEvents();
 
         plan.Deprecate(DateTimeOffset.UtcNow);
 

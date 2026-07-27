@@ -8,14 +8,12 @@ public sealed class UserEventMapper :
 {
     public UserDeactivatedIntegrationEvent? Map(UserDeactivatedDomainEvent domainEvent)
     {
-        var de = (IDomainEvent)domainEvent;
-        var correlationId = Guid.TryParse(de.CorrelationId, out var corrId) ? corrId : Guid.CreateVersion7();
         return new UserDeactivatedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
             UserId: domainEvent.UserId,
-            CorrelationId: correlationId,
+            CorrelationId: domainEvent.EventId,
             ActorUserId: domainEvent.DeactivatedBy,
-            CausationId: Guid.TryParse(de.CausationId, out var causId) ? causId : null,
+            CausationId: null,
             OccurredAt: domainEvent.DeactivatedAt
         );
     }

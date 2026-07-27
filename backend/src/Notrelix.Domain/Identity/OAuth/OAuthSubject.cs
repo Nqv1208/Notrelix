@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Identity.OAuth;
 
 public sealed class OAuthSubject : ValueObject
 {
-    public string Value { get; }
+    public string Value { get; } = null!;
 
     private OAuthSubject() { }
     private OAuthSubject(string value)

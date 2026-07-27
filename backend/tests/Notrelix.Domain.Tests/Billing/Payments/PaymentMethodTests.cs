@@ -110,7 +110,7 @@ public class PaymentMethodTests
             "Visa",
             Guid.NewGuid(),
             DateTimeOffset.UtcNow);
-        method.ClearDomainEvents();
+        ((IHasDomainEvents)method).ClearDomainEvents();
 
         method.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

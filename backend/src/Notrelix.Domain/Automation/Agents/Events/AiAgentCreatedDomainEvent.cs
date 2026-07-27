@@ -1,10 +1,17 @@
 namespace Notrelix.Domain.Automation.Agents.Events;
 
-public sealed record AiAgentCreatedDomainEvent(
-    Guid AccountId,
-    Guid WorkspaceId,
-    Guid AgentId,
-    string Name,
-    Guid ActorUserId,
-    DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, ActorUserId);
+[EventName("automation.ai-agent-created")]
+public sealed record AiAgentCreatedDomainEvent : WorkspaceScopedDomainEvent
+{
+    public Guid AgentId { get; }
+    public string Name { get; }
+
+    public AiAgentCreatedDomainEvent(
+        Guid accountId, Guid workspaceId, Guid agentId, string name,
+        DateTimeOffset occurredAt)
+        : base(accountId, workspaceId, occurredAt)
+    {
+        AgentId = agentId;
+        Name = name;
+    }
+}

@@ -5,7 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Domain.WorkManagement.Checklists;
+using Notrelix.Domain.WorkManagement.Forms;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement;
 
 public abstract class WorkManagementHandlerTestBase
@@ -44,6 +46,11 @@ public abstract class WorkManagementHandlerTestBase
         DbContextMock.Setup(c => c.BoardSubscribers).Returns(CreateAsyncDbSet(new List<BoardSubscriber>()));
         DbContextMock.Setup(c => c.Checklists).Returns(CreateAsyncDbSet(new List<Checklist>()));
         DbContextMock.Setup(c => c.ChecklistItems).Returns(CreateAsyncDbSet(new List<ChecklistItem>()));
+        DbContextMock.Setup(c => c.Forms).Returns(CreateAsyncDbSet(new List<Form>()));
+        DbContextMock.Setup(c => c.FormQuestions).Returns(CreateAsyncDbSet(new List<FormQuestion>()));
+        DbContextMock.Setup(c => c.FormSubmissions).Returns(CreateAsyncDbSet(new List<FormSubmission>()));
+        DbContextMock.Setup(c => c.ApprovalRequests).Returns(CreateAsyncDbSet(new List<ApprovalRequest>()));
+        DbContextMock.Setup(c => c.ApprovalSteps).Returns(CreateAsyncDbSet(new List<ApprovalStep>()));
     }
 
     protected void SetupBoards(params Board[] boards) =>
@@ -76,11 +83,62 @@ public abstract class WorkManagementHandlerTestBase
     protected void SetupChecklistItems(params ChecklistItem[] items) =>
         DbContextMock.Setup(c => c.ChecklistItems).Returns(CreateAsyncDbSet(items.ToList()));
 
+    protected void SetupSavedFilters(params SavedFilter[] filters) =>
+        DbContextMock.Setup(c => c.SavedFilters).Returns(CreateAsyncDbSet(filters.ToList()));
+
+    protected void SetupBoardViewUserPreferences(params BoardViewUserPreference[] preferences) =>
+        DbContextMock.Setup(c => c.BoardViewUserPreferences).Returns(CreateAsyncDbSet(preferences.ToList()));
+
     protected void SetupBoardViews(params BoardView[] views) =>
         DbContextMock.Setup(c => c.BoardViews).Returns(CreateAsyncDbSet(views.ToList()));
 
     protected void SetupBoardFields(params BoardField[] fields) =>
         DbContextMock.Setup(c => c.BoardFields).Returns(CreateAsyncDbSet(fields.ToList()));
+
+    protected void SetupForms(params Form[] forms) =>
+        DbContextMock.Setup(c => c.Forms).Returns(CreateAsyncDbSet(forms.ToList()));
+
+    protected void SetupFormSubmissions(params FormSubmission[] submissions) =>
+        DbContextMock.Setup(c => c.FormSubmissions).Returns(CreateAsyncDbSet(submissions.ToList()));
+
+    protected void SetupApprovalRequests(params ApprovalRequest[] requests) =>
+        DbContextMock.Setup(c => c.ApprovalRequests).Returns(CreateAsyncDbSet(requests.ToList()));
+
+    protected void SetupApprovalSteps(params ApprovalStep[] steps) =>
+        DbContextMock.Setup(c => c.ApprovalSteps).Returns(CreateAsyncDbSet(steps.ToList()));
+
+    protected ApprovalRequest CreateApprovalRequest(
+        Guid? id = null,
+        Guid? boardId = null,
+        ApprovalStatus status = ApprovalStatus.Pending,
+        bool isDeleted = false)
+    {
+        var targetBoardId = boardId ?? Guid.CreateVersion7();
+        var target = ResourceRef.Create(ResourceType.Board, targetBoardId, TestWorkspaceId);
+        var request = ApprovalRequest.Create(
+            TestAccountId,
+            TestWorkspaceId,
+            target,
+            "Test Approval",
+            TestUserId,
+            TestNow);
+        if (id.HasValue)
+            request.GetType().GetProperty(nameof(ApprovalRequest.Id))!.SetValue(request, id.Value);
+        if (status == ApprovalStatus.Approved || status == ApprovalStatus.Rejected)
+        {
+            request.AddStep(1, TestUserId, TestNow, approverUserId: TestUserId);
+            var step = request.Steps.First();
+            if (status == ApprovalStatus.Approved)
+                request.Approve(step.Id, TestUserId, TestNow);
+            else
+                request.Reject(step.Id, TestUserId, TestNow);
+        }
+        else if (status == ApprovalStatus.Cancelled)
+            request.Cancel(TestUserId, TestNow);
+        if (isDeleted)
+            request.SoftDelete(TestUserId, TestNow);
+        return request;
+    }
 
     protected Board CreateBoard(Guid? id = null, Guid? workspaceId = null)
     {
@@ -111,6 +169,23 @@ public abstract class WorkManagementHandlerTestBase
         if (id.HasValue)
             item.GetType().GetProperty(nameof(BoardItem.Id))!.SetValue(item, id.Value);
         return item;
+    }
+
+    protected SavedFilter CreateSavedFilter(Guid? id = null, Guid? boardId = null, bool isDeleted = false)
+    {
+        var filter = SavedFilter.Create(
+            TestAccountId,
+            TestWorkspaceId,
+            boardId ?? Guid.CreateVersion7(),
+            "Test Filter",
+            Array.Empty<FilterRule>(),
+            TestUserId,
+            TestNow);
+        if (isDeleted)
+            filter.SoftDelete(TestUserId, TestNow);
+        if (id.HasValue)
+            filter.GetType().GetProperty(nameof(SavedFilter.Id))!.SetValue(filter, id.Value);
+        return filter;
     }
 
     protected BoardItemLink CreateBoardItemLink(Guid? id = null, Guid? sourceItemId = null, Guid? targetItemId = null)
@@ -154,6 +229,52 @@ public abstract class WorkManagementHandlerTestBase
         if (id.HasValue)
             checklist.GetType().GetProperty(nameof(Checklist.Id))!.SetValue(checklist, id.Value);
         return checklist;
+    }
+
+    protected Form CreateForm(Guid? id = null, Guid? boardId = null, FormStatus status = FormStatus.Draft)
+    {
+        var form = Form.Create(
+            TestAccountId,
+            TestWorkspaceId,
+            boardId ?? Guid.CreateVersion7(),
+            "Test Form",
+            "test-form",
+            TestUserId,
+            TestNow);
+        if (id.HasValue)
+            form.GetType().GetProperty(nameof(Form.Id))!.SetValue(form, id.Value);
+        if (status == FormStatus.Published)
+            form.Publish(TestUserId, TestNow);
+        else if (status == FormStatus.Closed)
+            form.Close(TestUserId, TestNow);
+        else if (status == FormStatus.Deleted)
+            form.SoftDelete(TestUserId, TestNow);
+        return form;
+    }
+
+    protected FormSubmission CreateFormSubmission(Guid? id = null, Guid? formId = null, FormSubmissionStatus status = FormSubmissionStatus.Accepted)
+    {
+        var submission = FormSubmission.Create(
+            TestAccountId,
+            TestWorkspaceId,
+            formId ?? Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            null,
+            TestUserId,
+            "test@example.com",
+            "{}",
+            null,
+            null,
+            TestNow);
+        if (id.HasValue)
+            submission.GetType().GetProperty(nameof(FormSubmission.Id))!.SetValue(submission, id.Value);
+        if (status == FormSubmissionStatus.Rejected)
+            submission.Reject(TestNow);
+        else if (status == FormSubmissionStatus.Spam)
+            submission.MarkAsSpam(TestNow);
+        else if (status == FormSubmissionStatus.Deleted)
+            submission.Delete(TestUserId, TestNow);
+        return submission;
     }
 
     private static DbSet<T> CreateAsyncDbSet<T>(List<T> data) where T : class

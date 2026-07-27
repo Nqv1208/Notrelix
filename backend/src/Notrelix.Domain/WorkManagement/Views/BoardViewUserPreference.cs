@@ -1,6 +1,7 @@
+using Notrelix.Domain.WorkManagement.Views.Events;
 namespace Notrelix.Domain.WorkManagement.Views;
 
-public class BoardViewUserPreference : AggregateRoot, IWorkspaceScoped
+public class BoardViewUserPreference : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     private readonly List<FilterRule> _filterRules = new();
     private readonly List<SortRule> _sortRules = new();
@@ -42,7 +43,7 @@ public class BoardViewUserPreference : AggregateRoot, IWorkspaceScoped
 
         pref.SetAuditOnCreate(userId, createdAt);
 
-        pref.AddDomainEvent(new BoardViewUserPreferenceCreatedDomainEvent(
+        pref.RaiseDomainEvent(new BoardViewUserPreferenceCreatedDomainEvent(
             accountId,
             workspaceId,
             boardId,
@@ -70,7 +71,7 @@ public class BoardViewUserPreference : AggregateRoot, IWorkspaceScoped
 
         SetAuditOnUpdate(UserId, updatedAt);
 
-        AddDomainEvent(new BoardViewUserPreferenceFilterChangedDomainEvent(
+        RaiseDomainEvent(new BoardViewUserPreferenceFilterChangedDomainEvent(
             AccountId,
             WorkspaceId,
             BoardId,
@@ -96,7 +97,7 @@ public class BoardViewUserPreference : AggregateRoot, IWorkspaceScoped
 
         SetAuditOnUpdate(UserId, updatedAt);
 
-        AddDomainEvent(new BoardViewUserPreferenceSortChangedDomainEvent(
+        RaiseDomainEvent(new BoardViewUserPreferenceSortChangedDomainEvent(
             AccountId,
             WorkspaceId,
             BoardId,
@@ -119,7 +120,7 @@ public class BoardViewUserPreference : AggregateRoot, IWorkspaceScoped
 
         SetAuditOnUpdate(UserId, updatedAt);
 
-        AddDomainEvent(new BoardViewUserPreferenceGroupChangedDomainEvent(
+        RaiseDomainEvent(new BoardViewUserPreferenceGroupChangedDomainEvent(
             AccountId,
             WorkspaceId,
             BoardId,

@@ -29,7 +29,7 @@ public class ApiTokenSoftDeleteRestoreTests
         var workspaceId = Guid.NewGuid();
         var token = ApiToken.Create(Guid.NewGuid(), workspaceId, _actorId, "My Token", "hash", null, _actorId, _now);
         token.SoftDelete(_actorId, _now);
-        token.ClearDomainEvents();
+        ((IHasDomainEvents)token).ClearDomainEvents();
         var version = token.Version;
 
         token.Restore(_actorId, _now);
