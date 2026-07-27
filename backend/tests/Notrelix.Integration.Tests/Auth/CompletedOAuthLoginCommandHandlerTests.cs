@@ -182,7 +182,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
 
         var user = User.Create("oauth-linked@example.com", "OAuth User", "hashed", now);
         user.LinkOAuthAccount(OAuthProvider.Google, "google-sub-123",
-            OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, EmptyProfile), null, now);
+            OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, EmptyProfile), null, user.Id, now);
         context.Users.Add(user);
         await context.SaveChangesAsync();
 
@@ -225,7 +225,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
 
         var user = User.Create("suspended@example.com", "Suspended User", "hashed", now);
         user.LinkOAuthAccount(OAuthProvider.Google, "google-sub-suspended",
-            OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, EmptyProfile), null, now);
+            OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, EmptyProfile), null, user.Id, now);
         user.Suspend(Guid.NewGuid(), now, "Testing");
         context.Users.Add(user);
         await context.SaveChangesAsync();

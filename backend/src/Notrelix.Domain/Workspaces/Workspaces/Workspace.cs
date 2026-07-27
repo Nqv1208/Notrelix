@@ -1,9 +1,8 @@
 using Notrelix.Domain.Workspaces.Workspaces.Events;
 namespace Notrelix.Domain.Workspaces.Workspaces;
 
-public class Workspace : SoftDeletableAggregateRoot, IWorkspaceScoped
+public class Workspace : SoftDeletableAggregateRoot
 {
-    public Guid WorkspaceId => Id;
     public string Name { get; private set; } = null!;
     public string Slug { get; private set; } = null!;
     public string? Description { get; private set; }

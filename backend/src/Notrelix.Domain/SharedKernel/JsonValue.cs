@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Notrelix.Domain.SharedKernel;
 
@@ -7,6 +8,8 @@ public sealed class JsonValue : ValueObject
     public string Value { get; } = null!;
 
     private JsonValue() { }
+
+    [JsonConstructor]
     private JsonValue(string value)
     {
         Value = value;

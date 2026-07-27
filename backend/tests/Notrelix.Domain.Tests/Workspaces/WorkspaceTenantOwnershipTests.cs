@@ -37,11 +37,10 @@ public class WorkspaceTenantOwnershipTests
     }
 
     [Fact]
-    public void Workspace_ShouldImplementIWorkspaceScoped()
+    public void Workspace_ShouldNotImplementIWorkspaceScoped()
     {
         var workspace = Workspace.Create(AccountId, OwnerId, "Test", "test", DateTimeOffset.UtcNow);
 
-        workspace.Should().BeAssignableTo<IWorkspaceScoped>();
-        workspace.WorkspaceId.Should().Be(workspace.Id);
+        workspace.Should().NotBeAssignableTo<IWorkspaceScoped>();
     }
 }

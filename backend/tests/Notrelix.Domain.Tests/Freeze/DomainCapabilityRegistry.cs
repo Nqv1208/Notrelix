@@ -120,6 +120,9 @@ internal static class DomainCapabilityRegistry
         // Documents templates
         "Notrelix.Domain.Documents.Templates.PageTemplate",
 
+        // Workspaces tenant root
+        "Notrelix.Domain.Workspaces.Workspaces.Workspace",
+
         // Integrations
         "Notrelix.Domain.Integrations.Webhooks.Events.InboundWebhookEvent",
 

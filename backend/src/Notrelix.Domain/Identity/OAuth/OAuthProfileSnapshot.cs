@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Notrelix.Domain.Identity.OAuth;
 
@@ -8,6 +9,7 @@ public sealed class OAuthProfileSnapshot : ValueObject
     public int SchemaVersion { get; }
     public JsonValue Data { get; }
 
+    [JsonConstructor]
     private OAuthProfileSnapshot(OAuthProvider provider, int schemaVersion, JsonValue data)
     {
         Provider = provider;

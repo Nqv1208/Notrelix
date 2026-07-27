@@ -6022,11 +6022,1625 @@ namespace Notrelix.Infrastructure.Migrations
                 schema: "notifications",
                 table: "email_outbox",
                 sql: "sensitive_payload_cleared_at IS NULL OR template_data_json IS NULL");
+            migrationBuilder.DropForeignKey(
+                name: "fk_integration_secret_versions_integration_connections_connect",
+                schema: "integration",
+                table: "integration_secret_versions");
+
+            migrationBuilder.DropIndex(
+                name: "idx_time_tracking_item_user",
+                schema: "work",
+                table: "time_tracking_entries");
+
+            migrationBuilder.DropIndex(
+                name: "idx_time_tracking_status",
+                schema: "work",
+                table: "time_tracking_entries");
+
+            migrationBuilder.DropIndex(
+                name: "idx_permission_templates_workspace_id",
+                schema: "governance",
+                table: "permission_templates");
+
+            migrationBuilder.DropIndex(
+                name: "idx_password_reset_tokens_expires",
+                schema: "identity",
+                table: "password_reset_tokens");
+
+            migrationBuilder.DropIndex(
+                name: "idx_page_templates_workspace_id",
+                schema: "docs",
+                table: "page_templates");
+
+            migrationBuilder.DropIndex(
+                name: "idx_email_verification_tokens_expires",
+                schema: "identity",
+                table: "email_verification_tokens");
+
+            migrationBuilder.DropIndex(
+                name: "ux_email_verification_tokens_one_active_per_user",
+                schema: "identity",
+                table: "email_verification_tokens");
+
+            migrationBuilder.DropColumn(
+                name: "version",
+                schema: "work",
+                table: "workload_allocations");
+
+            migrationBuilder.DropColumn(
+                name: "delete_reason",
+                schema: "integration",
+                table: "webhook_deliveries");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_at",
+                schema: "integration",
+                table: "webhook_deliveries");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_by",
+                schema: "integration",
+                table: "webhook_deliveries");
+
+            migrationBuilder.DropColumn(
+                name: "restored_at",
+                schema: "integration",
+                table: "webhook_deliveries");
+
+            migrationBuilder.DropColumn(
+                name: "restored_by",
+                schema: "integration",
+                table: "webhook_deliveries");
+
+            migrationBuilder.DropColumn(
+                name: "delete_reason",
+                schema: "identity",
+                table: "user_login_attempts");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_at",
+                schema: "identity",
+                table: "user_login_attempts");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_by",
+                schema: "identity",
+                table: "user_login_attempts");
+
+            migrationBuilder.DropColumn(
+                name: "restored_at",
+                schema: "identity",
+                table: "user_login_attempts");
+
+            migrationBuilder.DropColumn(
+                name: "restored_by",
+                schema: "identity",
+                table: "user_login_attempts");
+
+            migrationBuilder.DropColumn(
+                name: "delete_reason",
+                schema: "work",
+                table: "time_tracking_entries");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_at",
+                schema: "work",
+                table: "time_tracking_entries");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_by",
+                schema: "work",
+                table: "time_tracking_entries");
+
+            migrationBuilder.DropColumn(
+                name: "restored_at",
+                schema: "work",
+                table: "time_tracking_entries");
+
+            migrationBuilder.DropColumn(
+                name: "restored_by",
+                schema: "work",
+                table: "time_tracking_entries");
+
+            migrationBuilder.DropColumn(
+                name: "delete_reason",
+                schema: "billing",
+                table: "subscriptions");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_at",
+                schema: "billing",
+                table: "subscriptions");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_by",
+                schema: "billing",
+                table: "subscriptions");
+
+            migrationBuilder.DropColumn(
+                name: "restored_at",
+                schema: "billing",
+                table: "subscriptions");
+
+            migrationBuilder.DropColumn(
+                name: "restored_by",
+                schema: "billing",
+                table: "subscriptions");
+
+            migrationBuilder.DropColumn(
+                name: "delete_reason",
+                schema: "account",
+                table: "scim_directories");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_at",
+                schema: "account",
+                table: "scim_directories");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_by",
+                schema: "account",
+                table: "scim_directories");
+
+            migrationBuilder.DropColumn(
+                name: "restored_at",
+                schema: "account",
+                table: "scim_directories");
+
+            migrationBuilder.DropColumn(
+                name: "restored_by",
+                schema: "account",
+                table: "scim_directories");
+
+            migrationBuilder.DropColumn(
+                name: "delete_reason",
+                schema: "governance",
+                table: "permission_templates");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_at",
+                schema: "governance",
+                table: "permission_templates");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_by",
+                schema: "governance",
+                table: "permission_templates");
+
+            migrationBuilder.DropColumn(
+                name: "is_system",
+                schema: "governance",
+                table: "permission_templates");
+
+            migrationBuilder.DropColumn(
+                name: "restored_at",
+                schema: "governance",
+                table: "permission_templates");
+
+            migrationBuilder.DropColumn(
+                name: "restored_by",
+                schema: "governance",
+                table: "permission_templates");
+
+            migrationBuilder.DropColumn(
+                name: "delete_reason",
+                schema: "identity",
+                table: "password_reset_tokens");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_at",
+                schema: "identity",
+                table: "password_reset_tokens");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_by",
+                schema: "identity",
+                table: "password_reset_tokens");
+
+            migrationBuilder.DropColumn(
+                name: "restored_at",
+                schema: "identity",
+                table: "password_reset_tokens");
+
+            migrationBuilder.DropColumn(
+                name: "restored_by",
+                schema: "identity",
+                table: "password_reset_tokens");
+
+            migrationBuilder.DropColumn(
+                name: "delete_reason",
+                schema: "docs",
+                table: "page_templates");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_at",
+                schema: "docs",
+                table: "page_templates");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_by",
+                schema: "docs",
+                table: "page_templates");
+
+            migrationBuilder.DropColumn(
+                name: "restored_at",
+                schema: "docs",
+                table: "page_templates");
+
+            migrationBuilder.DropColumn(
+                name: "restored_by",
+                schema: "docs",
+                table: "page_templates");
+
+            migrationBuilder.DropColumn(
+                name: "delete_reason",
+                schema: "integration",
+                table: "inbound_webhook_events");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_at",
+                schema: "integration",
+                table: "inbound_webhook_events");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_by",
+                schema: "integration",
+                table: "inbound_webhook_events");
+
+            migrationBuilder.DropColumn(
+                name: "restored_at",
+                schema: "integration",
+                table: "inbound_webhook_events");
+
+            migrationBuilder.DropColumn(
+                name: "restored_by",
+                schema: "integration",
+                table: "inbound_webhook_events");
+
+            migrationBuilder.DropColumn(
+                name: "delete_reason",
+                schema: "identity",
+                table: "email_verification_tokens");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_at",
+                schema: "identity",
+                table: "email_verification_tokens");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_by",
+                schema: "identity",
+                table: "email_verification_tokens");
+
+            migrationBuilder.DropColumn(
+                name: "restored_at",
+                schema: "identity",
+                table: "email_verification_tokens");
+
+            migrationBuilder.DropColumn(
+                name: "restored_by",
+                schema: "identity",
+                table: "email_verification_tokens");
+
+            migrationBuilder.DropColumn(
+                name: "delete_reason",
+                schema: "docs",
+                table: "document_versions");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_at",
+                schema: "docs",
+                table: "document_versions");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_by",
+                schema: "docs",
+                table: "document_versions");
+
+            migrationBuilder.DropColumn(
+                name: "restored_at",
+                schema: "docs",
+                table: "document_versions");
+
+            migrationBuilder.DropColumn(
+                name: "restored_by",
+                schema: "docs",
+                table: "document_versions");
+
+            migrationBuilder.DropColumn(
+                name: "delete_reason",
+                schema: "reporting",
+                table: "dashboard_sources");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_at",
+                schema: "reporting",
+                table: "dashboard_sources");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_by",
+                schema: "reporting",
+                table: "dashboard_sources");
+
+            migrationBuilder.DropColumn(
+                name: "restored_at",
+                schema: "reporting",
+                table: "dashboard_sources");
+
+            migrationBuilder.DropColumn(
+                name: "restored_by",
+                schema: "reporting",
+                table: "dashboard_sources");
+
+            migrationBuilder.DropColumn(
+                name: "delete_reason",
+                schema: "billing",
+                table: "billing_events");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_at",
+                schema: "billing",
+                table: "billing_events");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_by",
+                schema: "billing",
+                table: "billing_events");
+
+            migrationBuilder.DropColumn(
+                name: "restored_at",
+                schema: "billing",
+                table: "billing_events");
+
+            migrationBuilder.DropColumn(
+                name: "restored_by",
+                schema: "billing",
+                table: "billing_events");
+
+            migrationBuilder.DropColumn(
+                name: "delete_reason",
+                schema: "billing",
+                table: "billing_customers");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_at",
+                schema: "billing",
+                table: "billing_customers");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_by",
+                schema: "billing",
+                table: "billing_customers");
+
+            migrationBuilder.DropColumn(
+                name: "restored_at",
+                schema: "billing",
+                table: "billing_customers");
+
+            migrationBuilder.DropColumn(
+                name: "restored_by",
+                schema: "billing",
+                table: "billing_customers");
+
+            migrationBuilder.DropColumn(
+                name: "delete_reason",
+                schema: "automation",
+                table: "automation_executions");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_at",
+                schema: "automation",
+                table: "automation_executions");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_by",
+                schema: "automation",
+                table: "automation_executions");
+
+            migrationBuilder.DropColumn(
+                name: "restored_at",
+                schema: "automation",
+                table: "automation_executions");
+
+            migrationBuilder.DropColumn(
+                name: "restored_by",
+                schema: "automation",
+                table: "automation_executions");
+
+            migrationBuilder.DropColumn(
+                name: "delete_reason",
+                schema: "automation",
+                table: "ai_agent_runs");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_at",
+                schema: "automation",
+                table: "ai_agent_runs");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_by",
+                schema: "automation",
+                table: "ai_agent_runs");
+
+            migrationBuilder.DropColumn(
+                name: "restored_at",
+                schema: "automation",
+                table: "ai_agent_runs");
+
+            migrationBuilder.DropColumn(
+                name: "restored_by",
+                schema: "automation",
+                table: "ai_agent_runs");
+
+            migrationBuilder.DropColumn(
+                name: "delete_reason",
+                schema: "account",
+                table: "account_invitations");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_at",
+                schema: "account",
+                table: "account_invitations");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_by",
+                schema: "account",
+                table: "account_invitations");
+
+            migrationBuilder.DropColumn(
+                name: "restored_at",
+                schema: "account",
+                table: "account_invitations");
+
+            migrationBuilder.DropColumn(
+                name: "restored_by",
+                schema: "account",
+                table: "account_invitations");
+
+            migrationBuilder.DropColumn(
+                name: "delete_reason",
+                schema: "account",
+                table: "account_identity_providers");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_at",
+                schema: "account",
+                table: "account_identity_providers");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_by",
+                schema: "account",
+                table: "account_identity_providers");
+
+            migrationBuilder.DropColumn(
+                name: "restored_at",
+                schema: "account",
+                table: "account_identity_providers");
+
+            migrationBuilder.DropColumn(
+                name: "restored_by",
+                schema: "account",
+                table: "account_identity_providers");
+
+            migrationBuilder.DropColumn(
+                name: "delete_reason",
+                schema: "account",
+                table: "account_domains");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_at",
+                schema: "account",
+                table: "account_domains");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_by",
+                schema: "account",
+                table: "account_domains");
+
+            migrationBuilder.DropColumn(
+                name: "restored_at",
+                schema: "account",
+                table: "account_domains");
+
+            migrationBuilder.DropColumn(
+                name: "restored_by",
+                schema: "account",
+                table: "account_domains");
+
+            migrationBuilder.AddColumn<string>(
+                name: "delete_reason",
+                schema: "account",
+                table: "workspace_routes",
+                type: "character varying(500)",
+                maxLength: 500,
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "deleted_at",
+                schema: "account",
+                table: "workspace_routes",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "deleted_by",
+                schema: "account",
+                table: "workspace_routes",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<bool>(
+                name: "is_deleted",
+                schema: "account",
+                table: "workspace_routes",
+                type: "boolean",
+                nullable: false,
+                defaultValue: false);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "restored_at",
+                schema: "account",
+                table: "workspace_routes",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "restored_by",
+                schema: "account",
+                table: "workspace_routes",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<long>(
+                name: "version",
+                schema: "account",
+                table: "workspace_routes",
+                type: "bigint",
+                nullable: false,
+                defaultValue: 1L);
+
+            migrationBuilder.AddColumn<bool>(
+                name: "is_deleted",
+                schema: "identity",
+                table: "user_profiles",
+                type: "boolean",
+                nullable: false,
+                defaultValue: false);
+
+            migrationBuilder.AlterColumn<long>(
+                name: "version",
+                schema: "work",
+                table: "time_tracking_entries",
+                type: "bigint",
+                nullable: false,
+                defaultValue: 1L,
+                oldClrType: typeof(long),
+                oldType: "bigint");
+
+            migrationBuilder.AddColumn<int>(
+                name: "schedule_schema_version",
+                schema: "automation",
+                table: "scheduled_jobs",
+                type: "integer",
+                nullable: false,
+                defaultValue: 0);
+
+            migrationBuilder.AddColumn<bool>(
+                name: "is_deleted",
+                schema: "collab",
+                table: "reactions",
+                type: "boolean",
+                nullable: false,
+                defaultValue: false);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "created_at",
+                schema: "collab",
+                table: "presence_sessions",
+                type: "timestamp with time zone",
+                nullable: false,
+                defaultValue: new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)));
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "updated_at",
+                schema: "collab",
+                table: "presence_sessions",
+                type: "timestamp with time zone",
+                nullable: false,
+                defaultValue: new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)));
+
+            migrationBuilder.AddColumn<string>(
+                name: "scope",
+                schema: "governance",
+                table: "permission_templates",
+                type: "character varying(50)",
+                maxLength: 50,
+                nullable: false,
+                defaultValue: "");
+
+            migrationBuilder.AddColumn<string>(
+                name: "current_secret_version",
+                schema: "integration",
+                table: "integration_connections",
+                type: "character varying(256)",
+                maxLength: 256,
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "error_detail",
+                schema: "integration",
+                table: "integration_connections",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "secret_rotated_at",
+                schema: "integration",
+                table: "integration_connections",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<long>(
+                name: "version",
+                schema: "work",
+                table: "board_groups",
+                type: "bigint",
+                nullable: false,
+                defaultValue: 1L);
+
+            migrationBuilder.AlterColumn<string>(
+                name: "verification_status",
+                schema: "account",
+                table: "account_domains",
+                type: "character varying(50)",
+                maxLength: 50,
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "character varying(32)",
+                oldMaxLength: 32);
+
+            migrationBuilder.CreateIndex(
+                name: "idx_workspace_routes_is_deleted",
+                schema: "account",
+                table: "workspace_routes",
+                column: "is_deleted");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_time_tracking_item_user",
+                schema: "work",
+                table: "time_tracking_entries",
+                columns: new[] { "item_id", "user_id" });
+
+            migrationBuilder.CreateIndex(
+                name: "idx_time_tracking_status",
+                schema: "work",
+                table: "time_tracking_entries",
+                column: "status");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_permission_templates_workspace_id",
+                schema: "governance",
+                table: "permission_templates",
+                column: "workspace_id",
+                filter: "workspace_id IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_password_reset_tokens_expires",
+                schema: "identity",
+                table: "password_reset_tokens",
+                column: "expires_at");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_page_templates_workspace_id",
+                schema: "docs",
+                table: "page_templates",
+                column: "workspace_id",
+                filter: "workspace_id IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_email_verification_tokens_expires",
+                schema: "identity",
+                table: "email_verification_tokens",
+                column: "expires_at");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_email_verification_tokens_one_active_per_user",
+                schema: "identity",
+                table: "email_verification_tokens",
+                column: "user_id",
+                unique: true,
+                filter: "status = 'Active'");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropIndex(
+                name: "idx_workspace_routes_is_deleted",
+                schema: "account",
+                table: "workspace_routes");
+
+            migrationBuilder.DropIndex(
+                name: "idx_time_tracking_item_user",
+                schema: "work",
+                table: "time_tracking_entries");
+
+            migrationBuilder.DropIndex(
+                name: "idx_time_tracking_status",
+                schema: "work",
+                table: "time_tracking_entries");
+
+            migrationBuilder.DropIndex(
+                name: "idx_permission_templates_workspace_id",
+                schema: "governance",
+                table: "permission_templates");
+
+            migrationBuilder.DropIndex(
+                name: "idx_password_reset_tokens_expires",
+                schema: "identity",
+                table: "password_reset_tokens");
+
+            migrationBuilder.DropIndex(
+                name: "idx_page_templates_workspace_id",
+                schema: "docs",
+                table: "page_templates");
+
+            migrationBuilder.DropIndex(
+                name: "idx_email_verification_tokens_expires",
+                schema: "identity",
+                table: "email_verification_tokens");
+
+            migrationBuilder.DropIndex(
+                name: "ux_email_verification_tokens_one_active_per_user",
+                schema: "identity",
+                table: "email_verification_tokens");
+
+            migrationBuilder.DropColumn(
+                name: "delete_reason",
+                schema: "account",
+                table: "workspace_routes");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_at",
+                schema: "account",
+                table: "workspace_routes");
+
+            migrationBuilder.DropColumn(
+                name: "deleted_by",
+                schema: "account",
+                table: "workspace_routes");
+
+            migrationBuilder.DropColumn(
+                name: "is_deleted",
+                schema: "account",
+                table: "workspace_routes");
+
+            migrationBuilder.DropColumn(
+                name: "restored_at",
+                schema: "account",
+                table: "workspace_routes");
+
+            migrationBuilder.DropColumn(
+                name: "restored_by",
+                schema: "account",
+                table: "workspace_routes");
+
+            migrationBuilder.DropColumn(
+                name: "version",
+                schema: "account",
+                table: "workspace_routes");
+
+            migrationBuilder.DropColumn(
+                name: "is_deleted",
+                schema: "identity",
+                table: "user_profiles");
+
+            migrationBuilder.DropColumn(
+                name: "schedule_schema_version",
+                schema: "automation",
+                table: "scheduled_jobs");
+
+            migrationBuilder.DropColumn(
+                name: "is_deleted",
+                schema: "collab",
+                table: "reactions");
+
+            migrationBuilder.DropColumn(
+                name: "created_at",
+                schema: "collab",
+                table: "presence_sessions");
+
+            migrationBuilder.DropColumn(
+                name: "updated_at",
+                schema: "collab",
+                table: "presence_sessions");
+
+            migrationBuilder.DropColumn(
+                name: "scope",
+                schema: "governance",
+                table: "permission_templates");
+
+            migrationBuilder.DropColumn(
+                name: "current_secret_version",
+                schema: "integration",
+                table: "integration_connections");
+
+            migrationBuilder.DropColumn(
+                name: "error_detail",
+                schema: "integration",
+                table: "integration_connections");
+
+            migrationBuilder.DropColumn(
+                name: "secret_rotated_at",
+                schema: "integration",
+                table: "integration_connections");
+
+            migrationBuilder.DropColumn(
+                name: "version",
+                schema: "work",
+                table: "board_groups");
+
+            migrationBuilder.AddColumn<long>(
+                name: "version",
+                schema: "work",
+                table: "workload_allocations",
+                type: "bigint",
+                nullable: false,
+                defaultValue: 0L);
+
+            migrationBuilder.AddColumn<string>(
+                name: "delete_reason",
+                schema: "integration",
+                table: "webhook_deliveries",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "deleted_at",
+                schema: "integration",
+                table: "webhook_deliveries",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "deleted_by",
+                schema: "integration",
+                table: "webhook_deliveries",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "restored_at",
+                schema: "integration",
+                table: "webhook_deliveries",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "restored_by",
+                schema: "integration",
+                table: "webhook_deliveries",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "delete_reason",
+                schema: "identity",
+                table: "user_login_attempts",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "deleted_at",
+                schema: "identity",
+                table: "user_login_attempts",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "deleted_by",
+                schema: "identity",
+                table: "user_login_attempts",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "restored_at",
+                schema: "identity",
+                table: "user_login_attempts",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "restored_by",
+                schema: "identity",
+                table: "user_login_attempts",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AlterColumn<long>(
+                name: "version",
+                schema: "work",
+                table: "time_tracking_entries",
+                type: "bigint",
+                nullable: false,
+                oldClrType: typeof(long),
+                oldType: "bigint",
+                oldDefaultValue: 1L);
+
+            migrationBuilder.AddColumn<string>(
+                name: "delete_reason",
+                schema: "work",
+                table: "time_tracking_entries",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "deleted_at",
+                schema: "work",
+                table: "time_tracking_entries",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "deleted_by",
+                schema: "work",
+                table: "time_tracking_entries",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "restored_at",
+                schema: "work",
+                table: "time_tracking_entries",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "restored_by",
+                schema: "work",
+                table: "time_tracking_entries",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "delete_reason",
+                schema: "billing",
+                table: "subscriptions",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "deleted_at",
+                schema: "billing",
+                table: "subscriptions",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "deleted_by",
+                schema: "billing",
+                table: "subscriptions",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "restored_at",
+                schema: "billing",
+                table: "subscriptions",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "restored_by",
+                schema: "billing",
+                table: "subscriptions",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "delete_reason",
+                schema: "account",
+                table: "scim_directories",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "deleted_at",
+                schema: "account",
+                table: "scim_directories",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "deleted_by",
+                schema: "account",
+                table: "scim_directories",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "restored_at",
+                schema: "account",
+                table: "scim_directories",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "restored_by",
+                schema: "account",
+                table: "scim_directories",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "delete_reason",
+                schema: "governance",
+                table: "permission_templates",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "deleted_at",
+                schema: "governance",
+                table: "permission_templates",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "deleted_by",
+                schema: "governance",
+                table: "permission_templates",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<bool>(
+                name: "is_system",
+                schema: "governance",
+                table: "permission_templates",
+                type: "boolean",
+                nullable: false,
+                defaultValue: false);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "restored_at",
+                schema: "governance",
+                table: "permission_templates",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "restored_by",
+                schema: "governance",
+                table: "permission_templates",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "delete_reason",
+                schema: "identity",
+                table: "password_reset_tokens",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "deleted_at",
+                schema: "identity",
+                table: "password_reset_tokens",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "deleted_by",
+                schema: "identity",
+                table: "password_reset_tokens",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "restored_at",
+                schema: "identity",
+                table: "password_reset_tokens",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "restored_by",
+                schema: "identity",
+                table: "password_reset_tokens",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "delete_reason",
+                schema: "docs",
+                table: "page_templates",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "deleted_at",
+                schema: "docs",
+                table: "page_templates",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "deleted_by",
+                schema: "docs",
+                table: "page_templates",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "restored_at",
+                schema: "docs",
+                table: "page_templates",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "restored_by",
+                schema: "docs",
+                table: "page_templates",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "delete_reason",
+                schema: "integration",
+                table: "inbound_webhook_events",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "deleted_at",
+                schema: "integration",
+                table: "inbound_webhook_events",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "deleted_by",
+                schema: "integration",
+                table: "inbound_webhook_events",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "restored_at",
+                schema: "integration",
+                table: "inbound_webhook_events",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "restored_by",
+                schema: "integration",
+                table: "inbound_webhook_events",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "delete_reason",
+                schema: "identity",
+                table: "email_verification_tokens",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "deleted_at",
+                schema: "identity",
+                table: "email_verification_tokens",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "deleted_by",
+                schema: "identity",
+                table: "email_verification_tokens",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "restored_at",
+                schema: "identity",
+                table: "email_verification_tokens",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "restored_by",
+                schema: "identity",
+                table: "email_verification_tokens",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "delete_reason",
+                schema: "docs",
+                table: "document_versions",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "deleted_at",
+                schema: "docs",
+                table: "document_versions",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "deleted_by",
+                schema: "docs",
+                table: "document_versions",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "restored_at",
+                schema: "docs",
+                table: "document_versions",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "restored_by",
+                schema: "docs",
+                table: "document_versions",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "delete_reason",
+                schema: "reporting",
+                table: "dashboard_sources",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "deleted_at",
+                schema: "reporting",
+                table: "dashboard_sources",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "deleted_by",
+                schema: "reporting",
+                table: "dashboard_sources",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "restored_at",
+                schema: "reporting",
+                table: "dashboard_sources",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "restored_by",
+                schema: "reporting",
+                table: "dashboard_sources",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "delete_reason",
+                schema: "billing",
+                table: "billing_events",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "deleted_at",
+                schema: "billing",
+                table: "billing_events",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "deleted_by",
+                schema: "billing",
+                table: "billing_events",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "restored_at",
+                schema: "billing",
+                table: "billing_events",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "restored_by",
+                schema: "billing",
+                table: "billing_events",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "delete_reason",
+                schema: "billing",
+                table: "billing_customers",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "deleted_at",
+                schema: "billing",
+                table: "billing_customers",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "deleted_by",
+                schema: "billing",
+                table: "billing_customers",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "restored_at",
+                schema: "billing",
+                table: "billing_customers",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "restored_by",
+                schema: "billing",
+                table: "billing_customers",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "delete_reason",
+                schema: "automation",
+                table: "automation_executions",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "deleted_at",
+                schema: "automation",
+                table: "automation_executions",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "deleted_by",
+                schema: "automation",
+                table: "automation_executions",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "restored_at",
+                schema: "automation",
+                table: "automation_executions",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "restored_by",
+                schema: "automation",
+                table: "automation_executions",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "delete_reason",
+                schema: "automation",
+                table: "ai_agent_runs",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "deleted_at",
+                schema: "automation",
+                table: "ai_agent_runs",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "deleted_by",
+                schema: "automation",
+                table: "ai_agent_runs",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "restored_at",
+                schema: "automation",
+                table: "ai_agent_runs",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "restored_by",
+                schema: "automation",
+                table: "ai_agent_runs",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "delete_reason",
+                schema: "account",
+                table: "account_invitations",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "deleted_at",
+                schema: "account",
+                table: "account_invitations",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "deleted_by",
+                schema: "account",
+                table: "account_invitations",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "restored_at",
+                schema: "account",
+                table: "account_invitations",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "restored_by",
+                schema: "account",
+                table: "account_invitations",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "delete_reason",
+                schema: "account",
+                table: "account_identity_providers",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "deleted_at",
+                schema: "account",
+                table: "account_identity_providers",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "deleted_by",
+                schema: "account",
+                table: "account_identity_providers",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "restored_at",
+                schema: "account",
+                table: "account_identity_providers",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "restored_by",
+                schema: "account",
+                table: "account_identity_providers",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AlterColumn<string>(
+                name: "verification_status",
+                schema: "account",
+                table: "account_domains",
+                type: "character varying(32)",
+                maxLength: 32,
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "character varying(50)",
+                oldMaxLength: 50);
+
+            migrationBuilder.AddColumn<string>(
+                name: "delete_reason",
+                schema: "account",
+                table: "account_domains",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "deleted_at",
+                schema: "account",
+                table: "account_domains",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "deleted_by",
+                schema: "account",
+                table: "account_domains",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "restored_at",
+                schema: "account",
+                table: "account_domains",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "restored_by",
+                schema: "account",
+                table: "account_domains",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.CreateIndex(
+                name: "idx_time_tracking_item_user",
+                schema: "work",
+                table: "time_tracking_entries",
+                columns: new[] { "item_id", "user_id" },
+                filter: "deleted_at IS NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_time_tracking_status",
+                schema: "work",
+                table: "time_tracking_entries",
+                column: "status",
+                filter: "deleted_at IS NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_permission_templates_workspace_id",
+                schema: "governance",
+                table: "permission_templates",
+                column: "workspace_id",
+                filter: "workspace_id IS NOT NULL AND deleted_at IS NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_password_reset_tokens_expires",
+                schema: "identity",
+                table: "password_reset_tokens",
+                column: "expires_at",
+                filter: "deleted_at IS NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_page_templates_workspace_id",
+                schema: "docs",
+                table: "page_templates",
+                column: "workspace_id",
+                filter: "workspace_id IS NOT NULL AND deleted_at IS NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_email_verification_tokens_expires",
+                schema: "identity",
+                table: "email_verification_tokens",
+                column: "expires_at",
+                filter: "deleted_at IS NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_email_verification_tokens_one_active_per_user",
+                schema: "identity",
+                table: "email_verification_tokens",
+                column: "user_id",
+                unique: true,
+                filter: "status = 'Active' AND deleted_at IS NULL");
+
+            migrationBuilder.AddForeignKey(
+                name: "fk_integration_secret_versions_integration_connections_connect",
+                schema: "integration",
+                table: "integration_secret_versions",
+                column: "connection_id",
+                principalSchema: "integration",
+                principalTable: "integration_connections",
+                principalColumn: "id",
+                onDelete: ReferentialAction.Cascade);
             migrationBuilder.DropTable(
                 name: "access_grants",
                 schema: "authz");

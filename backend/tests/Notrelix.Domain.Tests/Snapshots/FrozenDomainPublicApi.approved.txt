@@ -2322,10 +2322,8 @@ Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionDeletedDoma
 Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionDeletedDomainEvent|<Clone>$|Method|public|False|True|
 Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionDeletedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& ConnectionId, Guid& DeletedBy, DateTimeOffset& OccurredAt
 Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionDeletedDomainEvent|Equals|Method|public|False|True|IntegrationConnectionDeletedDomainEvent other
-Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionDeletedDomainEvent|AccountId|Property|public|False|False|readwrite
 Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionDeletedDomainEvent|ConnectionId|Property|public|False|False|readwrite
 Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionDeletedDomainEvent|DeletedBy|Property|public|False|False|readwrite
-Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionDeletedDomainEvent|WorkspaceId|Property|public|False|False|readwrite
 Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionErrorRecordedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid ConnectionId, String ErrorDetail, Guid RecordedBy, DateTimeOffset OccurredAt
 Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionErrorRecordedDomainEvent|<Clone>$|Method|public|False|True|
 Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionErrorRecordedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& ConnectionId, String& ErrorDetail, Guid& RecordedBy, DateTimeOffset& OccurredAt
@@ -2349,10 +2347,8 @@ Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionRestoredDom
 Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionRestoredDomainEvent|<Clone>$|Method|public|False|True|
 Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionRestoredDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& ConnectionId, Guid& RestoredBy, DateTimeOffset& OccurredAt
 Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionRestoredDomainEvent|Equals|Method|public|False|True|IntegrationConnectionRestoredDomainEvent other
-Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionRestoredDomainEvent|AccountId|Property|public|False|False|readwrite
 Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionRestoredDomainEvent|ConnectionId|Property|public|False|False|readwrite
 Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionRestoredDomainEvent|RestoredBy|Property|public|False|False|readwrite
-Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionRestoredDomainEvent|WorkspaceId|Property|public|False|False|readwrite
 Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionRevokedDomainEvent|.ctor|Constructor|public|False|False|Guid AccountId, Guid WorkspaceId, Guid ConnectionId, Guid RevokedBy, DateTimeOffset OccurredAt
 Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionRevokedDomainEvent|<Clone>$|Method|public|False|True|
 Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionRevokedDomainEvent|Deconstruct|Method|public|False|False|Guid& AccountId, Guid& WorkspaceId, Guid& ConnectionId, Guid& RevokedBy, DateTimeOffset& OccurredAt
@@ -3937,14 +3933,13 @@ Notrelix.Domain.Workspaces.Workspaces.Workspace|SoftDelete|Method|public|False|F
 Notrelix.Domain.Workspaces.Workspaces.Workspace|Unarchive|Method|public|False|False|Guid unarchivedBy, DateTimeOffset unarchivedAt
 Notrelix.Domain.Workspaces.Workspaces.Workspace|UpdateDescription|Method|public|False|False|String newDescription, Guid updatedBy, DateTimeOffset updatedAt
 Notrelix.Domain.Workspaces.Workspaces.Workspace|UpdateSettings|Method|public|False|False|WorkspaceSettings newSettings, Guid updatedBy, DateTimeOffset updatedAt
-Notrelix.Domain.Workspaces.Workspaces.Workspace|AccountId|Property|public|False|True|readonly
+Notrelix.Domain.Workspaces.Workspaces.Workspace|AccountId|Property|public|False|False|readonly
 Notrelix.Domain.Workspaces.Workspaces.Workspace|Description|Property|public|False|False|readonly
 Notrelix.Domain.Workspaces.Workspaces.Workspace|IsPersonal|Property|public|False|False|readonly
 Notrelix.Domain.Workspaces.Workspaces.Workspace|Name|Property|public|False|False|readonly
 Notrelix.Domain.Workspaces.Workspaces.Workspace|Settings|Property|public|False|False|readonly
 Notrelix.Domain.Workspaces.Workspaces.Workspace|Slug|Property|public|False|False|readonly
 Notrelix.Domain.Workspaces.Workspaces.Workspace|Status|Property|public|False|False|readonly
-Notrelix.Domain.Workspaces.Workspaces.Workspace|WorkspaceId|Property|public|False|True|readonly
 Notrelix.Domain.Workspaces.Workspaces.WorkspaceCreationResult|.ctor|Constructor|protected|False|False|WorkspaceCreationResult original
 Notrelix.Domain.Workspaces.Workspaces.WorkspaceCreationResult|.ctor|Constructor|public|False|False|Workspace Workspace, WorkspaceMember OwnerMember
 Notrelix.Domain.Workspaces.Workspaces.WorkspaceCreationResult|<Clone>$|Method|public|False|True|

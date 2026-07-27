@@ -630,10 +630,8 @@ integrations.calendar-synced|1|Notrelix.Domain.Integrations.Calendar.Events.Cale
 integrations.integration-connection-created|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionCreatedDomainEvent|Workspace|ConnectionId|Guid|False
 integrations.integration-connection-created|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionCreatedDomainEvent|Workspace|CreatedBy|Guid|False
 integrations.integration-connection-created|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionCreatedDomainEvent|Workspace|Provider|IntegrationProvider|False
-integrations.integration-connection-deleted|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionDeletedDomainEvent|Global|AccountId|Guid|False
-integrations.integration-connection-deleted|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionDeletedDomainEvent|Global|ConnectionId|Guid|False
-integrations.integration-connection-deleted|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionDeletedDomainEvent|Global|DeletedBy|Guid|False
-integrations.integration-connection-deleted|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionDeletedDomainEvent|Global|WorkspaceId|Guid|False
+integrations.integration-connection-deleted|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionDeletedDomainEvent|Workspace|ConnectionId|Guid|False
+integrations.integration-connection-deleted|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionDeletedDomainEvent|Workspace|DeletedBy|Guid|False
 integrations.integration-connection-error-recorded|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionErrorRecordedDomainEvent|Workspace|ConnectionId|Guid|False
 integrations.integration-connection-error-recorded|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionErrorRecordedDomainEvent|Workspace|ErrorDetail|String|False
 integrations.integration-connection-error-recorded|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionErrorRecordedDomainEvent|Workspace|RecordedBy|Guid|False
@@ -641,10 +639,8 @@ integrations.integration-connection-expired|1|Notrelix.Domain.Integrations.Conne
 integrations.integration-connection-expired|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionExpiredDomainEvent|Workspace|ExpiredBy|Guid|False
 integrations.integration-connection-reauthorized|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionReauthorizedDomainEvent|Workspace|ConnectionId|Guid|False
 integrations.integration-connection-reauthorized|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionReauthorizedDomainEvent|Workspace|UpdatedBy|Guid|False
-integrations.integration-connection-restored|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionRestoredDomainEvent|Global|AccountId|Guid|False
-integrations.integration-connection-restored|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionRestoredDomainEvent|Global|ConnectionId|Guid|False
-integrations.integration-connection-restored|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionRestoredDomainEvent|Global|RestoredBy|Guid|False
-integrations.integration-connection-restored|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionRestoredDomainEvent|Global|WorkspaceId|Guid|False
+integrations.integration-connection-restored|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionRestoredDomainEvent|Workspace|ConnectionId|Guid|False
+integrations.integration-connection-restored|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionRestoredDomainEvent|Workspace|RestoredBy|Guid|False
 integrations.integration-connection-revoked|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionRevokedDomainEvent|Workspace|ConnectionId|Guid|False
 integrations.integration-connection-revoked|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationConnectionRevokedDomainEvent|Workspace|RevokedBy|Guid|False
 integrations.integration-scope-added|1|Notrelix.Domain.Integrations.Connections.Events.IntegrationScopeAddedDomainEvent|Workspace|AddedBy|Guid|False
