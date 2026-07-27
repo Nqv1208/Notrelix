@@ -1,6 +1,5 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Collaboration.Abstractions;
-using Notrelix.Domain.Collaboration.Comments;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 

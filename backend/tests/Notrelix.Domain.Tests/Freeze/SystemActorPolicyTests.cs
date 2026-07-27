@@ -1,6 +1,5 @@
 using System.Reflection;
 using FluentAssertions;
-using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Tests.Freeze;
 

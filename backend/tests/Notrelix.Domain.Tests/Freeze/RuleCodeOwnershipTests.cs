@@ -5,12 +5,10 @@ using Notrelix.Domain.Analytics;
 using Notrelix.Domain.Automation;
 using Notrelix.Domain.Billing;
 using Notrelix.Domain.Collaboration;
-using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Domain.Documents;
 using Notrelix.Domain.Governance;
 using Notrelix.Domain.Identity;
 using Notrelix.Domain.Integrations;
-using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.WorkManagement;
 using Notrelix.Domain.Workspaces;
 

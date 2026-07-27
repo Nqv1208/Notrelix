@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Governance.Templates;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Domain.Tests.Governance;
 

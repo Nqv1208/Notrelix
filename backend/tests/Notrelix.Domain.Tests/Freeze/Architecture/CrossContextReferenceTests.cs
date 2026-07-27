@@ -1,7 +1,5 @@
 using System.Reflection;
 using FluentAssertions;
-using Notrelix.Domain.Common;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Freeze.Architecture;
 

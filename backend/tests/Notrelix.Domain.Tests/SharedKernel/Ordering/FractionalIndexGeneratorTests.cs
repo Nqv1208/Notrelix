@@ -30,7 +30,8 @@ public class FractionalIndexGeneratorTests
     [Fact] public void Upstream_Zz_a01() => AssertGenerate("Zz", "a01", "a0");
     [Fact] public void Upstream_Null_a0V() => AssertGenerate(null, "a0V", "a0");
     [Fact] public void Upstream_Null_b999() => AssertGenerate(null, "b999", "b99");
-    [Fact] public void Upstream_Reversed_a1_a0_Throws()
+    [Fact]
+    public void Upstream_Reversed_a1_a0_Throws()
     {
         var act = () => FractionalIndexGenerator.GenerateKeyBetween(
             FractionalIndex.Create("a1"), FractionalIndex.Create("a0"));

@@ -2,7 +2,6 @@ using FluentAssertions;
 using Notrelix.Domain.Integrations;
 using Notrelix.Domain.Integrations.Calendar;
 using Notrelix.Domain.Integrations.Connections;
-using Notrelix.Domain.Integrations.Connections.Events;
 
 namespace Notrelix.Domain.Tests.Integrations;
 

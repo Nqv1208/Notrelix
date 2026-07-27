@@ -2,7 +2,6 @@ using Notrelix.Application.Common.Exceptions;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Infrastructure.Messaging;
 using Notrelix.Infrastructure.Messaging.Options;
-using BusinessRuleException = Notrelix.Domain.Common.Exceptions.BusinessRuleException;
 
 namespace Notrelix.Infrastructure;
 

@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 namespace Notrelix.Domain.Tests.Freeze;
 
 /// <summary>

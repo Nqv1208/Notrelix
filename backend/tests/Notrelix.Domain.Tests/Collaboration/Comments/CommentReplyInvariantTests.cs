@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Collaboration.Comments;
-using Notrelix.Domain.Collaboration.Comments.Events;
 
 namespace Notrelix.Domain.Tests.Collaboration.Comments;
 

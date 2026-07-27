@@ -1,5 +1,4 @@
 using Notrelix.Domain.Governance.Permissions;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Domain.Governance.Templates;
 
