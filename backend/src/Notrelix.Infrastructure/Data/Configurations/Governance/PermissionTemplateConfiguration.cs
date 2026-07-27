@@ -15,8 +15,11 @@ public class PermissionTemplateConfiguration : IEntityTypeConfiguration<Permissi
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(1024);
         builder.Property(x => x.TargetResourceType).HasColumnName("target_resource_type").HasConversion<string>().HasMaxLength(50);
-        builder.Property(x => x.PermissionsJson).HasColumnName("permissions_json").HasColumnType("jsonb").IsRequired();
-        builder.Property(x => x.IsSystem).HasColumnName("is_system");
+        builder.Property(x => x.Definition).HasColumnName("permissions_json").HasColumnType("jsonb").IsRequired()
+            .HasConversion(
+                v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                v => System.Text.Json.JsonSerializer.Deserialize<PermissionTemplateDefinition>(v, (System.Text.Json.JsonSerializerOptions?)null)!);
+        builder.Property(x => x.Scope).HasColumnName("scope").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");

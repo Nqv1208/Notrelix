@@ -52,7 +52,7 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
         var defaultFields = new[]
         {
             BoardFieldEntity.Create(accountId, board.WorkspaceId, board.Id, "Title", FieldType.Text, FieldSettings.Empty(), FractionalIndex.Create("a0"), _requestContext.UserId, createdAt, isSystem: true),
-            BoardFieldEntity.Create(accountId, board.WorkspaceId, board.Id, "Status", FieldType.Status, FieldSettings.Empty(), FractionalIndex.Create("a1"), _requestContext.UserId, createdAt, isSystem: true),
+            BoardFieldEntity.Create(accountId, board.WorkspaceId, board.Id, "Status", FieldType.Status, FieldSettings.Create(JsonValue.Create("{\"transitions\":{}}")!), FractionalIndex.Create("a1"), _requestContext.UserId, createdAt, isSystem: true),
             BoardFieldEntity.Create(accountId, board.WorkspaceId, board.Id, "Assignee", FieldType.Person, FieldSettings.Empty(), FractionalIndex.Create("a2"), _requestContext.UserId, createdAt, isSystem: true),
             BoardFieldEntity.Create(accountId, board.WorkspaceId, board.Id, "Due Date", FieldType.Date, FieldSettings.Empty(), FractionalIndex.Create("a3"), _requestContext.UserId, createdAt, isSystem: true),
         };

@@ -44,7 +44,7 @@ public class DocumentSnapshotConverter : ValueConverter<DocumentSnapshot, string
 {
     public DocumentSnapshotConverter()
         : base(
-            v => v.Data.Value,
+            v => v.Data!.Value,
             v => DocumentSnapshot.Create(JsonValue.Create(v)))
     {
     }

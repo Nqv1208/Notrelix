@@ -102,6 +102,7 @@ public class ApprovalRequestCommandTests : WorkManagementHandlerTestBase
         public async Task Handle_PendingRequest_Approves()
         {
             var approvalRequest = CreateApprovalRequest();
+            approvalRequest.AddStep(1, TestUserId, TestNow, approverUserId: TestUserId);
             SetupApprovalRequests(approvalRequest);
 
             var command = new ApproveApprovalRequestCommand(
@@ -123,7 +124,7 @@ public class ApprovalRequestCommandTests : WorkManagementHandlerTestBase
         }
 
         [Fact]
-        public async Task Handle_AlreadyApprovedRequest_ThrowsBusinessRuleException()
+        public async Task Handle_AlreadyApprovedRequest_ReturnsFailure()
         {
             var approvalRequest = CreateApprovalRequest(status: ApprovalStatus.Approved);
             SetupApprovalRequests(approvalRequest);
@@ -131,12 +132,13 @@ public class ApprovalRequestCommandTests : WorkManagementHandlerTestBase
             var command = new ApproveApprovalRequestCommand(
                 approvalRequest.Id, null, 1);
 
-            await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
-                .Should().ThrowAsync<Domain.Common.Exceptions.BusinessRuleException>();
+            var result = await _handler.Handle(command, CancellationToken.None);
+
+            result.Succeeded.Should().BeFalse();
         }
 
         [Fact]
-        public async Task Handle_AlreadyRejectedRequest_ThrowsBusinessRuleException()
+        public async Task Handle_AlreadyRejectedRequest_ReturnsFailure()
         {
             var approvalRequest = CreateApprovalRequest(status: ApprovalStatus.Rejected);
             SetupApprovalRequests(approvalRequest);
@@ -144,8 +146,9 @@ public class ApprovalRequestCommandTests : WorkManagementHandlerTestBase
             var command = new ApproveApprovalRequestCommand(
                 approvalRequest.Id, null, 1);
 
-            await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
-                .Should().ThrowAsync<Domain.Common.Exceptions.BusinessRuleException>();
+            var result = await _handler.Handle(command, CancellationToken.None);
+
+            result.Succeeded.Should().BeFalse();
         }
     }
 
@@ -167,6 +170,7 @@ public class ApprovalRequestCommandTests : WorkManagementHandlerTestBase
         public async Task Handle_PendingRequest_Rejects()
         {
             var approvalRequest = CreateApprovalRequest();
+            approvalRequest.AddStep(1, TestUserId, TestNow, approverUserId: TestUserId);
             SetupApprovalRequests(approvalRequest);
 
             var command = new RejectApprovalRequestCommand(
@@ -188,7 +192,7 @@ public class ApprovalRequestCommandTests : WorkManagementHandlerTestBase
         }
 
         [Fact]
-        public async Task Handle_AlreadyApprovedRequest_ThrowsBusinessRuleException()
+        public async Task Handle_AlreadyApprovedRequest_ReturnsFailure()
         {
             var approvalRequest = CreateApprovalRequest(status: ApprovalStatus.Approved);
             SetupApprovalRequests(approvalRequest);
@@ -196,12 +200,13 @@ public class ApprovalRequestCommandTests : WorkManagementHandlerTestBase
             var command = new RejectApprovalRequestCommand(
                 approvalRequest.Id, null, 1);
 
-            await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
-                .Should().ThrowAsync<Domain.Common.Exceptions.BusinessRuleException>();
+            var result = await _handler.Handle(command, CancellationToken.None);
+
+            result.Succeeded.Should().BeFalse();
         }
 
         [Fact]
-        public async Task Handle_AlreadyCancelledRequest_ThrowsBusinessRuleException()
+        public async Task Handle_AlreadyCancelledRequest_ReturnsFailure()
         {
             var approvalRequest = CreateApprovalRequest(status: ApprovalStatus.Cancelled);
             SetupApprovalRequests(approvalRequest);
@@ -209,8 +214,9 @@ public class ApprovalRequestCommandTests : WorkManagementHandlerTestBase
             var command = new RejectApprovalRequestCommand(
                 approvalRequest.Id, null, 1);
 
-            await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
-                .Should().ThrowAsync<Domain.Common.Exceptions.BusinessRuleException>();
+            var result = await _handler.Handle(command, CancellationToken.None);
+
+            result.Succeeded.Should().BeFalse();
         }
     }
 
@@ -232,6 +238,7 @@ public class ApprovalRequestCommandTests : WorkManagementHandlerTestBase
         public async Task Handle_PendingRequest_Cancels()
         {
             var approvalRequest = CreateApprovalRequest();
+            approvalRequest.AddStep(1, TestUserId, TestNow, approverUserId: TestUserId);
             SetupApprovalRequests(approvalRequest);
 
             var command = new CancelApprovalRequestCommand(approvalRequest.Id, 1);

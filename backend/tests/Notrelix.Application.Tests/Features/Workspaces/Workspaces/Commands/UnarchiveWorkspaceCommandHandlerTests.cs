@@ -12,6 +12,7 @@ public class UnarchiveWorkspaceCommandHandlerTests : WorkspaceHandlerTestBase
     {
         var workspace = CreateWorkspace(id: TestWorkspaceId, isArchived: true);
         SetupWorkspaces(workspace);
+        DateTimeProviderMock.Setup(c => c.UtcNow).Returns(TestNow.AddDays(2));
         var sut = CreateSut();
         var result = await sut.Handle(new UnarchiveWorkspaceCommand(TestWorkspaceId, 1), CancellationToken.None);
         result.Succeeded.Should().BeTrue();

@@ -17,7 +17,7 @@ public class GetChecklistsTests : WorkManagementHandlerTestBase
     {
         var itemId = Guid.CreateVersion7();
         var checklist = CreateChecklist(itemId: itemId);
-        checklist.AddItem("Task 1", FractionalIndex.Create("b0"), TestUserId, TestNow);
+        checklist.AddItem("Task 1", FractionalIndex.Create("a1"), TestUserId, TestNow);
         SetupChecklists(checklist);
 
         var items = checklist.Items.ToArray();

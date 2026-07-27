@@ -24,7 +24,7 @@ public class UpdateBoardItemStatusTests : WorkManagementHandlerTestBase
         var item = CreateBoardItem(boardId: board.Id);
         var statusField = BoardField.Create(
             TestAccountId, TestWorkspaceId, board.Id, "Status",
-            FieldType.Status, FieldSettings.Empty(), FractionalIndex.Create("a0"),
+            FieldType.Status, FieldSettings.Create(JsonValue.Create("{\"transitions\":{}}")!), FractionalIndex.Create("a0"),
             TestUserId, TestNow);
         statusField.AddOption("Done", Color.Create("#00FF00"), FractionalIndex.Create("a0"), TestUserId, TestNow);
         SetupBoards(board);
@@ -74,7 +74,7 @@ public class UpdateBoardItemStatusTests : WorkManagementHandlerTestBase
         var item = CreateBoardItem(boardId: board.Id);
         var statusField = BoardField.Create(
             TestAccountId, TestWorkspaceId, board.Id, "Status",
-            FieldType.Status, FieldSettings.Empty(), FractionalIndex.Create("a0"),
+            FieldType.Status, FieldSettings.Create(JsonValue.Create("{\"transitions\":{}}")!), FractionalIndex.Create("a0"),
             TestUserId, TestNow);
         statusField.SoftDelete(TestUserId, TestNow);
         SetupBoards(board);

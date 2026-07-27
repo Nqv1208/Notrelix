@@ -36,15 +36,17 @@ public class CreateBoardFieldCommandHandler : IRequestHandler<CreateBoardFieldCo
         var now = _dateTimeProvider.UtcNow;
         var position = request.Position is not null
             ? FractionalIndex.Create(request.Position)
-            : FractionalIndex.Create("z");
-
-        var settings = request.Settings is not null
-            ? FieldSettings.Create(JsonValue.Create(request.Settings)!)
-            : FieldSettings.Empty();
+            : FractionalIndex.Initial();
 
         var type = Enum.TryParse<FieldType>(request.FieldType, true, out var parsedType)
             ? parsedType
             : FieldType.Text;
+
+        var settings = request.Settings is not null
+            ? FieldSettings.Create(JsonValue.Create(request.Settings)!)
+            : type == FieldType.Status
+                ? FieldSettings.Create(JsonValue.Create("{\"transitions\":{}}")!)
+                : FieldSettings.Empty();
 
         var column = BoardField.Create(
             _requestContext.RequireAccountId(),

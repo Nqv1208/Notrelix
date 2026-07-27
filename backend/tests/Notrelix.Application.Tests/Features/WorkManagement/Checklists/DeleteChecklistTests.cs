@@ -39,7 +39,7 @@ public class DeleteChecklistTests : WorkManagementHandlerTestBase
     {
         var checklist = CreateChecklist();
         var itemId = Guid.CreateVersion7();
-        checklist.AddItem("Item 1", FractionalIndex.Create("b0"), TestUserId, TestNow);
+        checklist.AddItem("Item 1", FractionalIndex.Create("a1"), TestUserId, TestNow);
         SetupChecklists(checklist);
 
         var command = new DeleteChecklistCommand(checklist.Id);

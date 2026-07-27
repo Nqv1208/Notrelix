@@ -18,7 +18,7 @@ public class OAuthAccountConfiguration : IEntityTypeConfiguration<OAuthAccount>
         builder.Property(x => x.ProfileSnapshot).HasColumnName("raw_profile").HasColumnType("jsonb")
             .HasConversion(
                 v => v == null ? null : JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                v => string.IsNullOrEmpty(v) ? null : JsonSerializer.Deserialize<OAuthProfileSnapshot>(v, (JsonSerializerOptions?)null)!);
+                v => string.IsNullOrEmpty(v) ? null! : JsonSerializer.Deserialize<OAuthProfileSnapshot>(v, (JsonSerializerOptions?)null)!);
 
         builder.OwnsOne(x => x.Token, token =>
         {

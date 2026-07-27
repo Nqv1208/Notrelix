@@ -30,14 +30,20 @@ public class ReorderBoardFieldsCommandHandler : IRequestHandler<ReorderBoardFiel
 
     public async Task<Result> Handle(ReorderBoardFieldsCommand request, CancellationToken ct)
     {
+        if (request.Items.Count == 0)
+            return Result.Success();
+
         var now = _dateTimeProvider.UtcNow;
-        foreach (var item in request.Items)
+        var sorted = request.Items.OrderBy(x => x.NewPosition).ToList();
+        var newPositions = FractionalIndexGenerator.GenerateNKeysBetween(null, null, sorted.Count);
+        for (var idx = 0; idx < sorted.Count; idx++)
         {
+            var item = sorted[idx];
             var column = await _context.BoardFields
                 .FirstOrDefaultAsync(value => value.Id == item.Id && value.BoardId == request.BoardId, ct);
             if (column is not null)
             {
-                column.UpdatePosition(FractionalIndex.Create(item.NewPosition.ToString("F0")), _currentUser.UserId, now);
+                column.UpdatePosition(newPositions[idx], _currentUser.UserId, now);
             }
         }
 

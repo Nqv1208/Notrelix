@@ -38,7 +38,7 @@ public class UpdateChecklistCommandHandler : IRequestHandler<UpdateChecklistComm
             checklist.Rename(request.Title, _currentUser.UserId, now);
 
         if (request.Position.HasValue)
-            checklist.UpdatePosition(FractionalIndex.Create(request.Position.Value.ToString("F0")), _currentUser.UserId, now);
+            checklist.UpdatePosition(FractionalIndexGenerator.GenerateKeyBetween(null, null), _currentUser.UserId, now);
 
         return Result.Success();
     }

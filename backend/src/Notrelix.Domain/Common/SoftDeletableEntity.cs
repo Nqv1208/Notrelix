@@ -8,7 +8,7 @@ namespace Notrelix.Domain.Common;
 /// </summary>
 public abstract class SoftDeletableEntity : AuditableEntity
 {
-    public bool IsDeleted => DeletedAt.HasValue;
+    public bool IsDeleted { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
     public Guid? DeletedBy { get; private set; }
     public string? DeleteReason { get; private set; }
@@ -28,6 +28,7 @@ public abstract class SoftDeletableEntity : AuditableEntity
         DeletedAt = deletedAt;
         DeletedBy = deletedBy;
         DeleteReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+        IsDeleted = true;
         return true;
     }
 
@@ -41,6 +42,7 @@ public abstract class SoftDeletableEntity : AuditableEntity
         DeletedAt = null;
         DeletedBy = null;
         DeleteReason = null;
+        IsDeleted = false;
         RestoredAt = restoredAt;
         RestoredBy = restoredBy;
         return true;

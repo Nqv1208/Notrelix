@@ -30,6 +30,9 @@ public class ReorderBoardGroupsCommandHandler : IRequestHandler<ReorderBoardGrou
 
     public async Task<Result> Handle(ReorderBoardGroupsCommand request, CancellationToken ct)
     {
+        if (request.Items.Count == 0)
+            return Result.Success();
+
         var itemIds = request.Items.Select(item => item.Id).ToHashSet();
         var lists = await _context.BoardGroups
             .Where(list => itemIds.Contains(list.Id))
@@ -42,10 +45,12 @@ public class ReorderBoardGroupsCommandHandler : IRequestHandler<ReorderBoardGrou
             throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException("ListBoardMismatch", "All reordered groups must belong to the requested board.");
 
         var now = _dateTimeProvider.UtcNow;
-        var positionsById = request.Items.ToDictionary(item => item.Id, item => item.NewPosition);
-        foreach (var list in lists)
+        var positionsById = request.Items.ToDictionary(i => i.Id, i => i.NewPosition);
+        var sorted = lists.OrderBy(l => positionsById[l.Id]).ToList();
+        var newPositions = FractionalIndexGenerator.GenerateNKeysBetween(null, null, sorted.Count);
+        for (var idx = 0; idx < sorted.Count; idx++)
         {
-            list.UpdatePosition(FractionalIndex.Create(positionsById[list.Id].ToString("F0")), _currentUser.UserId, now);
+            sorted[idx].UpdatePosition(newPositions[idx], _currentUser.UserId, now);
         }
 
         return Result.Success();
