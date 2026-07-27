@@ -7,4 +7,4 @@ public sealed record IntegrationConnectionRestoredDomainEvent(
     Guid ConnectionId,
     Guid RestoredBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

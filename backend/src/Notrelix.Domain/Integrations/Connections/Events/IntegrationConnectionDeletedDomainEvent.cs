@@ -7,4 +7,4 @@ public sealed record IntegrationConnectionDeletedDomainEvent(
     Guid ConnectionId,
     Guid DeletedBy,
     DateTimeOffset OccurredAt
-) : DomainEvent(OccurredAt);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);
