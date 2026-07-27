@@ -13,5 +13,9 @@
 export { createQueryClient } from './query-client';
 export {
   executeOptimisticCommand,
-  type OptimisticCommandOptions,
+  defineOptimisticUpdate,
+  type ExecuteOptimisticCommandOptions,
+  type ExecuteOptimisticCommandOptions as OptimisticCommandOptions,
+  type OptimisticSnapshot,
+  type OptimisticUpdate,
 } from './optimistic-command';

@@ -1,11 +1,17 @@
+import { useMemo } from 'react';
 import { createUseSecuritySettings } from '@notrelix/features-account';
-import { api, endpoints } from '@notrelix/contracts';
+import { useAppRuntime } from '@notrelix/runtime-web';
 import { Button } from '@notrelix/ui-web';
 import { Shield, Key, Smartphone } from 'lucide-react';
 
-const useSecuritySettings = createUseSecuritySettings({ api, endpoints });
-
 export function AccountSecurityPage() {
+  const { api: runtimeClient } = useAppRuntime();
+
+  const useSecuritySettings = useMemo(
+    () => createUseSecuritySettings({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
+    [runtimeClient],
+  );
+
   const { data: security, isLoading } = useSecuritySettings();
 
   if (isLoading) {

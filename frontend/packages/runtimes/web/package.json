@@ -15,7 +15,8 @@
   "dependencies": {
     "@notrelix/contracts": "workspace:*",
     "@notrelix/kernel": "workspace:*",
-    "@notrelix/platform": "workspace:*"
+    "@notrelix/platform": "workspace:*",
+    "@notrelix/realtime": "workspace:*"
   },
   "peerDependencies": {
     "react": "catalog:",

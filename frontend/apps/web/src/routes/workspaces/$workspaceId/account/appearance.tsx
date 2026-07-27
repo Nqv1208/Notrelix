@@ -1,12 +1,10 @@
+import { useMemo } from 'react';
 import { createUsePreferences, createUseUpdatePreferences } from '@notrelix/features-account';
-import { api, endpoints } from '@notrelix/contracts';
+import { useAppRuntime } from '@notrelix/runtime-web';
 import { Button } from '@notrelix/ui-web';
 import { useColorTheme } from '@notrelix/ui-web';
 import { Monitor, Sun, Moon } from 'lucide-react';
 import { toast } from 'sonner';
-
-const usePreferences = createUsePreferences({ api, endpoints, options: { mockMode: true } });
-const useUpdatePreferences = createUseUpdatePreferences({ api, endpoints, options: { mockMode: true } });
 
 const THEME_OPTIONS = [
   { value: 'light' as const, label: 'Light', icon: Sun },
@@ -23,6 +21,28 @@ const COLOR_THEMES = [
 ];
 
 export function AccountAppearancePage() {
+  const { api: runtimeClient, env: runtimeEnv } = useAppRuntime();
+
+  const usePreferences = useMemo(
+    () =>
+      createUsePreferences({
+        api: runtimeClient.api,
+        endpoints: runtimeClient.endpoints,
+        options: { mockMode: runtimeEnv.nodeEnv === 'development' },
+      }),
+    [runtimeClient, runtimeEnv.nodeEnv],
+  );
+
+  const useUpdatePreferences = useMemo(
+    () =>
+      createUseUpdatePreferences({
+        api: runtimeClient.api,
+        endpoints: runtimeClient.endpoints,
+        options: { mockMode: runtimeEnv.nodeEnv === 'development' },
+      }),
+    [runtimeClient, runtimeEnv.nodeEnv],
+  );
+
   const { preferences, isLoading } = usePreferences();
   const updateMutation = useUpdatePreferences();
   const { colorTheme, setColorTheme } = useColorTheme();

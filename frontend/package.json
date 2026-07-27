@@ -12,11 +12,14 @@
     "typecheck": "turbo typecheck",
     "lint": "turbo lint",
     "test": "turbo test",
+    "test:node": "vitest run --config tooling/testing/vitest.node.config.ts",
+    "test:web": "vitest run --config tooling/testing/vitest.web.config.ts",
     "format": "turbo format",
     "codegen": "turbo codegen",
     "check:deps": "pnpm --filter @notrelix/dependency-rules check",
     "clean": "turbo run clean && rm -rf node_modules .turbo",
-    "validate": "pnpm typecheck && pnpm lint && pnpm test && pnpm check:deps"
+    "validate": "pnpm typecheck && pnpm lint && pnpm test && pnpm check:deps",
+    "freeze:audit": "node ./scripts/freeze-audit.mjs"
   },
   "devDependencies": {
     "eslint": "catalog:",

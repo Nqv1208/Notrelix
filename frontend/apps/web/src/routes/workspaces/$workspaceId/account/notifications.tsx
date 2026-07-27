@@ -1,11 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { createUsePreferences, createUseUpdatePreferences } from '@notrelix/features-account';
-import { api, endpoints } from '@notrelix/contracts';
+import { useAppRuntime } from '@notrelix/runtime-web';
 import { Button } from '@notrelix/ui-web';
 import { toast } from 'sonner';
-
-const usePreferences = createUsePreferences({ api, endpoints, options: { mockMode: true } });
-const useUpdatePreferences = createUseUpdatePreferences({ api, endpoints, options: { mockMode: true } });
 
 const NOTIFICATION_CHANNELS = [
   {
@@ -26,6 +23,28 @@ const NOTIFICATION_CHANNELS = [
 ];
 
 export function AccountNotificationsPage() {
+  const { api: runtimeClient, env: runtimeEnv } = useAppRuntime();
+
+  const usePreferences = useMemo(
+    () =>
+      createUsePreferences({
+        api: runtimeClient.api,
+        endpoints: runtimeClient.endpoints,
+        options: { mockMode: runtimeEnv.nodeEnv === 'development' },
+      }),
+    [runtimeClient, runtimeEnv.nodeEnv],
+  );
+
+  const useUpdatePreferences = useMemo(
+    () =>
+      createUseUpdatePreferences({
+        api: runtimeClient.api,
+        endpoints: runtimeClient.endpoints,
+        options: { mockMode: runtimeEnv.nodeEnv === 'development' },
+      }),
+    [runtimeClient, runtimeEnv.nodeEnv],
+  );
+
   const { preferences: _preferences, isLoading } = usePreferences();
   const updateMutation = useUpdatePreferences();
 

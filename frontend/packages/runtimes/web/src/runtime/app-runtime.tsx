@@ -1,6 +1,11 @@
 import React, { createContext, useContext, type ReactNode } from 'react';
 import { createNotrelixClient, type NotrelixClient } from '@notrelix/contracts';
-import { parseEnv, type ResolvedEnv } from '@notrelix/kernel';
+import { parseEnv, type ResolvedRuntimeEnvironment, type RuntimeEnvironmentInput } from '@notrelix/kernel';
+import { RealtimeClient } from '@notrelix/realtime';
+import { createSessionEventBus, type SessionEventBus } from './session-event-bus';
+
+export type { SessionEventBus, SessionExpiredEvent } from './session-event-bus';
+export { useFeatureRuntimeDependencies, type FeatureRuntimeDependencies } from './use-feature-runtime-dependencies';
 
 export interface ClockPort {
   now(): Date;
@@ -18,16 +23,34 @@ export interface FeatureFlagsPort {
 }
 
 export interface AppRuntime {
-  api: NotrelixClient;
-  clock: ClockPort;
-  telemetry: TelemetryPort;
-  featureFlags: FeatureFlagsPort;
-  env: ResolvedEnv;
+  readonly api: NotrelixClient;
+  readonly realtime: RealtimeClient;
+  readonly sessionEvents: SessionEventBus;
+  readonly clock: ClockPort;
+  readonly telemetry: TelemetryPort;
+  readonly featureFlags: FeatureFlagsPort;
+  readonly env: ResolvedRuntimeEnvironment;
+  dispose(): void;
 }
 
-export function createAppRuntime(rawEnv: Partial<Record<string, string | undefined>> = {}): AppRuntime {
-  const resolvedEnv = parseEnv(rawEnv);
-  const client = createNotrelixClient({ baseUrl: resolvedEnv.apiUrl });
+export function createAppRuntime(
+  input: RuntimeEnvironmentInput | Partial<Record<string, string | undefined>> = {}
+): AppRuntime {
+  const resolvedEnv = parseEnv(input as Record<string, unknown>);
+  const sessionEvents = createSessionEventBus();
+
+  const client = createNotrelixClient({
+    baseUrl: resolvedEnv.apiUrl,
+    onSessionExpired: (error) => {
+      sessionEvents.publish({
+        type: 'session-expired',
+        error,
+        occurredAt: new Date().toISOString(),
+      });
+    },
+  });
+
+  const realtimeClient = new RealtimeClient(resolvedEnv.realtimeUrl);
 
   const defaultClock: ClockPort = {
     now: () => new Date(),
@@ -36,7 +59,7 @@ export function createAppRuntime(rawEnv: Partial<Record<string, string | undefin
 
   const defaultTelemetry: TelemetryPort = {
     track: (event, properties) => {
-      if (resolvedEnv.nodeEnv === 'development') {
+      if (!resolvedEnv.isProduction) {
         console.debug(`[Telemetry] ${event}`, properties);
       }
     },
@@ -52,10 +75,16 @@ export function createAppRuntime(rawEnv: Partial<Record<string, string | undefin
 
   return {
     api: client,
+    realtime: realtimeClient,
+    sessionEvents,
     clock: defaultClock,
     telemetry: defaultTelemetry,
     featureFlags: defaultFlags,
     env: resolvedEnv,
+    dispose(): void {
+      sessionEvents.clear();
+      realtimeClient.disconnect();
+    },
   };
 }
 

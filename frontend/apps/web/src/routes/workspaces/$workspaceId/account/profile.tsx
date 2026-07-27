@@ -1,13 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createUseProfile, createUseUpdateProfile } from '@notrelix/features-account';
-import { api, endpoints } from '@notrelix/contracts';
+import { useAppRuntime } from '@notrelix/runtime-web';
 import { Button, Input } from '@notrelix/ui-web';
 import { toast } from 'sonner';
 
-const useProfile = createUseProfile({ api, endpoints });
-const useUpdateProfile = createUseUpdateProfile({ api, endpoints });
-
 export function AccountProfilePage() {
+  const { api: runtimeClient } = useAppRuntime();
+
+  const useProfile = useMemo(
+    () => createUseProfile({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
+    [runtimeClient],
+  );
+
+  const useUpdateProfile = useMemo(
+    () => createUseUpdateProfile({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
+    [runtimeClient],
+  );
+
   const { profile, isLoading } = useProfile();
   const updateMutation = useUpdateProfile();
 

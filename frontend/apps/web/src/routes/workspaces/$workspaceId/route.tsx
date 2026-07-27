@@ -4,7 +4,7 @@ import { WorkspaceGuard } from '@/shell/guards/workspace-guard';
 import { WorkspaceProvider } from '@/providers/workspace-provider';
 import { WorkspaceSidebar } from '@/shell/sidebar/sidebar';
 import { WorkspaceTopbar } from '@/shell/topbar/topbar';
-import { WorkspaceTabbedRouteFrame } from '@/shell/workspace-tabbed-frame';
+import { WorkspaceTabbedFrame } from '@/shell/workspace-tabbed-frame';
 
 const CONTENT_ROUTES = ['/', '/dashboard', '/boards', '/docs'];
 
@@ -28,9 +28,9 @@ export function WorkspaceLayout() {
               {!useTabbedFrame && <WorkspaceTopbar />}
               <main className="flex-1 overflow-y-auto min-h-0">
                 {useTabbedFrame ? (
-                  <WorkspaceTabbedRouteFrame>
+                  <WorkspaceTabbedFrame>
                     <Outlet />
-                  </WorkspaceTabbedRouteFrame>
+                  </WorkspaceTabbedFrame>
                 ) : (
                   <Outlet />
                 )}

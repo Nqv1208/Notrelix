@@ -1,0 +1,51 @@
+{
+  "auditedAt": "2026-07-26T18:36:23.071Z",
+  "summary": {
+    "pass": 6,
+    "fail": 0
+  },
+  "gates": [
+    {
+      "gate": "TYPECHECK",
+      "command": "pnpm typecheck",
+      "status": "PASS",
+      "durationMs": 10449,
+      "errorOutput": ""
+    },
+    {
+      "gate": "LINT",
+      "command": "pnpm lint",
+      "status": "PASS",
+      "durationMs": 402,
+      "errorOutput": ""
+    },
+    {
+      "gate": "TEST",
+      "command": "pnpm test",
+      "status": "PASS",
+      "durationMs": 421,
+      "errorOutput": ""
+    },
+    {
+      "gate": "CHECK_DEPS",
+      "command": "pnpm check:deps",
+      "status": "PASS",
+      "durationMs": 582,
+      "errorOutput": ""
+    },
+    {
+      "gate": "BUILD",
+      "command": "pnpm build",
+      "status": "PASS",
+      "durationMs": 2464,
+      "errorOutput": ""
+    },
+    {
+      "gate": "VALIDATE",
+      "command": "pnpm validate",
+      "status": "PASS",
+      "durationMs": 2083,
+      "errorOutput": ""
+    }
+  ]
+}

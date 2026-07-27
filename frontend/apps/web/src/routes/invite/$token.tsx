@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { useMemo } from 'react';
 import { useParams, useNavigate, Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -30,24 +31,40 @@ import {
   workspaceQueryKeys,
   type WorkspaceApiClient,
 } from '@notrelix/features-workspace/core';
-import { api, endpoints } from '@notrelix/contracts';
-
-const invitationsEndpoints: InvitationsEndpoints = {
-  workspaces: {
-    invitationByToken: endpoints.workspaces.invitationByToken,
-    acceptInvitation: endpoints.workspaces.acceptInvitation,
-    pendingInvitations: endpoints.workspaces.pendingInvitations,
-  },
-};
-
-const invitationService = createInvitationsService(api as unknown as WorkspaceApiClient, invitationsEndpoints);
-const useAuthUser = createUseAuthUser({ api, endpoints });
-const useLogout = createUseLogout({ api, endpoints });
+import { useAppRuntime } from '@notrelix/runtime-web';
 
 export function InvitePage() {
   const { token } = useParams({ from: '/invite/$token' });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { api: runtimeClient } = useAppRuntime();
+
+  const invitationsEndpoints: InvitationsEndpoints = useMemo(
+    () => ({
+      workspaces: {
+        invitationByToken: runtimeClient.endpoints.workspaces.invitationByToken,
+        acceptInvitation: runtimeClient.endpoints.workspaces.acceptInvitation,
+        pendingInvitations: runtimeClient.endpoints.workspaces.pendingInvitations,
+      },
+    }),
+    [runtimeClient],
+  );
+
+  const invitationService = useMemo(
+    () => createInvitationsService(runtimeClient.api as unknown as WorkspaceApiClient, invitationsEndpoints),
+    [runtimeClient, invitationsEndpoints],
+  );
+
+  const useAuthUser = useMemo(
+    () => createUseAuthUser({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
+    [runtimeClient],
+  );
+
+  const useLogout = useMemo(
+    () => createUseLogout({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
+    [runtimeClient],
+  );
+
 
   const { user: currentUser, isAuthenticated, isLoading: authLoading } = useAuthUser();
   const logoutMutation = useLogout();

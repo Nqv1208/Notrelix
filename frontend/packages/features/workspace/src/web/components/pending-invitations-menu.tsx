@@ -1,19 +1,28 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { UserPlus, Loader2, Check, X, Calendar, User, Briefcase } from 'lucide-react';
-import { Button, Popover, PopoverContent, PopoverTrigger, Avatar, AvatarFallback } from '@notrelix/ui-web';
+import { Button, Popover, PopoverContent, PopoverTrigger } from '@notrelix/ui-web';
 import { createUsePendingInvitations } from '../../core';
 import { createUseAcceptInvitation } from '../hooks/mutations/use-accept-invitation';
 import type { WorkspaceInvitation } from '../../core';
-import { api, endpoints } from '@notrelix/contracts';
+import { useAppRuntime } from '@notrelix/runtime-web';
 import { cn } from '@notrelix/ui-web';
-
-const usePendingInvitations = createUsePendingInvitations({ api, endpoints });
-const useAcceptInvitation = createUseAcceptInvitation({ api, endpoints });
 
 export function PendingInvitationsMenu() {
   const navigate = useNavigate();
+  const { api: runtimeClient } = useAppRuntime();
   const [open, setOpen] = useState(false);
+
+  const usePendingInvitations = useMemo(
+    () => createUsePendingInvitations({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
+    [runtimeClient],
+  );
+
+  const useAcceptInvitation = useMemo(
+    () => createUseAcceptInvitation({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
+    [runtimeClient],
+  );
+
   const { data: invitations, isLoading, refetch } = usePendingInvitations();
   const acceptMutation = useAcceptInvitation();
   const [acceptingToken, setAcceptingToken] = useState<string | null>(null);

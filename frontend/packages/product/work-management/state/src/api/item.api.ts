@@ -1,5 +1,4 @@
-import { api } from "@notrelix/contracts"
-import { endpoints } from "@notrelix/contracts"
+import { createNotrelixClient, endpoints } from "@notrelix/contracts"
 import type {
   ActivityLogResponseApi,
   AttachmentDtoApi,
@@ -10,6 +9,8 @@ import type {
 import type { CreateCardInput, UpdateCardInput, UpdateFieldValueInput, UploadCardFileInput } from "@notrelix/work-management-core"
 import type { MoveCardInput } from "@notrelix/work-management-core"
 import { mapActivityResponse, mapAttachmentDtoToCardFile, mapCardDto } from "@notrelix/work-management-core"
+
+const api = createNotrelixClient({ baseUrl: "/api/v1" }).api
 
 export const cardApi = {
   async getCard(cardId: string): Promise<CardDetail> {

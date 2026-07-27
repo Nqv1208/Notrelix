@@ -469,6 +469,9 @@ importers:
       '@notrelix/query':
         specifier: workspace:*
         version: link:../../foundation/query
+      '@notrelix/runtime-web':
+        specifier: workspace:*
+        version: link:../../runtimes/web
       '@notrelix/ui-web':
         specifier: workspace:*
         version: link:../../ui/web
@@ -633,6 +636,9 @@ importers:
       '@notrelix/query':
         specifier: workspace:*
         version: link:../../foundation/query
+      '@notrelix/runtime-web':
+        specifier: workspace:*
+        version: link:../../runtimes/web
       '@notrelix/ui-web':
         specifier: workspace:*
         version: link:../../ui/web
@@ -1087,6 +1093,9 @@ importers:
       '@notrelix/platform':
         specifier: workspace:*
         version: link:../../foundation/platform
+      '@notrelix/realtime':
+        specifier: workspace:*
+        version: link:../../foundation/realtime
     devDependencies:
       '@types/react':
         specifier: ^19.0.0

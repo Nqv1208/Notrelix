@@ -1,12 +1,18 @@
+import { useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { createUseWorkspaceList, type WorkspaceSummary } from '@notrelix/features-workspace';
-import { api, endpoints } from '@notrelix/contracts';
+import { useAppRuntime } from '@notrelix/runtime-web';
 import { Button } from '@notrelix/ui-web';
-
-const useWorkspaceList = createUseWorkspaceList({ api, endpoints });
 
 export function HomePage() {
   const navigate = useNavigate();
+  const { api: runtimeClient } = useAppRuntime();
+
+  const useWorkspaceList = useMemo(
+    () => createUseWorkspaceList({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
+    [runtimeClient],
+  );
+
   const { data: workspaces, isLoading } = useWorkspaceList();
 
   if (isLoading) {

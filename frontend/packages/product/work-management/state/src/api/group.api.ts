@@ -1,6 +1,7 @@
-import { api } from "@notrelix/contracts"
-import { endpoints } from "@notrelix/contracts"
+import { createNotrelixClient, endpoints } from "@notrelix/contracts"
 import type { BoardGroup } from "@notrelix/work-management-core"
+
+const api = createNotrelixClient({ baseUrl: "/api/v1" }).api
 
 export type CreateGroupInput = {
   boardId: string

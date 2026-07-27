@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams } from '@tanstack/react-router';
 import { useWorkspaceContext } from '@/providers/workspace-provider';
 import {
@@ -10,7 +10,7 @@ import {
   createUseUpdateMemberRole,
 } from '@notrelix/features-workspace';
 import type { WorkspaceMember, WorkspaceInvitation } from '@notrelix/features-workspace/core';
-import { api, endpoints } from '@notrelix/contracts';
+import { useAppRuntime } from '@notrelix/runtime-web';
 import {
   Button,
   Input,
@@ -33,16 +33,41 @@ import {
 import { toast } from 'sonner';
 import { Trash2, UserMinus, Mail } from 'lucide-react';
 
-const useWorkspaceMembers = createUseWorkspaceMembers({ api });
-const useWorkspaceInvitations = createUseWorkspaceInvitations({ api, endpoints });
-const useCreateInvitation = createUseCreateInvitation({ api, endpoints });
-const useDeleteInvitation = createUseDeleteInvitation({ api, endpoints });
-const useRemoveMember = createUseRemoveMember({ api });
-const useUpdateMemberRole = createUseUpdateMemberRole({ api });
-
 export function MembersPage() {
   const { workspaceId } = useParams({ from: '/workspaces/$workspaceId' });
+  const { api: runtimeClient } = useAppRuntime();
   const { workspace } = useWorkspaceContext();
+
+  const useWorkspaceMembers = useMemo(
+    () => createUseWorkspaceMembers({ api: runtimeClient.api }),
+    [runtimeClient],
+  );
+
+  const useWorkspaceInvitations = useMemo(
+    () => createUseWorkspaceInvitations({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
+    [runtimeClient],
+  );
+
+  const useCreateInvitation = useMemo(
+    () => createUseCreateInvitation({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
+    [runtimeClient],
+  );
+
+  const useDeleteInvitation = useMemo(
+    () => createUseDeleteInvitation({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
+    [runtimeClient],
+  );
+
+  const useRemoveMember = useMemo(
+    () => createUseRemoveMember({ api: runtimeClient.api }),
+    [runtimeClient],
+  );
+
+  const useUpdateMemberRole = useMemo(
+    () => createUseUpdateMemberRole({ api: runtimeClient.api }),
+    [runtimeClient],
+  );
+
   const { data: members = [], isLoading } = useWorkspaceMembers(workspaceId);
   const { data: invitations = [] } = useWorkspaceInvitations(workspaceId);
   const createInvitationMutation = useCreateInvitation(workspaceId);

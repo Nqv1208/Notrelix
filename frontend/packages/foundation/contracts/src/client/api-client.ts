@@ -12,10 +12,16 @@ export type ApiRequestOptions = {
   correlationId?: string
 }
 
+export interface NotrelixClientConfig {
+  baseUrl: string
+  onSessionExpired?: (error: AppError) => void
+}
+
 export async function apiFetch<TResponse>(
   baseUrl: string,
   url: string,
   options: RequestInit & ApiRequestOptions = {},
+  onSessionExpired?: (error: AppError) => void,
   retry = true
 ): Promise<TResponse> {
   const correlationId = options.correlationId || generateCorrelationId()
@@ -59,24 +65,28 @@ export async function apiFetch<TResponse>(
     url !== endpoints.auth.register
   ) {
     try {
-      await refreshOnce(baseUrl)
+      await refreshOnce(baseUrl, onSessionExpired)
       return await apiFetch<TResponse>(
         baseUrl,
         url,
         { ...options, skipAuthRefresh: true, correlationId },
+        onSessionExpired,
         false
       )
     } catch (refreshError) {
-      if (refreshError instanceof AppError) {
-        throw refreshError
+      const authErr = refreshError instanceof AppError
+        ? refreshError
+        : new AppError({
+            kind: "auth",
+            message: "Session expired. Please sign in again.",
+            status: 401,
+            correlationId,
+            cause: refreshError,
+          })
+      if (onSessionExpired) {
+        onSessionExpired(authErr)
       }
-      throw new AppError({
-        kind: "auth",
-        message: "Session expired. Please sign in again.",
-        status: 401,
-        correlationId,
-        cause: refreshError,
-      })
+      throw authErr
     }
   }
 
@@ -134,7 +144,7 @@ export async function apiFetch<TResponse>(
 
 let refreshPromise: Promise<void> | null = null
 
-async function refreshOnce(baseUrl: string): Promise<void> {
+async function refreshOnce(baseUrl: string, onSessionExpired?: (error: AppError) => void): Promise<void> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       const refreshResponse = await fetch(`${baseUrl}${endpoints.auth.refresh}`, {
@@ -146,20 +156,24 @@ async function refreshOnce(baseUrl: string): Promise<void> {
       })
 
       if (!refreshResponse.ok) {
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new CustomEvent("auth:failure"))
-        }
-        throw new AppError({
+        const err = new AppError({
           kind: "auth",
           status: refreshResponse.status,
           message: "Session expired. Please sign in again.",
         })
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("auth:failure"))
+        }
+        if (onSessionExpired) {
+          onSessionExpired(err)
+        }
+        throw err
       }
     })().finally(() => {
       refreshPromise = null
     })
   }
-  return refreshPromise;
+  return refreshPromise
 }
 
 function extractErrorMessage(data: unknown): string {
@@ -173,30 +187,32 @@ function extractErrorMessage(data: unknown): string {
   return "Request failed"
 }
 
-export function createNotrelixClient(config: { baseUrl: string }) {
-  const customBaseUrl = config.baseUrl;
+export function createNotrelixClient(config: NotrelixClientConfig) {
+  const customBaseUrl = config.baseUrl
+  const onSessionExpired = config.onSessionExpired
+
   return {
     api: {
       get<TResponse>(url: string, options?: ApiRequestOptions): Promise<TResponse> {
-        return apiFetch<TResponse>(customBaseUrl, url, { method: "GET", ...options })
+        return apiFetch<TResponse>(customBaseUrl, url, { method: "GET", ...options }, onSessionExpired)
       },
       post<TResponse, TBody = unknown>(url: string, body?: TBody, options?: ApiRequestOptions): Promise<TResponse> {
         const init: RequestInit & ApiRequestOptions = { method: "POST", ...options }
         if (body !== undefined) init.body = JSON.stringify(body)
-        return apiFetch<TResponse>(customBaseUrl, url, init)
+        return apiFetch<TResponse>(customBaseUrl, url, init, onSessionExpired)
       },
       put<TResponse, TBody = unknown>(url: string, body?: TBody, options?: ApiRequestOptions): Promise<TResponse> {
         const init: RequestInit & ApiRequestOptions = { method: "PUT", ...options }
         if (body !== undefined) init.body = JSON.stringify(body)
-        return apiFetch<TResponse>(customBaseUrl, url, init)
+        return apiFetch<TResponse>(customBaseUrl, url, init, onSessionExpired)
       },
       patch<TResponse, TBody = unknown>(url: string, body?: TBody, options?: ApiRequestOptions): Promise<TResponse> {
         const init: RequestInit & ApiRequestOptions = { method: "PATCH", ...options }
         if (body !== undefined) init.body = JSON.stringify(body)
-        return apiFetch<TResponse>(customBaseUrl, url, init)
+        return apiFetch<TResponse>(customBaseUrl, url, init, onSessionExpired)
       },
       delete<TResponse>(url: string, options?: ApiRequestOptions): Promise<TResponse> {
-        return apiFetch<TResponse>(customBaseUrl, url, { method: "DELETE", ...options })
+        return apiFetch<TResponse>(customBaseUrl, url, { method: "DELETE", ...options }, onSessionExpired)
       },
     },
     endpoints,
@@ -204,66 +220,3 @@ export function createNotrelixClient(config: { baseUrl: string }) {
 }
 
 export type NotrelixClient = ReturnType<typeof createNotrelixClient>;
-
-// ---------------------------------------------------------------------------
-// DEPRECATED: Global API singleton + configureApi
-//
-// These are maintained ONLY as a compatibility bridge during the incremental
-// migration to the AppRuntime injection pattern.
-//
-// ✅ NEW code: use `useAppRuntime()` -> `runtime.api` (injected, testable)
-// ❌ AVOID: importing `api` from '@notrelix/contracts' in new components
-//
-// Migration guide:
-//   1. Add `const { api: runtimeClient } = useAppRuntime()` in your component
-//   2. Replace `{ api, endpoints }` factory args with
-//      `{ api: runtimeClient.api, endpoints: runtimeClient.endpoints }`
-//   3. Remove the module-level factory call; move it inside the component
-//      body wrapped in `useMemo` (for hooks) or lazy-init (for components)
-// ---------------------------------------------------------------------------
-
-/** @deprecated Internal mutable base URL — will be removed when all consumers migrate. */
-let activeBaseUrl = "/api/v1";
-
-/**
- * @deprecated Call `createAppRuntime(import.meta.env)` in main.tsx and pass
- * the runtime through `AppRuntimeProvider` instead of configuring a global singleton.
- *
- * This function exists only for backward compatibility during migration.
- * It will be removed in a future PR once all app components use `useAppRuntime()`.
- */
-export function configureApi(baseUrl: string) {
-  activeBaseUrl = baseUrl;
-}
-
-/**
- * @deprecated Import `useAppRuntime()` and use `runtime.api` instead.
- *
- * This singleton is configured via `configureApi()` in main.tsx and is
- * being phased out in favour of the AppRuntime injection pattern.
- * Existing module-level component factories may continue to use this
- * until they are migrated to the `useAppRuntime()` context pattern.
- */
-export const api = {
-  get<TResponse>(url: string, options?: ApiRequestOptions): Promise<TResponse> {
-    return apiFetch<TResponse>(activeBaseUrl, url, { method: "GET", ...options })
-  },
-  post<TResponse, TBody = unknown>(url: string, body?: TBody, options?: ApiRequestOptions): Promise<TResponse> {
-    const init: RequestInit & ApiRequestOptions = { method: "POST", ...options }
-    if (body !== undefined) init.body = JSON.stringify(body)
-    return apiFetch<TResponse>(activeBaseUrl, url, init)
-  },
-  put<TResponse, TBody = unknown>(url: string, body?: TBody, options?: ApiRequestOptions): Promise<TResponse> {
-    const init: RequestInit & ApiRequestOptions = { method: "PUT", ...options }
-    if (body !== undefined) init.body = JSON.stringify(body)
-    return apiFetch<TResponse>(activeBaseUrl, url, init)
-  },
-  patch<TResponse, TBody = unknown>(url: string, body?: TBody, options?: ApiRequestOptions): Promise<TResponse> {
-    const init: RequestInit & ApiRequestOptions = { method: "PATCH", ...options }
-    if (body !== undefined) init.body = JSON.stringify(body)
-    return apiFetch<TResponse>(activeBaseUrl, url, init)
-  },
-  delete<TResponse>(url: string, options?: ApiRequestOptions): Promise<TResponse> {
-    return apiFetch<TResponse>(activeBaseUrl, url, { method: "DELETE", ...options })
-  },
-};

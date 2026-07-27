@@ -1,8 +1,9 @@
-import { api } from "@notrelix/contracts"
-import { endpoints } from "@notrelix/contracts"
+import { createNotrelixClient, endpoints } from "@notrelix/contracts"
 import type { CommentDtoApi } from "@notrelix/work-management-core"
 import type { CreateCardUpdateInput } from "@notrelix/work-management-core"
 import { mapCommentDtoToCardUpdate } from "@notrelix/work-management-core"
+
+const api = createNotrelixClient({ baseUrl: "/api/v1" }).api
 
 export const commentApi = {
   async getCardUpdates(cardId: string) {

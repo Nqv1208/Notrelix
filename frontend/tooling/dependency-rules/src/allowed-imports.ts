@@ -14,7 +14,7 @@ export const ALLOWED_IMPORTS: Record<string, string[]> = {
   "@notrelix/observability": ["@notrelix/kernel"],
 
   // ── Runtimes ────────────────────────────────────────────────────────
-  "@notrelix/runtime-web": ["@notrelix/platform", "@notrelix/kernel", "@notrelix/contracts"],
+  "@notrelix/runtime-web": ["@notrelix/platform", "@notrelix/kernel", "@notrelix/contracts", "@notrelix/realtime"],
   "@notrelix/runtime-mobile": ["@notrelix/platform", "@notrelix/kernel", "@notrelix/contracts"],
 
   // ── UI ──────────────────────────────────────────────────────────────
@@ -89,6 +89,7 @@ export const ALLOWED_IMPORTS: Record<string, string[]> = {
   "@notrelix/features-workspace": [
     "@notrelix/contracts", "@notrelix/kernel", "@notrelix/platform",
     "@notrelix/query", "@notrelix/ui-web", "@notrelix/ui-mobile",
+    "@notrelix/runtime-web",
   ],
   "@notrelix/features-account": [
     "@notrelix/contracts", "@notrelix/kernel", "@notrelix/platform",
@@ -121,6 +122,7 @@ export const ALLOWED_IMPORTS: Record<string, string[]> = {
   "@notrelix/features-collaboration": [
     "@notrelix/contracts", "@notrelix/kernel", "@notrelix/platform",
     "@notrelix/query", "@notrelix/realtime", "@notrelix/ui-web", "@notrelix/ui-mobile",
+    "@notrelix/runtime-web",
   ],
 
   // ── Apps ───────────────────────────────────────────────────────────

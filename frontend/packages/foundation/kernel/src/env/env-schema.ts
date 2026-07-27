@@ -1,60 +1,108 @@
 import { z } from "zod";
 
+export type RuntimeMode = "development" | "test" | "production";
+
+export interface RuntimeEnvironmentInput {
+  readonly mode?: RuntimeMode;
+  readonly apiUrl?: string;
+  readonly realtimeUrl?: string;
+  readonly appUrl?: string;
+  readonly releaseSha?: string;
+  readonly mockApi?: boolean;
+}
+
+export interface ResolvedRuntimeEnvironment {
+  readonly mode: RuntimeMode;
+  readonly isProduction: boolean;
+  readonly apiUrl: string;
+  readonly realtimeUrl: string;
+  readonly wsUrl: string; // Alias for realtimeUrl backward compatibility
+  readonly appUrl: string;
+  readonly releaseSha: string;
+  readonly mockApi: boolean;
+  readonly nodeEnv: RuntimeMode; // Alias for mode backward compatibility
+}
+
 export const envSchema = z.object({
-  NEXT_PUBLIC_API_URL: z.string().url().optional(),
-  NEXT_PUBLIC_WS_URL: z.string().url().optional(),
+  mode: z.enum(["development", "production", "test"]).default("development"),
+  apiUrl: z.string().url().optional(),
+  realtimeUrl: z.string().url().optional(),
+  appUrl: z.string().url().optional(),
+  releaseSha: z.string().optional(),
+  mockApi: z.boolean().default(false),
+
+  // Legacy Vite / Next environment mapping fallbacks
   VITE_API_URL: z.string().url().optional(),
   VITE_WS_URL: z.string().url().optional(),
   VITE_APP_URL: z.string().url().optional(),
   VITE_RELEASE_SHA: z.string().optional(),
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  VITE_MOCK_API: z.string().optional(),
+  NODE_ENV: z.enum(["development", "production", "test"]).optional(),
 });
 
-export type Env = z.infer<typeof envSchema>;
+export function parseEnv(rawInput: Partial<Record<string, unknown>> = {}): ResolvedRuntimeEnvironment {
+  const mode: RuntimeMode =
+    (rawInput.mode as RuntimeMode) ||
+    (rawInput.NODE_ENV as RuntimeMode) ||
+    "development";
 
-export interface ResolvedEnv {
-  apiUrl: string;
-  wsUrl: string;
-  nodeEnv: "development" | "production" | "test";
-  appUrl?: string;
-  releaseSha?: string;
-}
+  const apiUrl =
+    (rawInput.apiUrl as string) ||
+    (rawInput.VITE_API_URL as string) ||
+    (rawInput.NEXT_PUBLIC_API_URL as string);
 
-export function parseEnv(input: Partial<Record<string, string | undefined>>): ResolvedEnv {
-  const parsedEnv = envSchema.safeParse(input);
+  const realtimeUrl =
+    (rawInput.realtimeUrl as string) ||
+    (rawInput.VITE_WS_URL as string) ||
+    (rawInput.NEXT_PUBLIC_WS_URL as string);
 
-  if (!parsedEnv.success) {
-    console.error("[Kernel Env] Invalid environment variables:", parsedEnv.error.format());
-    throw new Error("Invalid environment variables configuration");
-  }
+  const appUrl =
+    (rawInput.appUrl as string) ||
+    (rawInput.VITE_APP_URL as string);
 
-  const data = parsedEnv.data;
-  const isProduction = data.NODE_ENV === "production";
+  const releaseSha =
+    (rawInput.releaseSha as string) ||
+    (rawInput.VITE_RELEASE_SHA as string) ||
+    "dev-local";
 
-  // Fail-fast in production if required URLs are missing
+  const mockApi =
+    typeof rawInput.mockApi === "boolean"
+      ? rawInput.mockApi
+      : rawInput.VITE_MOCK_API === "true";
+
+  const isProduction = mode === "production";
+
   if (isProduction) {
-    const missingVars: string[] = [];
-    if (!data.VITE_API_URL && !data.NEXT_PUBLIC_API_URL) missingVars.push("VITE_API_URL");
-    if (!data.VITE_WS_URL && !data.NEXT_PUBLIC_WS_URL) missingVars.push("VITE_WS_URL");
-    if (missingVars.length > 0) {
+    const missing: string[] = [];
+    if (!apiUrl) missing.push("apiUrl");
+    if (!realtimeUrl) missing.push("realtimeUrl");
+    if (!appUrl) missing.push("appUrl");
+    if (missing.length > 0) {
       throw new Error(
-        `[Kernel Env] Missing required environment variables in production: ${missingVars.join(", ")}`
+        `[Kernel Env] Missing required environment variables in production: ${missing.join(", ")}`
       );
+    }
+    if (mockApi) {
+      throw new Error("[Kernel Env] mockApi cannot be true in production mode");
     }
   }
 
-  const apiUrl = data.VITE_API_URL ?? data.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
-  const wsUrl = data.VITE_WS_URL ?? data.NEXT_PUBLIC_WS_URL ?? "ws://localhost:5000/stream";
+  const resolvedApiUrl = apiUrl ?? "http://localhost:8000/api/v1";
+  const resolvedRealtimeUrl = realtimeUrl ?? "ws://localhost:8000/realtime";
+  const resolvedAppUrl = appUrl ?? "http://localhost:3000";
 
   return {
-    apiUrl,
-    wsUrl,
-    nodeEnv: data.NODE_ENV,
-    appUrl: data.VITE_APP_URL,
-    releaseSha: data.VITE_RELEASE_SHA,
+    mode,
+    isProduction,
+    apiUrl: resolvedApiUrl,
+    realtimeUrl: resolvedRealtimeUrl,
+    wsUrl: resolvedRealtimeUrl,
+    appUrl: resolvedAppUrl,
+    releaseSha,
+    mockApi,
+    nodeEnv: mode,
   };
 }
 
-// NOTE: Do NOT export a global `env = parseEnv()` singleton.
-// Applications must call parseEnv(import.meta.env) explicitly via createAppRuntime().
+export type Env = ResolvedRuntimeEnvironment;
 export const envSchemaDefinition = envSchema;

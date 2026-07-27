@@ -5,6 +5,8 @@
  * - isManualClose flag prevents reconnect loops on intentional disconnects (logout, unmount)
  * - Exponential backoff with jitter avoids thundering herd reconnect storms
  * - Envelope validation rejects malformed messages before dispatching to listeners
+ * - Event deduplication LRU cache prevents processing duplicate eventId deliveries
+ * - Heartbeat (30s ping) keeps connection alive across proxies/load balancers
  * - No singleton exported - instantiate via AppRuntime composition root
  */
 
@@ -67,8 +69,17 @@ export class RealtimeClient {
   private readonly baseReconnectDelayMs = 1000;
   private readonly maxReconnectDelayMs = 30_000;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
   /** Prevents onclose from scheduling a reconnect after intentional disconnect() */
   private isManualClose = false;
+
+  /** Heartbeat timer (30s interval) */
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly heartbeatIntervalMs = 30_000;
+
+  /** LRU cache for eventId deduplication */
+  private readonly seenEventIds: Set<string> = new Set();
+  private readonly maxDeduplicationCacheSize = 1000;
 
   constructor(private readonly url: string) {}
 
@@ -97,6 +108,7 @@ export class RealtimeClient {
       this.socket.onopen = () => {
         this.reconnectAttempts = 0;
         this.setState('connected');
+        this.startHeartbeat();
       };
 
       this.socket.onmessage = (event) => {
@@ -113,10 +125,18 @@ export class RealtimeClient {
           return;
         }
 
+        // Deduplication check
+        if (this.isDuplicateEvent(parsed.eventId)) {
+          console.debug('[RealtimeClient] Duplicate eventId ignored:', parsed.eventId);
+          return;
+        }
+
+        this.recordEventId(parsed.eventId);
         this.eventListeners.forEach((listener) => listener(parsed as RealtimeEnvelope));
       };
 
       this.socket.onclose = () => {
+        this.stopHeartbeat();
         this.socket = null;
         if (this.isManualClose) {
           // Intentional disconnect - do NOT schedule reconnect
@@ -135,6 +155,41 @@ export class RealtimeClient {
       console.error('[RealtimeClient] Failed to create WebSocket:', e);
       this.socket = null;
       this.scheduleReconnect();
+    }
+  }
+
+  private isDuplicateEvent(eventId: string): boolean {
+    return this.seenEventIds.has(eventId);
+  }
+
+  private recordEventId(eventId: string): void {
+    if (this.seenEventIds.size >= this.maxDeduplicationCacheSize) {
+      // Evict oldest inserted eventId
+      const oldestKey = this.seenEventIds.values().next().value;
+      if (oldestKey !== undefined) {
+        this.seenEventIds.delete(oldestKey);
+      }
+    }
+    this.seenEventIds.add(eventId);
+  }
+
+  private startHeartbeat(): void {
+    this.stopHeartbeat();
+    this.heartbeatTimer = setInterval(() => {
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        try {
+          this.socket.send(JSON.stringify({ type: 'ping', timestamp: new Date().toISOString() }));
+        } catch (err) {
+          console.warn('[RealtimeClient] Failed to send heartbeat ping:', err);
+        }
+      }
+    }, this.heartbeatIntervalMs);
+  }
+
+  private stopHeartbeat(): void {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
     }
   }
 
@@ -178,6 +233,8 @@ export class RealtimeClient {
     // handler knows not to schedule a reconnect.
     this.isManualClose = true;
 
+    this.stopHeartbeat();
+
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -192,6 +249,3 @@ export class RealtimeClient {
     }
   }
 }
-
-// NOTE: No singleton exported. Instantiate via AppRuntime composition root:
-// const realtimeClient = new RealtimeClient(runtime.env.wsUrl);

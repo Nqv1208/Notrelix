@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from '@notrelix/platform/navigation';
 import {
   createUseWorkspaceList,
   createUseCreateWorkspace,
 } from '@notrelix/features-workspace';
-import { api, endpoints } from '@notrelix/contracts';
+import { useAppRuntime } from '@notrelix/runtime-web';
 import { useWorkspaceContext } from '../../providers/workspace-provider';
 import {
   Avatar,
@@ -26,21 +26,29 @@ import {
 } from '@notrelix/ui-web';
 import { ChevronsUpDown, Plus } from 'lucide-react';
 
-import { env } from '@/config/env';
-
-const useWorkspaceList = createUseWorkspaceList({
-  api,
-  endpoints,
-  options: { mockMode: env.mockApi },
-});
-const useCreateWorkspace = createUseCreateWorkspace({
-  api,
-  endpoints,
-});
-
 export function WorkspaceSwitcher() {
   const navigate = useNavigate();
+  const { api: runtimeClient, env: runtimeEnv } = useAppRuntime();
   const { workspaceId, workspace: activeWorkspace } = useWorkspaceContext();
+
+  const useWorkspaceList = useMemo(
+    () =>
+      createUseWorkspaceList({
+        api: runtimeClient.api,
+        endpoints: runtimeClient.endpoints,
+        options: { mockMode: runtimeEnv.nodeEnv === 'development' },
+      }),
+    [runtimeClient, runtimeEnv.nodeEnv],
+  );
+
+  const useCreateWorkspace = useMemo(
+    () =>
+      createUseCreateWorkspace({
+        api: runtimeClient.api,
+        endpoints: runtimeClient.endpoints,
+      }),
+    [runtimeClient],
+  );
   
   const { data: workspaces = [] } = useWorkspaceList();
   const createWorkspaceMutation = useCreateWorkspace();

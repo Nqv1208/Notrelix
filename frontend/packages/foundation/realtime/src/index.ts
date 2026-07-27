@@ -1,5 +1,5 @@
 /**
- * @notrelix/realtime - WebSocket client and event contracts
+ * @notrelix/realtime - WebSocket client, protocol, and event contracts
  *
  * Provides realtime communication infrastructure with typed events.
  *
@@ -7,6 +7,7 @@
  * not as a module-level singleton.
  */
 
+export * from './protocol';
 export {
   RealtimeClient,
   type RealtimeEvent,
