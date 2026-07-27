@@ -1,6 +1,7 @@
+using Notrelix.Domain.Collaboration.Attachments.Events;
 namespace Notrelix.Domain.Collaboration.Attachments;
 
-public class Attachment : AggregateRoot, IWorkspaceScoped
+public class Attachment : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -18,7 +19,7 @@ public class Attachment : AggregateRoot, IWorkspaceScoped
         Guard.NotNull(metadata);
 
         if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
-            throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
+            throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{workspaceId}', got '{target.WorkspaceId.Value}'.");
 
         var attachment = new Attachment
         {
@@ -30,25 +31,25 @@ public class Attachment : AggregateRoot, IWorkspaceScoped
         };
 
         attachment.SetAuditOnCreate(createdBy, createdAt);
-        attachment.AddDomainEvent(new AttachmentCreatedDomainEvent(accountId, workspaceId, attachment.Id, target, createdAt));
+        attachment.RaiseDomainEvent(new AttachmentCreatedDomainEvent(accountId, workspaceId, attachment.Id, target, createdAt));
         return attachment;
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new AttachmentDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
+        RaiseDomainEvent(new AttachmentDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new AttachmentRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new AttachmentRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

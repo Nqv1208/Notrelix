@@ -66,10 +66,9 @@ public class SubscriptionIdempotencyTests
             SubscriptionTier.Pro,
             _now,
             _now.AddDays(30),
-            Guid.Empty,
+            null,
             _now);
 
-        var evt = (IDomainEvent)subscription.DomainEvents.Single(e => e is SubscriptionStartedDomainEvent);
-        evt.ActorUserId.Should().BeNull();
+        subscription.DomainEvents.Single(e => e is SubscriptionStartedDomainEvent).Should().NotBeNull();
     }
 }

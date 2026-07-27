@@ -3,7 +3,10 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.SetBoardItemDueDate;
 
-public record SetBoardItemDueDateCommand(Guid BoardItemId, DateTime? DueDate, DateTime? StartDate) : ICommand<Result>, ITransactionalRequest;
+public record SetBoardItemDueDateCommand(Guid BoardItemId, DateTime? DueDate, DateTime? StartDate, string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IIdempotentRequest
+{
+    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"set-item-due-date:{BoardItemId}";
+}
 
 public class SetBoardItemDueDateCommandHandler : IRequestHandler<SetBoardItemDueDateCommand, Result>
 {

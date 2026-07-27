@@ -1,6 +1,9 @@
+using Notrelix.Domain.Accounts.Members.Events;
+using Notrelix.Domain.Accounts.Rules;
+using Notrelix.Domain.Workspaces;
 namespace Notrelix.Domain.Accounts.Members;
 
-public class AccountMember : AggregateRoot, IAccountScoped
+public class AccountMember : SoftDeletableAggregateRoot, IAccountScoped
 {
     public Guid AccountId { get; private set; }
     public Guid UserId { get; private set; }
@@ -24,7 +27,7 @@ public class AccountMember : AggregateRoot, IAccountScoped
         };
 
         member.SetAuditOnCreate(addedBy, createdAt);
-        member.AddDomainEvent(new AccountMemberAddedDomainEvent(accountId, member.Id, userId, role, addedBy, createdAt));
+        member.RaiseDomainEvent(new AccountMemberAddedDomainEvent(accountId, member.Id, userId, role, addedBy, createdAt));
         return member;
     }
 
@@ -34,7 +37,7 @@ public class AccountMember : AggregateRoot, IAccountScoped
         Guard.NotEmpty(updatedBy);
 
         if (Status != AccountMemberStatus.Active)
-            throw new BusinessRuleException("Cannot change role of an inactive or suspended member.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotChangeRoleOfInactive, "Cannot change role of an inactive or suspended member.");
 
         AccountOwnerRules.EnsureCanDowngradeOwner(Role, newRole, activeOwnerCount);
 
@@ -45,7 +48,7 @@ public class AccountMember : AggregateRoot, IAccountScoped
 
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new AccountMemberRoleChangedDomainEvent(
+        RaiseDomainEvent(new AccountMemberRoleChangedDomainEvent(
             AccountId, Id, UserId, oldRole, newRole, updatedBy, updatedAt));
     }
 
@@ -61,7 +64,7 @@ public class AccountMember : AggregateRoot, IAccountScoped
         Status = AccountMemberStatus.Suspended;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new AccountMemberSuspendedDomainEvent(AccountId, Id, UserId, updatedBy, updatedAt));
+        RaiseDomainEvent(new AccountMemberSuspendedDomainEvent(AccountId, Id, UserId, updatedBy, updatedAt));
     }
 
     public void Activate(Guid updatedBy, DateTimeOffset updatedAt)
@@ -72,25 +75,25 @@ public class AccountMember : AggregateRoot, IAccountScoped
         if (Status == AccountMemberStatus.Active) return;
 
         if (Status == AccountMemberStatus.Removed)
-            throw new BusinessRuleException("Cannot activate a removed member. Restore the member first.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotActivateRemoved, "Cannot activate a removed member. Restore the member first.");
 
         Status = AccountMemberStatus.Active;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new AccountMemberActivatedDomainEvent(AccountId, Id, UserId, updatedBy, updatedAt));
+        RaiseDomainEvent(new AccountMemberActivatedDomainEvent(AccountId, Id, UserId, updatedBy, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
 
         if (IsDeleted) return;
 
         Status = AccountMemberStatus.Removed;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new AccountMemberRemovedDomainEvent(AccountId, Id, UserId, deletedBy, deletedAt));
+        RaiseDomainEvent(new AccountMemberRemovedDomainEvent(AccountId, Id, UserId, deletedBy, deletedAt));
     }
 
     public void Remove(int activeOwnerCount, Guid removedBy, DateTimeOffset removedAt, string? reason = null)
@@ -103,16 +106,16 @@ public class AccountMember : AggregateRoot, IAccountScoped
         SoftDelete(removedBy, removedAt, reason);
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
 
         Guard.NotEmpty(restoredBy);
 
         Status = AccountMemberStatus.Active;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new AccountMemberRestoredDomainEvent(AccountId, Id, UserId, restoredBy, restoredAt));
+        RaiseDomainEvent(new AccountMemberRestoredDomainEvent(AccountId, Id, UserId, restoredBy, restoredAt));
     }
 }

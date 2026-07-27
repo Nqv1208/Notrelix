@@ -1,6 +1,7 @@
 namespace Notrelix.Domain.WorkManagement.Relations.Events;
 
-public record BoardRelationCreatedDomainEvent : WorkspaceScopedDomainEvent
+[EventName("work-management.board-relation-created")]
+public sealed record BoardRelationCreatedDomainEvent : WorkspaceScopedDomainEvent
 {
     public Guid RelationId { get; }
     public Guid SourceBoardId { get; }
@@ -12,9 +13,8 @@ public record BoardRelationCreatedDomainEvent : WorkspaceScopedDomainEvent
         Guid relationId,
         Guid sourceBoardId,
         Guid targetBoardId,
-        Guid? actorUserId,
         DateTimeOffset occurredAt)
-        : base(accountId, workspaceId, occurredAt, actorUserId)
+        : base(accountId, workspaceId, occurredAt)
     {
         RelationId = relationId;
         SourceBoardId = sourceBoardId;

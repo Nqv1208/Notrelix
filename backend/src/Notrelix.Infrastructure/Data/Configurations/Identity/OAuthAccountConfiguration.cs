@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Notrelix.Domain.Identity.OAuth;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Identity;
@@ -14,7 +15,10 @@ public class OAuthAccountConfiguration : IEntityTypeConfiguration<OAuthAccount>
         builder.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(x => x.Provider).HasColumnName("provider").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.ProviderId).HasColumnName("provider_id").IsRequired().HasMaxLength(256);
-        builder.Property(x => x.RawProfile).HasColumnName("raw_profile").HasColumnType("jsonb");
+        builder.Property(x => x.ProfileSnapshot).HasColumnName("raw_profile").HasColumnType("jsonb")
+            .HasConversion(
+                v => v == null ? null : JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                v => string.IsNullOrEmpty(v) ? null! : JsonSerializer.Deserialize<OAuthProfileSnapshot>(v, (JsonSerializerOptions?)null)!);
 
         builder.OwnsOne(x => x.Token, token =>
         {

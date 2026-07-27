@@ -25,17 +25,17 @@ public class UserLoginAttempt : AggregateRoot
     {
         if (userId is null && string.IsNullOrWhiteSpace(attemptedEmail))
         {
-            throw new BusinessRuleException("Login attempt must have either user id or attempted email.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_LoginAttempt_MustHaveUserIdOrEmail, "Login attempt must have either user id or attempted email.");
         }
 
         if (succeeded && !string.IsNullOrWhiteSpace(failureReason))
         {
-            throw new BusinessRuleException("Successful login attempt cannot have failure reason.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_LoginAttempt_SuccessfulCannotHaveReason, "Successful login attempt cannot have failure reason.");
         }
 
         if (!succeeded && string.IsNullOrWhiteSpace(failureReason))
         {
-            throw new BusinessRuleException("Failed login attempt must have failure reason.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_LoginAttempt_FailedMustHaveReason, "Failed login attempt must have failure reason.");
         }
 
         var attempt = new UserLoginAttempt
@@ -49,7 +49,7 @@ public class UserLoginAttempt : AggregateRoot
             OccurredAt = occurredAt
         };
 
-        attempt.AddDomainEvent(new LoginAttemptRecordedDomainEvent(
+        attempt.RaiseDomainEvent(new LoginAttemptRecordedDomainEvent(
             attempt.Id,
             attempt.UserId,
             attempt.AttemptedEmail,

@@ -1,5 +1,7 @@
+using Notrelix.Domain.Billing.Plans;
 namespace Notrelix.Domain.Billing.Usage.Events;
 
+[EventName("billing.workspace-feature-usage-initialized")]
 public sealed record WorkspaceFeatureUsageInitializedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -8,4 +10,4 @@ public sealed record WorkspaceFeatureUsageInitializedDomainEvent(
     decimal? HardLimit,
     decimal? SoftLimit,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

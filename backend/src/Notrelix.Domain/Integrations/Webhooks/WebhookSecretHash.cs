@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Integrations.Webhooks;
 
 public sealed class WebhookSecretHash : ValueObject
 {
-    public string Hash { get; }
+    public string Hash { get; } = null!;
 
     private WebhookSecretHash() { }
     private WebhookSecretHash(string hash)

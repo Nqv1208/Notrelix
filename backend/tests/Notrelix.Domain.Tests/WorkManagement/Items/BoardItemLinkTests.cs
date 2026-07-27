@@ -30,7 +30,7 @@ public class BoardItemLinkTests
 
         var act = () => BoardItemLink.Create(Guid.NewGuid(), workspaceId, Guid.NewGuid(), Guid.NewGuid(), target, BoardItemLinkType.Reference, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        act.Should().Throw<WorkspaceMismatchException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]

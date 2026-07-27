@@ -27,7 +27,7 @@ public class UserMfaMethodSoftDeleteRestoreTests
         var secretRef = SecretRef.Create("secret-123");
         var method = UserMfaMethod.Create(_actorId, MfaMethodType.AuthenticatorApp, _now, secretRef);
         method.SoftDelete(_actorId, _now);
-        method.ClearDomainEvents();
+        ((IHasDomainEvents)method).ClearDomainEvents();
         var version = method.Version;
 
         method.Restore(_actorId, _now);

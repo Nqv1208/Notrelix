@@ -21,7 +21,7 @@ public class MentionWorkspaceScopeTests
     {
         var source = ResourceRef.Create(ResourceType.Comment, Guid.NewGuid(), WsB);
         var act = () => Mention.Create(Guid.NewGuid(), WsA, source, MentionType.User, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        act.Should().Throw<WorkspaceMismatchException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]

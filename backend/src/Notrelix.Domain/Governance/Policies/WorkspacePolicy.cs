@@ -1,3 +1,4 @@
+using Notrelix.Domain.Governance.Policies.Events;
 namespace Notrelix.Domain.Governance.Policies;
 
 public class WorkspacePolicy : AuditableEntity, IWorkspaceScoped
@@ -40,6 +41,6 @@ public class WorkspacePolicy : AuditableEntity, IWorkspaceScoped
         if (sharingPolicy != null) SharingPolicy = sharingPolicy;
 
         SetAuditOnUpdate(updatedBy, updatedAt);
-        AddDomainEvent(new WorkspacePolicyUpdatedEvent(AccountId, WorkspaceId, updatedBy, updatedAt));
+        RaiseDomainEvent(new WorkspacePolicyUpdatedDomainEvent(AccountId, WorkspaceId, updatedBy, updatedAt));
     }
 }

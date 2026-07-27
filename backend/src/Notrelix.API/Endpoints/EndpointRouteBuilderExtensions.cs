@@ -17,7 +17,13 @@ using Notrelix.API.Endpoints.WorkManagement.BoardItems;
 using Notrelix.API.Endpoints.WorkManagement.Boards;
 using Notrelix.API.Endpoints.WorkManagement.BoardViews;
 using Notrelix.API.Endpoints.WorkManagement.Checklists;
+using Notrelix.API.Endpoints.WorkManagement.Approvals;
+using Notrelix.API.Endpoints.WorkManagement.Forms;
 using Notrelix.API.Endpoints.WorkManagement.Labels;
+using Notrelix.API.Endpoints.WorkManagement.BoardPreferences;
+using Notrelix.API.Endpoints.WorkManagement.SavedFilters;
+using Notrelix.API.Endpoints.WorkManagement.Relations;
+using Notrelix.API.Endpoints.WorkManagement.Templates;
 using Notrelix.API.Endpoints.Workspaces.Activity;
 using Notrelix.API.Endpoints.Workspaces.Invitations;
 using Notrelix.API.Endpoints.Workspaces.Members;
@@ -70,6 +76,24 @@ public static class EndpointRouteBuilderExtensions
 
         // WorkManagement - Labels
         app.MapLabels();
+
+        // WorkManagement - SavedFilters
+        app.MapSavedFilters();
+
+        // WorkManagement - BoardPreferences
+        app.MapBoardPreferences();
+
+        // WorkManagement - Forms
+        app.MapForms();
+
+        // WorkManagement - Approvals
+        app.MapApprovals();
+
+        // WorkManagement - Relations
+        app.MapRelations();
+
+        // WorkManagement - Templates
+        app.MapTemplates();
 
         // Collaboration
         app.RegisterBoardItemActivityEndpoints();

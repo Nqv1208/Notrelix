@@ -8,8 +8,6 @@ public sealed class CommentEventMapper :
 {
     public override CommentCreatedIntegrationEvent? Map(CommentCreatedDomainEvent domainEvent)
     {
-        var de = (IDomainEvent)domainEvent;
-        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new CommentCreatedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
             CommentId: domainEvent.CommentId,
@@ -18,8 +16,8 @@ public sealed class CommentEventMapper :
             TargetId: domainEvent.Target.ResourceId,
             AuthorId: domainEvent.CreatedBy,
             Body: string.Empty,
-            CorrelationId: correlationId,
-            ActorUserId: de.ActorUserId,
+            CorrelationId: domainEvent.EventId,
+            ActorUserId: domainEvent.CreatedBy,
             CausationId: null,
             OccurredAt: domainEvent.OccurredAt
         );
@@ -27,8 +25,6 @@ public sealed class CommentEventMapper :
 
     public MentionCreatedIntegrationEvent? Map(MentionCreatedDomainEvent domainEvent)
     {
-        var de = (IDomainEvent)domainEvent;
-        var correlationId = Guid.TryParse(de.CorrelationId, out var c) ? c : Guid.CreateVersion7();
         return new MentionCreatedIntegrationEvent(
             EventId: Guid.CreateVersion7(),
             MentionId: domainEvent.MentionId,
@@ -36,9 +32,9 @@ public sealed class CommentEventMapper :
             TargetType: domainEvent.Source.ResourceType.ToString(),
             TargetId: domainEvent.Source.ResourceId,
             MentionedUserId: domainEvent.MentionedId,
-            MentionedByUserId: de.ActorUserId ?? domainEvent.MentionedId,
-            CorrelationId: correlationId,
-            ActorUserId: de.ActorUserId,
+            MentionedByUserId: domainEvent.MentionedId,
+            CorrelationId: domainEvent.EventId,
+            ActorUserId: null,
             CausationId: null,
             OccurredAt: domainEvent.OccurredAt
         );

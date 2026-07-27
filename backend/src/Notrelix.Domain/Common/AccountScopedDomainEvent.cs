@@ -1,20 +1,16 @@
 namespace Notrelix.Domain.Common;
 
-public abstract record AccountScopedDomainEvent : DomainEvent
+public abstract record AccountScopedDomainEvent : DomainEvent, IAccountScoped
 {
     public Guid AccountId { get; }
 
     protected AccountScopedDomainEvent(
         Guid accountId,
-        DateTimeOffset occurredAt,
-        Guid? actorUserId = null,
-        string? correlationId = null,
-        string? causationId = null,
-        Guid subjectId = default)
-        : base(occurredAt, workspaceId: null, actorUserId, subjectId)
+        DateTimeOffset occurredAt)
+        : base(occurredAt)
     {
+        if (accountId == Guid.Empty)
+            throw new ArgumentException("Account id cannot be empty.", nameof(accountId));
         AccountId = accountId;
-        CorrelationId = correlationId;
-        CausationId = causationId;
     }
 }

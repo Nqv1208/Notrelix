@@ -30,11 +30,20 @@ public class GuardTests
     }
 
     [Fact]
-    public void Assert_ShouldThrow_WhenConditionIsFalse()
+    public void Positive_ShouldThrow_WhenZero()
     {
-        Action act = () => Guard.Assert(1 == 2, "Math is broken.");
+        Action act = () => Guard.Positive(0);
 
-        act.Should().Throw<BusinessRuleException>()
-            .WithMessage("Math is broken.");
+        var ex = act.Should().Throw<BusinessRuleException>().Which;
+        ex.RuleCode.Should().Be(CommonRuleCodes.Guard_Positive);
+    }
+
+    [Fact]
+    public void NotEmpty_ShouldThrow_WhenEmpty()
+    {
+        Action act = () => Guard.NotEmpty(Guid.Empty);
+
+        var ex = act.Should().Throw<BusinessRuleException>().Which;
+        ex.RuleCode.Should().Be(CommonRuleCodes.Guard_Empty);
     }
 }

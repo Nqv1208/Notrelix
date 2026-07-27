@@ -37,7 +37,7 @@ public class UserSessionTests
     {
         var now = DateTimeOffset.UtcNow;
         var session = UserSession.Create(Guid.NewGuid(), ValidTokenHash, now.AddDays(30), now);
-        session.ClearDomainEvents();
+        ((IHasDomainEvents)session).ClearDomainEvents();
 
         var revokeTime = now.AddDays(1);
         session.Revoke(revokeTime);
@@ -55,7 +55,7 @@ public class UserSessionTests
         var now = DateTimeOffset.UtcNow;
         var session = UserSession.Create(Guid.NewGuid(), ValidTokenHash, now.AddDays(30), now);
         session.Revoke(now.AddDays(1));
-        session.ClearDomainEvents();
+        ((IHasDomainEvents)session).ClearDomainEvents();
 
         session.Revoke(now.AddDays(2));
 
@@ -88,7 +88,7 @@ public class UserSessionTests
     {
         var now = DateTimeOffset.UtcNow;
         var session = UserSession.Create(Guid.NewGuid(), ValidTokenHash, now.AddDays(30), now);
-        session.ClearDomainEvents();
+        ((IHasDomainEvents)session).ClearDomainEvents();
 
         var expireTime = now.AddDays(1);
         session.Expire(expireTime);
@@ -107,7 +107,7 @@ public class UserSessionTests
         var now = DateTimeOffset.UtcNow;
         var session = UserSession.Create(Guid.NewGuid(), ValidTokenHash, now.AddDays(30), now);
         session.Expire(now.AddDays(1));
-        session.ClearDomainEvents();
+        ((IHasDomainEvents)session).ClearDomainEvents();
 
         session.Expire(now.AddDays(2));
 

@@ -2,7 +2,7 @@ namespace Notrelix.Domain.WorkManagement.Fields;
 
 public sealed class FieldValue : ValueObject
 {
-    public JsonValue Data { get; }
+    public JsonValue Data { get; } = null!;
 
     private FieldValue() { }
     private FieldValue(JsonValue data)

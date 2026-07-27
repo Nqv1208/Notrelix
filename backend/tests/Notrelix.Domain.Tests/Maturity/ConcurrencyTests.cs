@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Workspaces.Workspaces;
 
 namespace Notrelix.Domain.Tests.Maturity;
 
@@ -10,7 +9,7 @@ public class ConcurrencyTests
     {
         var workspace = Workspace.Create(Guid.NewGuid(), Guid.NewGuid(), "My Workspace", "my-workspace", DateTimeOffset.UtcNow);
         workspace.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        workspace.ClearDomainEvents();
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
 
         workspace.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, "second delete");
 

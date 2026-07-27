@@ -64,28 +64,26 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
         };
 
         run.SetAuditOnCreate(actorUserId, createdAt);
-        run.AddDomainEvent(new AiAgentRunQueuedDomainEvent(accountId, workspaceId, run.Id, aiAgentId, createdAt));
+        run.RaiseDomainEvent(new AiAgentRunQueuedDomainEvent(accountId, workspaceId, run.Id, aiAgentId, createdAt));
         return run;
     }
 
     public void Start(DateTimeOffset startedAt)
     {
-        EnsureNotDeleted();
         if (Status != AiAgentRunStatus.Queued)
-            throw new BusinessRuleException("Run can only start from Queued state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Agent_InvalidStatusTransition, "Run can only start from Queued state.");
 
         Status = AiAgentRunStatus.Running;
         StartedAt = startedAt;
         SetAuditOnUpdate(ActorUserId, startedAt);
         IncrementVersion();
-        AddDomainEvent(new AiAgentRunStartedDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, startedAt));
+        RaiseDomainEvent(new AiAgentRunStartedDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, startedAt));
     }
 
     public void Succeed(JsonValue output, DateTimeOffset finishedAt)
     {
-        EnsureNotDeleted();
         if (Status != AiAgentRunStatus.Running)
-            throw new BusinessRuleException("Run can only succeed from Running state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Agent_InvalidStatusTransition, "Run can only succeed from Running state.");
         Guard.NotNull(output);
 
         Status = AiAgentRunStatus.Succeeded;
@@ -93,14 +91,13 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
         FinishedAt = finishedAt;
         SetAuditOnUpdate(ActorUserId, finishedAt);
         IncrementVersion();
-        AddDomainEvent(new AiAgentRunSucceededDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, finishedAt));
+        RaiseDomainEvent(new AiAgentRunSucceededDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, finishedAt));
     }
 
     public void Fail(JsonValue error, DateTimeOffset finishedAt)
     {
-        EnsureNotDeleted();
         if (Status != AiAgentRunStatus.Running)
-            throw new BusinessRuleException("Run can only fail from Running state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Agent_InvalidStatusTransition, "Run can only fail from Running state.");
         Guard.NotNull(error);
 
         Status = AiAgentRunStatus.Failed;
@@ -108,19 +105,18 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
         FinishedAt = finishedAt;
         SetAuditOnUpdate(ActorUserId, finishedAt);
         IncrementVersion();
-        AddDomainEvent(new AiAgentRunFailedDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, error.ToString(), finishedAt));
+        RaiseDomainEvent(new AiAgentRunFailedDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, error.ToString(), finishedAt));
     }
 
     public void Cancel(Guid? cancelledBy, DateTimeOffset cancelledAt)
     {
-        EnsureNotDeleted();
         if (Status != AiAgentRunStatus.Queued && Status != AiAgentRunStatus.Running)
-            throw new BusinessRuleException("Run can only be cancelled from Queued or Running state.");
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Agent_InvalidStatusTransition, "Run can only be cancelled from Queued or Running state.");
 
         Status = AiAgentRunStatus.Cancelled;
         FinishedAt = cancelledAt;
         SetAuditOnUpdate(cancelledBy, cancelledAt);
         IncrementVersion();
-        AddDomainEvent(new AiAgentRunCancelledDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, cancelledBy, cancelledAt));
+        RaiseDomainEvent(new AiAgentRunCancelledDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, cancelledBy, cancelledAt));
     }
 }

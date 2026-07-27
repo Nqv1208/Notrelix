@@ -19,7 +19,7 @@ public class Mention : Entity, IWorkspaceScoped
         Guard.NotEmpty(mentionedId);
 
         if (source.WorkspaceId.HasValue && source.WorkspaceId.Value != workspaceId)
-            throw new WorkspaceMismatchException(workspaceId, source.WorkspaceId.Value);
+            throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{workspaceId}', got '{source.WorkspaceId.Value}'.");
 
         return new Mention
         {

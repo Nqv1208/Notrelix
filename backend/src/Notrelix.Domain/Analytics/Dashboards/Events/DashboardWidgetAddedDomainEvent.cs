@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Analytics.Dashboards.Events;
 
+[EventName("analytics.dashboard-widget-added")]
 public sealed record DashboardWidgetAddedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -7,4 +8,4 @@ public sealed record DashboardWidgetAddedDomainEvent(
     Guid WidgetId,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, UpdatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

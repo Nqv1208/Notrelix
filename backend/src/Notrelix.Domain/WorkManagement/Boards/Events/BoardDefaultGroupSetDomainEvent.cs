@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Boards.Events;
 
+[EventName("work-management.board-default-group-set")]
 public sealed record BoardDefaultGroupSetDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -7,4 +8,4 @@ public sealed record BoardDefaultGroupSetDomainEvent(
     Guid GroupId,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, UpdatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

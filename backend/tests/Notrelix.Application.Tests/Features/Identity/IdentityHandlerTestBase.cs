@@ -115,7 +115,7 @@ public abstract class IdentityHandlerTestBase
             user.GetType().GetProperty(nameof(User.Status))!.SetValue(user, status);
 
         if (emailConfirmed)
-            user.ConfirmEmail(TestNow);
+            user.ConfirmEmail(null, TestNow);
 
         return user;
     }

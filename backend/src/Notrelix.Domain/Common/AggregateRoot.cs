@@ -1,10 +1,10 @@
 namespace Notrelix.Domain.Common;
 
 /// <summary>
-/// Marker base class for aggregate roots. Inherits soft-delete behavior.
-/// All top-level business entities should extend this.
+/// Base class for aggregate roots with version tracking but NO soft-delete.
+/// Use SoftDeletableAggregateRoot for aggregates that need deletion lifecycle.
 /// </summary>
-public abstract class AggregateRoot : SoftDeletableEntity
+public abstract class AggregateRoot : AuditableEntity
 {
     public long Version { get; private set; } = 1;
 
@@ -13,6 +13,9 @@ public abstract class AggregateRoot : SoftDeletableEntity
 
     protected void IncrementVersion()
     {
-        Version++;
+        checked
+        {
+            Version++;
+        }
     }
 }

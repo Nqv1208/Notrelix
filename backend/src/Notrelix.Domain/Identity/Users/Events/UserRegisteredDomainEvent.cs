@@ -1,7 +1,6 @@
-using Notrelix.Domain.Common.Constants;
-
 namespace Notrelix.Domain.Identity.Users.Events;
 
+[EventName("identity.user-registered")]
 public sealed record UserRegisteredDomainEvent : GlobalDomainEvent
 {
     public Guid UserId { get; }
@@ -14,16 +13,11 @@ public sealed record UserRegisteredDomainEvent : GlobalDomainEvent
         string email,
         string displayName,
         DateTimeOffset registeredAt)
-        : base(occurredAt: registeredAt, actorUserId: userId, subjectId: userId)
+        : base(occurredAt: registeredAt)
     {
         UserId = userId;
         Email = email;
         DisplayName = displayName;
         RegisteredAt = registeredAt;
-
-        SourceContext = SourceContexts.Identity;
-        AggregateType = AggregateTypes.User;
-        AggregateId = userId;
-        SubjectType = SubjectTypes.User;
     }
 }

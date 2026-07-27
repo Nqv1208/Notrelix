@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Identity.Tokens;
 
 public sealed class TokenHash : ValueObject
 {
-    public string Value { get; }
+    public string Value { get; } = null!;
 
     private TokenHash() { }
     private TokenHash(string value)

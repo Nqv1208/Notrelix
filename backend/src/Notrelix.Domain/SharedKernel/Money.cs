@@ -1,9 +1,15 @@
+using System.Text.RegularExpressions;
+
 namespace Notrelix.Domain.SharedKernel;
 
 public sealed class Money : ValueObject
 {
+    private static readonly Regex CurrencyRegex = new(
+        @"^[A-Z]{3}$",
+        RegexOptions.Compiled);
+
     public decimal Amount { get; }
-    public string Currency { get; }
+    public string Currency { get; } = null!;
 
     private Money() { }
     private Money(decimal amount, string currency)
@@ -15,9 +21,11 @@ public sealed class Money : ValueObject
     public static Money Create(decimal amount, string currency)
     {
         Guard.NotNullOrWhiteSpace(currency);
-        Guard.Assert(currency.Length == 3, "Currency must be a 3-letter ISO code.");
+        currency = currency.Trim().ToUpperInvariant();
+        if (!CurrencyRegex.IsMatch(currency))
+            throw new BusinessRuleException(SharedKernelRuleCodes.SharedKernel_Money_InvalidCurrency, "Currency must be a 3-letter uppercase ISO code.");
 
-        return new Money(amount, currency.ToUpperInvariant());
+        return new Money(amount, currency);
     }
 
     protected override IEnumerable<object?> GetEqualityComponents()

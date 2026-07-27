@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Accounts.Accounts.Events;
 
+[EventName("accounts.account-created")]
 public sealed record AccountCreatedDomainEvent(
     Guid AccountId,
     string Name,
@@ -7,4 +8,4 @@ public sealed record AccountCreatedDomainEvent(
     AccountType Type,
     Guid CreatedBy,
     DateTimeOffset OccurredAt
-) : AccountRootDomainEvent(AccountId, OccurredAt, CreatedBy);
+) : AccountScopedDomainEvent(AccountId, OccurredAt);

@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Workspaces.Spaces;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 
@@ -14,7 +13,7 @@ public class SpaceVersionTests
     public void Rename_ShouldIncrementVersion()
     {
         var space = Space.Create(_accountId, _workspaceId, "Original", SpaceVisibility.Private, _actorId, _now);
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
         var version = space.Version;
 
         space.Rename("Renamed", _actorId, _now);
@@ -27,7 +26,7 @@ public class SpaceVersionTests
     public void Archive_ShouldIncrementVersion()
     {
         var space = Space.Create(_accountId, _workspaceId, "Space", SpaceVisibility.Private, _actorId, _now);
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
         var version = space.Version;
 
         space.Archive(_actorId, _now);
@@ -40,7 +39,7 @@ public class SpaceVersionTests
     public void SoftDelete_ShouldIncrementVersion()
     {
         var space = Space.Create(_accountId, _workspaceId, "Space", SpaceVisibility.Private, _actorId, _now);
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
         var version = space.Version;
 
         space.SoftDelete(_actorId, _now);
@@ -55,7 +54,7 @@ public class SpaceVersionTests
     {
         var space = Space.Create(_accountId, _workspaceId, "Space", SpaceVisibility.Private, _actorId, _now);
         space.SoftDelete(_actorId, _now);
-        space.ClearDomainEvents();
+        ((IHasDomainEvents)space).ClearDomainEvents();
         var version = space.Version;
 
         space.Restore(_actorId, _now);

@@ -1,7 +1,9 @@
+using Notrelix.Domain.Accounts.Accounts.Events;
 namespace Notrelix.Domain.Accounts.Accounts;
 
-public class Account : AggregateRoot
+public class Account : SoftDeletableAggregateRoot, IAccountScoped
 {
+    public Guid AccountId => Id;
     public string Name { get; private set; } = null!;
     public string Slug { get; private set; } = null!;
     public string? LegalName { get; private set; }
@@ -36,7 +38,7 @@ public class Account : AggregateRoot
         };
 
         account.SetAuditOnCreate(createdBy, createdAt);
-        account.AddDomainEvent(new AccountCreatedDomainEvent(
+        account.RaiseDomainEvent(new AccountCreatedDomainEvent(
             account.Id, account.Name, account.Slug, account.Type, createdBy, createdAt));
 
         return account;
@@ -49,7 +51,7 @@ public class Account : AggregateRoot
         Guard.MaxLength(newName, 160);
 
         if (Status == AccountStatus.Closed)
-            throw new BusinessRuleException("Cannot rename a closed account.");
+            throw new BusinessRuleException(AccountRuleCodes.Accounts_Account_CannotRenameClosed, "Cannot rename a closed account.");
 
         var oldName = Name;
         if (Name == newName.Trim()) return;
@@ -57,7 +59,7 @@ public class Account : AggregateRoot
         Name = newName.Trim();
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new AccountRenamedDomainEvent(Id, oldName, Name, updatedBy, updatedAt));
+        RaiseDomainEvent(new AccountRenamedDomainEvent(Id, oldName, Name, updatedBy, updatedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
@@ -68,7 +70,7 @@ public class Account : AggregateRoot
         Status = AccountStatus.Closed;
         SetAuditOnUpdate(archivedBy, archivedAt);
         IncrementVersion();
-        AddDomainEvent(new AccountArchivedDomainEvent(Id, archivedBy, archivedAt));
+        RaiseDomainEvent(new AccountArchivedDomainEvent(Id, archivedBy, archivedAt));
     }
 
     public void Suspend(Guid suspendedBy, DateTimeOffset suspendedAt, string? reason = null)
@@ -80,7 +82,7 @@ public class Account : AggregateRoot
         Status = AccountStatus.Suspended;
         SetAuditOnUpdate(suspendedBy, suspendedAt);
         IncrementVersion();
-        AddDomainEvent(new AccountSuspendedDomainEvent(Id, previousStatus, suspendedBy, suspendedAt, reason));
+        RaiseDomainEvent(new AccountSuspendedDomainEvent(Id, previousStatus, suspendedBy, suspendedAt, reason));
     }
 
     public void Activate(Guid activatedBy, DateTimeOffset activatedAt)
@@ -88,44 +90,56 @@ public class Account : AggregateRoot
         EnsureNotDeleted();
         if (Status == AccountStatus.Active || Status == AccountStatus.Trialing) return;
 
+        var previousStatus = Status;
         Status = AccountStatus.Active;
         SetAuditOnUpdate(activatedBy, activatedAt);
         IncrementVersion();
+        RaiseDomainEvent(new AccountActivatedDomainEvent(Id, previousStatus, activatedBy, activatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
         Status = AccountStatus.SoftDeleted;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new AccountSoftDeletedDomainEvent(Id, deletedBy, deletedAt, reason));
+        RaiseDomainEvent(new AccountSoftDeletedDomainEvent(Id, deletedBy, deletedAt, reason));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
         Status = AccountStatus.Active;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new AccountRestoredDomainEvent(Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new AccountRestoredDomainEvent(Id, restoredBy, restoredAt));
     }
 
     public void UpdatePlanCode(string? planCode, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        PlanCode = planCode;
+        var normalized = planCode?.Trim();
+        if (PlanCode == normalized) return;
+
+        var oldPlanCode = PlanCode;
+        PlanCode = normalized;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        RaiseDomainEvent(new AccountPlanCodeChangedDomainEvent(Id, oldPlanCode, PlanCode, updatedBy, updatedAt));
     }
 
     public void UpdateDefaultRegion(string? regionCode, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        DefaultRegionCode = regionCode;
+        var normalized = regionCode?.Trim();
+        if (DefaultRegionCode == normalized) return;
+
+        var oldRegionCode = DefaultRegionCode;
+        DefaultRegionCode = normalized;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
+        RaiseDomainEvent(new AccountDefaultRegionChangedDomainEvent(Id, oldRegionCode, DefaultRegionCode, updatedBy, updatedAt));
     }
 }

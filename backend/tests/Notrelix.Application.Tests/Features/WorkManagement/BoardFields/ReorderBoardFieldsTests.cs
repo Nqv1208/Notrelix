@@ -1,6 +1,7 @@
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderBoardFields;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement.BoardFields;
 
 public class ReorderBoardFieldsTests : WorkManagementHandlerTestBase

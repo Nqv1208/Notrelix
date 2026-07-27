@@ -69,22 +69,25 @@ public sealed class DomainEventLog
         RetentionUntil = retentionUntil;
     }
 
-    public static DomainEventLog FromDomainEvent(IDomainEvent domainEvent, string eventName, DateTimeOffset now)
+    public static DomainEventLog FromDomainEvent(DomainEvent domainEvent, string eventName, DateTimeOffset now)
     {
         var payloadJson = JsonSerializer.SerializeToDocument(domainEvent, domainEvent.GetType(), JsonOptions);
+
+        Guid? workspaceId = domainEvent is IWorkspaceScoped ws ? ws.WorkspaceId : null;
+
         return new DomainEventLog(
             eventId: domainEvent.EventId,
-            sourceContext: domainEvent.SourceContext,
+            sourceContext: domainEvent.GetType().Namespace ?? "Notrelix.Domain",
             eventName: eventName,
-            eventVersion: domainEvent.EventVersion,
-            aggregateType: domainEvent.AggregateType,
-            aggregateId: domainEvent.AggregateId,
-            subjectType: domainEvent.SubjectType,
-            subjectId: domainEvent.SubjectId,
-            workspaceId: domainEvent.WorkspaceId,
-            actorUserId: domainEvent.ActorUserId,
-            correlationId: domainEvent.CorrelationId,
-            causationId: domainEvent.CausationId,
+            eventVersion: 1,
+            aggregateType: null,
+            aggregateId: null,
+            subjectType: null,
+            subjectId: null,
+            workspaceId: workspaceId,
+            actorUserId: null,
+            correlationId: null,
+            causationId: null,
             occurredAt: domainEvent.OccurredAt,
             recordedAt: now,
             payloadJson: payloadJson,

@@ -1,3 +1,4 @@
+using Notrelix.Domain.Collaboration.Watchers.Events;
 namespace Notrelix.Domain.Collaboration.Watchers;
 
 public enum WatchLevel
@@ -7,7 +8,7 @@ public enum WatchLevel
     None
 }
 
-public class ResourceWatcher : AggregateRoot, IWorkspaceScoped
+public class ResourceWatcher : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -26,7 +27,7 @@ public class ResourceWatcher : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(createdBy);
 
         if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
-            throw new WorkspaceMismatchException(workspaceId, target.WorkspaceId.Value);
+            throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{workspaceId}', got '{target.WorkspaceId.Value}'.");
 
         var watcher = new ResourceWatcher
         {
@@ -38,7 +39,7 @@ public class ResourceWatcher : AggregateRoot, IWorkspaceScoped
         };
 
         watcher.SetAuditOnCreate(createdBy, createdAt);
-        watcher.AddDomainEvent(new ResourceWatchedDomainEvent(accountId, workspaceId, watcher.Id, target, userId, createdAt));
+        watcher.RaiseDomainEvent(new ResourceWatchedDomainEvent(accountId, workspaceId, watcher.Id, target, userId, createdAt));
         return watcher;
     }
 
@@ -47,9 +48,9 @@ public class ResourceWatcher : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(unwatchedBy);
 
-        base.SoftDelete(unwatchedBy, removedAt);
+        if (!MarkDeleted(unwatchedBy, removedAt)) return;
         SetAuditOnUpdate(unwatchedBy, removedAt);
         IncrementVersion();
-        AddDomainEvent(new ResourceUnwatchedDomainEvent(AccountId, WorkspaceId, Id, removedAt));
+        RaiseDomainEvent(new ResourceUnwatchedDomainEvent(AccountId, WorkspaceId, Id, removedAt));
     }
 }

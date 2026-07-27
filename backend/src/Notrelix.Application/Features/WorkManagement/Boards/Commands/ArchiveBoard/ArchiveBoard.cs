@@ -4,14 +4,16 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.ArchiveBoard;
 
-public record ArchiveBoardCommand(Guid BoardId)
+public record ArchiveBoardCommand(Guid BoardId, string? IdempotencyKey = null)
     : ICommand<Result>,
       ITransactionalRequest,
       IResourceScopedRequest,
-      IRequirePermission
+      IRequirePermission,
+      IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"archive-board:{BoardId}";
 }
 
 public class ArchiveBoardCommandHandler : IRequestHandler<ArchiveBoardCommand, Result>

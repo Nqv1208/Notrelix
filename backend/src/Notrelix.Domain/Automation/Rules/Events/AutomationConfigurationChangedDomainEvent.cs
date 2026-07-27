@@ -1,9 +1,10 @@
 namespace Notrelix.Domain.Automation.Rules.Events;
 
+[EventName("automation.automation-configuration-changed")]
 public sealed record AutomationConfigurationChangedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
     Guid RuleId,
     Guid UpdatedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, UpdatedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

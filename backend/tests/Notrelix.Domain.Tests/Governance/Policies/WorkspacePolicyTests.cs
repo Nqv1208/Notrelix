@@ -32,7 +32,7 @@ public class WorkspacePolicyTests
     public void UpdatePolicy_ShouldReplacePoliciesAndRaiseEvent()
     {
         var policy = WorkspacePolicy.Create(AccountId, WorkspaceId, Actor, Now);
-        policy.ClearDomainEvents();
+        ((IHasDomainEvents)policy).ClearDomainEvents();
 
         var newGuestPolicy = GuestAccessPolicy.Create(false);
         var newResourcePolicy = ResourcePolicy.Create(true);
@@ -44,7 +44,7 @@ public class WorkspacePolicyTests
         policy.ResourcePolicy.AllowPublicSharing.Should().BeTrue();
         policy.SharingPolicy.AllowPublicSharing.Should().BeTrue();
         policy.SharingPolicy.AllowExternalInvite.Should().BeTrue();
-        policy.DomainEvents.Should().ContainSingle(e => e is WorkspacePolicyUpdatedEvent);
+        policy.DomainEvents.Should().ContainSingle(e => e is WorkspacePolicyUpdatedDomainEvent);
     }
 
     [Fact]

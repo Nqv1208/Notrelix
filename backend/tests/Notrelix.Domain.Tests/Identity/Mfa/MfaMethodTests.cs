@@ -57,7 +57,7 @@ public class MfaMethodTests
     {
         var now = DateTimeOffset.UtcNow;
         var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.Email, now, destinationMasked: "t***@example.com");
-        method.ClearDomainEvents();
+        ((IHasDomainEvents)method).ClearDomainEvents();
 
         method.Verify(now.AddMinutes(5));
 
@@ -91,7 +91,7 @@ public class MfaMethodTests
         var now = DateTimeOffset.UtcNow;
         var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.AuthenticatorApp, now, ValidSecret);
         method.Verify(now.AddMinutes(1));
-        method.ClearDomainEvents();
+        ((IHasDomainEvents)method).ClearDomainEvents();
 
         method.SetAsPrimary(now.AddMinutes(2));
 
@@ -111,7 +111,7 @@ public class MfaMethodTests
         var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.AuthenticatorApp, now, ValidSecret);
         method.Verify(now.AddMinutes(1));
         method.SetAsPrimary(now.AddMinutes(2));
-        method.ClearDomainEvents();
+        ((IHasDomainEvents)method).ClearDomainEvents();
 
         method.UnsetAsPrimary(now.AddMinutes(3));
 
@@ -142,7 +142,7 @@ public class MfaMethodTests
         var method = UserMfaMethod.Create(Guid.NewGuid(), MfaMethodType.AuthenticatorApp, now, ValidSecret);
         method.Verify(now.AddMinutes(1));
         method.SetAsPrimary(now.AddMinutes(2));
-        method.ClearDomainEvents();
+        ((IHasDomainEvents)method).ClearDomainEvents();
 
         method.Disable(now.AddMinutes(3));
 

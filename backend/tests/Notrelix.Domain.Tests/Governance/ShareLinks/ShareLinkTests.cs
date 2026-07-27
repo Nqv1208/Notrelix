@@ -17,7 +17,7 @@ public class ShareLinkTests
 
         link.TokenHash.Hash.Should().NotBe("secret-token-123");
         link.Status.Should().Be(ShareLinkStatus.Active);
-        link.DomainEvents.Should().ContainSingle(e => e is ShareLinkCreatedEvent);
+        link.DomainEvents.Should().ContainSingle(e => e is ShareLinkCreatedDomainEvent);
     }
 
     [Fact]
@@ -34,13 +34,13 @@ public class ShareLinkTests
     {
         var workspaceId = Guid.NewGuid();
         var link = ShareLink.Create(Guid.NewGuid(), workspaceId, ResourceType.Board, Guid.NewGuid(), ShareLinkTokenHash.Create("token"), ShareLinkAccessMode.WorkspaceOnly, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        link.ClearDomainEvents();
+        ((IHasDomainEvents)link).ClearDomainEvents();
 
         var disabledBy = Guid.NewGuid();
         link.Disable(disabledBy, DateTimeOffset.UtcNow);
 
         link.Status.Should().Be(ShareLinkStatus.Disabled);
-        link.DomainEvents.Should().ContainSingle(e => e is ShareLinkDisabledEvent);
+        link.DomainEvents.Should().ContainSingle(e => e is ShareLinkDisabledDomainEvent);
     }
 
     [Fact]
@@ -48,13 +48,13 @@ public class ShareLinkTests
     {
         var workspaceId = Guid.NewGuid();
         var link = ShareLink.Create(Guid.NewGuid(), workspaceId, ResourceType.Board, Guid.NewGuid(), ShareLinkTokenHash.Create("token1"), ShareLinkAccessMode.WorkspaceOnly, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        link.ClearDomainEvents();
+        ((IHasDomainEvents)link).ClearDomainEvents();
 
         var newHash = ShareLinkTokenHash.Create("token2");
         var rotatedBy = Guid.NewGuid();
         link.RotateTokenHash(newHash, rotatedBy, DateTimeOffset.UtcNow);
 
         link.TokenHash.Should().Be(newHash);
-        link.DomainEvents.Should().ContainSingle(e => e is ShareLinkRotatedEvent);
+        link.DomainEvents.Should().ContainSingle(e => e is ShareLinkRotatedDomainEvent);
     }
 }

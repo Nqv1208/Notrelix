@@ -8,6 +8,10 @@ public sealed class EventNameAttribute : Attribute
 
     public EventNameAttribute(string name)
     {
-        Name = name;
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        if (name.Length > 128)
+            throw new ArgumentOutOfRangeException(nameof(name), name, "Event name cannot exceed 128 characters.");
+
+        Name = name.Trim();
     }
 }

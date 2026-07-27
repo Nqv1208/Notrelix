@@ -41,7 +41,6 @@ public class V4MissingParityTests
         evt.WorkspaceId.Should().Be(_workspaceId);
         evt.AgentId.Should().Be(agent.Id);
         evt.Name.Should().Be("Translation Bot");
-        evt.ActorUserId.Should().Be(_actorId);
     }
 
     [Fact]

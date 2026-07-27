@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Identity.Profiles;
 
 public sealed class UserPreferences : ValueObject
 {
-    public JsonValue Data { get; }
+    public JsonValue Data { get; } = null!;
 
     private UserPreferences() { }
     private UserPreferences(JsonValue data)

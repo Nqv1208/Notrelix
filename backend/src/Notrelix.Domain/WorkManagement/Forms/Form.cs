@@ -1,8 +1,9 @@
+using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Forms.Events;
 
 namespace Notrelix.Domain.WorkManagement.Forms;
 
-public class Form : AggregateRoot, IWorkspaceScoped
+public class Form : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -18,6 +19,20 @@ public class Form : AggregateRoot, IWorkspaceScoped
     public IReadOnlyCollection<FormQuestion> Questions => _questions.AsReadOnly();
 
     private Form() : base() { }
+
+    private static string ValidateJson(string? value, string propertyName)
+    {
+        var json = value ?? "{}";
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FormQuestion_InvalidConfigJson, $"{propertyName} must be valid JSON.");
+        }
+        return json;
+    }
 
     public static Form Create(
         Guid accountId,
@@ -46,12 +61,12 @@ public class Form : AggregateRoot, IWorkspaceScoped
             Slug = slug.Trim().ToLowerInvariant(),
             Status = FormStatus.Draft,
             Visibility = visibility,
-            SettingsJson = settingsJson ?? "{}",
-            SubmitterPolicyJson = submitterPolicyJson ?? "{}"
+            SettingsJson = ValidateJson(settingsJson, nameof(SettingsJson)),
+            SubmitterPolicyJson = ValidateJson(submitterPolicyJson, nameof(SubmitterPolicyJson))
         };
 
         form.SetAuditOnCreate(createdBy, createdAt);
-        form.AddDomainEvent(new FormCreatedDomainEvent(accountId, workspaceId, form.Id, boardId, form.Name, createdBy, createdAt));
+        form.RaiseDomainEvent(new FormCreatedDomainEvent(accountId, workspaceId, form.Id, boardId, form.Name, createdAt));
         return form;
     }
 
@@ -62,28 +77,28 @@ public class Form : AggregateRoot, IWorkspaceScoped
 
         Name = name.Trim();
         Visibility = visibility;
-        SettingsJson = settingsJson ?? "{}";
-        SubmitterPolicyJson = submitterPolicyJson ?? "{}";
+        SettingsJson = ValidateJson(settingsJson, nameof(SettingsJson));
+        SubmitterPolicyJson = ValidateJson(submitterPolicyJson, nameof(SubmitterPolicyJson));
 
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new FormDetailsUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, Name, SettingsJson, SubmitterPolicyJson, updatedBy, updatedAt));
+        RaiseDomainEvent(new FormDetailsUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, Name, SettingsJson, SubmitterPolicyJson, updatedBy, updatedAt));
     }
 
     public void Publish(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         if (Status == FormStatus.Closed)
-            throw new BusinessRuleException("Cannot publish a closed form.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Form_CannotPublishClosed, "Cannot publish a closed form.");
 
         if (_questions.Count == 0)
-            throw new BusinessRuleException("Cannot publish a form with no questions.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Form_CannotPublishNoQuestions, "Cannot publish a form with no questions.");
 
         var oldStatus = Status;
         Status = FormStatus.Published;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new FormPublishedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
+        RaiseDomainEvent(new FormPublishedDomainEvent(AccountId, WorkspaceId, Id, updatedAt));
     }
 
     public void Close(Guid updatedBy, DateTimeOffset updatedAt)
@@ -94,16 +109,16 @@ public class Form : AggregateRoot, IWorkspaceScoped
         Status = FormStatus.Closed;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new FormClosedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
+        RaiseDomainEvent(new FormClosedDomainEvent(AccountId, WorkspaceId, Id, updatedAt));
     }
 
     public void EnsureAcceptsSubmissions()
     {
         EnsureNotDeleted();
         if (Status == FormStatus.Draft)
-            throw new BusinessRuleException("Cannot submit to a draft form.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Form_CannotSubmitToDraft, "Cannot submit to a draft form.");
         if (Status == FormStatus.Closed)
-            throw new BusinessRuleException("Cannot submit to a closed form.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Form_CannotSubmitToClosed, "Cannot submit to a closed form.");
     }
 
     public void AddQuestion(FormQuestion question, Guid updatedBy, DateTimeOffset updatedAt)
@@ -112,35 +127,35 @@ public class Form : AggregateRoot, IWorkspaceScoped
         Guard.NotNull(question);
 
         if (Status == FormStatus.Closed)
-            throw new BusinessRuleException("Cannot add a question to a closed form.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Form_CannotAddQuestionToClosed, "Cannot add a question to a closed form.");
 
         if (question.WorkspaceId != WorkspaceId)
-            throw new WorkspaceMismatchException(WorkspaceId, question.WorkspaceId);
+            throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{WorkspaceId}', got '{question.WorkspaceId}'.");
 
         if (_questions.Any(q => q.QuestionKey.Equals(question.QuestionKey, StringComparison.OrdinalIgnoreCase)))
-            throw new BusinessRuleException($"A question with key '{question.QuestionKey}' already exists.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Form_DuplicateQuestionKey, $"A question with key '{question.QuestionKey}' already exists.");
 
         _questions.Add(question);
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new FormQuestionAddedDomainEvent(AccountId, WorkspaceId, Id, question.QuestionKey, updatedBy, updatedAt));
+        RaiseDomainEvent(new FormQuestionAddedDomainEvent(AccountId, WorkspaceId, Id, question.QuestionKey, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new FormSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
+        RaiseDomainEvent(new FormSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new FormRestoredDomainEvent(AccountId, WorkspaceId, Id, BoardId, restoredBy, restoredAt));
+        RaiseDomainEvent(new FormRestoredDomainEvent(AccountId, WorkspaceId, Id, BoardId, restoredBy, restoredAt));
     }
 }

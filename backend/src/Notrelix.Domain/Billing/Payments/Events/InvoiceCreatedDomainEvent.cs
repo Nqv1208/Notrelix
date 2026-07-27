@@ -1,5 +1,7 @@
+using Notrelix.Domain.Billing.Common;
 namespace Notrelix.Domain.Billing.Payments.Events;
 
+[EventName("billing.invoice-created")]
 public sealed record InvoiceCreatedDomainEvent(
     Guid AccountId,
     Guid InvoiceId,
@@ -7,4 +9,4 @@ public sealed record InvoiceCreatedDomainEvent(
     Money Amount,
     DateTimeOffset DueAt,
     DateTimeOffset OccurredAt
-) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : BillingAccountScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

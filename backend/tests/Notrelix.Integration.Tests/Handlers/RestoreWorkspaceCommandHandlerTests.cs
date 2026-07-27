@@ -24,10 +24,17 @@ public class RestoreWorkspaceCommandHandlerTests : IAsyncLifetime
 
     public Task DisposeAsync() => Task.CompletedTask;
 
+    private static ICurrentTenantContext SystemTenant()
+    {
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetSystem();
+        return tenant;
+    }
+
     [Fact]
     public async Task Handle_WhenWorkspaceIsSoftDeleted_ShouldRestore()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateContext(SystemTenant());
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
@@ -50,7 +57,7 @@ public class RestoreWorkspaceCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenWorkspaceNotFound_ShouldThrowNotFoundException()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateContext(SystemTenant());
         var userId = Guid.NewGuid();
 
         var requestContextMock = new Mock<ICurrentRequestContext>();
@@ -64,7 +71,7 @@ public class RestoreWorkspaceCommandHandlerTests : IAsyncLifetime
     [Fact]
     public async Task Handle_WhenWorkspaceIsActive_ShouldBeNoOp()
     {
-        await using var context = _db.CreateContext();
+        await using var context = _db.CreateContext(SystemTenant());
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 

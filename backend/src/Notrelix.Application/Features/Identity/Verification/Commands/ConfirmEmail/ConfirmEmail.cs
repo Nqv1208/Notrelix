@@ -84,7 +84,7 @@ public sealed class ConfirmEmailCommandHandler
         }
 
         token.MarkUsed(now);
-        user.ConfirmEmail(now);
+        user.ConfirmEmail(null, now);
 
         return Result<ConfirmEmailResultDto>.Success(
             new ConfirmEmailResultDto(

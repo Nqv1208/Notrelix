@@ -21,7 +21,7 @@ public class ReactionWorkspaceScopeTests
     {
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsB);
         var act = () => Reaction.Create(Guid.NewGuid(), WsA, target, Guid.NewGuid(), Emoji.Create("+1"), DateTimeOffset.UtcNow);
-        act.Should().Throw<WorkspaceMismatchException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]

@@ -2,7 +2,7 @@ namespace Notrelix.Domain.WorkManagement.Boards;
 
 public sealed class BoardGroupColor : ValueObject
 {
-    public string Hex { get; }
+    public string Hex { get; } = null!;
 
     private BoardGroupColor() { }
     private BoardGroupColor(string hex)

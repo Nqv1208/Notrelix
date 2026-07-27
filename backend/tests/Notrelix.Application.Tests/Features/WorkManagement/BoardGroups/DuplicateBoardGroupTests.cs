@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DuplicateBoardGroup;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Tests.Features.WorkManagement.BoardGroups;
 
 public class DuplicateBoardGroupTests : WorkManagementHandlerTestBase

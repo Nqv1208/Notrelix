@@ -1,6 +1,8 @@
+using Notrelix.Domain.Workspaces.Members.Events;
+using Notrelix.Domain.Workspaces.Rules;
 namespace Notrelix.Domain.Workspaces.Members;
 
-public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
+public class WorkspaceMember : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -27,7 +29,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         };
 
         member.SetAuditOnCreate(addedBy, createdAt);
-        member.AddDomainEvent(new WorkspaceMemberAddedDomainEvent(accountId, workspaceId, member.Id, userId, role, addedBy, createdAt));
+        member.RaiseDomainEvent(new WorkspaceMemberAddedDomainEvent(accountId, workspaceId, member.Id, userId, role, addedBy, createdAt));
         return member;
     }
 
@@ -43,12 +45,13 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         if (newRole == WorkspaceRole.Owner)
         {
             throw new BusinessRuleException(
+                WorkspaceRuleCodes.Workspaces_Member_CannotDirectlyAssignOwner,
                 "Ownership must be transferred through the ownership transfer workflow.");
         }
 
         if (Status != WorkspaceMemberStatus.Active)
         {
-            throw new BusinessRuleException("Cannot change role of an inactive or suspended member.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotChangeRoleOfInactive, "Cannot change role of an inactive or suspended member.");
         }
 
         WorkspaceOwnerRules.EnsureCanDowngradeOwner(Role, newRole, activeOwnerCount);
@@ -60,7 +63,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
 
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceMemberRoleChangedDomainEvent(
+        RaiseDomainEvent(new WorkspaceMemberRoleChangedDomainEvent(
             AccountId, WorkspaceId, Id, UserId, oldRole, newRole, updatedBy, updatedAt));
     }
 
@@ -70,7 +73,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(promotedBy);
 
         if (Status != WorkspaceMemberStatus.Active)
-            throw new BusinessRuleException("Cannot promote an inactive member to owner.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotPromoteInactiveToOwner, "Cannot promote an inactive member to owner.");
 
         if (Role == WorkspaceRole.Owner) return;
 
@@ -79,7 +82,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
 
         SetAuditOnUpdate(promotedBy, promotedAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceMemberRoleChangedDomainEvent(
+        RaiseDomainEvent(new WorkspaceMemberRoleChangedDomainEvent(
             AccountId, WorkspaceId, Id, UserId, oldRole, WorkspaceRole.Owner, promotedBy, promotedAt));
     }
 
@@ -91,15 +94,15 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
 
-        WorkspaceOwnerRules.EnsureCanSuspendOwner(Role, activeOwnerCount);
-
         if (Status == WorkspaceMemberStatus.Suspended) return;
+
+        WorkspaceOwnerRules.EnsureCanSuspendOwner(Role, activeOwnerCount);
 
         Status = WorkspaceMemberStatus.Suspended;
 
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceMemberSuspendedDomainEvent(
+        RaiseDomainEvent(new WorkspaceMemberSuspendedDomainEvent(
             AccountId, WorkspaceId, Id, UserId, updatedBy, updatedAt));
     }
 
@@ -112,26 +115,26 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
 
         if (Status == WorkspaceMemberStatus.Removed)
         {
-            throw new BusinessRuleException("Cannot activate a removed member. Restore the member first.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotActivateRemoved, "Cannot activate a removed member. Restore the member first.");
         }
 
         Status = WorkspaceMemberStatus.Active;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceMemberActivatedDomainEvent(AccountId, WorkspaceId, Id, UserId, updatedBy, updatedAt));
+        RaiseDomainEvent(new WorkspaceMemberActivatedDomainEvent(AccountId, WorkspaceId, Id, UserId, updatedBy, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
 
         if (IsDeleted) return;
 
         Status = WorkspaceMemberStatus.Removed;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceMemberRemovedDomainEvent(AccountId, WorkspaceId, Id, UserId, deletedBy, deletedAt));
+        RaiseDomainEvent(new WorkspaceMemberRemovedDomainEvent(AccountId, WorkspaceId, Id, UserId, deletedBy, deletedAt));
     }
 
     public void Remove(int activeOwnerCount, Guid removedBy, DateTimeOffset removedAt, string? reason = null)
@@ -144,17 +147,17 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
         SoftDelete(removedBy, removedAt, reason);
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
 
         Guard.NotEmpty(restoredBy);
 
         Status = WorkspaceMemberStatus.Active;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new WorkspaceMemberRestoredDomainEvent(
+        RaiseDomainEvent(new WorkspaceMemberRestoredDomainEvent(
             AccountId,
             WorkspaceId,
             Id,

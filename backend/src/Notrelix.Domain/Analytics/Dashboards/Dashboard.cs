@@ -1,9 +1,11 @@
+using Notrelix.Domain.Analytics.Dashboards.Events;
 using Notrelix.Domain.Analytics.Rules;
 using Notrelix.Domain.Analytics.Widgets;
+using static Notrelix.Domain.Analytics.AnalyticsRuleCodes;
 
 namespace Notrelix.Domain.Analytics.Dashboards;
 
-public class Dashboard : AggregateRoot, IWorkspaceScoped
+public class Dashboard : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -34,7 +36,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         };
 
         dashboard.SetAuditOnCreate(createdBy, createdAt);
-        dashboard.AddDomainEvent(new DashboardCreatedDomainEvent(accountId, workspaceId, dashboard.Id, createdBy, createdAt));
+        dashboard.RaiseDomainEvent(new DashboardCreatedDomainEvent(accountId, workspaceId, dashboard.Id, createdBy, createdAt));
         return dashboard;
     }
 
@@ -49,7 +51,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         Name = normalizedName;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardRenamedDomainEvent(AccountId, WorkspaceId, Id, Name, updatedBy, updatedAt));
+        RaiseDomainEvent(new DashboardRenamedDomainEvent(AccountId, WorkspaceId, Id, Name, updatedBy, updatedAt));
     }
 
     public void ChangeVisibility(DashboardVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
@@ -60,7 +62,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         Visibility = visibility;
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardVisibilityChangedDomainEvent(AccountId, WorkspaceId, Id, Visibility, updatedBy, updatedAt));
+        RaiseDomainEvent(new DashboardVisibilityChangedDomainEvent(AccountId, WorkspaceId, Id, Visibility, updatedBy, updatedAt));
     }
 
     public void AddWidget(string title, DashboardWidgetType type, JsonValue config, WidgetPosition position, Guid updatedBy, DateTimeOffset updatedAt)
@@ -70,13 +72,13 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         WidgetRules.ValidatePosition(position);
 
         if (_widgets.Count >= MaxWidgets)
-            throw new BusinessRuleException($"Cannot add more than {MaxWidgets} widgets to a dashboard.");
+            throw new BusinessRuleException(Analytics_Dashboard_WidgetLimitExceeded, $"Cannot add more than {MaxWidgets} widgets to a dashboard.");
 
-        var widget = DashboardWidget.Create(Id, title, type, config, position);
+        var widget = DashboardWidget.Create(AccountId, WorkspaceId, Id, title, type, config, position);
         _widgets.Add(widget);
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardWidgetAddedDomainEvent(AccountId, WorkspaceId, Id, widget.Id, updatedBy, updatedAt));
+        RaiseDomainEvent(new DashboardWidgetAddedDomainEvent(AccountId, WorkspaceId, Id, widget.Id, updatedBy, updatedAt));
     }
 
     public void RemoveWidget(Guid widgetId, Guid updatedBy, DateTimeOffset updatedAt)
@@ -88,7 +90,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         _widgets.Remove(widget);
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardWidgetRemovedDomainEvent(AccountId, WorkspaceId, Id, widgetId, updatedBy, updatedAt));
+        RaiseDomainEvent(new DashboardWidgetRemovedDomainEvent(AccountId, WorkspaceId, Id, widgetId, updatedBy, updatedAt));
     }
 
     public void MoveWidget(Guid widgetId, WidgetPosition newPosition, Guid updatedBy, DateTimeOffset updatedAt)
@@ -97,32 +99,34 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         var widget = _widgets.FirstOrDefault(w => w.Id == widgetId);
         if (widget is null)
         {
-            throw new DomainException($"Widget '{widgetId}' not found on this dashboard.");
+            throw new BusinessRuleException(Analytics_Dashboard_WidgetNotFound, $"Widget '{widgetId}' not found on this dashboard.");
         }
+
+        if (widget.Position == newPosition) return;
 
         widget.UpdatePosition(newPosition);
         SetAuditOnUpdate(updatedBy, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardWidgetMovedDomainEvent(AccountId, WorkspaceId, Id, widgetId, newPosition, updatedBy, updatedAt));
+        RaiseDomainEvent(new DashboardWidgetMovedDomainEvent(AccountId, WorkspaceId, Id, widgetId, newPosition, updatedBy, updatedAt));
     }
 
-    public override void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
         Status = DashboardStatus.Archived;
-        base.SoftDelete(deletedBy, deletedAt, reason);
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
         SetAuditOnUpdate(deletedBy, deletedAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new DashboardDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
-    public override void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
         Status = DashboardStatus.Active;
-        base.Restore(restoredBy, restoredAt);
+        if (!MarkRestored(restoredBy, restoredAt)) return;
         SetAuditOnUpdate(restoredBy, restoredAt);
         IncrementVersion();
-        AddDomainEvent(new DashboardRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new DashboardRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }

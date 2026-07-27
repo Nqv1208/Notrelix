@@ -49,7 +49,7 @@ public class AddBoardMemberTests : WorkManagementHandlerTestBase
     }
 
     [Fact]
-    public async Task Handle_UserNotInWorkspace_ThrowsBusinessRuleViolationException()
+    public async Task Handle_UserNotInWorkspace_ThrowsBusinessRuleException()
     {
         var board = CreateBoard();
         SetupBoards(board);
@@ -62,7 +62,7 @@ public class AddBoardMemberTests : WorkManagementHandlerTestBase
         var command = new AddBoardMemberCommand(board.Id, Guid.CreateVersion7(), null);
 
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
-            .Should().ThrowAsync<Domain.Common.Exceptions.BusinessRuleViolationException>();
+            .Should().ThrowAsync<Domain.Common.Exceptions.BusinessRuleException>();
     }
 
     [Fact]

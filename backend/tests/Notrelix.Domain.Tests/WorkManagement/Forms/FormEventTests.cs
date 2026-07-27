@@ -15,7 +15,7 @@ public class FormEventTests
     public void Form_UpdateDetails_ShouldRaiseEvent()
     {
         var form = Form.Create(Guid.NewGuid(), WsA, BoardA, "Form", "form", Actor, Now);
-        form.ClearDomainEvents();
+        ((IHasDomainEvents)form).ClearDomainEvents();
         var version = form.Version;
 
         form.UpdateDetails("Updated Form", BoardVisibility.Workspace, "{}", "{}", Actor, Now);
@@ -30,7 +30,7 @@ public class FormEventTests
     public void Form_SoftDelete_ShouldRaiseEvent()
     {
         var form = Form.Create(Guid.NewGuid(), WsA, BoardA, "Form", "form", Actor, Now);
-        form.ClearDomainEvents();
+        ((IHasDomainEvents)form).ClearDomainEvents();
         var version = form.Version;
 
         form.SoftDelete(Actor, Now);
@@ -45,7 +45,7 @@ public class FormEventTests
     {
         var form = Form.Create(Guid.NewGuid(), WsA, BoardA, "Form", "form", Actor, Now);
         form.SoftDelete(Actor, Now);
-        form.ClearDomainEvents();
+        ((IHasDomainEvents)form).ClearDomainEvents();
         var version = form.Version;
 
         form.SoftDelete(Actor, Now);
@@ -59,7 +59,7 @@ public class FormEventTests
     {
         var form = Form.Create(Guid.NewGuid(), WsA, BoardA, "Form", "form", Actor, Now);
         form.SoftDelete(Actor, Now);
-        form.ClearDomainEvents();
+        ((IHasDomainEvents)form).ClearDomainEvents();
         var version = form.Version;
 
         form.Restore(Actor, Now);
@@ -73,7 +73,7 @@ public class FormEventTests
     public void Form_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
         var form = Form.Create(Guid.NewGuid(), WsA, BoardA, "Form", "form", Actor, Now);
-        form.ClearDomainEvents();
+        ((IHasDomainEvents)form).ClearDomainEvents();
         var version = form.Version;
 
         form.Restore(Actor, Now);

@@ -29,14 +29,14 @@ public class ReactionTests
         var target = ResourceRef.Create(ResourceType.Comment, Guid.NewGuid(), Guid.NewGuid());
 
         var act = () => Reaction.Create(Guid.NewGuid(), workspaceId, target, Guid.NewGuid(), Emoji.Create("heart"), DateTimeOffset.UtcNow);
-        act.Should().Throw<WorkspaceMismatchException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
     public void Remove_ShouldRaiseEvent()
     {
         var reaction = CreateReaction();
-        reaction.ClearDomainEvents();
+        ((IHasDomainEvents)reaction).ClearDomainEvents();
 
         reaction.Remove(DateTimeOffset.UtcNow);
 

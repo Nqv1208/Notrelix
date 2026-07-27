@@ -23,7 +23,7 @@ public class CustomRoleTests
     public void AddPermission_ShouldAddToList_AndRaiseEvent()
     {
         var role = CustomRole.Create(Guid.NewGuid(), Guid.NewGuid(), "Role", null, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        role.ClearDomainEvents();
+        ((IHasDomainEvents)role).ClearDomainEvents();
 
         var updatedBy = Guid.NewGuid();
         role.AddPermission("CreateBoard", updatedBy, DateTimeOffset.UtcNow);
@@ -38,7 +38,7 @@ public class CustomRoleTests
     {
         var role = CustomRole.Create(Guid.NewGuid(), Guid.NewGuid(), "Role", null, Guid.NewGuid(), DateTimeOffset.UtcNow);
         role.AddPermission("CreateBoard", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        role.ClearDomainEvents();
+        ((IHasDomainEvents)role).ClearDomainEvents();
 
         var updatedBy = Guid.NewGuid();
         role.RemovePermission("CreateBoard", updatedBy, DateTimeOffset.UtcNow);

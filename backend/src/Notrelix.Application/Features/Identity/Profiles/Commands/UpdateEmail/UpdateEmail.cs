@@ -55,7 +55,7 @@ public sealed class UpdateEmailCommandHandler
             return Result<UpdateEmailResultDto>.Failure("Email is already in use.");
 
         var now = _dateTimeProvider.UtcNow;
-        user.UpdateEmail(normalizedEmail, now);
+        user.UpdateEmail(normalizedEmail, _requestContext.UserId, now);
         await _tokenIssuer.IssueAsync(user, user.Id, now, cancellationToken);
 
         return Result<UpdateEmailResultDto>.Success(

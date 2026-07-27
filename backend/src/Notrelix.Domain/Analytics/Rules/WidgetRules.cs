@@ -14,11 +14,11 @@ public static class WidgetRules
         Guard.NotNull(position);
         if (position.X < 0 || position.Y < 0)
         {
-            throw new DomainException("Widget coordinates (X, Y) must be non-negative.");
+            throw new BusinessRuleException(AnalyticsRuleCodes.Analytics_Widget_CoordinatesMustBeNonNegative, "Widget coordinates (X, Y) must be non-negative.");
         }
         if (position.W <= 0 || position.H <= 0)
         {
-            throw new DomainException("Widget dimensions (W, H) must be positive.");
+            throw new BusinessRuleException(AnalyticsRuleCodes.Analytics_Widget_DimensionsMustBePositive, "Widget dimensions (W, H) must be positive.");
         }
     }
 }

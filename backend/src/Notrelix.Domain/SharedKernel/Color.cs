@@ -8,7 +8,7 @@ public sealed class Color : ValueObject
         @"^#(?:[0-9a-fA-F]{3}){1,2}$",
         RegexOptions.Compiled);
 
-    public string Value { get; }
+    public string Value { get; } = null!;
 
     private Color() { }
     private Color(string value)
@@ -21,7 +21,11 @@ public sealed class Color : ValueObject
         Guard.NotNullOrWhiteSpace(value);
         value = value.Trim().ToUpperInvariant();
 
-        Guard.Assert(HexColorRegex.IsMatch(value), $"'{value}' is not a valid hex color code.");
+        if (!HexColorRegex.IsMatch(value))
+            throw new BusinessRuleException(SharedKernelRuleCodes.SharedKernel_Color_InvalidFormat, $"'{value}' is not a valid hex color code.");
+
+        if (value.Length == 4)
+            value = $"#{value[1]}{value[1]}{value[2]}{value[2]}{value[3]}{value[3]}";
 
         return new Color(value);
     }

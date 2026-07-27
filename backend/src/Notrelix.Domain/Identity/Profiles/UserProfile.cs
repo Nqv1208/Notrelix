@@ -2,7 +2,7 @@ using Notrelix.Domain.Identity.Profiles.Events;
 
 namespace Notrelix.Domain.Identity.Profiles;
 
-public class UserProfile : AggregateRoot
+public class UserProfile : SoftDeletableAggregateRoot
 {
     public Guid UserId { get; private set; }
     public string Timezone { get; private set; } = "UTC";
@@ -20,7 +20,7 @@ public class UserProfile : AggregateRoot
             UserId = userId
         };
         profile.SetAuditOnCreate(userId, createdAt);
-        profile.AddDomainEvent(new UserProfileCreatedDomainEvent(profile.Id, userId, createdAt));
+        profile.RaiseDomainEvent(new UserProfileCreatedDomainEvent(profile.Id, userId, createdAt));
         return profile;
     }
 
@@ -30,7 +30,7 @@ public class UserProfile : AggregateRoot
         Timezone = string.IsNullOrWhiteSpace(timezone) ? "UTC" : timezone.Trim();
         SetAuditOnUpdate(UserId, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new UserProfileUpdatedDomainEvent(UserId, updatedAt));
+        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, UserId, updatedAt));
     }
 
     public void UpdateLocale(string locale, DateTimeOffset updatedAt)
@@ -39,7 +39,7 @@ public class UserProfile : AggregateRoot
         Locale = string.IsNullOrWhiteSpace(locale) ? "vi" : locale.Trim();
         SetAuditOnUpdate(UserId, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new UserProfileUpdatedDomainEvent(UserId, updatedAt));
+        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, UserId, updatedAt));
     }
 
     public void UpdateTheme(string theme, DateTimeOffset updatedAt)
@@ -53,13 +53,13 @@ public class UserProfile : AggregateRoot
         {
             if (!UserProfileTheme.IsValid(theme))
             {
-                throw new BusinessRuleException($"Invalid profile theme: {theme}.");
+                throw new BusinessRuleException(IdentityRuleCodes.Identity_Profile_InvalidTheme, $"Invalid profile theme: {theme}.");
             }
             Theme = theme.Trim().ToLowerInvariant();
         }
         SetAuditOnUpdate(UserId, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new UserProfileUpdatedDomainEvent(UserId, updatedAt));
+        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, UserId, updatedAt));
     }
 
     public void UpdatePreferences(string preferences, DateTimeOffset updatedAt)
@@ -72,11 +72,29 @@ public class UserProfile : AggregateRoot
         }
         catch (System.Text.Json.JsonException)
         {
-            throw new BusinessRuleException("Preferences must be a valid JSON string.");
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_Profile_InvalidPreferencesJson, "Preferences must be a valid JSON string.");
         }
         Preferences = json;
         SetAuditOnUpdate(UserId, updatedAt);
         IncrementVersion();
-        AddDomainEvent(new UserProfileUpdatedDomainEvent(UserId, updatedAt));
+        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, UserId, updatedAt));
+    }
+
+    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        if (IsDeleted) return;
+        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
+        SetAuditOnUpdate(deletedBy, deletedAt);
+        IncrementVersion();
+        RaiseDomainEvent(new UserProfileSoftDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, reason));
+    }
+
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (!IsDeleted) return;
+        if (!MarkRestored(restoredBy, restoredAt)) return;
+        SetAuditOnUpdate(restoredBy, restoredAt);
+        IncrementVersion();
+        RaiseDomainEvent(new UserProfileRestoredDomainEvent(Id, UserId, restoredBy, restoredAt));
     }
 }

@@ -4,10 +4,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValues;
 
-public record UpdateBoardItemFieldValuesCommand(Guid BoardItemId, Dictionary<Guid, object?> Values) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+public record UpdateBoardItemFieldValuesCommand(Guid BoardItemId, Dictionary<Guid, object?> Values, string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"bulk-set-field-values:{BoardItemId}:{string.Join(",", Values.Keys.OrderBy(k => k))}";
 }
 
 public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBoardItemFieldValuesCommand, Result>
@@ -131,7 +132,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
             throw new NotFoundException(nameof(Page), pageId);
 
         if (pageWorkspaceId.Value != boardWorkspaceId)
-            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleViolationException(
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
                 "CardPageSameWorkspace",
                 "BoardItem can only be linked to a page in the same workspace.");
     }

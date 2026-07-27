@@ -10,12 +10,14 @@ public record UpdateBoardCommand(
     string? Description,
     string? Background,
     BoardVisibility? Visibility,
-    long? ExpectedVersion) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest
+    long? ExpectedVersion,
+    string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
     long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion ?? 0;
     ResourceRef IExpectedVersionRequest.Resource => Resource;
+    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"update-board:{BoardId}";
 }
 
 public class UpdateBoardCommandHandler : IRequestHandler<UpdateBoardCommand, Result>

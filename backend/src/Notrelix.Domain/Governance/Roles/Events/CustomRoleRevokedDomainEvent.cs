@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.Governance.Roles.Events;
 
+[EventName("governance.custom-role-revoked")]
 public sealed record CustomRoleRevokedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -7,4 +8,4 @@ public sealed record CustomRoleRevokedDomainEvent(
     Guid MemberId,
     Guid RevokedBy,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, RevokedBy);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

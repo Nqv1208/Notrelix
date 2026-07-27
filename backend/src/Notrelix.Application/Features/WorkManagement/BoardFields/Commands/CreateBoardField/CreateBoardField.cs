@@ -1,12 +1,14 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
 
-public record CreateBoardFieldCommand(Guid BoardId, string Name, string FieldType, string? Settings, string? Position) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
+public record CreateBoardFieldCommand(Guid BoardId, string Name, string FieldType, string? Settings, string? Position, string? IdempotencyKey = null) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreateField;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"create-field:{BoardId}:{Name}";
 }
 
 public class CreateBoardFieldCommandHandler : IRequestHandler<CreateBoardFieldCommand, Result<Guid>>
@@ -34,15 +36,17 @@ public class CreateBoardFieldCommandHandler : IRequestHandler<CreateBoardFieldCo
         var now = _dateTimeProvider.UtcNow;
         var position = request.Position is not null
             ? FractionalIndex.Create(request.Position)
-            : FractionalIndex.Create("z");
-
-        var settings = request.Settings is not null
-            ? FieldSettings.Create(JsonValue.Create(request.Settings)!)
-            : FieldSettings.Empty();
+            : FractionalIndex.Initial();
 
         var type = Enum.TryParse<FieldType>(request.FieldType, true, out var parsedType)
             ? parsedType
             : FieldType.Text;
+
+        var settings = request.Settings is not null
+            ? FieldSettings.Create(JsonValue.Create(request.Settings)!)
+            : type == FieldType.Status
+                ? FieldSettings.Create(JsonValue.Create("{\"transitions\":{}}")!)
+                : FieldSettings.Empty();
 
         var column = BoardField.Create(
             _requestContext.RequireAccountId(),

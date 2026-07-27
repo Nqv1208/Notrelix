@@ -23,7 +23,7 @@ public class AttachmentWorkspaceScopeTests
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsB);
         var meta = FileMetadata.Create("f.pdf", 100, "application/pdf");
         var act = () => Attachment.Create(Guid.NewGuid(), WsA, target, AttachmentType.Document, meta, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        act.Should().Throw<WorkspaceMismatchException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]

@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Views.Events;
 
+[EventName("work-management.board-view-user-preference-created")]
 public sealed record BoardViewUserPreferenceCreatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -8,4 +9,4 @@ public sealed record BoardViewUserPreferenceCreatedDomainEvent(
     Guid UserId,
     Guid PreferenceId,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

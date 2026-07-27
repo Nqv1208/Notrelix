@@ -7,11 +7,13 @@ namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SaveB
 public record SaveBoardViewCommand(
     Guid BoardId,
     ViewMode ViewMode,
-    string? Filters) : ICommand<Result>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest
+    string? Filters,
+    string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
     public RealtimeTopic Topic => new("board", "Board", BoardId);
+    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"save-view:{BoardId}";
 }
 
 public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand, Result>

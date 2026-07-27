@@ -3,6 +3,7 @@ using BoardFieldEntity = global::Notrelix.Domain.WorkManagement.Fields.BoardFiel
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
+using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace;
 
 public record CreateBoardInWorkspaceCommand(
@@ -10,11 +11,13 @@ public record CreateBoardInWorkspaceCommand(
     string Title,
     string? Description,
     string? Background,
-    BoardVisibility? Visibility) : ICommand<Result<Guid>>, ITransactionalRequest, IRequirePermission, IWorkspaceRequest, IRealtimeRequest
+    BoardVisibility? Visibility,
+    string? IdempotencyKey = null) : ICommand<Result<Guid>>, ITransactionalRequest, IRequirePermission, IWorkspaceRequest, IRealtimeRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreateBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId);
     public RealtimeTopic Topic => new("workspace", "Workspace", WorkspaceId);
+    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"create-board:{WorkspaceId}:{Title}";
 }
 
 public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardInWorkspaceCommand, Result<Guid>>
@@ -49,7 +52,7 @@ public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardI
         var defaultFields = new[]
         {
             BoardFieldEntity.Create(accountId, board.WorkspaceId, board.Id, "Title", FieldType.Text, FieldSettings.Empty(), FractionalIndex.Create("a0"), _requestContext.UserId, createdAt, isSystem: true),
-            BoardFieldEntity.Create(accountId, board.WorkspaceId, board.Id, "Status", FieldType.Status, FieldSettings.Empty(), FractionalIndex.Create("a1"), _requestContext.UserId, createdAt, isSystem: true),
+            BoardFieldEntity.Create(accountId, board.WorkspaceId, board.Id, "Status", FieldType.Status, FieldSettings.Create(JsonValue.Create("{\"transitions\":{}}")!), FractionalIndex.Create("a1"), _requestContext.UserId, createdAt, isSystem: true),
             BoardFieldEntity.Create(accountId, board.WorkspaceId, board.Id, "Assignee", FieldType.Person, FieldSettings.Empty(), FractionalIndex.Create("a2"), _requestContext.UserId, createdAt, isSystem: true),
             BoardFieldEntity.Create(accountId, board.WorkspaceId, board.Id, "Due Date", FieldType.Date, FieldSettings.Empty(), FractionalIndex.Create("a3"), _requestContext.UserId, createdAt, isSystem: true),
         };

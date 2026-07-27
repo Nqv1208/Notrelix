@@ -23,7 +23,7 @@ public class PermissionRuleLifecycleTests
     public void PermissionRule_Disable_ShouldUpdateStatus()
     {
         var rule = PermissionRule.Create(Guid.NewGuid(), WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
-        rule.ClearDomainEvents();
+        ((IHasDomainEvents)rule).ClearDomainEvents();
 
         rule.Disable(Actor, Now);
 
@@ -64,7 +64,7 @@ public class PermissionRuleLifecycleTests
     public void PermissionRule_SoftDelete_ShouldRaiseEvent()
     {
         var rule = PermissionRule.Create(Guid.NewGuid(), WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
-        rule.ClearDomainEvents();
+        ((IHasDomainEvents)rule).ClearDomainEvents();
         var version = rule.Version;
 
         rule.SoftDelete(Actor, Now);
@@ -81,7 +81,7 @@ public class PermissionRuleLifecycleTests
     {
         var rule = PermissionRule.Create(Guid.NewGuid(), WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
         rule.SoftDelete(Actor, Now);
-        rule.ClearDomainEvents();
+        ((IHasDomainEvents)rule).ClearDomainEvents();
         var version = rule.Version;
 
         rule.Restore(Actor, Now);
@@ -98,7 +98,7 @@ public class PermissionRuleLifecycleTests
     {
         var rule = PermissionRule.Create(Guid.NewGuid(), WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
         rule.SoftDelete(Actor, Now);
-        rule.ClearDomainEvents();
+        ((IHasDomainEvents)rule).ClearDomainEvents();
         var version = rule.Version;
 
         rule.SoftDelete(Actor, Now);
@@ -111,7 +111,7 @@ public class PermissionRuleLifecycleTests
     public void PermissionRule_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
         var rule = PermissionRule.Create(Guid.NewGuid(), WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
-        rule.ClearDomainEvents();
+        ((IHasDomainEvents)rule).ClearDomainEvents();
         var version = rule.Version;
 
         rule.Restore(Actor, Now);

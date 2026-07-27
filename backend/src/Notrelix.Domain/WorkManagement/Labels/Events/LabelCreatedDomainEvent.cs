@@ -1,5 +1,6 @@
 namespace Notrelix.Domain.WorkManagement.Labels.Events;
 
+[EventName("work-management.label-created")]
 public sealed record LabelCreatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
@@ -7,4 +8,4 @@ public sealed record LabelCreatedDomainEvent(
     Guid LabelId,
     string Name,
     DateTimeOffset OccurredAt
-) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt, null);
+) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

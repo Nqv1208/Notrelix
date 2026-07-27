@@ -33,7 +33,7 @@ public class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileCommand,
             return Result<UserDto>.Failure("User not found");
         }
 
-        user.UpdateProfile(request.Name, request.Avatar, _dateTimeProvider.UtcNow);
+        user.UpdateProfile(request.Name, request.Avatar, request.UserId, _dateTimeProvider.UtcNow);
 
         return Result<UserDto>.Success(new UserDto
         {
