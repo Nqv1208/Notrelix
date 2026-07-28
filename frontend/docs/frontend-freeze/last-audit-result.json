@@ -1,50 +1,75 @@
 {
-  "auditedAt": "2026-07-26T18:36:23.071Z",
+  "commit": "69eafb110e32be040d82c1d87c9df8245e249345",
+  "timestamp": "2026-07-28T14:45:22.865Z",
+  "node": "v24.15.0",
+  "pnpm": "10.0.0",
+  "status": "FROZEN",
   "summary": {
-    "pass": 6,
+    "pass": 7,
     "fail": 0
   },
-  "gates": [
+  "commands": [
     {
+      "name": "typecheck",
       "gate": "TYPECHECK",
       "command": "pnpm typecheck",
-      "status": "PASS",
-      "durationMs": 10449,
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 3300,
       "errorOutput": ""
     },
     {
+      "name": "lint",
       "gate": "LINT",
       "command": "pnpm lint",
-      "status": "PASS",
-      "durationMs": 402,
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 218,
       "errorOutput": ""
     },
     {
-      "gate": "TEST",
-      "command": "pnpm test",
-      "status": "PASS",
-      "durationMs": 421,
+      "name": "test_node",
+      "gate": "TEST_NODE",
+      "command": "pnpm test:node",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 1253,
       "errorOutput": ""
     },
     {
+      "name": "test_web",
+      "gate": "TEST_WEB",
+      "command": "pnpm test:web",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 3791,
+      "errorOutput": ""
+    },
+    {
+      "name": "check_deps",
       "gate": "CHECK_DEPS",
       "command": "pnpm check:deps",
-      "status": "PASS",
-      "durationMs": 582,
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 393,
       "errorOutput": ""
     },
     {
+      "name": "build",
       "gate": "BUILD",
       "command": "pnpm build",
-      "status": "PASS",
-      "durationMs": 2464,
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 1708,
       "errorOutput": ""
     },
     {
+      "name": "validate",
       "gate": "VALIDATE",
       "command": "pnpm validate",
-      "status": "PASS",
-      "durationMs": 2083,
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 6657,
       "errorOutput": ""
     }
   ]
