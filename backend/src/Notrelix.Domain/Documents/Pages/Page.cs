@@ -41,16 +41,18 @@ public class Page : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Rename(string newTitle, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (Status == PageStatus.Archived)
             throw new BusinessRuleException(DocumentRuleCodes.Documents_Page_CannotRenameArchived, "Cannot rename an archived page.");
         Guard.NotNullOrWhiteSpace(newTitle);
         Guard.MaxLength(newTitle, 500);
 
-        var oldTitle = Title;
         if (Title == newTitle.Trim()) return;
 
+        var oldTitle = Title;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Title = newTitle.Trim();
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new PageRenamedDomainEvent(AccountId, WorkspaceId, Id, oldTitle, Title, updatedBy, updatedAt));
     }
@@ -58,6 +60,7 @@ public class Page : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Move(Guid? newParentId, Guid updatedBy, DateTimeOffset updatedAt, Func<Guid, Guid?> getParentId)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (Status == PageStatus.Archived)
             throw new BusinessRuleException(DocumentRuleCodes.Documents_Page_CannotMoveArchived, "Cannot move an archived page.");
         if (ParentId == newParentId) return;
@@ -68,8 +71,9 @@ public class Page : SoftDeletableAggregateRoot, IWorkspaceScoped
         }
 
         var oldParentId = ParentId;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         ParentId = newParentId;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new PageMovedDomainEvent(AccountId, WorkspaceId, Id, oldParentId, ParentId, updatedBy, updatedAt));
     }
@@ -77,30 +81,36 @@ public class Page : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(archivedBy);
         if (Status == PageStatus.Archived) return;
 
+        var pending = PrepareAuditUpdate(archivedBy, archivedAt);
         Status = PageStatus.Archived;
-        SetAuditOnUpdate(archivedBy, archivedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new PageArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        Status = PageStatus.SoftDeleted;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
+        Status = PageStatus.SoftDeleted;
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new PageSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        Status = PageStatus.Active;
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        Status = PageStatus.Active;
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new PageRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }

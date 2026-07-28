@@ -57,8 +57,9 @@ public class UserSession : SoftDeletableAggregateRoot
             throw new BusinessRuleException(IdentityRuleCodes.Identity_Session_CannotUpdateRefreshTokenOfInactive, "Cannot update refresh token for an inactive session.");
         }
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         RefreshTokenHash = newTokenHash;
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserSessionRefreshTokenRotatedDomainEvent(Id, UserId, updatedAt));
     }
@@ -73,10 +74,10 @@ public class UserSession : SoftDeletableAggregateRoot
             throw new BusinessRuleException(IdentityRuleCodes.Identity_Session_CannotRevokeExpired, "Cannot revoke an expired session.");
         }
 
+        var pending = PrepareAuditUpdate(UserId, revokedAt);
         Status = SessionStatus.Revoked;
         RevokedAt = revokedAt;
-
-        SetAuditOnUpdate(UserId, revokedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserSessionRevokedDomainEvent(Id, UserId, revokedAt, reason));
     }
@@ -91,28 +92,32 @@ public class UserSession : SoftDeletableAggregateRoot
             throw new BusinessRuleException(IdentityRuleCodes.Identity_Session_CannotExpireRevoked, "Cannot expire a revoked session.");
         }
 
+        var pending = PrepareAuditUpdate(UserId, expiredAt);
         Status = SessionStatus.Expired;
         ExpiredAt = expiredAt;
-
-        SetAuditOnUpdate(UserId, expiredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserSessionExpiredDomainEvent(Id, UserId, expiredAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserSessionSoftDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, reason));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserSessionRestoredDomainEvent(Id, UserId, restoredBy, restoredAt));
     }

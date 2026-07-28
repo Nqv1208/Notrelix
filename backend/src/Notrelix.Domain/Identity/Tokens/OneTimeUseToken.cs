@@ -45,9 +45,10 @@ public abstract class OneTimeUseToken : AggregateRoot
         if (Status is UserTokenStatus.Expired or UserTokenStatus.Revoked || usedAt >= ExpiresAt)
             throw new BusinessRuleException(IdentityRuleCodes.Identity_OneTimeToken_CannotUseExpired, "Cannot use an expired token.");
 
+        var pending = PrepareAuditUpdate(UserId, usedAt);
         Status = UserTokenStatus.Used;
         UsedAt = usedAt;
-        SetAuditOnUpdate(UserId, usedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         if (domainEvent != null) RaiseDomainEvent(domainEvent);
     }
@@ -61,9 +62,10 @@ public abstract class OneTimeUseToken : AggregateRoot
 
         if (Status == UserTokenStatus.Revoked) return false;
 
+        var pending = PrepareAuditUpdate(UserId, expiredAt);
         Status = UserTokenStatus.Expired;
         ExpiredAt = expiredAt;
-        SetAuditOnUpdate(UserId, expiredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         if (domainEvent != null) RaiseDomainEvent(domainEvent);
         return true;
@@ -83,10 +85,11 @@ public abstract class OneTimeUseToken : AggregateRoot
         if (Status is UserTokenStatus.Used or UserTokenStatus.Expired)
             return false;
 
+        var pending = PrepareAuditUpdate(UserId, revokedAt);
         Status = UserTokenStatus.Revoked;
         RevokedAt = revokedAt;
         RevocationReason = revocationReason.Trim();
-        SetAuditOnUpdate(UserId, revokedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         if (domainEvent != null) RaiseDomainEvent(domainEvent);
         return true;

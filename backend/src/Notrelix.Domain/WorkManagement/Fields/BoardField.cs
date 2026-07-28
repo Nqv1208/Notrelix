@@ -71,12 +71,15 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotNull(settings);
+
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
+
         FieldSettingsValidator.Validate(settings, Type);
 
         if (Settings == settings) return;
 
         Settings = settings;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new BoardFieldUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
@@ -87,12 +90,16 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (Type != FieldType.Select && Type != FieldType.MultiSelect && Type != FieldType.Status)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_CannotAddOptionsForType, $"Cannot add options to field of type {Type}");
 
-        if (_options.Any(o => string.Equals(o.Name, name, StringComparison.OrdinalIgnoreCase)))
-            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_DuplicateOptionName, $"Duplicate option name '{name}'.");
+        var normalizedName = NormalizeOptionName(name);
 
-        var option = FieldOption.Create(Id, name, color, position);
+        if (_options.Any(o => string.Equals(o.Name, normalizedName, StringComparison.OrdinalIgnoreCase)))
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_DuplicateOptionName, $"Duplicate option name '{normalizedName}'.");
+
+        var audit = PrepareAuditUpdate(addedBy, addedAt);
+
+        var option = FieldOption.Create(Id, normalizedName, color, position);
         _options.Add(option);
-        SetAuditOnUpdate(addedBy, addedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new FieldOptionAddedDomainEvent(AccountId, WorkspaceId, Id, option.Id, option.Name, addedBy, addedAt));
     }
@@ -100,12 +107,16 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void RemoveOption(Guid optionId, Guid removedBy, DateTimeOffset removedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(removedBy);
+
+        var audit = PrepareAuditUpdate(removedBy, removedAt);
+
         var option = _options.FirstOrDefault(o => o.Id == optionId);
         if (option is null)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_OptionNotFound, $"Field option '{optionId}' not found.");
 
         _options.Remove(option);
-        SetAuditOnUpdate(removedBy, removedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new FieldOptionRemovedDomainEvent(AccountId, WorkspaceId, Id, optionId, removedBy, removedAt));
     }
@@ -115,26 +126,30 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(name);
 
+        var normalizedName = NormalizeOptionName(name);
+
         var option = _options.FirstOrDefault(o => o.Id == optionId);
         if (option is null)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_OptionNotFound, $"Field option '{optionId}' not found.");
 
-        if (_options.Any(o => o.Id != optionId && string.Equals(o.Name, name, StringComparison.OrdinalIgnoreCase)))
-            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_DuplicateOptionName, $"Duplicate option name '{name}'.");
+        if (_options.Any(o => o.Id != optionId && string.Equals(o.Name, normalizedName, StringComparison.OrdinalIgnoreCase)))
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_DuplicateOptionName, $"Duplicate option name '{normalizedName}'.");
 
-        var trimmedName = name.Trim();
-        if (option.Name == trimmedName && option.Color == color) return;
+        if (option.Name == normalizedName && option.Color == color) return;
 
-        option.Update(name, color);
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
 
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        option.Update(normalizedName, color);
+
+        ApplyAuditUpdate(audit);
         IncrementVersion();
-        RaiseDomainEvent(new FieldOptionUpdatedDomainEvent(AccountId, WorkspaceId, Id, optionId, trimmedName, updatedBy, updatedAt));
+        RaiseDomainEvent(new FieldOptionUpdatedDomainEvent(AccountId, WorkspaceId, Id, optionId, normalizedName, updatedBy, updatedAt));
     }
 
     public void ReorderOptions(IReadOnlyList<Guid> orderedOptionIds, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
 
         // ── Validate the complete input set BEFORE any mutation ──────────
         if (orderedOptionIds.Count != _options.Count)
@@ -153,6 +168,8 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
                 WorkManagementRuleCodes.WorkManagement_Field_OptionNotFound,
                 "Reorder list must contain every field option exactly once.");
 
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
+
         // ── No-op check ──────────────────────────────────────────────────
         var currentOrder = _options.OrderBy(o => o.Position).Select(o => o.Id).ToList();
         if (currentOrder.SequenceEqual(orderedOptionIds)) return;
@@ -167,7 +184,7 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         for (var i = 0; i < orderedOptionIds.Count; i++)
             optionsById[orderedOptionIds[i]].UpdatePosition(positions[i]);
 
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
 
         // Defensive copy: event payload must not reference caller's mutable list
@@ -177,13 +194,16 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
 
         if (IsSystem)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_CannotDeleteSystem, "Cannot delete a system field.");
 
+        var audit = PrepareAuditUpdate(deletedBy, deletedAt);
+
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new BoardFieldDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
@@ -195,13 +215,24 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
             or FieldType.Person;
     }
 
+    internal static string NormalizeOptionName(string name)
+    {
+        Guard.NotNullOrWhiteSpace(name);
+        Guard.MaxLength(name, 100);
+        return name.Trim();
+    }
+
     public void UpdateClassification(DataClassification classification, bool isSensitive, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
+
         if (DataClassification == classification && IsSensitive == isSensitive) return;
         DataClassification = classification;
         IsSensitive = isSensitive;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new BoardFieldClassificationUpdatedDomainEvent(AccountId, WorkspaceId, BoardId, Id, classification, isSensitive, updatedBy, updatedAt));
     }
@@ -210,19 +241,26 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotNull(position);
+        Guard.NotEmpty(updatedBy);
+
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
 
         if (Position.Value == position.Value) return;
 
         Position = position;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
+
+        var audit = PrepareAuditUpdate(restoredBy, restoredAt);
+
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new BoardFieldRestoredDomainEvent(AccountId, WorkspaceId, BoardId, Id, restoredBy, restoredAt));
     }

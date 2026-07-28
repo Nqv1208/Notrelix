@@ -42,56 +42,68 @@ public class PaymentMethod : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void SetAsDefault(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (IsDefault) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         IsDefault = true;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 
     public void UnsetAsDefault(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (!IsDefault) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         IsDefault = false;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 
     public void Deactivate(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (Status == PaymentMethodStatus.Expired) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = PaymentMethodStatus.Expired;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 
     public void Reactivate(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (Status == PaymentMethodStatus.Active) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = PaymentMethodStatus.Active;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 }

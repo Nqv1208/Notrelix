@@ -70,6 +70,8 @@ public class WorkspaceInvitation : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(acceptedUserId);
 
+        var audit = PrepareAuditUpdate(acceptedUserId, acceptedAt);
+
         if (Status == WorkspaceInvitationStatus.Accepted) return;
 
         if (Status != WorkspaceInvitationStatus.Pending)
@@ -79,7 +81,7 @@ public class WorkspaceInvitation : SoftDeletableAggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Invitation_HasExpired, "Invitation has expired.");
 
         Status = WorkspaceInvitationStatus.Accepted;
-        SetAuditOnUpdate(acceptedUserId, acceptedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
 
         RaiseDomainEvent(new WorkspaceInvitationAcceptedDomainEvent(
@@ -91,11 +93,13 @@ public class WorkspaceInvitation : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(declinedBy);
 
+        var audit = PrepareAuditUpdate(declinedBy, declinedAt);
+
         if (Status != WorkspaceInvitationStatus.Pending)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Invitation_NotPending, "Invitation is not pending.");
 
         Status = WorkspaceInvitationStatus.Declined;
-        SetAuditOnUpdate(declinedBy, declinedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
 
         RaiseDomainEvent(new WorkspaceInvitationDeclinedDomainEvent(
@@ -106,6 +110,8 @@ public class WorkspaceInvitation : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
+
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
 
         if (Status != WorkspaceInvitationStatus.Pending)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Invitation_NotPending, "Invitation is not pending.");
@@ -119,7 +125,7 @@ public class WorkspaceInvitation : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         var oldRole = Role;
         Role = newRole;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
 
         RaiseDomainEvent(new WorkspaceInvitationRoleChangedDomainEvent(
@@ -130,10 +136,12 @@ public class WorkspaceInvitation : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
 
+        var audit = PrepareAuditUpdate(null, expiredAt);
+
         if (Status != WorkspaceInvitationStatus.Pending) return;
 
         Status = WorkspaceInvitationStatus.Expired;
-        SetAuditOnUpdate(null, expiredAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
 
         RaiseDomainEvent(new WorkspaceInvitationExpiredDomainEvent(
@@ -145,10 +153,12 @@ public class WorkspaceInvitation : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(revokedBy);
 
+        var audit = PrepareAuditUpdate(revokedBy, revokedAt);
+
         if (Status != WorkspaceInvitationStatus.Pending) return;
 
         Status = WorkspaceInvitationStatus.Revoked;
-        SetAuditOnUpdate(revokedBy, revokedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
 
         RaiseDomainEvent(new WorkspaceInvitationRevokedDomainEvent(
@@ -166,6 +176,8 @@ public class WorkspaceInvitation : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.NotNull(newTokenHash);
         Guard.NotEmpty(resentBy);
 
+        var audit = PrepareAuditUpdate(resentBy, resentAt);
+
         if (Status is not WorkspaceInvitationStatus.Pending and
             not WorkspaceInvitationStatus.Expired)
         {
@@ -180,7 +192,7 @@ public class WorkspaceInvitation : SoftDeletableAggregateRoot, IWorkspaceScoped
         Status = WorkspaceInvitationStatus.Pending;
         ExpiresAt = resentAt.Add(expiry);
 
-        SetAuditOnUpdate(resentBy, resentAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
 
         RaiseDomainEvent(new WorkspaceInvitationResentDomainEvent(
@@ -189,20 +201,26 @@ public class WorkspaceInvitation : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
-        if (IsDeleted) return;
         Guard.NotEmpty(deletedBy);
+        if (IsDeleted) return;
+
+        var audit = PrepareAuditUpdate(deletedBy, deletedAt);
+
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceInvitationSoftDeletedDomainEvent(AccountId, Id, WorkspaceId, deletedBy, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
-        if (!IsDeleted) return;
         Guard.NotEmpty(restoredBy);
+        if (!IsDeleted) return;
+
+        var audit = PrepareAuditUpdate(restoredBy, restoredAt);
+
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceInvitationRestoredDomainEvent(AccountId, Id, WorkspaceId, restoredBy, restoredAt));
     }

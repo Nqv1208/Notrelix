@@ -47,10 +47,12 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Enable(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (Status == AutomationRuleStatus.Active) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = AutomationRuleStatus.Active;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AutomationRuleEnabledDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
@@ -58,10 +60,12 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Disable(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (Status == AutomationRuleStatus.Disabled) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = AutomationRuleStatus.Disabled;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AutomationRuleDisabledDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
@@ -70,31 +74,37 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotNull(config);
+        Guard.NotEmpty(updatedBy);
 
         if (Configuration == config) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Configuration = config;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AutomationConfigurationChangedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        Status = AutomationRuleStatus.Disabled;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
+        Status = AutomationRuleStatus.Disabled;
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AutomationRuleDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        Status = AutomationRuleStatus.Draft;
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        Status = AutomationRuleStatus.Draft;
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AutomationRuleRestoredDomainEvent(AccountId, WorkspaceId, Id, Name, restoredBy, restoredAt));
     }

@@ -78,15 +78,17 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(name);
         Guard.MaxLength(name, 500);
 
-        var oldName = Name;
         var normalizedName = name.Trim();
         if (Name == normalizedName) return;
 
+        var oldName = Name;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Name = normalizedName;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemRenamedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldName, Name, updatedBy, updatedAt));
     }
@@ -95,6 +97,7 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNull(group);
         Guard.NotNull(newPosition);
 
@@ -102,14 +105,15 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{WorkspaceId}', got '{group.WorkspaceId}'.");
 
         if (group.BoardId != BoardId)
-            throw new BusinessRuleException(CommonRuleCodes.Common_BoardScopeMismatch, $"Board scope mismatch. Expected '{BoardId}', got '{group.BoardId}'.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_BoardScopeMismatch, $"Board scope mismatch. Expected '{BoardId}', got '{group.BoardId}'.");
 
-        var oldGroupId = GroupId;
         if (GroupId == group.GroupId && Position == newPosition) return;
 
+        var oldGroupId = GroupId;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         GroupId = group.GroupId;
         Position = newPosition;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemMovedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldGroupId, group.GroupId, newPosition.Value, updatedBy, updatedAt));
     }
@@ -118,6 +122,7 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNull(field);
         Guard.NotNull(newValue);
 
@@ -171,7 +176,8 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
             existingValue.UpdateValue(newValue);
         }
 
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemFieldValueChangedDomainEvent(AccountId, WorkspaceId, Id, BoardId, field.Id, oldValue, newValue, updatedBy, updatedAt));
     }
@@ -180,6 +186,7 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
 
         if (parentItemId.HasValue)
         {
@@ -194,9 +201,10 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         if (ParentItemId == parentItemId && ItemLevel == itemLevel) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         ParentItemId = parentItemId;
         ItemLevel = itemLevel;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemParentAssignedDomainEvent(AccountId, WorkspaceId, BoardId, Id, parentItemId, itemLevel, updatedBy, updatedAt));
     }
@@ -205,13 +213,15 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
         if (startedAt != null && dueAt != null && dueAt < startedAt)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_DueDateMustBeAfterStartDate, "Due date must be after start date.");
 
         if (StartedAt == startedAt && DueAt == dueAt) return;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         StartedAt = startedAt;
         DueAt = dueAt;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemTimelineSetDomainEvent(AccountId, WorkspaceId, BoardId, Id, startedAt, dueAt, updatedBy, updatedAt));
     }
@@ -220,18 +230,22 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
         if (CompletedAt == completedAt) return;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         CompletedAt = completedAt;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemCompletedDomainEvent(AccountId, WorkspaceId, BoardId, Id, completedAt, updatedBy, updatedAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
@@ -239,9 +253,11 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(archivedBy);
         if (IsArchived) return;
+        var pending = PrepareAuditUpdate(archivedBy, archivedAt);
         IsArchived = true;
-        SetAuditOnUpdate(archivedBy, archivedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemArchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, archivedBy, archivedAt));
     }
@@ -249,18 +265,22 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(unarchivedBy);
         if (!IsArchived) return;
+        var pending = PrepareAuditUpdate(unarchivedBy, unarchivedAt);
         IsArchived = false;
-        SetAuditOnUpdate(unarchivedBy, unarchivedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemUnarchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, unarchivedBy, unarchivedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemRestoredDomainEvent(AccountId, WorkspaceId, Id, BoardId, restoredBy, restoredAt));
     }

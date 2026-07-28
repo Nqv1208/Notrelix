@@ -63,8 +63,9 @@ public class ShareLink : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         if (Status == ShareLinkStatus.Disabled) return;
 
+        var pending = PrepareAuditUpdate(disabledBy, disabledAt);
         Status = ShareLinkStatus.Disabled;
-        SetAuditOnUpdate(disabledBy, disabledAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new ShareLinkDisabledDomainEvent(AccountId, WorkspaceId, Id, disabledBy, disabledAt));
     }
@@ -74,9 +75,10 @@ public class ShareLink : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotNull(newHash);
 
+        var pending = PrepareAuditUpdate(rotatedBy, rotatedAt);
         TokenHash = newHash;
         Status = ShareLinkStatus.Active;
-        SetAuditOnUpdate(rotatedBy, rotatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
         RaiseDomainEvent(new ShareLinkRotatedDomainEvent(AccountId, WorkspaceId, Id, rotatedBy, rotatedAt));
@@ -84,19 +86,23 @@ public class ShareLink : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
         IncrementVersion();
+        ApplyAuditUpdate(pending);
         RaiseDomainEvent(new ShareLinkSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
         IncrementVersion();
+        ApplyAuditUpdate(pending);
         RaiseDomainEvent(new ShareLinkRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 
@@ -105,8 +111,9 @@ public class ShareLink : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         if (Status != ShareLinkStatus.Active) return;
 
+        var pending = PrepareAuditUpdate(null, expiredAt);
         Status = ShareLinkStatus.Expired;
-        SetAuditOnUpdate(null, expiredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new ShareLinkExpiredDomainEvent(AccountId, WorkspaceId, Id, expiredAt));
     }

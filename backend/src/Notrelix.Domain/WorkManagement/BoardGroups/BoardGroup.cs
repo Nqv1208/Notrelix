@@ -45,29 +45,32 @@ public class BoardGroup : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(title);
         Guard.MaxLength(title, 255);
 
-        var oldTitle = Title;
         var normalizedTitle = title.Trim();
         if (Title == normalizedTitle) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Title = normalizedTitle;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new BoardGroupRenamedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldTitle, Title, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardGroupRenamedDomainEvent(AccountId, WorkspaceId, Id, BoardId, Title, normalizedTitle, updatedBy, updatedAt));
     }
 
     public void UpdateColor(Color color, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNull(color);
         if (Color == color) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         var oldColor = Color;
         Color = color;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardGroupColorChangedDomainEvent(AccountId, WorkspaceId, BoardId, Id, oldColor, color, updatedBy, updatedAt));
     }
@@ -76,20 +79,24 @@ public class BoardGroup : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNull(newPosition);
         if (Position == newPosition) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Position = newPosition;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardGroupReorderedDomainEvent(AccountId, WorkspaceId, Id, BoardId, newPosition.Value, updatedBy, updatedAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardGroupSoftDeletedDomainEvent(AccountId, WorkspaceId, BoardId, Id, deletedBy, deletedAt));
     }
@@ -102,9 +109,11 @@ public class BoardGroup : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardGroupRestoredDomainEvent(AccountId, WorkspaceId, BoardId, Id, restoredBy, restoredAt));
     }
@@ -112,9 +121,11 @@ public class BoardGroup : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(archivedBy);
         if (IsArchived) return;
+        var pending = PrepareAuditUpdate(archivedBy, archivedAt);
         IsArchived = true;
-        SetAuditOnUpdate(archivedBy, archivedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardGroupArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
     }
@@ -122,9 +133,11 @@ public class BoardGroup : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(unarchivedBy);
         if (!IsArchived) return;
+        var pending = PrepareAuditUpdate(unarchivedBy, unarchivedAt);
         IsArchived = false;
-        SetAuditOnUpdate(unarchivedBy, unarchivedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardGroupUnarchivedDomainEvent(AccountId, WorkspaceId, Id, unarchivedBy, unarchivedAt));
     }

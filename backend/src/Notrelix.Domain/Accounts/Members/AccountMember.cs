@@ -1,6 +1,6 @@
 using Notrelix.Domain.Accounts.Members.Events;
 using Notrelix.Domain.Accounts.Rules;
-using Notrelix.Domain.Workspaces;
+
 namespace Notrelix.Domain.Accounts.Members;
 
 public class AccountMember : SoftDeletableAggregateRoot, IAccountScoped
@@ -37,16 +37,16 @@ public class AccountMember : SoftDeletableAggregateRoot, IAccountScoped
         Guard.NotEmpty(updatedBy);
 
         if (Status != AccountMemberStatus.Active)
-            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotChangeRoleOfInactive, "Cannot change role of an inactive or suspended member.");
+            throw new BusinessRuleException(AccountRuleCodes.Accounts_Member_CannotChangeRoleOfInactive, "Cannot change role of an inactive or suspended member.");
 
         AccountOwnerRules.EnsureCanDowngradeOwner(Role, newRole, activeOwnerCount);
 
         if (Role == newRole) return;
 
         var oldRole = Role;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Role = newRole;
-
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AccountMemberRoleChangedDomainEvent(
             AccountId, Id, UserId, oldRole, newRole, updatedBy, updatedAt));
@@ -61,8 +61,9 @@ public class AccountMember : SoftDeletableAggregateRoot, IAccountScoped
 
         if (Status == AccountMemberStatus.Suspended) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = AccountMemberStatus.Suspended;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AccountMemberSuspendedDomainEvent(AccountId, Id, UserId, updatedBy, updatedAt));
     }
@@ -75,10 +76,11 @@ public class AccountMember : SoftDeletableAggregateRoot, IAccountScoped
         if (Status == AccountMemberStatus.Active) return;
 
         if (Status == AccountMemberStatus.Removed)
-            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotActivateRemoved, "Cannot activate a removed member. Restore the member first.");
+            throw new BusinessRuleException(AccountRuleCodes.Accounts_Member_CannotActivateRemoved, "Cannot activate a removed member. Restore the member first.");
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = AccountMemberStatus.Active;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AccountMemberActivatedDomainEvent(AccountId, Id, UserId, updatedBy, updatedAt));
     }
@@ -89,9 +91,10 @@ public class AccountMember : SoftDeletableAggregateRoot, IAccountScoped
 
         if (IsDeleted) return;
 
-        Status = AccountMemberStatus.Removed;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
+        Status = AccountMemberStatus.Removed;
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AccountMemberRemovedDomainEvent(AccountId, Id, UserId, deletedBy, deletedAt));
     }
@@ -108,13 +111,12 @@ public class AccountMember : SoftDeletableAggregateRoot, IAccountScoped
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
-        if (!IsDeleted) return;
-
         Guard.NotEmpty(restoredBy);
-
-        Status = AccountMemberStatus.Active;
+        if (!IsDeleted) return;
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        Status = AccountMemberStatus.Active;
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AccountMemberRestoredDomainEvent(AccountId, Id, UserId, restoredBy, restoredAt));
     }

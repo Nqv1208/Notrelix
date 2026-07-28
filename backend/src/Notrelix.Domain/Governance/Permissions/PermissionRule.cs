@@ -71,27 +71,32 @@ public class PermissionRule : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         if (Status == PermissionRuleStatus.Disabled) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = PermissionRuleStatus.Disabled;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         RaiseDomainEvent(new PermissionRuleDisabledDomainEvent(AccountId, WorkspaceId, Id, updatedAt));
         IncrementVersion();
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
         IncrementVersion();
+        ApplyAuditUpdate(pending);
         RaiseDomainEvent(new PermissionRuleSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
         IncrementVersion();
+        ApplyAuditUpdate(pending);
         RaiseDomainEvent(new PermissionRuleRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredAt));
     }
 

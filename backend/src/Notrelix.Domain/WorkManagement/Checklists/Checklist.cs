@@ -73,10 +73,12 @@ public class Checklist : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void AddItem(string title, FractionalIndex position, Guid addedBy, DateTimeOffset addedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(addedBy);
         Guard.NotNull(position);
+        var pending = PrepareAuditUpdate(addedBy, addedAt);
         var item = ChecklistItem.Create(Id, title, position);
         _items.Add(item);
-        SetAuditOnUpdate(addedBy, addedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new ChecklistItemAddedDomainEvent(AccountId, WorkspaceId, Id, item.Id, title, addedAt));
     }
@@ -84,11 +86,13 @@ public class Checklist : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void ToggleItem(Guid itemId, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         var item = _items.FirstOrDefault(x => x.Id == itemId);
         if (item == null) throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Checklist_ItemNotFound, $"Item {itemId} not found");
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         item.Toggle(updatedAt);
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new ChecklistItemToggledDomainEvent(AccountId, WorkspaceId, Id, item.Id, item.Status == ChecklistItemStatus.Done, updatedAt));
     }
@@ -96,11 +100,13 @@ public class Checklist : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void RemoveItem(Guid itemId, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         var item = _items.FirstOrDefault(x => x.Id == itemId);
         if (item == null) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         _items.Remove(item);
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new ChecklistItemRemovedDomainEvent(AccountId, WorkspaceId, Id, item.Id, updatedAt));
     }
@@ -108,38 +114,46 @@ public class Checklist : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Rename(string title, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(title);
         var normalizedTitle = title.Trim();
         if (Title == normalizedTitle) return;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Title = normalizedTitle;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 
     public void UpdatePosition(FractionalIndex position, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNull(position);
         if (Position.Value == position.Value) return;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Position = position;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new ChecklistSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new ChecklistRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }

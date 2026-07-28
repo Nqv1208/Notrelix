@@ -73,14 +73,15 @@ public class Form : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void UpdateDetails(string name, BoardVisibility visibility, string settingsJson, string submitterPolicyJson, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(name);
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Name = name.Trim();
         Visibility = visibility;
         SettingsJson = ValidateJson(settingsJson, nameof(SettingsJson));
         SubmitterPolicyJson = ValidateJson(submitterPolicyJson, nameof(SubmitterPolicyJson));
-
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new FormDetailsUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, Name, SettingsJson, SubmitterPolicyJson, updatedBy, updatedAt));
     }
@@ -88,15 +89,16 @@ public class Form : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Publish(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (Status == FormStatus.Closed)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Form_CannotPublishClosed, "Cannot publish a closed form.");
 
         if (_questions.Count == 0)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Form_CannotPublishNoQuestions, "Cannot publish a form with no questions.");
 
-        var oldStatus = Status;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = FormStatus.Published;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new FormPublishedDomainEvent(AccountId, WorkspaceId, Id, updatedAt));
     }
@@ -104,10 +106,12 @@ public class Form : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Close(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (Status == FormStatus.Closed) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = FormStatus.Closed;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new FormClosedDomainEvent(AccountId, WorkspaceId, Id, updatedAt));
     }
@@ -124,6 +128,7 @@ public class Form : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void AddQuestion(FormQuestion question, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNull(question);
 
         if (Status == FormStatus.Closed)
@@ -135,26 +140,31 @@ public class Form : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (_questions.Any(q => q.QuestionKey.Equals(question.QuestionKey, StringComparison.OrdinalIgnoreCase)))
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Form_DuplicateQuestionKey, $"A question with key '{question.QuestionKey}' already exists.");
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         _questions.Add(question);
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new FormQuestionAddedDomainEvent(AccountId, WorkspaceId, Id, question.QuestionKey, updatedAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new FormSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new FormRestoredDomainEvent(AccountId, WorkspaceId, Id, BoardId, restoredBy, restoredAt));
     }

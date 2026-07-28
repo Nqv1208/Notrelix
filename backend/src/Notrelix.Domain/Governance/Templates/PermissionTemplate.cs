@@ -79,8 +79,9 @@ public class PermissionTemplate : AggregateRoot
 
         if (Status == PermissionTemplateStatus.Archived) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = PermissionTemplateStatus.Archived;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 }

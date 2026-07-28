@@ -54,12 +54,14 @@ public class ApiToken : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Revoke(Guid revokedBy, DateTimeOffset revokedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(revokedBy);
         if (Status == ApiTokenStatus.Revoked) return;
 
+        var pending = PrepareAuditUpdate(revokedBy, revokedAt);
         Status = ApiTokenStatus.Revoked;
         RevokedAt = revokedAt;
         RevokedBy = revokedBy;
-        SetAuditOnUpdate(revokedBy, revokedAt);
+        ApplyAuditUpdate(pending);
         RaiseDomainEvent(new ApiTokenRevokedDomainEvent(AccountId, WorkspaceId, Id, revokedAt));
         IncrementVersion();
     }
@@ -78,26 +80,31 @@ public class ApiToken : SoftDeletableAggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(IdentityRuleCodes.Identity_ApiToken_CannotUseExpired, "Cannot use an expired API token.");
         }
 
+        var pending = PrepareAuditUpdate(AccountId, usedAt);
         LastUsedAt = usedAt;
-        SetAuditOnUpdate(AccountId, usedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new ApiTokenRecordedUseDomainEvent(AccountId, WorkspaceId, Id, usedAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new ApiTokenSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new ApiTokenRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredAt));
     }

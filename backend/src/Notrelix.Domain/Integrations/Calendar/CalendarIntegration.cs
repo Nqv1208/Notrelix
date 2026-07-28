@@ -74,8 +74,9 @@ public class CalendarIntegration : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         if (IsActive) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, occurredAt);
         IsActive = true;
-        SetAuditOnUpdate(updatedBy, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new CalendarIntegrationActivatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
     }
@@ -85,8 +86,9 @@ public class CalendarIntegration : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         if (!IsActive) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, occurredAt);
         IsActive = false;
-        SetAuditOnUpdate(updatedBy, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new CalendarIntegrationDeactivatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
     }
@@ -98,8 +100,9 @@ public class CalendarIntegration : SoftDeletableAggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(Integrations_Calendar_CannotChangeDirectionDeactivated, "Cannot change sync direction on a deactivated calendar integration.");
         if (SyncDirection == newDirection) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, occurredAt);
         SyncDirection = newDirection;
-        SetAuditOnUpdate(updatedBy, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new CalendarIntegrationSyncDirectionChangedDomainEvent(AccountId, WorkspaceId, Id, newDirection, updatedBy, occurredAt));
     }
@@ -133,6 +136,7 @@ public class CalendarIntegration : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         IsActive = false;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
@@ -142,6 +146,7 @@ public class CalendarIntegration : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         if (!MarkRestored(restoredBy, restoredAt)) return;
         IncrementVersion();

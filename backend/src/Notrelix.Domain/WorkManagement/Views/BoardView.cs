@@ -53,6 +53,7 @@ public class BoardView : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void UpdateConfig(BoardViewConfig config, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNull(config);
 
         // Ensure the config type matches the view type
@@ -67,8 +68,9 @@ public class BoardView : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         if (Config == config) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Config = config;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardViewConfigUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, updatedBy, updatedAt));
     }
@@ -76,52 +78,61 @@ public class BoardView : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(name);
         Guard.MaxLength(name, 255);
 
-        var oldName = Name;
         var normalizedName = name.Trim();
         if (Name == normalizedName) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Name = normalizedName;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new BoardViewRenamedDomainEvent(AccountId, WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardViewRenamedDomainEvent(AccountId, WorkspaceId, Id, Name, normalizedName, updatedBy, updatedAt));
     }
 
     public void SetDefault(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (IsDefault) return;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         IsDefault = true;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 
     public void ClearDefault(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (!IsDefault) return;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         IsDefault = false;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
 
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardViewDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardViewRestoredDomainEvent(AccountId, WorkspaceId, Id, BoardId, restoredBy, restoredAt));
     }
@@ -129,9 +140,11 @@ public class BoardView : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(archivedBy);
         if (IsArchived) return;
+        var pending = PrepareAuditUpdate(archivedBy, archivedAt);
         IsArchived = true;
-        SetAuditOnUpdate(archivedBy, archivedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardViewArchivedDomainEvent(AccountId, WorkspaceId, Id, BoardId, archivedBy, archivedAt));
     }
@@ -139,9 +152,11 @@ public class BoardView : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(unarchivedBy);
         if (!IsArchived) return;
+        var pending = PrepareAuditUpdate(unarchivedBy, unarchivedAt);
         IsArchived = false;
-        SetAuditOnUpdate(unarchivedBy, unarchivedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardViewUnarchivedDomainEvent(AccountId, WorkspaceId, Id, BoardId, unarchivedBy, unarchivedAt));
     }

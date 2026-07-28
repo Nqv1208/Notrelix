@@ -34,9 +34,11 @@ public class AutomationTemplate : SoftDeletableAggregateRoot
     public void UpdateName(string newName, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(newName);
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Name = newName.Trim();
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         RaiseDomainEvent(new Events.AutomationTemplateUpdatedDomainEvent(Id, updatedAt));
     }
 
@@ -44,8 +46,10 @@ public class AutomationTemplate : SoftDeletableAggregateRoot
     {
         EnsureNotDeleted();
         Guard.NotNull(newDefinition);
+        Guard.NotEmpty(updatedBy);
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Definition = newDefinition;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         RaiseDomainEvent(new Events.AutomationTemplateUpdatedDomainEvent(Id, updatedAt));
     }
 
@@ -53,8 +57,9 @@ public class AutomationTemplate : SoftDeletableAggregateRoot
     {
         EnsureNotDeleted();
         if (Status == AutomationTemplateStatus.Published) return;
+        var pending = PrepareAuditUpdate(null, publishedAt);
         Status = AutomationTemplateStatus.Published;
-        SetAuditOnUpdate(null, publishedAt);
+        ApplyAuditUpdate(pending);
         RaiseDomainEvent(new Events.AutomationTemplatePublishedDomainEvent(Id, publishedAt));
     }
 
@@ -63,8 +68,9 @@ public class AutomationTemplate : SoftDeletableAggregateRoot
         EnsureNotDeleted();
         if (Status == AutomationTemplateStatus.Archived)
             throw new BusinessRuleException(AutomationRuleCodes.Automation_Template_AlreadyArchived, "Template is already archived.");
+        var pending = PrepareAuditUpdate(null, archivedAt);
         Status = AutomationTemplateStatus.Archived;
-        SetAuditOnUpdate(null, archivedAt);
+        ApplyAuditUpdate(pending);
         RaiseDomainEvent(new Events.AutomationTemplateArchivedDomainEvent(Id, archivedAt));
     }
 

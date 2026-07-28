@@ -27,8 +27,9 @@ public class UserProfile : SoftDeletableAggregateRoot
     public void UpdateTimezone(string timezone, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         Timezone = string.IsNullOrWhiteSpace(timezone) ? "UTC" : timezone.Trim();
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, UserId, updatedAt));
     }
@@ -36,8 +37,9 @@ public class UserProfile : SoftDeletableAggregateRoot
     public void UpdateLocale(string locale, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         Locale = string.IsNullOrWhiteSpace(locale) ? "vi" : locale.Trim();
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, UserId, updatedAt));
     }
@@ -45,6 +47,7 @@ public class UserProfile : SoftDeletableAggregateRoot
     public void UpdateTheme(string theme, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         if (string.IsNullOrWhiteSpace(theme))
         {
             Theme = "system";
@@ -57,7 +60,7 @@ public class UserProfile : SoftDeletableAggregateRoot
             }
             Theme = theme.Trim().ToLowerInvariant();
         }
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, UserId, updatedAt));
     }
@@ -74,26 +77,31 @@ public class UserProfile : SoftDeletableAggregateRoot
         {
             throw new BusinessRuleException(IdentityRuleCodes.Identity_Profile_InvalidPreferencesJson, "Preferences must be a valid JSON string.");
         }
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         Preferences = json;
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, UserId, updatedAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserProfileSoftDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, reason));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserProfileRestoredDomainEvent(Id, UserId, restoredBy, restoredAt));
     }

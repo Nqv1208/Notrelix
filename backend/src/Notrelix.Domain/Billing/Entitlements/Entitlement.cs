@@ -72,8 +72,9 @@ public class Entitlement : SoftDeletableAggregateRoot, IAccountScoped
         if (Limit == newLimit) return;
 
         var oldLimit = Limit;
+        var pending = PrepareAuditUpdate(actorUserId, occurredAt);
         Limit = newLimit;
-        SetAuditOnUpdate(actorUserId, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
         RaiseDomainEvent(new EntitlementLimitChangedDomainEvent(
@@ -90,8 +91,9 @@ public class Entitlement : SoftDeletableAggregateRoot, IAccountScoped
 
         if (Status == EntitlementStatus.Disabled) return;
 
+        var pending = PrepareAuditUpdate(actorUserId, occurredAt);
         Status = EntitlementStatus.Disabled;
-        SetAuditOnUpdate(actorUserId, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
         RaiseDomainEvent(new EntitlementDisabledDomainEvent(
@@ -105,10 +107,11 @@ public class Entitlement : SoftDeletableAggregateRoot, IAccountScoped
 
         if (Status == EntitlementStatus.Revoked) return;
 
+        var pending = PrepareAuditUpdate(actorUserId, occurredAt);
         Status = EntitlementStatus.Revoked;
         RevokedAt = occurredAt;
         RevokedBy = actorUserId;
-        SetAuditOnUpdate(actorUserId, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
         RaiseDomainEvent(new EntitlementRevokedDomainEvent(
@@ -124,8 +127,9 @@ public class Entitlement : SoftDeletableAggregateRoot, IAccountScoped
         if (Status == EntitlementStatus.Revoked)
             throw new BusinessRuleException(BillingRuleCodes.Billing_Entitlement_CannotExpireRevoked, "Cannot expire a revoked entitlement.");
 
+        var pending = PrepareAuditUpdate(null, occurredAt);
         Status = EntitlementStatus.Expired;
-        SetAuditOnUpdate(null, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
         RaiseDomainEvent(new EntitlementExpiredDomainEvent(

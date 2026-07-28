@@ -38,8 +38,9 @@ public class WebhookSubscription : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         if (IsActive) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         IsActive = true;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new WebhookSubscriptionEnabledDomainEvent(AccountId, Id, WorkspaceId, updatedAt));
     }
@@ -49,8 +50,9 @@ public class WebhookSubscription : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         if (!IsActive) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         IsActive = false;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new WebhookSubscriptionDisabledDomainEvent(AccountId, Id, WorkspaceId, updatedAt));
     }
@@ -60,18 +62,21 @@ public class WebhookSubscription : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotNull(newHash);
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         SecretHash = newHash;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new WebhookSubscriptionSecretRotatedDomainEvent(AccountId, Id, WorkspaceId, updatedAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
+        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
         IsActive = false;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 }

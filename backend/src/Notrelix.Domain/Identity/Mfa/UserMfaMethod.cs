@@ -53,9 +53,10 @@ public class UserMfaMethod : SoftDeletableAggregateRoot
             throw new BusinessRuleException(IdentityRuleCodes.Identity_Mfa_CannotVerifyDisabled, "Cannot verify a disabled MFA method.");
         }
 
+        var pending = PrepareAuditUpdate(UserId, verifiedAt);
         Status = MfaMethodStatus.Active;
         VerifiedAt = verifiedAt;
-        SetAuditOnUpdate(UserId, verifiedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
         RaiseDomainEvent(new UserMfaMethodVerifiedDomainEvent(Id, UserId, Type, verifiedAt));
@@ -71,8 +72,9 @@ public class UserMfaMethod : SoftDeletableAggregateRoot
 
         if (IsPrimary) return;
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         IsPrimary = true;
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
         RaiseDomainEvent(new UserMfaMethodSetAsPrimaryDomainEvent(Id, UserId, Type, updatedAt));
@@ -83,8 +85,9 @@ public class UserMfaMethod : SoftDeletableAggregateRoot
         EnsureNotDeleted();
         if (!IsPrimary) return;
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         IsPrimary = false;
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
         RaiseDomainEvent(new UserMfaMethodUnsetAsPrimaryDomainEvent(Id, UserId, Type, updatedAt));
@@ -95,10 +98,11 @@ public class UserMfaMethod : SoftDeletableAggregateRoot
         EnsureNotDeleted();
         if (Status == MfaMethodStatus.Disabled) return;
 
+        var pending = PrepareAuditUpdate(UserId, disabledAt);
         Status = MfaMethodStatus.Disabled;
         IsPrimary = false;
         DisabledAt = disabledAt;
-        SetAuditOnUpdate(UserId, disabledAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
         RaiseDomainEvent(new UserMfaMethodDisabledDomainEvent(Id, UserId, Type, disabledAt));
@@ -106,18 +110,22 @@ public class UserMfaMethod : SoftDeletableAggregateRoot
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserMfaMethodSoftDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, reason));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserMfaMethodRestoredDomainEvent(Id, UserId, restoredBy, restoredAt));
     }

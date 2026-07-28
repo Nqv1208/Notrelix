@@ -35,11 +35,11 @@ public class UserSecuritySettings : SoftDeletableAggregateRoot
 
         if (IsMfaEnabled && PreferredMfaMethod == method) return;
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         IsMfaEnabled = true;
         PreferredMfaMethod = method;
         LastSecurityReviewAt = updatedAt;
-
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserMfaRequirementEnabledDomainEvent(UserId, method, updatedAt));
     }
@@ -52,11 +52,11 @@ public class UserSecuritySettings : SoftDeletableAggregateRoot
 
         var previousMethod = PreferredMfaMethod;
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         IsMfaEnabled = false;
         PreferredMfaMethod = null;
         LastSecurityReviewAt = updatedAt;
-
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserMfaRequirementDisabledDomainEvent(UserId, previousMethod, updatedAt));
     }
@@ -65,10 +65,10 @@ public class UserSecuritySettings : SoftDeletableAggregateRoot
     {
         EnsureNotDeleted();
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         RequirePasswordChange = true;
         LastSecurityReviewAt = updatedAt;
-
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new PasswordChangeRequiredDomainEvent(UserId, updatedAt));
     }
@@ -77,11 +77,11 @@ public class UserSecuritySettings : SoftDeletableAggregateRoot
     {
         EnsureNotDeleted();
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         RequirePasswordChange = false;
         PasswordChangedAt = updatedAt;
         LastSecurityReviewAt = updatedAt;
-
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserSecurityPasswordChangedDomainEvent(UserId, updatedAt));
     }
@@ -91,28 +91,32 @@ public class UserSecuritySettings : SoftDeletableAggregateRoot
         EnsureNotDeleted();
         Guard.NotNull(settings);
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         SettingsJson = settings;
         LastSecurityReviewAt = updatedAt;
-
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserSecuritySettingsUpdatedDomainEvent(UserId, updatedAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserSecuritySettingsSoftDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, reason));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserSecuritySettingsRestoredDomainEvent(Id, UserId, restoredBy, restoredAt));
     }

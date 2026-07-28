@@ -52,6 +52,9 @@ public class Workspace : SoftDeletableAggregateRoot
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(newName);
         Guard.MaxLength(newName, 160);
+        Guard.NotEmpty(updatedBy);
+
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
 
         if (Status == WorkspaceStatus.Archived)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Workspace_CannotRenameArchived, "Cannot rename an archived workspace.");
@@ -60,7 +63,7 @@ public class Workspace : SoftDeletableAggregateRoot
         if (Name == newName.Trim()) return;
 
         Name = newName.Trim();
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceRenamedDomainEvent(AccountId, Id, oldName, Name, updatedBy, updatedAt));
     }
@@ -70,10 +73,12 @@ public class Workspace : SoftDeletableAggregateRoot
         EnsureNotDeleted();
         Guard.NotEmpty(archivedBy);
 
+        var audit = PrepareAuditUpdate(archivedBy, archivedAt);
+
         if (Status == WorkspaceStatus.Archived) return;
 
         Status = WorkspaceStatus.Archived;
-        SetAuditOnUpdate(archivedBy, archivedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceArchivedDomainEvent(AccountId, Id, archivedBy, archivedAt));
     }
@@ -83,6 +88,8 @@ public class Workspace : SoftDeletableAggregateRoot
         EnsureNotDeleted();
         Guard.NotEmpty(unarchivedBy);
 
+        var audit = PrepareAuditUpdate(unarchivedBy, unarchivedAt);
+
         if (Status == WorkspaceStatus.Active) return;
 
         if (Status != WorkspaceStatus.Archived)
@@ -91,29 +98,35 @@ public class Workspace : SoftDeletableAggregateRoot
                 "Only an archived workspace can be unarchived.");
 
         Status = WorkspaceStatus.Active;
-        SetAuditOnUpdate(unarchivedBy, unarchivedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceUnarchivedDomainEvent(AccountId, Id, unarchivedBy, unarchivedAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
-        if (IsDeleted) return;
         Guard.NotEmpty(deletedBy);
+        if (IsDeleted) return;
+
+        var audit = PrepareAuditUpdate(deletedBy, deletedAt);
+
         Status = WorkspaceStatus.SoftDeleted;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceSoftDeletedDomainEvent(AccountId, Id, deletedBy, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
-        if (!IsDeleted) return;
         Guard.NotEmpty(restoredBy);
+        if (!IsDeleted) return;
+
+        var audit = PrepareAuditUpdate(restoredBy, restoredAt);
+
         Status = WorkspaceStatus.Active;
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceRestoredDomainEvent(AccountId, Id, restoredBy, restoredAt));
     }
@@ -122,6 +135,8 @@ public class Workspace : SoftDeletableAggregateRoot
     {
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
+
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
 
         if (Status == WorkspaceStatus.Archived)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Workspace_CannotUpdateDescriptionArchived, "Cannot update description of an archived workspace.");
@@ -138,7 +153,7 @@ public class Workspace : SoftDeletableAggregateRoot
 
         var oldDescription = Description;
         Description = normalized;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceDescriptionUpdatedDomainEvent(AccountId, Id, oldDescription, Description, updatedBy, updatedAt));
     }
@@ -149,13 +164,15 @@ public class Workspace : SoftDeletableAggregateRoot
         Guard.NotEmpty(updatedBy);
         Guard.NotNull(newSettings);
 
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
+
         if (Status == WorkspaceStatus.Archived)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Workspace_CannotUpdateSettingsArchived, "Cannot update settings of an archived workspace.");
 
         if (Settings == newSettings) return;
 
         Settings = newSettings;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceSettingsUpdatedDomainEvent(AccountId, Id, updatedBy, updatedAt));
     }

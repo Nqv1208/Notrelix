@@ -66,10 +66,10 @@ public class BoardViewUserPreference : SoftDeletableAggregateRoot, IWorkspaceSco
 
         BoardViewPreferenceRules.EnsureValidFilterRules(normalizedRules);
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         _filterRules.Clear();
         _filterRules.AddRange(normalizedRules);
-
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
 
         RaiseDomainEvent(new BoardViewUserPreferenceFilterChangedDomainEvent(
             AccountId,
@@ -92,10 +92,10 @@ public class BoardViewUserPreference : SoftDeletableAggregateRoot, IWorkspaceSco
 
         BoardViewPreferenceRules.EnsureValidSortRules(normalizedRules);
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         _sortRules.Clear();
         _sortRules.AddRange(normalizedRules);
-
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
 
         RaiseDomainEvent(new BoardViewUserPreferenceSortChangedDomainEvent(
             AccountId,
@@ -116,9 +116,9 @@ public class BoardViewUserPreference : SoftDeletableAggregateRoot, IWorkspaceSco
         if (groupRule is not null)
             BoardViewPreferenceRules.EnsureValidGroupRule(groupRule);
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         GroupRule = groupRule;
-
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
 
         RaiseDomainEvent(new BoardViewUserPreferenceGroupChangedDomainEvent(
             AccountId,

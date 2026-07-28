@@ -1,4 +1,3 @@
-using static Notrelix.Domain.Common.Exceptions.CommonRuleCodes;
 using static Notrelix.Domain.WorkManagement.WorkManagementRuleCodes;
 
 namespace Notrelix.Domain.WorkManagement.Relations;
@@ -15,10 +14,10 @@ public static class RelationRules
     {
         var sourceWorkspaceId = getBoardWorkspaceId(sourceBoardId);
         if (sourceWorkspaceId != workspaceId)
-            throw new BusinessRuleException(Common_BoardScopeMismatch, $"Source board {sourceBoardId} does not belong to workspace {workspaceId}.");
+            throw new BusinessRuleException(WorkManagement_BoardScopeMismatch, $"Source board {sourceBoardId} does not belong to workspace {workspaceId}.");
 
         var targetWorkspaceId = getBoardWorkspaceId(targetBoardId);
         if (targetWorkspaceId != workspaceId)
-            throw new BusinessRuleException(Common_BoardScopeMismatch, $"Target board {targetBoardId} does not belong to workspace {workspaceId}.");
+            throw new BusinessRuleException(WorkManagement_BoardScopeMismatch, $"Target board {targetBoardId} does not belong to workspace {workspaceId}.");
     }
 }

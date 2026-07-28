@@ -76,8 +76,9 @@ public class WorkspaceFeatureUsage : SoftDeletableAggregateRoot, IWorkspaceScope
         }
 
         var oldUsage = CurrentUsage;
+        var pending = PrepareAuditUpdate(actorUserId, occurredAt);
         CurrentUsage += amount;
-        SetAuditOnUpdate(actorUserId, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
         RaiseDomainEvent(new FeatureUsageConsumedDomainEvent(AccountId, WorkspaceId, Feature.Code, amount, occurredAt));
@@ -92,8 +93,9 @@ public class WorkspaceFeatureUsage : SoftDeletableAggregateRoot, IWorkspaceScope
         if (CurrentUsage - amount < 0)
             throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_CannotReleaseBelowZero, "Usage cannot be released below zero.");
 
+        var pending = PrepareAuditUpdate(actorUserId, occurredAt);
         CurrentUsage -= amount;
-        SetAuditOnUpdate(actorUserId, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
         RaiseDomainEvent(new FeatureUsageReleasedDomainEvent(AccountId, WorkspaceId, Feature.Code, amount, occurredAt));
@@ -102,9 +104,10 @@ public class WorkspaceFeatureUsage : SoftDeletableAggregateRoot, IWorkspaceScope
     public void Reset(DateTimeOffset resetAt, Guid actorUserId)
     {
         EnsureNotDeleted();
+        var pending = PrepareAuditUpdate(actorUserId, resetAt);
         CurrentUsage = 0;
         LastResetAt = resetAt;
-        SetAuditOnUpdate(actorUserId, resetAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceFeatureUsageResetDomainEvent(AccountId, WorkspaceId, Feature, resetAt));
     }

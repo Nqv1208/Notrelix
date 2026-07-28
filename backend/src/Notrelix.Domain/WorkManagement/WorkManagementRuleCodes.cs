@@ -133,6 +133,9 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Relation_CannotCreateSelfReferencing = "WorkManagement_Relation_CannotCreateSelfReferencing";
     public const string WorkManagement_Relation_CannotResumeBroken = "WorkManagement_Relation_CannotResumeBroken";
 
+    // ── Scope ────────────────────────────────────────────────────────────
+    public const string WorkManagement_BoardScopeMismatch = "WorkManagement_BoardScopeMismatch";
+
     // ── Connection ────────────────────────────────────────────────────────
     public const string WorkManagement_Connection_CannotConnectToSelf = "WorkManagement_Connection_CannotConnectToSelf";
 }

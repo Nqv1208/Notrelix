@@ -67,19 +67,22 @@ public class ResourcePermission : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         if (Level == newLevel) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         var oldLevel = Level;
         Level = newLevel;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new ResourcePermissionLevelChangedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, oldLevel, newLevel, updatedBy, updatedAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
         IncrementVersion();
+        ApplyAuditUpdate(pending);
         if (!_suppressSoftDeleteEvent)
             RaiseDomainEvent(new ResourcePermissionSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, deletedBy, deletedAt));
     }
@@ -96,10 +99,12 @@ public class ResourcePermission : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
         IncrementVersion();
+        ApplyAuditUpdate(pending);
         RaiseDomainEvent(new ResourcePermissionRestoredDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, restoredBy, restoredAt));
     }
 }

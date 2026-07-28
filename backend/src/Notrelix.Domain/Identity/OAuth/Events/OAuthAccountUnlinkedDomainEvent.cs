@@ -5,5 +5,6 @@ public sealed record OAuthAccountUnlinkedDomainEvent(
     Guid UserId,
     OAuthProvider Provider,
     string ProviderId,
+    Guid UnlinkedBy,
     DateTimeOffset UnlinkedAt
 ) : GlobalDomainEvent(UnlinkedAt);

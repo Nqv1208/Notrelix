@@ -77,9 +77,11 @@ public class BoardRelation : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Pause(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (Status == BoardRelationStatus.Paused) return;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = BoardRelationStatus.Paused;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardRelationPausedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
@@ -87,11 +89,13 @@ public class BoardRelation : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Resume(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (Status == BoardRelationStatus.Active) return;
         if (Status == BoardRelationStatus.Broken)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Relation_CannotResumeBroken, "Cannot resume a broken relation. Repair it first.");
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = BoardRelationStatus.Active;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardRelationResumedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
@@ -99,29 +103,35 @@ public class BoardRelation : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void MarkBroken(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (Status == BoardRelationStatus.Broken) return;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = BoardRelationStatus.Broken;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardRelationMarkedBrokenDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
+        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
         Status = BoardRelationStatus.Deleted;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardRelationDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
         Status = BoardRelationStatus.Active;
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardRelationRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }

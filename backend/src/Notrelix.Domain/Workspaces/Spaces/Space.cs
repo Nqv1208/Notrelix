@@ -49,18 +49,21 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Rename(string newName, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        if (Status == SpaceStatus.Archived)
-            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Space_CannotRenameArchived, "Cannot rename an archived space.");
         Guard.NotNullOrWhiteSpace(newName);
         Guard.MaxLength(newName, 160);
         Guard.NotEmpty(updatedBy);
+
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
+
+        if (Status == SpaceStatus.Archived)
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Space_CannotRenameArchived, "Cannot rename an archived space.");
 
         var oldName = Name;
         var normalizedName = newName.Trim();
         if (Name == normalizedName) return;
 
         Name = normalizedName;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new SpaceRenamedDomainEvent(AccountId, WorkspaceId, Id, oldName, Name, updatedBy, updatedAt));
     }
@@ -69,6 +72,8 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
+
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
 
         if (Status == SpaceStatus.Archived)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Space_CannotUpdateDescriptionArchived, "Cannot update description of an archived space.");
@@ -84,7 +89,7 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         var oldDescription = Description;
         Description = normalized;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new SpaceDescriptionUpdatedDomainEvent(
             AccountId, WorkspaceId, Id, oldDescription, Description, updatedBy, updatedAt));
@@ -95,6 +100,8 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
 
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
+
         if (Status == SpaceStatus.Archived)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Space_CannotChangeVisibilityArchived, "Cannot change visibility of an archived space.");
 
@@ -102,7 +109,7 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         var oldVisibility = Visibility;
         Visibility = newVisibility;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new SpaceVisibilityChangedDomainEvent(
             AccountId, WorkspaceId, Id, oldVisibility, newVisibility, updatedBy, updatedAt));
@@ -113,6 +120,8 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
 
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
+
         if (Status == SpaceStatus.Archived)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Space_CannotChangeTypeArchived, "Cannot change type of an archived space.");
 
@@ -120,7 +129,7 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         var oldType = SpaceType;
         SpaceType = newType;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new SpaceTypeChangedDomainEvent(
             AccountId, WorkspaceId, Id, oldType, newType, updatedBy, updatedAt));
@@ -130,10 +139,13 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotEmpty(archivedBy);
+
+        var audit = PrepareAuditUpdate(archivedBy, archivedAt);
+
         if (Status == SpaceStatus.Archived) return;
 
         Status = SpaceStatus.Archived;
-        SetAuditOnUpdate(archivedBy, archivedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new SpaceArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
     }
@@ -143,6 +155,8 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(unarchivedBy);
 
+        var audit = PrepareAuditUpdate(unarchivedBy, unarchivedAt);
+
         if (Status == SpaceStatus.Active) return;
 
         if (Status != SpaceStatus.Archived)
@@ -151,7 +165,7 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
                 "Only an archived space can be unarchived.");
 
         Status = SpaceStatus.Active;
-        SetAuditOnUpdate(unarchivedBy, unarchivedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new SpaceUnarchivedDomainEvent(
             AccountId, WorkspaceId, Id, unarchivedBy, unarchivedAt));
@@ -161,9 +175,12 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
+
+        var audit = PrepareAuditUpdate(deletedBy, deletedAt);
+
         Status = SpaceStatus.SoftDeleted;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new SpaceSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
@@ -172,9 +189,12 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
+
+        var audit = PrepareAuditUpdate(restoredBy, restoredAt);
+
         Status = SpaceStatus.Active;
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new SpaceRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }

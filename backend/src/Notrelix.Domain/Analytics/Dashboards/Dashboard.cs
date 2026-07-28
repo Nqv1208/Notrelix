@@ -43,13 +43,15 @@ public class Dashboard : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(name);
 
         var normalizedName = name.Trim();
         if (Name == normalizedName) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Name = normalizedName;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new DashboardRenamedDomainEvent(AccountId, WorkspaceId, Id, Name, updatedBy, updatedAt));
     }
@@ -57,10 +59,12 @@ public class Dashboard : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void ChangeVisibility(DashboardVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (Visibility == visibility) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Visibility = visibility;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new DashboardVisibilityChangedDomainEvent(AccountId, WorkspaceId, Id, Visibility, updatedBy, updatedAt));
     }
@@ -68,6 +72,7 @@ public class Dashboard : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void AddWidget(string title, DashboardWidgetType type, JsonValue config, WidgetPosition position, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(title);
         WidgetRules.ValidatePosition(position);
 
@@ -76,7 +81,8 @@ public class Dashboard : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         var widget = DashboardWidget.Create(AccountId, WorkspaceId, Id, title, type, config, position);
         _widgets.Add(widget);
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new DashboardWidgetAddedDomainEvent(AccountId, WorkspaceId, Id, widget.Id, updatedBy, updatedAt));
     }
@@ -84,11 +90,13 @@ public class Dashboard : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void RemoveWidget(Guid widgetId, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         var widget = _widgets.FirstOrDefault(w => w.Id == widgetId);
         if (widget is null) return;
 
         _widgets.Remove(widget);
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new DashboardWidgetRemovedDomainEvent(AccountId, WorkspaceId, Id, widgetId, updatedBy, updatedAt));
     }
@@ -96,6 +104,7 @@ public class Dashboard : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void MoveWidget(Guid widgetId, WidgetPosition newPosition, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         var widget = _widgets.FirstOrDefault(w => w.Id == widgetId);
         if (widget is null)
         {
@@ -105,27 +114,32 @@ public class Dashboard : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (widget.Position == newPosition) return;
 
         widget.UpdatePosition(newPosition);
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new DashboardWidgetMovedDomainEvent(AccountId, WorkspaceId, Id, widgetId, newPosition, updatedBy, updatedAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        Status = DashboardStatus.Archived;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
+        Status = DashboardStatus.Archived;
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new DashboardDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        Status = DashboardStatus.Active;
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        Status = DashboardStatus.Active;
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new DashboardRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }

@@ -215,8 +215,8 @@ public static class FractionalIndexGenerator
             }
         }
 
-        var digitA = a != null && a.Length > 0 ? DigitLookup[a[0]] : 0;
-        var digitB = b != null && b.Length > 0 ? DigitLookup[b[0]] : DigitsLength;
+        var digitA = a != null && a.Length > 0 ? GetDigitIndex(a[0], DigitLookup) : 0;
+        var digitB = b != null && b.Length > 0 ? GetDigitIndex(b[0], DigitLookup) : DigitsLength;
 
         if (digitB - digitA > 1)
         {
@@ -234,7 +234,7 @@ public static class FractionalIndexGenerator
 
     private static int GetIntegerLength(char head)
     {
-        var i = IntLookup[head];
+        var i = GetDigitIndex(head, IntLookup);
         if (IntDigits[i] == head)
         {
             var half = IntDigitsLength / 2;
@@ -263,7 +263,7 @@ public static class FractionalIndexGenerator
 
         for (var i = x.Length - 1; i >= 1; i--)
         {
-            var d = DigitLookup[x[i]] + 1;
+            var d = GetDigitIndex(x[i], DigitLookup) + 1;
             if (d == DigitsLength)
             {
                 trailing = Digits[0] + trailing;
@@ -274,7 +274,7 @@ public static class FractionalIndexGenerator
             }
         }
 
-        var headIndex = IntLookup[head];
+        var headIndex = GetDigitIndex(head, IntLookup);
         if (headIndex == IntDigitsLength - 1)
             return null;
 
@@ -296,7 +296,7 @@ public static class FractionalIndexGenerator
 
         for (var i = x.Length - 1; i >= 1; i--)
         {
-            var d = DigitLookup[x[i]] - 1;
+            var d = GetDigitIndex(x[i], DigitLookup) - 1;
             if (d == -1)
             {
                 trailing = last + trailing;
@@ -307,7 +307,7 @@ public static class FractionalIndexGenerator
             }
         }
 
-        var headIndex = IntLookup[head];
+        var headIndex = GetDigitIndex(head, IntLookup);
         if (headIndex == 0)
             return null;
 
@@ -334,11 +334,22 @@ public static class FractionalIndexGenerator
 
     private static void ValidateOrderKey(string key)
     {
+        for (var i = 0; i < key.Length; i++)
+        {
+            var c = key[i];
+            if (c >= DigitLookup.Length || DigitLookup[c] < 0)
+                throw new ArgumentException(
+                    $"Invalid order key character '{c}' in key '{key}'.", nameof(key));
+        }
+
         if (IsSmallestInteger(key))
             throw new ArgumentException($"Invalid order key: '{key}'.", nameof(key));
 
-        var i = GetIntegerPart(key);
-        var f = key[i.Length..];
+        var head = GetIntegerLength(key[0]);
+        if (head > key.Length)
+            throw new ArgumentException($"Invalid order key: '{key}'.", nameof(key));
+
+        var f = key[head..];
 
         if (f.Length > 0 && f[^1] == Digits[0])
             throw new ArgumentException($"Invalid order key: '{key}'.", nameof(key));
@@ -346,9 +357,18 @@ public static class FractionalIndexGenerator
 
     private static int[] BuildLookup(string alphabet)
     {
-        var lookup = new int[256];
+        var lookup = Enumerable.Repeat(-1, 256).ToArray();
         for (var i = 0; i < alphabet.Length; i++)
             lookup[alphabet[i]] = i;
         return lookup;
+    }
+
+    private static int GetDigitIndex(char character, int[] lookup)
+    {
+        if (character >= lookup.Length || lookup[character] < 0)
+            throw new ArgumentException(
+                $"Invalid fractional-index character '{character}'.");
+
+        return lookup[character];
     }
 }

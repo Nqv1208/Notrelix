@@ -61,35 +61,41 @@ public class Label : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Update(string name, LabelColor color, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(name);
         Guard.NotNull(color);
 
         var normalizedName = name.Trim();
         if (Name == normalizedName && Color == color) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Name = normalizedName;
         Color = color;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new LabelUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
+        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
         Status = LabelStatus.SoftDeleted;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new LabelSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         if (!MarkRestored(restoredBy, restoredAt)) return;
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
         Status = LabelStatus.Active;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new LabelRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }

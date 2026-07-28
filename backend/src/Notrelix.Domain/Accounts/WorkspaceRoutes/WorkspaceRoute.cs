@@ -50,8 +50,9 @@ public class WorkspaceRoute : SoftDeletableAggregateRoot, IAccountScoped
 
         if (IsDefault) return;
 
+        var pending = PrepareAuditUpdate(actorId, occurredAt);
         IsDefault = true;
-        SetAuditOnUpdate(actorId, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceRouteSetAsDefaultDomainEvent(
             AccountId, Id, RouteSlug, actorId, occurredAt));
@@ -64,8 +65,9 @@ public class WorkspaceRoute : SoftDeletableAggregateRoot, IAccountScoped
 
         if (!IsDefault) return;
 
+        var pending = PrepareAuditUpdate(actorId, occurredAt);
         IsDefault = false;
-        SetAuditOnUpdate(actorId, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceRouteUnsetAsDefaultDomainEvent(
             AccountId, Id, RouteSlug, actorId, occurredAt));
@@ -79,8 +81,9 @@ public class WorkspaceRoute : SoftDeletableAggregateRoot, IAccountScoped
 
         if (WorkspaceId == workspaceId) return;
 
+        var pending = PrepareAuditUpdate(actorId, occurredAt);
         WorkspaceId = workspaceId;
-        SetAuditOnUpdate(actorId, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceRouteLinkedDomainEvent(
             AccountId, Id, RouteSlug, workspaceId, actorId, occurredAt));
@@ -93,8 +96,9 @@ public class WorkspaceRoute : SoftDeletableAggregateRoot, IAccountScoped
 
         if (WorkspaceId is null) return;
 
+        var pending = PrepareAuditUpdate(actorId, occurredAt);
         WorkspaceId = null;
-        SetAuditOnUpdate(actorId, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceRouteUnlinkedDomainEvent(
             AccountId, Id, RouteSlug, actorId, occurredAt));
@@ -102,9 +106,11 @@ public class WorkspaceRoute : SoftDeletableAggregateRoot, IAccountScoped
 
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceRouteSoftDeletedDomainEvent(
             AccountId, Id, RouteSlug, deletedBy, deletedAt));
@@ -112,9 +118,11 @@ public class WorkspaceRoute : SoftDeletableAggregateRoot, IAccountScoped
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceRouteRestoredDomainEvent(
             AccountId, Id, RouteSlug, restoredBy, restoredAt));
