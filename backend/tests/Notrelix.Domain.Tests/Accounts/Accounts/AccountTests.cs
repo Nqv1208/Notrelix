@@ -62,6 +62,14 @@ public class AccountTests
         account.CreatedAt.Should().Be(_now);
     }
 
+    [Fact]
+    public void InitialVersion_ShouldBe1()
+    {
+        var account = CreateAccount();
+
+        account.Version.Should().Be(1);
+    }
+
     // ── Rename ───────────────────────────────────────────────────────────
 
     [Fact]
@@ -110,6 +118,31 @@ public class AccountTests
         account.Version.Should().Be(versionBefore + 1);
     }
 
+    [Fact]
+    public void Rename_AfterSoftDelete_ShouldThrow()
+    {
+        var account = CreateAccount();
+        account.SoftDelete(_userId, _now);
+
+        var act = () => account.Rename("New Name", _userId, _now);
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void Rename_ShouldRaiseEvent_WithCorrectPayload()
+    {
+        var account = CreateAccount();
+        ((IHasDomainEvents)account).ClearDomainEvents();
+
+        account.Rename("New Name", _userId, _now);
+
+        var evt = account.DomainEvents
+            .OfType<AccountRenamedDomainEvent>()
+            .Single();
+        evt.OldName.Should().Be("My Account");
+        evt.NewName.Should().Be("New Name");
+    }
+
     // ── Archive ──────────────────────────────────────────────────────────
 
     [Fact]
@@ -134,6 +167,64 @@ public class AccountTests
         account.Archive(_userId, _now);
 
         account.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Archive_AfterSoftDelete_ShouldThrow()
+    {
+        var account = CreateAccount();
+        account.SoftDelete(_userId, _now);
+
+        var act = () => account.Archive(_userId, _now);
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void Archive_ShouldIncrementVersion()
+    {
+        var account = CreateAccount();
+        var versionBefore = account.Version;
+
+        account.Archive(_userId, _now);
+
+        account.Version.Should().Be(versionBefore + 1);
+    }
+
+    [Fact]
+    public void Archive_NoOp_VersionShouldNotIncrement()
+    {
+        var account = CreateAccount();
+        account.Archive(_userId, _now);
+        var versionBefore = account.Version;
+
+        account.Archive(_userId, _now);
+
+        account.Version.Should().Be(versionBefore);
+    }
+
+    [Fact]
+    public void Archive_ShouldSetAudit()
+    {
+        var account = CreateAccount();
+
+        account.Archive(_userId, _now);
+
+        account.UpdatedAt.Should().Be(_now);
+        account.UpdatedBy.Should().Be(_userId);
+    }
+
+    [Fact]
+    public void Archive_ShouldRaiseEvent_WithCorrectPayload()
+    {
+        var account = CreateAccount();
+        ((IHasDomainEvents)account).ClearDomainEvents();
+
+        account.Archive(_userId, _now);
+
+        var evt = account.DomainEvents
+            .OfType<AccountArchivedDomainEvent>()
+            .Single();
+        evt.AccountId.Should().Be(account.Id);
     }
 
     // ── Suspend ──────────────────────────────────────────────────────────
@@ -162,6 +253,64 @@ public class AccountTests
         account.DomainEvents.Should().BeEmpty();
     }
 
+    [Fact]
+    public void Suspend_AfterSoftDelete_ShouldThrow()
+    {
+        var account = CreateAccount();
+        account.SoftDelete(_userId, _now);
+
+        var act = () => account.Suspend(_userId, _now);
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void Suspend_ShouldIncrementVersion()
+    {
+        var account = CreateAccount();
+        var versionBefore = account.Version;
+
+        account.Suspend(_userId, _now);
+
+        account.Version.Should().Be(versionBefore + 1);
+    }
+
+    [Fact]
+    public void Suspend_NoOp_VersionShouldNotIncrement()
+    {
+        var account = CreateAccount();
+        account.Suspend(_userId, _now);
+        var versionBefore = account.Version;
+
+        account.Suspend(_userId, _now);
+
+        account.Version.Should().Be(versionBefore);
+    }
+
+    [Fact]
+    public void Suspend_ShouldSetAudit()
+    {
+        var account = CreateAccount();
+
+        account.Suspend(_userId, _now);
+
+        account.UpdatedAt.Should().Be(_now);
+        account.UpdatedBy.Should().Be(_userId);
+    }
+
+    [Fact]
+    public void Suspend_ShouldRaiseEvent_WithCorrectPayload()
+    {
+        var account = CreateAccount();
+        ((IHasDomainEvents)account).ClearDomainEvents();
+
+        account.Suspend(_userId, _now);
+
+        var evt = account.DomainEvents
+            .OfType<AccountSuspendedDomainEvent>()
+            .Single();
+        evt.PreviousStatus.Should().Be(AccountStatus.Active);
+    }
+
     // ── Activate ─────────────────────────────────────────────────────────
 
     [Fact]
@@ -186,6 +335,66 @@ public class AccountTests
         account.Activate(_userId, _now);
 
         account.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Activate_AfterSoftDelete_ShouldThrow()
+    {
+        var account = CreateAccount();
+        account.SoftDelete(_userId, _now);
+
+        var act = () => account.Activate(_userId, _now);
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void Activate_ShouldIncrementVersion()
+    {
+        var account = CreateAccount();
+        account.Suspend(_userId, _now);
+        var versionBefore = account.Version;
+
+        account.Activate(_userId, _now);
+
+        account.Version.Should().Be(versionBefore + 1);
+    }
+
+    [Fact]
+    public void Activate_NoOp_VersionShouldNotIncrement()
+    {
+        var account = CreateAccount();
+        var versionBefore = account.Version;
+
+        account.Activate(_userId, _now);
+
+        account.Version.Should().Be(versionBefore);
+    }
+
+    [Fact]
+    public void Activate_ShouldSetAudit()
+    {
+        var account = CreateAccount();
+        account.Suspend(_userId, _now);
+
+        account.Activate(_userId, _now);
+
+        account.UpdatedAt.Should().Be(_now);
+        account.UpdatedBy.Should().Be(_userId);
+    }
+
+    [Fact]
+    public void Activate_ShouldRaiseEvent_WithCorrectPayload()
+    {
+        var account = CreateAccount();
+        account.Suspend(_userId, _now);
+        ((IHasDomainEvents)account).ClearDomainEvents();
+
+        account.Activate(_userId, _now);
+
+        var evt = account.DomainEvents
+            .OfType<AccountActivatedDomainEvent>()
+            .Single();
+        evt.PreviousStatus.Should().Be(AccountStatus.Suspended);
     }
 
     // ── SoftDelete / Restore ─────────────────────────────────────────────
@@ -238,6 +447,104 @@ public class AccountTests
         account.Restore(_userId, _now);
 
         account.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void SoftDelete_ShouldIncrementVersion()
+    {
+        var account = CreateAccount();
+        var versionBefore = account.Version;
+
+        account.SoftDelete(_userId, _now);
+
+        account.Version.Should().Be(versionBefore + 1);
+    }
+
+    [Fact]
+    public void SoftDelete_NoOp_VersionShouldNotIncrement()
+    {
+        var account = CreateAccount();
+        account.SoftDelete(_userId, _now);
+        var versionBefore = account.Version;
+
+        account.SoftDelete(_userId, _now);
+
+        account.Version.Should().Be(versionBefore);
+    }
+
+    [Fact]
+    public void SoftDelete_ShouldSetDeleteAudit()
+    {
+        var account = CreateAccount();
+
+        account.SoftDelete(_userId, _now);
+
+        account.DeletedAt.Should().Be(_now);
+        account.DeletedBy.Should().Be(_userId);
+    }
+
+    [Fact]
+    public void SoftDelete_ShouldRaiseEvent_WithCorrectPayload()
+    {
+        var account = CreateAccount();
+        ((IHasDomainEvents)account).ClearDomainEvents();
+
+        account.SoftDelete(_userId, _now);
+
+        var evt = account.DomainEvents
+            .OfType<AccountSoftDeletedDomainEvent>()
+            .Single();
+        evt.DeletedBy.Should().Be(_userId);
+    }
+
+    [Fact]
+    public void Restore_ShouldIncrementVersion()
+    {
+        var account = CreateAccount();
+        account.SoftDelete(_userId, _now);
+        var versionBefore = account.Version;
+
+        account.Restore(_userId, _now);
+
+        account.Version.Should().Be(versionBefore + 1);
+    }
+
+    [Fact]
+    public void Restore_NoOp_VersionShouldNotIncrement()
+    {
+        var account = CreateAccount();
+        var versionBefore = account.Version;
+
+        account.Restore(_userId, _now);
+
+        account.Version.Should().Be(versionBefore);
+    }
+
+    [Fact]
+    public void Restore_ShouldSetRestoreAudit()
+    {
+        var account = CreateAccount();
+        account.SoftDelete(_userId, _now);
+
+        account.Restore(_userId, _now);
+
+        account.RestoredAt.Should().Be(_now);
+        account.RestoredBy.Should().Be(_userId);
+    }
+
+    [Fact]
+    public void Restore_ShouldRaiseEvent_WithCorrectPayload()
+    {
+        var account = CreateAccount();
+        account.SoftDelete(_userId, _now);
+        ((IHasDomainEvents)account).ClearDomainEvents();
+
+        account.Restore(_userId, _now);
+
+        var evt = account.DomainEvents
+            .OfType<AccountRestoredDomainEvent>()
+            .Single();
+        evt.RestoredBy.Should().Be(_userId);
     }
 
     // ── UpdatePlanCode ───────────────────────────────────────────────────
@@ -302,6 +609,32 @@ public class AccountTests
         account.Version.Should().Be(versionBefore + 1);
     }
 
+    [Fact]
+    public void UpdatePlanCode_AfterSoftDelete_ShouldThrow()
+    {
+        var account = CreateAccount();
+        account.SoftDelete(_userId, _now);
+
+        var act = () => account.UpdatePlanCode("enterprise", _userId, _now);
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void UpdatePlanCode_ShouldRaiseEvent_WithCorrectPayload()
+    {
+        var account = CreateAccount();
+        account.UpdatePlanCode("old-plan", _userId, _now);
+        ((IHasDomainEvents)account).ClearDomainEvents();
+
+        account.UpdatePlanCode("new-plan", _userId, _now);
+
+        var evt = account.DomainEvents
+            .OfType<AccountPlanCodeChangedDomainEvent>()
+            .Single();
+        evt.OldPlanCode.Should().Be("old-plan");
+        evt.NewPlanCode.Should().Be("new-plan");
+    }
+
     // ── UpdateDefaultRegion ──────────────────────────────────────────────
 
     [Fact]
@@ -362,5 +695,31 @@ public class AccountTests
         account.UpdatedAt.Should().Be(_now);
         account.UpdatedBy.Should().Be(_userId);
         account.Version.Should().Be(versionBefore + 1);
+    }
+
+    [Fact]
+    public void UpdateDefaultRegion_AfterSoftDelete_ShouldThrow()
+    {
+        var account = CreateAccount();
+        account.SoftDelete(_userId, _now);
+
+        var act = () => account.UpdateDefaultRegion("us-east-1", _userId, _now);
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void UpdateDefaultRegion_ShouldRaiseEvent_WithCorrectPayload()
+    {
+        var account = CreateAccount();
+        account.UpdateDefaultRegion("us-east-1", _userId, _now);
+        ((IHasDomainEvents)account).ClearDomainEvents();
+
+        account.UpdateDefaultRegion("eu-west-1", _userId, _now);
+
+        var evt = account.DomainEvents
+            .OfType<AccountDefaultRegionChangedDomainEvent>()
+            .Single();
+        evt.OldRegionCode.Should().Be("us-east-1");
+        evt.NewRegionCode.Should().Be("eu-west-1");
     }
 }

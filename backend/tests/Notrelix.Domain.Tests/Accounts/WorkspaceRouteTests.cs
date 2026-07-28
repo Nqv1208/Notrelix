@@ -226,4 +226,193 @@ public class WorkspaceRouteTests
 
         act.Should().Throw<DomainException>();
     }
+
+    private WorkspaceRoute CreateRoute(Guid? workspaceId = null, bool isDefault = false)
+    {
+        return WorkspaceRoute.Create(_accountId, "test-route", _actorId, _now, workspaceId, isDefault);
+    }
+
+    [Fact]
+    public void InitialVersion_ShouldBe1()
+    {
+        var route = CreateRoute();
+        route.Version.Should().Be(1);
+    }
+
+    [Fact]
+    public void SetAsDefault_NoOp_VersionShouldNotIncrement()
+    {
+        var route = CreateRoute(isDefault: true);
+        var before = route.Version;
+        route.SetAsDefault(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        route.Version.Should().Be(before);
+    }
+
+    [Fact]
+    public void UnsetDefault_ShouldIncrementVersion()
+    {
+        var route = CreateRoute(isDefault: true);
+        var before = route.Version;
+        route.UnsetDefault(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        route.Version.Should().Be(before + 1);
+    }
+
+    [Fact]
+    public void UnsetDefault_ShouldUpdateAudit()
+    {
+        var route = CreateRoute(isDefault: true);
+        var actor = Guid.NewGuid();
+        var time = DateTimeOffset.UtcNow;
+        route.UnsetDefault(actor, time);
+        route.UpdatedBy.Should().Be(actor);
+        route.UpdatedAt.Should().Be(time);
+    }
+
+    [Fact]
+    public void UnsetDefault_NoOp_VersionShouldNotIncrement()
+    {
+        var route = CreateRoute(isDefault: false);
+        var before = route.Version;
+        route.UnsetDefault(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        route.Version.Should().Be(before);
+    }
+
+    [Fact]
+    public void LinkWorkspace_ShouldIncrementVersion()
+    {
+        var route = CreateRoute();
+        var before = route.Version;
+        route.LinkWorkspace(Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        route.Version.Should().Be(before + 1);
+    }
+
+    [Fact]
+    public void LinkWorkspace_ShouldUpdateAudit()
+    {
+        var route = CreateRoute();
+        var actor = Guid.NewGuid();
+        var time = DateTimeOffset.UtcNow;
+        route.LinkWorkspace(Guid.NewGuid(), actor, time);
+        route.UpdatedBy.Should().Be(actor);
+        route.UpdatedAt.Should().Be(time);
+    }
+
+    [Fact]
+    public void LinkWorkspace_NoOp_VersionShouldNotIncrement()
+    {
+        var workspaceId = Guid.NewGuid();
+        var route = CreateRoute(workspaceId: workspaceId);
+        var before = route.Version;
+        route.LinkWorkspace(workspaceId, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        route.Version.Should().Be(before);
+    }
+
+    [Fact]
+    public void UnlinkWorkspace_ShouldIncrementVersion()
+    {
+        var route = CreateRoute(workspaceId: Guid.NewGuid());
+        var before = route.Version;
+        route.UnlinkWorkspace(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        route.Version.Should().Be(before + 1);
+    }
+
+    [Fact]
+    public void UnlinkWorkspace_ShouldUpdateAudit()
+    {
+        var route = CreateRoute(workspaceId: Guid.NewGuid());
+        var actor = Guid.NewGuid();
+        var time = DateTimeOffset.UtcNow;
+        route.UnlinkWorkspace(actor, time);
+        route.UpdatedBy.Should().Be(actor);
+        route.UpdatedAt.Should().Be(time);
+    }
+
+    [Fact]
+    public void UnlinkWorkspace_NoOp_VersionShouldNotIncrement()
+    {
+        var route = CreateRoute();
+        var before = route.Version;
+        route.UnlinkWorkspace(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        route.Version.Should().Be(before);
+    }
+
+    [Fact]
+    public void SoftDelete_ShouldIncrementVersion()
+    {
+        var route = CreateRoute();
+        var before = route.Version;
+        route.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        route.Version.Should().Be(before + 1);
+    }
+
+    [Fact]
+    public void SoftDelete_ShouldSetDeleteAudit()
+    {
+        var route = CreateRoute();
+        var actor = Guid.NewGuid();
+        var time = DateTimeOffset.UtcNow;
+        route.SoftDelete(actor, time, "reason");
+        route.DeletedBy.Should().Be(actor);
+        route.DeletedAt.Should().Be(time);
+    }
+
+    [Fact]
+    public void SoftDelete_IsIdempotent_ShouldNotRaiseEvent()
+    {
+        var route = CreateRoute();
+        route.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        ((IHasDomainEvents)route).ClearDomainEvents();
+        route.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        route.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void SoftDelete_IsIdempotent_ShouldNotIncrementVersion()
+    {
+        var route = CreateRoute();
+        route.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        var before = route.Version;
+        route.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        route.Version.Should().Be(before);
+    }
+
+    [Fact]
+    public void Restore_ShouldIncrementVersion()
+    {
+        var route = CreateRoute();
+        route.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        var before = route.Version;
+        route.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        route.Version.Should().Be(before + 1);
+    }
+
+    [Fact]
+    public void Restore_ShouldSetRestoreAudit()
+    {
+        var route = CreateRoute();
+        route.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        var actor = Guid.NewGuid();
+        var time = DateTimeOffset.UtcNow;
+        route.Restore(actor, time);
+        route.RestoredBy.Should().Be(actor);
+        route.RestoredAt.Should().Be(time);
+    }
+
+    [Fact]
+    public void Restore_NoOp_ShouldNotRaiseEvent()
+    {
+        var route = CreateRoute();
+        ((IHasDomainEvents)route).ClearDomainEvents();
+        route.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        route.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Restore_NoOp_ShouldNotIncrementVersion()
+    {
+        var route = CreateRoute();
+        var before = route.Version;
+        route.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        route.Version.Should().Be(before);
+    }
 }
