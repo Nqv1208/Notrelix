@@ -1,7 +1,10 @@
+using Notrelix.Domain.Common;
 using Notrelix.Domain.Workspaces.Workspaces.Events;
 namespace Notrelix.Domain.Workspaces.Workspaces;
 
-public class Workspace : SoftDeletableAggregateRoot
+public sealed class Workspace :
+    SoftDeletableAggregateRoot,
+    IAccountScoped
 {
     public string Name { get; private set; } = null!;
     public string Slug { get; private set; } = null!;

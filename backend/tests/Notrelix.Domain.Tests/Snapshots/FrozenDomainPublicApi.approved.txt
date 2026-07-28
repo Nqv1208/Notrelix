@@ -3929,7 +3929,7 @@ Notrelix.Domain.Workspaces.Workspaces.Workspace|SoftDelete|Method|public|False|F
 Notrelix.Domain.Workspaces.Workspaces.Workspace|Unarchive|Method|public|False|False|System.Guid unarchivedBy, System.DateTimeOffset unarchivedAt
 Notrelix.Domain.Workspaces.Workspaces.Workspace|UpdateDescription|Method|public|False|False|System.String newDescription, System.Guid updatedBy, System.DateTimeOffset updatedAt
 Notrelix.Domain.Workspaces.Workspaces.Workspace|UpdateSettings|Method|public|False|False|Notrelix.Domain.Workspaces.Workspaces.WorkspaceSettings newSettings, System.Guid updatedBy, System.DateTimeOffset updatedAt
-Notrelix.Domain.Workspaces.Workspaces.Workspace|AccountId|Property|public|False|False|readonly|System.Guid
+Notrelix.Domain.Workspaces.Workspaces.Workspace|AccountId|Property|public|False|True|readonly|System.Guid
 Notrelix.Domain.Workspaces.Workspaces.Workspace|Description|Property|public|False|False|readonly|System.String
 Notrelix.Domain.Workspaces.Workspaces.Workspace|IsPersonal|Property|public|False|False|readonly|System.Boolean
 Notrelix.Domain.Workspaces.Workspaces.Workspace|Name|Property|public|False|False|readonly|System.String
