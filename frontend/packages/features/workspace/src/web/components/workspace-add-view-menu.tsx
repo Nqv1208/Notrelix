@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Plus } from 'lucide-react';
 import { Badge, Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@notrelix/ui-web';
-import { useAppRuntime } from '@notrelix/runtime-web';
 import { workspaceViewTemplates } from '../../core/constants/view-templates';
 import type { WorkspaceViewType } from '../../core/types/workspace';
 import { createUseCreateWorkspaceView } from '../hooks/mutations/use-create-workspace-view';
@@ -11,17 +10,18 @@ export function WorkspaceAddViewMenu({
   workspaceId,
   createViewHook: customCreateViewHook,
   boards = [],
+  api,
 }: {
   workspaceId: string;
   createViewHook?: ReturnType<typeof createUseCreateWorkspaceView>;
   boards?: Array<{ id: string }>;
+  api?: any;
 }) {
   const navigate = useNavigate();
-  const { api: runtimeClient } = useAppRuntime();
 
   const defaultCreateViewHook = useMemo(
-    () => createUseCreateWorkspaceView({ api: runtimeClient.api }),
-    [runtimeClient],
+    () => createUseCreateWorkspaceView({ api }),
+    [api],
   );
   const createViewHook = customCreateViewHook || defaultCreateViewHook;
   const createView = createViewHook(workspaceId);

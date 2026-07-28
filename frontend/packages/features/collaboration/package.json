@@ -21,7 +21,6 @@
     "@notrelix/kernel": "workspace:*",
     "@notrelix/platform": "workspace:*",
     "@notrelix/query": "workspace:*",
-    "@notrelix/runtime-web": "workspace:*",
     "@notrelix/ui-web": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "lucide-react": "catalog:"

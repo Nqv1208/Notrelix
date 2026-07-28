@@ -1,45 +1,54 @@
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAppRuntime } from '@notrelix/runtime-web';
+import { useAppRuntime, type SessionExpiredEvent } from '@notrelix/runtime-web';
 import { router } from '../router';
+import { sanitizeInternalReturnUrl } from '../routing/sanitize-return-url';
+
+const MAX_HANDLED_EVENTS = 32;
 
 export function SessionLifecycle({ children }: { children: React.ReactNode }) {
   const runtime = useAppRuntime();
   const queryClient = useQueryClient();
-  const isHandlingExpiry = useRef(false);
+  const handledEventIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    const unsubscribe = runtime.sessionEvents.subscribe((event) => {
-      if (event.type === 'session-expired') {
-        if (isHandlingExpiry.current) return;
-        isHandlingExpiry.current = true;
-
-        console.warn('[SessionLifecycle] Session expired, clearing cache and redirecting to sign-in.');
-
-        // Cancel all active queries and clear private cache
-        queryClient.cancelQueries();
-        queryClient.clear();
-
-        // Redirect to sign-in page safely with current pathname as sanitized return URL
-        const currentPath = window.location.pathname;
-        const redirectPath = currentPath.startsWith('/') && !currentPath.startsWith('//') ? currentPath : '/';
-
-        router.navigate({
-          to: '/sign-in',
-          search: { redirect: redirectPath },
-        });
-
-        // Reset debouncing flag after 2 seconds
-        setTimeout(() => {
-          isHandlingExpiry.current = false;
-        }, 2000);
+    const unsubscribe = runtime.sessionEvents.subscribe(async (event: SessionExpiredEvent) => {
+      if (handledEventIdsRef.current.has(event.eventId)) {
+        return;
       }
+
+      // Add to bounded deduplication set
+      handledEventIdsRef.current.add(event.eventId);
+      if (handledEventIdsRef.current.size > MAX_HANDLED_EVENTS) {
+        const first = handledEventIdsRef.current.values().next().value;
+        if (first) handledEventIdsRef.current.delete(first);
+      }
+
+      // 1. Disconnect realtime connection
+      runtime.realtime.disconnect('session-expired');
+
+      // 2. Cancel ongoing query refetches
+      await queryClient.cancelQueries();
+
+      // 3. Clear private query cache
+      queryClient.clear();
+
+      // 4. Sanitize current location (pathname + search + hash)
+      const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      const redirectPath = sanitizeInternalReturnUrl(currentUrl);
+
+      // 5. Navigate to sign-in page
+      router.navigate({
+        to: '/sign-in',
+        search: { redirect: redirectPath },
+        replace: true,
+      });
     });
 
     return () => {
       unsubscribe();
     };
-  }, [runtime.sessionEvents, queryClient]);
+  }, [runtime, queryClient]);
 
   return <>{children}</>;
 }

@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from '@tanstack/react-router';
 import { MoreHorizontal } from 'lucide-react';
 import { Button, cn } from '@notrelix/ui-web';
-import { useAppRuntime } from '@notrelix/runtime-web';
 import type { WorkspaceView } from '../../core/types/workspace';
 import { createUseReorderWorkspaceViews } from '..';
 import { WorkspaceAddViewMenu } from './workspace-add-view-menu';
@@ -68,17 +67,18 @@ export function WorkspaceViewTabs({
   activeViewId,
   currentBoardId,
   reorderHook: customReorderHook,
+  api,
 }: {
   workspaceId: string;
   views: WorkspaceView[];
   activeViewId?: string;
   currentBoardId?: string;
   reorderHook?: ReturnType<typeof createUseReorderWorkspaceViews>;
+  api?: any;
 }) {
-  const { api: runtimeClient } = useAppRuntime();
   const defaultReorderHook = useMemo(
-    () => createUseReorderWorkspaceViews({ api: runtimeClient.api }),
-    [runtimeClient],
+    () => createUseReorderWorkspaceViews({ api }),
+    [api],
   );
   const reorderHook = customReorderHook || defaultReorderHook;
 
@@ -174,7 +174,7 @@ export function WorkspaceViewTabs({
             </SortableContext>
           </DndContext>
         </div>
-        <WorkspaceAddViewMenu workspaceId={workspaceId} />
+        <WorkspaceAddViewMenu workspaceId={workspaceId} api={api} />
         <Button variant="ghost" size="icon" aria-label="More view actions">
           <MoreHorizontal className="size-4" />
         </Button>

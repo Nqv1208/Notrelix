@@ -13,6 +13,17 @@ import './styles/globals.css';
 const runtimeEnvironment = readWebRuntimeEnvironment(import.meta.env);
 const runtime = createAppRuntime(runtimeEnvironment);
 
+// Register HMR disposal and pagehide cleanup
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    runtime.dispose();
+  });
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', () => runtime.dispose(), { once: true });
+}
+
 function App() {
   return (
     <AppProviders runtime={runtime}>

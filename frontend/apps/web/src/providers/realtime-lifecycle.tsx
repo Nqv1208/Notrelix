@@ -8,7 +8,7 @@ export function RealtimeLifecycle({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isAuthenticated) {
-      runtime.realtime.connect();
+      void runtime.realtime.connect({ sessionGeneration: 'web-session' });
     } else {
       runtime.realtime.disconnect();
     }

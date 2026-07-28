@@ -10,3 +10,4 @@ export { workspaceQueryKeys } from './core/query/keys';
 
 // Web exports (Mutation hooks)
 export * from './web';
+export { workspaceRealtimeAdapter } from './realtime-adapter';

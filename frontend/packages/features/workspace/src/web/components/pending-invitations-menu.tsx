@@ -5,22 +5,25 @@ import { Button, Popover, PopoverContent, PopoverTrigger } from '@notrelix/ui-we
 import { createUsePendingInvitations } from '../../core';
 import { createUseAcceptInvitation } from '../hooks/mutations/use-accept-invitation';
 import type { WorkspaceInvitation } from '../../core';
-import { useAppRuntime } from '@notrelix/runtime-web';
 import { cn } from '@notrelix/ui-web';
 
-export function PendingInvitationsMenu() {
+interface PendingInvitationsMenuProps {
+  api: any;
+  endpoints: any;
+}
+
+export function PendingInvitationsMenu({ api, endpoints }: PendingInvitationsMenuProps) {
   const navigate = useNavigate();
-  const { api: runtimeClient } = useAppRuntime();
   const [open, setOpen] = useState(false);
 
   const usePendingInvitations = useMemo(
-    () => createUsePendingInvitations({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
-    [runtimeClient],
+    () => createUsePendingInvitations({ api, endpoints }),
+    [api, endpoints],
   );
 
   const useAcceptInvitation = useMemo(
-    () => createUseAcceptInvitation({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
-    [runtimeClient],
+    () => createUseAcceptInvitation({ api, endpoints }),
+    [api, endpoints],
   );
 
   const { data: invitations, isLoading, refetch } = usePendingInvitations();
@@ -64,7 +67,7 @@ export function PendingInvitationsMenu() {
         </button>
       </PopoverTrigger>
 
-      <PopoverContent align="end" className="w-80 p-0 border-border/60 bg-card/95 shadow-xl backdrop-blur-md rounded-2xl overflow-hidden z-[100]">
+      <PopoverContent align="end" className="w-80 p-0 border-border/40 bg-card/95 shadow-xl backdrop-blur-md rounded-2xl overflow-hidden z-[100]">
         <div className="flex items-center justify-between border-b border-border/40 px-4 py-3 bg-muted/30">
           <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <UserPlus className="size-4 text-primary" />
