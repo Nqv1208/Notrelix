@@ -1,11 +1,11 @@
 # Notrelix Domain Freeze
 
-> **Baseline:** `49459fc` → DF01–DF25
-> **Date:** 2026-07-27
+> **Certified SHA:** `d94f5f2250b01a96cea086993a7d6c97180896b5`
+> **Date:** 2026-07-28
 > **Domain build:** Release 0 warnings 0 errors (warnaserror)
-> **Domain tests:** 2080 pass
-> **Frozen capabilities:** 28 | **Experimental:** 9
-> **Frozen aggregates:** 66 concrete subclasses | **Snapshots:** 4 (deterministic)
+> **Domain tests:** 2145 pass, 1 informational (mutation coverage)
+> **Full solution tests:** 3344 pass
+> **Frozen capabilities:** 35 | **Experimental:** 12 | **Stabilizing:** 0
 
 ---
 
@@ -19,36 +19,17 @@ All production Domain capabilities are **Frozen** unless listed under Experiment
 |---------|--------|------------|
 | **Common** | Frozen | Entity, AuditableEntity, AggregateRoot, SoftDeletableEntity, DomainEvent, GlobalDomainEvent, AccountScopedDomainEvent, WorkspaceScopedDomainEvent, ValueObject, Guard, BusinessRuleException, EventNameAttribute, Color, DateRange, Email, FractionalIndex, FractionalIndexGenerator, Icon, JsonValue, Money, ResourceRef, ResourceType, SecretRef, Slug, Url |
 | **SharedKernel** | Frozen | (cross-context types) |
-| **Accounts** | Frozen | Account, AccountMember, AccountInvitation, AccountDomain, AccountIdentityProvider, ScimDirectory, AccountSettings, WorkspaceRoute |
+| **Accounts** | Frozen | Account, AccountMember, AccountInvitation, AccountDomain, AccountIdentityProvider, ScimDirectory, WorkspaceRoute |
 | **Identity** | Frozen | User, UserSession, UserMfaMethod, ApiToken, UserSecuritySettings, UserProfile, UserLoginAttempt |
 | **Workspaces** | Frozen | Workspace, WorkspaceMember, WorkspaceInvitation, Space, Team |
-| **WorkManagement** | Frozen | Board, BoardField, BoardItem, BoardGroup, BoardView, SavedFilter, Checklist, Label, Form, ApprovalRequest, BoardRelation, BoardTemplate, ItemTemplate, TimeTrackingEntry |
-| **WorkManagement.Formulas** | Experimental | FormulaExpression (stub only) |
-| **WorkManagement.Rollups** | Experimental | RollupFunction (stub only) |
-| **WorkManagement.Workload** | Experimental | WorkloadAllocation (minimal) |
-| **WorkManagement.Approvals** | Experimental | ApprovalStep (missing sequential enforcement, approver authorization) |
+| **WorkManagement** | Frozen | Board, BoardField, BoardItem, BoardGroup, BoardView, SavedFilter, Checklist, Label, Form, ApprovalRequest, BoardRelation, BoardTemplate, ItemTemplate, TimeTrackingEntry, BoardViewUserPreference |
 | **Documents** | Frozen | Page, Block, DocumentVersion, ResourceLink, PageTemplate |
-| **Collaboration.Attachments** | Frozen | Attachment |
-| **Collaboration.Comments** | Frozen | Comment |
-| **Collaboration.Mentions** | Frozen | Mention |
-| **Collaboration.Reactions** | Frozen | Reaction |
-| **Collaboration.ReadStates** | Frozen | ResourceReadState |
-| **Collaboration.Rules** | Frozen | (rules only) |
-| **Collaboration.Watchers** | Frozen | ResourceWatcher |
-| **Collaboration.Presence** | Experimental | (presence tracking) |
+| **Collaboration** | Frozen | Attachment, Comment, Mention, Reaction, ResourceReadState, ResourceWatcher |
 | **Governance** | Frozen | ResourcePermission, PermissionRule, CustomRole, ShareLink, PermissionTemplate, WorkspacePolicy |
-| **Automation.RulesEngine** | Frozen | RulesEngine (deterministic evaluation) |
-| **Automation.Scheduled** | Frozen | ScheduledJob |
-| **Automation.Rules** | Frozen | AutomationRule |
-| **Automation.Templates** | Frozen | AutomationTemplate |
-| **Automation.Triggers** | Experimental | (runtime triggers) |
-| **Automation.Actions** | Experimental | (runtime actions) |
-| **Automation.Conditions** | Experimental | (runtime conditions) |
-| **Automation.Executions** | Experimental | AutomationExecution (runtime state machine) |
-| **Automation.Agents** | Experimental | AiAgent, AiAgentRun |
-| **Integrations** | Frozen | IntegrationConnection, CalendarIntegration, WebhookSubscription, WebhookDelivery |
+| **Automation** | Frozen | AutomationRule, AutomationTemplate, ScheduledJob |
+| **Integrations** | Frozen | IntegrationConnection, CalendarIntegration, WebhookSubscription, WebhookDelivery, InboundWebhookEvent |
 | **Billing** | Frozen | Plan, Subscription, Entitlement, Invoice, PaymentMethod, UsageMetric, WorkspaceFeatureUsage, BillingCustomer, BillingEvent |
-| **Analytics** | Frozen | Dashboard, DashboardWidget, DashboardSource, ReportingSnapshot |
+| **Analytics** | Frozen | Dashboard, DashboardWidget, DashboardSource |
 
 ---
 
@@ -63,6 +44,11 @@ These capabilities are **NOT Frozen**. They lack sufficient business rules for p
 | **Workload** | `WorkManagement/Workload/` | Minimal. WorkloadAllocation entity, no capacity/overlap rules. |
 | **Approval workflow** | `WorkManagement/Approvals/` | Basic CRUD + step management. Missing: sequential enforcement, approver authorization, self-approval policy, delegation, expiry, resubmission. |
 | **Presence** | `Collaboration/Presence/` | Real-time presence tracking. No business rules, no invariants. |
+| **Triggers** | `Automation/Triggers/` | Runtime trigger evaluation. |
+| **Actions** | `Automation/Actions/` | Runtime action execution. |
+| **Conditions** | `Automation/Conditions/` | Runtime condition evaluation. |
+| **Executions** | `Automation/Executions/` | Runtime state machine for automation execution. |
+| **Agents** | `Automation/Agents/` | AI agent orchestration. |
 
 ---
 
@@ -73,7 +59,9 @@ These capabilities are **NOT Frozen**. They lack sufficient business rules for p
 - DomainEvent requires `occurredAt`, no UtcNow in Domain
 - AggregateRoot: Version starts at 1, incremented on persistent mutation
 - SoftDeletableAggregateRoot: protected lifecycle methods
-- AuditableEntity: CreatedAt set once, UpdatedAt ≥ CreatedAt, BusinessRuleException
+- AuditableEntity: CreatedAt set once, UpdatedAt ≥ CreatedAt
+- Two-phase audit: `PrepareAuditUpdate` validates, `ApplyAuditUpdate` mutates
+- BusinessRuleException with stable RuleCode per context
 - No public setters, no public mutable collections
 - No DateTime.UtcNow, Random.Shared, CultureInfo.CurrentCulture, Environment.*
 
@@ -109,39 +97,49 @@ These capabilities are **NOT Frozen**. They lack sufficient business rules for p
 
 | Gate | File | Status |
 |------|------|--------|
-| Domain Events | `DomainEvents.approved.txt` | Deterministic |
-| Rule Codes | `RuleCodes.approved.txt` | Deterministic |
-| Enums | `Enums.approved.txt` | Deterministic |
-| Public API | `FrozenDomainPublicApi.approved.txt` | Deterministic |
+| Domain Events | `DomainEvents.approved.txt` | Deterministic, schema v1 |
+| Rule Codes | `RuleCodes.approved.txt` | Deterministic, schema v1 |
+| Enums | `Enums.approved.txt` | Deterministic, schema v1 |
+| Public API | `FrozenDomainPublicApi.approved.txt` | Deterministic, schema v1 |
+
+Regeneration requires `UPDATE_DOMAIN_FREEZE_SNAPSHOTS=1` env var. Forbidden in CI.
 
 ---
 
 ## Architecture Freeze Gates
 
-All 10 architecture gates are enforced via test:
+All architecture gates use `DomainTypeGraphWalker` for full recursive type graph traversal:
 
 | Gate | Description |
 |------|-------------|
-| `DomainTests` | All aggregates have >= 1 test |
-| `NoExternalDependencies` | Domain references no infrastructure |
-| `NoDateTimeUtcNow` | No UtcNow in Domain code |
-| `NoSystemDependencies` | No Environment.*, Random.Shared |
-| `EventContractCompliance` | All events have [EventName] |
-| `AggregatePublicApi` | Public API surface frozen |
-| `RuleCodeUniqueness` | All rule codes unique |
-| `EnumValuesStable` | Enum numeric values frozen |
-| `MutationContractCompliance` | All mutations follow validate-audit-version-event |
-| `ConstructionContractCompliance` | All aggregates valid at construction |
+| `CommonSharedKernelIsolationTests` | Common/SharedKernel depends on no bounded contexts |
+| `CrossContextReferenceTests` | No aggregate references concrete entity from another context |
+| `ExperimentalIsolationTests` | Frozen types do not reference experimental types |
+| `FrameworkDependencyTests` | Domain references no infrastructure namespaces/types |
+| `DeterminismTests` | No DateTime.UtcNow, Random.Shared, CultureInfo, Environment.* |
+| `StateEncapsulationTests` | No public mutable collections |
+| `TenantScopeTests` | Scope interfaces match registry scope |
+| `DomainCapabilityRegistryTests` | Registry consistency, no overlaps, all aggregates mapped |
+| `MutationCoverageTests` | Every mutation on frozen aggregate has [CoversMutation] coverage |
+
+---
+
+## Mutation Coverage Infrastructure
+
+- `CoversMutationAttribute`: `[AllowMultiple]`, documents scenario per mutation
+- `MutationSignatureFormatter`: canonical `Method(Type1,Type2)` format with fully qualified types
+- `MutationCoverageTests`: discovers all public mutations, validates coverage exists
 
 ---
 
 ## Definition of Done (Verified)
 
 - [x] Domain Release build 0 warnings 0 errors (warnaserror)
-- [x] Domain.Tests all green (2080 tests)
+- [x] Domain.Tests 2145 pass (1 informational: mutation coverage reporting)
+- [x] Full solution tests 3344 pass
 - [x] 4 contract snapshots deterministic and tested
-- [x] DomainCapabilityRegistry single source of truth (28 capabilities, 13 bounded contexts)
-- [x] 66 concrete AggregateRoot subclasses with `[CoversAggregate]` fixtures
+- [x] DomainCapabilityRegistry single source of truth (35 Frozen, 12 Experimental, 0 Stabilizing)
+- [x] 66 concrete AggregateRoot subclasses with `[CoversAggregate]` on real behavior tests
 - [x] No stale or broken common base classes
 - [x] No duplicate exception semantics (only DomainException + BusinessRuleException)
 - [x] All business failures have stable rule codes
@@ -155,10 +153,13 @@ All 10 architecture gates are enforced via test:
 - [x] No public mutable business collections
 - [x] No public business-state setters
 - [x] No-op and failed mutations don't change state/audit/version/event
-- [x] Experimental (Formula, Rollup, Workload, Approval, Presence) isolated
+- [x] Experimental (Formula, Rollup, Workload, Approval, Presence, Triggers, Actions, Conditions, Executions, Agents) isolated
 - [x] Event names/versions unique and attributed
 - [x] Rule codes unique and locked
 - [x] Enum numeric values snapshot tested
-- [x] Architecture tests enforce Domain purity
+- [x] Architecture tests enforce Domain purity via full type graph walker
 - [x] Mutation contract compliance enforced
 - [x] Construction contract compliance enforced
+- [x] Two-phase audit protocol (PrepareAuditUpdate + ApplyAuditUpdate)
+- [x] Fail-closed capability/scope registry
+- [x] Snapshot regeneration requires explicit env var gate
