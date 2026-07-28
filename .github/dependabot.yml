@@ -29,6 +29,54 @@ updates:
         patterns:
           - "MassTransit*"
 
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Ho_Chi_Minh
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - npm
+    groups:
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+      nextjs:
+        patterns:
+          - "next"
+      vite:
+        patterns:
+          - "vite"
+          - "@vitejs/plugin-react"
+      tanstack:
+        patterns:
+          - "@tanstack/*"
+      ui:
+        patterns:
+          - "@radix-ui/*"
+          - "shadcn"
+          - "tailwindcss"
+          - "class-variance-authority"
+          - "tailwind-merge"
+          - "clsx"
+      testing:
+        patterns:
+          - "vitest"
+          - "@playwright/test"
+          - "@testing-library/*"
+      tooling:
+        patterns:
+          - "typescript"
+          - "eslint"
+          - "prettier"
+          - "turbo"
+
   - package-ecosystem: docker
     directory: /backend
     schedule:
