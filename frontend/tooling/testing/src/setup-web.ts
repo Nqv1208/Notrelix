@@ -1,10 +1,11 @@
 import { cleanup } from '@testing-library/react';
-import { afterEach } from 'vitest';
+import { afterEach, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 
-// Automatically cleanup React Testing Library after each test
+// Automatically cleanup React Testing Library and restore mocks after each test
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
 });
 
 // Stub window.matchMedia for JSDOM

@@ -14,8 +14,11 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: [path.resolve(__dirname, './src/setup-web.ts')],
     include: [
-      'apps/**/*.test.{ts,tsx}',
-      'packages/**/*.{component,integration}.test.{ts,tsx}',
+      'apps/**/*.component.test.{ts,tsx}',
+      'apps/**/*.integration.test.{ts,tsx}',
+      'apps/**/__tests__/**/*.test.{ts,tsx}',
+      'packages/**/*.component.test.{ts,tsx}',
+      'packages/**/*.integration.test.{ts,tsx}',
     ],
     exclude: ['**/node_modules/**', '**/dist/**', '**/.next/**'],
   },

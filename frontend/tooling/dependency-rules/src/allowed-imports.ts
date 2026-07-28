@@ -89,7 +89,6 @@ export const ALLOWED_IMPORTS: Record<string, string[]> = {
   "@notrelix/features-workspace": [
     "@notrelix/contracts", "@notrelix/kernel", "@notrelix/platform",
     "@notrelix/query", "@notrelix/ui-web", "@notrelix/ui-mobile",
-    "@notrelix/runtime-web",
   ],
   "@notrelix/features-account": [
     "@notrelix/contracts", "@notrelix/kernel", "@notrelix/platform",
@@ -122,7 +121,6 @@ export const ALLOWED_IMPORTS: Record<string, string[]> = {
   "@notrelix/features-collaboration": [
     "@notrelix/contracts", "@notrelix/kernel", "@notrelix/platform",
     "@notrelix/query", "@notrelix/realtime", "@notrelix/ui-web", "@notrelix/ui-mobile",
-    "@notrelix/runtime-web",
   ],
 
   // ── Apps ───────────────────────────────────────────────────────────
@@ -148,4 +146,4 @@ export const ALLOWED_IMPORTS: Record<string, string[]> = {
     "@notrelix/runtime-mobile", "@notrelix/ui-tokens", "@notrelix/ui-mobile",
     "@notrelix/work-management-mobile",
   ],
-}
+};
