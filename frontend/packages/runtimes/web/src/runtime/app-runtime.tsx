@@ -1,5 +1,5 @@
 import React, { createContext, useContext, type ReactNode } from 'react';
-import { createNotrelixClient, type NotrelixClient } from '@notrelix/contracts';
+import { createNotrelixClient, type NotrelixClient, type NotrelixClientConfig, type SessionExpiredEvent } from '@notrelix/contracts';
 import { parseEnv, type ResolvedRuntimeEnvironment, type RuntimeEnvironmentInput } from '@notrelix/kernel';
 import { RealtimeClient } from '@notrelix/realtime';
 import { createSessionEventBus, type SessionEventBus } from './session-event-bus';
@@ -15,11 +15,20 @@ export interface ClockPort {
 export interface TelemetryPort {
   track(event: string, properties?: Record<string, unknown>): void;
   reportError(error: unknown, context?: Record<string, unknown>): void;
+  flush?(): Promise<void> | void;
 }
 
 export interface FeatureFlagsPort {
   isEnabled(flag: string): boolean;
   getFlags(): Record<string, boolean>;
+}
+
+export interface AppRuntimeFactories {
+  readonly createApiClient?: (config: NotrelixClientConfig) => NotrelixClient;
+  readonly createRealtimeClient?: (url: string) => RealtimeClient;
+  readonly clock?: ClockPort;
+  readonly telemetry?: TelemetryPort;
+  readonly featureFlags?: FeatureFlagsPort;
 }
 
 export interface AppRuntime {
@@ -34,58 +43,77 @@ export interface AppRuntime {
 }
 
 export function createAppRuntime(
-  input: RuntimeEnvironmentInput | Partial<Record<string, string | undefined>> = {}
+  input: RuntimeEnvironmentInput,
+  factories: AppRuntimeFactories = {}
 ): AppRuntime {
-  const resolvedEnv = parseEnv(input as Record<string, unknown>);
-  const sessionEvents = createSessionEventBus();
+  const resolvedEnv = parseEnv(input);
 
-  const client = createNotrelixClient({
-    baseUrl: resolvedEnv.apiUrl,
-    onSessionExpired: (error) => {
-      sessionEvents.publish({
-        type: 'session-expired',
-        error,
-        occurredAt: new Date().toISOString(),
-      });
-    },
-  });
-
-  const realtimeClient = new RealtimeClient(resolvedEnv.realtimeUrl);
-
-  const defaultClock: ClockPort = {
+  const clock: ClockPort = factories.clock ?? {
     now: () => new Date(),
     isoNow: () => new Date().toISOString(),
   };
 
-  const defaultTelemetry: TelemetryPort = {
+  const telemetry: TelemetryPort = factories.telemetry ?? {
     track: (event, properties) => {
       if (!resolvedEnv.isProduction) {
         console.debug(`[Telemetry] ${event}`, properties);
       }
     },
     reportError: (error, context) => {
-      console.error('[Telemetry Error]', error, context);
+      if (!resolvedEnv.isProduction) {
+        console.error('[Telemetry Error]', error, context);
+      }
     },
   };
 
-  const defaultFlags: FeatureFlagsPort = {
+  const sessionEvents = createSessionEventBus((err, ctx) => telemetry.reportError(err, ctx));
+
+  const client = factories.createApiClient
+    ? factories.createApiClient({
+        baseUrl: resolvedEnv.apiUrl,
+        clock,
+        onSessionExpired: (event: SessionExpiredEvent) => {
+          sessionEvents.publish(event);
+        },
+      })
+    : createNotrelixClient({
+        baseUrl: resolvedEnv.apiUrl,
+        clock,
+        onSessionExpired: (event: SessionExpiredEvent) => {
+          sessionEvents.publish(event);
+        },
+      });
+
+  const realtimeClient = factories.createRealtimeClient
+    ? factories.createRealtimeClient(resolvedEnv.realtimeUrl)
+    : new RealtimeClient(resolvedEnv.realtimeUrl);
+
+  const featureFlags: FeatureFlagsPort = factories.featureFlags ?? {
     isEnabled: () => true,
     getFlags: () => ({}),
   };
 
-  return {
+  let disposed = false;
+
+  const runtime: AppRuntime = {
     api: client,
     realtime: realtimeClient,
     sessionEvents,
-    clock: defaultClock,
-    telemetry: defaultTelemetry,
-    featureFlags: defaultFlags,
+    clock,
+    telemetry,
+    featureFlags,
     env: resolvedEnv,
     dispose(): void {
+      if (disposed) return;
+      disposed = true;
+
       sessionEvents.clear();
       realtimeClient.disconnect();
+      telemetry.flush?.();
     },
   };
+
+  return Object.freeze(runtime);
 }
 
 const AppRuntimeContext = createContext<AppRuntime | null>(null);

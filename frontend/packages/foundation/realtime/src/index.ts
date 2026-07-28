@@ -10,10 +10,16 @@
 export * from './protocol';
 export {
   RealtimeClient,
-  type RealtimeEvent,
-  type RealtimeEnvelope,
   type RealtimeConnectionState,
-  type ConnectionStateListener,
-  type EventListener,
+  type RealtimeConnectContext,
+  type RealtimeConnectionDescriptor,
+  type RealtimeConnectionDescriptorProvider,
+  type RealtimeSubscriptionFilter,
+  type RealtimeSequenceGap,
+  type RealtimeEventListener,
+  type RealtimeStateListener,
+  type RealtimeRecoveryListener,
+  type RealtimeTransport,
+  type RealtimeClientOptions,
 } from './transport/realtime-client';
 export type { BoardEvent, BoardPatchEvent, BoardPresenceEvent } from './events';

@@ -1,8 +1,6 @@
-export interface SessionExpiredEvent {
-  readonly type: 'session-expired';
-  readonly error?: unknown;
-  readonly occurredAt: string;
-}
+import type { SessionExpiredEvent } from '@notrelix/contracts';
+
+export type { SessionExpiredEvent };
 
 export interface SessionEventBus {
   publish(event: SessionExpiredEvent): void;
@@ -10,7 +8,9 @@ export interface SessionEventBus {
   clear(): void;
 }
 
-export function createSessionEventBus(): SessionEventBus {
+export function createSessionEventBus(
+  reportError?: (error: unknown, context?: Record<string, unknown>) => void
+): SessionEventBus {
   const listeners: Set<(event: SessionExpiredEvent) => void> = new Set();
 
   return {
@@ -19,7 +19,11 @@ export function createSessionEventBus(): SessionEventBus {
         try {
           listener(event);
         } catch (err) {
-          console.error('[SessionEventBus] Error in session event listener:', err);
+          if (reportError) {
+            reportError(err, { eventId: event.eventId, reason: event.reason });
+          } else {
+            console.error('[SessionEventBus] Error in session event listener:', err);
+          }
         }
       });
     },

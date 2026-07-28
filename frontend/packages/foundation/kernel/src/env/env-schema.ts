@@ -14,6 +14,7 @@ export interface RuntimeEnvironmentInput {
 export interface ResolvedRuntimeEnvironment {
   readonly mode: RuntimeMode;
   readonly isProduction: boolean;
+  readonly isDevelopment: boolean;
   readonly apiUrl: string;
   readonly realtimeUrl: string;
   readonly wsUrl: string; // Alias for realtimeUrl backward compatibility
@@ -40,46 +41,61 @@ export const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).optional(),
 });
 
-export function parseEnv(rawInput: Partial<Record<string, unknown>> = {}): ResolvedRuntimeEnvironment {
+function isValidUrl(val: string | undefined): boolean {
+  if (!val || typeof val !== "string") return false;
+  try {
+    new URL(val);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function parseEnv(rawInput: RuntimeEnvironmentInput | Record<string, unknown> = {}): ResolvedRuntimeEnvironment {
+  const input = rawInput as Record<string, unknown>;
+
   const mode: RuntimeMode =
-    (rawInput.mode as RuntimeMode) ||
-    (rawInput.NODE_ENV as RuntimeMode) ||
-    "development";
+    input.mode === "production" || input.mode === "test" || input.mode === "development"
+      ? (input.mode as RuntimeMode)
+      : input.NODE_ENV === "production" || input.NODE_ENV === "test" || input.NODE_ENV === "development"
+        ? (input.NODE_ENV as RuntimeMode)
+        : "development";
 
-  const apiUrl =
-    (rawInput.apiUrl as string) ||
-    (rawInput.VITE_API_URL as string) ||
-    (rawInput.NEXT_PUBLIC_API_URL as string);
+  const rawApiUrl =
+    (input.apiUrl as string) ||
+    (input.VITE_API_URL as string) ||
+    (input.NEXT_PUBLIC_API_URL as string);
 
-  const realtimeUrl =
-    (rawInput.realtimeUrl as string) ||
-    (rawInput.VITE_WS_URL as string) ||
-    (rawInput.NEXT_PUBLIC_WS_URL as string);
+  const rawRealtimeUrl =
+    (input.realtimeUrl as string) ||
+    (input.VITE_WS_URL as string) ||
+    (input.NEXT_PUBLIC_WS_URL as string);
 
-  const appUrl =
-    (rawInput.appUrl as string) ||
-    (rawInput.VITE_APP_URL as string);
+  const rawAppUrl =
+    (input.appUrl as string) ||
+    (input.VITE_APP_URL as string);
 
   const releaseSha =
-    (rawInput.releaseSha as string) ||
-    (rawInput.VITE_RELEASE_SHA as string) ||
+    (input.releaseSha as string) ||
+    (input.VITE_RELEASE_SHA as string) ||
     "dev-local";
 
   const mockApi =
-    typeof rawInput.mockApi === "boolean"
-      ? rawInput.mockApi
-      : rawInput.VITE_MOCK_API === "true";
+    typeof input.mockApi === "boolean"
+      ? input.mockApi
+      : input.VITE_MOCK_API === "true";
 
   const isProduction = mode === "production";
+  const isDevelopment = mode === "development";
 
   if (isProduction) {
     const missing: string[] = [];
-    if (!apiUrl) missing.push("apiUrl");
-    if (!realtimeUrl) missing.push("realtimeUrl");
-    if (!appUrl) missing.push("appUrl");
+    if (!isValidUrl(rawApiUrl)) missing.push("apiUrl");
+    if (!isValidUrl(rawRealtimeUrl)) missing.push("realtimeUrl");
+    if (!isValidUrl(rawAppUrl)) missing.push("appUrl");
     if (missing.length > 0) {
       throw new Error(
-        `[Kernel Env] Missing required environment variables in production: ${missing.join(", ")}`
+        `[Kernel Env] Missing or invalid required environment variables in production: ${missing.join(", ")}`
       );
     }
     if (mockApi) {
@@ -87,13 +103,14 @@ export function parseEnv(rawInput: Partial<Record<string, unknown>> = {}): Resol
     }
   }
 
-  const resolvedApiUrl = apiUrl ?? "http://localhost:8000/api/v1";
-  const resolvedRealtimeUrl = realtimeUrl ?? "ws://localhost:8000/realtime";
-  const resolvedAppUrl = appUrl ?? "http://localhost:3000";
+  const resolvedApiUrl = isValidUrl(rawApiUrl) ? rawApiUrl! : "http://localhost:5000";
+  const resolvedRealtimeUrl = isValidUrl(rawRealtimeUrl) ? rawRealtimeUrl! : "ws://localhost:5000/realtime";
+  const resolvedAppUrl = isValidUrl(rawAppUrl) ? rawAppUrl! : "http://localhost:3000";
 
   return {
     mode,
     isProduction,
+    isDevelopment,
     apiUrl: resolvedApiUrl,
     realtimeUrl: resolvedRealtimeUrl,
     wsUrl: resolvedRealtimeUrl,
