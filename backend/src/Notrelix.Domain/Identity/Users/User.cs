@@ -259,10 +259,10 @@ public class User : SoftDeletableAggregateRoot
                 IdentityRuleCodes.Identity_User_OAuthProviderAlreadyLinked,
                 $"Provider {provider} is already linked. Use UpdateOAuthProfile or RotateOAuthToken instead.");
 
+        var pending = PrepareAuditUpdate(linkedBy, linkedAt);
+
         var oauth = OAuthAccount.Create(Id, provider, providerId, profileSnapshot, token);
         _oauthAccounts.Add(oauth);
-
-        var pending = PrepareAuditUpdate(linkedBy, linkedAt);
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new OAuthAccountLinkedDomainEvent(Id, provider, providerId, linkedBy, linkedAt));
@@ -292,8 +292,8 @@ public class User : SoftDeletableAggregateRoot
         if (existing.ProfileSnapshot == profileSnapshot)
             return;
 
-        existing.UpdateProfileSnapshot(profileSnapshot);
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        existing.UpdateProfileSnapshot(profileSnapshot);
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new OAuthProfileUpdatedDomainEvent(Id, provider, updatedBy, updatedAt));
@@ -307,8 +307,8 @@ public class User : SoftDeletableAggregateRoot
         var existing = _oauthAccounts.FirstOrDefault(x => x.Provider == provider);
         if (existing == null) return;
 
-        _oauthAccounts.Remove(existing);
         var pending = PrepareAuditUpdate(unlinkedBy, unlinkedAt);
+        _oauthAccounts.Remove(existing);
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new OAuthAccountUnlinkedDomainEvent(Id, provider, existing.ProviderId, unlinkedBy, unlinkedAt));
@@ -328,8 +328,8 @@ public class User : SoftDeletableAggregateRoot
 
         if (existing.Token == newToken) return;
 
-        existing.UpdateToken(newToken);
         var pending = PrepareAuditUpdate(rotatedBy, rotatedAt);
+        existing.UpdateToken(newToken);
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new OAuthTokenReferenceRotatedDomainEvent(Id, provider, rotatedBy, rotatedAt));
