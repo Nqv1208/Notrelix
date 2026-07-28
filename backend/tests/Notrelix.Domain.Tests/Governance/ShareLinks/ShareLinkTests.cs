@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Governance.ShareLinks;
 
 namespace Notrelix.Domain.Tests.Governance;
 
+[CoversAggregate(typeof(ShareLink))]
 public class ShareLinkTests
 {
     [Fact]

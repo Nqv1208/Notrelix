@@ -1,9 +1,11 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Views;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 
+[CoversAggregate(typeof(BoardView))]
 public class BoardViewTests
 {
     [Fact]

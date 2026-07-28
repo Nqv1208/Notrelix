@@ -1,9 +1,11 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Analytics.Dashboards;
 using Notrelix.Domain.Analytics.Widgets;
 
 namespace Notrelix.Domain.Tests.Analytics.Dashboards;
 
+[CoversAggregate(typeof(Dashboard))]
 public class DashboardLifecycleTests
 {
     private readonly Guid _workspaceId = Guid.NewGuid();

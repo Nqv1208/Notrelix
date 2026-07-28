@@ -1,7 +1,9 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Identity;
 
+[CoversAggregate(typeof(UserSecuritySettings))]
 public class UserSecuritySettingsTests
 {
     [Fact]

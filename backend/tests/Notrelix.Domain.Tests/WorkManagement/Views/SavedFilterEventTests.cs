@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.WorkManagement.Views;
 
 namespace Notrelix.Domain.Tests.WorkManagement.Views;
 
+[CoversAggregate(typeof(SavedFilter))]
 public class SavedFilterEventTests
 {
     private static readonly Guid WsA = Guid.NewGuid();

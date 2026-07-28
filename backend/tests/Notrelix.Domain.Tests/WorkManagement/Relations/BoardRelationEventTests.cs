@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.WorkManagement.Relations;
 
 namespace Notrelix.Domain.Tests.WorkManagement.Relations;
 
+[CoversAggregate(typeof(BoardRelation))]
 public class BoardRelationEventTests
 {
     private static readonly Guid WsA = Guid.NewGuid();

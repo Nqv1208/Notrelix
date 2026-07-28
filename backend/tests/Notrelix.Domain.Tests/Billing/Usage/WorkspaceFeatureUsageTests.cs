@@ -1,9 +1,11 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Billing.Plans;
 using Notrelix.Domain.Billing.Usage;
 
 namespace Notrelix.Domain.Tests.Billing;
 
+[CoversAggregate(typeof(WorkspaceFeatureUsage))]
 public class WorkspaceFeatureUsageTests
 {
     private static readonly FeatureCode SampleFeature = FeatureCode.Create("BOARD_COUNT");

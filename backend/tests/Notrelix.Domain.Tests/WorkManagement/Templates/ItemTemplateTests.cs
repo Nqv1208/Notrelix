@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.WorkManagement.Templates;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 
+[CoversAggregate(typeof(ItemTemplate))]
 public class ItemTemplateTests
 {
     [Fact]

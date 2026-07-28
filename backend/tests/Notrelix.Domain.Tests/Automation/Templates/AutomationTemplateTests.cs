@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Automation.Templates;
 
 namespace Notrelix.Domain.Tests.Automation;
 
+[CoversAggregate(typeof(AutomationTemplate))]
 public class AutomationTemplateTests
 {
     [Fact]

@@ -1,7 +1,9 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 
+[CoversAggregate(typeof(Space))]
 public class SpaceTests
 {
     [Fact]
@@ -236,5 +238,93 @@ public class SpaceTests
 
         var act = () => space.Rename("Sales", Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted and cannot be modified*");
+    }
+
+    [Fact]
+    public void Rename_ArchivedSpace_ShouldNotMutateName()
+    {
+        var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Space", SpaceVisibility.Private, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)space).ClearDomainEvents();
+        var originalName = space.Name;
+
+        var act = () => space.Rename("New Name", Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        space.Name.Should().Be(originalName);
+        space.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void UpdateDescription_ArchivedSpace_ShouldNotMutateDescription()
+    {
+        var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Space", SpaceVisibility.Private, Guid.NewGuid(), DateTimeOffset.UtcNow, description: "Original");
+        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)space).ClearDomainEvents();
+        var originalDescription = space.Description;
+
+        var act = () => space.UpdateDescription("New description", Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        space.Description.Should().Be(originalDescription);
+        space.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ChangeVisibility_ArchivedSpace_ShouldNotMutateVisibility()
+    {
+        var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Space", SpaceVisibility.Private, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)space).ClearDomainEvents();
+        var originalVisibility = space.Visibility;
+
+        var act = () => space.ChangeVisibility(SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        space.Visibility.Should().Be(originalVisibility);
+        space.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ChangeType_ArchivedSpace_ShouldNotMutateType()
+    {
+        var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Space", SpaceVisibility.Private, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)space).ClearDomainEvents();
+        var originalType = space.SpaceType;
+
+        var act = () => space.ChangeType(SpaceType.Portfolio, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        space.SpaceType.Should().Be(originalType);
+        space.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Rename_EmptyActor_ShouldNotMutateName()
+    {
+        var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Space", SpaceVisibility.Private, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)space).ClearDomainEvents();
+        var originalName = space.Name;
+
+        var act = () => space.Rename("New Name", Guid.Empty, DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        space.Name.Should().Be(originalName);
+        space.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Archive_EmptyActor_ShouldNotMutateStatus()
+    {
+        var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Space", SpaceVisibility.Private, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)space).ClearDomainEvents();
+        var originalStatus = space.Status;
+
+        var act = () => space.Archive(Guid.Empty, DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        space.Status.Should().Be(originalStatus);
+        space.DomainEvents.Should().BeEmpty();
     }
 }

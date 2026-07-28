@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Integrations.Webhooks;
 
 namespace Notrelix.Domain.Tests.Integrations;
 
+[CoversAggregate(typeof(WebhookSubscription))]
 public class WebhookSubscriptionTests
 {
     [Fact]

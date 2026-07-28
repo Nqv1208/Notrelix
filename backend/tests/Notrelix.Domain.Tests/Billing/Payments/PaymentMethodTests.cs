@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Billing.Payments;
 
 namespace Notrelix.Domain.Tests.Billing;
 
+[CoversAggregate(typeof(PaymentMethod))]
 public class PaymentMethodTests
 {
     [Fact]

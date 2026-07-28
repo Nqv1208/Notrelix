@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Tests.Freeze;
 
 /// <summary>
 /// Manual tool to regenerate approved snapshot files.
-/// Run via: dotnet test --filter "FreezeSnapshotRegeneratorTests"
+/// Run via: UPDATE_DOMAIN_FREEZE_SNAPSHOTS=1 dotnet test --filter "FreezeSnapshotRegeneratorTests"
 /// This is NOT a normal [Fact] - it writes files and should be run intentionally.
 /// </summary>
 public class FreezeSnapshotRegeneratorTests
@@ -25,8 +25,16 @@ public class FreezeSnapshotRegeneratorTests
     }
 
     [Fact]
+    [Trait("Category", "ManualSnapshotUpdate")]
     public void Regenerate_All_Snapshots()
     {
+        if (Environment.GetEnvironmentVariable("UPDATE_DOMAIN_FREEZE_SNAPSHOTS") != "1")
+            return; // Manual snapshot update only. Set UPDATE_DOMAIN_FREEZE_SNAPSHOTS=1 to run.
+
+        if (Environment.GetEnvironmentVariable("CI") == "true")
+            throw new InvalidOperationException(
+                "Snapshot regeneration is forbidden in CI.");
+
         Directory.CreateDirectory(SnapshotsDir);
 
         WriteSnapshot("DomainEvents.approved.txt", FreezeSnapshotBuilder.BuildDomainEventsSnapshot());

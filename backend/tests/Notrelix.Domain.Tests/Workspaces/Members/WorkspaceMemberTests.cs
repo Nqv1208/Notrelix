@@ -1,7 +1,9 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 
+[CoversAggregate(typeof(WorkspaceMember))]
 public class WorkspaceMemberTests
 {
     [Fact]
@@ -167,5 +169,61 @@ public class WorkspaceMemberTests
 
         var act = () => member.Suspend(Guid.NewGuid(), DateTimeOffset.UtcNow, 2);
         act.Should().Throw<DomainException>();
+    }
+
+    [Fact]
+    public void ChangeRole_LastOwner_ShouldNotMutateRole()
+    {
+        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Owner, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)member).ClearDomainEvents();
+        var originalRole = member.Role;
+
+        var act = () => member.ChangeRole(WorkspaceRole.Admin, Guid.NewGuid(), 1, DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        member.Role.Should().Be(originalRole);
+        member.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Suspend_LastOwner_ShouldNotMutateStatus()
+    {
+        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Owner, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)member).ClearDomainEvents();
+        var originalStatus = member.Status;
+
+        var act = () => member.Suspend(Guid.NewGuid(), DateTimeOffset.UtcNow, 1);
+
+        act.Should().Throw<BusinessRuleException>();
+        member.Status.Should().Be(originalStatus);
+        member.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ChangeRole_EmptyActor_ShouldNotMutateRole()
+    {
+        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)member).ClearDomainEvents();
+        var originalRole = member.Role;
+
+        var act = () => member.ChangeRole(WorkspaceRole.Admin, Guid.Empty, 2, DateTimeOffset.UtcNow);
+
+        act.Should().Throw<BusinessRuleException>();
+        member.Role.Should().Be(originalRole);
+        member.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Suspend_EmptyActor_ShouldNotMutateStatus()
+    {
+        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)member).ClearDomainEvents();
+        var originalStatus = member.Status;
+
+        var act = () => member.Suspend(Guid.Empty, DateTimeOffset.UtcNow, 2);
+
+        act.Should().Throw<BusinessRuleException>();
+        member.Status.Should().Be(originalStatus);
+        member.DomainEvents.Should().BeEmpty();
     }
 }

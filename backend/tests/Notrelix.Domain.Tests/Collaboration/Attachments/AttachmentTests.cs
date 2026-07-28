@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Collaboration.Attachments;
 
 namespace Notrelix.Domain.Tests.Collaboration;
 
+[CoversAggregate(typeof(Attachment))]
 public class AttachmentTests
 {
     [Fact]

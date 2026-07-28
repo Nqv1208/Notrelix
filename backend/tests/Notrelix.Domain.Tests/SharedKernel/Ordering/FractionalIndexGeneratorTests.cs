@@ -92,6 +92,123 @@ public class FractionalIndexGeneratorTests
         act.Should().Throw<ArgumentException>();
     }
 
+    // ── Invalid character rejection (FZ02) ─────────────────────────────
+
+    [Theory]
+    [InlineData("a0!")]
+    [InlineData("a0_")]
+    [InlineData("a0-")]
+    [InlineData("a0 é")]
+    [InlineData("a0@")]
+    [InlineData("a0#")]
+    [InlineData("a0$")]
+    [InlineData("a0%")]
+    [InlineData("a0^")]
+    [InlineData("a0&")]
+    [InlineData("a0*")]
+    [InlineData("a0(")]
+    [InlineData("a0)")]
+    [InlineData("a0+")]
+    [InlineData("a0=")]
+    [InlineData("a0[")]
+    [InlineData("a0]")]
+    [InlineData("a0{")]
+    [InlineData("a0}")]
+    [InlineData("a0|")]
+    [InlineData("a0\\")]
+    [InlineData("a0;")]
+    [InlineData("a0'")]
+    [InlineData("a0\"")]
+    [InlineData("a0,")]
+    [InlineData("a0.")]
+    [InlineData("a0<")]
+    [InlineData("a0>")]
+    [InlineData("a0?")]
+    [InlineData("a0/")]
+    [InlineData("a0~")]
+    [InlineData("a0`")]
+    public void InvalidCharacter_InFractionalPart_Rejected(string value)
+    {
+        var act = () => FractionalIndex.Create(value);
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Theory]
+    [InlineData("0a")]
+    [InlineData("1a")]
+    [InlineData("9a")]
+    [InlineData("!a")]
+    [InlineData("@a")]
+    public void InvalidHeadCharacter_Rejected(string value)
+    {
+        var act = () => FractionalIndex.Create(value);
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void NonAsciiCharacter_Rejected()
+    {
+        var act = () => FractionalIndex.Create("a0\u00e9");
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void NonAsciiHeadCharacter_Rejected()
+    {
+        var act = () => FractionalIndex.Create("\u00e90");
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void DigitLookup_SentinelRejectsUnknownCharacters()
+    {
+        // Verify that the -1 sentinel in DigitLookup rejects characters
+        // that happen to have index 0 in the old zero-initialized array
+        var act = () => FractionalIndex.Create("a0!");
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*Invalid*character*");
+    }
+
+    [Fact]
+    public void IntLookup_SentinelRejectsUnknownCharacters()
+    {
+        // Verify that IntLookup rejects non-alphabet head characters
+        var act = () => FractionalIndex.Create("0a");
+        act.Should().Throw<ArgumentException>();
+    }
+
+    // ── Deterministic ordering (FZ02) ──────────────────────────────────
+
+    [Fact]
+    public void DeterministicSequence_100_StrictlyOrdinalAndUnique()
+    {
+        for (var trial = 0; trial < 10; trial++)
+        {
+            var keys = FractionalIndexGenerator.GenerateNKeysBetween(null, null, 100);
+
+            keys.Select(k => k.Value).Distinct().Should().HaveCount(100,
+                "all generated keys must be unique");
+
+            for (var i = 1; i < keys.Count; i++)
+                keys[i - 1].CompareTo(keys[i]).Should().BeNegative(
+                    "keys must be strictly ordered");
+        }
+    }
+
+    [Fact]
+    public void GeneratedKeys_OnlyContainCanonicalAlphabet()
+    {
+        const string canonical = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+        var keys = FractionalIndexGenerator.GenerateNKeysBetween(null, null, 200);
+
+        foreach (var key in keys)
+        {
+            foreach (var c in key.Value)
+                canonical.Should().Contain(c.ToString(),
+                    $"key '{key.Value}' contains non-canonical character '{c}'");
+        }
+    }
+
     // ── Existing custom fixtures ─────────────────────────────────────────
 
     [Fact]

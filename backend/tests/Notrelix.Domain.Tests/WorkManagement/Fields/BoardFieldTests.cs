@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.WorkManagement.Fields;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 
+[CoversAggregate(typeof(BoardField))]
 public class BoardFieldTests
 {
     [Fact]

@@ -1,9 +1,11 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Billing.Entitlements;
 using Notrelix.Domain.Billing.Plans;
 
 namespace Notrelix.Domain.Tests.Billing;
 
+[CoversAggregate(typeof(Entitlement))]
 public class EntitlementTests
 {
     private static readonly FeatureCode SampleFeature = FeatureCode.Create("BOARD_COUNT");

@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.WorkManagement.Templates;
 
 namespace Notrelix.Domain.Tests.WorkManagement.Templates;
 
+[CoversAggregate(typeof(BoardTemplate))]
 public class TemplateTests
 {
     private static readonly Guid Actor = Guid.NewGuid();

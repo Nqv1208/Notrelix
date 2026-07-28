@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Billing.BillingEvents;
 
 namespace Notrelix.Domain.Tests.Billing;
 
+[CoversAggregate(typeof(BillingEvent))]
 public class BillingEventTests
 {
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;

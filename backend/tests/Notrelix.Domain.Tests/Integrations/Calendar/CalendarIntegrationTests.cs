@@ -1,9 +1,11 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Integrations;
 using Notrelix.Domain.Integrations.Calendar;
 
 namespace Notrelix.Domain.Tests.Integrations.Calendar;
 
+[CoversAggregate(typeof(CalendarIntegration))]
 public class CalendarIntegrationTests
 {
     private static readonly Guid AccountId = Guid.NewGuid();

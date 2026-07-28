@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.WorkManagement.Checklists;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 
+[CoversAggregate(typeof(Checklist))]
 public class ChecklistTests
 {
     [Fact]

@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Automation.Scheduled;
 
 namespace Notrelix.Domain.Tests.Automation;
 
+[CoversAggregate(typeof(ScheduledJob))]
 public class ScheduledJobTests
 {
     [Fact]

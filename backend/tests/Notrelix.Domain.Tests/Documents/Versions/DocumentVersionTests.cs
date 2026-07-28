@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Documents.Versions;
 
 namespace Notrelix.Domain.Tests.Documents;
 
+[CoversAggregate(typeof(DocumentVersion))]
 public class DocumentVersionTests
 {
     [Fact]

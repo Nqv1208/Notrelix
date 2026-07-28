@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Governance.Roles;
 
 namespace Notrelix.Domain.Tests.Governance;
 
+[CoversAggregate(typeof(CustomRole))]
 public class CustomRoleTests
 {
     [Fact]

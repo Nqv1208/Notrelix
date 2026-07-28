@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Billing.Subscriptions;
 
 namespace Notrelix.Domain.Tests.Billing;
 
+[CoversAggregate(typeof(Subscription))]
 public class SubscriptionTests
 {
     [Fact]

@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Billing.Plans;
 
 namespace Notrelix.Domain.Tests.Billing;
 
+[CoversAggregate(typeof(Plan))]
 public class PlanTests
 {
     private static readonly Money SamplePrice = Money.Create(19.99m, "USD");

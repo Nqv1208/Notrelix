@@ -3,8 +3,9 @@ namespace Notrelix.Domain.Tests.Freeze;
 /// <summary>
 /// Marks a test method as covering a specific mutation scenario for an aggregate.
 /// The gate validates that the method signature exists exactly once on the target type.
+/// AllowMultiple enables one test to document multiple applicable dimensions.
 /// </summary>
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
 public sealed class CoversMutationAttribute : Attribute
 {
     public Type AggregateType { get; }

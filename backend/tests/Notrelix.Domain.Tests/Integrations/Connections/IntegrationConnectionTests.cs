@@ -1,10 +1,12 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Integrations;
 using Notrelix.Domain.Integrations.Calendar;
 using Notrelix.Domain.Integrations.Connections;
 
 namespace Notrelix.Domain.Tests.Integrations;
 
+[CoversAggregate(typeof(IntegrationConnection))]
 public class IntegrationConnectionTests
 {
     private static readonly Guid AccountId = Guid.NewGuid();

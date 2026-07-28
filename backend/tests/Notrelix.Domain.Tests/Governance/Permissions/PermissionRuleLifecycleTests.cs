@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Governance.Permissions;
 
 namespace Notrelix.Domain.Tests.Governance.Permissions;
 
+[CoversAggregate(typeof(PermissionRule))]
 public class PermissionRuleLifecycleTests
 {
     private static readonly Guid WsA = Guid.NewGuid();

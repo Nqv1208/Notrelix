@@ -1,7 +1,9 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Identity;
 
+[CoversAggregate(typeof(UserSession))]
 public class UserSessionTests
 {
     private static readonly RefreshTokenHash ValidTokenHash = RefreshTokenHash.Create("test-refresh-token");

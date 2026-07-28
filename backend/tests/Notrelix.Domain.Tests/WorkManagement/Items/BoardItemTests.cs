@@ -1,10 +1,12 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Items;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 
+[CoversAggregate(typeof(BoardItem))]
 public class BoardItemTests
 {
     private BoardItem CreateValidItem()

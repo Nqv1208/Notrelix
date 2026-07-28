@@ -1,9 +1,11 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Automation.Rules;
 using Notrelix.Domain.Automation.RulesEngine;
 
 namespace Notrelix.Domain.Tests.Automation;
 
+[CoversAggregate(typeof(AutomationRule))]
 public class AutomationRuleTests
 {
     private static AutomationConfiguration CreateConfig(string triggerType = "ItemCreated", string actionType = "Webhook")

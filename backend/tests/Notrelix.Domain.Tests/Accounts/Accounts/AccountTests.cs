@@ -1,7 +1,9 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Accounts;
 
+[CoversAggregate(typeof(Account))]
 public class AccountTests
 {
     private readonly Guid _userId = Guid.NewGuid();

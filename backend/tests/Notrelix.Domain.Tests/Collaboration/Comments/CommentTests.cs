@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Collaboration.Comments;
 
 namespace Notrelix.Domain.Tests.Collaboration;
 
+[CoversAggregate(typeof(Comment))]
 public class CommentTests
 {
     [Fact]

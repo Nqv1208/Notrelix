@@ -1,7 +1,9 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Identity;
 
+[CoversAggregate(typeof(UserProfile))]
 public class UserProfileTests
 {
     private static readonly DateTimeOffset SampleCreatedAt = new DateTimeOffset(2026, 6, 11, 8, 0, 0, TimeSpan.Zero);

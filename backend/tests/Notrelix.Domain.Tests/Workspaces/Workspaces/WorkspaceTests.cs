@@ -252,4 +252,78 @@ public class WorkspaceTests
         workspace.AccountId.Should().Be(AccountId);
         workspace.IsPersonal.Should().BeTrue();
     }
+
+    [Fact]
+    public void Rename_ArchivedWorkspace_ShouldNotMutateName()
+    {
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
+        workspace.Archive(Guid.NewGuid(), Now);
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
+        var originalName = workspace.Name;
+
+        var act = () => workspace.Rename("New Name", Guid.NewGuid(), Now);
+
+        act.Should().Throw<BusinessRuleException>();
+        workspace.Name.Should().Be(originalName);
+        workspace.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void UpdateDescription_ArchivedWorkspace_ShouldNotMutateDescription()
+    {
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now, description: "Original");
+        workspace.Archive(Guid.NewGuid(), Now);
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
+        var originalDescription = workspace.Description;
+
+        var act = () => workspace.UpdateDescription("New description", Guid.NewGuid(), Now);
+
+        act.Should().Throw<BusinessRuleException>();
+        workspace.Description.Should().Be(originalDescription);
+        workspace.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void UpdateSettings_ArchivedWorkspace_ShouldNotMutateSettings()
+    {
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
+        workspace.Archive(Guid.NewGuid(), Now);
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
+        var originalSettings = workspace.Settings;
+
+        var settings = WorkspaceSettings.Create(allowPublicSharing: true);
+        var act = () => workspace.UpdateSettings(settings, Guid.NewGuid(), Now);
+
+        act.Should().Throw<BusinessRuleException>();
+        workspace.Settings.Should().BeSameAs(originalSettings);
+        workspace.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Rename_EmptyActor_ShouldNotMutateName()
+    {
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
+        var originalName = workspace.Name;
+
+        var act = () => workspace.Rename("New Name", Guid.Empty, Now);
+
+        act.Should().Throw<BusinessRuleException>();
+        workspace.Name.Should().Be(originalName);
+        workspace.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Archive_EmptyActor_ShouldNotMutateStatus()
+    {
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
+        var originalStatus = workspace.Status;
+
+        var act = () => workspace.Archive(Guid.Empty, Now);
+
+        act.Should().Throw<BusinessRuleException>();
+        workspace.Status.Should().Be(originalStatus);
+        workspace.DomainEvents.Should().BeEmpty();
+    }
 }

@@ -32,6 +32,8 @@ internal static class DomainCapabilityRegistry
         new("Notrelix.Domain.Workspaces", DomainCapabilityStatus.Frozen),
 
         // ── WorkManagement stable core ────────────────────────────────────
+        // Root prefix for RuleCodes/enums; specific sub-namespaces below.
+        new("Notrelix.Domain.WorkManagement", DomainCapabilityStatus.Frozen),
         new("Notrelix.Domain.WorkManagement.Boards", DomainCapabilityStatus.Frozen),
         new("Notrelix.Domain.WorkManagement.BoardGroups", DomainCapabilityStatus.Frozen),
         new("Notrelix.Domain.WorkManagement.Fields", DomainCapabilityStatus.Frozen),
@@ -53,6 +55,8 @@ internal static class DomainCapabilityRegistry
         new("Notrelix.Domain.Documents", DomainCapabilityStatus.Frozen),
 
         // ── Collaboration ─────────────────────────────────────────────────
+        // Root prefix for RuleCodes; specific sub-namespaces below.
+        new("Notrelix.Domain.Collaboration", DomainCapabilityStatus.Frozen),
         // Presence is Experimental; other Collaboration sub-namespaces are Frozen.
         // Do not register "Notrelix.Domain.Collaboration" as a blanket Frozen prefix
         // because Collaboration.Presence must be independently Experimental.
@@ -69,6 +73,7 @@ internal static class DomainCapabilityRegistry
         new("Notrelix.Domain.Governance", DomainCapabilityStatus.Frozen),
 
         // ── Automation ────────────────────────────────────────────────────
+        new("Notrelix.Domain.Automation", DomainCapabilityStatus.Frozen),
         new("Notrelix.Domain.Automation.RulesEngine", DomainCapabilityStatus.Frozen),
         new("Notrelix.Domain.Automation.Scheduled", DomainCapabilityStatus.Frozen),
         new("Notrelix.Domain.Automation.Rules", DomainCapabilityStatus.Frozen),
@@ -168,20 +173,28 @@ internal static class DomainCapabilityRegistry
         if (typeof(IAccountScoped).IsAssignableFrom(aggregateType))
             return AggregateScopeKind.Account;
 
-        return AggregateScopeKind.Global;
+        throw new InvalidOperationException(
+            $"Aggregate scope is not classified: {aggregateType.FullName}. " +
+            $"Register it in GlobalAggregates, HybridAggregates, or implement IWorkspaceScoped/IAccountScoped.");
     }
 
     public static DomainCapabilityStatus ResolveCapability(Type type)
     {
         var ns = type.Namespace;
-        if (ns is null) return DomainCapabilityStatus.Frozen;
+        if (ns is null)
+            throw new InvalidOperationException(
+                $"Domain capability cannot be resolved for type with null namespace: {type.FullName}");
 
-        // Find the longest matching prefix
+        // Find the longest matching prefix (namespace boundary enforced)
         var best = Capabilities
-            .Where(c => ns.StartsWith(c.NamespacePrefix, StringComparison.Ordinal))
+            .Where(c => ns.StartsWith(c.NamespacePrefix + ".", StringComparison.Ordinal) ||
+                        ns == c.NamespacePrefix)
             .MaxBy(c => c.NamespacePrefix.Length);
 
-        return best?.Status ?? DomainCapabilityStatus.Frozen;
+        return best?.Status
+            ?? throw new InvalidOperationException(
+                $"Domain capability is not classified: {type.FullName} (namespace: {ns}). " +
+                $"Register it in DomainCapabilityRegistry.Capabilities.");
     }
 }
 
@@ -215,12 +228,11 @@ public class DomainCapabilityRegistryTests
                 var a = caps[i].NamespacePrefix;
                 var b = caps[j].NamespacePrefix;
 
-                // Check if one is a true parent namespace of the other
-                // (must be followed by '.' or end of string, not just a prefix match like Rules vs RulesEngine)
-                var aStartsWithB = a.StartsWith(b + ".", StringComparison.Ordinal) || a == b;
-                var bStartsWithA = b.StartsWith(a + ".", StringComparison.Ordinal) || b == a;
-
-                if (aStartsWithB || bStartsWithA)
+                // Parent-child prefixes are intentional (longest-prefix wins).
+                // Sibling prefixes like "Rules" vs "RulesEngine" are fine because
+                // longest-prefix matching resolves them to distinct namespace branches.
+                // Only flag exact duplicates.
+                if (a == b)
                 {
                     overlapping.Add((caps[i], caps[j]));
                 }
@@ -228,7 +240,7 @@ public class DomainCapabilityRegistryTests
         }
 
         overlapping.Should().BeEmpty(
-            "namespace prefixes must not overlap: " +
+            "namespace prefixes must not have exact duplicates: " +
             string.Join("; ", overlapping.Select(o => $"{o.A.NamespacePrefix} <-> {o.B.NamespacePrefix}")));
     }
 
@@ -285,23 +297,20 @@ public class DomainCapabilityRegistryTests
             .Where(t => t is { IsClass: true, IsAbstract: false } && typeof(AggregateRoot).IsAssignableFrom(t))
             .ToList();
 
-        var unmapped = aggregateRoots
-            .Where(t => DomainCapabilityRegistry.ResolveCapability(t) == DomainCapabilityStatus.Frozen &&
-                        !DomainCapabilityRegistry.GetFrozen()
-                            .Any(c => t.Namespace?.StartsWith(c.NamespacePrefix, StringComparison.Ordinal) == true))
+        // With fail-closed registry, ResolveCapability throws for unclassified types.
+        // Every aggregate must be classifiable.
+        var unclassified = aggregateRoots
+            .Where(t =>
+            {
+                try { DomainCapabilityRegistry.ResolveCapability(t); return false; }
+                catch (InvalidOperationException) { return true; }
+            })
             .Select(t => t.FullName)
             .ToList();
 
-        // Global aggregates that don't match any capability prefix are acceptable
-        // if they are in the GlobalAggregates set
-        var trulyUnmapped = unmapped
-            .Where(n => !DomainCapabilityRegistry.GlobalAggregates.Contains(n!) &&
-                        !DomainCapabilityRegistry.HybridAggregates.Contains(n!))
-            .ToList();
-
-        trulyUnmapped.Should().BeEmpty(
-            "every aggregate must map to a capability: " +
-            string.Join(", ", trulyUnmapped));
+        unclassified.Should().BeEmpty(
+            "every aggregate must be classified by DomainCapabilityRegistry: " +
+            string.Join(", ", unclassified));
     }
 
     [Fact]
@@ -311,17 +320,20 @@ public class DomainCapabilityRegistryTests
             .Where(t => t is { IsClass: true, IsAbstract: false } && typeof(AggregateRoot).IsAssignableFrom(t))
             .ToList();
 
-        var violations = aggregateRoots
-            .Where(t => !typeof(IWorkspaceScoped).IsAssignableFrom(t) &&
-                        !typeof(IAccountScoped).IsAssignableFrom(t) &&
-                        !DomainCapabilityRegistry.GlobalAggregates.Contains(t.FullName!) &&
-                        !DomainCapabilityRegistry.HybridAggregates.Contains(t.FullName!))
+        // With fail-closed registry, ResolveScope throws for unclassified aggregates.
+        // Every aggregate must be classifiable.
+        var unclassified = aggregateRoots
+            .Where(t =>
+            {
+                try { DomainCapabilityRegistry.ResolveScope(t); return false; }
+                catch (InvalidOperationException) { return true; }
+            })
             .Select(t => t.FullName)
             .ToList();
 
-        violations.Should().BeEmpty(
-            "aggregates without IWorkspaceScoped/IAccountScoped must be registered as Global or Hybrid: " +
-            string.Join(", ", violations));
+        unclassified.Should().BeEmpty(
+            "every aggregate must be classified by scope (Global/Hybrid/Workspace/Account): " +
+            string.Join(", ", unclassified));
     }
 
     [Fact]

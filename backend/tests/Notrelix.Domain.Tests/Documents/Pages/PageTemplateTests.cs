@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Documents.Templates;
 
 namespace Notrelix.Domain.Tests.Documents;
 
+[CoversAggregate(typeof(PageTemplate))]
 public class PageTemplateTests
 {
     [Fact]

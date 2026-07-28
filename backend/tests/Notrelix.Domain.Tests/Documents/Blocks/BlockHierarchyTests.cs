@@ -15,7 +15,7 @@ public class BlockHierarchyTests
     [Fact]
     public void MoveToRoot_ShouldSetParentNull()
     {
-        var block = Block.Create(_accountId, _workspaceId, _pageId, BlockType.Text,
+        var block = Block.CreateRoot(_accountId, _workspaceId, _pageId, BlockType.Text,
             BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), _actorId, _now);
         block.MoveUnder(
             BlockAncestorPath.Create(_accountId, _workspaceId, _pageId, Guid.NewGuid(), new[] { Guid.NewGuid() }),
@@ -31,7 +31,7 @@ public class BlockHierarchyTests
     [Fact]
     public void MoveToRoot_WhenAlreadyRoot_ShouldBeNoOp()
     {
-        var block = Block.Create(_accountId, _workspaceId, _pageId, BlockType.Text,
+        var block = Block.CreateRoot(_accountId, _workspaceId, _pageId, BlockType.Text,
             BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), _actorId, _now);
         ((IHasDomainEvents)block).ClearDomainEvents();
 
@@ -45,7 +45,7 @@ public class BlockHierarchyTests
     public void MoveUnder_ShouldSetParent()
     {
         var parentId = Guid.NewGuid();
-        var block = Block.Create(_accountId, _workspaceId, _pageId, BlockType.Text,
+        var block = Block.CreateRoot(_accountId, _workspaceId, _pageId, BlockType.Text,
             BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), _actorId, _now);
 
         block.MoveUnder(
@@ -61,9 +61,8 @@ public class BlockHierarchyTests
         var blockId = Guid.NewGuid();
         var childId = Guid.NewGuid();
 
-        var block = Block.Create(_accountId, _workspaceId, _pageId, BlockType.Text,
-            BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), _actorId, _now,
-            parentId: Guid.NewGuid());
+        var block = Block.CreateRoot(_accountId, _workspaceId, _pageId, BlockType.Text,
+            BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), _actorId, _now);
 
         var act = () => BlockTreeRules.EnsureNoCycle(blockId,
             BlockAncestorPath.Create(_accountId, _workspaceId, _pageId, childId, new[] { blockId }));
@@ -85,7 +84,7 @@ public class BlockHierarchyTests
     [Fact]
     public void MoveUnder_ShouldThrow_WhenDeleted()
     {
-        var block = Block.Create(_accountId, _workspaceId, _pageId, BlockType.Text,
+        var block = Block.CreateRoot(_accountId, _workspaceId, _pageId, BlockType.Text,
             BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), _actorId, _now);
         block.SoftDelete(_actorId, _now);
 
@@ -99,7 +98,7 @@ public class BlockHierarchyTests
     [Fact]
     public void MoveToRoot_ShouldRaiseEvent()
     {
-        var block = Block.Create(_accountId, _workspaceId, _pageId, BlockType.Text,
+        var block = Block.CreateRoot(_accountId, _workspaceId, _pageId, BlockType.Text,
             BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), _actorId, _now);
         block.MoveUnder(
             BlockAncestorPath.Create(_accountId, _workspaceId, _pageId, Guid.NewGuid(), new[] { Guid.NewGuid() }),
@@ -114,7 +113,7 @@ public class BlockHierarchyTests
     [Fact]
     public void MoveUnder_ShouldRaiseEvent()
     {
-        var block = Block.Create(_accountId, _workspaceId, _pageId, BlockType.Text,
+        var block = Block.CreateRoot(_accountId, _workspaceId, _pageId, BlockType.Text,
             BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), _actorId, _now);
         ((IHasDomainEvents)block).ClearDomainEvents();
 

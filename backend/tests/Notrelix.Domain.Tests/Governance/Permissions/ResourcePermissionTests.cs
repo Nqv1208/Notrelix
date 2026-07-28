@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Governance.Permissions;
 
 namespace Notrelix.Domain.Tests.Governance;
 
+[CoversAggregate(typeof(ResourcePermission))]
 public class ResourcePermissionTests
 {
     [Fact]

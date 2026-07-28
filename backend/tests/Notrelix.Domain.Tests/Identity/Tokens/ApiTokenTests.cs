@@ -1,7 +1,9 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Identity.Tokens;
 
+[CoversAggregate(typeof(ApiToken))]
 public class ApiTokenTests
 {
     private static readonly Guid WorkspaceId = Guid.NewGuid();

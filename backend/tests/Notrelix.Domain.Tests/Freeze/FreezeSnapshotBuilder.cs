@@ -47,9 +47,9 @@ public static class FreezeSnapshotBuilder
                 var nullabilityInfo = nullabilityContext.Create(prop);
                 var isNullable = IsNullableProperty(prop, nullabilityInfo);
 
-                var typeName = prop.PropertyType.Name;
+                var typeName = FormatType(prop.PropertyType);
                 if (prop.PropertyType.IsGenericType && Nullable.GetUnderlyingType(prop.PropertyType) is { } underlying)
-                    typeName = underlying.Name;
+                    typeName = FormatType(underlying);
 
                 lines.Add($"{logicalName}|{version}|{evt.FullName}|{scope}|{prop.Name}|{typeName}|{isNullable}");
             }
@@ -121,10 +121,12 @@ public static class FreezeSnapshotBuilder
 
         foreach (var enumType in enums)
         {
+            var underlyingType = Enum.GetUnderlyingType(enumType);
             var values = Enum.GetValues(enumType);
             foreach (var value in values)
             {
-                lines.Add($"{enumType.FullName}|{value}|{(int)value}");
+                var numericValue = Convert.ChangeType(value, underlyingType);
+                lines.Add($"{enumType.FullName}|{value}|{numericValue}");
             }
         }
 
@@ -156,7 +158,7 @@ public static class FreezeSnapshotBuilder
                 .OrderBy(c => c.GetParameters().Length);
             foreach (var ctor in ctors)
             {
-                var paramStr = string.Join(", ", ctor.GetParameters().Select(p => $"{p.ParameterType.Name} {p.Name}"));
+                var paramStr = string.Join(", ", ctor.GetParameters().Select(p => $"{FormatType(p.ParameterType)} {p.Name}"));
                 lines.Add($"{type.FullName}|.ctor|Constructor|{(ctor.IsPublic ? "public" : "protected")}|{ctor.IsAbstract}|{ctor.IsVirtual}|{paramStr}");
             }
 
@@ -167,7 +169,7 @@ public static class FreezeSnapshotBuilder
                 .OrderBy(m => m.Name, StringComparer.Ordinal);
             foreach (var method in methods)
             {
-                var paramStr = string.Join(", ", method.GetParameters().Select(p => $"{p.ParameterType.Name} {p.Name}"));
+                var paramStr = string.Join(", ", method.GetParameters().Select(p => $"{FormatType(p.ParameterType)} {p.Name}"));
                 lines.Add($"{type.FullName}|{method.Name}|Method|public|{method.IsAbstract}|{method.IsVirtual}|{paramStr}");
             }
 
@@ -179,7 +181,7 @@ public static class FreezeSnapshotBuilder
                 var setter = prop.SetMethod != null && (prop.SetMethod.IsPublic || prop.SetMethod.IsFamily)
                     ? "readwrite"
                     : "readonly";
-                lines.Add($"{type.FullName}|{prop.Name}|Property|public|{prop.GetMethod?.IsAbstract == true}|{prop.GetMethod?.IsVirtual == true}|{setter}");
+                lines.Add($"{type.FullName}|{prop.Name}|Property|public|{prop.GetMethod?.IsAbstract == true}|{prop.GetMethod?.IsVirtual == true}|{setter}|{FormatType(prop.PropertyType)}");
             }
         }
 
@@ -233,6 +235,31 @@ public static class FreezeSnapshotBuilder
         }
 
         return "Global";
+    }
+
+    private static string FormatType(Type type)
+    {
+        if (type.IsByRef)
+            return FormatType(type.GetElementType()!) + '&';
+
+        if (type.IsArray)
+            return FormatType(type.GetElementType()!) + "[]";
+
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+            return FormatType(type.GetGenericArguments()[0]) + '?';
+
+        if (type.IsGenericType && !type.IsGenericTypeDefinition)
+        {
+            var name = type.Name;
+            var backtick = name.IndexOf('`');
+            if (backtick > 0) name = name[..backtick];
+
+            var args = type.GetGenericArguments();
+            var formatted = string.Join(",", args.Select(FormatType));
+            return $"{type.Namespace}.{name}<{formatted}>";
+        }
+
+        return type.FullName ?? type.Name;
     }
 
     private static string Encode(List<string> lines)

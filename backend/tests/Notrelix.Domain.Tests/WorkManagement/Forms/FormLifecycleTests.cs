@@ -1,8 +1,10 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.WorkManagement.Forms;
 
 namespace Notrelix.Domain.Tests.WorkManagement.Forms;
 
+[CoversAggregate(typeof(Form))]
 public class FormLifecycleTests
 {
     private static readonly Guid WsA = Guid.NewGuid();
