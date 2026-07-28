@@ -91,10 +91,9 @@ public class AccountMember : SoftDeletableAggregateRoot, IAccountScoped
 
         if (IsDeleted) return;
 
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         Status = AccountMemberStatus.Removed;
-        ApplyAuditUpdate(pending);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
         RaiseDomainEvent(new AccountMemberRemovedDomainEvent(AccountId, Id, UserId, deletedBy, deletedAt));
     }
@@ -113,10 +112,9 @@ public class AccountMember : SoftDeletableAggregateRoot, IAccountScoped
     {
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
         Status = AccountMemberStatus.Active;
-        ApplyAuditUpdate(pending);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new AccountMemberRestoredDomainEvent(AccountId, Id, UserId, restoredBy, restoredAt));
     }

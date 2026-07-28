@@ -180,9 +180,8 @@ public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
-        ApplyAuditUpdate(pending);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
         RaiseDomainEvent(new BlockSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, PageId, deletedBy, deletedAt));
     }
@@ -191,9 +190,8 @@ public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
-        ApplyAuditUpdate(pending);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new BlockRestoredDomainEvent(AccountId, WorkspaceId, Id, PageId, restoredBy, restoredAt));
     }

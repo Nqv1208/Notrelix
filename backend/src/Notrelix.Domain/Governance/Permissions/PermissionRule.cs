@@ -82,10 +82,9 @@ public class PermissionRule : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         IncrementVersion();
-        ApplyAuditUpdate(pending);
+        ApplyDeletion(pendingDeletion);
         RaiseDomainEvent(new PermissionRuleSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
     }
 
@@ -93,10 +92,9 @@ public class PermissionRule : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
         IncrementVersion();
-        ApplyAuditUpdate(pending);
+        ApplyRestore(pendingRestore);
         RaiseDomainEvent(new PermissionRuleRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredAt));
     }
 

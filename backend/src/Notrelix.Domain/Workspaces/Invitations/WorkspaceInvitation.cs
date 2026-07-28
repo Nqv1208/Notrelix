@@ -204,10 +204,8 @@ public class WorkspaceInvitation : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
 
-        var audit = PrepareAuditUpdate(deletedBy, deletedAt);
-
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        ApplyAuditUpdate(audit);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceInvitationSoftDeletedDomainEvent(AccountId, Id, WorkspaceId, deletedBy, deletedAt));
     }
@@ -217,10 +215,8 @@ public class WorkspaceInvitation : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
 
-        var audit = PrepareAuditUpdate(restoredBy, restoredAt);
-
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        ApplyAuditUpdate(audit);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceInvitationRestoredDomainEvent(AccountId, Id, WorkspaceId, restoredBy, restoredAt));
     }

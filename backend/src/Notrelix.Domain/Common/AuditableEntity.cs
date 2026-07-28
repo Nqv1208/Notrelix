@@ -56,7 +56,7 @@ public abstract class AuditableEntity : Entity
         UpdatedAt = update.OccurredAt;
     }
 
-    protected void SetAuditOnUpdate(Guid? updatedBy, DateTimeOffset updatedAt)
+    private void SetAuditOnUpdate(Guid? updatedBy, DateTimeOffset updatedAt)
     {
         ValidateAuditUpdate(updatedBy, updatedAt);
         UpdatedBy = updatedBy;

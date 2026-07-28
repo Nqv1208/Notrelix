@@ -200,10 +200,8 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (IsSystem)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_CannotDeleteSystem, "Cannot delete a system field.");
 
-        var audit = PrepareAuditUpdate(deletedBy, deletedAt);
-
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        ApplyAuditUpdate(audit);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
         RaiseDomainEvent(new BoardFieldDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
@@ -257,10 +255,8 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
 
-        var audit = PrepareAuditUpdate(restoredBy, restoredAt);
-
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        ApplyAuditUpdate(audit);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new BoardFieldRestoredDomainEvent(AccountId, WorkspaceId, BoardId, Id, restoredBy, restoredAt));
     }

@@ -73,10 +73,9 @@ public class WebhookSubscription : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         IsActive = false;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        ApplyAuditUpdate(pending);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
     }
 }

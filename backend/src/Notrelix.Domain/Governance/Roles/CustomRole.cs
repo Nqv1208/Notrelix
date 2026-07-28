@@ -131,10 +131,9 @@ public class CustomRole : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (IsDeleted) return;
         if (IsSystem)
             throw new BusinessRuleException(GovernanceRuleCodes.Governance_Role_CannotDeleteSystem, "Cannot delete a system role.");
-        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         Status = CustomRoleStatus.Archived;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        ApplyAuditUpdate(pending);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
         RaiseDomainEvent(new CustomRoleSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
@@ -143,10 +142,9 @@ public class CustomRole : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
         Status = CustomRoleStatus.Active;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        ApplyAuditUpdate(pending);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new CustomRoleRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }

@@ -138,10 +138,9 @@ public class AiAgent : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(deletedBy);
         if (Status == AiAgentStatus.Deleted) return;
-        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         Status = AiAgentStatus.Deleted;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        ApplyAuditUpdate(pending);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
         RaiseDomainEvent(new AiAgentStatusChangedDomainEvent(AccountId, WorkspaceId, Id, Status, deletedAt));
     }
@@ -150,10 +149,9 @@ public class AiAgent : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(restoredBy);
         if (Status != AiAgentStatus.Deleted) return;
-        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
         Status = AiAgentStatus.Draft;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        ApplyAuditUpdate(pending);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new AiAgentStatusChangedDomainEvent(AccountId, WorkspaceId, Id, Status, restoredAt));
     }

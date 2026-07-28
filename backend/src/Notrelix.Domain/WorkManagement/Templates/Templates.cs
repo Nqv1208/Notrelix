@@ -88,9 +88,8 @@ public class BoardTemplate : SoftDeletableAggregateRoot
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
-        ApplyAuditUpdate(pending);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
     }
 
@@ -100,10 +99,9 @@ public class BoardTemplate : SoftDeletableAggregateRoot
         if (!IsDeleted && Status != TemplateStatus.Archived)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_BoardTemplate_CanOnlyRestoreArchived, "Only archived or deleted templates can be restored.");
 
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
         Status = TemplateStatus.Draft;
-        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 }
@@ -201,9 +199,8 @@ public class ItemTemplate : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
-        ApplyAuditUpdate(pending);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
     }
 
@@ -213,10 +210,9 @@ public class ItemTemplate : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (!IsDeleted && Status != TemplateStatus.Archived)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_BoardTemplate_CanOnlyRestoreArchived, "Only archived or deleted templates can be restored.");
 
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
         Status = TemplateStatus.Draft;
-        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 }

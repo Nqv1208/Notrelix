@@ -7,7 +7,7 @@ namespace Notrelix.Domain.Tests.Freeze;
 /// Documents and enforces the system-actor policy:
 /// - Public user-initiated mutations must require a non-empty actor ID (Guid, not Guid?).
 /// - Factory methods and automated operations may pass null only when explicitly documented.
-/// - SetAuditOnCreate/Update(null, ...) is only allowed inside approved system operations.
+/// - PrepareAuditUpdate(null, ...) is only allowed inside approved system operations.
 /// </summary>
 public class SystemActorPolicyTests
 {
@@ -26,7 +26,7 @@ public class SystemActorPolicyTests
     [Fact]
     public void AuditMethods_ShouldAcceptNullableActor_ForSystemOperations()
     {
-        // AuditableEntity.SetAuditOnCreate and SetAuditOnUpdate accept Guid? actor
+        // AuditableEntity.SetAuditOnCreate and PrepareAuditUpdate accept Guid? actor
         // to support system-generated operations. This is by design.
         var auditableEntityType = typeof(AuditableEntity);
 
@@ -39,7 +39,7 @@ public class SystemActorPolicyTests
             BindingFlags.NonPublic | BindingFlags.Instance);
 
         setAuditOnCreate.Should().NotBeNull("AuditableEntity must have SetAuditOnCreate");
-        setAuditOnUpdate.Should().NotBeNull("AuditableEntity must have SetAuditOnUpdate");
+        setAuditOnUpdate.Should().NotBeNull("AuditableEntity must have SetAuditOnUpdate (private, for Infrastructure interceptor)");
 
         // Both methods accept Guid? (nullable) actor
         var createParams = setAuditOnCreate!.GetParameters();

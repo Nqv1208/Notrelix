@@ -233,10 +233,9 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         Status = IntegrationConnectionStatus.Revoked;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        ApplyAuditUpdate(pending);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
         RaiseDomainEvent(new IntegrationConnectionDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
@@ -245,10 +244,9 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
     {
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
         Status = IntegrationConnectionStatus.Active;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        ApplyAuditUpdate(pending);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new IntegrationConnectionRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }

@@ -211,11 +211,9 @@ public class Team : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
 
-        var audit = PrepareAuditUpdate(deletedBy, deletedAt);
-
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         Status = TeamStatus.SoftDeleted;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        ApplyAuditUpdate(audit);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
         RaiseDomainEvent(new TeamSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
@@ -225,11 +223,9 @@ public class Team : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
 
-        var audit = PrepareAuditUpdate(restoredBy, restoredAt);
-
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
         Status = TeamStatus.Active;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        ApplyAuditUpdate(audit);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new TeamRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }

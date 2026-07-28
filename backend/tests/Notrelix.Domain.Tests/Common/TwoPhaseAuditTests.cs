@@ -13,9 +13,6 @@ public class TwoPhaseAuditTests
         public void PublicSetAuditOnCreate(Guid? actor, DateTimeOffset time)
             => SetAuditOnCreate(actor, time);
 
-        public void PublicSetAuditOnUpdate(Guid? actor, DateTimeOffset time)
-            => SetAuditOnUpdate(actor, time);
-
         public PendingAuditUpdate PublicPrepareAuditUpdate(Guid? actor, DateTimeOffset time)
             => PrepareAuditUpdate(actor, time);
 
@@ -90,7 +87,9 @@ public class TwoPhaseAuditTests
     {
         var entity = new TestAuditableEntity();
         entity.PublicSetAuditOnCreate(Guid.NewGuid(), new DateTimeOffset(2025, 6, 1, 0, 0, 0, TimeSpan.Zero));
-        entity.PublicSetAuditOnUpdate(Guid.NewGuid(), new DateTimeOffset(2025, 7, 1, 0, 0, 0, TimeSpan.Zero));
+
+        var firstUpdate = entity.PublicPrepareAuditUpdate(Guid.NewGuid(), new DateTimeOffset(2025, 7, 1, 0, 0, 0, TimeSpan.Zero));
+        entity.PublicApplyAuditUpdate(firstUpdate);
         entity.SetBusinessState("before");
 
         var act = () => entity.PublicPrepareAuditUpdate(Guid.NewGuid(), new DateTimeOffset(2025, 6, 15, 0, 0, 0, TimeSpan.Zero));
@@ -113,18 +112,6 @@ public class TwoPhaseAuditTests
         act.Should().Throw<BusinessRuleException>();
         entity.UpdatedAt.Should().BeNull();
         entity.BusinessState.Should().Be("before");
-    }
-
-    [Fact]
-    public void SetAuditOnUpdate_ShouldStillWork_ForBackwardCompatibility()
-    {
-        var entity = new TestAuditableEntity();
-        entity.PublicSetAuditOnCreate(Guid.NewGuid(), new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
-
-        entity.PublicSetAuditOnUpdate(Guid.NewGuid(), new DateTimeOffset(2025, 6, 1, 0, 0, 0, TimeSpan.Zero));
-
-        entity.UpdatedAt.Should().Be(new DateTimeOffset(2025, 6, 1, 0, 0, 0, TimeSpan.Zero));
-        entity.UpdatedBy.Should().NotBeNull();
     }
 
     [Fact]

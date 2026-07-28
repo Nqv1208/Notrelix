@@ -139,7 +139,8 @@ public class CalendarIntegration : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         IsActive = false;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
         RaiseDomainEvent(new CalendarIntegrationDeactivatedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
@@ -148,7 +149,8 @@ public class CalendarIntegration : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new CalendarIntegrationActivatedDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }

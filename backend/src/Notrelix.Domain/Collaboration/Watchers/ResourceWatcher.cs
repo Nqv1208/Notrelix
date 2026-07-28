@@ -48,9 +48,8 @@ public class ResourceWatcher : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(unwatchedBy);
 
-        if (!MarkDeleted(unwatchedBy, removedAt)) return;
-        var pending = PrepareAuditUpdate(unwatchedBy, removedAt);
-        ApplyAuditUpdate(pending);
+        var pendingDeletion = PrepareDeletion(unwatchedBy, removedAt, null);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
         RaiseDomainEvent(new ResourceUnwatchedDomainEvent(AccountId, WorkspaceId, Id, removedAt));
     }

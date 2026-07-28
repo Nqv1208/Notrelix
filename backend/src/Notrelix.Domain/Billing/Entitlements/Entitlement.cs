@@ -147,7 +147,8 @@ public class Entitlement : SoftDeletableAggregateRoot, IAccountScoped
     public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         if (IsDeleted) return;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
         RaiseDomainEvent(new EntitlementSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, Feature.Code, deletedBy, deletedAt));
     }
@@ -155,8 +156,9 @@ public class Entitlement : SoftDeletableAggregateRoot, IAccountScoped
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
         Status = EntitlementStatus.Active;
+        ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new EntitlementRestoredDomainEvent(AccountId, WorkspaceId, Id, Feature.Code, restoredBy, restoredAt));
     }

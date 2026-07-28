@@ -108,11 +108,9 @@ public class Workspace : SoftDeletableAggregateRoot
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
 
-        var audit = PrepareAuditUpdate(deletedBy, deletedAt);
-
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         Status = WorkspaceStatus.SoftDeleted;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        ApplyAuditUpdate(audit);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceSoftDeletedDomainEvent(AccountId, Id, deletedBy, deletedAt));
     }
@@ -122,11 +120,9 @@ public class Workspace : SoftDeletableAggregateRoot
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
 
-        var audit = PrepareAuditUpdate(restoredBy, restoredAt);
-
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
         Status = WorkspaceStatus.Active;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        ApplyAuditUpdate(audit);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceRestoredDomainEvent(AccountId, Id, restoredBy, restoredAt));
     }

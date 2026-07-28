@@ -108,9 +108,8 @@ public class WorkspaceRoute : SoftDeletableAggregateRoot, IAccountScoped
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        var pending = PrepareAuditUpdate(deletedBy, deletedAt);
-        ApplyAuditUpdate(pending);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceRouteSoftDeletedDomainEvent(
             AccountId, Id, RouteSlug, deletedBy, deletedAt));
@@ -120,9 +119,8 @@ public class WorkspaceRoute : SoftDeletableAggregateRoot, IAccountScoped
     {
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
-        ApplyAuditUpdate(pending);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceRouteRestoredDomainEvent(
             AccountId, Id, RouteSlug, restoredBy, restoredAt));
