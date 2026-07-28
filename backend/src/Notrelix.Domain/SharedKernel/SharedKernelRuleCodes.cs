@@ -12,4 +12,5 @@ public static class SharedKernelRuleCodes
     public const string SharedKernel_Color_InvalidFormat = "SharedKernel_Color_InvalidFormat";
     public const string SharedKernel_Money_InvalidCurrency = "SharedKernel_Money_InvalidCurrency";
     public const string SharedKernel_DateRange_StartAfterEnd = "SharedKernel_DateRange_StartAfterEnd";
+    public const string SharedKernel_FractionalIndex_InvalidCharacter = "SharedKernel_FractionalIndex_InvalidCharacter";
 }

@@ -4,6 +4,8 @@
 // Original project license: CC0-1.0.
 // Commit: f1193a7 (v4.0.0 tag).
 
+using Notrelix.Domain.Common.Exceptions;
+
 namespace Notrelix.Domain.SharedKernel.Ordering;
 
 /// <summary>
@@ -338,8 +340,9 @@ public static class FractionalIndexGenerator
         {
             var c = key[i];
             if (c >= DigitLookup.Length || DigitLookup[c] < 0)
-                throw new ArgumentException(
-                    $"Invalid order key character '{c}' in key '{key}'.", nameof(key));
+                throw new BusinessRuleException(
+                    SharedKernelRuleCodes.SharedKernel_FractionalIndex_InvalidCharacter,
+                    $"Invalid fractional index character '{c}' in key '{key}'.");
         }
 
         if (IsSmallestInteger(key))
@@ -366,8 +369,9 @@ public static class FractionalIndexGenerator
     private static int GetDigitIndex(char character, int[] lookup)
     {
         if (character >= lookup.Length || lookup[character] < 0)
-            throw new ArgumentException(
-                $"Invalid fractional-index character '{character}'.");
+            throw new BusinessRuleException(
+                SharedKernelRuleCodes.SharedKernel_FractionalIndex_InvalidCharacter,
+                $"Invalid fractional index character '{character}'.");
 
         return lookup[character];
     }

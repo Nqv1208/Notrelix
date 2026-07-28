@@ -87,9 +87,8 @@ public class FractionalIndexGeneratorTests
     [Fact]
     public void Upstream_InvalidHead_0_Rejected()
     {
-        // "0" is not a valid head character in the A-Z/a-z alphabet
         var act = () => FractionalIndex.Create("0");
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     // ── Invalid character rejection (FZ02) ─────────────────────────────
@@ -130,7 +129,7 @@ public class FractionalIndexGeneratorTests
     public void InvalidCharacter_InFractionalPart_Rejected(string value)
     {
         var act = () => FractionalIndex.Create(value);
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Theory]
@@ -142,39 +141,36 @@ public class FractionalIndexGeneratorTests
     public void InvalidHeadCharacter_Rejected(string value)
     {
         var act = () => FractionalIndex.Create(value);
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
     public void NonAsciiCharacter_Rejected()
     {
         var act = () => FractionalIndex.Create("a0\u00e9");
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
     public void NonAsciiHeadCharacter_Rejected()
     {
         var act = () => FractionalIndex.Create("\u00e90");
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
     public void DigitLookup_SentinelRejectsUnknownCharacters()
     {
-        // Verify that the -1 sentinel in DigitLookup rejects characters
-        // that happen to have index 0 in the old zero-initialized array
         var act = () => FractionalIndex.Create("a0!");
-        act.Should().Throw<ArgumentException>()
+        act.Should().Throw<BusinessRuleException>()
             .WithMessage("*Invalid*character*");
     }
 
     [Fact]
     public void IntLookup_SentinelRejectsUnknownCharacters()
     {
-        // Verify that IntLookup rejects non-alphabet head characters
         var act = () => FractionalIndex.Create("0a");
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     // ── Deterministic ordering (FZ02) ──────────────────────────────────
@@ -299,7 +295,7 @@ public class FractionalIndexGeneratorTests
     public void InvalidKey_IsRejected()
     {
         var act = () => FractionalIndex.Create("!!!");
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
@@ -388,7 +384,7 @@ public class FractionalIndexGeneratorTests
     public void Create_DoesNotTrim_WhitespaceIsRejected()
     {
         var act = () => FractionalIndex.Create(" a0");
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     // ── Large batch ──────────────────────────────────────────────────────
