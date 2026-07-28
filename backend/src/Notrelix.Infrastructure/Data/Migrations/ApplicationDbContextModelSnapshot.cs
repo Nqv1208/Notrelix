@@ -610,7 +610,7 @@ namespace Notrelix.Infrastructure.Migrations
                     b.ToTable("scim_sync_runs", "account");
                 });
 
-            modelBuilder.Entity("Notrelix.Domain.Accounts.Settings.AccountSettings", b =>
+            modelBuilder.Entity("Notrelix.Application.Features.Accounts.Abstractions.Records.AccountSettingRecord", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")

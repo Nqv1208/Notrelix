@@ -514,7 +514,7 @@ internal static class InitDb
                 var blocksPerPage = targets.BlockCount / targets.PageCount;
                 for (int b = 0; b < blocksPerPage; b++)
                 {
-                    var block = Block.Create(
+                    var block = Block.CreateRoot(
                         account.Id, ws.Id, page.Id, BlockType.Text,
                         BlockContent.Create(JsonValue.Create($"\"Content block {b + 1} for page {pageIndex + 1}\"")),
                         FractionalIndex.Create($"a{b}"),
