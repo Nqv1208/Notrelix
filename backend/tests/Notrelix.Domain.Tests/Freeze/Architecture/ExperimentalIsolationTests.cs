@@ -19,7 +19,9 @@ public class ExperimentalIsolationTests
         {
             if (!IsFrozenDomainType(type)) continue;
 
-            foreach (var referencedType in GetReferencedTypes(type))
+            var referencedTypes = DomainTypeGraphWalker.GetReferencedTypes(type);
+
+            foreach (var referencedType in referencedTypes)
             {
                 if (IsExperimentalType(referencedType))
                 {
@@ -42,18 +44,17 @@ public class ExperimentalIsolationTests
         {
             if (!IsExperimentalType(type)) continue;
 
-            foreach (var referencedType in GetReferencedTypes(type))
+            var referencedTypes = DomainTypeGraphWalker.GetReferencedTypes(type);
+
+            foreach (var referencedType in referencedTypes)
             {
                 if (IsFrozenDomainType(referencedType))
                 {
                     // Experimental types CAN reference frozen types (one-way dependency)
-                    // This test verifies the reverse direction only
                 }
             }
         }
 
-        // This test is a no-op for now - experimental -> frozen is allowed
-        // The real assertion is in FrozenAggregates_ShouldNotReferenceExperimentalTypes
         violations.Should().BeEmpty();
     }
 
@@ -96,25 +97,5 @@ public class ExperimentalIsolationTests
 
         return ExperimentalPrefixes.Any(p =>
             type.Namespace.StartsWith(p, StringComparison.Ordinal));
-    }
-
-    private static IEnumerable<Type> GetReferencedTypes(Type type)
-    {
-        var types = new HashSet<Type>();
-
-        foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
-            types.Add(prop.PropertyType);
-
-        foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
-        {
-            types.Add(method.ReturnType);
-            foreach (var param in method.GetParameters())
-                types.Add(param.ParameterType);
-        }
-
-        foreach (var iface in type.GetInterfaces())
-            types.Add(iface);
-
-        return types.Where(t => t.Namespace?.StartsWith("Notrelix.Domain.", StringComparison.Ordinal) == true);
     }
 }

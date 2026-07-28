@@ -38,10 +38,13 @@ public class FrameworkDependencyTests
         {
             if (!IsDomainType(type)) continue;
 
-            foreach (var referencedNamespace in GetReferencedNamespaces(type))
+            var referencedTypes = DomainTypeGraphWalker.GetReferencedTypes(type);
+
+            foreach (var referencedType in referencedTypes)
             {
-                if (ForbiddenNamespaces.Contains(referencedNamespace))
-                    violations.Add($"{type.FullName} -> {referencedNamespace}");
+                var ns = referencedType.Namespace;
+                if (ns is not null && ForbiddenNamespaces.Contains(ns))
+                    violations.Add($"{type.FullName} -> {ns}");
             }
         }
 
@@ -59,7 +62,9 @@ public class FrameworkDependencyTests
         {
             if (!IsDomainType(type)) continue;
 
-            foreach (var referencedType in GetReferencedTypes(type))
+            var referencedTypes = DomainTypeGraphWalker.GetReferencedTypes(type);
+
+            foreach (var referencedType in referencedTypes)
             {
                 if (referencedType.Name is not null && ForbiddenTypeNames.Contains(referencedType.Name))
                     violations.Add($"{type.FullName} -> {referencedType.FullName}");
@@ -77,53 +82,5 @@ public class FrameworkDependencyTests
         if (!type.Namespace.StartsWith("Notrelix.Domain.", StringComparison.Ordinal)) return false;
         if (type.Namespace.StartsWith("Notrelix.Domain.SharedKernel", StringComparison.Ordinal)) return false;
         return true;
-    }
-
-    private static IEnumerable<string> GetReferencedNamespaces(Type type)
-    {
-        var namespaces = new HashSet<string>();
-
-        foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
-        {
-            var ns = prop.PropertyType.Namespace;
-            if (ns is not null) namespaces.Add(ns);
-        }
-
-        foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
-        {
-            var ns = method.ReturnType.Namespace;
-            if (ns is not null) namespaces.Add(ns);
-
-            foreach (var param in method.GetParameters())
-            {
-                ns = param.ParameterType.Namespace;
-                if (ns is not null) namespaces.Add(ns);
-            }
-        }
-
-        foreach (var iface in type.GetInterfaces())
-        {
-            var ns = iface.Namespace;
-            if (ns is not null) namespaces.Add(ns);
-        }
-
-        return namespaces;
-    }
-
-    private static IEnumerable<Type> GetReferencedTypes(Type type)
-    {
-        var types = new HashSet<Type>();
-
-        foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
-            types.Add(prop.PropertyType);
-
-        foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
-        {
-            types.Add(method.ReturnType);
-            foreach (var param in method.GetParameters())
-                types.Add(param.ParameterType);
-        }
-
-        return types;
     }
 }

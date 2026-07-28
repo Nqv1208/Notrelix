@@ -7,45 +7,48 @@ public class CommonSharedKernelIsolationTests
 {
     private static readonly Assembly DomainAssembly = typeof(AggregateRoot).Assembly;
 
+    private static readonly string[] BusinessContextPrefixes =
+    [
+        "Notrelix.Domain.Accounts",
+        "Notrelix.Domain.Identity",
+        "Notrelix.Domain.Workspaces",
+        "Notrelix.Domain.Teams",
+        "Notrelix.Domain.Governance",
+        "Notrelix.Domain.WorkManagement",
+        "Notrelix.Domain.Documents",
+        "Notrelix.Domain.Collaboration",
+        "Notrelix.Domain.Automation",
+        "Notrelix.Domain.Integrations",
+        "Notrelix.Domain.Billing",
+        "Notrelix.Domain.Analytics",
+    ];
+
     [Fact]
     public void CommonAndSharedKernel_ShouldNotDependOnBusinessContexts()
     {
-        var commonTypes = DomainAssembly.GetTypes()
-            .Where(t => t.Namespace is not null &&
-                        t.Namespace.StartsWith("Notrelix.Domain.Common", StringComparison.Ordinal))
-            .ToList();
-
-        var sharedKernelTypes = DomainAssembly.GetTypes()
-            .Where(t => t.Namespace is not null &&
-                        t.Namespace.StartsWith("Notrelix.Domain.SharedKernel", StringComparison.Ordinal))
-            .ToList();
-
-        var businessContextPrefixes = new[]
+        var infrastructurePrefixes = new[]
         {
-            "Notrelix.Domain.Accounts",
-            "Notrelix.Domain.Identity",
-            "Notrelix.Domain.Workspaces",
-            "Notrelix.Domain.Teams",
-            "Notrelix.Domain.Governance",
-            "Notrelix.Domain.WorkManagement",
-            "Notrelix.Domain.Documents",
-            "Notrelix.Domain.Collaboration",
-            "Notrelix.Domain.Automation",
-            "Notrelix.Domain.Integrations",
-            "Notrelix.Domain.Billing",
-            "Notrelix.Domain.Analytics",
+            "Notrelix.Domain.Common",
+            "Notrelix.Domain.SharedKernel",
         };
+
+        var infrastructureTypes = DomainAssembly.GetTypes()
+            .Where(t => t.Namespace is not null &&
+                        infrastructurePrefixes.Any(p => t.Namespace.StartsWith(p, StringComparison.Ordinal)))
+            .ToList();
 
         var violations = new List<string>();
 
-        foreach (var type in commonTypes.Concat(sharedKernelTypes))
+        foreach (var type in infrastructureTypes)
         {
-            foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            var referencedTypes = DomainTypeGraphWalker.GetReferencedTypes(type);
+
+            foreach (var referencedType in referencedTypes)
             {
-                var propNs = prop.PropertyType.Namespace;
-                if (propNs is not null && businessContextPrefixes.Any(p => propNs.StartsWith(p, StringComparison.Ordinal)))
+                var ns = referencedType.Namespace;
+                if (ns is not null && BusinessContextPrefixes.Any(p => ns.StartsWith(p, StringComparison.Ordinal)))
                 {
-                    violations.Add($"{type.FullName} -> {prop.PropertyType.FullName}");
+                    violations.Add($"{type.FullName} -> {referencedType.FullName}");
                 }
             }
         }

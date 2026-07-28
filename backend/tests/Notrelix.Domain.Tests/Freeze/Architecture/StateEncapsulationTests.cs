@@ -8,18 +8,18 @@ public class StateEncapsulationTests
 {
     private static readonly Assembly DomainAssembly = typeof(AggregateRoot).Assembly;
 
+    private static readonly Type[] MutableCollectionTypes =
+    [
+        typeof(List<>),
+        typeof(HashSet<>),
+        typeof(Dictionary<,>),
+        typeof(Collection<>),
+        typeof(ObservableCollection<>),
+    ];
+
     [Fact]
     public void AggregateEntities_ShouldNotExposeMutableCollections()
     {
-        var mutableCollectionTypes = new[]
-        {
-            typeof(List<>),
-            typeof(HashSet<>),
-            typeof(Dictionary<,>),
-            typeof(Collection<>),
-            typeof(ObservableCollection<>),
-        };
-
         var violations = new List<string>();
 
         foreach (var type in DomainAssembly.GetTypes())
@@ -27,24 +27,22 @@ public class StateEncapsulationTests
             if (!IsDomainType(type)) continue;
             if (type.IsEnum || type.IsInterface || type.IsAbstract) continue;
 
-            if (typeof(AggregateRoot).IsAssignableFrom(type) ||
-                typeof(Entity).IsAssignableFrom(type))
+            if (!typeof(AggregateRoot).IsAssignableFrom(type) &&
+                !typeof(Entity).IsAssignableFrom(type))
+                continue;
+
+            foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
-                foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+                var propType = prop.PropertyType;
+
+                if (propType.IsGenericType && MutableCollectionTypes.Contains(propType.GetGenericTypeDefinition()))
                 {
-                    var propType = prop.PropertyType;
+                    violations.Add($"{type.FullName}.{prop.Name} (type: {propType.Name})");
+                }
 
-                    // Check direct mutable collection types
-                    if (propType.IsGenericType && mutableCollectionTypes.Contains(propType.GetGenericTypeDefinition()))
-                    {
-                        violations.Add($"{type.FullName}.{prop.Name} (type: {propType.Name})");
-                    }
-
-                    // Check IEnumerable<T> properties that return concrete mutable types
-                    if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-                    {
-                        violations.Add($"{type.FullName}.{prop.Name} (exposes IEnumerable<T> - prefer IReadOnlyList<T>)");
-                    }
+                if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                {
+                    violations.Add($"{type.FullName}.{prop.Name} (exposes IEnumerable<T> - prefer IReadOnlyList<T>)");
                 }
             }
         }

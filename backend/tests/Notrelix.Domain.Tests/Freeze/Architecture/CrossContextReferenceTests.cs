@@ -41,26 +41,22 @@ public class CrossContextReferenceTests
 
             var sourceContext = ResolveContext(type.Namespace!);
 
-            foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
-            {
-                var targetType = prop.PropertyType;
+            var referencedTypes = DomainTypeGraphWalker.GetReferencedTypes(type);
 
+            foreach (var referencedType in referencedTypes)
+            {
                 // Skip primitive types, value objects, enums, Guid, string, etc.
-                if (IsPrimitiveOrBuiltin(targetType)) continue;
+                if (IsPrimitiveOrBuiltin(referencedType)) continue;
 
                 // Check if the target type is a concrete entity from another context
-                if (targetType is { IsClass: true, IsAbstract: false } &&
-                    typeof(AggregateRoot).IsAssignableFrom(targetType))
+                if (referencedType is { IsClass: true, IsAbstract: false } &&
+                    typeof(AggregateRoot).IsAssignableFrom(referencedType))
                 {
-                    var targetContext = ResolveContext(targetType.Namespace!);
+                    var targetContext = ResolveContext(referencedType.Namespace!);
 
                     if (targetContext is not null && targetContext != sourceContext)
                     {
-                        var key = $"{type.FullName}.{prop.Name}";
-                        if (!CrossContextWhitelist.Contains(key))
-                        {
-                            violations.Add($"{type.FullName}.{prop.Name} -> {targetType.FullName} (cross-context)");
-                        }
+                        violations.Add($"{type.FullName} -> {referencedType.FullName} (cross-context)");
                     }
                 }
             }
@@ -101,12 +97,12 @@ public class CrossContextReferenceTests
         if (type == typeof(decimal)) return true;
         if (type == typeof(byte[])) return true;
         if (type.IsEnum) return true;
-        if (type.IsValueType) return true; // Value objects
+        if (type.IsValueType) return true;
         if (type.IsArray) return true;
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>)) return true;
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IReadOnlyList<>)) return true;
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>)) return true;
-        if (type.IsInterface) return true; // Skip interfaces (IWorkspaceScoped, etc.)
+        if (type.IsInterface) return true;
         return false;
     }
 }
