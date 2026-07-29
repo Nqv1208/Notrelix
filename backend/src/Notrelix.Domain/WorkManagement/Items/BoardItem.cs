@@ -166,17 +166,20 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         var existingValue = _fieldValues.FirstOrDefault(fv => fv.FieldId == field.Id);
         var oldValue = existingValue?.Value ?? FieldValue.Empty();
 
+        if (existingValue != null && existingValue.Value == newValue)
+            return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+
         if (existingValue == null)
         {
             _fieldValues.Add(BoardItemValue.Create(Id, field.Id, newValue));
         }
         else
         {
-            if (existingValue.Value == newValue) return;
             existingValue.UpdateValue(newValue);
         }
 
-        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemFieldValueChangedDomainEvent(AccountId, WorkspaceId, Id, BoardId, field.Id, oldValue, newValue, updatedBy, updatedAt));
