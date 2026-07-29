@@ -33,6 +33,7 @@ public class PageTests
         page.DomainEvents.Should().ContainSingle(e => e is PageRenamedDomainEvent);
     }
 
+    [CoversMutation(typeof(Page), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Rename_WhenArchived_ShouldThrow()
     {
@@ -68,6 +69,7 @@ public class PageTests
         page.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Page), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Move_WhenArchived_ShouldThrow()
     {
@@ -96,6 +98,7 @@ public class PageTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Page move would create a cycle in the page tree.");
     }
 
+    [CoversMutation(typeof(Page), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Archive_ShouldSetStatus_AndRaiseEvent()
     {
@@ -108,6 +111,7 @@ public class PageTests
         page.DomainEvents.Should().ContainSingle(e => e is PageArchivedDomainEvent);
     }
 
+    [CoversMutation(typeof(Page), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Archive_WhenAlreadyArchived_ShouldBeNoOp()
     {
