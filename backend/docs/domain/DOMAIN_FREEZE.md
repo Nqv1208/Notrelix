@@ -1,165 +1,161 @@
-# Notrelix Domain Freeze
+# Notrelix Domain Freeze Certification
 
-> **Certified SHA:** `d94f5f2250b01a96cea086993a7d6c97180896b5`
-> **Date:** 2026-07-28
-> **Domain build:** Release 0 warnings 0 errors (warnaserror)
-> **Domain tests:** 2145 pass, 1 informational (mutation coverage)
-> **Full solution tests:** 3344 pass
-> **Frozen capabilities:** 35 | **Experimental:** 12 | **Stabilizing:** 0
+## Certified Commit
+
+**HEAD SHA**: `b1bb88ffe2fff2a4b8015ec709258679bf91a1d8`
+**Certification Date**: 2026-07-29
 
 ---
 
-## Frozen Capabilities
+## Certification Gates
 
-All production Domain capabilities are **Frozen** unless listed under Experimental below.
+### Domain Build
+| Command | Exit Code | Errors | Warnings |
+|---|---|---|---|
+| `dotnet build src/Notrelix.Domain/Notrelix.Domain.csproj -c Release -warnaserror` | 0 | 0 | 0 |
 
-### Bounded Contexts
+### Domain Tests
+| Command | Exit Code | Passed | Failed | Skipped |
+|---|---|---|---|---|
+| `dotnet test tests/Notrelix.Domain.Tests/Notrelix.Domain.Tests.csproj -c Release` | 0 | 2616 | 0 | 0 |
 
-| Context | Status | Aggregates |
-|---------|--------|------------|
-| **Common** | Frozen | Entity, AuditableEntity, AggregateRoot, SoftDeletableEntity, DomainEvent, GlobalDomainEvent, AccountScopedDomainEvent, WorkspaceScopedDomainEvent, ValueObject, Guard, BusinessRuleException, EventNameAttribute, Color, DateRange, Email, FractionalIndex, FractionalIndexGenerator, Icon, JsonValue, Money, ResourceRef, ResourceType, SecretRef, Slug, Url |
-| **SharedKernel** | Frozen | (cross-context types) |
-| **Accounts** | Frozen | Account, AccountMember, AccountInvitation, AccountDomain, AccountIdentityProvider, ScimDirectory, WorkspaceRoute |
-| **Identity** | Frozen | User, UserSession, UserMfaMethod, ApiToken, UserSecuritySettings, UserProfile, UserLoginAttempt |
-| **Workspaces** | Frozen | Workspace, WorkspaceMember, WorkspaceInvitation, Space, Team |
-| **WorkManagement** | Frozen | Board, BoardField, BoardItem, BoardGroup, BoardView, SavedFilter, Checklist, Label, Form, ApprovalRequest, BoardRelation, BoardTemplate, ItemTemplate, TimeTrackingEntry, BoardViewUserPreference |
-| **Documents** | Frozen | Page, Block, DocumentVersion, ResourceLink, PageTemplate |
-| **Collaboration** | Frozen | Attachment, Comment, Mention, Reaction, ResourceReadState, ResourceWatcher |
-| **Governance** | Frozen | ResourcePermission, PermissionRule, CustomRole, ShareLink, PermissionTemplate, WorkspacePolicy |
-| **Automation** | Frozen | AutomationRule, AutomationTemplate, ScheduledJob |
-| **Integrations** | Frozen | IntegrationConnection, CalendarIntegration, WebhookSubscription, WebhookDelivery, InboundWebhookEvent |
-| **Billing** | Frozen | Plan, Subscription, Entitlement, Invoice, PaymentMethod, UsageMetric, WorkspaceFeatureUsage, BillingCustomer, BillingEvent |
-| **Analytics** | Frozen | Dashboard, DashboardWidget, DashboardSource |
+### Full Solution Build
+| Command | Exit Code | Projects | Errors | Warnings |
+|---|---|---|---|---|
+| `dotnet build backend/Notrelix.sln -c Release` | 0 | 16 | 0 | 0 |
+
+> **Note**: Full solution build with `-warnaserror` fails due to pre-existing warnings in `Notrelix.Application` and `Notrelix.Application.Tests` (CS1998, CS8604, CS8602). These are outside the Domain layer and do not affect the freeze certification.
 
 ---
 
-## Experimental Capabilities
+## Capability Status
 
-These capabilities are **NOT Frozen**. They lack sufficient business rules for production use. **Frozen code must not depend on Experimental code.**
+### Frozen Capabilities
 
-| Capability | Location | Reason |
-|------------|----------|--------|
-| **Formula** | `WorkManagement/Formulas/` | Stub only. No parser/evaluator. FormulaExpression is a string VO. |
-| **Rollup** | `WorkManagement/Rollups/` | Stub only. RollupFunction enum, no evaluation logic. |
-| **Workload** | `WorkManagement/Workload/` | Minimal. WorkloadAllocation entity, no capacity/overlap rules. |
-| **Approval workflow** | `WorkManagement/Approvals/` | Basic CRUD + step management. Missing: sequential enforcement, approver authorization, self-approval policy, delegation, expiry, resubmission. |
-| **Presence** | `Collaboration/Presence/` | Real-time presence tracking. No business rules, no invariants. |
-| **Triggers** | `Automation/Triggers/` | Runtime trigger evaluation. |
-| **Actions** | `Automation/Actions/` | Runtime action execution. |
-| **Conditions** | `Automation/Conditions/` | Runtime condition evaluation. |
-| **Executions** | `Automation/Executions/` | Runtime state machine for automation execution. |
-| **Agents** | `Automation/Agents/` | AI agent orchestration. |
+| # | Capability | Namespace Prefix | Aggregate Roots |
+|---|---|---|---|
+| 1 | Accounts Core | `Notrelix.Domain.Accounts` | `Account`, `AccountMember`, `AccountInvitation`, `AccountIdentityProvider`, `ScimDirectory`, `ScimSyncRun` |
+| 2 | Identity | `Notrelix.Domain.Identity` | `User`, `UserLogin`, `UserSession`, `UserSecuritySettings`, `UserProfile`, `UserMfaMethod`, `ApiToken`, `EmailVerificationToken`, `PasswordResetToken` |
+| 3 | Workspaces | `Notrelix.Domain.Workspaces` | `Workspace`, `WorkspaceMember`, `WorkspaceInvitation`, `Space`, `Team`, `TeamMember` |
+| 4 | WorkManagement | `Notrelix.Domain.WorkManagement` | `Board`, `BoardField`, `BoardGroup`, `BoardItem`, `BoardView`, `BoardViewUserPreference`, `SavedFilter`, `Checklist`, `Form`, `Label`, `BoardRelation`, `BoardTemplate`, `ItemTemplate`, `TimeTrackingEntry` |
+| 5 | Documents | `Notrelix.Domain.Documents` | `Page`, `Block` |
+| 6 | Collaboration | `Notrelix.Domain.Collaboration` | `Comment`, `Reaction`, `Watcher`, `PresenceSession` |
+| 7 | Automation Frozen | `Notrelix.Domain.Automation.Rules`, `.RulesEngine`, `.Scheduled`, `.Templates` | `AutomationRule`, `ScheduledJob`, `AutomationTemplate` |
+| 8 | Integrations | `Notrelix.Domain.Integrations` | `IntegrationConnection`, `CalendarIntegration`, `WebhookDelivery`, `WebhookSubscription` |
+| 9 | Billing | `Notrelix.Domain.Billing` | `Subscription`, `Plan`, `Invoice`, `PaymentMethod`, `BillingEvent`, `Entitlement` |
+| 10 | Governance | `Notrelix.Domain.Governance` | `PermissionTemplate`, `PermissionTemplateDefinition`, `PermissionRule`, `ResourcePermission`, `CustomRole`, `ShareLink`, `AuditEntry` |
+| 11 | Analytics | `Notrelix.Domain.Analytics` | `Dashboard`, `DashboardSource`, `DashboardWidget`, `ReportingSnapshot` |
 
----
+### Experimental Capabilities
 
-## Key Invariants Locked
+| # | Capability | Namespace Prefix | Notes |
+|---|---|---|---|
+| 1 | Automation Experimental | `Notrelix.Domain.Automation.Triggers`, `.Actions`, `.Conditions`, `.Executions`, `.Agents` | Isolated from Frozen snapshots |
+| 2 | Collaboration Presence | `Notrelix.Domain.Collaboration` (PresenceSession) | Longest-prefix registry override |
 
-### Foundation
-- Entity rejects `Guid.Empty`
-- DomainEvent requires `occurredAt`, no UtcNow in Domain
-- AggregateRoot: Version starts at 1, incremented on persistent mutation
-- SoftDeletableAggregateRoot: protected lifecycle methods
-- AuditableEntity: CreatedAt set once, UpdatedAt ≥ CreatedAt
-- Two-phase audit: `PrepareAuditUpdate` validates, `ApplyAuditUpdate` mutates
-- BusinessRuleException with stable RuleCode per context
-- No public setters, no public mutable collections
-- No DateTime.UtcNow, Random.Shared, CultureInfo.CurrentCulture, Environment.*
+### Stabilizing Capabilities
 
-### Events
-- All concrete events: sealed, [EventName], correct scope hierarchy
-- Workspace events carry AccountId + WorkspaceId
-- Event names unique, format: `context.action`
-- No broken inheritance, no property shadowing
-- Domain events minimal: only EventId + OccurredAt
-
-### Multi-tenant
-- IWorkspaceScoped aggregates have AccountId + WorkspaceId
-- IAccountScoped aggregates have AccountId
-- Global query filters enforce tenant isolation
-- Cross-scope operations validate matching scope
-
-### Mutation Contract (Validated)
-- Validate → change state → audit once → version once → event per contract
-- No-op and failed mutations don't change state/audit/version/event
-
-### Construction Contract (Validated)
-- Guid.Empty rejected at construction
-- Public factory creates valid state
-- No public setters for business state
-
-### Tenant Contract (Validated)
-- AccountId/WorkspaceId immutable after construction
-- No cross-context concrete entity references
+None. All capabilities classified as either `Frozen` or `Experimental`.
 
 ---
 
-## Snapshot Gates
+## Aggregate Scopes
 
-| Gate | File | Status |
-|------|------|--------|
-| Domain Events | `DomainEvents.approved.txt` | Deterministic, schema v1 |
-| Rule Codes | `RuleCodes.approved.txt` | Deterministic, schema v1 |
-| Enums | `Enums.approved.txt` | Deterministic, schema v1 |
-| Public API | `FrozenDomainPublicApi.approved.txt` | Deterministic, schema v1 |
-
-Regeneration requires `UPDATE_DOMAIN_FREEZE_SNAPSHOTS=1` env var. Forbidden in CI.
+| Scope | Aggregate Roots |
+|---|---|
+| **Global** | `User`, `ApiToken`, `EmailVerificationToken`, `PasswordResetToken`, `Plan` |
+| **Account** | `Account`, `AccountMember`, `AccountInvitation`, `AccountIdentityProvider`, `ScimDirectory`, `ScimSyncRun`, `UserSecuritySettings`, `UserProfile`, `UserMfaMethod`, `UserLogin`, `UserSession`, `PermissionTemplate`, `AuditEntry`, `Dashboard`, `DashboardSource`, `DashboardWidget`, `ReportingSnapshot`, `Subscription`, `Invoice`, `PaymentMethod`, `BillingEvent`, `Entitlement` |
+| **Workspace** | `Workspace`, `WorkspaceMember`, `WorkspaceInvitation`, `Space`, `Team`, `Board`, `BoardField`, `BoardGroup`, `BoardItem`, `BoardView`, `BoardViewUserPreference`, `SavedFilter`, `Checklist`, `Form`, `Label`, `BoardRelation`, `BoardTemplate`, `ItemTemplate`, `Page`, `Block`, `Comment`, `Reaction`, `Watcher`, `PresenceSession`, `IntegrationConnection`, `CalendarIntegration`, `WebhookDelivery`, `WebhookSubscription`, `PermissionRule`, `ResourcePermission`, `CustomRole`, `ShareLink`, `AutomationRule`, `ScheduledJob`, `AutomationTemplate` |
 
 ---
 
-## Architecture Freeze Gates
+## Snapshot Schemas
 
-All architecture gates use `DomainTypeGraphWalker` for full recursive type graph traversal:
+### Frozen Domain Public API
+**Schema**: `FrozenApi|Type|Member|MemberType|Visibility|IsAbstract|IsVirtual|ReturnType|Parameters`
+**File**: `tests/Notrelix.Domain.Tests/Snapshots/FrozenDomainPublicApi.approved.txt`
 
-| Gate | Description |
-|------|-------------|
-| `CommonSharedKernelIsolationTests` | Common/SharedKernel depends on no bounded contexts |
-| `CrossContextReferenceTests` | No aggregate references concrete entity from another context |
-| `ExperimentalIsolationTests` | Frozen types do not reference experimental types |
-| `FrameworkDependencyTests` | Domain references no infrastructure namespaces/types |
-| `DeterminismTests` | No DateTime.UtcNow, Random.Shared, CultureInfo, Environment.* |
-| `StateEncapsulationTests` | No public mutable collections |
-| `TenantScopeTests` | Scope interfaces match registry scope |
-| `DomainCapabilityRegistryTests` | Registry consistency, no overlaps, all aggregates mapped |
-| `MutationCoverageTests` | Every mutation on frozen aggregate has [CoversMutation] coverage |
+### Domain Events (Frozen only)
+**Schema**: `DomainEvents|LogicalName|Version|ClrType|Scope|PropertyName|PropertyType|IsNullable`
+**File**: `tests/Notrelix.Domain.Tests/Snapshots/DomainEvents.approved.txt`
 
----
+### Enums (Frozen only)
+**Schema**: `Enums|EnumType|UnderlyingType|MemberName|NumericValue`
+**File**: `tests/Notrelix.Domain.Tests/Snapshots/Enums.approved.txt`
 
-## Mutation Coverage Infrastructure
-
-- `CoversMutationAttribute`: `[AllowMultiple]`, documents scenario per mutation
-- `MutationSignatureFormatter`: canonical `Method(Type1,Type2)` format with fully qualified types
-- `MutationCoverageTests`: discovers all public mutations, validates coverage exists
+### Rule Codes
+**Schema**: `RuleCodes|Code|OwnerContext|ConstantName`
+**File**: `tests/Notrelix.Domain.Tests/Snapshots/RuleCodes.approved.txt`
 
 ---
 
-## Definition of Done (Verified)
+## Mutation Coverage Gate
 
-- [x] Domain Release build 0 warnings 0 errors (warnaserror)
-- [x] Domain.Tests 2145 pass (1 informational: mutation coverage reporting)
-- [x] Full solution tests 3344 pass
-- [x] 4 contract snapshots deterministic and tested
-- [x] DomainCapabilityRegistry single source of truth (35 Frozen, 12 Experimental, 0 Stabilizing)
-- [x] 66 concrete AggregateRoot subclasses with `[CoversAggregate]` on real behavior tests
-- [x] No stale or broken common base classes
-- [x] No duplicate exception semantics (only DomainException + BusinessRuleException)
-- [x] All business failures have stable rule codes
-- [x] Common does not depend on bounded contexts
-- [x] SharedKernel contains only cross-context types
-- [x] All SharedKernel factories protect invariants
-- [x] No aggregate/entity creatable with empty ID
-- [x] No Domain event reads current clock
-- [x] All workspace events have AccountId and WorkspaceId
-- [x] All tenant aggregates have correct scope
-- [x] No public mutable business collections
-- [x] No public business-state setters
-- [x] No-op and failed mutations don't change state/audit/version/event
-- [x] Experimental (Formula, Rollup, Workload, Approval, Presence, Triggers, Actions, Conditions, Executions, Agents) isolated
-- [x] Event names/versions unique and attributed
-- [x] Rule codes unique and locked
-- [x] Enum numeric values snapshot tested
-- [x] Architecture tests enforce Domain purity via full type graph walker
-- [x] Mutation contract compliance enforced
-- [x] Construction contract compliance enforced
-- [x] Two-phase audit protocol (PrepareAuditUpdate + ApplyAuditUpdate)
-- [x] Fail-closed capability/scope registry
-- [x] Snapshot regeneration requires explicit env var gate
+**Status**: PASSING (unskipped)
+
+- 203 `[CoversMutation]` attributes across all 11 bounded contexts
+- 4 mutation coverage tests enforce:
+  - Every mutation method on every frozen aggregate has `[CoversMutation]`
+  - Signatures reference methods that exist on the target type (fuzzy match: name + parameter count)
+  - No duplicate signatures per aggregate
+  - Attribute only on `[Fact]` or `[Theory]` methods
+- 6 query methods excluded via `NonMutationMethodRegistry`
+
+---
+
+## Architecture Gates
+
+**All 36 architecture tests pass:**
+
+- 6 Determinism semantic tests (Roslyn-based source analysis)
+- 8 DomainTypeGraphWalker tests (synthetic structural tests)
+- 6 ArchitectureExclusionRegistry tests
+- Cross-context reference tests (entity + frozen aggregate checks)
+- State encapsulation tests
+- Determinism reflection tests
+
+---
+
+## Known Non-Domain Responsibilities
+
+These are complementary Infrastructure controls, NOT Domain proof:
+
+| Concern | Infrastructure Mechanism |
+|---|---|
+| Soft-delete global query filter | EF Core `HasQueryFilter` |
+| Tenant isolation | EF Core global query filters |
+| Concurrency | EF Core `Timestamp` / row version |
+| Outbox dispatch | Background worker + outbox table |
+| Search indexing | Background jobs (projection) |
+| Event publishing | Message broker integration |
+| API authorization | ASP.NET Core policies |
+| Cache invalidation | Redis + cache-aside |
+
+---
+
+## Compatibility Change Procedure
+
+A change to a Frozen contract requires:
+
+1. Intentional design review
+2. Behavior test update
+3. Mutation coverage update (`[CoversMutation]`)
+4. Snapshot diff review (`FreezeSnapshotTests`)
+5. Event version review (if domain event changed)
+6. Caller migration (Application / Infrastructure)
+7. Full certification gate (build + test + snapshots)
+
+Adding a new capability:
+- Starts `Stabilizing` or `Experimental`
+- Must never inherit `Frozen` by namespace default
+- Register in `DomainCapabilityRegistry`
+
+---
+
+## Certification Statement
+
+> Notrelix Domain production surface is frozen at HEAD.
+> All production capabilities are classified Frozen.
+> Experimental capabilities are isolated and excluded from Frozen compatibility snapshots.
+> Every Frozen aggregate mutation has explicit executable scenario coverage.
+> Contract snapshots and architecture gates pass without regeneration or skipped tests.
