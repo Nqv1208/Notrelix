@@ -28,6 +28,7 @@ public class EntitlementTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Entitlement), "ChangeLimit(System.Int32,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void ChangeLimit_ShouldUpdate_AndRaiseEvent()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 100, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -40,6 +41,7 @@ public class EntitlementTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Entitlement), "ChangeLimit(System.Int32,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     public void ChangeLimit_WhenSameLimit_ShouldBeNoOp()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 100, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -51,6 +53,7 @@ public class EntitlementTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Entitlement), "ChangeLimit(System.Int32,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void ChangeLimit_WhenNegative_ShouldThrow()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -59,6 +62,7 @@ public class EntitlementTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Entitlement), "ChangeLimit(System.Int32,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void ChangeLimit_WhenDisabled_ShouldThrow()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -69,6 +73,7 @@ public class EntitlementTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Entitlement), "ChangeLimit(System.Int32,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void ChangeLimit_WhenDeleted_ShouldThrow()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -79,6 +84,7 @@ public class EntitlementTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Entitlement), "Disable(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void Disable_ShouldTransition_AndRaiseEvent()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -91,6 +97,7 @@ public class EntitlementTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Entitlement), "Disable(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     public void Disable_WhenAlreadyDisabled_ShouldBeNoOp()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -103,6 +110,7 @@ public class EntitlementTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Entitlement), "Disable(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void Disable_WhenRevoked_ShouldThrow()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -113,6 +121,7 @@ public class EntitlementTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Entitlement), "Revoke(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void Revoke_ShouldTransition_AndRaiseEvent()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -126,6 +135,7 @@ public class EntitlementTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Entitlement), "Revoke(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     public void Revoke_WhenAlreadyRevoked_ShouldBeNoOp()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -138,6 +148,7 @@ public class EntitlementTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Entitlement), "MarkExpired(System.DateTimeOffset)", MutationScenario.Valid)]
     public void MarkExpired_ShouldTransition_AndRaiseEvent()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -150,6 +161,7 @@ public class EntitlementTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Entitlement), "MarkExpired(System.DateTimeOffset)", MutationScenario.NoOp)]
     public void MarkExpired_WhenAlreadyExpired_ShouldBeNoOp()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -162,6 +174,7 @@ public class EntitlementTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Entitlement), "MarkExpired(System.DateTimeOffset)", MutationScenario.Invalid)]
     public void MarkExpired_WhenRevoked_ShouldThrow()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -206,6 +219,7 @@ public class EntitlementTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Entitlement), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     public void SoftDelete_ShouldMarkDeleted_AndRaiseEvent()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -218,6 +232,7 @@ public class EntitlementTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Entitlement), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -230,6 +245,7 @@ public class EntitlementTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Entitlement), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     public void Restore_ShouldRestore_AndRaiseEvent()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -243,6 +259,7 @@ public class EntitlementTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Entitlement), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
