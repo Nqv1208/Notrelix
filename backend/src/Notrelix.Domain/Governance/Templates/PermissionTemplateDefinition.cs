@@ -11,21 +11,35 @@ public sealed class PermissionTemplateDefinition : ValueObject
         Entries = entries;
     }
 
+    private static PermissionTemplateEntry[] CopyEntries(IReadOnlyList<PermissionTemplateEntry> entries)
+    {
+        var result = new PermissionTemplateEntry[entries.Count];
+        for (var i = 0; i < entries.Count; i++)
+        {
+            var entry = entries[i];
+            Guard.NotNull(entry);
+            result[i] = entry;
+        }
+        return result;
+    }
+
     public static PermissionTemplateDefinition Create(IReadOnlyList<PermissionTemplateEntry> entries)
     {
         Guard.NotNull(entries);
         if (entries.Count == 0)
             throw new BusinessRuleException(GovernanceRuleCodes.Governance_PermissionTemplate_EntriesRequired, "Permission template must have at least one entry.");
 
+        var copied = CopyEntries(entries);
+
         var seen = new HashSet<(ResourceType, Governance.Permissions.PermissionAction, Governance.Permissions.PermissionEffect)>();
-        foreach (var entry in entries)
+        foreach (var entry in copied)
         {
             var key = (entry.Resource, entry.Action, entry.Effect);
             if (!seen.Add(key))
                 throw new BusinessRuleException(GovernanceRuleCodes.Governance_PermissionTemplate_DuplicateEntry, $"Duplicate entry for {entry.Resource}/{entry.Action}/{entry.Effect}.");
         }
 
-        return new PermissionTemplateDefinition(1, entries);
+        return new PermissionTemplateDefinition(1, copied);
     }
 
     protected override IEnumerable<object?> GetEqualityComponents()

@@ -5,6 +5,7 @@ namespace Notrelix.Domain.Governance.Templates;
 
 public class PermissionTemplate : AggregateRoot
 {
+    public Guid? AccountId { get; private set; }
     public Guid? WorkspaceId { get; private set; }
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
@@ -58,6 +59,7 @@ public class PermissionTemplate : AggregateRoot
 
         var template = new PermissionTemplate
         {
+            AccountId = accountId,
             WorkspaceId = workspaceId,
             Name = name.Trim(),
             Description = description?.Trim(),
@@ -83,5 +85,6 @@ public class PermissionTemplate : AggregateRoot
         Status = PermissionTemplateStatus.Archived;
         ApplyAuditUpdate(pending);
         IncrementVersion();
+        RaiseDomainEvent(new PermissionTemplateArchivedDomainEvent(AccountId!.Value, WorkspaceId!.Value, Id, updatedBy, updatedAt));
     }
 }

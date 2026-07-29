@@ -89,16 +89,28 @@ public class PermissionTemplateLifecycleTests
         act.Should().Throw<BusinessRuleException>();
     }
 
+    [CoversMutation(typeof(PermissionTemplate), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
-    public void Archive_WhenWorkspace_ShouldSetArchived()
+    public void Archive_WhenWorkspace_ShouldSetArchivedAndRaiseEvent()
     {
-        var template = PermissionTemplate.CreateWorkspace(Guid.NewGuid(), Guid.NewGuid(), "Template", ValidDefinition(), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var accountId = Guid.NewGuid();
+        var workspaceId = Guid.NewGuid();
+        var updatedBy = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+        var template = PermissionTemplate.CreateWorkspace(accountId, workspaceId, "Template", ValidDefinition(), Guid.NewGuid(), now);
 
-        template.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        template.Archive(updatedBy, now);
 
         template.Status.Should().Be(PermissionTemplateStatus.Archived);
+        template.DomainEvents.Should().ContainSingle(e => e is PermissionTemplateArchivedDomainEvent);
+        var evt = (PermissionTemplateArchivedDomainEvent)template.DomainEvents.Single(e => e is PermissionTemplateArchivedDomainEvent);
+        evt.AccountId.Should().Be(accountId);
+        evt.WorkspaceId.Should().Be(workspaceId);
+        evt.TemplateId.Should().Be(template.Id);
+        evt.ArchivedBy.Should().Be(updatedBy);
     }
 
+    [CoversMutation(typeof(PermissionTemplate), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Archive_WhenSystem_ShouldThrow()
     {
@@ -110,6 +122,7 @@ public class PermissionTemplateLifecycleTests
             .WithMessage("*System*");
     }
 
+    [CoversMutation(typeof(PermissionTemplate), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Archive_WhenAlreadyArchived_ShouldBeNoOp()
     {
@@ -121,6 +134,7 @@ public class PermissionTemplateLifecycleTests
         template.Status.Should().Be(PermissionTemplateStatus.Archived);
     }
 
+    [CoversMutation(typeof(PermissionTemplate), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Archive_ShouldIncrementVersion()
     {
