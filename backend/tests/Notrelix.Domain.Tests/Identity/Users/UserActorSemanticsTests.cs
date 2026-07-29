@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Identity.OAuth;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Identity.Users;
 
@@ -9,6 +10,7 @@ public class UserActorSemanticsTests
 
     private static User CreateUser() => User.Create("test@example.com", "Test User", "hash", Now);
 
+    [CoversMutation(typeof(User), "UpdateProfile(System.String,System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void UpdateProfile_ShouldSetUpdatedByToActor()
     {
@@ -18,6 +20,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
+    [CoversMutation(typeof(User), "UpdateEmail(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void UpdateEmail_ShouldSetUpdatedByToActor()
     {
@@ -27,6 +30,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
+    [CoversMutation(typeof(User), "UpdatePassword(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void UpdatePassword_ShouldSetUpdatedByToActor()
     {
@@ -36,6 +40,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
+    [CoversMutation(typeof(User), "RecordLogin(System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void RecordLogin_ShouldSetUpdatedByToSelf()
     {
@@ -44,6 +49,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(user.Id);
     }
 
+    [CoversMutation(typeof(User), "Activate(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Valid)]
     [Fact]
     public void Activate_ShouldSetUpdatedByToActor()
     {
@@ -54,6 +60,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
+    [CoversMutation(typeof(User), "Deactivate(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Valid)]
     [Fact]
     public void Deactivate_ShouldSetUpdatedByToActor()
     {
@@ -63,6 +70,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
+    [CoversMutation(typeof(User), "Suspend(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Valid)]
     [Fact]
     public void Suspend_ShouldSetUpdatedByToActor()
     {
@@ -72,6 +80,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
+    [CoversMutation(typeof(User), "ConfirmEmail(System.Guid?,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void ConfirmEmail_ShouldSetUpdatedByToActor()
     {
@@ -81,6 +90,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
+    [CoversMutation(typeof(User), "ConfirmEmail(System.Guid?,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void ConfirmEmail_SystemActor_ShouldAllowNull()
     {
@@ -89,6 +99,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().BeNull();
     }
 
+    [CoversMutation(typeof(User), "LinkOAuthAccount(Notrelix.Domain.Identity.OAuth.OAuthProvider,System.String,Notrelix.Domain.Identity.OAuth.OAuthProfileSnapshot,Notrelix.Domain.Identity.OAuth.OAuthToken,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void LinkOAuthAccount_ShouldSetUpdatedByToActor()
     {
@@ -99,6 +110,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
+    [CoversMutation(typeof(User), "UpdateOAuthProfile(Notrelix.Domain.Identity.OAuth.OAuthProvider,Notrelix.Domain.Identity.OAuth.OAuthProfileSnapshot,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void UpdateOAuthProfile_ShouldSetUpdatedByToActor()
     {
@@ -111,6 +123,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
+    [CoversMutation(typeof(User), "RotateOAuthToken(Notrelix.Domain.Identity.OAuth.OAuthProvider,Notrelix.Domain.Identity.OAuth.OAuthToken,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void RotateOAuthToken_ShouldSetUpdatedByToActor()
     {
@@ -124,6 +137,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
+    [CoversMutation(typeof(User), "UnlinkOAuthAccount(Notrelix.Domain.Identity.OAuth.OAuthProvider,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void UnlinkOAuthAccount_ShouldSetUpdatedByToActor()
     {
@@ -135,6 +149,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
+    [CoversMutation(typeof(User), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldSetDeletedByToActor()
     {
@@ -144,6 +159,7 @@ public class UserActorSemanticsTests
         user.DeletedBy.Should().Be(actor);
     }
 
+    [CoversMutation(typeof(User), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldSetRestoredByToActor()
     {

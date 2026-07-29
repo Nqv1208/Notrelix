@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Billing.Payments;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Billing.Payments;
 
@@ -9,6 +10,10 @@ public class PaymentMethodLifecycleTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
+    [CoversMutation(typeof(PaymentMethod), "SetAsDefault(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(PaymentMethod), "UnsetAsDefault(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(PaymentMethod), "Deactivate(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(PaymentMethod), "Reactivate(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void PaymentMethod_Create_ShouldRaiseEvent()
     {
@@ -23,6 +28,7 @@ public class PaymentMethodLifecycleTests
         evt.Brand.Should().Be("Visa");
     }
 
+    [CoversMutation(typeof(PaymentMethod), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void PaymentMethod_SoftDelete_ShouldIncrementVersion()
     {
@@ -36,6 +42,7 @@ public class PaymentMethodLifecycleTests
         method.Version.Should().Be(version + 1);
     }
 
+    [CoversMutation(typeof(PaymentMethod), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void PaymentMethod_Restore_ShouldIncrementVersion()
     {
@@ -50,6 +57,7 @@ public class PaymentMethodLifecycleTests
         method.Version.Should().Be(version + 1);
     }
 
+    [CoversMutation(typeof(PaymentMethod), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void PaymentMethod_SoftDelete_WhenAlreadyDeleted_ShouldNotIncrement()
     {
@@ -63,6 +71,8 @@ public class PaymentMethodLifecycleTests
         method.Version.Should().Be(version);
     }
 
+    [CoversMutation(typeof(PaymentMethod), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(PaymentMethod), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void PaymentMethod_Restore_WhenNotDeleted_ShouldNotIncrement()
     {

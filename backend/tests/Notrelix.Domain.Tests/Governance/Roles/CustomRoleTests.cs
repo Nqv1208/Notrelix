@@ -7,6 +7,8 @@ namespace Notrelix.Domain.Tests.Governance;
 [CoversAggregate(typeof(CustomRole))]
 public class CustomRoleTests
 {
+    [CoversMutation(typeof(CustomRole), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(CustomRole), "AssignToMember(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Create_ShouldSucceed_AndRaiseEvent()
     {
@@ -21,6 +23,8 @@ public class CustomRoleTests
         role.DomainEvents.Should().ContainSingle(e => e is CustomRoleCreatedDomainEvent);
     }
 
+    [CoversMutation(typeof(CustomRole), "AddPermission(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(CustomRole), "RemovePermission(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void AddPermission_ShouldAddToList_AndRaiseEvent()
     {
@@ -35,6 +39,8 @@ public class CustomRoleTests
         role.DomainEvents.Should().ContainSingle(e => e is CustomRoleUpdatedDomainEvent);
     }
 
+    [CoversMutation(typeof(CustomRole), "RevokeFromMember(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(CustomRole), "RemovePermission(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void RemovePermission_ShouldRemoveFromList_AndRaiseEvent()
     {

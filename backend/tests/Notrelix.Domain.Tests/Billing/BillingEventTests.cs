@@ -41,6 +41,9 @@ public class BillingEventTests
         act.Should().Throw<BusinessRuleException>();
     }
 
+    [CoversMutation(typeof(BillingEvent), "MarkIgnored(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(BillingEvent), "MarkFailed(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(BillingEvent), "MarkProcessed(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void MarkProcessed_WhenReceived_ShouldSucceed()
     {
@@ -52,6 +55,9 @@ public class BillingEventTests
         billingEvent.UpdatedBy.Should().Be(_actor);
     }
 
+    [CoversMutation(typeof(BillingEvent), "MarkIgnored(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(BillingEvent), "MarkFailed(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(BillingEvent), "MarkProcessed(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void MarkProcessed_WhenAlreadyProcessed_ShouldBeIdempotent()
     {
@@ -65,6 +71,9 @@ public class BillingEventTests
         billingEvent.Version.Should().Be(versionAfterFirst);
     }
 
+    [CoversMutation(typeof(BillingEvent), "MarkIgnored(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BillingEvent), "MarkFailed(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BillingEvent), "MarkProcessed(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void MarkFailed_ShouldSetStatusAndError()
     {
@@ -76,6 +85,9 @@ public class BillingEventTests
         billingEvent.Error.Should().Be("Processing error");
     }
 
+    [CoversMutation(typeof(BillingEvent), "MarkIgnored(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(BillingEvent), "MarkFailed(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(BillingEvent), "MarkProcessed(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void MarkFailed_WhenAlreadyFailed_ShouldBeIdempotent()
     {
@@ -89,6 +101,9 @@ public class BillingEventTests
         billingEvent.Version.Should().Be(versionAfterFirst);
     }
 
+    [CoversMutation(typeof(BillingEvent), "MarkIgnored(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(BillingEvent), "MarkFailed(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(BillingEvent), "MarkProcessed(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void MarkIgnored_WhenReceived_ShouldSucceed()
     {
@@ -99,6 +114,9 @@ public class BillingEventTests
         billingEvent.Status.Should().Be(BillingEventStatus.Ignored);
     }
 
+    [CoversMutation(typeof(BillingEvent), "MarkIgnored(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(BillingEvent), "MarkFailed(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(BillingEvent), "MarkProcessed(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void MarkIgnored_WhenNotReceived_ShouldBeIdempotent()
     {

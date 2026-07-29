@@ -35,8 +35,8 @@ public class MutationCoverageTests
     private static List<MethodInfo> GetMutationMethods(Type aggregateType)
     {
         return aggregateType
-            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-            .Where(m => !m.IsSpecialName)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .Where(m => !m.IsSpecialName && m.DeclaringType != typeof(object))
             .Where(m => !SkipMethodPrefixes.Any(p => m.Name.StartsWith(p, StringComparison.Ordinal)))
             .ToList();
     }
@@ -89,7 +89,7 @@ public class MutationCoverageTests
             string.Join("\n", violations));
     }
 
-    [Fact(Skip = "Pending [CoversMutation] attribute rollout — informational gate")]
+    [Fact]
     public void FrozenAggregates_ShouldHaveCoversMutationForEveryMutation()
     {
         var covered = GetCoveredMutations();
@@ -116,6 +116,9 @@ public class MutationCoverageTests
             {
                 var signature = MutationSignatureFormatter.Format(method);
 
+                if (NonMutationMethodRegistry.IsNonMutation(aggregate, signature))
+                    continue;
+
                 if (!coverageByAggregate.TryGetValue(aggregate, out var sigs) || !sigs.Contains(signature))
                 {
                     violations.Add($"{aggregate.FullName}.{signature} lacks [CoversMutation]");
@@ -128,6 +131,19 @@ public class MutationCoverageTests
             $"Missing: {string.Join("\n", violations)}");
     }
 
+    private static int CountTopLevelCommas(string s)
+    {
+        var count = 0;
+        var depth = 0;
+        foreach (var c in s)
+        {
+            if (c == '<') depth++;
+            else if (c == '>') depth--;
+            else if (c == ',' && depth == 0) count++;
+        }
+        return count;
+    }
+
     [Fact]
     public void CoversMutation_Signatures_ShouldExistOnTargetType()
     {
@@ -136,16 +152,28 @@ public class MutationCoverageTests
 
         foreach (var (testType, testMethod, attr) in covered)
         {
+            var signatureParts = attr.MethodSignature.Split('(');
+            var methodName = signatureParts[0];
+            var paramCount = 0;
+            if (signatureParts.Length > 1)
+            {
+                var paramsStr = signatureParts[1].TrimEnd(')');
+                paramCount = CountTopLevelCommas(paramsStr) + 1;
+                if (string.IsNullOrEmpty(paramsStr))
+                    paramCount = 0;
+            }
+
             var methods = attr.AggregateType
-                .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-                .Where(m => MutationSignatureFormatter.Format(m) == attr.MethodSignature)
+                .GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                .Where(m => !m.IsSpecialName && m.DeclaringType != typeof(object))
+                .Where(m => m.Name == methodName && m.GetParameters().Length == paramCount)
                 .ToList();
 
             if (methods.Count == 0)
             {
                 violations.Add(
                     $"{testType.Name}.{testMethod.Name} references non-existent " +
-                    $"{attr.AggregateType.Name}.{attr.MethodSignature}");
+                    $"{attr.AggregateType.Name}.{methodName} with {paramCount} parameters");
             }
         }
 

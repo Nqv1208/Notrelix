@@ -12,6 +12,9 @@ public class BoardRelationEventTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
+    [CoversMutation(typeof(BoardRelation), "Pause(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(BoardRelation), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(BoardRelation), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void BoardRelation_Pause_ShouldRaiseEvent()
     {
@@ -26,6 +29,7 @@ public class BoardRelationEventTests
         relation.DomainEvents.Should().ContainSingle(e => e is BoardRelationPausedDomainEvent);
     }
 
+    [CoversMutation(typeof(BoardRelation), "Pause(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void BoardRelation_Pause_WhenAlreadyPaused_ShouldNotRaiseEvent()
     {
@@ -40,6 +44,7 @@ public class BoardRelationEventTests
         relation.DomainEvents.Should().NotContain(e => e is BoardRelationPausedDomainEvent);
     }
 
+    [CoversMutation(typeof(BoardRelation), "Resume(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void BoardRelation_Resume_ShouldRaiseEvent()
     {
@@ -55,6 +60,7 @@ public class BoardRelationEventTests
         relation.DomainEvents.Should().ContainSingle(e => e is BoardRelationResumedDomainEvent);
     }
 
+    [CoversMutation(typeof(BoardRelation), "Resume(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void BoardRelation_Resume_WhenAlreadyActive_ShouldNotRaiseEvent()
     {
@@ -68,6 +74,7 @@ public class BoardRelationEventTests
         relation.DomainEvents.Should().NotContain(e => e is BoardRelationResumedDomainEvent);
     }
 
+    [CoversMutation(typeof(BoardRelation), "MarkBroken(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void BoardRelation_MarkBroken_ShouldRaiseEvent()
     {
@@ -82,6 +89,7 @@ public class BoardRelationEventTests
         relation.DomainEvents.Should().ContainSingle(e => e is BoardRelationMarkedBrokenDomainEvent);
     }
 
+    [CoversMutation(typeof(BoardRelation), "MarkBroken(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void BoardRelation_MarkBroken_WhenAlreadyBroken_ShouldNotRaiseEvent()
     {

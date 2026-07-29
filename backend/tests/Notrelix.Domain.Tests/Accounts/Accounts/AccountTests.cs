@@ -72,6 +72,7 @@ public class AccountTests
 
     // ── Rename ───────────────────────────────────────────────────────────
 
+    [CoversMutation(typeof(Account), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Rename_ShouldSucceed_AndRaiseEvent()
     {
@@ -84,6 +85,7 @@ public class AccountTests
         account.DomainEvents.Should().ContainSingle(e => e is AccountRenamedDomainEvent);
     }
 
+    [CoversMutation(typeof(Account), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Rename_SameName_ShouldNotRaiseEvent()
     {
@@ -95,6 +97,7 @@ public class AccountTests
         account.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Account), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Rename_ClosedAccount_ShouldThrow()
     {
@@ -105,6 +108,7 @@ public class AccountTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot rename a closed account.");
     }
 
+    [CoversMutation(typeof(Account), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Rename_ShouldSetAuditAndVersion()
     {
@@ -118,6 +122,7 @@ public class AccountTests
         account.Version.Should().Be(versionBefore + 1);
     }
 
+    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
     [Fact]
     public void Rename_AfterSoftDelete_ShouldThrow()
     {
@@ -128,6 +133,7 @@ public class AccountTests
         act.Should().Throw<BusinessRuleException>();
     }
 
+    [CoversMutation(typeof(Account), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Rename_ShouldRaiseEvent_WithCorrectPayload()
     {
@@ -145,6 +151,7 @@ public class AccountTests
 
     // ── Archive ──────────────────────────────────────────────────────────
 
+    [CoversMutation(typeof(Account), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Archive_ShouldSucceed()
     {
@@ -157,6 +164,7 @@ public class AccountTests
         account.DomainEvents.Should().ContainSingle(e => e is AccountArchivedDomainEvent);
     }
 
+    [CoversMutation(typeof(Account), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Archive_AlreadyClosed_ShouldNotRaiseEvent()
     {
@@ -169,6 +177,7 @@ public class AccountTests
         account.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
     [Fact]
     public void Archive_AfterSoftDelete_ShouldThrow()
     {
@@ -179,6 +188,7 @@ public class AccountTests
         act.Should().Throw<BusinessRuleException>();
     }
 
+    [CoversMutation(typeof(Account), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Archive_ShouldIncrementVersion()
     {
@@ -190,6 +200,7 @@ public class AccountTests
         account.Version.Should().Be(versionBefore + 1);
     }
 
+    [CoversMutation(typeof(Account), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Archive_NoOp_VersionShouldNotIncrement()
     {
@@ -202,6 +213,7 @@ public class AccountTests
         account.Version.Should().Be(versionBefore);
     }
 
+    [CoversMutation(typeof(Account), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Audit)]
     [Fact]
     public void Archive_ShouldSetAudit()
     {
@@ -213,6 +225,7 @@ public class AccountTests
         account.UpdatedBy.Should().Be(_userId);
     }
 
+    [CoversMutation(typeof(Account), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Archive_ShouldRaiseEvent_WithCorrectPayload()
     {
@@ -229,6 +242,7 @@ public class AccountTests
 
     // ── Suspend ──────────────────────────────────────────────────────────
 
+    [CoversMutation(typeof(Account), "Suspend(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Valid)]
     [Fact]
     public void Suspend_ShouldSucceed()
     {
@@ -241,6 +255,7 @@ public class AccountTests
         account.DomainEvents.Should().ContainSingle(e => e is AccountSuspendedDomainEvent);
     }
 
+    [CoversMutation(typeof(Account), "Suspend(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
     public void Suspend_AlreadySuspended_ShouldNotRaiseEvent()
     {
@@ -253,6 +268,7 @@ public class AccountTests
         account.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
     [Fact]
     public void Suspend_AfterSoftDelete_ShouldThrow()
     {
@@ -263,6 +279,7 @@ public class AccountTests
         act.Should().Throw<BusinessRuleException>();
     }
 
+    [CoversMutation(typeof(Account), "Suspend(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Version)]
     [Fact]
     public void Suspend_ShouldIncrementVersion()
     {
@@ -274,6 +291,7 @@ public class AccountTests
         account.Version.Should().Be(versionBefore + 1);
     }
 
+    [CoversMutation(typeof(Account), "Suspend(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
     public void Suspend_NoOp_VersionShouldNotIncrement()
     {
@@ -286,6 +304,7 @@ public class AccountTests
         account.Version.Should().Be(versionBefore);
     }
 
+    [CoversMutation(typeof(Account), "Suspend(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Audit)]
     [Fact]
     public void Suspend_ShouldSetAudit()
     {
@@ -297,6 +316,7 @@ public class AccountTests
         account.UpdatedBy.Should().Be(_userId);
     }
 
+    [CoversMutation(typeof(Account), "Suspend(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Event)]
     [Fact]
     public void Suspend_ShouldRaiseEvent_WithCorrectPayload()
     {
@@ -313,6 +333,7 @@ public class AccountTests
 
     // ── Activate ─────────────────────────────────────────────────────────
 
+    [CoversMutation(typeof(Account), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Activate_ShouldRestoreToActive_AndRaiseEvent()
     {
@@ -326,6 +347,7 @@ public class AccountTests
         account.DomainEvents.Should().ContainSingle(e => e is AccountActivatedDomainEvent);
     }
 
+    [CoversMutation(typeof(Account), "Activate(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Activate_AlreadyActive_ShouldNotRaiseEvent()
     {
@@ -337,6 +359,7 @@ public class AccountTests
         account.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
     [Fact]
     public void Activate_AfterSoftDelete_ShouldThrow()
     {
@@ -347,6 +370,7 @@ public class AccountTests
         act.Should().Throw<BusinessRuleException>();
     }
 
+    [CoversMutation(typeof(Account), "Activate(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Activate_ShouldIncrementVersion()
     {
@@ -359,6 +383,7 @@ public class AccountTests
         account.Version.Should().Be(versionBefore + 1);
     }
 
+    [CoversMutation(typeof(Account), "Activate(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Activate_NoOp_VersionShouldNotIncrement()
     {
@@ -370,6 +395,7 @@ public class AccountTests
         account.Version.Should().Be(versionBefore);
     }
 
+    [CoversMutation(typeof(Account), "Activate(System.Guid,System.DateTimeOffset)", MutationScenario.Audit)]
     [Fact]
     public void Activate_ShouldSetAudit()
     {
@@ -382,6 +408,7 @@ public class AccountTests
         account.UpdatedBy.Should().Be(_userId);
     }
 
+    [CoversMutation(typeof(Account), "Activate(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Activate_ShouldRaiseEvent_WithCorrectPayload()
     {
@@ -399,6 +426,7 @@ public class AccountTests
 
     // ── SoftDelete / Restore ─────────────────────────────────────────────
 
+    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldMarkAsSoftDeleted()
     {
@@ -412,6 +440,7 @@ public class AccountTests
         account.DomainEvents.Should().ContainSingle(e => e is AccountSoftDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_DeletedAccount_ShouldNotRaiseEvent()
     {
@@ -424,6 +453,7 @@ public class AccountTests
         account.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Account), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldRestoreToActive()
     {
@@ -438,6 +468,7 @@ public class AccountTests
         account.DomainEvents.Should().ContainSingle(e => e is AccountRestoredDomainEvent);
     }
 
+    [CoversMutation(typeof(Account), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ActiveAccount_ShouldNotRaiseEvent()
     {
@@ -449,6 +480,7 @@ public class AccountTests
         account.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldIncrementVersion()
     {
@@ -460,6 +492,7 @@ public class AccountTests
         account.Version.Should().Be(versionBefore + 1);
     }
 
+    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
     public void SoftDelete_NoOp_VersionShouldNotIncrement()
     {
@@ -472,6 +505,7 @@ public class AccountTests
         account.Version.Should().Be(versionBefore);
     }
 
+    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldSetDeleteAudit()
     {
@@ -483,6 +517,7 @@ public class AccountTests
         account.DeletedBy.Should().Be(_userId);
     }
 
+    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldRaiseEvent_WithCorrectPayload()
     {
@@ -497,6 +532,7 @@ public class AccountTests
         evt.DeletedBy.Should().Be(_userId);
     }
 
+    [CoversMutation(typeof(Account), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldIncrementVersion()
     {
@@ -509,6 +545,7 @@ public class AccountTests
         account.Version.Should().Be(versionBefore + 1);
     }
 
+    [CoversMutation(typeof(Account), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Restore_NoOp_VersionShouldNotIncrement()
     {
@@ -520,6 +557,7 @@ public class AccountTests
         account.Version.Should().Be(versionBefore);
     }
 
+    [CoversMutation(typeof(Account), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldSetRestoreAudit()
     {
@@ -532,6 +570,7 @@ public class AccountTests
         account.RestoredBy.Should().Be(_userId);
     }
 
+    [CoversMutation(typeof(Account), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldRaiseEvent_WithCorrectPayload()
     {
@@ -549,6 +588,7 @@ public class AccountTests
 
     // ── UpdatePlanCode ───────────────────────────────────────────────────
 
+    [CoversMutation(typeof(Account), "UpdatePlanCode(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void UpdatePlanCode_ShouldSucceed_AndRaiseEvent()
     {
@@ -561,6 +601,7 @@ public class AccountTests
         account.DomainEvents.Should().ContainSingle(e => e is AccountPlanCodeChangedDomainEvent);
     }
 
+    [CoversMutation(typeof(Account), "UpdatePlanCode(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void UpdatePlanCode_SameValue_ShouldNotRaiseEvent()
     {
@@ -573,6 +614,7 @@ public class AccountTests
         account.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Account), "UpdatePlanCode(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void UpdatePlanCode_ShouldTrimWhitespace()
     {
@@ -583,6 +625,7 @@ public class AccountTests
         account.PlanCode.Should().Be("enterprise");
     }
 
+    [CoversMutation(typeof(Account), "UpdatePlanCode(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void UpdatePlanCode_Null_ShouldClear()
     {
@@ -596,6 +639,7 @@ public class AccountTests
         account.DomainEvents.Should().ContainSingle(e => e is AccountPlanCodeChangedDomainEvent);
     }
 
+    [CoversMutation(typeof(Account), "UpdatePlanCode(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void UpdatePlanCode_ShouldSetAuditAndVersion()
     {
@@ -609,6 +653,7 @@ public class AccountTests
         account.Version.Should().Be(versionBefore + 1);
     }
 
+    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
     [Fact]
     public void UpdatePlanCode_AfterSoftDelete_ShouldThrow()
     {
@@ -619,6 +664,7 @@ public class AccountTests
         act.Should().Throw<BusinessRuleException>();
     }
 
+    [CoversMutation(typeof(Account), "UpdatePlanCode(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void UpdatePlanCode_ShouldRaiseEvent_WithCorrectPayload()
     {
@@ -637,6 +683,7 @@ public class AccountTests
 
     // ── UpdateDefaultRegion ──────────────────────────────────────────────
 
+    [CoversMutation(typeof(Account), "UpdateDefaultRegion(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void UpdateDefaultRegion_ShouldSucceed_AndRaiseEvent()
     {
@@ -649,6 +696,7 @@ public class AccountTests
         account.DomainEvents.Should().ContainSingle(e => e is AccountDefaultRegionChangedDomainEvent);
     }
 
+    [CoversMutation(typeof(Account), "UpdateDefaultRegion(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void UpdateDefaultRegion_SameValue_ShouldNotRaiseEvent()
     {
@@ -661,6 +709,7 @@ public class AccountTests
         account.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Account), "UpdateDefaultRegion(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void UpdateDefaultRegion_ShouldTrimWhitespace()
     {
@@ -671,6 +720,7 @@ public class AccountTests
         account.DefaultRegionCode.Should().Be("us-east-1");
     }
 
+    [CoversMutation(typeof(Account), "UpdateDefaultRegion(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void UpdateDefaultRegion_Null_ShouldClear()
     {
@@ -684,6 +734,7 @@ public class AccountTests
         account.DomainEvents.Should().ContainSingle(e => e is AccountDefaultRegionChangedDomainEvent);
     }
 
+    [CoversMutation(typeof(Account), "UpdateDefaultRegion(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void UpdateDefaultRegion_ShouldSetAuditAndVersion()
     {
@@ -697,6 +748,7 @@ public class AccountTests
         account.Version.Should().Be(versionBefore + 1);
     }
 
+    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
     [Fact]
     public void UpdateDefaultRegion_AfterSoftDelete_ShouldThrow()
     {
@@ -707,6 +759,7 @@ public class AccountTests
         act.Should().Throw<BusinessRuleException>();
     }
 
+    [CoversMutation(typeof(Account), "UpdateDefaultRegion(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void UpdateDefaultRegion_ShouldRaiseEvent_WithCorrectPayload()
     {

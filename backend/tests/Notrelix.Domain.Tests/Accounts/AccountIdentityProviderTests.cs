@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Accounts.IdentityProviders;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Accounts;
 
@@ -61,6 +62,7 @@ public class AccountIdentityProviderTests
         act.Should().Throw<BusinessRuleException>();
     }
 
+    [CoversMutation(typeof(AccountIdentityProvider), "Enable()", MutationScenario.Valid)]
     [Fact]
     public void Enable_ShouldSetStatusToActive()
     {
@@ -72,6 +74,7 @@ public class AccountIdentityProviderTests
         idp.Status.Should().Be("Active");
     }
 
+    [CoversMutation(typeof(AccountIdentityProvider), "Enable()", MutationScenario.NoOp)]
     [Fact]
     public void Enable_WhenAlreadyActive_ShouldBeIdempotent()
     {
@@ -84,6 +87,7 @@ public class AccountIdentityProviderTests
         idp.Status.Should().Be("Active");
     }
 
+    [CoversMutation(typeof(AccountIdentityProvider), "Disable()", MutationScenario.Valid)]
     [Fact]
     public void Disable_ShouldSetStatusToDisabled()
     {
@@ -96,6 +100,7 @@ public class AccountIdentityProviderTests
         idp.Status.Should().Be("Disabled");
     }
 
+    [CoversMutation(typeof(AccountIdentityProvider), "EnableJitProvisioning()", MutationScenario.Valid)]
     [Fact]
     public void EnableJitProvisioning_ShouldSetToTrue()
     {
@@ -107,6 +112,7 @@ public class AccountIdentityProviderTests
         idp.JitProvisioningEnabled.Should().BeTrue();
     }
 
+    [CoversMutation(typeof(AccountIdentityProvider), "DisableJitProvisioning()", MutationScenario.Valid)]
     [Fact]
     public void DisableJitProvisioning_ShouldSetToFalse()
     {
@@ -119,6 +125,7 @@ public class AccountIdentityProviderTests
         idp.JitProvisioningEnabled.Should().BeFalse();
     }
 
+    [CoversMutation(typeof(AccountIdentityProvider), "UpdateCertificate(System.String)", MutationScenario.Valid)]
     [Fact]
     public void UpdateCertificate_ShouldUpdateRef()
     {
@@ -130,6 +137,7 @@ public class AccountIdentityProviderTests
         idp.CertificateRef.Should().Be("new-cert");
     }
 
+    [CoversMutation(typeof(AccountIdentityProvider), "UpdateCertificate(System.String)", MutationScenario.Invalid)]
     [Fact]
     public void UpdateCertificate_WithEmptyValue_ShouldThrow()
     {

@@ -44,6 +44,10 @@ public class UserProfileTests
         profile.Id.Should().NotBe(Guid.Empty);
     }
 
+    [CoversMutation(typeof(UserProfile), "UpdatePreferences(System.String,System.DateTimeOffset)", MutationScenario.Audit)]
+    [CoversMutation(typeof(UserProfile), "UpdateTheme(System.String,System.DateTimeOffset)", MutationScenario.Audit)]
+    [CoversMutation(typeof(UserProfile), "UpdateLocale(System.String,System.DateTimeOffset)", MutationScenario.Audit)]
+    [CoversMutation(typeof(UserProfile), "UpdateTimezone(System.String,System.DateTimeOffset)", MutationScenario.Audit)]
     [Fact]
     public void UpdateTimezone_ShouldUseSuppliedTimestampAndAudit()
     {
@@ -58,6 +62,10 @@ public class UserProfileTests
         profile.UpdatedBy.Should().Be(userId);
     }
 
+    [CoversMutation(typeof(UserProfile), "UpdatePreferences(System.String,System.DateTimeOffset)", MutationScenario.Audit)]
+    [CoversMutation(typeof(UserProfile), "UpdateTheme(System.String,System.DateTimeOffset)", MutationScenario.Audit)]
+    [CoversMutation(typeof(UserProfile), "UpdateLocale(System.String,System.DateTimeOffset)", MutationScenario.Audit)]
+    [CoversMutation(typeof(UserProfile), "UpdateTimezone(System.String,System.DateTimeOffset)", MutationScenario.Audit)]
     [Fact]
     public void UpdateLocale_ShouldUseSuppliedTimestampAndAudit()
     {
@@ -72,6 +80,10 @@ public class UserProfileTests
         profile.UpdatedBy.Should().Be(userId);
     }
 
+    [CoversMutation(typeof(UserProfile), "UpdatePreferences(System.String,System.DateTimeOffset)", MutationScenario.Audit)]
+    [CoversMutation(typeof(UserProfile), "UpdateTheme(System.String,System.DateTimeOffset)", MutationScenario.Audit)]
+    [CoversMutation(typeof(UserProfile), "UpdateLocale(System.String,System.DateTimeOffset)", MutationScenario.Audit)]
+    [CoversMutation(typeof(UserProfile), "UpdateTimezone(System.String,System.DateTimeOffset)", MutationScenario.Audit)]
     [Fact]
     public void UpdateTheme_ShouldUseSuppliedTimestampAndAudit()
     {
@@ -86,6 +98,10 @@ public class UserProfileTests
         profile.UpdatedBy.Should().Be(userId);
     }
 
+    [CoversMutation(typeof(UserProfile), "UpdatePreferences(System.String,System.DateTimeOffset)", MutationScenario.Audit)]
+    [CoversMutation(typeof(UserProfile), "UpdateTheme(System.String,System.DateTimeOffset)", MutationScenario.Audit)]
+    [CoversMutation(typeof(UserProfile), "UpdateLocale(System.String,System.DateTimeOffset)", MutationScenario.Audit)]
+    [CoversMutation(typeof(UserProfile), "UpdateTimezone(System.String,System.DateTimeOffset)", MutationScenario.Audit)]
     [Fact]
     public void UpdatePreferences_ShouldUseSuppliedTimestampAndAudit()
     {
@@ -100,6 +116,10 @@ public class UserProfileTests
         profile.UpdatedBy.Should().Be(userId);
     }
 
+    [CoversMutation(typeof(UserProfile), "UpdatePreferences(System.String,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(UserProfile), "UpdateTheme(System.String,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(UserProfile), "UpdateLocale(System.String,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(UserProfile), "UpdateTimezone(System.String,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void UpdateTimezone_WithEmptyValue_ShouldDefaultToUtc()
     {
@@ -119,6 +139,11 @@ public class UserProfileTests
         userProperty.Should().BeNull("circular navigation to User has been removed");
     }
 
+    [CoversMutation(typeof(UserProfile), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(UserProfile), "UpdatePreferences(System.String,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(UserProfile), "UpdateTheme(System.String,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(UserProfile), "UpdateLocale(System.String,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(UserProfile), "UpdateTimezone(System.String,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void UpdateTimezone_OnDeletedProfile_ShouldThrow()
     {

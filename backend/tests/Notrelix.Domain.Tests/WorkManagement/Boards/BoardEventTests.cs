@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.WorkManagement.Boards;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.WorkManagement.Boards;
 
@@ -9,6 +10,7 @@ public class BoardEventTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
+    [CoversMutation(typeof(Board), "UpdateDescription(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Board_UpdateDescription_ShouldRaiseEvent()
     {
@@ -27,6 +29,7 @@ public class BoardEventTests
         evt.NewDescription.Should().Be("New desc");
     }
 
+    [CoversMutation(typeof(Board), "UpdateDescription(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Board_UpdateDescription_WhenSameValue_ShouldNotRaiseEvent()
     {
@@ -40,6 +43,7 @@ public class BoardEventTests
         board.DomainEvents.Should().NotContain(e => e is BoardDescriptionUpdatedDomainEvent);
     }
 
+    [CoversMutation(typeof(Board), "UpdateBackground(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Board_UpdateBackground_ShouldRaiseEvent()
     {
@@ -57,6 +61,7 @@ public class BoardEventTests
         evt.NewBackground.Should().Be("new-bg");
     }
 
+    [CoversMutation(typeof(Board), "SetDefaultGroup(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Board_SetDefaultGroup_ShouldRaiseEvent()
     {

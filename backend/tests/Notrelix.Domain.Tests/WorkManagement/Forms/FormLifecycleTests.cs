@@ -12,6 +12,8 @@ public class FormLifecycleTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
+    [CoversMutation(typeof(Form), "Publish(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Form), "UpdateDetails(System.String,Notrelix.Domain.WorkManagement.Boards.BoardVisibility,System.String,System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Form_Publish_ShouldEmitEventAndUpdateStatus()
     {
@@ -26,6 +28,7 @@ public class FormLifecycleTests
         form.Version.Should().Be(3);
     }
 
+    [CoversMutation(typeof(Form), "Publish(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Form_Publish_WithNoQuestions_ShouldThrow()
     {
@@ -35,6 +38,7 @@ public class FormLifecycleTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*no questions*");
     }
 
+    [CoversMutation(typeof(Form), "Publish(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Form_Publish_WhenClosed_ShouldThrow()
     {
@@ -46,6 +50,8 @@ public class FormLifecycleTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*closed*");
     }
 
+    [CoversMutation(typeof(Form), "Close(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Form), "UpdateDetails(System.String,Notrelix.Domain.WorkManagement.Boards.BoardVisibility,System.String,System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Form_Close_ShouldEmitEventAndUpdateStatus()
     {
@@ -59,6 +65,7 @@ public class FormLifecycleTests
         form.Version.Should().Be(2);
     }
 
+    [CoversMutation(typeof(Form), "Close(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Form_Close_WhenAlreadyClosed_ShouldNotIncrementVersion()
     {
@@ -71,6 +78,7 @@ public class FormLifecycleTests
         form.Version.Should().Be(version);
     }
 
+    [CoversMutation(typeof(Form), "AddQuestion(Notrelix.Domain.WorkManagement.Forms.FormQuestion,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Form_AddQuestion_ShouldEmitEvent()
     {
@@ -84,6 +92,7 @@ public class FormLifecycleTests
         form.DomainEvents.Should().ContainSingle(e => e is FormQuestionAddedDomainEvent);
     }
 
+    [CoversMutation(typeof(Form), "Close(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Form_AddQuestion_WhenClosed_ShouldThrow()
     {

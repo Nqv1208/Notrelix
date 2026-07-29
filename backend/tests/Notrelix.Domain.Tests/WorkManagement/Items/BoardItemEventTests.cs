@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.WorkManagement.Items;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.WorkManagement.Items;
 
@@ -12,6 +13,7 @@ public class BoardItemEventTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
+    [CoversMutation(typeof(BoardItem), "Complete(System.DateTimeOffset?,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void BoardItem_Complete_ShouldRaiseEvent()
     {
@@ -28,6 +30,7 @@ public class BoardItemEventTests
         evt.CompletedBy.Should().Be(Actor);
     }
 
+    [CoversMutation(typeof(BoardItem), "Complete(System.DateTimeOffset?,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void BoardItem_Complete_WhenSameValue_ShouldNotRaiseEvent()
     {
@@ -42,6 +45,7 @@ public class BoardItemEventTests
         item.DomainEvents.Should().NotContain(e => e is BoardItemCompletedDomainEvent);
     }
 
+    [CoversMutation(typeof(BoardItem), "SetTimeline(System.DateTimeOffset?,System.DateTimeOffset?,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void BoardItem_SetTimeline_ShouldRaiseEvent()
     {
@@ -58,6 +62,7 @@ public class BoardItemEventTests
         evt.DueAt.Should().Be(Now.AddDays(7));
     }
 
+    [CoversMutation(typeof(BoardItem), "SetTimeline(System.DateTimeOffset?,System.DateTimeOffset?,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void BoardItem_SetTimeline_WhenSameValue_ShouldNotRaiseEvent()
     {
@@ -71,6 +76,7 @@ public class BoardItemEventTests
         item.DomainEvents.Should().NotContain(e => e is BoardItemTimelineSetDomainEvent);
     }
 
+    [CoversMutation(typeof(BoardItem), "AssignParentItem(System.Guid?,System.Int32,System.Collections.Generic.IReadOnlyDictionary<System.Guid,Notrelix.Domain.WorkManagement.Items.ItemParentSnapshot>,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void BoardItem_AssignParentItem_ShouldRaiseEvent()
     {
@@ -94,6 +100,7 @@ public class BoardItemEventTests
         evt.ItemLevel.Should().Be(1);
     }
 
+    [CoversMutation(typeof(BoardItem), "AssignParentItem(System.Guid?,System.Int32,System.Collections.Generic.IReadOnlyDictionary<System.Guid,Notrelix.Domain.WorkManagement.Items.ItemParentSnapshot>,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void BoardItem_AssignParentItem_WithOwnId_ShouldThrow()
     {
@@ -107,6 +114,7 @@ public class BoardItemEventTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*own parent*");
     }
 
+    [CoversMutation(typeof(BoardItem), "AssignParentItem(System.Guid?,System.Int32,System.Collections.Generic.IReadOnlyDictionary<System.Guid,Notrelix.Domain.WorkManagement.Items.ItemParentSnapshot>,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void BoardItem_AssignParentItem_WithCycle_ShouldThrow()
     {
@@ -124,6 +132,7 @@ public class BoardItemEventTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*cycle*");
     }
 
+    [CoversMutation(typeof(BoardItem), "AssignParentItem(System.Guid?,System.Int32,System.Collections.Generic.IReadOnlyDictionary<System.Guid,Notrelix.Domain.WorkManagement.Items.ItemParentSnapshot>,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void BoardItem_AssignParentItem_WithNull_ShouldClearParent()
     {

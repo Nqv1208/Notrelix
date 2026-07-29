@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Billing.Usage;
 
 namespace Notrelix.Domain.Tests.Billing;
@@ -21,6 +22,7 @@ public class UsageMetricTests
     }
 
     [Fact]
+    [CoversMutation(typeof(UsageMetric), "Increase(System.Int32,System.Int32,System.Boolean,System.DateTimeOffset)", MutationScenario.Valid)]
     public void Increase_WithinLimit_ShouldSucceed_AndRaiseEvent()
     {
         var now = DateTimeOffset.UtcNow;
@@ -34,6 +36,8 @@ public class UsageMetricTests
     }
 
     [Fact]
+    [CoversMutation(typeof(UsageMetric), "Increase(System.Int32,System.Int32,System.Boolean,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(UsageMetric), "Increase(System.Int32,System.Int32,System.Boolean,System.DateTimeOffset)", MutationScenario.Event)]
     public void Increase_ExceedingHardLimit_ShouldThrowException_AndRaiseLimitExceededEvent()
     {
         var now = DateTimeOffset.UtcNow;
@@ -46,6 +50,7 @@ public class UsageMetricTests
     }
 
     [Fact]
+    [CoversMutation(typeof(UsageMetric), "Increase(System.Int32,System.Int32,System.Boolean,System.DateTimeOffset)", MutationScenario.Valid)]
     public void Increase_ExceedingSoftLimit_ShouldSucceed_AndRaiseBothEvents()
     {
         var now = DateTimeOffset.UtcNow;
@@ -59,6 +64,8 @@ public class UsageMetricTests
     }
 
     [Fact]
+    [CoversMutation(typeof(UsageMetric), "Decrease(System.Int32,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(UsageMetric), "Decrease(System.Int32,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void Decrease_ShouldReduceValue_AndNotAllowNegative()
     {
         var now = DateTimeOffset.UtcNow;
@@ -75,6 +82,7 @@ public class UsageMetricTests
     }
 
     [Fact]
+    [CoversMutation(typeof(UsageMetric), "Reset(Notrelix.Domain.Billing.Usage.UsagePeriod,System.DateTimeOffset)", MutationScenario.Valid)]
     public void Reset_ShouldClearValue()
     {
         var now = DateTimeOffset.UtcNow;
@@ -90,6 +98,7 @@ public class UsageMetricTests
     }
 
     [Fact]
+    [CoversMutation(typeof(UsageMetric), "Increase(System.Int32,System.Int32,System.Boolean,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void Increase_WhenDeleted_ShouldThrow()
     {
         var now = DateTimeOffset.UtcNow;
@@ -101,6 +110,7 @@ public class UsageMetricTests
     }
 
     [Fact]
+    [CoversMutation(typeof(UsageMetric), "Decrease(System.Int32,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void Decrease_WhenDeleted_ShouldThrow()
     {
         var now = DateTimeOffset.UtcNow;
@@ -113,6 +123,7 @@ public class UsageMetricTests
     }
 
     [Fact]
+    [CoversMutation(typeof(UsageMetric), "Decrease(System.Int32,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void Decrease_WithNonPositiveAmount_ShouldThrow()
     {
         var now = DateTimeOffset.UtcNow;
@@ -124,6 +135,7 @@ public class UsageMetricTests
     }
 
     [Fact]
+    [CoversMutation(typeof(UsageMetric), "Decrease(System.Int32,System.DateTimeOffset)", MutationScenario.Event)]
     public void Decrease_ShouldRaiseEvent()
     {
         var now = DateTimeOffset.UtcNow;
@@ -137,6 +149,7 @@ public class UsageMetricTests
     }
 
     [Fact]
+    [CoversMutation(typeof(UsageMetric), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     public void SoftDelete_ShouldMarkDeleted_AndRaiseEvent()
     {
         var now = DateTimeOffset.UtcNow;
@@ -150,6 +163,7 @@ public class UsageMetricTests
     }
 
     [Fact]
+    [CoversMutation(typeof(UsageMetric), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
         var now = DateTimeOffset.UtcNow;
@@ -163,6 +177,7 @@ public class UsageMetricTests
     }
 
     [Fact]
+    [CoversMutation(typeof(UsageMetric), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     public void Restore_ShouldRestore_AndRaiseEvent()
     {
         var now = DateTimeOffset.UtcNow;
@@ -177,6 +192,7 @@ public class UsageMetricTests
     }
 
     [Fact]
+    [CoversMutation(typeof(UsageMetric), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {
         var now = DateTimeOffset.UtcNow;

@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Notrelix.Domain.Automation.Rules;
 using Notrelix.Domain.Automation.RulesEngine;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Automation.Rules;
 
@@ -33,6 +34,7 @@ public class AutomationRuleLifecycleTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
+    [CoversMutation(typeof(AutomationRule), "Enable(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Enable_DeletedRule_ShouldNotChangeStatus()
     {
@@ -45,6 +47,7 @@ public class AutomationRuleLifecycleTests
         rule.Status.Should().Be(AutomationRuleStatus.Disabled);
     }
 
+    [CoversMutation(typeof(AutomationRule), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_thenEnable_ShouldSucceed()
     {
@@ -57,6 +60,7 @@ public class AutomationRuleLifecycleTests
         rule.Status.Should().Be(AutomationRuleStatus.Active);
     }
 
+    [CoversMutation(typeof(AutomationRule), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Enable_afterRestore_ShouldRaiseEnabledEvent()
     {
@@ -70,6 +74,7 @@ public class AutomationRuleLifecycleTests
         rule.DomainEvents.Should().ContainSingle(e => e is AutomationRuleEnabledDomainEvent);
     }
 
+    [CoversMutation(typeof(AutomationRule), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldSetStatusAndAudit()
     {
@@ -88,6 +93,7 @@ public class AutomationRuleLifecycleTests
         rule.Version.Should().Be(3);
     }
 
+    [CoversMutation(typeof(AutomationRule), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldSetStatusAndAudit()
     {
@@ -106,6 +112,7 @@ public class AutomationRuleLifecycleTests
         rule.Version.Should().Be(3);
     }
 
+    [CoversMutation(typeof(AutomationRule), "Enable(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Enable_thenDisable_ShouldBeCorrectVersion()
     {

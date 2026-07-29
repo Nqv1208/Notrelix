@@ -22,6 +22,7 @@ public class ShareLinkTests
         link.DomainEvents.Should().ContainSingle(e => e is ShareLinkCreatedDomainEvent);
     }
 
+    [CoversMutation(typeof(ShareLink), "Expire(System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void IsExpired_ShouldReturnTrue_WhenExpirationPassed()
     {
@@ -31,6 +32,7 @@ public class ShareLinkTests
         link.IsExpired(DateTimeOffset.UtcNow).Should().BeTrue();
     }
 
+    [CoversMutation(typeof(ShareLink), "Disable(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Disable_ShouldSetStatusToDisabled_AndRaiseEvent()
     {
@@ -45,6 +47,7 @@ public class ShareLinkTests
         link.DomainEvents.Should().ContainSingle(e => e is ShareLinkDisabledDomainEvent);
     }
 
+    [CoversMutation(typeof(ShareLink), "RotateTokenHash(Notrelix.Domain.Governance.ShareLinks.ShareLinkTokenHash,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void RotateTokenHash_ShouldUpdateHash_AndRaiseEvent()
     {

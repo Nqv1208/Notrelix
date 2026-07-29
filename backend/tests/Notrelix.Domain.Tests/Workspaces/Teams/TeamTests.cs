@@ -6,6 +6,8 @@ namespace Notrelix.Domain.Tests.Workspaces;
 [CoversAggregate(typeof(Team))]
 public class TeamTests
 {
+    [CoversMutation(typeof(Team), "AddMember(System.Guid,Notrelix.Domain.Workspaces.Teams.TeamMemberRole,System.Guid,System.DateTimeOffset,System.Guid?)", MutationScenario.Event)]
+    [CoversMutation(typeof(Team), "RemoveMember(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void AddMember_ShouldAddToList_AndRaiseEvent()
     {
@@ -22,6 +24,7 @@ public class TeamTests
         team.DomainEvents.Should().ContainSingle(e => e is TeamMemberAddedDomainEvent);
     }
 
+    [CoversMutation(typeof(Team), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldSetStatusToSoftDeleted_AndRaiseEvent()
     {
@@ -35,6 +38,7 @@ public class TeamTests
         team.DomainEvents.Should().Contain(e => e is TeamSoftDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(Team), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldSetStatusToActive_AndRaiseEvent()
     {
@@ -49,6 +53,8 @@ public class TeamTests
         team.DomainEvents.Should().Contain(e => e is TeamRestoredDomainEvent);
     }
 
+    [CoversMutation(typeof(Team), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Team), "RemoveMember(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void AddMember_ShouldThrow_WhenArchived()
     {
@@ -60,6 +66,7 @@ public class TeamTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*archived*");
     }
 
+    [CoversMutation(typeof(Team), "RemoveMember(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void RemoveMember_ShouldThrow_WhenArchived()
     {
@@ -73,6 +80,8 @@ public class TeamTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*archived*");
     }
 
+    [CoversMutation(typeof(Team), "AddMember(System.Guid,Notrelix.Domain.Workspaces.Teams.TeamMemberRole,System.Guid,System.DateTimeOffset,System.Guid?)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Team), "RemoveMember(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void AddMember_ShouldThrow_WhenDeleted()
     {
@@ -84,6 +93,7 @@ public class TeamTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
+    [CoversMutation(typeof(Team), "RemoveMember(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void RemoveMember_ShouldSetMemberStatusToRemoved()
     {
@@ -97,6 +107,8 @@ public class TeamTests
         member.Status.Should().Be(TeamMemberStatus.Removed);
     }
 
+    [CoversMutation(typeof(Team), "AddMember(System.Guid,Notrelix.Domain.Workspaces.Teams.TeamMemberRole,System.Guid,System.DateTimeOffset,System.Guid?)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Team), "RemoveMember(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void AddMember_DuplicateActiveMember_ShouldBeNoOp()
     {
@@ -111,6 +123,7 @@ public class TeamTests
         team.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Team), "RemoveMember(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void AddMember_ReAddRemovedMember_ShouldReactivateMember()
     {
@@ -135,6 +148,7 @@ public class TeamTests
         team.DomainEvents.Should().ContainSingle(e => e is TeamMemberAddedDomainEvent);
     }
 
+    [CoversMutation(typeof(Team), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Rename_ShouldSucceed_AndRaiseEvent()
     {
@@ -147,6 +161,7 @@ public class TeamTests
         team.DomainEvents.Should().ContainSingle(e => e is TeamRenamedDomainEvent);
     }
 
+    [CoversMutation(typeof(Team), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Rename_ShouldThrow_WhenArchived()
     {
@@ -157,6 +172,7 @@ public class TeamTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot rename an archived team.");
     }
 
+    [CoversMutation(typeof(Team), "Unarchive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Unarchive_ShouldSetStatusToActive_AndRaiseEvent()
     {
@@ -171,6 +187,7 @@ public class TeamTests
         team.DomainEvents.Should().ContainSingle(e => e is TeamUnarchivedDomainEvent);
     }
 
+    [CoversMutation(typeof(Team), "Unarchive(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Unarchive_WhenAlreadyActive_ShouldBeNoOp()
     {
@@ -183,6 +200,7 @@ public class TeamTests
         team.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Team), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
     [Fact]
     public void Unarchive_SoftDeleted_ShouldThrow()
     {
@@ -193,6 +211,7 @@ public class TeamTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
+    [CoversMutation(typeof(Team), "UpdateDescription(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void UpdateDescription_ShouldSucceed_AndRaiseEvent()
     {
@@ -210,6 +229,7 @@ public class TeamTests
         evt.UpdatedBy.Should().Be(actor);
     }
 
+    [CoversMutation(typeof(Team), "UpdateDescription(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void UpdateDescription_ShouldClearDescription_WhenSetToNull()
     {
@@ -223,6 +243,7 @@ public class TeamTests
         team.DomainEvents.Should().ContainSingle(e => e is TeamDescriptionUpdatedDomainEvent);
     }
 
+    [CoversMutation(typeof(Team), "UpdateDescription(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void UpdateDescription_WhenSameValue_ShouldBeNoOp()
     {
@@ -235,6 +256,7 @@ public class TeamTests
         team.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Team), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void UpdateDescription_ArchivedTeam_ShouldThrow()
     {
@@ -245,6 +267,8 @@ public class TeamTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*archived*");
     }
 
+    [CoversMutation(typeof(Team), "ChangeMemberRole(System.Guid,Notrelix.Domain.Workspaces.Teams.TeamMemberRole,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Team), "RemoveMember(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void ChangeMemberRole_ShouldSucceed_AndRaiseEvent()
     {
@@ -264,6 +288,8 @@ public class TeamTests
         evt.UpdatedBy.Should().Be(actor);
     }
 
+    [CoversMutation(typeof(Team), "ChangeMemberRole(System.Guid,Notrelix.Domain.Workspaces.Teams.TeamMemberRole,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Team), "RemoveMember(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void ChangeMemberRole_WhenSameRole_ShouldBeNoOp()
     {
@@ -277,6 +303,8 @@ public class TeamTests
         team.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Team), "ChangeMemberRole(System.Guid,Notrelix.Domain.Workspaces.Teams.TeamMemberRole,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Team), "RemoveMember(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void ChangeMemberRole_NonMember_ShouldThrow()
     {
@@ -286,6 +314,8 @@ public class TeamTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*not an active member*");
     }
 
+    [CoversMutation(typeof(Team), "ChangeMemberRole(System.Guid,Notrelix.Domain.Workspaces.Teams.TeamMemberRole,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Team), "RemoveMember(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void ChangeMemberRole_DowngradeLastLead_ShouldThrow()
     {
@@ -298,6 +328,8 @@ public class TeamTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot downgrade the last lead of a team.");
     }
 
+    [CoversMutation(typeof(Team), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Team), "RemoveMember(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void ChangeMemberRole_ArchivedTeam_ShouldThrow()
     {
@@ -310,6 +342,7 @@ public class TeamTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*archived*");
     }
 
+    [CoversMutation(typeof(Team), "RemoveMember(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void CreateWithLead_ShouldCreateTeamAndLeadMember()
     {
@@ -328,6 +361,7 @@ public class TeamTests
         team.Members.Should().HaveCount(1);
     }
 
+    [CoversMutation(typeof(Team), "RemoveMember(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void RemoveMember_ShouldThrow_WhenRemovingLastLead()
     {
@@ -339,6 +373,7 @@ public class TeamTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot remove the last lead from a team.");
     }
 
+    [CoversMutation(typeof(Team), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Rename_ArchivedTeam_ShouldNotMutateName()
     {
@@ -354,6 +389,7 @@ public class TeamTests
         team.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Team), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void UpdateDescription_ArchivedTeam_ShouldNotMutateDescription()
     {
@@ -369,6 +405,8 @@ public class TeamTests
         team.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Team), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Team), "RemoveMember(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void AddMember_ArchivedTeam_ShouldNotAddMember()
     {
@@ -384,6 +422,7 @@ public class TeamTests
         team.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Team), "RemoveMember(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void RemoveMember_ArchivedTeam_ShouldNotRemoveMember()
     {
@@ -401,6 +440,8 @@ public class TeamTests
         team.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Team), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Team), "RemoveMember(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void ChangeMemberRole_ArchivedTeam_ShouldNotMutateRole()
     {
@@ -418,6 +459,7 @@ public class TeamTests
         team.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Team), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Rename_EmptyActor_ShouldNotMutateName()
     {
@@ -432,6 +474,7 @@ public class TeamTests
         team.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Team), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Archive_EmptyActor_ShouldNotMutateStatus()
     {

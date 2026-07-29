@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Billing.Subscriptions;
 
 namespace Notrelix.Domain.Tests.Billing;
@@ -10,6 +11,7 @@ public class SubscriptionIdempotencyTests
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "CancelImmediately(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     public void CancelImmediately_ShouldNotIncrementVersion_WhenAlreadyCanceled()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, _now, _now.AddDays(30), _actorId, _now);
@@ -22,6 +24,7 @@ public class SubscriptionIdempotencyTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "ScheduleCancellation(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     public void ScheduleCancellation_ShouldNotIncrementVersion_WhenAlreadyScheduled()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, _now, _now.AddDays(30), _actorId, _now);
@@ -34,6 +37,7 @@ public class SubscriptionIdempotencyTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "Expire(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     public void Expire_ShouldNotIncrementVersion_WhenAlreadyExpired()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, _now, _now.AddDays(30), _actorId, _now);
@@ -46,6 +50,7 @@ public class SubscriptionIdempotencyTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "MarkPastDue(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     public void MarkPastDue_ShouldNotIncrementVersion_WhenAlreadyPastDue()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, _now, _now.AddDays(30), _actorId, _now);

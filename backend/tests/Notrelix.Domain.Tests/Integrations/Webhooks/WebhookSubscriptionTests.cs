@@ -23,6 +23,7 @@ public class WebhookSubscriptionTests
         sub.DomainEvents.Should().ContainSingle(e => e is WebhookSubscriptionCreatedDomainEvent);
     }
 
+    [CoversMutation(typeof(WebhookSubscription), "Enable(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void EnableDisable_ShouldModifyIsActive()
     {
@@ -36,6 +37,7 @@ public class WebhookSubscriptionTests
         sub.IsActive.Should().BeTrue();
     }
 
+    [CoversMutation(typeof(WebhookSubscription), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldDisableSubscription()
     {
@@ -48,6 +50,7 @@ public class WebhookSubscriptionTests
         sub.IsActive.Should().BeFalse();
     }
 
+    [CoversMutation(typeof(WebhookSubscription), "RotateSecret(Notrelix.Domain.Integrations.Webhooks.WebhookSecretHash,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void RotateSecret_ShouldUpdateHash()
     {
@@ -59,6 +62,7 @@ public class WebhookSubscriptionTests
         sub.SecretHash.Should().Be(newHash);
     }
 
+    [CoversMutation(typeof(WebhookSubscription), "RotateSecret(Notrelix.Domain.Integrations.Webhooks.WebhookSecretHash,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void RotateSecret_WhenDeleted_ShouldThrow()
     {
@@ -69,6 +73,7 @@ public class WebhookSubscriptionTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
+    [CoversMutation(typeof(WebhookSubscription), "RotateSecret(Notrelix.Domain.Integrations.Webhooks.WebhookSecretHash,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void RotateSecret_WithNullHash_ShouldThrow()
     {
@@ -77,6 +82,7 @@ public class WebhookSubscriptionTests
         act.Should().Throw<BusinessRuleException>();
     }
 
+    [CoversMutation(typeof(WebhookSubscription), "Enable(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Enable_WhenDeleted_ShouldThrow()
     {
@@ -87,6 +93,7 @@ public class WebhookSubscriptionTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
+    [CoversMutation(typeof(WebhookSubscription), "Disable(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Disable_WhenDeleted_ShouldThrow()
     {

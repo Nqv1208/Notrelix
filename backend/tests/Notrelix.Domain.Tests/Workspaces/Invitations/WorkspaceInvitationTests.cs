@@ -6,6 +6,7 @@ namespace Notrelix.Domain.Tests.Workspaces;
 [CoversAggregate(typeof(WorkspaceInvitation))]
 public class WorkspaceInvitationTests
 {
+    [CoversMutation(typeof(WorkspaceInvitation), "Accept(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Accept_ShouldSucceed_WhenPendingAndNotExpired()
     {
@@ -19,6 +20,7 @@ public class WorkspaceInvitationTests
         invitation.DomainEvents.Should().ContainSingle(e => e is WorkspaceInvitationAcceptedDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Accept(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Accept_ShouldThrow_WhenExpired()
     {
@@ -30,6 +32,7 @@ public class WorkspaceInvitationTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Invitation has expired.");
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Accept(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Accept_ShouldThrow_WithoutMutating_WhenExpired()
     {
@@ -43,6 +46,7 @@ public class WorkspaceInvitationTests
         invitation.DomainEvents.Should().NotContain(e => e is WorkspaceInvitationExpiredDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Expire(System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Expire_ShouldSucceed_WhenPending_AndUseNullActor()
     {
@@ -55,6 +59,7 @@ public class WorkspaceInvitationTests
         invitation.DomainEvents.Should().Contain(e => e is WorkspaceInvitationExpiredDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Expire(System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Expire_ShouldDoNothing_WhenAlreadyExpired()
     {
@@ -68,6 +73,7 @@ public class WorkspaceInvitationTests
         invitation.DomainEvents.Should().NotContain(e => e is WorkspaceInvitationExpiredDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Accept(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Accept_ShouldThrow_WhenDeleted()
     {
@@ -79,6 +85,7 @@ public class WorkspaceInvitationTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Revoke(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Revoke_ShouldThrow_WhenDeleted()
     {
@@ -90,6 +97,7 @@ public class WorkspaceInvitationTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Expire(System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Invitation_ExpiredExactlyAtExpiresAt()
     {
@@ -103,6 +111,7 @@ public class WorkspaceInvitationTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Invitation has expired.");
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Accept(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Accept_ShouldThrow_WhenRevoked()
     {
@@ -113,6 +122,7 @@ public class WorkspaceInvitationTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Invitation is not pending.");
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Accept(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Accept_ShouldThrow_WhenAlreadyExpiredState()
     {
@@ -123,6 +133,7 @@ public class WorkspaceInvitationTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Invitation is not pending.");
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Resend(Notrelix.Domain.Workspaces.Invitations.InvitationTokenHash,System.Int32,System.DateTimeOffset,System.TimeSpan,System.Guid)", MutationScenario.Event)]
     [Fact]
     public void Resend_ShouldIncrementTokenGeneration_AndRaiseEvent()
     {
@@ -150,6 +161,7 @@ public class WorkspaceInvitationTests
         invitation.DomainEvents.Should().ContainSingle(e => e is WorkspaceInvitationResentDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Decline(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Decline_ShouldSucceed_AndRaiseEvent()
     {
@@ -170,6 +182,7 @@ public class WorkspaceInvitationTests
         invitation.DomainEvents.Should().ContainSingle(e => e is WorkspaceInvitationDeclinedDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Decline(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Decline_ShouldThrow_WhenNotPending()
     {
@@ -188,6 +201,7 @@ public class WorkspaceInvitationTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Invitation is not pending.");
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Decline(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Decline_ShouldThrow_WhenDeleted()
     {
@@ -206,6 +220,7 @@ public class WorkspaceInvitationTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "ChangeRole(Notrelix.Domain.Workspaces.Members.WorkspaceRole,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void ChangeRole_ShouldSucceed_AndRaiseEvent()
     {
@@ -226,6 +241,7 @@ public class WorkspaceInvitationTests
         invitation.DomainEvents.Should().ContainSingle(e => e is WorkspaceInvitationRoleChangedDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "ChangeRole(Notrelix.Domain.Workspaces.Members.WorkspaceRole,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void ChangeRole_WhenSameRole_ShouldBeNoOp()
     {
@@ -245,6 +261,7 @@ public class WorkspaceInvitationTests
         invitation.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "ChangeRole(Notrelix.Domain.Workspaces.Members.WorkspaceRole,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void ChangeRole_ShouldThrow_WhenNotPending()
     {
@@ -279,6 +296,7 @@ public class WorkspaceInvitationTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*owner*");
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Accept(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Accept_Expired_ShouldNotMutateStatus()
     {
@@ -303,6 +321,7 @@ public class WorkspaceInvitationTests
         invitation.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Accept(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Accept_NotPending_ShouldNotMutateStatus()
     {
@@ -326,6 +345,7 @@ public class WorkspaceInvitationTests
         invitation.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Decline(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Decline_NotPending_ShouldNotMutateStatus()
     {
@@ -349,6 +369,7 @@ public class WorkspaceInvitationTests
         invitation.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "ChangeRole(Notrelix.Domain.Workspaces.Members.WorkspaceRole,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void ChangeRole_NotPending_ShouldNotMutateRole()
     {
@@ -372,6 +393,7 @@ public class WorkspaceInvitationTests
         invitation.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "ChangeRole(Notrelix.Domain.Workspaces.Members.WorkspaceRole,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void ChangeRole_OwnerRole_ShouldNotMutateRole()
     {
@@ -394,6 +416,7 @@ public class WorkspaceInvitationTests
         invitation.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Accept(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Accept_EmptyActor_ShouldNotMutateStatus()
     {
@@ -416,6 +439,7 @@ public class WorkspaceInvitationTests
         invitation.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Decline(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Decline_EmptyActor_ShouldNotMutateStatus()
     {

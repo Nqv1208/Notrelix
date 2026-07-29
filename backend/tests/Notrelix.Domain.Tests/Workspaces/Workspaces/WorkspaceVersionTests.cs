@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 
@@ -8,6 +9,7 @@ public class WorkspaceVersionTests
     private readonly Guid _actorId = Guid.NewGuid();
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
 
+    [CoversMutation(typeof(Workspace), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Rename_ShouldIncrementVersion()
     {
@@ -21,6 +23,7 @@ public class WorkspaceVersionTests
         workspace.DomainEvents.Should().Contain(e => e is WorkspaceRenamedDomainEvent);
     }
 
+    [CoversMutation(typeof(Workspace), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Archive_ShouldIncrementVersion()
     {
@@ -34,6 +37,7 @@ public class WorkspaceVersionTests
         workspace.DomainEvents.Should().Contain(e => e is WorkspaceArchivedDomainEvent);
     }
 
+    [CoversMutation(typeof(Workspace), "Unarchive(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Unarchive_ShouldIncrementVersion()
     {
@@ -48,6 +52,7 @@ public class WorkspaceVersionTests
         workspace.DomainEvents.Should().Contain(e => e is WorkspaceUnarchivedDomainEvent);
     }
 
+    [CoversMutation(typeof(Workspace), "UpdateDescription(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void UpdateDescription_ShouldIncrementVersion()
     {
@@ -61,6 +66,7 @@ public class WorkspaceVersionTests
         workspace.DomainEvents.Should().Contain(e => e is WorkspaceDescriptionUpdatedDomainEvent);
     }
 
+    [CoversMutation(typeof(Workspace), "UpdateSettings(Notrelix.Domain.Workspaces.Workspaces.WorkspaceSettings,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void UpdateSettings_ShouldIncrementVersion()
     {
@@ -75,6 +81,7 @@ public class WorkspaceVersionTests
         workspace.DomainEvents.Should().Contain(e => e is WorkspaceSettingsUpdatedDomainEvent);
     }
 
+    [CoversMutation(typeof(Workspace), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldIncrementVersion()
     {
@@ -89,6 +96,7 @@ public class WorkspaceVersionTests
         workspace.DomainEvents.Should().Contain(e => e is WorkspaceSoftDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(Workspace), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldIncrementVersion()
     {

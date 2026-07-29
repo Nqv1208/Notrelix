@@ -1,10 +1,12 @@
 using FluentAssertions;
 using Notrelix.Domain.Automation.Executions;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Automation;
 
 public class AutomationExecutionTests
 {
+    [CoversMutation(typeof(AutomationExecution), "Succeed(System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Create_ShouldSucceed_AndRaiseEvent()
     {
@@ -15,6 +17,7 @@ public class AutomationExecutionTests
         execution.DomainEvents.Should().ContainSingle(e => e is AutomationExecutionQueuedDomainEvent);
     }
 
+    [CoversMutation(typeof(AutomationExecution), "SetPayload(System.String)", MutationScenario.Valid)]
     [Fact]
     public void SetPayload_ShouldSetPayload()
     {
@@ -25,6 +28,7 @@ public class AutomationExecutionTests
         execution.Payload.Should().Be("{\"data\":\"test\"}");
     }
 
+    [CoversMutation(typeof(AutomationExecution), "Start(System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Start_ShouldTransition_AndRaiseEvent()
     {
@@ -37,6 +41,7 @@ public class AutomationExecutionTests
         execution.DomainEvents.Should().ContainSingle(e => e is AutomationExecutionStartedDomainEvent);
     }
 
+    [CoversMutation(typeof(AutomationExecution), "Start(System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Start_WhenNotQueued_ShouldThrow()
     {
@@ -47,6 +52,7 @@ public class AutomationExecutionTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*Queued*");
     }
 
+    [CoversMutation(typeof(AutomationExecution), "Succeed(System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Succeed_ShouldTransition_AndRaiseEvent()
     {
@@ -60,6 +66,7 @@ public class AutomationExecutionTests
         execution.DomainEvents.Should().ContainSingle(e => e is AutomationExecutionSucceededDomainEvent);
     }
 
+    [CoversMutation(typeof(AutomationExecution), "Succeed(System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Succeed_WhenNotRunning_ShouldThrow()
     {
@@ -69,6 +76,7 @@ public class AutomationExecutionTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*Running*");
     }
 
+    [CoversMutation(typeof(AutomationExecution), "Fail(System.String,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Fail_ShouldTransition_AndRaiseEvent()
     {
@@ -83,6 +91,7 @@ public class AutomationExecutionTests
         execution.DomainEvents.Should().ContainSingle(e => e is AutomationExecutionFailedDomainEvent);
     }
 
+    [CoversMutation(typeof(AutomationExecution), "Fail(System.String,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Fail_WhenNotRunning_ShouldThrow()
     {
@@ -92,6 +101,7 @@ public class AutomationExecutionTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*Running*");
     }
 
+    [CoversMutation(typeof(AutomationExecution), "Fail(System.String,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Fail_WithEmptyError_ShouldThrow()
     {
@@ -102,6 +112,7 @@ public class AutomationExecutionTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*empty*");
     }
 
+    [CoversMutation(typeof(AutomationExecution), "Cancel(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Cancel_FromQueued_ShouldTransition()
     {
@@ -113,6 +124,7 @@ public class AutomationExecutionTests
         execution.DomainEvents.Should().ContainSingle(e => e is AutomationExecutionCancelledDomainEvent);
     }
 
+    [CoversMutation(typeof(AutomationExecution), "Cancel(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Cancel_FromRunning_ShouldTransition()
     {
@@ -125,6 +137,7 @@ public class AutomationExecutionTests
         execution.Status.Should().Be(AutomationExecutionStatus.Cancelled);
     }
 
+    [CoversMutation(typeof(AutomationExecution), "Succeed(System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Cancel_WhenAlreadySucceeded_ShouldThrow()
     {
@@ -144,6 +157,7 @@ public class AutomationExecutionTests
         step.Status.Should().Be(AutomationExecutionStatus.Queued);
     }
 
+    [CoversMutation(typeof(AutomationExecution), "Start(System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void ExecutionStep_Start_ShouldTransition()
     {
@@ -154,6 +168,7 @@ public class AutomationExecutionTests
         step.Status.Should().Be(AutomationExecutionStatus.Running);
     }
 
+    [CoversMutation(typeof(AutomationExecution), "Succeed(System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void ExecutionStep_Succeed_ShouldTransition()
     {
@@ -165,6 +180,7 @@ public class AutomationExecutionTests
         step.Status.Should().Be(AutomationExecutionStatus.Succeeded);
     }
 
+    [CoversMutation(typeof(AutomationExecution), "Fail(System.String,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void ExecutionStep_Fail_ShouldTransition()
     {
@@ -177,6 +193,7 @@ public class AutomationExecutionTests
         step.Error.Should().Be("Error");
     }
 
+    [CoversMutation(typeof(AutomationExecution), "Start(System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void ExecutionStep_Start_WhenNotQueued_ShouldThrow()
     {
@@ -187,6 +204,7 @@ public class AutomationExecutionTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*Queued*");
     }
 
+    [CoversMutation(typeof(AutomationExecution), "Succeed(System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void ExecutionStep_Succeed_WhenNotRunning_ShouldThrow()
     {
@@ -196,6 +214,7 @@ public class AutomationExecutionTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*Running*");
     }
 
+    [CoversMutation(typeof(AutomationExecution), "Fail(System.String,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void ExecutionStep_Fail_WhenNotRunning_ShouldThrow()
     {

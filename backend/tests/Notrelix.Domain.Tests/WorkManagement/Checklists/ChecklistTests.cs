@@ -7,6 +7,7 @@ namespace Notrelix.Domain.Tests.WorkManagement;
 [CoversAggregate(typeof(Checklist))]
 public class ChecklistTests
 {
+    [CoversMutation(typeof(Checklist), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Create_ShouldUseFractionalIndex()
     {
@@ -15,6 +16,9 @@ public class ChecklistTests
         checklist.Position.Should().Be(FractionalIndex.Create("a0"));
     }
 
+    [CoversMutation(typeof(Checklist), "AddItem(System.String,Notrelix.Domain.SharedKernel.Ordering.FractionalIndex,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Checklist), "RemoveItem(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Checklist), "ToggleItem(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void AddItem_ShouldUseFractionalIndex()
     {
@@ -27,6 +31,10 @@ public class ChecklistTests
         checklist.Items.First().Position.Should().Be(FractionalIndex.Create("a1"));
     }
 
+    [CoversMutation(typeof(Checklist), "AddItem(System.String,Notrelix.Domain.SharedKernel.Ordering.FractionalIndex,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Checklist), "UpdatePosition(Notrelix.Domain.SharedKernel.Ordering.FractionalIndex,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Checklist), "RemoveItem(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Checklist), "ToggleItem(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void AddItem_ShouldMaintainPositionOrder_WithFractionalIndex()
     {

@@ -20,6 +20,7 @@ public class SpaceTests
         space.DomainEvents.Should().ContainSingle(e => e is SpaceCreatedDomainEvent);
     }
 
+    [CoversMutation(typeof(Space), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Rename_ShouldSucceed()
     {
@@ -31,6 +32,7 @@ public class SpaceTests
         space.Name.Should().Be("Sales");
     }
 
+    [CoversMutation(typeof(Space), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Rename_ShouldThrow_WhenArchived()
     {
@@ -42,6 +44,7 @@ public class SpaceTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*archived*");
     }
 
+    [CoversMutation(typeof(Space), "Unarchive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Unarchive_ShouldSetStatusToActive_AndRaiseEvent()
     {
@@ -56,6 +59,7 @@ public class SpaceTests
         space.DomainEvents.Should().ContainSingle(e => e is SpaceUnarchivedDomainEvent);
     }
 
+    [CoversMutation(typeof(Space), "Unarchive(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Unarchive_WhenAlreadyActive_ShouldBeNoOp()
     {
@@ -68,6 +72,7 @@ public class SpaceTests
         space.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Space), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
     [Fact]
     public void Unarchive_SoftDeleted_ShouldThrow()
     {
@@ -78,6 +83,7 @@ public class SpaceTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
+    [CoversMutation(typeof(Space), "UpdateDescription(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void UpdateDescription_ShouldSucceed_AndRaiseEvent()
     {
@@ -95,6 +101,7 @@ public class SpaceTests
         evt.UpdatedBy.Should().Be(actor);
     }
 
+    [CoversMutation(typeof(Space), "UpdateDescription(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void UpdateDescription_ShouldClearDescription_WhenSetToNull()
     {
@@ -107,6 +114,7 @@ public class SpaceTests
         space.DomainEvents.Should().ContainSingle(e => e is SpaceDescriptionUpdatedDomainEvent);
     }
 
+    [CoversMutation(typeof(Space), "UpdateDescription(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void UpdateDescription_WhenSameValue_ShouldBeNoOp()
     {
@@ -118,6 +126,7 @@ public class SpaceTests
         space.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Space), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void UpdateDescription_ArchivedSpace_ShouldThrow()
     {
@@ -128,6 +137,7 @@ public class SpaceTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*archived*");
     }
 
+    [CoversMutation(typeof(Space), "ChangeVisibility(Notrelix.Domain.Workspaces.Spaces.SpaceVisibility,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void ChangeVisibility_ShouldSucceed_AndRaiseEvent()
     {
@@ -145,6 +155,7 @@ public class SpaceTests
         evt.UpdatedBy.Should().Be(actor);
     }
 
+    [CoversMutation(typeof(Space), "ChangeVisibility(Notrelix.Domain.Workspaces.Spaces.SpaceVisibility,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void ChangeVisibility_WhenSameValue_ShouldBeNoOp()
     {
@@ -156,6 +167,7 @@ public class SpaceTests
         space.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Space), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void ChangeVisibility_ArchivedSpace_ShouldThrow()
     {
@@ -166,6 +178,7 @@ public class SpaceTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*archived*");
     }
 
+    [CoversMutation(typeof(Space), "ChangeType(Notrelix.Domain.Workspaces.Spaces.SpaceType,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void ChangeType_ShouldSucceed_AndRaiseEvent()
     {
@@ -183,6 +196,7 @@ public class SpaceTests
         evt.UpdatedBy.Should().Be(actor);
     }
 
+    [CoversMutation(typeof(Space), "ChangeType(Notrelix.Domain.Workspaces.Spaces.SpaceType,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void ChangeType_WhenSameValue_ShouldBeNoOp()
     {
@@ -194,6 +208,7 @@ public class SpaceTests
         space.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Space), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void ChangeType_ArchivedSpace_ShouldThrow()
     {
@@ -204,6 +219,7 @@ public class SpaceTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*archived*");
     }
 
+    [CoversMutation(typeof(Space), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldSetStatusToSoftDeleted_AndRaiseEvent()
     {
@@ -216,6 +232,7 @@ public class SpaceTests
         space.DomainEvents.Should().Contain(e => e is SpaceSoftDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(Space), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldSetStatusToActive_AndRaiseEvent()
     {
@@ -230,6 +247,7 @@ public class SpaceTests
         space.DomainEvents.Should().Contain(e => e is SpaceRestoredDomainEvent);
     }
 
+    [CoversMutation(typeof(Space), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Rename_OnDeletedSpace_ShouldThrow()
     {
@@ -240,6 +258,7 @@ public class SpaceTests
         act.Should().Throw<DomainException>().WithMessage("*deleted and cannot be modified*");
     }
 
+    [CoversMutation(typeof(Space), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Rename_ArchivedSpace_ShouldNotMutateName()
     {
@@ -255,6 +274,7 @@ public class SpaceTests
         space.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Space), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void UpdateDescription_ArchivedSpace_ShouldNotMutateDescription()
     {
@@ -270,6 +290,7 @@ public class SpaceTests
         space.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Space), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void ChangeVisibility_ArchivedSpace_ShouldNotMutateVisibility()
     {
@@ -285,6 +306,7 @@ public class SpaceTests
         space.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Space), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void ChangeType_ArchivedSpace_ShouldNotMutateType()
     {
@@ -300,6 +322,7 @@ public class SpaceTests
         space.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Space), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Rename_EmptyActor_ShouldNotMutateName()
     {
@@ -314,6 +337,7 @@ public class SpaceTests
         space.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Space), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Archive_EmptyActor_ShouldNotMutateStatus()
     {

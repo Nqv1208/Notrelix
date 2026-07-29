@@ -8,6 +8,7 @@ namespace Notrelix.Domain.Tests.WorkManagement;
 [CoversAggregate(typeof(BoardView))]
 public class BoardViewTests
 {
+    [CoversMutation(typeof(BoardView), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Create_ShouldSucceed_AndRaiseEvent()
     {
@@ -23,6 +24,7 @@ public class BoardViewTests
         view.DomainEvents.Should().ContainSingle(e => e is BoardViewCreatedDomainEvent);
     }
 
+    [CoversMutation(typeof(BoardView), "UpdateConfig(Notrelix.Domain.WorkManagement.Views.BoardViewConfig,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void UpdateConfig_ShouldUpdate_AndRaiseEvent()
     {
@@ -76,6 +78,9 @@ public class BoardViewTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*swimlane*");
     }
 
+    [CoversMutation(typeof(BoardView), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(BoardView), "ClearDefault(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(BoardView), "SetDefault(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void SoftDelete_ShouldSucceed_WhenNotDefaultView()
     {
@@ -88,6 +93,8 @@ public class BoardViewTests
         view.IsDeleted.Should().BeTrue();
     }
 
+    [CoversMutation(typeof(BoardView), "ClearDefault(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardView), "SetDefault(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void BoardViewRules_EnsureCanDeleteView_ShouldThrow_WhenDefaultAndOnlyView()
     {
@@ -104,6 +111,8 @@ public class BoardViewTests
         act.Should().NotThrow();
     }
 
+    [CoversMutation(typeof(BoardView), "ClearDefault(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardView), "SetDefault(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void BoardViewRules_EnsureCanDeleteView_ShouldNotThrow_WhenNotDefault()
     {
@@ -112,6 +121,8 @@ public class BoardViewTests
         act.Should().NotThrow();
     }
 
+    [CoversMutation(typeof(BoardView), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(BoardView), "SetDefault(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Archive_ShouldSetIsArchived_AndRaiseEvent()
     {
@@ -124,6 +135,7 @@ public class BoardViewTests
         view.DomainEvents.Should().ContainSingle(e => e is BoardViewArchivedDomainEvent);
     }
 
+    [CoversMutation(typeof(BoardView), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Archive_ShouldBeIdempotent()
     {
@@ -136,6 +148,7 @@ public class BoardViewTests
         view.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(BoardView), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Archive_ShouldThrow_WhenDeleted()
     {
@@ -147,6 +160,8 @@ public class BoardViewTests
         act.Should().Throw<DomainException>();
     }
 
+    [CoversMutation(typeof(BoardView), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(BoardView), "ClearDefault(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Unarchive_ShouldClearIsArchived_AndRaiseEvent()
     {
@@ -160,6 +175,7 @@ public class BoardViewTests
         view.DomainEvents.Should().ContainSingle(e => e is BoardViewUnarchivedDomainEvent);
     }
 
+    [CoversMutation(typeof(BoardView), "Unarchive(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Unarchive_ShouldBeIdempotent()
     {
@@ -171,6 +187,7 @@ public class BoardViewTests
         view.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(BoardView), "Unarchive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Unarchive_ShouldThrow_WhenDeleted()
     {

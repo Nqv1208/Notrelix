@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 
@@ -19,6 +20,7 @@ public class WorkspaceEventScopeTests
         evt.WorkspaceId.Should().Be(workspace.Id);
     }
 
+    [CoversMutation(typeof(Workspace), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void WorkspaceRenamed_ShouldCarryCorrectAccountId()
     {
@@ -32,6 +34,7 @@ public class WorkspaceEventScopeTests
         evt.WorkspaceId.Should().Be(workspace.Id);
     }
 
+    [CoversMutation(typeof(Workspace), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void WorkspaceArchived_ShouldCarryCorrectAccountId()
     {
@@ -45,6 +48,7 @@ public class WorkspaceEventScopeTests
         evt.WorkspaceId.Should().Be(workspace.Id);
     }
 
+    [CoversMutation(typeof(Workspace), "Unarchive(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void WorkspaceUnarchived_ShouldCarryCorrectAccountId()
     {
@@ -59,6 +63,7 @@ public class WorkspaceEventScopeTests
         evt.WorkspaceId.Should().Be(workspace.Id);
     }
 
+    [CoversMutation(typeof(Workspace), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void WorkspaceSoftDeleted_ShouldCarryCorrectAccountId()
     {
@@ -72,6 +77,7 @@ public class WorkspaceEventScopeTests
         evt.WorkspaceId.Should().Be(workspace.Id);
     }
 
+    [CoversMutation(typeof(Workspace), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void WorkspaceRestored_ShouldCarryCorrectAccountId()
     {

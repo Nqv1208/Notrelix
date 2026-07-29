@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Billing.Subscriptions;
 
 namespace Notrelix.Domain.Tests.Billing.Subscriptions;
@@ -10,6 +11,8 @@ public class SubscriptionLifecycleTests
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "ScheduleCancellation(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Subscription), "ScheduleCancellation(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     public void Subscription_ScheduleCancellation_ShouldRaiseEvent()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now, WsA);
@@ -27,6 +30,7 @@ public class SubscriptionLifecycleTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "ScheduleCancellation(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     public void Subscription_ScheduleCancellation_WhenAlreadyScheduled_ShouldNotRaiseEvent()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now, WsA);
@@ -41,6 +45,7 @@ public class SubscriptionLifecycleTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "CancelImmediately(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void Subscription_CancelImmediately_ShouldClearCancelAtPeriodEnd()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now, WsA);

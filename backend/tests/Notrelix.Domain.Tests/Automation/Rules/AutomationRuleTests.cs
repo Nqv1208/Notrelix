@@ -28,6 +28,7 @@ public class AutomationRuleTests
         rule.DomainEvents.Should().ContainSingle(e => e is AutomationRuleCreatedDomainEvent);
     }
 
+    [CoversMutation(typeof(AutomationRule), "Enable(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Enable_ShouldChangeStatus_AndRaiseEvent()
     {
@@ -41,6 +42,7 @@ public class AutomationRuleTests
         rule.DomainEvents.Should().ContainSingle(e => e is AutomationRuleEnabledDomainEvent);
     }
 
+    [CoversMutation(typeof(AutomationRule), "Enable(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Enable_WhenAlreadyActive_ShouldBeNoOp()
     {
@@ -53,6 +55,7 @@ public class AutomationRuleTests
         rule.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(AutomationRule), "Enable(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Enable_WhenDeleted_ShouldThrow()
     {
@@ -63,6 +66,7 @@ public class AutomationRuleTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
+    [CoversMutation(typeof(AutomationRule), "Disable(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Disable_ShouldChangeStatus_AndRaiseEvent()
     {
@@ -76,6 +80,7 @@ public class AutomationRuleTests
         rule.DomainEvents.Should().ContainSingle(e => e is AutomationRuleDisabledDomainEvent);
     }
 
+    [CoversMutation(typeof(AutomationRule), "Disable(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Disable_WhenAlreadyDisabled_ShouldBeNoOp()
     {
@@ -88,6 +93,7 @@ public class AutomationRuleTests
         rule.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(AutomationRule), "Disable(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Disable_WhenDeleted_ShouldThrow()
     {
@@ -98,6 +104,7 @@ public class AutomationRuleTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
+    [CoversMutation(typeof(AutomationRule), "UpdateConfiguration(Notrelix.Domain.Automation.RulesEngine.AutomationConfiguration,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void UpdateConfiguration_ShouldUpdate()
     {
@@ -110,6 +117,7 @@ public class AutomationRuleTests
         rule.Configuration.Action.Type.Should().Be("SendEmail");
     }
 
+    [CoversMutation(typeof(AutomationRule), "UpdateConfiguration(Notrelix.Domain.Automation.RulesEngine.AutomationConfiguration,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void UpdateConfiguration_WhenSameConfig_ShouldBeNoOp()
     {
@@ -122,6 +130,7 @@ public class AutomationRuleTests
         rule.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(AutomationRule), "UpdateConfiguration(Notrelix.Domain.Automation.RulesEngine.AutomationConfiguration,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void UpdateConfiguration_WhenDeleted_ShouldThrow()
     {
@@ -132,6 +141,7 @@ public class AutomationRuleTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
+    [CoversMutation(typeof(AutomationRule), "UpdateConfiguration(Notrelix.Domain.Automation.RulesEngine.AutomationConfiguration,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void UpdateConfiguration_ShouldRaiseConfigurationChangedEvent()
     {
@@ -143,6 +153,7 @@ public class AutomationRuleTests
         rule.DomainEvents.Should().ContainSingle(e => e is AutomationConfigurationChangedDomainEvent);
     }
 
+    [CoversMutation(typeof(AutomationRule), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldSetStatus_AndRaiseEvent()
     {
@@ -156,6 +167,7 @@ public class AutomationRuleTests
         rule.DomainEvents.Should().ContainSingle(e => e is AutomationRuleDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(AutomationRule), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
     public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
@@ -168,6 +180,7 @@ public class AutomationRuleTests
         rule.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(AutomationRule), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldSetStatus_AndRaiseEvent()
     {
@@ -182,6 +195,7 @@ public class AutomationRuleTests
         rule.DomainEvents.Should().ContainSingle(e => e is AutomationRuleRestoredDomainEvent);
     }
 
+    [CoversMutation(typeof(AutomationRule), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {

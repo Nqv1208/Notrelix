@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Governance.ShareLinks;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Governance.ShareLinks;
 
@@ -9,6 +10,7 @@ public class ShareLinkLifecycleTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
+    [CoversMutation(typeof(ShareLink), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void ShareLink_SoftDelete_ShouldRaiseEvent()
     {
@@ -27,6 +29,7 @@ public class ShareLinkLifecycleTests
         evt.DeletedBy.Should().Be(Actor);
     }
 
+    [CoversMutation(typeof(ShareLink), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void ShareLink_Restore_ShouldRaiseEvent()
     {
@@ -46,6 +49,7 @@ public class ShareLinkLifecycleTests
         evt.RestoredBy.Should().Be(Actor);
     }
 
+    [CoversMutation(typeof(ShareLink), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
     public void ShareLink_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
@@ -61,6 +65,7 @@ public class ShareLinkLifecycleTests
         link.DomainEvents.Should().NotContain(e => e is ShareLinkSoftDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(ShareLink), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void ShareLink_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {

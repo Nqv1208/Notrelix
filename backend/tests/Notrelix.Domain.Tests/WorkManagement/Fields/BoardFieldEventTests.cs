@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.WorkManagement.Fields;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.WorkManagement.Fields;
 
@@ -10,6 +11,9 @@ public class BoardFieldEventTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
+    [CoversMutation(typeof(BoardField), "UpdateClassification(Notrelix.Domain.WorkManagement.Fields.DataClassification,System.Boolean,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(BoardField), "UpdatePosition(Notrelix.Domain.SharedKernel.Ordering.FractionalIndex,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(BoardField), "UpdateSettings(Notrelix.Domain.WorkManagement.Fields.FieldSettings,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void BoardField_UpdateClassification_ShouldRaiseEvent()
     {
@@ -27,6 +31,9 @@ public class BoardFieldEventTests
         evt.IsSensitive.Should().BeTrue();
     }
 
+    [CoversMutation(typeof(BoardField), "UpdateClassification(Notrelix.Domain.WorkManagement.Fields.DataClassification,System.Boolean,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(BoardField), "UpdatePosition(Notrelix.Domain.SharedKernel.Ordering.FractionalIndex,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(BoardField), "UpdateSettings(Notrelix.Domain.WorkManagement.Fields.FieldSettings,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void BoardField_UpdateClassification_WhenSameValue_ShouldNotRaiseEvent()
     {
@@ -42,6 +49,7 @@ public class BoardFieldEventTests
         field.DomainEvents.Should().NotContain(e => e is BoardFieldClassificationUpdatedDomainEvent);
     }
 
+    [CoversMutation(typeof(BoardField), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void BoardField_Restore_ShouldRaiseEvent()
     {
@@ -58,6 +66,8 @@ public class BoardFieldEventTests
         field.DomainEvents.Should().ContainSingle(e => e is BoardFieldRestoredDomainEvent);
     }
 
+    [CoversMutation(typeof(BoardField), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(BoardField), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void BoardField_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {

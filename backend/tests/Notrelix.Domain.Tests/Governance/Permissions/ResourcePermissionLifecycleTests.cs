@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Governance.Permissions;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Governance.Permissions;
 
@@ -9,6 +10,7 @@ public class ResourcePermissionLifecycleTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
+    [CoversMutation(typeof(ResourcePermission), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void ResourcePermission_SoftDelete_ShouldRaiseEvent()
     {
@@ -26,6 +28,7 @@ public class ResourcePermissionLifecycleTests
         evt.DeletedBy.Should().Be(Actor);
     }
 
+    [CoversMutation(typeof(ResourcePermission), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void ResourcePermission_Restore_ShouldRaiseEvent()
     {
@@ -44,6 +47,7 @@ public class ResourcePermissionLifecycleTests
         evt.RestoredBy.Should().Be(Actor);
     }
 
+    [CoversMutation(typeof(ResourcePermission), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
     public void ResourcePermission_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
@@ -58,6 +62,7 @@ public class ResourcePermissionLifecycleTests
         permission.DomainEvents.Should().NotContain(e => e is ResourcePermissionSoftDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(ResourcePermission), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void ResourcePermission_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
@@ -71,6 +76,7 @@ public class ResourcePermissionLifecycleTests
         permission.DomainEvents.Should().NotContain(e => e is ResourcePermissionRestoredDomainEvent);
     }
 
+    [CoversMutation(typeof(ResourcePermission), "Revoke(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void ResourcePermission_Revoke_ShouldEmitOnlyRevokedEvent()
     {

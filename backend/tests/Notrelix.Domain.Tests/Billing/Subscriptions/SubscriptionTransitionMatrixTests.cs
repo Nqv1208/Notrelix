@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Billing.Subscriptions;
 
 namespace Notrelix.Domain.Tests.Billing.Subscriptions;
@@ -29,6 +30,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "MarkPastDue(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void MarkPastDue_FromActive_ShouldBecomePastDue()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -47,6 +49,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "MarkPastDue(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     public void MarkPastDue_FromPastDue_ShouldBeNoOp()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -60,6 +63,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "MarkPastDue(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     public void MarkPastDue_FromPastDue_DoesNotIncrementVersion()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -72,6 +76,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "MarkPastDue(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void MarkPastDue_FromCanceled_ShouldThrow()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -82,6 +87,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "MarkPastDue(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void MarkPastDue_FromExpired_ShouldThrow()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -99,6 +105,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "ScheduleCancellation(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void ScheduleCancellation_FromActive_ShouldSucceed()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -110,6 +117,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "ScheduleCancellation(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void ScheduleCancellation_FromPastDue_ShouldSucceed()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -122,6 +130,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "ScheduleCancellation(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     public void ScheduleCancellation_FromPastDue_ShouldIncrementVersion()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -134,6 +143,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "ScheduleCancellation(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void ScheduleCancellation_FromCanceled_ShouldThrow()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -144,6 +154,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "ScheduleCancellation(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void ScheduleCancellation_FromExpired_ShouldThrow()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -160,6 +171,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "ScheduleCancellation(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     public void ScheduleCancellation_AlreadyScheduled_ShouldBeNoOp()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -172,6 +184,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "CancelImmediately(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void CancelImmediately_FromActive_ShouldBecomeCanceled()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -182,6 +195,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "CancelImmediately(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void CancelImmediately_FromPastDue_ShouldBecomeCanceled()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -200,6 +214,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "CancelImmediately(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     public void CancelImmediately_FromCanceled_ShouldBeNoOp()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -212,6 +227,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "CancelImmediately(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void CancelImmediately_FromExpired_ShouldThrow()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -222,6 +238,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "Renew(System.DateTimeOffset,System.DateTimeOffset,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void Renew_FromActive_ShouldBecomeActiveWithNewPeriod()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -237,6 +254,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "Renew(System.DateTimeOffset,System.DateTimeOffset,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void Renew_FromPastDue_ShouldBecomeActiveWithNewPeriod()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -254,6 +272,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "Renew(System.DateTimeOffset,System.DateTimeOffset,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void Renew_FromCanceled_ShouldThrow()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -266,6 +285,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "Renew(System.DateTimeOffset,System.DateTimeOffset,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void Renew_FromExpired_ShouldThrow()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -278,6 +298,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "Renew(System.DateTimeOffset,System.DateTimeOffset,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void Renew_WithInvalidPeriod_ShouldThrow()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -289,6 +310,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "Expire(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void Expire_FromActive_ShouldBecomeExpired()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -299,6 +321,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "Expire(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void Expire_FromPastDue_ShouldBecomeExpired()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -311,6 +334,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "Expire(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void Expire_FromCancelAtPeriodEnd_ShouldBecomeExpired()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -323,6 +347,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "Expire(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void Expire_FromCanceled_ShouldThrow()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -333,6 +358,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "Expire(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     public void Expire_FromExpired_ShouldBeNoOp()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -357,6 +383,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "ChangePlan(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     public void ChangePlan_SamePlanId_ShouldBeNoOp()
     {
         var planId = Guid.NewGuid();
@@ -369,6 +396,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "ChangePlan(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void ChangePlan_DifferentPlanId_ShouldUpdateAndRaiseEvent()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -382,6 +410,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "ChangePlan(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void ChangePlan_FromCanceled_ShouldThrow()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -392,6 +421,7 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "ChangePlan(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void ChangePlan_FromExpired_ShouldThrow()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -402,6 +432,11 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
+    [CoversMutation(typeof(Subscription), "MarkPastDue(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Subscription), "ScheduleCancellation(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Subscription), "CancelImmediately(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Subscription), "Renew(System.DateTimeOffset,System.DateTimeOffset,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Subscription), "Expire(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void TransitionMatrix_AllAllowedTransitions_ShouldWork()
     {
         // Active -> PastDue

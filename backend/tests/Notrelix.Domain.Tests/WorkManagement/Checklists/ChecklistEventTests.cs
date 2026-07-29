@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.WorkManagement.Checklists;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.WorkManagement.Checklists;
 
@@ -9,6 +10,7 @@ public class ChecklistEventTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
+    [CoversMutation(typeof(Checklist), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void Checklist_SoftDelete_ShouldRaiseEvent()
     {
@@ -23,6 +25,7 @@ public class ChecklistEventTests
         checklist.DomainEvents.Should().ContainSingle(e => e is ChecklistSoftDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(Checklist), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
     public void Checklist_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
@@ -37,6 +40,7 @@ public class ChecklistEventTests
         checklist.DomainEvents.Should().NotContain(e => e is ChecklistSoftDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(Checklist), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Checklist_Restore_ShouldRaiseEvent()
     {
@@ -52,6 +56,7 @@ public class ChecklistEventTests
         checklist.DomainEvents.Should().ContainSingle(e => e is ChecklistRestoredDomainEvent);
     }
 
+    [CoversMutation(typeof(Checklist), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Checklist_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {

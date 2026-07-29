@@ -33,6 +33,7 @@ public class AttachmentTests
         act.Should().Throw<BusinessRuleException>();
     }
 
+    [CoversMutation(typeof(Attachment), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldSucceed_AndRaiseEvent()
     {
@@ -45,6 +46,7 @@ public class AttachmentTests
         attachment.DomainEvents.Should().ContainSingle(e => e is AttachmentDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(Attachment), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
     public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
@@ -57,6 +59,7 @@ public class AttachmentTests
         attachment.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Attachment), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldSucceed_AndRaiseEvent()
     {
@@ -70,6 +73,7 @@ public class AttachmentTests
         attachment.DomainEvents.Should().ContainSingle(e => e is AttachmentRestoredDomainEvent);
     }
 
+    [CoversMutation(typeof(Attachment), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {

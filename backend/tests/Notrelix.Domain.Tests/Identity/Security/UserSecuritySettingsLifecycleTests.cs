@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Identity;
 
@@ -19,6 +20,7 @@ public class UserSecuritySettingsLifecycleTests
         evt.OccurredAt.Should().Be(_now);
     }
 
+    [CoversMutation(typeof(UserSecuritySettings), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldIncrementVersion_AndRaiseEvent()
     {
@@ -33,6 +35,7 @@ public class UserSecuritySettingsLifecycleTests
         settings.DomainEvents.Should().ContainSingle(e => e is UserSecuritySettingsSoftDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(UserSecuritySettings), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldIncrementVersion_AndRaiseEvent()
     {

@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.WorkManagement.Fields;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.WorkManagement.Fields;
 
@@ -11,6 +12,7 @@ public class FieldOptionsReorderTests
     private readonly Guid _actorId = Guid.NewGuid();
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
 
+    [CoversMutation(typeof(BoardField), "ReorderOptions(System.Collections.Generic.IReadOnlyList<System.Guid>,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void ReorderOptions_ShouldRaiseEvent_WithOrderedOptionIds()
     {
@@ -36,6 +38,7 @@ public class FieldOptionsReorderTests
         evt.OrderedOptionIds[1].Should().Be(optionA.Id);
     }
 
+    [CoversMutation(typeof(BoardField), "ReorderOptions(System.Collections.Generic.IReadOnlyList<System.Guid>,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void ReorderOptions_ShouldNotRaiseEvent_WhenSameOrder()
     {
@@ -54,6 +57,7 @@ public class FieldOptionsReorderTests
         field.Version.Should().Be(version);
     }
 
+    [CoversMutation(typeof(BoardField), "ReorderOptions(System.Collections.Generic.IReadOnlyList<System.Guid>,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void ReorderOptions_ShouldThrow_WhenDuplicateIds()
     {
@@ -68,6 +72,7 @@ public class FieldOptionsReorderTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*duplicate*");
     }
 
+    [CoversMutation(typeof(BoardField), "ReorderOptions(System.Collections.Generic.IReadOnlyList<System.Guid>,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void ReorderOptions_ShouldThrow_WhenExtraIds()
     {
@@ -81,6 +86,7 @@ public class FieldOptionsReorderTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*all options*");
     }
 
+    [CoversMutation(typeof(BoardField), "ReorderOptions(System.Collections.Generic.IReadOnlyList<System.Guid>,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void ReorderOptions_ShouldApplyNewPositions()
     {

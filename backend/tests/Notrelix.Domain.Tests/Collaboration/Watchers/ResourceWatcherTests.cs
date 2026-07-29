@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Collaboration.Watchers;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Collaboration;
 
@@ -37,6 +38,7 @@ public class ResourceWatcherTests
         act.Should().Throw<BusinessRuleException>();
     }
 
+    [CoversMutation(typeof(ResourceWatcher), "Unwatch(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Unwatch_ShouldRaiseEvent_AndSetDeleted()
     {
@@ -49,6 +51,7 @@ public class ResourceWatcherTests
         watcher.DomainEvents.Should().ContainSingle(e => e is ResourceUnwatchedDomainEvent);
     }
 
+    [CoversMutation(typeof(ResourceWatcher), "Unwatch(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Unwatch_WhenAlreadyDeleted_ShouldThrow()
     {

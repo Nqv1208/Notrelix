@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.WorkManagement.Labels;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.WorkManagement.Labels;
 
@@ -10,6 +11,8 @@ public class LabelEventTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
+    [CoversMutation(typeof(Label), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Label), "Update(System.String,Notrelix.Domain.WorkManagement.Labels.LabelColor,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Label_Restore_ShouldRaiseEvent()
     {
@@ -25,6 +28,8 @@ public class LabelEventTests
         label.DomainEvents.Should().ContainSingle(e => e is LabelRestoredDomainEvent);
     }
 
+    [CoversMutation(typeof(Label), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Label), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void Label_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {

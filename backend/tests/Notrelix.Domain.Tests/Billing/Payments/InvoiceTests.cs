@@ -19,6 +19,7 @@ public class InvoiceTests
         invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceCreatedDomainEvent);
     }
 
+    [CoversMutation(typeof(Invoice), "Issue(System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Issue_ShouldTransition_AndRaiseEvent()
     {
@@ -31,6 +32,7 @@ public class InvoiceTests
         invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceIssuedDomainEvent);
     }
 
+    [CoversMutation(typeof(Invoice), "Issue(System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Issue_WhenNotDraft_ShouldThrow()
     {
@@ -41,6 +43,8 @@ public class InvoiceTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*draft*");
     }
 
+    [CoversMutation(typeof(Invoice), "MarkFailed(System.String,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Invoice), "MarkPaid(System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void MarkPaid_ShouldTransition_AndRaiseEvent()
     {
@@ -54,6 +58,8 @@ public class InvoiceTests
         invoice.DomainEvents.Should().ContainSingle(e => e is InvoicePaidDomainEvent);
     }
 
+    [CoversMutation(typeof(Invoice), "MarkFailed(System.String,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Invoice), "MarkPaid(System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void MarkPaid_WhenAlreadyPaid_ShouldBeNoOp()
     {
@@ -67,6 +73,9 @@ public class InvoiceTests
         invoice.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Invoice), "Void(System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Invoice), "MarkFailed(System.String,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Invoice), "MarkPaid(System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void MarkPaid_WhenVoid_ShouldThrow()
     {
@@ -77,6 +86,8 @@ public class InvoiceTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*void*");
     }
 
+    [CoversMutation(typeof(Invoice), "MarkFailed(System.String,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Invoice), "MarkPaid(System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void MarkFailed_ShouldTransition_AndRaiseEvent()
     {
@@ -90,6 +101,8 @@ public class InvoiceTests
         invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceFailedDomainEvent);
     }
 
+    [CoversMutation(typeof(Invoice), "MarkFailed(System.String,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Invoice), "MarkPaid(System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void MarkFailed_WhenPaid_ShouldThrow()
     {
@@ -101,6 +114,9 @@ public class InvoiceTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*paid*");
     }
 
+    [CoversMutation(typeof(Invoice), "Void(System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Invoice), "MarkFailed(System.String,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Invoice), "MarkPaid(System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void MarkFailed_WhenVoid_ShouldThrow()
     {
@@ -111,6 +127,7 @@ public class InvoiceTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*void*");
     }
 
+    [CoversMutation(typeof(Invoice), "Void(System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Void_ShouldTransition_AndRaiseEvent()
     {
@@ -124,6 +141,7 @@ public class InvoiceTests
         invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceVoidedDomainEvent);
     }
 
+    [CoversMutation(typeof(Invoice), "Void(System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Void_WhenAlreadyVoid_ShouldBeNoOp()
     {
@@ -136,6 +154,8 @@ public class InvoiceTests
         invoice.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Invoice), "Void(System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Invoice), "MarkPaid(System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Void_WhenPaid_ShouldThrow()
     {
@@ -147,6 +167,8 @@ public class InvoiceTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*paid*");
     }
 
+    [CoversMutation(typeof(Invoice), "MarkFailed(System.String,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Invoice), "MarkPaid(System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void MarkFailed_WhenDraft_ShouldSucceed()
     {
@@ -159,6 +181,7 @@ public class InvoiceTests
         invoice.DomainEvents.Should().ContainSingle(e => e is InvoiceFailedDomainEvent);
     }
 
+    [CoversMutation(typeof(Invoice), "Void(System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Void_WhenOpen_ShouldSucceed()
     {
@@ -171,6 +194,8 @@ public class InvoiceTests
         invoice.Status.Should().Be(InvoiceStatus.Void);
     }
 
+    [CoversMutation(typeof(Invoice), "MarkFailed(System.String,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Invoice), "MarkPaid(System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void MarkPaid_WhenUncollectible_ShouldSucceed()
     {
@@ -183,6 +208,9 @@ public class InvoiceTests
         invoice.Status.Should().Be(InvoiceStatus.Paid);
     }
 
+    [CoversMutation(typeof(Invoice), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Invoice), "MarkFailed(System.String,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Invoice), "MarkPaid(System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void SoftDelete_ShouldMarkDeleted_AndRaiseEvent()
     {
@@ -195,6 +223,7 @@ public class InvoiceTests
         invoice.DomainEvents.Should().Contain(e => e is InvoiceSoftDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(Invoice), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
@@ -207,6 +236,7 @@ public class InvoiceTests
         invoice.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Invoice), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldRestore_AndRaiseEvent()
     {
@@ -220,6 +250,8 @@ public class InvoiceTests
         invoice.DomainEvents.Should().Contain(e => e is InvoiceRestoredDomainEvent);
     }
 
+    [CoversMutation(typeof(Invoice), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Invoice), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {

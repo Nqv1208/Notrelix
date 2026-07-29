@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Identity;
 
@@ -7,6 +8,7 @@ public class ApiTokenSoftDeleteRestoreTests
     private readonly Guid _actorId = Guid.NewGuid();
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
 
+    [CoversMutation(typeof(ApiToken), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldIncrementVersion_AndRaiseEvent()
     {
@@ -23,6 +25,7 @@ public class ApiTokenSoftDeleteRestoreTests
         evt.TokenId.Should().Be(token.Id);
     }
 
+    [CoversMutation(typeof(ApiToken), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldIncrementVersion_AndRaiseEvent()
     {

@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 
@@ -22,6 +23,7 @@ public class WorkspaceInvitationVersionTests
             _now);
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Accept(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Accept_ShouldIncrementVersion()
     {
@@ -35,6 +37,7 @@ public class WorkspaceInvitationVersionTests
         invitation.DomainEvents.Should().Contain(e => e is WorkspaceInvitationAcceptedDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Decline(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Decline_ShouldIncrementVersion()
     {
@@ -48,6 +51,7 @@ public class WorkspaceInvitationVersionTests
         invitation.DomainEvents.Should().Contain(e => e is WorkspaceInvitationDeclinedDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "ChangeRole(Notrelix.Domain.Workspaces.Members.WorkspaceRole,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void ChangeRole_ShouldIncrementVersion()
     {
@@ -61,6 +65,7 @@ public class WorkspaceInvitationVersionTests
         invitation.DomainEvents.Should().Contain(e => e is WorkspaceInvitationRoleChangedDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Expire(System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Expire_ShouldIncrementVersion()
     {
@@ -74,6 +79,7 @@ public class WorkspaceInvitationVersionTests
         invitation.DomainEvents.Should().Contain(e => e is WorkspaceInvitationExpiredDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Revoke(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Revoke_ShouldIncrementVersion()
     {
@@ -87,6 +93,7 @@ public class WorkspaceInvitationVersionTests
         invitation.DomainEvents.Should().Contain(e => e is WorkspaceInvitationRevokedDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Resend(Notrelix.Domain.Workspaces.Invitations.InvitationTokenHash,System.Int32,System.DateTimeOffset,System.TimeSpan,System.Guid)", MutationScenario.Version)]
     [Fact]
     public void Resend_ShouldIncrementVersion()
     {
@@ -105,6 +112,7 @@ public class WorkspaceInvitationVersionTests
         invitation.DomainEvents.Should().Contain(e => e is WorkspaceInvitationResentDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldIncrementVersion()
     {
@@ -119,6 +127,7 @@ public class WorkspaceInvitationVersionTests
         invitation.DomainEvents.Should().Contain(e => e is WorkspaceInvitationSoftDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceInvitation), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldIncrementVersion()
     {

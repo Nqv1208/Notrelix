@@ -36,6 +36,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "Consume(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void Consume_WithinLimit_ShouldSucceed_AndRaiseEvent()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
@@ -48,6 +49,8 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "Consume(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "Consume(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     public void Consume_ExceedingHardLimit_WhenOverageDisallowed_ShouldThrow()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 80, 100, null, DateTimeOffset.UtcNow);
@@ -58,6 +61,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "Consume(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void Consume_ExceedingHardLimit_WhenOverageAllowed_ShouldSucceed()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 80, 100, null, DateTimeOffset.UtcNow, overageAllowed: true);
@@ -68,6 +72,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "Consume(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void Consume_WithNonPositiveAmount_ShouldThrow()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
@@ -76,6 +81,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "Consume(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void Consume_WhenDeleted_ShouldThrow()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
@@ -86,6 +92,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "Release(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void Release_ShouldSucceed_AndRaiseEvent()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 50, 100, null, DateTimeOffset.UtcNow);
@@ -98,6 +105,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "Release(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void Release_WithAmountExceedingCurrent_ShouldThrow()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 10, 100, null, DateTimeOffset.UtcNow);
@@ -106,6 +114,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "Release(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void Release_WithNonPositiveAmount_ShouldThrow()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 50, 100, null, DateTimeOffset.UtcNow);
@@ -114,6 +123,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "Reset(System.DateTimeOffset,System.Guid)", MutationScenario.Valid)]
     public void Reset_ShouldClearUsage_AndRaiseEvent()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 75, 100, null, DateTimeOffset.UtcNow);
@@ -126,6 +136,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "Release(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void Release_WhenDeleted_ShouldThrow()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 50, 100, null, DateTimeOffset.UtcNow);
@@ -136,6 +147,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     public void SoftDelete_ShouldMarkDeleted_AndRaiseEvent()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
@@ -148,6 +160,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
@@ -160,6 +173,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     public void Restore_ShouldRestore_AndRaiseEvent()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
@@ -173,6 +187,9 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "Consume(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void SoftDelete_WhenConsumeAfterRestore_ShouldSucceed()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
@@ -215,6 +232,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "Reset(System.DateTimeOffset,System.Guid)", MutationScenario.Valid)]
     public void Reset_ShouldClearUsage_AndSetLastResetAt()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 75, 100, null, DateTimeOffset.UtcNow);
@@ -226,6 +244,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "Consume(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void Consume_WhenUsageExceedsSoftLimit_ShouldNotThrow()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 70, 100, 80, DateTimeOffset.UtcNow, overageAllowed: true);
@@ -236,6 +255,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
@@ -247,6 +267,8 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     public void SoftDelete_AndRestore_ShouldToggleIsDeleted()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
@@ -259,6 +281,9 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "Consume(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void Consume_WhenDeletedAndRestored_ShouldSucceed()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
@@ -271,6 +296,9 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), "Release(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void Release_WhenDeletedAndRestored_ShouldSucceed()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 50, 100, null, DateTimeOffset.UtcNow);

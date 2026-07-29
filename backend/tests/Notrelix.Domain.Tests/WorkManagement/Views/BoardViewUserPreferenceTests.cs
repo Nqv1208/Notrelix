@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.WorkManagement.Views;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 
@@ -23,6 +24,9 @@ public class BoardViewUserPreferenceTests
         pref.DomainEvents.Should().ContainSingle(e => e is BoardViewUserPreferenceCreatedDomainEvent);
     }
 
+    [CoversMutation(typeof(BoardViewUserPreference), "ApplyGroup(Notrelix.Domain.WorkManagement.Views.GroupRule,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(BoardViewUserPreference), "ApplySort(System.Collections.Generic.IEnumerable<Notrelix.Domain.WorkManagement.Views.SortRule>,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(BoardViewUserPreference), "ApplyFilter(System.Collections.Generic.IEnumerable<Notrelix.Domain.WorkManagement.Views.FilterRule>,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void ApplyFilter_ShouldUpdateFilterRules()
     {
@@ -36,6 +40,9 @@ public class BoardViewUserPreferenceTests
         pref.DomainEvents.Should().ContainSingle(e => e is BoardViewUserPreferenceFilterChangedDomainEvent);
     }
 
+    [CoversMutation(typeof(BoardViewUserPreference), "ApplyGroup(Notrelix.Domain.WorkManagement.Views.GroupRule,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(BoardViewUserPreference), "ApplySort(System.Collections.Generic.IEnumerable<Notrelix.Domain.WorkManagement.Views.SortRule>,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(BoardViewUserPreference), "ApplyFilter(System.Collections.Generic.IEnumerable<Notrelix.Domain.WorkManagement.Views.FilterRule>,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void ApplySort_ShouldUpdateSortRules()
     {
@@ -49,6 +56,9 @@ public class BoardViewUserPreferenceTests
         pref.DomainEvents.Should().ContainSingle(e => e is BoardViewUserPreferenceSortChangedDomainEvent);
     }
 
+    [CoversMutation(typeof(BoardViewUserPreference), "ApplyGroup(Notrelix.Domain.WorkManagement.Views.GroupRule,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(BoardViewUserPreference), "ApplySort(System.Collections.Generic.IEnumerable<Notrelix.Domain.WorkManagement.Views.SortRule>,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(BoardViewUserPreference), "ApplyFilter(System.Collections.Generic.IEnumerable<Notrelix.Domain.WorkManagement.Views.FilterRule>,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void ApplyGroup_ShouldSetGroupRule()
     {
@@ -63,6 +73,9 @@ public class BoardViewUserPreferenceTests
         pref.DomainEvents.Should().ContainSingle(e => e is BoardViewUserPreferenceGroupChangedDomainEvent);
     }
 
+    [CoversMutation(typeof(BoardViewUserPreference), "ApplyGroup(Notrelix.Domain.WorkManagement.Views.GroupRule,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardViewUserPreference), "ApplySort(System.Collections.Generic.IEnumerable<Notrelix.Domain.WorkManagement.Views.SortRule>,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardViewUserPreference), "ApplyFilter(System.Collections.Generic.IEnumerable<Notrelix.Domain.WorkManagement.Views.FilterRule>,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void ApplyGroup_WithNull_ShouldClearGroup()
     {
@@ -74,6 +87,7 @@ public class BoardViewUserPreferenceTests
         pref.GroupRule.Should().BeNull();
     }
 
+    [CoversMutation(typeof(BoardViewUserPreference), "ApplyFilter(System.Collections.Generic.IEnumerable<Notrelix.Domain.WorkManagement.Views.FilterRule>,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void DuplicateFilter_ShouldThrow()
     {
@@ -91,6 +105,7 @@ public class BoardViewUserPreferenceTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Duplicate filter rules for the same field are not allowed.");
     }
 
+    [CoversMutation(typeof(BoardViewUserPreference), "ApplySort(System.Collections.Generic.IEnumerable<Notrelix.Domain.WorkManagement.Views.SortRule>,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void DuplicateSort_ShouldThrow()
     {

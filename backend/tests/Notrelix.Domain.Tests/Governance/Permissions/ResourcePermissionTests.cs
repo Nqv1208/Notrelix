@@ -32,6 +32,7 @@ public class ResourcePermissionTests
         permission.DomainEvents.Should().ContainSingle(e => e is ResourcePermissionGrantedDomainEvent);
     }
 
+    [CoversMutation(typeof(ResourcePermission), "ChangeLevel(Notrelix.Domain.Governance.Permissions.PermissionLevel,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void ChangeLevel_ShouldUpdateLevel_AndRaiseEvent()
     {
@@ -49,6 +50,7 @@ public class ResourcePermissionTests
         permission.DomainEvents.Should().ContainSingle(e => e is ResourcePermissionLevelChangedDomainEvent);
     }
 
+    [CoversMutation(typeof(ResourcePermission), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void Revoke_ShouldSoftDelete_AndRaiseEvent()
     {

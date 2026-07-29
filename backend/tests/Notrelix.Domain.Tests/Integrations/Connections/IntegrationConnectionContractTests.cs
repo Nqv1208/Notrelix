@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Integrations.Connections;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Integrations.Connections;
 
@@ -10,6 +11,7 @@ public class IntegrationConnectionContractTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
+    [CoversMutation(typeof(IntegrationConnection), "MarkError(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void MarkError_ShouldStoreErrorDetail()
     {
@@ -21,6 +23,7 @@ public class IntegrationConnectionContractTests
         connection.ErrorDetail.Should().Be("Rate limit exceeded");
     }
 
+    [CoversMutation(typeof(IntegrationConnection), "MarkError(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void MarkError_WhenAlreadyError_ShouldUpdateErrorDetail()
     {
@@ -33,6 +36,7 @@ public class IntegrationConnectionContractTests
         connection.ErrorDetail.Should().Be("Second error");
     }
 
+    [CoversMutation(typeof(IntegrationConnection), "MarkError(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void MarkError_EmptyError_ShouldThrow()
     {
@@ -42,6 +46,7 @@ public class IntegrationConnectionContractTests
         act.Should().Throw<BusinessRuleException>();
     }
 
+    [CoversMutation(typeof(IntegrationConnection), "AddScope(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Scope)]
     [Fact]
     public void AddScope_TrimmedBeforeComparison()
     {
@@ -64,6 +69,7 @@ public class IntegrationConnectionContractTests
         connection.Scopes.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(IntegrationConnection), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldSetAudit()
     {
@@ -81,6 +87,7 @@ public class IntegrationConnectionContractTests
         connection.DomainEvents.Should().ContainSingle(e => e is IntegrationConnectionDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(IntegrationConnection), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldSetAudit()
     {
@@ -100,6 +107,7 @@ public class IntegrationConnectionContractTests
         connection.DomainEvents.Should().ContainSingle(e => e is IntegrationConnectionRestoredDomainEvent);
     }
 
+    [CoversMutation(typeof(IntegrationConnection), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
     public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
@@ -112,6 +120,7 @@ public class IntegrationConnectionContractTests
         connection.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(IntegrationConnection), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {
@@ -135,6 +144,7 @@ public class IntegrationConnectionContractTests
         connection.DomainEvents.Should().ContainSingle(e => e is IntegrationConnectionRevokedDomainEvent);
     }
 
+    [CoversMutation(typeof(IntegrationConnection), "Reconnect(System.String,System.DateTimeOffset?,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Reconnect_ShouldRaiseReauthorizedEvent()
     {

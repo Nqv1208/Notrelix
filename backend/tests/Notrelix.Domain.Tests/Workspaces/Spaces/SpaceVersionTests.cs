@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 
@@ -9,6 +10,7 @@ public class SpaceVersionTests
     private readonly Guid _actorId = Guid.NewGuid();
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
 
+    [CoversMutation(typeof(Space), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Rename_ShouldIncrementVersion()
     {
@@ -22,6 +24,7 @@ public class SpaceVersionTests
         space.DomainEvents.Should().Contain(e => e is SpaceRenamedDomainEvent);
     }
 
+    [CoversMutation(typeof(Space), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Archive_ShouldIncrementVersion()
     {
@@ -35,6 +38,7 @@ public class SpaceVersionTests
         space.DomainEvents.Should().Contain(e => e is SpaceArchivedDomainEvent);
     }
 
+    [CoversMutation(typeof(Space), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldIncrementVersion()
     {
@@ -49,6 +53,7 @@ public class SpaceVersionTests
         space.DomainEvents.Should().Contain(e => e is SpaceSoftDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(Space), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldIncrementVersion()
     {

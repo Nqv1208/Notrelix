@@ -34,6 +34,7 @@ public class UserTests
         user.CreatedAt.Should().Be(now);
     }
 
+    [CoversMutation(typeof(User), "RecordLogin(System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void RecordLogin_ShouldUseSuppliedTimestamp()
     {
@@ -50,6 +51,7 @@ public class UserTests
         evt.OccurredAt.Should().Be(loginTime);
     }
 
+    [CoversMutation(typeof(User), "UpdateProfile(System.String,System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void UpdateProfile_ShouldUseSuppliedTimestamp()
     {
@@ -65,6 +67,7 @@ public class UserTests
         user.UpdatedAt.Should().Be(updateTime);
     }
 
+    [CoversMutation(typeof(User), "UpdateProfile(System.String,System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void UpdateProfile_OnDeletedUser_ShouldThrow()
     {
@@ -77,6 +80,7 @@ public class UserTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
+    [CoversMutation(typeof(User), "UpdateEmail(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void UpdateEmail_WithValidEmail_ShouldChangeEmail()
     {
@@ -88,6 +92,7 @@ public class UserTests
         user.Email.Value.Should().Be("new@example.com");
     }
 
+    [CoversMutation(typeof(User), "UpdatePassword(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void UpdatePassword_ShouldChangePasswordHash()
     {
@@ -99,6 +104,7 @@ public class UserTests
         user.PasswordHash.Should().Be("newhash");
     }
 
+    [CoversMutation(typeof(User), "Suspend(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Valid)]
     [Fact]
     public void Suspend_ShouldSetStatusToSuspended()
     {
@@ -110,6 +116,7 @@ public class UserTests
         user.Status.Should().Be(UserStatus.Suspended);
     }
 
+    [CoversMutation(typeof(User), "Suspend(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Valid)]
     [Fact]
     public void Activate_AfterSuspend_ShouldSetStatusToActive()
     {
@@ -147,6 +154,7 @@ public class UserTests
         hasRevokeSessionMethod.Should().BeNull("session revocation belongs to UserSession aggregate");
     }
 
+    [CoversMutation(typeof(User), "UpdatePassword(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void UpdatePassword_SameHash_ShouldBeNoOp()
     {
@@ -162,6 +170,7 @@ public class UserTests
         user.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(User), "UpdatePassword(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void UpdatePassword_DifferentHash_ShouldChangePassword()
     {
@@ -177,6 +186,7 @@ public class UserTests
         user.DomainEvents.Should().ContainSingle(e => e is UserPasswordChangedDomainEvent);
     }
 
+    [CoversMutation(typeof(User), "RotateOAuthToken(Notrelix.Domain.Identity.OAuth.OAuthProvider,Notrelix.Domain.Identity.OAuth.OAuthToken,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void RotateOAuthToken_SameToken_ShouldBeNoOp()
     {
@@ -196,6 +206,7 @@ public class UserTests
         user.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(User), "RotateOAuthToken(Notrelix.Domain.Identity.OAuth.OAuthProvider,Notrelix.Domain.Identity.OAuth.OAuthToken,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void RotateOAuthToken_DifferentToken_ShouldRotate()
     {
@@ -216,6 +227,7 @@ public class UserTests
         user.DomainEvents.Should().ContainSingle(e => e is OAuthTokenReferenceRotatedDomainEvent);
     }
 
+    [CoversMutation(typeof(User), "UnlinkOAuthAccount(Notrelix.Domain.Identity.OAuth.OAuthProvider,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void UnlinkOAuthAccount_EmptyActor_ShouldThrow()
     {

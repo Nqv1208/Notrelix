@@ -7,6 +7,9 @@ namespace Notrelix.Domain.Tests.WorkManagement;
 [CoversAggregate(typeof(BoardGroup))]
 public class BoardGroupTests
 {
+    [CoversMutation(typeof(BoardGroup), "UpdateColor(Notrelix.Domain.SharedKernel.Color,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(BoardGroup), "UpdatePosition(Notrelix.Domain.SharedKernel.Ordering.FractionalIndex,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(BoardGroup), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void UpdateColor_ShouldRaiseColorChangedEvent()
     {
@@ -22,6 +25,7 @@ public class BoardGroupTests
         group.DomainEvents.Should().ContainSingle(e => e is BoardGroupColorChangedDomainEvent);
     }
 
+    [CoversMutation(typeof(BoardGroup), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldRaiseEvent_WithBoardId()
     {
@@ -38,6 +42,7 @@ public class BoardGroupTests
         deletedEvent.WorkspaceId.Should().Be(workspaceId);
     }
 
+    [CoversMutation(typeof(BoardGroup), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldClearIsDeleted_AndRaiseEvent()
     {
@@ -52,6 +57,7 @@ public class BoardGroupTests
         group.DomainEvents.Should().ContainSingle(e => e is BoardGroupRestoredDomainEvent);
     }
 
+    [CoversMutation(typeof(BoardGroup), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Archive_ShouldSetIsArchived_AndRaiseEvent()
     {
@@ -64,6 +70,7 @@ public class BoardGroupTests
         group.DomainEvents.Should().ContainSingle(e => e is BoardGroupArchivedDomainEvent);
     }
 
+    [CoversMutation(typeof(BoardGroup), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Archive_ShouldBeIdempotent()
     {
@@ -76,6 +83,7 @@ public class BoardGroupTests
         group.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(BoardGroup), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Archive_ShouldThrow_WhenDeleted()
     {
@@ -87,6 +95,7 @@ public class BoardGroupTests
         act.Should().Throw<DomainException>();
     }
 
+    [CoversMutation(typeof(BoardGroup), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Unarchive_ShouldClearIsArchived_AndRaiseEvent()
     {
@@ -100,6 +109,7 @@ public class BoardGroupTests
         group.DomainEvents.Should().ContainSingle(e => e is BoardGroupUnarchivedDomainEvent);
     }
 
+    [CoversMutation(typeof(BoardGroup), "Unarchive(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Unarchive_ShouldBeIdempotent()
     {
@@ -111,6 +121,7 @@ public class BoardGroupTests
         group.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(BoardGroup), "Unarchive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Unarchive_ShouldThrow_WhenDeleted()
     {

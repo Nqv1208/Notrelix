@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 
@@ -10,6 +11,7 @@ public class WorkspaceMemberVersionTests
     private readonly Guid _userId = Guid.NewGuid();
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
 
+    [CoversMutation(typeof(WorkspaceMember), "ChangeRole(Notrelix.Domain.Workspaces.Members.WorkspaceRole,System.Guid,System.Int32,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void ChangeRole_ShouldIncrementVersion()
     {
@@ -23,6 +25,7 @@ public class WorkspaceMemberVersionTests
         member.DomainEvents.Should().Contain(e => e is WorkspaceMemberRoleChangedDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceMember), "Suspend(System.Guid,System.DateTimeOffset,System.Int32)", MutationScenario.Version)]
     [Fact]
     public void Suspend_ShouldIncrementVersion()
     {
@@ -36,6 +39,7 @@ public class WorkspaceMemberVersionTests
         member.DomainEvents.Should().Contain(e => e is WorkspaceMemberSuspendedDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceMember), "Activate(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Activate_ShouldIncrementVersion()
     {
@@ -50,6 +54,7 @@ public class WorkspaceMemberVersionTests
         member.DomainEvents.Should().Contain(e => e is WorkspaceMemberActivatedDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceMember), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldIncrementVersion()
     {
@@ -64,6 +69,7 @@ public class WorkspaceMemberVersionTests
         member.DomainEvents.Should().Contain(e => e is WorkspaceMemberRemovedDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceMember), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldIncrementVersion()
     {

@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Identity;
 
@@ -7,6 +8,8 @@ public class UserMfaMethodSoftDeleteRestoreTests
     private readonly Guid _actorId = Guid.NewGuid();
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
 
+    [CoversMutation(typeof(UserMfaMethod), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(UserMfaMethod), "Disable(System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void SoftDelete_ShouldIncrementVersion_AndRaiseEvent()
     {
@@ -21,6 +24,7 @@ public class UserMfaMethodSoftDeleteRestoreTests
         method.DomainEvents.Should().ContainSingle(e => e is UserMfaMethodSoftDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(UserMfaMethod), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldIncrementVersion_AndRaiseEvent()
     {

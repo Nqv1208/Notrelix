@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Forms;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.WorkManagement.Forms;
 
@@ -26,6 +27,7 @@ public class FormEventTests
         evt.Name.Should().Be("Updated Form");
     }
 
+    [CoversMutation(typeof(Form), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void Form_SoftDelete_ShouldRaiseEvent()
     {
@@ -40,6 +42,7 @@ public class FormEventTests
         form.DomainEvents.Should().ContainSingle(e => e is FormSoftDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(Form), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
     public void Form_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
@@ -54,6 +57,7 @@ public class FormEventTests
         form.DomainEvents.Should().NotContain(e => e is FormSoftDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(Form), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Form_Restore_ShouldRaiseEvent()
     {
@@ -69,6 +73,7 @@ public class FormEventTests
         form.DomainEvents.Should().ContainSingle(e => e is FormRestoredDomainEvent);
     }
 
+    [CoversMutation(typeof(Form), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Form_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {

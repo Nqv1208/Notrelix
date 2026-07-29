@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.WorkManagement.Boards;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 
@@ -9,6 +10,7 @@ public class BoardIdempotencyTests
     private readonly Guid _actorId = Guid.NewGuid();
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
 
+    [CoversMutation(typeof(Board), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Rename_ShouldNotIncrementVersion_WhenTitleIsSame()
     {
@@ -21,6 +23,7 @@ public class BoardIdempotencyTests
         board.DomainEvents.Should().NotContain(e => e is BoardRenamedDomainEvent);
     }
 
+    [CoversMutation(typeof(Board), "UpdateDescription(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void UpdateDescription_ShouldNotIncrementVersion_WhenDescriptionIsSame()
     {
@@ -33,6 +36,7 @@ public class BoardIdempotencyTests
         board.Version.Should().Be(version);
     }
 
+    [CoversMutation(typeof(Board), "ChangeVisibility(Notrelix.Domain.WorkManagement.Boards.BoardVisibility,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void ChangeVisibility_ShouldNotIncrementVersion_WhenVisibilityIsSame()
     {
@@ -45,6 +49,7 @@ public class BoardIdempotencyTests
         board.Version.Should().Be(version);
     }
 
+    [CoversMutation(typeof(Board), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Archive_ShouldNotIncrementVersion_WhenAlreadyArchived()
     {
@@ -57,6 +62,7 @@ public class BoardIdempotencyTests
         board.Version.Should().Be(version);
     }
 
+    [CoversMutation(typeof(Board), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Unarchive_ShouldNotIncrementVersion_WhenNotArchived()
     {
@@ -69,6 +75,7 @@ public class BoardIdempotencyTests
         board.Version.Should().Be(version);
     }
 
+    [CoversMutation(typeof(Board), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldIncrementVersion_AndRaiseEvent()
     {
@@ -82,6 +89,7 @@ public class BoardIdempotencyTests
         board.DomainEvents.Should().ContainSingle(e => e is BoardSoftDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(Board), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldIncrementVersion_AndRaiseEvent()
     {
@@ -97,6 +105,7 @@ public class BoardIdempotencyTests
         board.DomainEvents.Should().ContainSingle(e => e is BoardRestoredDomainEvent);
     }
 
+    [CoversMutation(typeof(Board), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
     public void SoftDelete_ShouldNotIncrementOrRaiseEvent_WhenAlreadyDeleted()
     {
@@ -111,6 +120,7 @@ public class BoardIdempotencyTests
         board.DomainEvents.Should().NotContain(e => e is BoardSoftDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(Board), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldNotIncrementOrRaiseEvent_WhenNotDeleted()
     {
@@ -135,6 +145,7 @@ public class BoardIdempotencyTests
         board.DomainEvents.Single(e => e is BoardRenamedDomainEvent).Should().NotBeNull();
     }
 
+    [CoversMutation(typeof(Board), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void DomainEvent_ShouldRaiseCorrectType_ForSoftDelete()
     {
@@ -146,6 +157,7 @@ public class BoardIdempotencyTests
         board.DomainEvents.Single(e => e is BoardSoftDeletedDomainEvent).Should().NotBeNull();
     }
 
+    [CoversMutation(typeof(Board), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void DomainEvent_ShouldRaiseCorrectType_ForRestore()
     {

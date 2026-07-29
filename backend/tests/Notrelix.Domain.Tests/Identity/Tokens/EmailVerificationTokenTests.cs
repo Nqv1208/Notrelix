@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Identity.Tokens;
 
@@ -38,6 +39,8 @@ public class EmailVerificationTokenTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*after creation time*");
     }
 
+    [CoversMutation(typeof(EmailVerificationToken), "MarkUsed(System.DateTimeOffset,Notrelix.Domain.Common.DomainEvent)", MutationScenario.Event)]
+    [CoversMutation(typeof(EmailVerificationToken), "MarkUsed(System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void MarkUsed_ShouldChangeStatusAndRaiseEvent()
     {
@@ -58,6 +61,8 @@ public class EmailVerificationTokenTests
         evt.UsedAt.Should().Be(useTime);
     }
 
+    [CoversMutation(typeof(EmailVerificationToken), "MarkUsed(System.DateTimeOffset,Notrelix.Domain.Common.DomainEvent)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(EmailVerificationToken), "MarkUsed(System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void MarkUsed_AlreadyUsed_ShouldThrow()
     {
@@ -70,6 +75,8 @@ public class EmailVerificationTokenTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*already been used*");
     }
 
+    [CoversMutation(typeof(EmailVerificationToken), "TryExpire(System.DateTimeOffset,Notrelix.Domain.Common.DomainEvent)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(EmailVerificationToken), "Expire(System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void MarkUsed_AfterExpiresAt_ShouldThrowWithoutMutating()
     {
@@ -86,6 +93,8 @@ public class EmailVerificationTokenTests
         token.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(EmailVerificationToken), "TryExpire(System.DateTimeOffset,Notrelix.Domain.Common.DomainEvent)", MutationScenario.Event)]
+    [CoversMutation(typeof(EmailVerificationToken), "Expire(System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Expire_ShouldSetStatusAndRaiseEvent()
     {
@@ -106,6 +115,8 @@ public class EmailVerificationTokenTests
         evt.ExpiredAt.Should().Be(expireTime);
     }
 
+    [CoversMutation(typeof(EmailVerificationToken), "TryExpire(System.DateTimeOffset,Notrelix.Domain.Common.DomainEvent)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(EmailVerificationToken), "Expire(System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Expire_AlreadyExpired_ShouldBeIdempotent()
     {
@@ -119,6 +130,8 @@ public class EmailVerificationTokenTests
         token.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(EmailVerificationToken), "TryExpire(System.DateTimeOffset,Notrelix.Domain.Common.DomainEvent)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(EmailVerificationToken), "Expire(System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Expire_OnUsedToken_ShouldThrow()
     {
@@ -131,6 +144,8 @@ public class EmailVerificationTokenTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*used token*");
     }
 
+    [CoversMutation(typeof(EmailVerificationToken), "TryRevoke(System.DateTimeOffset,System.String,Notrelix.Domain.Common.DomainEvent)", MutationScenario.Valid)]
+    [CoversMutation(typeof(EmailVerificationToken), "Revoke(System.DateTimeOffset,System.String)", MutationScenario.Valid)]
     [Fact]
     public void Revoke_ShouldMakeTokenUnavailable()
     {

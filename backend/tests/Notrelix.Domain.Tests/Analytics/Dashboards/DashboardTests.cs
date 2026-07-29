@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Notrelix.Domain.Analytics.Dashboards;
 using Notrelix.Domain.Analytics.Widgets;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Analytics;
 
@@ -22,6 +23,7 @@ public class DashboardTests
         dashboard.DomainEvents.Should().ContainSingle(e => e is DashboardCreatedDomainEvent);
     }
 
+    [CoversMutation(typeof(Dashboard), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Rename_ShouldUpdateName_AndRaiseEvent()
     {
@@ -35,6 +37,7 @@ public class DashboardTests
         dashboard.DomainEvents.Should().Contain(e => e is DashboardRenamedDomainEvent);
     }
 
+    [CoversMutation(typeof(Dashboard), "ChangeVisibility(Notrelix.Domain.Analytics.Dashboards.DashboardVisibility,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void ChangeVisibility_ShouldUpdateVisibility_AndRaiseEvent()
     {
@@ -48,6 +51,7 @@ public class DashboardTests
         dashboard.DomainEvents.Should().Contain(e => e is DashboardVisibilityChangedDomainEvent);
     }
 
+    [CoversMutation(typeof(Dashboard), "AddWidget(System.String,Notrelix.Domain.Analytics.Dashboards.DashboardWidgetType,Notrelix.Domain.SharedKernel.JsonValue,Notrelix.Domain.Analytics.Widgets.WidgetPosition,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void AddWidget_WithInvalidPosition_ShouldThrowException()
     {
@@ -62,6 +66,7 @@ public class DashboardTests
         act2.Should().Throw<DomainException>().WithMessage("Widget dimensions (W, H) must be positive.");
     }
 
+    [CoversMutation(typeof(Dashboard), "AddWidget(System.String,Notrelix.Domain.Analytics.Dashboards.DashboardWidgetType,Notrelix.Domain.SharedKernel.JsonValue,Notrelix.Domain.Analytics.Widgets.WidgetPosition,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void AddWidget_WithValidPosition_ShouldSucceed_AndRaiseEvent()
     {
@@ -114,6 +119,7 @@ public class DashboardTests
         dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetRemovedDomainEvent);
     }
 
+    [CoversMutation(typeof(Dashboard), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDeleteAndRestore_ShouldUpdateStatus()
     {

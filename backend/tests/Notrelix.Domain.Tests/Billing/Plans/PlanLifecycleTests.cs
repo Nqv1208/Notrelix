@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Billing.Plans;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Billing.Plans;
 
@@ -95,6 +96,7 @@ public class PlanLifecycleTests
         plan.DomainEvents.Should().NotContain(e => e is PlanDeprecatedDomainEvent);
     }
 
+    [CoversMutation(typeof(Plan), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void Plan_SoftDelete_ShouldRaiseEvent()
     {
@@ -111,6 +113,7 @@ public class PlanLifecycleTests
         evt.DeletedBy.Should().Be(Actor);
     }
 
+    [CoversMutation(typeof(Plan), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Plan_Restore_ShouldRaiseEvent()
     {
@@ -129,6 +132,7 @@ public class PlanLifecycleTests
         evt.RestoredBy.Should().Be(Actor);
     }
 
+    [CoversMutation(typeof(Plan), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void Plan_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
@@ -143,6 +147,8 @@ public class PlanLifecycleTests
         plan.DomainEvents.Should().NotContain(e => e is PlanSoftDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(Plan), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Plan), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void Plan_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {

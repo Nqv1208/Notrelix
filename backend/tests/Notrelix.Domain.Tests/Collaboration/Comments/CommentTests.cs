@@ -49,6 +49,7 @@ public class CommentTests
         comment.Anchor.Should().Be(anchor);
     }
 
+    [CoversMutation(typeof(Comment), "UpdateContent(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void UpdateContent_ShouldUpdate_AndRaiseEvent()
     {
@@ -61,6 +62,7 @@ public class CommentTests
         comment.DomainEvents.Should().ContainSingle(e => e is CommentUpdatedDomainEvent);
     }
 
+    [CoversMutation(typeof(Comment), "UpdateContent(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void UpdateContent_WhenSameContent_ShouldBeNoOp()
     {
@@ -72,6 +74,7 @@ public class CommentTests
         comment.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Comment), "UpdateContent(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void UpdateContent_WhenDeleted_ShouldThrow()
     {
@@ -82,6 +85,7 @@ public class CommentTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
+    [CoversMutation(typeof(Comment), "Resolve(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Resolve_ShouldUpdateStatus_AndRaiseEvent()
     {
@@ -96,6 +100,7 @@ public class CommentTests
         comment.DomainEvents.Should().ContainSingle(e => e is CommentResolvedDomainEvent);
     }
 
+    [CoversMutation(typeof(Comment), "Resolve(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Resolve_WhenAlreadyResolved_ShouldBeNoOp()
     {
@@ -108,6 +113,7 @@ public class CommentTests
         comment.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Comment), "Resolve(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Resolve_WhenDeleted_ShouldThrow()
     {
@@ -118,6 +124,7 @@ public class CommentTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
+    [CoversMutation(typeof(Comment), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldSetStatus_AndRaiseEvent()
     {
@@ -131,6 +138,7 @@ public class CommentTests
         comment.DomainEvents.Should().ContainSingle(e => e is CommentSoftDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(Comment), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
     public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
@@ -143,6 +151,7 @@ public class CommentTests
         comment.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Comment), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldSetStatus_AndRaiseEvent()
     {
@@ -157,6 +166,7 @@ public class CommentTests
         comment.DomainEvents.Should().ContainSingle(e => e is CommentRestoredDomainEvent);
     }
 
+    [CoversMutation(typeof(Comment), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {

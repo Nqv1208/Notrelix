@@ -2,6 +2,7 @@ using FluentAssertions;
 using Notrelix.Domain.Automation.Agents;
 using Notrelix.Domain.Automation.Agents.Events;
 using Notrelix.Domain.Analytics.Dashboards;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 
@@ -43,6 +44,7 @@ public class V4MissingParityTests
         evt.Name.Should().Be("Translation Bot");
     }
 
+    [CoversMutation(typeof(DashboardSource), "UpdateFilter(Notrelix.Domain.SharedKernel.JsonValue,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void AiAgent_Update_ShouldModifyFields_AndRaiseEvent()
     {

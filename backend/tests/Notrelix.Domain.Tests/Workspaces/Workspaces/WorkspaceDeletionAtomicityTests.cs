@@ -1,6 +1,5 @@
 using FluentAssertions;
-using Notrelix.Domain.Workspaces.Workspaces;
-using Xunit;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Workspaces.Workspaces;
 
@@ -12,6 +11,7 @@ public class WorkspaceDeletionAtomicityTests
     private static Workspace CreateWorkspace() =>
         Workspace.Create(Guid.NewGuid(), ActorId, "Test Workspace", "test-ws", Now);
 
+    [CoversMutation(typeof(Workspace), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldSetStatusToSoftDeleted()
     {
@@ -20,6 +20,7 @@ public class WorkspaceDeletionAtomicityTests
         workspace.Status.Should().Be(WorkspaceStatus.SoftDeleted);
     }
 
+    [CoversMutation(typeof(Workspace), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldSetDeleteAudit()
     {
@@ -29,6 +30,7 @@ public class WorkspaceDeletionAtomicityTests
         workspace.DeletedAt.Should().Be(Now);
     }
 
+    [CoversMutation(typeof(Workspace), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
     public void SoftDelete_IsIdempotent_ShouldNotRaiseEvent()
     {
@@ -39,6 +41,7 @@ public class WorkspaceDeletionAtomicityTests
         workspace.DomainEvents.Count.Should().Be(eventsBefore);
     }
 
+    [CoversMutation(typeof(Workspace), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
     public void SoftDelete_IsIdempotent_ShouldNotIncrementVersion()
     {
@@ -49,6 +52,7 @@ public class WorkspaceDeletionAtomicityTests
         workspace.Version.Should().Be(before);
     }
 
+    [CoversMutation(typeof(Workspace), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldSetStatusToActive()
     {
@@ -58,6 +62,7 @@ public class WorkspaceDeletionAtomicityTests
         workspace.Status.Should().Be(WorkspaceStatus.Active);
     }
 
+    [CoversMutation(typeof(Workspace), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldSetRestoreAudit()
     {
@@ -70,6 +75,7 @@ public class WorkspaceDeletionAtomicityTests
         workspace.RestoredAt.Should().Be(time);
     }
 
+    [CoversMutation(typeof(Workspace), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Restore_IsIdempotent_ShouldNotRaiseEvent()
     {
@@ -80,6 +86,7 @@ public class WorkspaceDeletionAtomicityTests
         workspace.DomainEvents.Count.Should().Be(eventsBefore);
     }
 
+    [CoversMutation(typeof(Workspace), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Restore_IsIdempotent_ShouldNotIncrementVersion()
     {
@@ -89,6 +96,7 @@ public class WorkspaceDeletionAtomicityTests
         workspace.Version.Should().Be(before);
     }
 
+    [CoversMutation(typeof(Workspace), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_RaisedEvent_ShouldContainAccountId()
     {
@@ -99,6 +107,7 @@ public class WorkspaceDeletionAtomicityTests
         evt.GetType().Name.Should().Be("WorkspaceSoftDeletedDomainEvent");
     }
 
+    [CoversMutation(typeof(Workspace), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_RaisedEvent_ShouldContainAccountId()
     {

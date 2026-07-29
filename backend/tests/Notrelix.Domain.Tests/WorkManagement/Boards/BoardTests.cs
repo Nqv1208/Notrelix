@@ -39,6 +39,7 @@ public class BoardTests
         act.Should().Throw<BusinessRuleException>();
     }
 
+    [CoversMutation(typeof(Board), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Rename_ShouldUpdateTitleAndRaiseEvent()
     {
@@ -54,6 +55,7 @@ public class BoardTests
         board.DomainEvents.Should().ContainSingle(e => e is BoardRenamedDomainEvent);
     }
 
+    [CoversMutation(typeof(Board), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Rename_ShouldThrow_WhenTitleIsEmpty()
     {
@@ -64,6 +66,7 @@ public class BoardTests
         act.Should().Throw<BusinessRuleException>();
     }
 
+    [CoversMutation(typeof(Board), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Rename_ShouldThrow_WhenBoardIsArchived()
     {
@@ -75,6 +78,7 @@ public class BoardTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot rename an archived board.");
     }
 
+    [CoversMutation(typeof(Board), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Archive_ShouldSetIsArchivedAndRaiseEvent()
     {
@@ -89,6 +93,7 @@ public class BoardTests
         board.DomainEvents.Should().ContainSingle(e => e is BoardArchivedDomainEvent);
     }
 
+    [CoversMutation(typeof(Board), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Archive_ShouldBeNoOp_WhenAlreadyArchived()
     {
@@ -101,6 +106,8 @@ public class BoardTests
         board.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Board), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Board), "Unarchive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Unarchive_ShouldClearIsArchivedAndRaiseEvent()
     {
@@ -116,6 +123,8 @@ public class BoardTests
         board.DomainEvents.Should().ContainSingle(e => e is BoardUnarchivedDomainEvent);
     }
 
+    [CoversMutation(typeof(Board), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Board), "Unarchive(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Unarchive_ShouldBeNoOp_WhenNotArchived()
     {
@@ -127,6 +136,7 @@ public class BoardTests
         board.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Board), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldSetIsDeletedAndRaiseEvent()
     {
@@ -144,6 +154,7 @@ public class BoardTests
         board.DomainEvents.Should().ContainSingle(e => e is BoardSoftDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(Board), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
     public void SoftDelete_ShouldBeNoOp_WhenAlreadyDeleted()
     {
@@ -156,6 +167,7 @@ public class BoardTests
         board.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Board), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldClearIsDeletedAndRaiseEvent()
     {
@@ -174,6 +186,7 @@ public class BoardTests
         board.DomainEvents.Should().ContainSingle(e => e is BoardRestoredDomainEvent);
     }
 
+    [CoversMutation(typeof(Board), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Restore_ShouldBeNoOp_WhenNotDeleted()
     {
@@ -185,6 +198,7 @@ public class BoardTests
         board.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Board), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Rename_ShouldThrow_WhenBoardIsDeleted()
     {
@@ -196,6 +210,7 @@ public class BoardTests
         act.Should().Throw<DomainException>();
     }
 
+    [CoversMutation(typeof(Board), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Archive_ShouldThrow_WhenBoardIsDeleted()
     {
@@ -207,6 +222,7 @@ public class BoardTests
         act.Should().Throw<DomainException>();
     }
 
+    [CoversMutation(typeof(Board), "UpdateDescription(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void UpdateDescription_ShouldRaiseEvent()
     {
@@ -221,6 +237,7 @@ public class BoardTests
         board.DomainEvents.Should().ContainSingle(e => e is BoardDescriptionUpdatedDomainEvent);
     }
 
+    [CoversMutation(typeof(Board), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void UpdateDescription_ShouldThrow_WhenBoardIsArchived()
     {
@@ -232,6 +249,7 @@ public class BoardTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot update description of an archived board.");
     }
 
+    [CoversMutation(typeof(Board), "ChangeVisibility(Notrelix.Domain.WorkManagement.Boards.BoardVisibility,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void ChangeVisibility_ShouldRaiseEvent()
     {
@@ -246,6 +264,7 @@ public class BoardTests
         board.DomainEvents.Should().ContainSingle(e => e is BoardVisibilityChangedDomainEvent);
     }
 
+    [CoversMutation(typeof(Board), "SetDefaultGroup(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void SetDefaultGroup_ShouldRaiseEvent()
     {
@@ -260,6 +279,8 @@ public class BoardTests
         board.DomainEvents.Should().ContainSingle(e => e is BoardDefaultGroupSetDomainEvent);
     }
 
+    [CoversMutation(typeof(Board), "GenerateNextItemIdentity(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Board), "GenerateNextItemIdentity(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void GenerateNextItemIdentity_ShouldIncrementSequence()
     {
@@ -275,6 +296,7 @@ public class BoardTests
         key2.Should().Be("TASK-2");
     }
 
+    [CoversMutation(typeof(Board), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void GenerateNextItemIdentity_ShouldThrow_WhenBoardIsArchived()
     {

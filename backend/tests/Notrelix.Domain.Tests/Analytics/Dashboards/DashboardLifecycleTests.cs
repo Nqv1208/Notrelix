@@ -12,6 +12,7 @@ public class DashboardLifecycleTests
     private readonly Guid _actor = Guid.NewGuid();
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
 
+    [CoversMutation(typeof(Dashboard), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Rename_ShouldIncrementVersion()
     {
@@ -24,6 +25,7 @@ public class DashboardLifecycleTests
         dashboard.DomainEvents.Should().Contain(e => e is DashboardRenamedDomainEvent);
     }
 
+    [CoversMutation(typeof(Dashboard), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Rename_SameName_ShouldNotIncrementVersion()
     {
@@ -37,6 +39,7 @@ public class DashboardLifecycleTests
         dashboard.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Dashboard), "ChangeVisibility(Notrelix.Domain.Analytics.Dashboards.DashboardVisibility,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void ChangeVisibility_ShouldIncrementVersion()
     {
@@ -49,6 +52,7 @@ public class DashboardLifecycleTests
         dashboard.DomainEvents.Should().Contain(e => e is DashboardVisibilityChangedDomainEvent);
     }
 
+    [CoversMutation(typeof(Dashboard), "ChangeVisibility(Notrelix.Domain.Analytics.Dashboards.DashboardVisibility,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void ChangeVisibility_SameValue_ShouldNotIncrementVersion()
     {
@@ -62,6 +66,8 @@ public class DashboardLifecycleTests
         dashboard.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Dashboard), "AddWidget(System.String,Notrelix.Domain.Analytics.Dashboards.DashboardWidgetType,Notrelix.Domain.SharedKernel.JsonValue,Notrelix.Domain.Analytics.Widgets.WidgetPosition,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(Dashboard), "RemoveWidget(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void AddWidget_ShouldIncrementVersion()
     {
@@ -75,6 +81,7 @@ public class DashboardLifecycleTests
         dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetAddedDomainEvent);
     }
 
+    [CoversMutation(typeof(Dashboard), "RemoveWidget(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void RemoveWidget_ShouldIncrementVersion()
     {
@@ -91,6 +98,7 @@ public class DashboardLifecycleTests
         dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetRemovedDomainEvent);
     }
 
+    [CoversMutation(typeof(Dashboard), "RemoveWidget(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void RemoveWidget_UnknownId_ShouldNotIncrementVersion()
     {
@@ -104,6 +112,8 @@ public class DashboardLifecycleTests
         dashboard.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Dashboard), "MoveWidget(System.Guid,Notrelix.Domain.Analytics.Widgets.WidgetPosition,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(Dashboard), "RemoveWidget(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void MoveWidget_ShouldIncrementVersion()
     {
@@ -121,6 +131,7 @@ public class DashboardLifecycleTests
         dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetMovedDomainEvent);
     }
 
+    [CoversMutation(typeof(Dashboard), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldIncrementVersion_AndRaiseDeletedEvent()
     {
@@ -136,6 +147,7 @@ public class DashboardLifecycleTests
         dashboard.DomainEvents.Should().Contain(e => e is DashboardDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(Dashboard), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldIncrementVersion_AndRaiseRestoredEvent()
     {
@@ -152,6 +164,7 @@ public class DashboardLifecycleTests
         dashboard.DomainEvents.Should().Contain(e => e is DashboardRestoredDomainEvent);
     }
 
+    [CoversMutation(typeof(Dashboard), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_Twice_ShouldNotIncrementVersion()
     {
@@ -166,6 +179,7 @@ public class DashboardLifecycleTests
         dashboard.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(Dashboard), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_Twice_ShouldNotIncrementVersion()
     {

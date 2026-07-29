@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Integrations.Connections;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Integrations.Connections;
 
@@ -10,6 +11,7 @@ public class ReconnectNoOpTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
+    [CoversMutation(typeof(IntegrationConnection), "Reconnect(System.String,System.DateTimeOffset?,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Reconnect_WhenAlreadyActiveWithSameValues_ShouldBeNoOp()
     {
@@ -39,6 +41,7 @@ public class ReconnectNoOpTests
         connection.DomainEvents.Should().ContainSingle(e => e is IntegrationConnectionReauthorizedDomainEvent);
     }
 
+    [CoversMutation(typeof(IntegrationConnection), "Reconnect(System.String,System.DateTimeOffset?,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Reconnect_WhenActiveWithDifferentProviderAccountId_ShouldReauthorize()
     {
@@ -68,6 +71,7 @@ public class ReconnectNoOpTests
         connection.DomainEvents.Should().ContainSingle(e => e is IntegrationConnectionReauthorizedDomainEvent);
     }
 
+    [CoversMutation(typeof(IntegrationConnection), "Reconnect(System.String,System.DateTimeOffset?,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Reconnect_ShouldClearErrorDetail()
     {
@@ -82,6 +86,7 @@ public class ReconnectNoOpTests
         connection.Status.Should().Be(IntegrationConnectionStatus.Active);
     }
 
+    [CoversMutation(typeof(IntegrationConnection), "Reconnect(System.String,System.DateTimeOffset?,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Reconnect_ShouldNormalizeProviderAccountId()
     {
@@ -94,6 +99,7 @@ public class ReconnectNoOpTests
         connection.ProviderAccountId.Should().Be("provider-1");
     }
 
+    [CoversMutation(typeof(IntegrationConnection), "Reconnect(System.String,System.DateTimeOffset?,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Reconnect_ShouldIncrementVersion()
     {
@@ -107,6 +113,7 @@ public class ReconnectNoOpTests
         connection.Version.Should().Be(initialVersion + 2);
     }
 
+    [CoversMutation(typeof(IntegrationConnection), "Reconnect(System.String,System.DateTimeOffset?,System.Guid,System.DateTimeOffset)", MutationScenario.Audit)]
     [Fact]
     public void Reconnect_ShouldSetAuditFields()
     {
@@ -123,6 +130,7 @@ public class ReconnectNoOpTests
         connection.UpdatedAt.Should().Be(updatedAt);
     }
 
+    [CoversMutation(typeof(IntegrationConnection), "Reconnect(System.String,System.DateTimeOffset?,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Reconnect_WhenActiveWithSameValuesButErrorDetail_ShouldNotBeNoOp()
     {
@@ -139,6 +147,7 @@ public class ReconnectNoOpTests
         connection.DomainEvents.Should().ContainSingle(e => e is IntegrationConnectionReauthorizedDomainEvent);
     }
 
+    [CoversMutation(typeof(IntegrationConnection), "Reconnect(System.String,System.DateTimeOffset?,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Reconnect_PastExpiration_ShouldThrow()
     {
@@ -150,6 +159,7 @@ public class ReconnectNoOpTests
         act.Should().Throw<BusinessRuleException>();
     }
 
+    [CoversMutation(typeof(IntegrationConnection), "Reconnect(System.String,System.DateTimeOffset?,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Reconnect_OnDeletedConnection_ShouldThrow()
     {

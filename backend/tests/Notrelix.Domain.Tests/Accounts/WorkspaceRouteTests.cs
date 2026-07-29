@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Notrelix.Domain.Accounts.WorkspaceRoutes;
 using Notrelix.Domain.Accounts.WorkspaceRoutes.Events;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Accounts;
 
@@ -72,6 +73,7 @@ public class WorkspaceRouteTests
             .WithMessage("*empty GUID*");
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "SetAsDefault(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void SetAsDefault_ShouldSetFlag_AndRaiseEvent()
     {
@@ -84,6 +86,7 @@ public class WorkspaceRouteTests
         route.DomainEvents.Should().ContainSingle(e => e is WorkspaceRouteSetAsDefaultDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "SetAsDefault(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void SetAsDefault_WhenAlreadyDefault_ShouldBeNoOp()
     {
@@ -96,6 +99,7 @@ public class WorkspaceRouteTests
         route.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "UnsetDefault(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void UnsetDefault_ShouldClearFlag_AndRaiseEvent()
     {
@@ -108,6 +112,7 @@ public class WorkspaceRouteTests
         route.DomainEvents.Should().ContainSingle(e => e is WorkspaceRouteUnsetAsDefaultDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "UnsetDefault(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void UnsetDefault_WhenNotDefault_ShouldBeNoOp()
     {
@@ -120,6 +125,7 @@ public class WorkspaceRouteTests
         route.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "LinkWorkspace(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void LinkWorkspace_ShouldSetWorkspaceId_AndRaiseEvent()
     {
@@ -132,6 +138,7 @@ public class WorkspaceRouteTests
         route.DomainEvents.Should().ContainSingle(e => e is WorkspaceRouteLinkedDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "LinkWorkspace(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void LinkWorkspace_WithSameId_ShouldBeNoOp()
     {
@@ -144,6 +151,7 @@ public class WorkspaceRouteTests
         route.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "UnlinkWorkspace(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void UnlinkWorkspace_ShouldClearWorkspaceId_AndRaiseEvent()
     {
@@ -156,6 +164,7 @@ public class WorkspaceRouteTests
         route.DomainEvents.Should().ContainSingle(e => e is WorkspaceRouteUnlinkedDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "UnlinkWorkspace(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void UnlinkWorkspace_WhenAlreadyNull_ShouldBeNoOp()
     {
@@ -191,6 +200,7 @@ public class WorkspaceRouteTests
         route.UpdatedAt.Should().Be(later);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldMarkDeleted_AndRaiseEvent()
     {
@@ -203,6 +213,7 @@ public class WorkspaceRouteTests
         route.DomainEvents.Should().ContainSingle(e => e is WorkspaceRouteSoftDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldMarkRestored_AndRaiseEvent()
     {
@@ -216,6 +227,7 @@ public class WorkspaceRouteTests
         route.DomainEvents.Should().ContainSingle(e => e is WorkspaceRouteRestoredDomainEvent);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
     [Fact]
     public void Mutations_AfterSoftDelete_ShouldThrow()
     {
@@ -239,6 +251,7 @@ public class WorkspaceRouteTests
         route.Version.Should().Be(1);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "SetAsDefault(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void SetAsDefault_NoOp_VersionShouldNotIncrement()
     {
@@ -248,6 +261,7 @@ public class WorkspaceRouteTests
         route.Version.Should().Be(before);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "UnsetDefault(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void UnsetDefault_ShouldIncrementVersion()
     {
@@ -257,6 +271,7 @@ public class WorkspaceRouteTests
         route.Version.Should().Be(before + 1);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "UnsetDefault(System.Guid,System.DateTimeOffset)", MutationScenario.Audit)]
     [Fact]
     public void UnsetDefault_ShouldUpdateAudit()
     {
@@ -268,6 +283,7 @@ public class WorkspaceRouteTests
         route.UpdatedAt.Should().Be(time);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "UnsetDefault(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void UnsetDefault_NoOp_VersionShouldNotIncrement()
     {
@@ -277,6 +293,7 @@ public class WorkspaceRouteTests
         route.Version.Should().Be(before);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "LinkWorkspace(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void LinkWorkspace_ShouldIncrementVersion()
     {
@@ -286,6 +303,7 @@ public class WorkspaceRouteTests
         route.Version.Should().Be(before + 1);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "LinkWorkspace(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Audit)]
     [Fact]
     public void LinkWorkspace_ShouldUpdateAudit()
     {
@@ -297,6 +315,7 @@ public class WorkspaceRouteTests
         route.UpdatedAt.Should().Be(time);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "LinkWorkspace(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void LinkWorkspace_NoOp_VersionShouldNotIncrement()
     {
@@ -307,6 +326,7 @@ public class WorkspaceRouteTests
         route.Version.Should().Be(before);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "UnlinkWorkspace(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void UnlinkWorkspace_ShouldIncrementVersion()
     {
@@ -316,6 +336,7 @@ public class WorkspaceRouteTests
         route.Version.Should().Be(before + 1);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "UnlinkWorkspace(System.Guid,System.DateTimeOffset)", MutationScenario.Audit)]
     [Fact]
     public void UnlinkWorkspace_ShouldUpdateAudit()
     {
@@ -327,6 +348,7 @@ public class WorkspaceRouteTests
         route.UpdatedAt.Should().Be(time);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "UnlinkWorkspace(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void UnlinkWorkspace_NoOp_VersionShouldNotIncrement()
     {
@@ -336,6 +358,7 @@ public class WorkspaceRouteTests
         route.Version.Should().Be(before);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldIncrementVersion()
     {
@@ -345,6 +368,7 @@ public class WorkspaceRouteTests
         route.Version.Should().Be(before + 1);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldSetDeleteAudit()
     {
@@ -356,6 +380,7 @@ public class WorkspaceRouteTests
         route.DeletedAt.Should().Be(time);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
     public void SoftDelete_IsIdempotent_ShouldNotRaiseEvent()
     {
@@ -366,6 +391,7 @@ public class WorkspaceRouteTests
         route.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
     public void SoftDelete_IsIdempotent_ShouldNotIncrementVersion()
     {
@@ -376,6 +402,7 @@ public class WorkspaceRouteTests
         route.Version.Should().Be(before);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldIncrementVersion()
     {
@@ -386,6 +413,7 @@ public class WorkspaceRouteTests
         route.Version.Should().Be(before + 1);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldSetRestoreAudit()
     {
@@ -398,6 +426,7 @@ public class WorkspaceRouteTests
         route.RestoredAt.Should().Be(time);
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Restore_NoOp_ShouldNotRaiseEvent()
     {
@@ -407,6 +436,7 @@ public class WorkspaceRouteTests
         route.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(WorkspaceRoute), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Restore_NoOp_ShouldNotIncrementVersion()
     {

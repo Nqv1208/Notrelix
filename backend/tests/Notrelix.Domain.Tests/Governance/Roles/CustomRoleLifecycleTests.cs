@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Governance.Roles;
+using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Governance.Roles;
 
@@ -9,6 +10,7 @@ public class CustomRoleLifecycleTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
+    [CoversMutation(typeof(CustomRole), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void CustomRole_Archive_ShouldRaiseEvent()
     {
@@ -26,6 +28,7 @@ public class CustomRoleLifecycleTests
         evt.ArchivedBy.Should().Be(Actor);
     }
 
+    [CoversMutation(typeof(CustomRole), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void CustomRole_Archive_WhenAlreadyArchived_ShouldNotRaiseEvent()
     {
@@ -40,6 +43,7 @@ public class CustomRoleLifecycleTests
         role.DomainEvents.Should().NotContain(e => e is CustomRoleArchivedDomainEvent);
     }
 
+    [CoversMutation(typeof(CustomRole), "Activate(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void CustomRole_Activate_ShouldRaiseEvent()
     {
@@ -58,6 +62,7 @@ public class CustomRoleLifecycleTests
         evt.ActivatedBy.Should().Be(Actor);
     }
 
+    [CoversMutation(typeof(CustomRole), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void CustomRole_Activate_WhenNotArchived_ShouldNotRaiseEvent()
     {
@@ -71,6 +76,7 @@ public class CustomRoleLifecycleTests
         role.DomainEvents.Should().NotContain(e => e is CustomRoleActivatedDomainEvent);
     }
 
+    [CoversMutation(typeof(CustomRole), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void CustomRole_SoftDelete_ShouldRaiseDedicatedEvent()
     {
@@ -89,6 +95,7 @@ public class CustomRoleLifecycleTests
         evt.DeletedBy.Should().Be(Actor);
     }
 
+    [CoversMutation(typeof(CustomRole), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void CustomRole_Restore_ShouldRaiseDedicatedEvent()
     {
@@ -108,6 +115,7 @@ public class CustomRoleLifecycleTests
         evt.RestoredBy.Should().Be(Actor);
     }
 
+    [CoversMutation(typeof(CustomRole), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
     public void CustomRole_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
@@ -122,6 +130,7 @@ public class CustomRoleLifecycleTests
         role.DomainEvents.Should().NotContain(e => e is CustomRoleSoftDeletedDomainEvent);
     }
 
+    [CoversMutation(typeof(CustomRole), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void CustomRole_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
