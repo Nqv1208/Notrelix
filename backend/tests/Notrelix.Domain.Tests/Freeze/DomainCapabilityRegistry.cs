@@ -70,7 +70,13 @@ internal static class DomainCapabilityRegistry
         new("Notrelix.Domain.Collaboration.Presence", DomainCapabilityStatus.Experimental),
 
         // ── Governance ────────────────────────────────────────────────────
+        // Root prefix covers RuleCodes; sub-namespaces below win by longest-prefix.
         new("Notrelix.Domain.Governance", DomainCapabilityStatus.Frozen),
+        new("Notrelix.Domain.Governance.Permissions", DomainCapabilityStatus.Frozen),
+        new("Notrelix.Domain.Governance.Policies", DomainCapabilityStatus.Frozen),
+        new("Notrelix.Domain.Governance.Roles", DomainCapabilityStatus.Frozen),
+        new("Notrelix.Domain.Governance.ShareLinks", DomainCapabilityStatus.Frozen),
+        new("Notrelix.Domain.Governance.Templates", DomainCapabilityStatus.Frozen),
 
         // ── Automation ────────────────────────────────────────────────────
         new("Notrelix.Domain.Automation", DomainCapabilityStatus.Frozen),
@@ -93,7 +99,12 @@ internal static class DomainCapabilityRegistry
         new("Notrelix.Domain.Billing", DomainCapabilityStatus.Frozen),
 
         // ── Analytics ─────────────────────────────────────────────────────
+        // Root prefix covers RuleCodes; sub-namespaces below win by longest-prefix.
         new("Notrelix.Domain.Analytics", DomainCapabilityStatus.Frozen),
+        new("Notrelix.Domain.Analytics.Dashboards", DomainCapabilityStatus.Frozen),
+        new("Notrelix.Domain.Analytics.Widgets", DomainCapabilityStatus.Frozen),
+        new("Notrelix.Domain.Analytics.Snapshots", DomainCapabilityStatus.Frozen),
+        new("Notrelix.Domain.Analytics.Rules", DomainCapabilityStatus.Frozen),
     ];
 
     /// <summary>
@@ -384,5 +395,139 @@ public class DomainCapabilityRegistryTests
 
         return experimentalPrefixes.Any(p =>
             ns.StartsWith(p, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void EveryPublicDomainType_ShouldResolveExactlyOneCapability()
+    {
+        var domainTypes = DomainAssembly.GetTypes()
+            .Where(t => t.IsPublic && t.Namespace?.StartsWith("Notrelix.Domain") == true)
+            .ToList();
+
+        var unclassified = new List<string>();
+        foreach (var type in domainTypes)
+        {
+            try { DomainCapabilityRegistry.ResolveCapability(type); }
+            catch (InvalidOperationException) { unclassified.Add(type.FullName!); }
+        }
+
+        unclassified.Should().BeEmpty(
+            "every public Domain type must be classified by DomainCapabilityRegistry: " +
+            string.Join(", ", unclassified));
+    }
+
+    [Fact]
+    public void AllCapabilityPrefixes_ShouldExistInDomainAssembly()
+    {
+        var domainNamespaces = DomainAssembly.GetTypes()
+            .Select(t => t.Namespace)
+            .Where(ns => ns is not null)
+            .Distinct()
+            .ToHashSet();
+
+        var missing = DomainCapabilityRegistry.GetAll()
+            .Where(c => !domainNamespaces.Contains(c.NamespacePrefix))
+            .Select(c => c.NamespacePrefix)
+            .ToList();
+
+        missing.Should().BeEmpty(
+            "every capability namespace prefix must exist in the Domain assembly: " +
+            string.Join(", ", missing));
+    }
+
+    [Fact]
+    public void FrozenRoot_ShouldNotShadowExperimentalChild()
+    {
+        // Longest-prefix resolution handles parent/child correctly.
+        // Verify that every Experimental type's resolved capability is Experimental.
+        var experimentalPrefixes = DomainCapabilityRegistry.GetExperimental()
+            .Select(c => c.NamespacePrefix)
+            .ToHashSet();
+
+        var experimentalTypes = DomainAssembly.GetTypes()
+            .Where(t => t.IsPublic && t.Namespace is not null &&
+                        experimentalPrefixes.Any(p => t.Namespace.StartsWith(p, StringComparison.Ordinal)))
+            .ToList();
+
+        var misclassified = experimentalTypes
+            .Where(t => DomainCapabilityRegistry.ResolveCapability(t) != DomainCapabilityStatus.Experimental)
+            .Select(t => $"{t.FullName} -> {DomainCapabilityRegistry.ResolveCapability(t)}")
+            .ToList();
+
+        misclassified.Should().BeEmpty(
+            "no Experimental type should be resolved as Frozen due to a parent prefix: " +
+            string.Join(", ", misclassified));
+    }
+
+    [Fact]
+    public void NoAggregateInGlobal_ShouldImplementAccountOrWorkspaceScoped()
+    {
+        var violations = DomainCapabilityRegistry.GlobalAggregates
+            .Select(n => DomainAssembly.GetType(n))
+            .Where(t => t is not null)
+            .Where(t => typeof(IAccountScoped).IsAssignableFrom(t) ||
+                        typeof(IWorkspaceScoped).IsAssignableFrom(t))
+            .Select(t => t!.FullName)
+            .ToList();
+
+        violations.Should().BeEmpty(
+            "global aggregates must not implement IAccountScoped or IWorkspaceScoped: " +
+            string.Join(", ", violations));
+    }
+
+    [Fact]
+    public void GlobalAggregatesList_ShouldNotContainWorkspace()
+    {
+        DomainCapabilityRegistry.GlobalAggregates.Should().NotContain(
+            n => n.Contains("Workspace"),
+            "workspace aggregates must not be global");
+    }
+
+    [Fact]
+    public void HybridAggregate_ShouldHaveDirectHybridInvariantTests()
+    {
+        var hybridTypes = DomainCapabilityRegistry.HybridAggregates
+            .Select(n => DomainAssembly.GetType(n))
+            .Where(t => t is not null)
+            .ToList();
+
+        foreach (var type in hybridTypes)
+        {
+            var ns = type!.Namespace!;
+            var resolvedStatus = DomainCapabilityRegistry.ResolveCapability(type);
+            resolvedStatus.Should().Be(DomainCapabilityStatus.Frozen,
+                $"hybrid aggregate {type.FullName} must be Frozen");
+        }
+    }
+
+    [Fact]
+    public void HybridPermissionTemplate_ShouldBeClassifiedCorrectly()
+    {
+        var templateType = DomainAssembly.GetType("Notrelix.Domain.Governance.Templates.PermissionTemplate")!;
+
+        var scope = DomainCapabilityRegistry.ResolveScope(templateType);
+        scope.Should().Be(AggregateScopeKind.Hybrid);
+
+        var capability = DomainCapabilityRegistry.ResolveCapability(templateType);
+        capability.Should().Be(DomainCapabilityStatus.Frozen);
+    }
+
+    [Fact]
+    public void LongestPrefix_ShouldResolveSubNamespaceOverRoot()
+    {
+        var governanceRoot = "Notrelix.Domain.Governance";
+        var templatesSub = "Notrelix.Domain.Governance.Templates";
+
+        var templateType = DomainAssembly.GetType("Notrelix.Domain.Governance.Templates.PermissionTemplate")!;
+
+        var resolved = DomainCapabilityRegistry.ResolveCapability(templateType);
+
+        var rootEntry = DomainCapabilityRegistry.GetAll()
+            .First(c => c.NamespacePrefix == governanceRoot);
+        var subEntry = DomainCapabilityRegistry.GetAll()
+            .First(c => c.NamespacePrefix == templatesSub);
+
+        resolved.Should().Be(subEntry.Status,
+            $"{templatesSub} (longest prefix) must win over {governanceRoot} (shorter prefix)");
     }
 }

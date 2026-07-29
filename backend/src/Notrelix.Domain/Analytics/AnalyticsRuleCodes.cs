@@ -16,4 +16,5 @@ public static class AnalyticsRuleCodes
     // ── Snapshot ──────────────────────────────────────────────────────────
     public const string Analytics_Snapshot_DataMustBeJsonObject = "Analytics_Snapshot_DataMustBeJsonObject";
     public const string Analytics_Snapshot_InvalidDataJson = "Analytics_Snapshot_InvalidDataJson";
+    public const string Analytics_Snapshot_CapturedAtDefault = "Analytics_Snapshot_CapturedAtDefault";
 }

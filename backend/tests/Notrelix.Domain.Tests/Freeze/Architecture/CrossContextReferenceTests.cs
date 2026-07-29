@@ -67,6 +67,47 @@ public class CrossContextReferenceTests
             string.Join("\n", violations));
     }
 
+    [Fact]
+    public void FrozenTypes_ShouldNotReferenceEntitiesFromOtherContexts()
+    {
+        var violations = new List<string>();
+
+        foreach (var type in DomainAssembly.GetTypes())
+        {
+            if (!IsFrozenDomainType(type)) continue;
+
+            var referencedTypes = DomainTypeGraphWalker.GetReferencedTypes(type);
+
+            foreach (var referencedType in referencedTypes)
+            {
+                if (IsPrimitiveOrBuiltin(referencedType)) continue;
+
+                if (IsEntityOrAggregate(referencedType))
+                {
+                    var targetContext = ResolveContext(referencedType.Namespace!);
+
+                    if (targetContext is not null && targetContext != ResolveContext(type.Namespace!))
+                    {
+                        violations.Add($"{type.FullName} -> {referencedType.FullName} (cross-context entity)");
+                    }
+                }
+            }
+        }
+
+        violations.Should().BeEmpty(
+            "frozen types must not reference concrete entities from other contexts (use IDs instead): " +
+            string.Join("\n", violations));
+    }
+
+    private static bool IsFrozenDomainType(Type type)
+    {
+        if (type.Namespace is null) return false;
+        if (!type.Namespace.StartsWith("Notrelix.Domain.", StringComparison.Ordinal)) return false;
+
+        var status = DomainCapabilityRegistry.ResolveCapability(type);
+        return status == DomainCapabilityStatus.Frozen;
+    }
+
     private static bool IsDomainType(Type type)
     {
         if (type.Namespace is null) return false;
@@ -76,6 +117,11 @@ public class CrossContextReferenceTests
     private static bool IsAggregateRoot(Type type)
     {
         return typeof(AggregateRoot).IsAssignableFrom(type);
+    }
+
+    private static bool IsEntityOrAggregate(Type type)
+    {
+        return typeof(Entity).IsAssignableFrom(type) && type is { IsAbstract: false, IsInterface: false };
     }
 
     private static string? ResolveContext(string ns)
