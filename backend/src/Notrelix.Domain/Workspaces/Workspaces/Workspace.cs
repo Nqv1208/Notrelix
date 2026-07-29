@@ -1,4 +1,3 @@
-using Notrelix.Domain.Common;
 using Notrelix.Domain.Workspaces.Workspaces.Events;
 namespace Notrelix.Domain.Workspaces.Workspaces;
 

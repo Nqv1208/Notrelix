@@ -1,7 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Integrations.Connections;
-using Notrelix.Domain.SharedKernel;
-using Xunit;
 using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Integrations.Connections;
@@ -25,7 +23,7 @@ public class IntegrationSecretStateTests
         c.SecretRotatedAt.Should().BeNull();
     }
 
-[CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void RotateSecret_ShouldSetSecretState()
     {
@@ -37,7 +35,7 @@ public class IntegrationSecretStateTests
         c.SecretRotatedAt.Should().Be(Now);
     }
 
-[CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void RotateSecret_WithNewVersion_ShouldUpdate()
     {
@@ -49,7 +47,7 @@ public class IntegrationSecretStateTests
         c.CurrentSecretRef.Should().Be(newRef);
     }
 
-[CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void RotateSecret_WithSameState_ShouldBeNoOp()
     {
@@ -60,7 +58,7 @@ public class IntegrationSecretStateTests
         c.DomainEvents.Should().ContainSingle(e => e is IntegrationSecretRotatedDomainEvent);
     }
 
-[CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void RotateSecret_WithEmptyVersion_ShouldThrow()
     {
@@ -69,7 +67,7 @@ public class IntegrationSecretStateTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-[CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void RotateSecret_WithNullRef_ShouldThrow()
     {
@@ -78,7 +76,7 @@ public class IntegrationSecretStateTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-[CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void RotateSecret_WhenDeleted_ShouldThrow()
     {

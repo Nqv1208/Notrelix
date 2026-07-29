@@ -1,4 +1,3 @@
-using System.Reflection;
 using FluentAssertions;
 
 namespace Notrelix.Domain.Tests.Accounts;

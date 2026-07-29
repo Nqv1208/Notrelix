@@ -1,8 +1,6 @@
-using System.Linq;
 using FluentAssertions;
 using Notrelix.Domain.Documents.Versions;
 using Notrelix.Domain.Tests.Freeze;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Documents.Versions;
 

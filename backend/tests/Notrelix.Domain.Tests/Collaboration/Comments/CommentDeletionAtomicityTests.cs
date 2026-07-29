@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Collaboration.Comments;
 using Notrelix.Domain.Tests.Freeze;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Collaboration.Comments;
 
@@ -14,7 +13,7 @@ public class CommentDeletionAtomicityTests
 
     private ResourceRef Target => ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
 
-[CoversMutation(typeof(Comment), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Comment), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldTransitionStatus()
     {
@@ -24,7 +23,7 @@ public class CommentDeletionAtomicityTests
         comment.IsDeleted.Should().BeTrue();
     }
 
-[CoversMutation(typeof(Comment), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Comment), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldRaiseEvent()
     {
@@ -34,7 +33,7 @@ public class CommentDeletionAtomicityTests
         comment.DomainEvents.Should().ContainSingle(e => e is CommentSoftDeletedDomainEvent);
     }
 
-[CoversMutation(typeof(Comment), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Comment), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldIncrementVersion()
     {
@@ -44,7 +43,7 @@ public class CommentDeletionAtomicityTests
         comment.Version.Should().Be(before + 1);
     }
 
-[CoversMutation(typeof(Comment), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Comment), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
     public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
@@ -57,7 +56,7 @@ public class CommentDeletionAtomicityTests
         comment.DomainEvents.Should().BeEmpty();
     }
 
-[CoversMutation(typeof(Comment), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Comment), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_AfterSoftDelete_ShouldRevertStatus()
     {
@@ -68,7 +67,7 @@ public class CommentDeletionAtomicityTests
         comment.IsDeleted.Should().BeFalse();
     }
 
-[CoversMutation(typeof(Comment), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Comment), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldRaiseEvent()
     {
@@ -79,7 +78,7 @@ public class CommentDeletionAtomicityTests
         comment.DomainEvents.Should().ContainSingle(e => e is CommentRestoredDomainEvent);
     }
 
-[CoversMutation(typeof(Comment), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Comment), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldIncrementVersion()
     {
@@ -90,7 +89,7 @@ public class CommentDeletionAtomicityTests
         comment.Version.Should().Be(before + 1);
     }
 
-[CoversMutation(typeof(Comment), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Comment), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {

@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Automation.RulesEngine;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Automation.Configuration;
 

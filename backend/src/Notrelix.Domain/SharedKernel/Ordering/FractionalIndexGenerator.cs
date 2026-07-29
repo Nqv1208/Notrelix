@@ -4,8 +4,6 @@
 // Original project license: CC0-1.0.
 // Commit: f1193a7 (v4.0.0 tag).
 
-using Notrelix.Domain.Common.Exceptions;
-
 namespace Notrelix.Domain.SharedKernel.Ordering;
 
 /// <summary>

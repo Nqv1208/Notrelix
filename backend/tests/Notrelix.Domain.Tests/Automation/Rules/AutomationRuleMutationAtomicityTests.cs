@@ -2,7 +2,6 @@ using FluentAssertions;
 using Notrelix.Domain.Automation.Rules;
 using Notrelix.Domain.Automation.RulesEngine;
 using Notrelix.Domain.Tests.Freeze;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Automation.Rules;
 
@@ -17,7 +16,7 @@ public class AutomationRuleMutationAtomicityTests
         AutomationTriggerDefinition.Create("FieldChanged"),
         AutomationActionDefinition.Create("SendEmail"));
 
-[CoversMutation(typeof(AutomationRule), "Enable(System.Guid,System.DateTimeOffset)", MutationScenario.Audit)]
+    [CoversMutation(typeof(AutomationRule), "Enable(System.Guid,System.DateTimeOffset)", MutationScenario.Audit)]
     [Fact]
     public void Enable_ShouldUseTwoPhaseAudit()
     {
@@ -28,7 +27,7 @@ public class AutomationRuleMutationAtomicityTests
         rule.IsEnabled.Should().BeTrue();
     }
 
-[CoversMutation(typeof(AutomationRule), "Enable(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(AutomationRule), "Enable(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Enable_WhenDeleted_ShouldThrow()
     {
@@ -38,7 +37,7 @@ public class AutomationRuleMutationAtomicityTests
         act.Should().Throw<DomainException>();
     }
 
-[CoversMutation(typeof(AutomationRule), "Enable(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(AutomationRule), "Enable(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Enable_WhenAlreadyEnabled_ShouldBeNoOp()
     {
@@ -49,7 +48,7 @@ public class AutomationRuleMutationAtomicityTests
         rule.Version.Should().Be(before);
     }
 
-[CoversMutation(typeof(AutomationRule), "Disable(System.Guid,System.DateTimeOffset)", MutationScenario.Audit)]
+    [CoversMutation(typeof(AutomationRule), "Disable(System.Guid,System.DateTimeOffset)", MutationScenario.Audit)]
     [Fact]
     public void Disable_ShouldUseTwoPhaseAudit()
     {
@@ -60,7 +59,7 @@ public class AutomationRuleMutationAtomicityTests
         rule.Version.Should().Be(before + 1);
     }
 
-[CoversMutation(typeof(AutomationRule), "Disable(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(AutomationRule), "Disable(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void Disable_WhenDeleted_ShouldThrow()
     {
@@ -102,7 +101,7 @@ public class AutomationRuleMutationAtomicityTests
         rule.Version.Should().Be(before);
     }
 
-[CoversMutation(typeof(AutomationRule), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(AutomationRule), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldSetDeleted()
     {
@@ -111,7 +110,7 @@ public class AutomationRuleMutationAtomicityTests
         rule.IsDeleted.Should().BeTrue();
     }
 
-[CoversMutation(typeof(AutomationRule), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(AutomationRule), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
     public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
@@ -122,7 +121,7 @@ public class AutomationRuleMutationAtomicityTests
         rule.Version.Should().Be(before);
     }
 
-[CoversMutation(typeof(AutomationRule), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(AutomationRule), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldClearDeleted()
     {
@@ -132,7 +131,7 @@ public class AutomationRuleMutationAtomicityTests
         rule.IsDeleted.Should().BeFalse();
     }
 
-[CoversMutation(typeof(AutomationRule), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(AutomationRule), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {

@@ -1,10 +1,6 @@
 using FluentAssertions;
-using Notrelix.Domain.Integrations;
 using Notrelix.Domain.Integrations.Connections;
-using Notrelix.Domain.Integrations.Rules;
-using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.Tests.Freeze;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Integrations.Connections;
 
@@ -18,7 +14,7 @@ public class IntegrationConnectionMutationAtomicityTests
     private static IntegrationConnection CreateActive() =>
         IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now);
 
-[CoversMutation(typeof(IntegrationConnection), "MarkError(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(IntegrationConnection), "MarkError(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void MarkError_ShouldIncrementVersion()
     {
@@ -28,7 +24,7 @@ public class IntegrationConnectionMutationAtomicityTests
         c.Version.Should().Be(before + 1);
     }
 
-[CoversMutation(typeof(IntegrationConnection), "MarkError(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(IntegrationConnection), "MarkError(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void MarkError_NoOp_ShouldNotIncrementVersion()
     {
@@ -39,7 +35,7 @@ public class IntegrationConnectionMutationAtomicityTests
         c.Version.Should().Be(before);
     }
 
-[CoversMutation(typeof(IntegrationConnection), "Reconnect(System.String,System.DateTimeOffset?,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(IntegrationConnection), "Reconnect(System.String,System.DateTimeOffset?,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Reconnect_ShouldIncrementVersion()
     {
@@ -50,7 +46,7 @@ public class IntegrationConnectionMutationAtomicityTests
         c.Version.Should().Be(before + 1);
     }
 
-[CoversMutation(typeof(IntegrationConnection), "Reconnect(System.String,System.DateTimeOffset?,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(IntegrationConnection), "Reconnect(System.String,System.DateTimeOffset?,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Reconnect_NoOp_ShouldNotIncrementVersion()
     {
@@ -60,7 +56,7 @@ public class IntegrationConnectionMutationAtomicityTests
         c.Version.Should().Be(before);
     }
 
-[CoversMutation(typeof(IntegrationConnection), "Disconnect(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(IntegrationConnection), "Disconnect(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Disconnect_ShouldIncrementVersion()
     {
@@ -70,7 +66,7 @@ public class IntegrationConnectionMutationAtomicityTests
         c.Version.Should().Be(before + 1);
     }
 
-[CoversMutation(typeof(IntegrationConnection), "Disconnect(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(IntegrationConnection), "Disconnect(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Disconnect_NoOp_ShouldNotIncrementVersion()
     {
@@ -81,7 +77,7 @@ public class IntegrationConnectionMutationAtomicityTests
         c.Version.Should().Be(before);
     }
 
-[CoversMutation(typeof(IntegrationConnection), "AddScope(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Scope)]
+    [CoversMutation(typeof(IntegrationConnection), "AddScope(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Scope)]
     [Fact]
     public void AddScope_ShouldIncrementVersion()
     {
@@ -91,7 +87,7 @@ public class IntegrationConnectionMutationAtomicityTests
         c.Version.Should().Be(before + 1);
     }
 
-[CoversMutation(typeof(IntegrationConnection), "AddScope(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(IntegrationConnection), "AddScope(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void AddScope_NoOp_ShouldNotIncrementVersion()
     {
@@ -121,7 +117,7 @@ public class IntegrationConnectionMutationAtomicityTests
         c.Version.Should().Be(before);
     }
 
-[CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void RotateSecret_ShouldIncrementVersion()
     {
@@ -131,7 +127,7 @@ public class IntegrationConnectionMutationAtomicityTests
         c.Version.Should().Be(before + 1);
     }
 
-[CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void RotateSecret_NoOp_ShouldNotIncrementVersion()
     {
@@ -143,7 +139,7 @@ public class IntegrationConnectionMutationAtomicityTests
         c.Version.Should().Be(before);
     }
 
-[CoversMutation(typeof(IntegrationConnection), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(IntegrationConnection), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SoftDelete_ShouldIncrementVersion()
     {
@@ -153,7 +149,7 @@ public class IntegrationConnectionMutationAtomicityTests
         c.Version.Should().Be(before + 1);
     }
 
-[CoversMutation(typeof(IntegrationConnection), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(IntegrationConnection), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
     public void SoftDelete_NoOp_ShouldNotIncrementVersion()
     {
@@ -164,7 +160,7 @@ public class IntegrationConnectionMutationAtomicityTests
         c.Version.Should().Be(before);
     }
 
-[CoversMutation(typeof(IntegrationConnection), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(IntegrationConnection), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_ShouldIncrementVersion()
     {
@@ -175,7 +171,7 @@ public class IntegrationConnectionMutationAtomicityTests
         c.Version.Should().Be(before + 1);
     }
 
-[CoversMutation(typeof(IntegrationConnection), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(IntegrationConnection), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Restore_NoOp_ShouldNotIncrementVersion()
     {

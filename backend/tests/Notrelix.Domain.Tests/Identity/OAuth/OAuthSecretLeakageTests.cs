@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Identity.OAuth;
-using Notrelix.Domain.Identity.OAuth.Events;
 
 namespace Notrelix.Domain.Tests.Identity.OAuth;
 

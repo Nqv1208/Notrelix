@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Identity.Users;
 
 namespace Notrelix.Domain.Tests.Identity.Users;
 

@@ -4,7 +4,6 @@ using Notrelix.Domain.Automation.Actions;
 using Notrelix.Domain.Automation.Conditions;
 using Notrelix.Domain.Automation.RulesEngine;
 using Notrelix.Domain.Automation.Triggers;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Automation;
 

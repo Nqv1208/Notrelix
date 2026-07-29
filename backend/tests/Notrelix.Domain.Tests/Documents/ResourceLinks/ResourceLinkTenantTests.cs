@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Documents.ResourceLinks;
 using Notrelix.Domain.Tests.Freeze;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Documents.ResourceLinks;
 

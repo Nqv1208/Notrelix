@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.WorkManagement.Approvals;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.WorkManagement.Approvals;
 

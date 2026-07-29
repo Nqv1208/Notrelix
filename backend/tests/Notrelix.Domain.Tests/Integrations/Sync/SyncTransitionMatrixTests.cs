@@ -1,7 +1,5 @@
 using FluentAssertions;
-using Notrelix.Domain.Integrations.Connections;
 using Notrelix.Domain.Integrations.Sync;
-using Xunit;
 
 namespace Notrelix.Domain.Tests.Integrations.Sync;
 

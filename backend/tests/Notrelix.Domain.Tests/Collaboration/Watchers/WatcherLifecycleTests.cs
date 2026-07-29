@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Collaboration.Watchers;
-using Xunit;
 using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Collaboration.Watchers;
@@ -34,7 +33,7 @@ public class WatcherLifecycleTests
         watcher.DomainEvents.Should().ContainSingle(e => e is ResourceWatchedDomainEvent);
     }
 
-[CoversMutation(typeof(ResourceWatcher), "Unwatch(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(ResourceWatcher), "Unwatch(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Unwatch_ShouldSetDeleted()
     {
@@ -43,7 +42,7 @@ public class WatcherLifecycleTests
         watcher.IsDeleted.Should().BeTrue();
     }
 
-[CoversMutation(typeof(ResourceWatcher), "Unwatch(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(ResourceWatcher), "Unwatch(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Unwatch_ShouldRaiseEvent()
     {
@@ -62,7 +61,7 @@ public class WatcherLifecycleTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-[CoversMutation(typeof(ResourceWatcher), "Unwatch(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(ResourceWatcher), "Unwatch(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
     [Fact]
     public void Unwatch_ShouldIncrementVersion()
     {
@@ -72,7 +71,7 @@ public class WatcherLifecycleTests
         watcher.Version.Should().Be(before + 1);
     }
 
-[CoversMutation(typeof(ResourceWatcher), "Unwatch(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(ResourceWatcher), "Unwatch(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
     [Fact]
     public void Unwatch_WhenAlreadyDeleted_ShouldThrow()
     {
