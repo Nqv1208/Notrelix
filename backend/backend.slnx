@@ -18,4 +18,7 @@
   <Project Path="tests/Notrelix.Testing.Domain/Notrelix.Testing.Domain.csproj" />
   <Project Path="tests/Notrelix.Testing.Application/Notrelix.Testing.Application.csproj" />
   <Project Path="tests/Notrelix.Testing.Integration/Notrelix.Testing.Integration.csproj" />
+
+  <!-- Tools (not shipped) -->
+  <Project Path="tools/Notrelix.DomainFreezeSnapshots/Notrelix.DomainFreezeSnapshots.csproj" />
 </Solution>

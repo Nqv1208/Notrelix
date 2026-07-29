@@ -1,4 +1,5 @@
 using System.Reflection;
+using Notrelix.Domain.Tests.Freeze.Snapshots;
 
 namespace Notrelix.Domain.Tests.Freeze;
 
@@ -24,7 +25,8 @@ public static class FreezeSnapshotBuilder
         var events = DomainAssembly
             .GetTypes()
             .Where(t => t is { IsClass: true, IsAbstract: false }
-                     && typeof(IDomainEvent).IsAssignableFrom(t))
+                     && typeof(IDomainEvent).IsAssignableFrom(t)
+                     && DomainCapabilityRegistry.ResolveCapability(t) == DomainCapabilityStatus.Frozen)
             .OrderBy(t => t.FullName, StringComparer.Ordinal)
             .ToList();
 
@@ -47,9 +49,9 @@ public static class FreezeSnapshotBuilder
                 var nullabilityInfo = nullabilityContext.Create(prop);
                 var isNullable = IsNullableProperty(prop, nullabilityInfo);
 
-                var typeName = FormatType(prop.PropertyType);
+                var typeName = CanonicalTypeNameFormatter.Format(prop.PropertyType);
                 if (prop.PropertyType.IsGenericType && Nullable.GetUnderlyingType(prop.PropertyType) is { } underlying)
-                    typeName = FormatType(underlying);
+                    typeName = CanonicalTypeNameFormatter.Format(underlying);
 
                 lines.Add($"{logicalName}|{version}|{evt.FullName}|{scope}|{prop.Name}|{typeName}|{isNullable}");
             }
@@ -60,21 +62,13 @@ public static class FreezeSnapshotBuilder
 
     public static string BuildRuleCodesSnapshot()
     {
-        var ruleCodeTypes = new[]
-        {
-            typeof(Notrelix.Domain.Common.Exceptions.CommonRuleCodes),
-            typeof(Notrelix.Domain.Accounts.AccountRuleCodes),
-            typeof(Notrelix.Domain.Identity.IdentityRuleCodes),
-            typeof(Notrelix.Domain.Workspaces.WorkspaceRuleCodes),
-            typeof(Notrelix.Domain.WorkManagement.WorkManagementRuleCodes),
-            typeof(Notrelix.Domain.Documents.DocumentRuleCodes),
-            typeof(Notrelix.Domain.Collaboration.CollaborationRuleCodes),
-            typeof(Notrelix.Domain.Automation.AutomationRuleCodes),
-            typeof(Notrelix.Domain.Integrations.IntegrationRuleCodes),
-            typeof(Notrelix.Domain.Billing.BillingRuleCodes),
-            typeof(Notrelix.Domain.Governance.GovernanceRuleCodes),
-            typeof(Notrelix.Domain.Analytics.AnalyticsRuleCodes),
-        };
+        var ruleCodeTypes = DomainAssembly
+            .GetTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false, IsPublic: true }
+                     && t.Name.EndsWith("RuleCodes", StringComparison.Ordinal)
+                     && t.Namespace?.StartsWith("Notrelix.Domain", StringComparison.Ordinal) == true)
+            .OrderBy(t => t.FullName, StringComparer.Ordinal)
+            .ToList();
 
         var lines = new List<string>
         {
@@ -107,26 +101,28 @@ public static class FreezeSnapshotBuilder
     {
         var enums = DomainAssembly
             .GetTypes()
-            .Where(t => t.IsEnum)
+            .Where(t => t.IsEnum
+                     && DomainCapabilityRegistry.ResolveCapability(t) == DomainCapabilityStatus.Frozen)
             .OrderBy(t => t.FullName, StringComparer.Ordinal)
             .ToList();
 
         var lines = new List<string>
         {
             "# Enum Snapshot",
-            "# Snapshot schema: 1",
-            "# Contract: Enums|EnumType|MemberName|NumericValue",
+            "# Snapshot schema: 2",
+            "# Contract: Enums|EnumType|UnderlyingType|MemberName|NumericValue",
             ""
         };
 
         foreach (var enumType in enums)
         {
             var underlyingType = Enum.GetUnderlyingType(enumType);
+            var underlyingName = CanonicalTypeNameFormatter.Format(underlyingType);
             var values = Enum.GetValues(enumType);
             foreach (var value in values)
             {
                 var numericValue = Convert.ChangeType(value, underlyingType);
-                lines.Add($"{enumType.FullName}|{value}|{numericValue}");
+                lines.Add($"{enumType.FullName}|{underlyingName}|{value}|{numericValue}");
             }
         }
 
@@ -158,7 +154,7 @@ public static class FreezeSnapshotBuilder
                 .OrderBy(c => c.GetParameters().Length);
             foreach (var ctor in ctors)
             {
-                var paramStr = string.Join(", ", ctor.GetParameters().Select(p => $"{FormatType(p.ParameterType)} {p.Name}"));
+                var paramStr = string.Join(", ", ctor.GetParameters().Select(p => $"{CanonicalTypeNameFormatter.Format(p.ParameterType)} {p.Name}"));
                 lines.Add($"{type.FullName}|.ctor|Constructor|{(ctor.IsPublic ? "public" : "protected")}|{ctor.IsAbstract}|{ctor.IsVirtual}|{paramStr}");
             }
 
@@ -169,8 +165,9 @@ public static class FreezeSnapshotBuilder
                 .OrderBy(m => m.Name, StringComparer.Ordinal);
             foreach (var method in methods)
             {
-                var paramStr = string.Join(", ", method.GetParameters().Select(p => $"{FormatType(p.ParameterType)} {p.Name}"));
-                lines.Add($"{type.FullName}|{method.Name}|Method|public|{method.IsAbstract}|{method.IsVirtual}|{paramStr}");
+                var paramStr = string.Join(", ", method.GetParameters().Select(p => $"{CanonicalTypeNameFormatter.Format(p.ParameterType)} {p.Name}"));
+                var returnType = CanonicalTypeNameFormatter.Format(method.ReturnType);
+                lines.Add($"{type.FullName}|{method.Name}|Method|public|{method.IsAbstract}|{method.IsVirtual}|{returnType}|{paramStr}");
             }
 
             var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
@@ -181,7 +178,7 @@ public static class FreezeSnapshotBuilder
                 var setter = prop.SetMethod != null && (prop.SetMethod.IsPublic || prop.SetMethod.IsFamily)
                     ? "readwrite"
                     : "readonly";
-                lines.Add($"{type.FullName}|{prop.Name}|Property|public|{prop.GetMethod?.IsAbstract == true}|{prop.GetMethod?.IsVirtual == true}|{setter}|{FormatType(prop.PropertyType)}");
+                lines.Add($"{type.FullName}|{prop.Name}|Property|public|{prop.GetMethod?.IsAbstract == true}|{prop.GetMethod?.IsVirtual == true}|{setter}|{CanonicalTypeNameFormatter.Format(prop.PropertyType)}");
             }
         }
 
@@ -235,31 +232,6 @@ public static class FreezeSnapshotBuilder
         }
 
         return "Global";
-    }
-
-    private static string FormatType(Type type)
-    {
-        if (type.IsByRef)
-            return FormatType(type.GetElementType()!) + '&';
-
-        if (type.IsArray)
-            return FormatType(type.GetElementType()!) + "[]";
-
-        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
-            return FormatType(type.GetGenericArguments()[0]) + '?';
-
-        if (type.IsGenericType && !type.IsGenericTypeDefinition)
-        {
-            var name = type.Name;
-            var backtick = name.IndexOf('`');
-            if (backtick > 0) name = name[..backtick];
-
-            var args = type.GetGenericArguments();
-            var formatted = string.Join(",", args.Select(FormatType));
-            return $"{type.Namespace}.{name}<{formatted}>";
-        }
-
-        return type.FullName ?? type.Name;
     }
 
     private static string Encode(List<string> lines)

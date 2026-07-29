@@ -1,3 +1,6 @@
+using System.Reflection;
+using FluentAssertions;
+
 namespace Notrelix.Domain.Tests.Freeze;
 
 /// <summary>
@@ -54,5 +57,24 @@ public class FreezeSnapshotTests
         var generated = FreezeSnapshotBuilder.BuildFrozenPublicApiSnapshot();
         var approvedPath = Path.Combine(SnapshotsDir, "FrozenDomainPublicApi.approved.txt");
         FreezeSnapshotComparer.AssertNoDrift("FrozenPublicApi", generated, approvedPath);
+    }
+
+    [Fact]
+    public void SnapshotRegenerator_ShouldNotBeDiscoverable()
+    {
+        var testTypes = typeof(FreezeSnapshotTests).Assembly
+            .GetTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false, IsPublic: true })
+            .ToList();
+
+        var regenerators = testTypes
+            .SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                .Select(m => new { Type = t, Method = m }))
+            .Where(x => x.Method.Name.StartsWith("Regenerate", StringComparison.Ordinal))
+            .ToList();
+
+        regenerators.Should().BeEmpty(
+            "snapshot regenerator should not be a discoverable test. " +
+            "Use tools/Notrelix.DomainFreezeSnapshots instead.");
     }
 }
