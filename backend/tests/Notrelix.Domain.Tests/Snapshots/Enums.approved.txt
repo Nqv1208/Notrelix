@@ -6,7 +6,6 @@ Notrelix.Domain.Accounts.Accounts.AccountStatus|System.Int32|Active|0
 Notrelix.Domain.Accounts.Accounts.AccountStatus|System.Int32|Trialing|1
 Notrelix.Domain.Accounts.Accounts.AccountStatus|System.Int32|Suspended|2
 Notrelix.Domain.Accounts.Accounts.AccountStatus|System.Int32|Closed|3
-Notrelix.Domain.Accounts.Accounts.AccountStatus|System.Int32|SoftDeleted|4
 Notrelix.Domain.Accounts.Accounts.AccountType|System.Int32|Personal|0
 Notrelix.Domain.Accounts.Accounts.AccountType|System.Int32|Team|1
 Notrelix.Domain.Accounts.Accounts.AccountType|System.Int32|Enterprise|2
@@ -114,7 +113,6 @@ Notrelix.Domain.Collaboration.Attachments.AttachmentType|System.Int32|Link|5
 Notrelix.Domain.Collaboration.Attachments.AttachmentType|System.Int32|Video|6
 Notrelix.Domain.Collaboration.Comments.CommentStatus|System.Int32|Active|0
 Notrelix.Domain.Collaboration.Comments.CommentStatus|System.Int32|Resolved|1
-Notrelix.Domain.Collaboration.Comments.CommentStatus|System.Int32|SoftDeleted|2
 Notrelix.Domain.Collaboration.Mentions.MentionType|System.Int32|User|0
 Notrelix.Domain.Collaboration.Mentions.MentionType|System.Int32|Team|1
 Notrelix.Domain.Collaboration.Mentions.MentionType|System.Int32|Page|2
@@ -153,7 +151,6 @@ Notrelix.Domain.Documents.Blocks.BlockType|System.Int32|Board|14
 Notrelix.Domain.Documents.Blocks.BlockType|System.Int32|Table|15
 Notrelix.Domain.Documents.Pages.PageStatus|System.Int32|Active|0
 Notrelix.Domain.Documents.Pages.PageStatus|System.Int32|Archived|1
-Notrelix.Domain.Documents.Pages.PageStatus|System.Int32|SoftDeleted|2
 Notrelix.Domain.Documents.Pages.PageVisibility|System.Int32|Private|0
 Notrelix.Domain.Documents.Pages.PageVisibility|System.Int32|Workspace|1
 Notrelix.Domain.Documents.Pages.PageVisibility|System.Int32|Public|2
@@ -422,7 +419,6 @@ Notrelix.Domain.WorkManagement.Items.TimeTrackingStatus|System.Int32|Stopped|1
 Notrelix.Domain.WorkManagement.Items.TimeTrackingStatus|System.Int32|Deleted|2
 Notrelix.Domain.WorkManagement.Labels.LabelStatus|System.Int32|Active|0
 Notrelix.Domain.WorkManagement.Labels.LabelStatus|System.Int32|Archived|1
-Notrelix.Domain.WorkManagement.Labels.LabelStatus|System.Int32|SoftDeleted|2
 Notrelix.Domain.WorkManagement.Relations.BoardItemSyncStatus|System.Int32|InSync|0
 Notrelix.Domain.WorkManagement.Relations.BoardItemSyncStatus|System.Int32|Pending|1
 Notrelix.Domain.WorkManagement.Relations.BoardItemSyncStatus|System.Int32|Conflict|2
@@ -482,7 +478,6 @@ Notrelix.Domain.Workspaces.Members.WorkspaceRole|System.Int32|Admin|2
 Notrelix.Domain.Workspaces.Members.WorkspaceRole|System.Int32|Owner|3
 Notrelix.Domain.Workspaces.Spaces.SpaceStatus|System.Int32|Active|0
 Notrelix.Domain.Workspaces.Spaces.SpaceStatus|System.Int32|Archived|1
-Notrelix.Domain.Workspaces.Spaces.SpaceStatus|System.Int32|SoftDeleted|2
 Notrelix.Domain.Workspaces.Spaces.SpaceType|System.Int32|Folder|0
 Notrelix.Domain.Workspaces.Spaces.SpaceType|System.Int32|Portfolio|1
 Notrelix.Domain.Workspaces.Spaces.SpaceType|System.Int32|Department|2
@@ -495,7 +490,5 @@ Notrelix.Domain.Workspaces.Teams.TeamMemberStatus|System.Int32|Active|0
 Notrelix.Domain.Workspaces.Teams.TeamMemberStatus|System.Int32|Removed|1
 Notrelix.Domain.Workspaces.Teams.TeamStatus|System.Int32|Active|0
 Notrelix.Domain.Workspaces.Teams.TeamStatus|System.Int32|Archived|1
-Notrelix.Domain.Workspaces.Teams.TeamStatus|System.Int32|SoftDeleted|2
 Notrelix.Domain.Workspaces.Workspaces.WorkspaceStatus|System.Int32|Active|0
 Notrelix.Domain.Workspaces.Workspaces.WorkspaceStatus|System.Int32|Archived|1
-Notrelix.Domain.Workspaces.Workspaces.WorkspaceStatus|System.Int32|SoftDeleted|2
