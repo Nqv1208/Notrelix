@@ -50,9 +50,9 @@ public class ResourcePermissionTests
         permission.DomainEvents.Should().ContainSingle(e => e is ResourcePermissionLevelChangedDomainEvent);
     }
 
-    [CoversMutation(typeof(ResourcePermission), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(ResourcePermission), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void Revoke_ShouldSoftDelete_AndRaiseEvent()
+    public void Revoke_ShouldDelete_AndRaiseEvent()
     {
         var workspaceId = Guid.NewGuid();
         var permission = ResourcePermission.Grant(Guid.NewGuid(),

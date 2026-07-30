@@ -84,6 +84,7 @@ public class DashboardTests
         dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetAddedDomainEvent);
     }
 
+    [CoversMutation(typeof(Dashboard), "MoveWidget(System.Guid,Notrelix.Domain.Analytics.Widgets.WidgetPosition,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void MoveWidget_ShouldUpdatePosition_AndRaiseEvent()
     {
@@ -102,6 +103,21 @@ public class DashboardTests
         dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetMovedDomainEvent);
     }
 
+    [CoversMutation(typeof(Dashboard), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [Fact]
+    public void Archive_ShouldSetStatusAndRaiseEvent()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Dashboard", actor, now);
+
+        dashboard.Archive(actor, now.AddDays(1));
+
+        dashboard.Status.Should().Be(DashboardStatus.Archived);
+        dashboard.DomainEvents.Should().Contain(e => e is DashboardArchivedDomainEvent);
+    }
+
+    [CoversMutation(typeof(Dashboard), "RemoveWidget(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void RemoveWidget_ShouldRemove_AndRaiseEvent()
     {
@@ -119,20 +135,4 @@ public class DashboardTests
         dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetRemovedDomainEvent);
     }
 
-    [CoversMutation(typeof(Dashboard), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
-    [Fact]
-    public void SoftDeleteAndRestore_ShouldUpdateStatus()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var actor = Guid.NewGuid();
-        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Dashboard", actor, now);
-
-        dashboard.SoftDelete(actor, now);
-        dashboard.Status.Should().Be(DashboardStatus.Archived);
-        dashboard.IsDeleted.Should().BeTrue();
-
-        dashboard.Restore(actor, now);
-        dashboard.Status.Should().Be(DashboardStatus.Active);
-        dashboard.IsDeleted.Should().BeFalse();
-    }
 }

@@ -1,7 +1,7 @@
 using Notrelix.Domain.Governance.ShareLinks.Events;
 namespace Notrelix.Domain.Governance.ShareLinks;
 
-public class ShareLink : SoftDeletableAggregateRoot, IWorkspaceScoped
+public class ShareLink : AggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -60,7 +60,6 @@ public class ShareLink : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void Disable(Guid disabledBy, DateTimeOffset disabledAt)
     {
-        EnsureNotDeleted();
         if (Status == ShareLinkStatus.Disabled) return;
 
         var pending = PrepareAuditUpdate(disabledBy, disabledAt);
@@ -72,7 +71,6 @@ public class ShareLink : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void RotateTokenHash(ShareLinkTokenHash newHash, Guid rotatedBy, DateTimeOffset rotatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotNull(newHash);
 
         var pending = PrepareAuditUpdate(rotatedBy, rotatedAt);
@@ -84,29 +82,8 @@ public class ShareLink : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new ShareLinkRotatedDomainEvent(AccountId, WorkspaceId, Id, rotatedBy, rotatedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        Guard.NotEmpty(deletedBy);
-        if (IsDeleted) return;
-        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
-        IncrementVersion();
-        ApplyDeletion(pendingDeletion);
-        RaiseDomainEvent(new ShareLinkSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
-    }
-
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        Guard.NotEmpty(restoredBy);
-        if (!IsDeleted) return;
-        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
-        IncrementVersion();
-        ApplyRestore(pendingRestore);
-        RaiseDomainEvent(new ShareLinkRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
-    }
-
     public void Expire(DateTimeOffset expiredAt)
     {
-        EnsureNotDeleted();
         if (Status != ShareLinkStatus.Active) return;
 
         var pending = PrepareAuditUpdate(null, expiredAt);

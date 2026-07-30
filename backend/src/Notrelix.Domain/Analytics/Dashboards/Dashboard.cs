@@ -5,7 +5,7 @@ using static Notrelix.Domain.Analytics.AnalyticsRuleCodes;
 
 namespace Notrelix.Domain.Analytics.Dashboards;
 
-public class Dashboard : SoftDeletableAggregateRoot, IWorkspaceScoped
+public class Dashboard : AggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -42,7 +42,6 @@ public class Dashboard : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(name);
 
@@ -58,7 +57,6 @@ public class Dashboard : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void ChangeVisibility(DashboardVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
         if (Visibility == visibility) return;
 
@@ -71,7 +69,6 @@ public class Dashboard : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void AddWidget(string title, DashboardWidgetType type, JsonValue config, WidgetPosition position, Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(title);
         WidgetRules.ValidatePosition(position);
@@ -89,7 +86,6 @@ public class Dashboard : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void RemoveWidget(Guid widgetId, Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
         var widget = _widgets.FirstOrDefault(w => w.Id == widgetId);
         if (widget is null) return;
@@ -103,7 +99,6 @@ public class Dashboard : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void MoveWidget(Guid widgetId, WidgetPosition newPosition, Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
         var widget = _widgets.FirstOrDefault(w => w.Id == widgetId);
         if (widget is null)
@@ -120,25 +115,14 @@ public class Dashboard : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new DashboardWidgetMovedDomainEvent(AccountId, WorkspaceId, Id, widgetId, newPosition, updatedBy, updatedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
-        Guard.NotEmpty(deletedBy);
-        if (IsDeleted) return;
-        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
-        Status = DashboardStatus.Archived;
-        ApplyDeletion(pendingDeletion);
-        IncrementVersion();
-        RaiseDomainEvent(new DashboardDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
-    }
+        if (Status == DashboardStatus.Archived) return;
 
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        Guard.NotEmpty(restoredBy);
-        if (!IsDeleted) return;
-        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
-        Status = DashboardStatus.Active;
-        ApplyRestore(pendingRestore);
+        var pending = PrepareAuditUpdate(archivedBy, archivedAt);
+        Status = DashboardStatus.Archived;
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new DashboardRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new DashboardArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
     }
 }

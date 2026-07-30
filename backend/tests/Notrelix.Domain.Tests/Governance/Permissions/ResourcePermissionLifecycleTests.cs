@@ -10,20 +10,20 @@ public class ResourcePermissionLifecycleTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(ResourcePermission), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(ResourcePermission), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void ResourcePermission_SoftDelete_ShouldRaiseEvent()
+    public void ResourcePermission_Delete_ShouldRaiseEvent()
     {
         var permission = ResourcePermission.Grant(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Actor, PermissionLevel.Editor, PermissionLevel.Owner, Actor, Now);
         ((IHasDomainEvents)permission).ClearDomainEvents();
         var version = permission.Version;
 
-        permission.SoftDelete(Actor, Now);
+        permission.Delete(Actor, Now);
 
         permission.IsDeleted.Should().BeTrue();
         permission.Version.Should().Be(version + 1);
-        permission.DomainEvents.Should().ContainSingle(e => e is ResourcePermissionSoftDeletedDomainEvent);
-        var evt = (ResourcePermissionSoftDeletedDomainEvent)permission.DomainEvents.Single(e => e is ResourcePermissionSoftDeletedDomainEvent);
+        permission.DomainEvents.Should().ContainSingle(e => e is ResourcePermissionDeletedDomainEvent);
+        var evt = (ResourcePermissionDeletedDomainEvent)permission.DomainEvents.Single(e => e is ResourcePermissionDeletedDomainEvent);
         evt.PermissionId.Should().Be(permission.Id);
         evt.DeletedBy.Should().Be(Actor);
     }
@@ -33,7 +33,7 @@ public class ResourcePermissionLifecycleTests
     public void ResourcePermission_Restore_ShouldRaiseEvent()
     {
         var permission = ResourcePermission.Grant(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Actor, PermissionLevel.Editor, PermissionLevel.Owner, Actor, Now);
-        permission.SoftDelete(Actor, Now);
+        permission.Delete(Actor, Now);
         ((IHasDomainEvents)permission).ClearDomainEvents();
         var version = permission.Version;
 
@@ -47,19 +47,19 @@ public class ResourcePermissionLifecycleTests
         evt.RestoredBy.Should().Be(Actor);
     }
 
-    [CoversMutation(typeof(ResourcePermission), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(ResourcePermission), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
-    public void ResourcePermission_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
+    public void ResourcePermission_Delete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
         var permission = ResourcePermission.Grant(Guid.NewGuid(), WsA, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Actor, PermissionLevel.Editor, PermissionLevel.Owner, Actor, Now);
-        permission.SoftDelete(Actor, Now);
+        permission.Delete(Actor, Now);
         ((IHasDomainEvents)permission).ClearDomainEvents();
         var version = permission.Version;
 
-        permission.SoftDelete(Actor, Now);
+        permission.Delete(Actor, Now);
 
         permission.Version.Should().Be(version);
-        permission.DomainEvents.Should().NotContain(e => e is ResourcePermissionSoftDeletedDomainEvent);
+        permission.DomainEvents.Should().NotContain(e => e is ResourcePermissionDeletedDomainEvent);
     }
 
     [CoversMutation(typeof(ResourcePermission), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
@@ -88,6 +88,6 @@ public class ResourcePermissionLifecycleTests
 
         permission.IsDeleted.Should().BeTrue();
         permission.DomainEvents.Should().ContainSingle(e => e is ResourcePermissionRevokedDomainEvent);
-        permission.DomainEvents.Should().NotContain(e => e is ResourcePermissionSoftDeletedDomainEvent);
+        permission.DomainEvents.Should().NotContain(e => e is ResourcePermissionDeletedDomainEvent);
     }
 }
