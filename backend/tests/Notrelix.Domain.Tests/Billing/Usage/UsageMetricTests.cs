@@ -98,31 +98,6 @@ public class UsageMetricTests
     }
 
     [Fact]
-    [CoversMutation(typeof(UsageMetric), "Increase(System.Int32,System.Int32,System.Boolean,System.DateTimeOffset)", MutationScenario.Invalid)]
-    public void Increase_WhenDeleted_ShouldThrow()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var metric = UsageMetric.Create(Guid.NewGuid(), Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
-        metric.SoftDelete(Guid.NewGuid(), now);
-
-        var act = () => metric.Increase(3, 5, isHardLimit: true, now);
-        act.Should().Throw<DomainException>().WithMessage("*deleted*");
-    }
-
-    [Fact]
-    [CoversMutation(typeof(UsageMetric), "Decrease(System.Int32,System.DateTimeOffset)", MutationScenario.Invalid)]
-    public void Decrease_WhenDeleted_ShouldThrow()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var metric = UsageMetric.Create(Guid.NewGuid(), Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
-        metric.Increase(5, 10, isHardLimit: true, now);
-        metric.SoftDelete(Guid.NewGuid(), now);
-
-        var act = () => metric.Decrease(2, now);
-        act.Should().Throw<DomainException>().WithMessage("*deleted*");
-    }
-
-    [Fact]
     [CoversMutation(typeof(UsageMetric), "Decrease(System.Int32,System.DateTimeOffset)", MutationScenario.Invalid)]
     public void Decrease_WithNonPositiveAmount_ShouldThrow()
     {
@@ -148,59 +123,4 @@ public class UsageMetricTests
         metric.DomainEvents.Should().Contain(e => e is UsageMetricDecreasedDomainEvent);
     }
 
-    [Fact]
-    [CoversMutation(typeof(UsageMetric), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
-    public void SoftDelete_ShouldMarkDeleted_AndRaiseEvent()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var metric = UsageMetric.Create(Guid.NewGuid(), Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
-        ((IHasDomainEvents)metric).ClearDomainEvents();
-
-        metric.SoftDelete(Guid.NewGuid(), now);
-
-        metric.IsDeleted.Should().BeTrue();
-        metric.DomainEvents.Should().Contain(e => e is UsageMetricSoftDeletedDomainEvent);
-    }
-
-    [Fact]
-    [CoversMutation(typeof(UsageMetric), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
-    public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var metric = UsageMetric.Create(Guid.NewGuid(), Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
-        metric.SoftDelete(Guid.NewGuid(), now);
-        ((IHasDomainEvents)metric).ClearDomainEvents();
-
-        metric.SoftDelete(Guid.NewGuid(), now);
-
-        metric.DomainEvents.Should().BeEmpty();
-    }
-
-    [Fact]
-    [CoversMutation(typeof(UsageMetric), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
-    public void Restore_ShouldRestore_AndRaiseEvent()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var metric = UsageMetric.Create(Guid.NewGuid(), Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
-        metric.SoftDelete(Guid.NewGuid(), now);
-        ((IHasDomainEvents)metric).ClearDomainEvents();
-
-        metric.Restore(Guid.NewGuid(), now);
-
-        metric.IsDeleted.Should().BeFalse();
-        metric.DomainEvents.Should().Contain(e => e is UsageMetricRestoredDomainEvent);
-    }
-
-    [Fact]
-    [CoversMutation(typeof(UsageMetric), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
-    public void Restore_WhenNotDeleted_ShouldBeNoOp()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var metric = UsageMetric.Create(Guid.NewGuid(), Guid.NewGuid(), UsageMetricKey.Create("BOARD_COUNT"), UsagePeriod.Create(now, now.AddDays(30)), now);
-        ((IHasDomainEvents)metric).ClearDomainEvents();
-
-        metric.Restore(Guid.NewGuid(), now);
-
-        metric.DomainEvents.Should().BeEmpty();
-    }
 }

@@ -81,17 +81,6 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "Consume(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
-    public void Consume_WhenDeleted_ShouldThrow()
-    {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
-        usage.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        var act = () => usage.Consume(10, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        act.Should().Throw<DomainException>().WithMessage("*deleted*");
-    }
-
-    [Fact]
     [CoversMutation(typeof(WorkspaceFeatureUsage), "Release(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     public void Release_ShouldSucceed_AndRaiseEvent()
     {
@@ -133,72 +122,6 @@ public class WorkspaceFeatureUsageTests
 
         usage.CurrentUsage.Should().Be(0);
         usage.DomainEvents.Should().ContainSingle(e => e is WorkspaceFeatureUsageResetDomainEvent);
-    }
-
-    [Fact]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "Release(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
-    public void Release_WhenDeleted_ShouldThrow()
-    {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 50, 100, null, DateTimeOffset.UtcNow);
-        usage.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        var act = () => usage.Release(10, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        act.Should().Throw<DomainException>().WithMessage("*deleted*");
-    }
-
-    [Fact]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
-    public void SoftDelete_ShouldMarkDeleted_AndRaiseEvent()
-    {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
-        ((IHasDomainEvents)usage).ClearDomainEvents();
-
-        usage.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        usage.IsDeleted.Should().BeTrue();
-        usage.DomainEvents.Should().Contain(e => e is WorkspaceFeatureUsageSoftDeletedDomainEvent);
-    }
-
-    [Fact]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
-    public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
-    {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
-        usage.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        ((IHasDomainEvents)usage).ClearDomainEvents();
-
-        usage.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        usage.DomainEvents.Should().BeEmpty();
-    }
-
-    [Fact]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
-    public void Restore_ShouldRestore_AndRaiseEvent()
-    {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
-        usage.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        ((IHasDomainEvents)usage).ClearDomainEvents();
-
-        usage.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        usage.IsDeleted.Should().BeFalse();
-        usage.DomainEvents.Should().Contain(e => e is WorkspaceFeatureUsageRestoredDomainEvent);
-    }
-
-    [Fact]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "Consume(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
-    public void SoftDelete_WhenConsumeAfterRestore_ShouldSucceed()
-    {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
-        usage.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        usage.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        usage.Consume(30, Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        usage.CurrentUsage.Should().Be(30);
     }
 
     [Fact]
@@ -254,59 +177,4 @@ public class WorkspaceFeatureUsageTests
         usage.CurrentUsage.Should().Be(85);
     }
 
-    [Fact]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
-    public void Restore_WhenNotDeleted_ShouldBeNoOp()
-    {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
-        ((IHasDomainEvents)usage).ClearDomainEvents();
-
-        usage.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        usage.DomainEvents.Should().BeEmpty();
-    }
-
-    [Fact]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
-    public void SoftDelete_AndRestore_ShouldToggleIsDeleted()
-    {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
-
-        usage.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        usage.IsDeleted.Should().BeTrue();
-
-        usage.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        usage.IsDeleted.Should().BeFalse();
-    }
-
-    [Fact]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "Consume(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
-    public void Consume_WhenDeletedAndRestored_ShouldSucceed()
-    {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
-        usage.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        usage.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        usage.Consume(30, Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        usage.CurrentUsage.Should().Be(30);
-    }
-
-    [Fact]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "Release(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
-    public void Release_WhenDeletedAndRestored_ShouldSucceed()
-    {
-        var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 50, 100, null, DateTimeOffset.UtcNow);
-        usage.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        usage.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        usage.Release(20, Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        usage.CurrentUsage.Should().Be(30);
-    }
 }

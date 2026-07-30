@@ -2,7 +2,7 @@ using Notrelix.Domain.Billing.Usage.Events;
 using Notrelix.Domain.Billing.Plans;
 namespace Notrelix.Domain.Billing.Usage;
 
-public class WorkspaceFeatureUsage : SoftDeletableAggregateRoot, IWorkspaceScoped
+public class WorkspaceFeatureUsage : AggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -65,7 +65,6 @@ public class WorkspaceFeatureUsage : SoftDeletableAggregateRoot, IWorkspaceScope
 
     public void Consume(decimal amount, Guid actorUserId, DateTimeOffset occurredAt)
     {
-        EnsureNotDeleted();
         if (amount <= 0)
             throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_ConsumeAmountMustBePositive, "Amount to consume must be positive.");
 
@@ -86,7 +85,6 @@ public class WorkspaceFeatureUsage : SoftDeletableAggregateRoot, IWorkspaceScope
 
     public void Release(decimal amount, Guid actorUserId, DateTimeOffset occurredAt)
     {
-        EnsureNotDeleted();
         if (amount <= 0)
             throw new BusinessRuleException(BillingRuleCodes.Billing_Usage_ReleaseAmountMustBePositive, "Amount to release must be positive.");
 
@@ -103,30 +101,11 @@ public class WorkspaceFeatureUsage : SoftDeletableAggregateRoot, IWorkspaceScope
 
     public void Reset(DateTimeOffset resetAt, Guid actorUserId)
     {
-        EnsureNotDeleted();
         var pending = PrepareAuditUpdate(actorUserId, resetAt);
         CurrentUsage = 0;
         LastResetAt = resetAt;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceFeatureUsageResetDomainEvent(AccountId, WorkspaceId, Feature, resetAt));
-    }
-
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        if (IsDeleted) return;
-        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
-        ApplyDeletion(pendingDeletion);
-        IncrementVersion();
-        RaiseDomainEvent(new WorkspaceFeatureUsageSoftDeletedDomainEvent(AccountId, WorkspaceId, Feature, deletedBy, deletedAt));
-    }
-
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        if (!IsDeleted) return;
-        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
-        ApplyRestore(pendingRestore);
-        IncrementVersion();
-        RaiseDomainEvent(new WorkspaceFeatureUsageRestoredDomainEvent(AccountId, WorkspaceId, Feature, restoredBy, restoredAt));
     }
 }

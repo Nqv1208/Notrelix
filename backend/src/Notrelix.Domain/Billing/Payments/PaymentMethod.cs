@@ -2,7 +2,7 @@ using Notrelix.Domain.Billing.Payments.Events;
 
 namespace Notrelix.Domain.Billing.Payments;
 
-public class PaymentMethod : SoftDeletableAggregateRoot, IWorkspaceScoped
+public class PaymentMethod : AggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -41,7 +41,6 @@ public class PaymentMethod : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void SetAsDefault(Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
         if (IsDefault) return;
 
@@ -53,7 +52,6 @@ public class PaymentMethod : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void UnsetAsDefault(Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
         if (!IsDefault) return;
 
@@ -65,7 +63,6 @@ public class PaymentMethod : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void Deactivate(Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
         if (Status == PaymentMethodStatus.Expired) return;
 
@@ -77,31 +74,12 @@ public class PaymentMethod : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void Reactivate(Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
         if (Status == PaymentMethodStatus.Active) return;
 
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = PaymentMethodStatus.Active;
         ApplyAuditUpdate(pending);
-        IncrementVersion();
-    }
-
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        Guard.NotEmpty(deletedBy);
-        if (IsDeleted) return;
-        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
-        ApplyDeletion(pendingDeletion);
-        IncrementVersion();
-    }
-
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        Guard.NotEmpty(restoredBy);
-        if (!IsDeleted) return;
-        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
-        ApplyRestore(pendingRestore);
         IncrementVersion();
     }
 }

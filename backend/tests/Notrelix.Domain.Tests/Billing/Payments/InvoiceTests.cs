@@ -208,61 +208,6 @@ public class InvoiceTests
         invoice.Status.Should().Be(InvoiceStatus.Paid);
     }
 
-    [CoversMutation(typeof(Invoice), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
-    [CoversMutation(typeof(Invoice), "MarkFailed(System.String,System.DateTimeOffset)", MutationScenario.Event)]
-    [CoversMutation(typeof(Invoice), "MarkPaid(System.DateTimeOffset)", MutationScenario.Event)]
-    [Fact]
-    public void SoftDelete_ShouldMarkDeleted_AndRaiseEvent()
-    {
-        var invoice = CreateDraftInvoice();
-        ((IHasDomainEvents)invoice).ClearDomainEvents();
-
-        invoice.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        invoice.IsDeleted.Should().BeTrue();
-        invoice.DomainEvents.Should().Contain(e => e is InvoiceSoftDeletedDomainEvent);
-    }
-
-    [CoversMutation(typeof(Invoice), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
-    [Fact]
-    public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
-    {
-        var invoice = CreateDraftInvoice();
-        invoice.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        ((IHasDomainEvents)invoice).ClearDomainEvents();
-
-        invoice.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        invoice.DomainEvents.Should().BeEmpty();
-    }
-
-    [CoversMutation(typeof(Invoice), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
-    [Fact]
-    public void Restore_ShouldRestore_AndRaiseEvent()
-    {
-        var invoice = CreateDraftInvoice();
-        invoice.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        ((IHasDomainEvents)invoice).ClearDomainEvents();
-
-        invoice.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        invoice.IsDeleted.Should().BeFalse();
-        invoice.DomainEvents.Should().Contain(e => e is InvoiceRestoredDomainEvent);
-    }
-
-    [CoversMutation(typeof(Invoice), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
-    [CoversMutation(typeof(Invoice), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
-    [Fact]
-    public void Restore_WhenNotDeleted_ShouldBeNoOp()
-    {
-        var invoice = CreateDraftInvoice();
-        ((IHasDomainEvents)invoice).ClearDomainEvents();
-
-        invoice.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        invoice.DomainEvents.Should().BeEmpty();
-    }
-
     private static Invoice CreateDraftInvoice()
     {
         return Invoice.Create(Guid.NewGuid(), Guid.NewGuid(), "INV-001", SampleAmount, DateTimeOffset.UtcNow.AddDays(30), DateTimeOffset.UtcNow);

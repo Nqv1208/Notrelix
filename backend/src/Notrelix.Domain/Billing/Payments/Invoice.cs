@@ -3,7 +3,7 @@ using static Notrelix.Domain.Billing.BillingRuleCodes;
 
 namespace Notrelix.Domain.Billing.Payments;
 
-public class Invoice : SoftDeletableAggregateRoot, IAccountScoped
+public class Invoice : AggregateRoot, IAccountScoped
 {
     public Guid AccountId { get; private set; }
     public Guid? WorkspaceId { get; private set; }
@@ -39,7 +39,6 @@ public class Invoice : SoftDeletableAggregateRoot, IAccountScoped
 
     public void Issue(DateTimeOffset issuedAt)
     {
-        EnsureNotDeleted();
         if (Status != InvoiceStatus.Draft)
             throw new BusinessRuleException(Billing_Invoice_CannotIssueUnlessDraft, "Only draft invoices can be issued.");
         var pending = PrepareAuditUpdate(null, issuedAt);
@@ -51,7 +50,6 @@ public class Invoice : SoftDeletableAggregateRoot, IAccountScoped
 
     public void MarkPaid(DateTimeOffset paidAt)
     {
-        EnsureNotDeleted();
         if (Status == InvoiceStatus.Void)
             throw new BusinessRuleException(Billing_Invoice_CannotMarkVoidAsPaid, "Cannot mark a void invoice as paid.");
         if (Status == InvoiceStatus.Paid) return;
@@ -65,7 +63,6 @@ public class Invoice : SoftDeletableAggregateRoot, IAccountScoped
 
     public void MarkFailed(string reason, DateTimeOffset failedAt)
     {
-        EnsureNotDeleted();
         if (Status == InvoiceStatus.Paid)
             throw new BusinessRuleException(Billing_Invoice_CannotFailPaid, "Cannot fail a paid invoice.");
         if (Status == InvoiceStatus.Void)
@@ -80,7 +77,6 @@ public class Invoice : SoftDeletableAggregateRoot, IAccountScoped
 
     public void Void(DateTimeOffset voidedAt)
     {
-        EnsureNotDeleted();
         if (Status == InvoiceStatus.Paid)
             throw new BusinessRuleException(Billing_Invoice_CannotVoidPaid, "Cannot void a paid invoice.");
         if (Status == InvoiceStatus.Void) return;
@@ -90,25 +86,5 @@ public class Invoice : SoftDeletableAggregateRoot, IAccountScoped
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new InvoiceVoidedDomainEvent(AccountId, Id, WorkspaceId, voidedAt));
-    }
-
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        Guard.NotEmpty(deletedBy);
-        if (IsDeleted) return;
-        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
-        ApplyDeletion(pendingDeletion);
-        IncrementVersion();
-        RaiseDomainEvent(new InvoiceSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
-    }
-
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        Guard.NotEmpty(restoredBy);
-        if (!IsDeleted) return;
-        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
-        ApplyRestore(pendingRestore);
-        IncrementVersion();
-        RaiseDomainEvent(new InvoiceRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 }
