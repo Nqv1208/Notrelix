@@ -3,7 +3,7 @@ using Notrelix.Domain.Identity.Security.Events;
 
 namespace Notrelix.Domain.Identity.Security;
 
-public class UserSecuritySettings : SoftDeletableAggregateRoot
+public sealed class UserSecuritySettings : AggregateRoot
 {
     public Guid UserId { get; private set; }
     public bool IsMfaEnabled { get; private set; }
@@ -31,8 +31,6 @@ public class UserSecuritySettings : SoftDeletableAggregateRoot
 
     public void EnableMfa(MfaMethodType method, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
-
         if (IsMfaEnabled && PreferredMfaMethod == method) return;
 
         var pending = PrepareAuditUpdate(UserId, updatedAt);
@@ -46,8 +44,6 @@ public class UserSecuritySettings : SoftDeletableAggregateRoot
 
     public void DisableMfa(DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
-
         if (!IsMfaEnabled) return;
 
         var previousMethod = PreferredMfaMethod;
@@ -63,8 +59,6 @@ public class UserSecuritySettings : SoftDeletableAggregateRoot
 
     public void RequirePasswordChangeNow(DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
-
         var pending = PrepareAuditUpdate(UserId, updatedAt);
         RequirePasswordChange = true;
         LastSecurityReviewAt = updatedAt;
@@ -75,8 +69,6 @@ public class UserSecuritySettings : SoftDeletableAggregateRoot
 
     public void MarkPasswordChanged(DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
-
         var pending = PrepareAuditUpdate(UserId, updatedAt);
         RequirePasswordChange = false;
         PasswordChangedAt = updatedAt;
@@ -88,7 +80,6 @@ public class UserSecuritySettings : SoftDeletableAggregateRoot
 
     public void UpdateSettings(JsonValue settings, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotNull(settings);
 
         var pending = PrepareAuditUpdate(UserId, updatedAt);
@@ -97,25 +88,5 @@ public class UserSecuritySettings : SoftDeletableAggregateRoot
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserSecuritySettingsUpdatedDomainEvent(UserId, updatedAt));
-    }
-
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        Guard.NotEmpty(deletedBy);
-        if (IsDeleted) return;
-        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
-        ApplyDeletion(pendingDeletion);
-        IncrementVersion();
-        RaiseDomainEvent(new UserSecuritySettingsSoftDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, reason));
-    }
-
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        Guard.NotEmpty(restoredBy);
-        if (!IsDeleted) return;
-        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
-        ApplyRestore(pendingRestore);
-        IncrementVersion();
-        RaiseDomainEvent(new UserSecuritySettingsRestoredDomainEvent(Id, UserId, restoredBy, restoredAt));
     }
 }

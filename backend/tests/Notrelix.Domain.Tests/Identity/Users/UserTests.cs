@@ -73,7 +73,7 @@ public class UserTests
     {
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hash123", now);
-        user.SoftDelete(Guid.NewGuid(), now);
+        user.Delete(Guid.NewGuid(), now);
 
         var act = () => user.UpdateProfile("New Name", null, user.Id, now);
 

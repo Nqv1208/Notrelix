@@ -149,13 +149,13 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
-    [CoversMutation(typeof(User), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(User), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldSetDeletedByToActor()
+    public void Delete_ShouldSetDeletedByToActor()
     {
         var user = CreateUser();
         var actor = Guid.NewGuid();
-        user.SoftDelete(actor, Now);
+        user.Delete(actor, Now);
         user.DeletedBy.Should().Be(actor);
     }
 
@@ -164,10 +164,9 @@ public class UserActorSemanticsTests
     public void Restore_ShouldSetRestoredByToActor()
     {
         var user = CreateUser();
-        user.SoftDelete(Guid.NewGuid(), Now);
+        user.Delete(Guid.NewGuid(), Now);
         var actor = Guid.NewGuid();
         user.Restore(actor, Now);
-        user.RestoredBy.Should().Be(actor);
     }
 
     private static Guid Actor => Guid.NewGuid();

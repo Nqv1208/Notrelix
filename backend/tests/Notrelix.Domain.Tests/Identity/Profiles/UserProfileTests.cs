@@ -139,7 +139,7 @@ public class UserProfileTests
         userProperty.Should().BeNull("circular navigation to User has been removed");
     }
 
-    [CoversMutation(typeof(UserProfile), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(UserProfile), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [CoversMutation(typeof(UserProfile), "UpdatePreferences(System.String,System.DateTimeOffset)", MutationScenario.Invalid)]
     [CoversMutation(typeof(UserProfile), "UpdateTheme(System.String,System.DateTimeOffset)", MutationScenario.Invalid)]
     [CoversMutation(typeof(UserProfile), "UpdateLocale(System.String,System.DateTimeOffset)", MutationScenario.Invalid)]
@@ -148,7 +148,7 @@ public class UserProfileTests
     public void UpdateTimezone_OnDeletedProfile_ShouldThrow()
     {
         var profile = UserProfile.Create(Guid.NewGuid(), SampleCreatedAt);
-        profile.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        profile.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => profile.UpdateTimezone("UTC", DateTimeOffset.UtcNow);
 

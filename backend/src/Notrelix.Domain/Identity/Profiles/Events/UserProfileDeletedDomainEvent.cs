@@ -1,7 +1,7 @@
 namespace Notrelix.Domain.Identity.Profiles.Events;
 
-[EventName("identity.user-profile-soft-deleted")]
-public sealed record UserProfileSoftDeletedDomainEvent(
+[EventName("identity.user-profile-deleted")]
+public sealed record UserProfileDeletedDomainEvent(
     Guid UserProfileId,
     Guid UserId,
     Guid DeletedBy,

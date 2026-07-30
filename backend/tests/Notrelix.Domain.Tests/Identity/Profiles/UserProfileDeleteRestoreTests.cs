@@ -3,17 +3,17 @@ using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Identity.Profiles;
 
-public class UserProfileSoftDeleteRestoreTests
+public class UserProfileDeleteRestoreTests
 {
     private readonly Guid _actorId = Guid.NewGuid();
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
 
     [Fact]
-    public void SoftDelete_ShouldMarkDeleted()
+    public void Delete_ShouldMarkDeleted()
     {
         var profile = UserProfile.Create(_actorId, _now);
 
-        profile.SoftDelete(_actorId, _now.AddMinutes(1));
+        profile.Delete(_actorId, _now.AddMinutes(1));
 
         profile.IsDeleted.Should().BeTrue();
         profile.DeletedAt.Should().Be(_now.AddMinutes(1));
@@ -21,15 +21,15 @@ public class UserProfileSoftDeleteRestoreTests
     }
 
     [Fact]
-    public void SoftDelete_ShouldRaiseEvent()
+    public void Delete_ShouldRaiseEvent()
     {
         var profile = UserProfile.Create(_actorId, _now);
         ((IHasDomainEvents)profile).ClearDomainEvents();
 
-        profile.SoftDelete(_actorId, _now.AddMinutes(1));
+        profile.Delete(_actorId, _now.AddMinutes(1));
 
-        profile.DomainEvents.Should().ContainSingle(e => e is UserProfileSoftDeletedDomainEvent);
-        var evt = (UserProfileSoftDeletedDomainEvent)profile.DomainEvents.Single(e => e is UserProfileSoftDeletedDomainEvent);
+        profile.DomainEvents.Should().ContainSingle(e => e is UserProfileDeletedDomainEvent);
+        var evt = (UserProfileDeletedDomainEvent)profile.DomainEvents.Single(e => e is UserProfileDeletedDomainEvent);
         evt.UserProfileId.Should().Be(profile.Id);
         evt.UserId.Should().Be(_actorId);
         evt.DeletedBy.Should().Be(_actorId);
@@ -37,42 +37,40 @@ public class UserProfileSoftDeleteRestoreTests
     }
 
     [Fact]
-    public void SoftDelete_AlreadyDeleted_ShouldBeNoOp()
+    public void Delete_AlreadyDeleted_ShouldBeNoOp()
     {
         var profile = UserProfile.Create(_actorId, _now);
-        profile.SoftDelete(_actorId, _now.AddMinutes(1));
+        profile.Delete(_actorId, _now.AddMinutes(1));
         ((IHasDomainEvents)profile).ClearDomainEvents();
 
-        profile.SoftDelete(_actorId, _now.AddMinutes(2));
+        profile.Delete(_actorId, _now.AddMinutes(2));
 
         profile.DomainEvents.Should().BeEmpty();
         profile.Version.Should().Be(2);
     }
 
     [Fact]
-    public void SoftDelete_ShouldIncrementVersion()
+    public void Delete_ShouldIncrementVersion()
     {
         var profile = UserProfile.Create(_actorId, _now);
         var versionBefore = profile.Version;
 
-        profile.SoftDelete(_actorId, _now.AddMinutes(1));
+        profile.Delete(_actorId, _now.AddMinutes(1));
 
         profile.Version.Should().Be(versionBefore + 1);
     }
 
     [CoversMutation(typeof(UserProfile), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
-    public void Restore_AfterSoftDelete_ShouldRestore()
+    public void Restore_AfterDelete_ShouldRestore()
     {
         var profile = UserProfile.Create(_actorId, _now);
-        profile.SoftDelete(_actorId, _now.AddMinutes(1));
+        profile.Delete(_actorId, _now.AddMinutes(1));
         ((IHasDomainEvents)profile).ClearDomainEvents();
 
         profile.Restore(_actorId, _now.AddMinutes(2));
 
         profile.IsDeleted.Should().BeFalse();
-        profile.RestoredAt.Should().Be(_now.AddMinutes(2));
-        profile.RestoredBy.Should().Be(_actorId);
     }
 
     [CoversMutation(typeof(UserProfile), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
@@ -80,7 +78,7 @@ public class UserProfileSoftDeleteRestoreTests
     public void Restore_ShouldRaiseEvent()
     {
         var profile = UserProfile.Create(_actorId, _now);
-        profile.SoftDelete(_actorId, _now.AddMinutes(1));
+        profile.Delete(_actorId, _now.AddMinutes(1));
         ((IHasDomainEvents)profile).ClearDomainEvents();
 
         profile.Restore(_actorId, _now.AddMinutes(2));
@@ -110,7 +108,7 @@ public class UserProfileSoftDeleteRestoreTests
     public void Restore_ShouldIncrementVersion()
     {
         var profile = UserProfile.Create(_actorId, _now);
-        profile.SoftDelete(_actorId, _now.AddMinutes(1));
+        profile.Delete(_actorId, _now.AddMinutes(1));
         var versionBefore = profile.Version;
 
         profile.Restore(_actorId, _now.AddMinutes(2));

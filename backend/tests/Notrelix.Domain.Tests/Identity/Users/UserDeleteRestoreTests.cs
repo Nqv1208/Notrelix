@@ -3,25 +3,26 @@ using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Identity;
 
-public class UserSoftDeleteRestoreTests
+public class UserDeleteRestoreTests
 {
     private readonly Guid _actorId = Guid.NewGuid();
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(User), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(User), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldIncrementVersion_AndRaiseEvent()
+    public void Delete_ShouldIncrementVersion_AndRaiseEvent()
     {
         var user = User.Create("test@example.com", "Test", "hash", _now);
         var version = user.Version;
 
-        user.SoftDelete(_actorId, _now);
+        user.Delete(_actorId, _now);
 
         user.IsDeleted.Should().BeTrue();
         user.Version.Should().Be(version + 1);
-        user.DomainEvents.Should().ContainSingle(e => e is UserSoftDeletedDomainEvent);
-        var evt = (UserSoftDeletedDomainEvent)user.DomainEvents.Single(e => e is UserSoftDeletedDomainEvent);
+        user.DomainEvents.Should().ContainSingle(e => e is UserDeletedDomainEvent);
+        var evt = (UserDeletedDomainEvent)user.DomainEvents.Single(e => e is UserDeletedDomainEvent);
         evt.UserId.Should().Be(user.Id);
+        evt.Status.Should().Be(user.Status);
         evt.DeletedBy.Should().Be(_actorId);
         evt.OccurredAt.Should().Be(_now);
     }
@@ -31,7 +32,7 @@ public class UserSoftDeleteRestoreTests
     public void Restore_ShouldIncrementVersion_AndRaiseEvent()
     {
         var user = User.Create("test@example.com", "Test", "hash", _now);
-        user.SoftDelete(_actorId, _now);
+        user.Delete(_actorId, _now);
         ((IHasDomainEvents)user).ClearDomainEvents();
         var version = user.Version;
 
@@ -42,22 +43,23 @@ public class UserSoftDeleteRestoreTests
         user.DomainEvents.Should().ContainSingle(e => e is UserRestoredDomainEvent);
         var evt = (UserRestoredDomainEvent)user.DomainEvents.Single(e => e is UserRestoredDomainEvent);
         evt.UserId.Should().Be(user.Id);
+        evt.Status.Should().Be(user.Status);
         evt.RestoredBy.Should().Be(_actorId);
     }
 
-    [CoversMutation(typeof(User), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(User), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
-    public void SoftDelete_ShouldNotIncrementOrRaiseEvent_WhenAlreadyDeleted()
+    public void Delete_ShouldNotIncrementOrRaiseEvent_WhenAlreadyDeleted()
     {
         var user = User.Create("test@example.com", "Test", "hash", _now);
-        user.SoftDelete(_actorId, _now);
+        user.Delete(_actorId, _now);
         ((IHasDomainEvents)user).ClearDomainEvents();
         var version = user.Version;
 
-        user.SoftDelete(_actorId, _now);
+        user.Delete(_actorId, _now);
 
         user.Version.Should().Be(version);
-        user.DomainEvents.Should().NotContain(e => e is UserSoftDeletedDomainEvent);
+        user.DomainEvents.Should().NotContain(e => e is UserDeletedDomainEvent);
     }
 
     [CoversMutation(typeof(User), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]

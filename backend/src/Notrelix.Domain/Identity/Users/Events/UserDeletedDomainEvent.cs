@@ -1,8 +1,9 @@
 namespace Notrelix.Domain.Identity.Users.Events;
 
-[EventName("identity.user-soft-deleted")]
-public sealed record UserSoftDeletedDomainEvent(
+[EventName("identity.user-deleted")]
+public sealed record UserDeletedDomainEvent(
     Guid UserId,
+    UserStatus Status,
     Guid DeletedBy,
     DateTimeOffset OccurredAt,
     string? Reason

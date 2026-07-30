@@ -2,7 +2,7 @@ using Notrelix.Domain.Identity.Tokens.Events;
 
 namespace Notrelix.Domain.Identity.Tokens;
 
-public class ApiToken : SoftDeletableAggregateRoot, IWorkspaceScoped
+public sealed class ApiToken : AggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -53,7 +53,6 @@ public class ApiToken : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void Revoke(Guid revokedBy, DateTimeOffset revokedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(revokedBy);
         if (Status == ApiTokenStatus.Revoked) return;
 
@@ -68,8 +67,6 @@ public class ApiToken : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void RecordUse(DateTimeOffset usedAt)
     {
-        EnsureNotDeleted();
-
         if (Status != ApiTokenStatus.Active)
             throw new BusinessRuleException(IdentityRuleCodes.Identity_ApiToken_CannotUseInactive, "Cannot use an inactive API token.");
 
@@ -85,25 +82,5 @@ public class ApiToken : SoftDeletableAggregateRoot, IWorkspaceScoped
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new ApiTokenRecordedUseDomainEvent(AccountId, WorkspaceId, Id, usedAt));
-    }
-
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        Guard.NotEmpty(deletedBy);
-        if (IsDeleted) return;
-        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
-        ApplyDeletion(pendingDeletion);
-        IncrementVersion();
-        RaiseDomainEvent(new ApiTokenSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
-    }
-
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        Guard.NotEmpty(restoredBy);
-        if (!IsDeleted) return;
-        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
-        ApplyRestore(pendingRestore);
-        IncrementVersion();
-        RaiseDomainEvent(new ApiTokenRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredAt));
     }
 }

@@ -140,6 +140,7 @@ public class MfaMethodTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*verified and active*");
     }
 
+    [CoversMutation(typeof(UserMfaMethod), "Disable(System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void Disable_ShouldDeactivateMethodAndClearPrimary()
     {

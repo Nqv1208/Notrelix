@@ -5,7 +5,7 @@ using Notrelix.Domain.Identity.Users.Events;
 
 namespace Notrelix.Domain.Identity.Users;
 
-public class User : SoftDeletableAggregateRoot
+public sealed class User : SoftDeletableAggregateRoot
 {
     public Email Email { get; private set; } = null!;
     public string NormalizedEmail { get; private set; } = string.Empty;
@@ -335,14 +335,14 @@ public class User : SoftDeletableAggregateRoot
         RaiseDomainEvent(new OAuthTokenReferenceRotatedDomainEvent(Id, provider, rotatedBy, rotatedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        RaiseDomainEvent(new UserSoftDeletedDomainEvent(Id, deletedBy, deletedAt, reason));
+        RaiseDomainEvent(new UserDeletedDomainEvent(Id, Status, deletedBy, deletedAt, pendingDeletion.Reason));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -352,6 +352,6 @@ public class User : SoftDeletableAggregateRoot
         var pendingRestore = PrepareRestore(restoredBy, restoredAt);
         ApplyRestore(pendingRestore);
         IncrementVersion();
-        RaiseDomainEvent(new UserRestoredDomainEvent(Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new UserRestoredDomainEvent(Id, Status, restoredBy, restoredAt));
     }
 }

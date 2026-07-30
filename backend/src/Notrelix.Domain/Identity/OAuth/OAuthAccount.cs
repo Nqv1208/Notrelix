@@ -1,6 +1,6 @@
 namespace Notrelix.Domain.Identity.OAuth;
 
-public class OAuthAccount : Entity
+public sealed class OAuthAccount : Entity
 {
     public Guid UserId { get; private set; }
     public OAuthProvider Provider { get; private set; }

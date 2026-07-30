@@ -2,7 +2,7 @@ using Notrelix.Domain.Identity.Mfa.Events;
 
 namespace Notrelix.Domain.Identity.Mfa;
 
-public class UserMfaMethod : SoftDeletableAggregateRoot
+public sealed class UserMfaMethod : AggregateRoot
 {
     public Guid UserId { get; private set; }
     public MfaMethodType Type { get; private set; }
@@ -45,7 +45,6 @@ public class UserMfaMethod : SoftDeletableAggregateRoot
 
     public void Verify(DateTimeOffset verifiedAt)
     {
-        EnsureNotDeleted();
         if (Status == MfaMethodStatus.Active) return;
 
         if (Status == MfaMethodStatus.Disabled)
@@ -64,7 +63,6 @@ public class UserMfaMethod : SoftDeletableAggregateRoot
 
     public void SetAsPrimary(DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         if (Status != MfaMethodStatus.Active)
         {
             throw new BusinessRuleException(IdentityRuleCodes.Identity_Mfa_CannotSetPrimaryUnlessVerifiedActive, "Only verified and active MFA methods can be set as primary.");
@@ -82,7 +80,6 @@ public class UserMfaMethod : SoftDeletableAggregateRoot
 
     public void UnsetAsPrimary(DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         if (!IsPrimary) return;
 
         var pending = PrepareAuditUpdate(UserId, updatedAt);
@@ -95,7 +92,6 @@ public class UserMfaMethod : SoftDeletableAggregateRoot
 
     public void Disable(DateTimeOffset disabledAt)
     {
-        EnsureNotDeleted();
         if (Status == MfaMethodStatus.Disabled) return;
 
         var pending = PrepareAuditUpdate(UserId, disabledAt);
@@ -106,25 +102,5 @@ public class UserMfaMethod : SoftDeletableAggregateRoot
         IncrementVersion();
 
         RaiseDomainEvent(new UserMfaMethodDisabledDomainEvent(Id, UserId, Type, disabledAt));
-    }
-
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        Guard.NotEmpty(deletedBy);
-        if (IsDeleted) return;
-        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
-        ApplyDeletion(pendingDeletion);
-        IncrementVersion();
-        RaiseDomainEvent(new UserMfaMethodSoftDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, reason));
-    }
-
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        Guard.NotEmpty(restoredBy);
-        if (!IsDeleted) return;
-        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
-        ApplyRestore(pendingRestore);
-        IncrementVersion();
-        RaiseDomainEvent(new UserMfaMethodRestoredDomainEvent(Id, UserId, restoredBy, restoredAt));
     }
 }

@@ -2,7 +2,7 @@ using Notrelix.Domain.Identity.Sessions.Events;
 
 namespace Notrelix.Domain.Identity.Sessions;
 
-public class UserSession : SoftDeletableAggregateRoot
+public sealed class UserSession : AggregateRoot
 {
     public Guid UserId { get; private set; }
     public RefreshTokenHash RefreshTokenHash { get; private set; } = null!;
@@ -49,7 +49,6 @@ public class UserSession : SoftDeletableAggregateRoot
 
     public void UpdateRefreshToken(RefreshTokenHash newTokenHash, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotNull(newTokenHash);
 
         if (Status != SessionStatus.Active)
@@ -66,7 +65,6 @@ public class UserSession : SoftDeletableAggregateRoot
 
     public void Revoke(DateTimeOffset revokedAt, string? reason = null)
     {
-        EnsureNotDeleted();
         if (Status == SessionStatus.Revoked) return;
 
         if (Status == SessionStatus.Expired)
@@ -84,7 +82,6 @@ public class UserSession : SoftDeletableAggregateRoot
 
     public void Expire(DateTimeOffset expiredAt)
     {
-        EnsureNotDeleted();
         if (Status == SessionStatus.Expired) return;
 
         if (Status == SessionStatus.Revoked)
@@ -98,25 +95,5 @@ public class UserSession : SoftDeletableAggregateRoot
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserSessionExpiredDomainEvent(Id, UserId, expiredAt));
-    }
-
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        Guard.NotEmpty(deletedBy);
-        if (IsDeleted) return;
-        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
-        ApplyDeletion(pendingDeletion);
-        IncrementVersion();
-        RaiseDomainEvent(new UserSessionSoftDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, reason));
-    }
-
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        Guard.NotEmpty(restoredBy);
-        if (!IsDeleted) return;
-        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
-        ApplyRestore(pendingRestore);
-        IncrementVersion();
-        RaiseDomainEvent(new UserSessionRestoredDomainEvent(Id, UserId, restoredBy, restoredAt));
     }
 }

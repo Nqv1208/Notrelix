@@ -2,7 +2,7 @@ using Notrelix.Domain.Identity.Profiles.Events;
 
 namespace Notrelix.Domain.Identity.Profiles;
 
-public class UserProfile : SoftDeletableAggregateRoot
+public sealed class UserProfile : SoftDeletableAggregateRoot
 {
     public Guid UserId { get; private set; }
     public string Timezone { get; private set; } = "UTC";
@@ -84,14 +84,14 @@ public class UserProfile : SoftDeletableAggregateRoot
         RaiseDomainEvent(new UserProfileUpdatedDomainEvent(UserId, UserId, updatedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        RaiseDomainEvent(new UserProfileSoftDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, reason));
+        RaiseDomainEvent(new UserProfileDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, pendingDeletion.Reason));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
