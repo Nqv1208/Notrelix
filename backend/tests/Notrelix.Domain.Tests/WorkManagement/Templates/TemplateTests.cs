@@ -27,7 +27,7 @@ public class TemplateTests
     public void BoardTemplate_Restore_ShouldClearIsDeleted()
     {
         var template = BoardTemplate.Create("Template", JsonValue.EmptyObject(), Now);
-        template.SoftDelete(Actor, Now);
+        template.Delete(Actor, Now);
         template.IsDeleted.Should().BeTrue();
 
         template.Restore(Actor, Now);
@@ -41,7 +41,7 @@ public class TemplateTests
     public void BoardTemplate_Rename_ShouldThrow_WhenDeleted()
     {
         var template = BoardTemplate.Create("Template", JsonValue.EmptyObject(), Now);
-        template.SoftDelete(Actor, Now);
+        template.Delete(Actor, Now);
 
         var act = () => template.Rename("New Name", Actor, Now);
         act.Should().Throw<BusinessRuleException>();
@@ -52,7 +52,7 @@ public class TemplateTests
     public void BoardTemplate_Draft_ShouldThrow_WhenDeleted()
     {
         var template = BoardTemplate.Create("Template", JsonValue.EmptyObject(), Now);
-        template.SoftDelete(Actor, Now);
+        template.Delete(Actor, Now);
 
         var act = () => template.Draft(Actor, Now);
         act.Should().Throw<BusinessRuleException>();
@@ -63,7 +63,7 @@ public class TemplateTests
     public void BoardTemplate_Publish_ShouldThrow_WhenDeleted()
     {
         var template = BoardTemplate.Create("Template", JsonValue.EmptyObject(), Now);
-        template.SoftDelete(Actor, Now);
+        template.Delete(Actor, Now);
 
         var act = () => template.Publish(Actor, Now);
         act.Should().Throw<BusinessRuleException>();
@@ -74,7 +74,7 @@ public class TemplateTests
     public void BoardTemplate_Archive_ShouldThrow_WhenDeleted()
     {
         var template = BoardTemplate.Create("Template", JsonValue.EmptyObject(), Now);
-        template.SoftDelete(Actor, Now);
+        template.Delete(Actor, Now);
 
         var act = () => template.Archive(Actor, Now);
         act.Should().Throw<BusinessRuleException>();
@@ -96,7 +96,7 @@ public class TemplateTests
     public void ItemTemplate_Restore_ShouldClearIsDeleted()
     {
         var template = ItemTemplate.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Item Template", JsonValue.EmptyObject(), Now);
-        template.SoftDelete(Actor, Now);
+        template.Delete(Actor, Now);
         template.IsDeleted.Should().BeTrue();
 
         template.Restore(Actor, Now);
@@ -110,7 +110,7 @@ public class TemplateTests
     public void ItemTemplate_Rename_ShouldThrow_WhenDeleted()
     {
         var template = ItemTemplate.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Item Template", JsonValue.EmptyObject(), Now);
-        template.SoftDelete(Actor, Now);
+        template.Delete(Actor, Now);
 
         var act = () => template.Rename("New Name", Actor, Now);
         act.Should().Throw<BusinessRuleException>();

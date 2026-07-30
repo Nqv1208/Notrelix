@@ -17,7 +17,7 @@ public class LabelEventTests
     public void Label_Restore_ShouldRaiseEvent()
     {
         var label = Label.Create(Guid.NewGuid(), WsA, BoardA, "Bug", LabelColor.Create("#FF0000"), Actor, Now);
-        label.SoftDelete(Actor, Now);
+        label.Delete(Actor, Now);
         ((IHasDomainEvents)label).ClearDomainEvents();
         var version = label.Version;
 
@@ -29,7 +29,7 @@ public class LabelEventTests
     }
 
     [CoversMutation(typeof(Label), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
-    [CoversMutation(typeof(Label), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Label), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void Label_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {

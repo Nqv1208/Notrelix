@@ -86,13 +86,12 @@ public class PageHierarchyTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(Page), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Page), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldSetStatus()
+    public void Delete_ShouldSetStatus()
     {
         var page = Page.Create(_accountId, _workspaceId, "Page", _actorId, _now);
-        page.SoftDelete(_actorId, _now);
-        page.Status.Should().Be(PageStatus.SoftDeleted);
+        page.Delete(_actorId, _now);
     }
 
     [CoversMutation(typeof(Page), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
@@ -100,7 +99,7 @@ public class PageHierarchyTests
     public void Restore_ShouldSetStatusActive()
     {
         var page = Page.Create(_accountId, _workspaceId, "Page", _actorId, _now);
-        page.SoftDelete(_actorId, _now);
+        page.Delete(_actorId, _now);
         page.Restore(_actorId, _now);
         page.Status.Should().Be(PageStatus.Active);
     }

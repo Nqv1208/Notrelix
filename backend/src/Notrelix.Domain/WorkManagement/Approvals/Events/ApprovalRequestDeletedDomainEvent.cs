@@ -1,7 +1,7 @@
 namespace Notrelix.Domain.WorkManagement.Approvals.Events;
 
-[EventName("work-management.approval-request-soft-deleted")]
-public sealed record ApprovalRequestSoftDeletedDomainEvent(
+[EventName("work-management.approval-request-deleted")]
+public sealed record ApprovalRequestDeletedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
     Guid RequestId,

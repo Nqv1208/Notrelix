@@ -67,14 +67,14 @@ public class BlockTests
         block.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Block), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Block), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [CoversMutation(typeof(Block), "UpdateProperties(Notrelix.Domain.Documents.Blocks.BlockProperties,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [CoversMutation(typeof(Block), "UpdateContent(Notrelix.Domain.Documents.Blocks.BlockContent,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void UpdateContent_WhenDeleted_ShouldThrow()
     {
         var block = Block.CreateRoot(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), BlockType.Text, BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        block.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        block.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => block.UpdateContent(BlockContent.Create(JsonValue.Create("{\"text\":\"X\"}")), Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
@@ -110,14 +110,14 @@ public class BlockTests
         block.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Block), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Block), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [CoversMutation(typeof(Block), "UpdateProperties(Notrelix.Domain.Documents.Blocks.BlockProperties,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [CoversMutation(typeof(Block), "UpdateContent(Notrelix.Domain.Documents.Blocks.BlockContent,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
     public void UpdateProperties_WhenDeleted_ShouldThrow()
     {
         var block = Block.CreateRoot(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), BlockType.Text, BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        block.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        block.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => block.UpdateProperties(BlockProperties.Empty(), Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
@@ -152,39 +152,39 @@ public class BlockTests
         block.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Block), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Block), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void MoveToRoot_WhenDeleted_ShouldThrow()
     {
         var block = Block.CreateRoot(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), BlockType.Text, BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        block.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        block.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => block.MoveToRoot(FractionalIndex.Create("a1"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
-    [CoversMutation(typeof(Block), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Block), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldSucceed_AndRaiseEvent()
+    public void Delete_ShouldSucceed_AndRaiseEvent()
     {
         var block = Block.CreateRoot(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), BlockType.Text, BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)block).ClearDomainEvents();
 
-        block.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        block.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         block.IsDeleted.Should().BeTrue();
-        block.DomainEvents.Should().ContainSingle(e => e is BlockSoftDeletedDomainEvent);
+        block.DomainEvents.Should().ContainSingle(e => e is BlockDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(Block), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Block), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
+    public void Delete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
         var block = Block.CreateRoot(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), BlockType.Text, BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        block.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        block.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)block).ClearDomainEvents();
 
-        block.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        block.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         block.DomainEvents.Should().BeEmpty();
     }
@@ -194,7 +194,7 @@ public class BlockTests
     public void Restore_ShouldSucceed_AndRaiseEvent()
     {
         var block = Block.CreateRoot(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), BlockType.Text, BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        block.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        block.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)block).ClearDomainEvents();
 
         block.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -204,7 +204,7 @@ public class BlockTests
     }
 
     [CoversMutation(typeof(Block), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
-    [CoversMutation(typeof(Block), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Block), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {

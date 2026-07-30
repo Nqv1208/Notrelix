@@ -101,36 +101,36 @@ public class SavedFilterEventTests
         filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterGroupUpdatedDomainEvent);
     }
 
-    [CoversMutation(typeof(SavedFilter), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(SavedFilter), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SavedFilter_SoftDelete_ShouldRaiseEvent()
+    public void SavedFilter_Delete_ShouldRaiseEvent()
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
         var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
         ((IHasDomainEvents)filter).ClearDomainEvents();
         var version = filter.Version;
 
-        filter.SoftDelete(Actor, Now);
+        filter.Delete(Actor, Now);
 
         filter.IsDeleted.Should().BeTrue();
         filter.Version.Should().Be(version + 1);
-        filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterSoftDeletedDomainEvent);
+        filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(SavedFilter), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(SavedFilter), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SavedFilter_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
+    public void SavedFilter_Delete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
         var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
-        filter.SoftDelete(Actor, Now);
+        filter.Delete(Actor, Now);
         ((IHasDomainEvents)filter).ClearDomainEvents();
         var version = filter.Version;
 
-        filter.SoftDelete(Actor, Now);
+        filter.Delete(Actor, Now);
 
         filter.Version.Should().Be(version);
-        filter.DomainEvents.Should().NotContain(e => e is SavedFilterSoftDeletedDomainEvent);
+        filter.DomainEvents.Should().NotContain(e => e is SavedFilterDeletedDomainEvent);
     }
 
     [CoversMutation(typeof(SavedFilter), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
@@ -139,7 +139,7 @@ public class SavedFilterEventTests
     {
         var filterRule = FilterRule.Create(Guid.NewGuid(), FilterOperator.Equals, "val");
         var filter = SavedFilter.Create(Guid.NewGuid(), WsA, BoardA, "My Filter", new[] { filterRule }, Actor, Now);
-        filter.SoftDelete(Actor, Now);
+        filter.Delete(Actor, Now);
         ((IHasDomainEvents)filter).ClearDomainEvents();
         var version = filter.Version;
 
@@ -151,7 +151,7 @@ public class SavedFilterEventTests
     }
 
     [CoversMutation(typeof(SavedFilter), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
-    [CoversMutation(typeof(SavedFilter), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(SavedFilter), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void SavedFilter_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {

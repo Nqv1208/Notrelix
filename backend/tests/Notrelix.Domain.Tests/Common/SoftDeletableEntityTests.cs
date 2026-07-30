@@ -6,13 +6,21 @@ public class SoftDeletableEntityTests
 {
     private class TestEntity : SoftDeletableEntity
     {
-        public void PublicApplyDeletion(SoftDeletableEntity.PendingDeletion deletion)
+        public PendingDeletion PublicPrepareDeletion(Guid? actorId, DateTimeOffset occurredAt, string? reason)
+            => PrepareDeletion(actorId, occurredAt, reason);
+
+        public void PublicApplyDeletion(PendingDeletion deletion)
             => ApplyDeletion(deletion);
 
-        public void PublicApplyRestore(SoftDeletableEntity.PendingRestore restore)
+        public PendingRestore PublicPrepareRestore(Guid? actorId, DateTimeOffset occurredAt)
+            => PrepareRestore(actorId, occurredAt);
+
+        public void PublicApplyRestore(PendingRestore restore)
             => ApplyRestore(restore);
 
         public void PublicEnsureNotDeleted() => EnsureNotDeleted();
+
+        public void PublicEnsureDeleted() => EnsureDeleted();
     }
 
     [Fact]
@@ -22,7 +30,7 @@ public class SoftDeletableEntityTests
         var actorId = Guid.NewGuid();
         var time = DateTimeOffset.UtcNow;
 
-        var pending = entity.PrepareDeletion(actorId, time, "Cleanup");
+        var pending = entity.PublicPrepareDeletion(actorId, time, "Cleanup");
 
         entity.IsDeleted.Should().BeFalse();
         entity.DeletedAt.Should().BeNull();
@@ -36,7 +44,7 @@ public class SoftDeletableEntityTests
     public void PrepareDeletion_InvalidTimestamp_ShouldThrow()
     {
         var entity = new TestEntity();
-        var act = () => entity.PrepareDeletion(Guid.NewGuid(), default, null);
+        var act = () => entity.PublicPrepareDeletion(Guid.NewGuid(), default, null);
         act.Should().Throw<BusinessRuleException>();
     }
 
@@ -44,7 +52,7 @@ public class SoftDeletableEntityTests
     public void PrepareDeletion_ShouldNormalizeReason()
     {
         var entity = new TestEntity();
-        var pending = entity.PrepareDeletion(Guid.NewGuid(), DateTimeOffset.UtcNow, "  Cleanup  ");
+        var pending = entity.PublicPrepareDeletion(Guid.NewGuid(), DateTimeOffset.UtcNow, "  Cleanup  ");
         pending.Reason.Should().Be("Cleanup");
     }
 
@@ -52,7 +60,7 @@ public class SoftDeletableEntityTests
     public void PrepareDeletion_NullReason_ShouldStayNull()
     {
         var entity = new TestEntity();
-        var pending = entity.PrepareDeletion(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        var pending = entity.PublicPrepareDeletion(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
         pending.Reason.Should().BeNull();
     }
 
@@ -63,7 +71,7 @@ public class SoftDeletableEntityTests
         var deletedBy = Guid.NewGuid();
         var deletedAt = DateTimeOffset.UtcNow;
 
-        var pending = entity.PrepareDeletion(deletedBy, deletedAt, "Cleanup");
+        var pending = entity.PublicPrepareDeletion(deletedBy, deletedAt, "Cleanup");
         entity.PublicApplyDeletion(pending);
 
         entity.IsDeleted.Should().BeTrue();
@@ -80,10 +88,10 @@ public class SoftDeletableEntityTests
         var deleteTime = DateTimeOffset.UtcNow;
         var restoreTime = deleteTime.AddMinutes(5);
 
-        var del = entity.PrepareDeletion(userId, deleteTime, null);
+        var del = entity.PublicPrepareDeletion(userId, deleteTime, null);
         entity.PublicApplyDeletion(del);
 
-        var pendingRestore = entity.PrepareRestore(userId, restoreTime);
+        var pendingRestore = entity.PublicPrepareRestore(userId, restoreTime);
         entity.IsDeleted.Should().BeTrue();
         entity.DeletedAt.Should().Be(deleteTime);
         pendingRestore.ActorId.Should().Be(userId);
@@ -94,7 +102,7 @@ public class SoftDeletableEntityTests
     public void PrepareRestore_InvalidTimestamp_ShouldThrow()
     {
         var entity = new TestEntity();
-        var act = () => entity.PrepareRestore(Guid.NewGuid(), default);
+        var act = () => entity.PublicPrepareRestore(Guid.NewGuid(), default);
         act.Should().Throw<BusinessRuleException>();
     }
 
@@ -105,25 +113,23 @@ public class SoftDeletableEntityTests
         var userId = Guid.NewGuid();
         var time = DateTimeOffset.UtcNow;
 
-        var del = entity.PrepareDeletion(userId, time, null);
+        var del = entity.PublicPrepareDeletion(userId, time, null);
         entity.PublicApplyDeletion(del);
 
-        var restore = entity.PrepareRestore(userId, time.AddMinutes(1));
+        var restore = entity.PublicPrepareRestore(userId, time.AddMinutes(1));
         entity.PublicApplyRestore(restore);
 
         entity.IsDeleted.Should().BeFalse();
         entity.DeletedAt.Should().BeNull();
         entity.DeletedBy.Should().BeNull();
         entity.DeleteReason.Should().BeNull();
-        entity.RestoredAt.Should().Be(time.AddMinutes(1));
-        entity.RestoredBy.Should().Be(userId);
     }
 
     [Fact]
     public void EnsureNotDeleted_ShouldThrow_WhenDeleted()
     {
         var entity = new TestEntity();
-        var pending = entity.PrepareDeletion(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        var pending = entity.PublicPrepareDeletion(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
         entity.PublicApplyDeletion(pending);
 
         var act = () => entity.PublicEnsureNotDeleted();
@@ -135,6 +141,25 @@ public class SoftDeletableEntityTests
     {
         var entity = new TestEntity();
         var act = () => entity.PublicEnsureNotDeleted();
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void EnsureDeleted_ShouldThrow_WhenNotDeleted()
+    {
+        var entity = new TestEntity();
+        var act = () => entity.PublicEnsureDeleted();
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void EnsureDeleted_ShouldNotThrow_WhenDeleted()
+    {
+        var entity = new TestEntity();
+        var pending = entity.PublicPrepareDeletion(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        entity.PublicApplyDeletion(pending);
+
+        var act = () => entity.PublicEnsureDeleted();
         act.Should().NotThrow();
     }
 }

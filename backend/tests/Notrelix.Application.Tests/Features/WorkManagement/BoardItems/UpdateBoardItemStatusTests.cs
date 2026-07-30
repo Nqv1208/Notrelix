@@ -76,7 +76,7 @@ public class UpdateBoardItemStatusTests : WorkManagementHandlerTestBase
             TestAccountId, TestWorkspaceId, board.Id, "Status",
             FieldType.Status, FieldSettings.Create(JsonValue.Create("{\"transitions\":{}}")!), FractionalIndex.Create("a0"),
             TestUserId, TestNow);
-        statusField.SoftDelete(TestUserId, TestNow);
+        statusField.Delete(TestUserId, TestNow);
         SetupBoards(board);
         SetupBoardItems(item);
         SetupBoardFields(statusField);

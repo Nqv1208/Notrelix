@@ -1,11 +1,11 @@
 using Notrelix.API.Extensions;
-using Notrelix.Application.Features.WorkManagement.Approvals.Commands.SoftDeleteApprovalRequest;
+using Notrelix.Application.Features.WorkManagement.Approvals.Commands.DeleteApprovalRequest;
 
 namespace Notrelix.API.Endpoints.WorkManagement.Approvals.Commands;
 
-public static class SoftDeleteApprovalRequestEndpoint
+public static class DeleteApprovalRequestEndpoint
 {
-    public static IEndpointRouteBuilder MapSoftDeleteApprovalRequest(this IEndpointRouteBuilder group)
+    public static IEndpointRouteBuilder MapDeleteApprovalRequest(this IEndpointRouteBuilder group)
     {
         group.MapResourceDelete("/", HandleAsync)
             .WithName("WorkManagement.Approvals.Delete")
@@ -20,7 +20,7 @@ public static class SoftDeleteApprovalRequestEndpoint
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new SoftDeleteApprovalRequestCommand(requestId, 0),
+            new DeleteApprovalRequestCommand(requestId, 0),
             cancellationToken);
         return result.ToNoContentResult();
     }

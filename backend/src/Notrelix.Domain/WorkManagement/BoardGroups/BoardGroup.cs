@@ -90,14 +90,14 @@ public class BoardGroup : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardGroupReorderedDomainEvent(AccountId, WorkspaceId, Id, BoardId, newPosition.Value, updatedBy, updatedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        RaiseDomainEvent(new BoardGroupSoftDeletedDomainEvent(AccountId, WorkspaceId, BoardId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new BoardGroupDeletedDomainEvent(AccountId, WorkspaceId, BoardId, Id, deletedBy, deletedAt));
     }
 
     public void ValidateNotDefaultGroup(Guid? defaultGroupId)

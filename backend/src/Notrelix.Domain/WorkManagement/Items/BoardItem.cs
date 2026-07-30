@@ -242,14 +242,14 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardItemCompletedDomainEvent(AccountId, WorkspaceId, BoardId, Id, completedAt, updatedBy, updatedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        RaiseDomainEvent(new BoardItemSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
+        RaiseDomainEvent(new BoardItemDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)

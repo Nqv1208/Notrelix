@@ -4,7 +4,7 @@ namespace Notrelix.Domain.Common;
 
 public abstract class AuditableEntity : Entity
 {
-    internal readonly record struct PendingAuditUpdate(
+    public readonly record struct PendingAuditUpdate(
         Guid? ActorId,
         DateTimeOffset OccurredAt);
 
@@ -42,7 +42,7 @@ public abstract class AuditableEntity : Entity
         CreatedAt = createdAt;
     }
 
-    internal PendingAuditUpdate PrepareAuditUpdate(
+    protected PendingAuditUpdate PrepareAuditUpdate(
         Guid? actorId,
         DateTimeOffset occurredAt)
     {
@@ -50,17 +50,10 @@ public abstract class AuditableEntity : Entity
         return new PendingAuditUpdate(actorId, occurredAt);
     }
 
-    internal void ApplyAuditUpdate(PendingAuditUpdate update)
+    protected void ApplyAuditUpdate(PendingAuditUpdate update)
     {
         UpdatedBy = update.ActorId;
         UpdatedAt = update.OccurredAt;
-    }
-
-    private void SetAuditOnUpdate(Guid? updatedBy, DateTimeOffset updatedAt)
-    {
-        ValidateAuditUpdate(updatedBy, updatedAt);
-        UpdatedBy = updatedBy;
-        UpdatedAt = updatedAt;
     }
 
     private void ValidateAuditUpdate(Guid? actorId, DateTimeOffset occurredAt)

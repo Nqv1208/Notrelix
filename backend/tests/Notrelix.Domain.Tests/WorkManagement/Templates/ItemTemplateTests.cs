@@ -11,7 +11,7 @@ public class ItemTemplateTests
     [CoversMutation(typeof(ItemTemplate), "Draft(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [CoversMutation(typeof(ItemTemplate), "Publish(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [CoversMutation(typeof(ItemTemplate), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
-    [CoversMutation(typeof(ItemTemplate), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(ItemTemplate), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [CoversMutation(typeof(ItemTemplate), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Create_ShouldSucceed()

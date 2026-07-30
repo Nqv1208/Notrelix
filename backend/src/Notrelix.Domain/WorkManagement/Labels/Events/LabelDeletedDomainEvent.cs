@@ -1,7 +1,7 @@
 namespace Notrelix.Domain.WorkManagement.Labels.Events;
 
-[EventName("work-management.label-soft-deleted")]
-public sealed record LabelSoftDeletedDomainEvent(
+[EventName("work-management.label-deleted")]
+public sealed record LabelDeletedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
     Guid LabelId,

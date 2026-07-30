@@ -85,7 +85,7 @@ public class BoardTemplate : SoftDeletableAggregateRoot
         IncrementVersion();
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
         var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
@@ -196,7 +196,7 @@ public class ItemTemplate : SoftDeletableAggregateRoot, IWorkspaceScoped
         IncrementVersion();
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
         var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);

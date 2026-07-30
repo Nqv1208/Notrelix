@@ -1,7 +1,7 @@
 namespace Notrelix.Domain.Documents.Blocks.Events;
 
-[EventName("documents.block-soft-deleted")]
-public sealed record BlockSoftDeletedDomainEvent(
+[EventName("documents.block-deleted")]
+public sealed record BlockDeletedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
     Guid BlockId,

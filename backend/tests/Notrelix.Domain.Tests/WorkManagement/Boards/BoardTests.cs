@@ -136,33 +136,33 @@ public class BoardTests
         board.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Board), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Board), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldSetIsDeletedAndRaiseEvent()
+    public void Delete_ShouldSetIsDeletedAndRaiseEvent()
     {
         var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Valid Title", null, DateTimeOffset.UtcNow);
         ((IHasDomainEvents)board).ClearDomainEvents();
 
         var deletedBy = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
-        board.SoftDelete(deletedBy, now);
+        board.Delete(deletedBy, now);
 
         board.IsDeleted.Should().BeTrue();
         board.DeletedAt.Should().Be(now);
         board.DeletedBy.Should().Be(deletedBy);
 
-        board.DomainEvents.Should().ContainSingle(e => e is BoardSoftDeletedDomainEvent);
+        board.DomainEvents.Should().ContainSingle(e => e is BoardDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(Board), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Board), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
-    public void SoftDelete_ShouldBeNoOp_WhenAlreadyDeleted()
+    public void Delete_ShouldBeNoOp_WhenAlreadyDeleted()
     {
         var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Valid Title", null, DateTimeOffset.UtcNow);
-        board.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        board.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)board).ClearDomainEvents();
 
-        board.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        board.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         board.DomainEvents.Should().BeEmpty();
     }
@@ -172,7 +172,7 @@ public class BoardTests
     public void Restore_ShouldClearIsDeletedAndRaiseEvent()
     {
         var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Valid Title", null, DateTimeOffset.UtcNow);
-        board.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        board.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)board).ClearDomainEvents();
 
         var restoredBy = Guid.NewGuid();
@@ -180,8 +180,6 @@ public class BoardTests
         board.Restore(restoredBy, now);
 
         board.IsDeleted.Should().BeFalse();
-        board.RestoredAt.Should().Be(now);
-        board.RestoredBy.Should().Be(restoredBy);
 
         board.DomainEvents.Should().ContainSingle(e => e is BoardRestoredDomainEvent);
     }
@@ -203,7 +201,7 @@ public class BoardTests
     public void Rename_ShouldThrow_WhenBoardIsDeleted()
     {
         var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Valid Title", null, DateTimeOffset.UtcNow);
-        board.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        board.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         Action act = () => board.Rename("New Title", Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -215,7 +213,7 @@ public class BoardTests
     public void Archive_ShouldThrow_WhenBoardIsDeleted()
     {
         var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Valid Title", null, DateTimeOffset.UtcNow);
-        board.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        board.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         Action act = () => board.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

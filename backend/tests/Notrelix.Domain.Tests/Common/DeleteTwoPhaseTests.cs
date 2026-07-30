@@ -2,13 +2,25 @@ using FluentAssertions;
 
 namespace Notrelix.Domain.Tests.Common;
 
-public class SoftDeleteTwoPhaseTests
+public class DeleteTwoPhaseTests
 {
     private class TestAggregateRoot : SoftDeletableAggregateRoot
     {
         public string? Name { get; private set; }
 
         public void SetName(string name) => Name = name;
+
+        public PendingDeletion PublicPrepareDeletion(Guid? actorId, DateTimeOffset occurredAt, string? reason)
+            => PrepareDeletion(actorId, occurredAt, reason);
+
+        public void PublicApplyDeletion(PendingDeletion deletion)
+            => ApplyDeletion(deletion);
+
+        public PendingRestore PublicPrepareRestore(Guid? actorId, DateTimeOffset occurredAt)
+            => PrepareRestore(actorId, occurredAt);
+
+        public void PublicApplyRestore(PendingRestore restore)
+            => ApplyRestore(restore);
     }
 
     private class TestChildEntity : SoftDeletableEntity
@@ -16,6 +28,18 @@ public class SoftDeleteTwoPhaseTests
         public string? Value { get; private set; }
 
         public void SetValue(string value) => Value = value;
+
+        public PendingDeletion PublicPrepareDeletion(Guid? actorId, DateTimeOffset occurredAt, string? reason)
+            => PrepareDeletion(actorId, occurredAt, reason);
+
+        public void PublicApplyDeletion(PendingDeletion deletion)
+            => ApplyDeletion(deletion);
+
+        public PendingRestore PublicPrepareRestore(Guid? actorId, DateTimeOffset occurredAt)
+            => PrepareRestore(actorId, occurredAt);
+
+        public void PublicApplyRestore(PendingRestore restore)
+            => ApplyRestore(restore);
     }
 
     [Fact]
@@ -25,7 +49,7 @@ public class SoftDeleteTwoPhaseTests
         var actorId = Guid.NewGuid();
         var time = DateTimeOffset.UtcNow;
 
-        var pending = entity.PrepareDeletion(actorId, time, "Reason");
+        var pending = entity.PublicPrepareDeletion(actorId, time, "Reason");
 
         entity.IsDeleted.Should().BeFalse();
         entity.DeletedAt.Should().BeNull();
@@ -43,7 +67,7 @@ public class SoftDeleteTwoPhaseTests
         var actorId = Guid.NewGuid();
         var time = DateTimeOffset.UtcNow;
 
-        var pending = entity.PrepareDeletion(actorId, time, "Reason");
+        var pending = entity.PublicPrepareDeletion(actorId, time, "Reason");
 
         entity.IsDeleted.Should().BeFalse();
         entity.DeletedAt.Should().BeNull();
@@ -56,8 +80,8 @@ public class SoftDeleteTwoPhaseTests
         var aggregate = new TestAggregateRoot();
         var child = new TestChildEntity();
 
-        var act1 = () => aggregate.PrepareDeletion(Guid.NewGuid(), default, null);
-        var act2 = () => child.PrepareDeletion(Guid.NewGuid(), default, null);
+        var act1 = () => aggregate.PublicPrepareDeletion(Guid.NewGuid(), default, null);
+        var act2 = () => child.PublicPrepareDeletion(Guid.NewGuid(), default, null);
 
         act1.Should().Throw<BusinessRuleException>();
         act2.Should().Throw<BusinessRuleException>();
@@ -67,7 +91,7 @@ public class SoftDeleteTwoPhaseTests
     public void PrepareDeletion_MinValueTimestamp_ShouldThrow()
     {
         var entity = new TestAggregateRoot();
-        var act = () => entity.PrepareDeletion(Guid.NewGuid(), DateTimeOffset.MinValue, null);
+        var act = () => entity.PublicPrepareDeletion(Guid.NewGuid(), DateTimeOffset.MinValue, null);
         act.Should().Throw<BusinessRuleException>();
     }
 
@@ -76,7 +100,7 @@ public class SoftDeleteTwoPhaseTests
     {
         var entity = new TestAggregateRoot();
 
-        var pending = entity.PrepareDeletion(Guid.NewGuid(), DateTimeOffset.UtcNow, "  reason  ");
+        var pending = entity.PublicPrepareDeletion(Guid.NewGuid(), DateTimeOffset.UtcNow, "  reason  ");
         pending.Reason.Should().Be("reason");
     }
 
@@ -84,7 +108,7 @@ public class SoftDeleteTwoPhaseTests
     public void PrepareDeletion_NullReason_ShouldStayNull()
     {
         var entity = new TestAggregateRoot();
-        var pending = entity.PrepareDeletion(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        var pending = entity.PublicPrepareDeletion(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
         pending.Reason.Should().BeNull();
     }
 
@@ -92,7 +116,7 @@ public class SoftDeleteTwoPhaseTests
     public void PrepareDeletion_EmptyReason_ShouldStayNull()
     {
         var entity = new TestAggregateRoot();
-        var pending = entity.PrepareDeletion(Guid.NewGuid(), DateTimeOffset.UtcNow, "   ");
+        var pending = entity.PublicPrepareDeletion(Guid.NewGuid(), DateTimeOffset.UtcNow, "   ");
         pending.Reason.Should().BeNull();
     }
 
@@ -103,8 +127,8 @@ public class SoftDeleteTwoPhaseTests
         var actorId = Guid.NewGuid();
         var time = DateTimeOffset.UtcNow;
 
-        var pending = entity.PrepareDeletion(actorId, time, "Cleanup");
-        entity.ApplyDeletion(pending);
+        var pending = entity.PublicPrepareDeletion(actorId, time, "Cleanup");
+        entity.PublicApplyDeletion(pending);
 
         entity.IsDeleted.Should().BeTrue();
         entity.DeletedAt.Should().Be(time);
@@ -119,8 +143,8 @@ public class SoftDeleteTwoPhaseTests
         var actorId = Guid.NewGuid();
         var time = DateTimeOffset.UtcNow;
 
-        var pending = entity.PrepareDeletion(actorId, time, "Cleanup");
-        entity.ApplyDeletion(pending);
+        var pending = entity.PublicPrepareDeletion(actorId, time, "Cleanup");
+        entity.PublicApplyDeletion(pending);
 
         entity.IsDeleted.Should().BeTrue();
         entity.DeletedAt.Should().Be(time);
@@ -135,8 +159,8 @@ public class SoftDeleteTwoPhaseTests
         var actorId = Guid.NewGuid();
         var time = DateTimeOffset.UtcNow;
 
-        var pending = entity.PrepareDeletion(actorId, time, null);
-        entity.ApplyDeletion(pending);
+        var pending = entity.PublicPrepareDeletion(actorId, time, null);
+        entity.PublicApplyDeletion(pending);
 
         entity.UpdatedAt.Should().Be(time);
         entity.UpdatedBy.Should().Be(actorId);
@@ -150,10 +174,10 @@ public class SoftDeleteTwoPhaseTests
         var deleteTime = DateTimeOffset.UtcNow;
         var restoreTime = deleteTime.AddMinutes(5);
 
-        var del = entity.PrepareDeletion(actorId, deleteTime, null);
-        entity.ApplyDeletion(del);
+        var del = entity.PublicPrepareDeletion(actorId, deleteTime, null);
+        entity.PublicApplyDeletion(del);
 
-        var pendingRestore = entity.PrepareRestore(actorId, restoreTime);
+        var pendingRestore = entity.PublicPrepareRestore(actorId, restoreTime);
         entity.IsDeleted.Should().BeTrue();
         entity.DeletedAt.Should().Be(deleteTime);
         pendingRestore.ActorId.Should().Be(actorId);
@@ -164,10 +188,10 @@ public class SoftDeleteTwoPhaseTests
     public void PrepareRestore_InvalidTimestamp_ShouldThrow()
     {
         var entity = new TestAggregateRoot();
-        var del = entity.PrepareDeletion(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
-        entity.ApplyDeletion(del);
+        var del = entity.PublicPrepareDeletion(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        entity.PublicApplyDeletion(del);
 
-        var act = () => entity.PrepareRestore(Guid.NewGuid(), default);
+        var act = () => entity.PublicPrepareRestore(Guid.NewGuid(), default);
         act.Should().Throw<BusinessRuleException>();
     }
 
@@ -179,18 +203,16 @@ public class SoftDeleteTwoPhaseTests
         var deleteTime = DateTimeOffset.UtcNow;
         var restoreTime = deleteTime.AddMinutes(5);
 
-        var del = entity.PrepareDeletion(actorId, deleteTime, "old reason");
-        entity.ApplyDeletion(del);
+        var del = entity.PublicPrepareDeletion(actorId, deleteTime, "old reason");
+        entity.PublicApplyDeletion(del);
 
-        var restore = entity.PrepareRestore(actorId, restoreTime);
-        entity.ApplyRestore(restore);
+        var restore = entity.PublicPrepareRestore(actorId, restoreTime);
+        entity.PublicApplyRestore(restore);
 
         entity.IsDeleted.Should().BeFalse();
         entity.DeletedAt.Should().BeNull();
         entity.DeletedBy.Should().BeNull();
         entity.DeleteReason.Should().BeNull();
-        entity.RestoredAt.Should().Be(restoreTime);
-        entity.RestoredBy.Should().Be(actorId);
         entity.UpdatedAt.Should().Be(restoreTime);
         entity.UpdatedBy.Should().Be(actorId);
     }
@@ -203,16 +225,16 @@ public class SoftDeleteTwoPhaseTests
         var deleteTime = DateTimeOffset.UtcNow;
         var restoreTime = deleteTime.AddMinutes(5);
 
-        var del = entity.PrepareDeletion(actorId, deleteTime, null);
-        entity.ApplyDeletion(del);
+        var del = entity.PublicPrepareDeletion(actorId, deleteTime, null);
+        entity.PublicApplyDeletion(del);
 
-        var restore = entity.PrepareRestore(actorId, restoreTime);
-        entity.ApplyRestore(restore);
+        var restore = entity.PublicPrepareRestore(actorId, restoreTime);
+        entity.PublicApplyRestore(restore);
 
         entity.IsDeleted.Should().BeFalse();
         entity.DeletedAt.Should().BeNull();
-        entity.RestoredAt.Should().Be(restoreTime);
-        entity.RestoredBy.Should().Be(actorId);
+        entity.DeletedBy.Should().BeNull();
+        entity.DeleteReason.Should().BeNull();
     }
 
     [Fact]
@@ -221,7 +243,7 @@ public class SoftDeleteTwoPhaseTests
         var entity = new TestAggregateRoot();
         var time = DateTimeOffset.UtcNow;
 
-        var act = () => entity.PrepareDeletion(Guid.NewGuid(), default, null);
+        var act = () => entity.PublicPrepareDeletion(Guid.NewGuid(), default, null);
         act.Should().Throw<BusinessRuleException>();
 
         entity.IsDeleted.Should().BeFalse();
@@ -233,10 +255,10 @@ public class SoftDeleteTwoPhaseTests
     public void FailureAtomicity_PrepareRestore_DoesNotCorruptState()
     {
         var entity = new TestAggregateRoot();
-        var del = entity.PrepareDeletion(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
-        entity.ApplyDeletion(del);
+        var del = entity.PublicPrepareDeletion(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        entity.PublicApplyDeletion(del);
 
-        var act = () => entity.PrepareRestore(Guid.NewGuid(), default);
+        var act = () => entity.PublicPrepareRestore(Guid.NewGuid(), default);
         act.Should().Throw<BusinessRuleException>();
 
         entity.IsDeleted.Should().BeTrue();

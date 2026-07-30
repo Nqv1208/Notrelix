@@ -33,7 +33,7 @@ public class DeleteBoardRelationCommandHandler : IRequestHandler<DeleteBoardRela
             .FirstOrDefaultAsync(r => r.Id == request.RelationId, ct);
         if (relation is null) throw new NotFoundException(nameof(BoardRelation), request.RelationId);
 
-        relation.SoftDelete(_requestContext.UserId, _dateTimeProvider.UtcNow);
+        relation.Delete(_requestContext.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }

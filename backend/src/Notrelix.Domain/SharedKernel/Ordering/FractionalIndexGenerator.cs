@@ -86,7 +86,9 @@ public static class FractionalIndexGenerator
     internal static void ValidateKey(string key)
     {
         if (string.IsNullOrEmpty(key))
-            throw new ArgumentException("Order key cannot be null or empty.", nameof(key));
+            throw new BusinessRuleException(
+                SharedKernelRuleCodes.SharedKernel_FractionalIndex_InvalidKey,
+                "Order key cannot be null or empty.");
 
         ValidateOrderKey(key);
     }
@@ -241,17 +243,23 @@ public static class FractionalIndexGenerator
             return i < half ? half - i + 1 : i - half + 2;
         }
 
-        throw new ArgumentException($"Invalid order key head: '{head}'.");
+        throw new BusinessRuleException(
+                SharedKernelRuleCodes.SharedKernel_FractionalIndex_InvalidIntegerPart,
+                $"Invalid order key head: '{head}'.");
     }
 
     private static string GetIntegerPart(string key)
     {
         if (key.Length == 0)
-            throw new ArgumentException("Order key cannot be empty.");
+            throw new BusinessRuleException(
+                SharedKernelRuleCodes.SharedKernel_FractionalIndex_InvalidKey,
+                "Order key cannot be empty.");
 
         var length = GetIntegerLength(key[0]);
         if (length > key.Length)
-            throw new ArgumentException($"Invalid order key: '{key}'.");
+            throw new BusinessRuleException(
+                SharedKernelRuleCodes.SharedKernel_FractionalIndex_InvalidKey,
+                $"Invalid order key: '{key}'.");
 
         return key[..length];
     }
@@ -344,16 +352,22 @@ public static class FractionalIndexGenerator
         }
 
         if (IsSmallestInteger(key))
-            throw new ArgumentException($"Invalid order key: '{key}'.", nameof(key));
+            throw new BusinessRuleException(
+                SharedKernelRuleCodes.SharedKernel_FractionalIndex_InvalidKey,
+                $"Invalid order key: '{key}'.");
 
         var head = GetIntegerLength(key[0]);
         if (head > key.Length)
-            throw new ArgumentException($"Invalid order key: '{key}'.", nameof(key));
+            throw new BusinessRuleException(
+                SharedKernelRuleCodes.SharedKernel_FractionalIndex_InvalidIntegerPart,
+                $"Invalid order key: '{key}'.");
 
         var f = key[head..];
 
         if (f.Length > 0 && f[^1] == Digits[0])
-            throw new ArgumentException($"Invalid order key: '{key}'.", nameof(key));
+            throw new BusinessRuleException(
+                SharedKernelRuleCodes.SharedKernel_FractionalIndex_TrailingZero,
+                $"Invalid order key: '{key}'.");
     }
 
     private static int[] BuildLookup(string alphabet)

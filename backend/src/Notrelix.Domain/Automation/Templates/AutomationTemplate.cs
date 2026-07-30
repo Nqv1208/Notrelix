@@ -74,12 +74,12 @@ public class AutomationTemplate : SoftDeletableAggregateRoot
         RaiseDomainEvent(new Events.AutomationTemplateArchivedDomainEvent(Id, archivedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         EnsureNotDeleted();
         var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         ApplyDeletion(pendingDeletion);
-        RaiseDomainEvent(new Events.AutomationTemplateSoftDeletedDomainEvent(Id, deletedAt));
+        RaiseDomainEvent(new Events.AutomationTemplateDeletedDomainEvent(Id, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)

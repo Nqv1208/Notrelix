@@ -1,7 +1,7 @@
 namespace Notrelix.Domain.WorkManagement.Forms.Events;
 
-[EventName("work-management.form-soft-deleted")]
-public sealed record FormSoftDeletedDomainEvent(
+[EventName("work-management.form-deleted")]
+public sealed record FormDeletedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
     Guid FormId,

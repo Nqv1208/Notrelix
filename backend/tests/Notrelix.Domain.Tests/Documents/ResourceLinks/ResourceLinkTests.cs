@@ -56,25 +56,25 @@ public class ResourceLinkTests
     }
 
     [Fact]
-    public void SoftDelete_ShouldRaiseEvent()
+    public void Delete_ShouldRaiseEvent()
     {
         var link = CreateLink();
         ((IHasDomainEvents)link).ClearDomainEvents();
 
-        link.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        link.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         link.IsDeleted.Should().BeTrue();
         link.DomainEvents.Should().ContainSingle(e => e is ResourceLinkDeletedDomainEvent);
     }
 
     [Fact]
-    public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
+    public void Delete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
         var link = CreateLink();
-        link.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        link.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)link).ClearDomainEvents();
 
-        link.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        link.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         link.DomainEvents.Should().BeEmpty();
     }

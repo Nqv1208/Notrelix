@@ -26,7 +26,7 @@ public class DeleteBlockCommandHandler : IRequestHandler<DeleteBlockCommand, Res
         var block = await _context.Blocks.FirstOrDefaultAsync(block => block.Id == request.BlockId && !block.IsDeleted, ct);
         if (block is null) throw new NotFoundException(nameof(Block), request.BlockId);
 
-        block.SoftDelete(_currentUser.UserId, _dateTimeProvider.UtcNow);
+        block.Delete(_currentUser.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }

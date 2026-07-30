@@ -55,7 +55,7 @@ public class BoardFieldEventTests
     {
         var position = FractionalIndex.Create("a0");
         var field = BoardField.Create(Guid.NewGuid(), WsA, BoardA, "Field", FieldType.Text, FieldSettings.Empty(), position, Actor, Now);
-        field.SoftDelete(Actor, Now);
+        field.Delete(Actor, Now);
         ((IHasDomainEvents)field).ClearDomainEvents();
         var version = field.Version;
 
@@ -67,7 +67,7 @@ public class BoardFieldEventTests
     }
 
     [CoversMutation(typeof(BoardField), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
-    [CoversMutation(typeof(BoardField), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(BoardField), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void BoardField_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {

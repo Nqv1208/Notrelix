@@ -165,7 +165,7 @@ public class SecretRotationBoundaryTests
     public void RotateSecret_WhenDeleted_ShouldThrow()
     {
         var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Google, Actor, Now);
-        connection.SoftDelete(Actor, Now);
+        connection.Delete(Actor, Now);
         var secretRef = SecretRef.Create("arn:aws:secrets:::secret/key");
 
         var act = () => connection.RotateSecret("v1", secretRef, Actor, Now);

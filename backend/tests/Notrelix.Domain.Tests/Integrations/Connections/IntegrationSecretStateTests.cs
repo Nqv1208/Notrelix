@@ -81,7 +81,7 @@ public class IntegrationSecretStateTests
     public void RotateSecret_WhenDeleted_ShouldThrow()
     {
         var c = CreateActive();
-        c.SoftDelete(Actor, Now);
+        c.Delete(Actor, Now);
         var act = () => c.RotateSecret("v1", SecretRef.Create("key/val"), Actor, Now);
         act.Should().Throw<DomainException>();
     }

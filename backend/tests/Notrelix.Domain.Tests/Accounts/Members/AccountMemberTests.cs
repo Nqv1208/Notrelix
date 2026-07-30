@@ -128,7 +128,6 @@ public class AccountMemberTests
         member.Remove(2, _actorId, _now);
 
         member.IsDeleted.Should().BeTrue();
-        member.Status.Should().Be(AccountMemberStatus.Removed);
         member.DomainEvents.Should().ContainSingle(e => e is AccountMemberRemovedDomainEvent);
     }
 
@@ -141,34 +140,6 @@ public class AccountMemberTests
 
         var act = () => member.Remove(1, _actorId, _now);
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot remove the last owner of the account.");
-    }
-
-    [CoversMutation(typeof(AccountMember), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
-    [Fact]
-    public void Restore_ShouldSucceed()
-    {
-        var member = AccountMember.Create(_accountId, _userId, AccountRole.Member, _actorId, _now);
-        member.Remove(2, _actorId, _now);
-        ((IHasDomainEvents)member).ClearDomainEvents();
-
-        member.Restore(_actorId, _now);
-
-        member.IsDeleted.Should().BeFalse();
-        member.Status.Should().Be(AccountMemberStatus.Active);
-        member.DomainEvents.Should().ContainSingle(e => e is AccountMemberRestoredDomainEvent);
-    }
-
-    [CoversMutation(typeof(AccountMember), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
-    [Fact]
-    public void SoftDelete_ShouldMarkAsRemoved()
-    {
-        var member = AccountMember.Create(_accountId, _userId, AccountRole.Member, _actorId, _now);
-        ((IHasDomainEvents)member).ClearDomainEvents();
-
-        member.SoftDelete(_actorId, _now);
-
-        member.IsDeleted.Should().BeTrue();
-        member.Status.Should().Be(AccountMemberStatus.Removed);
     }
 
     private AccountMember CreateMember(AccountRole role = AccountRole.Member)
@@ -335,59 +306,13 @@ public class AccountMemberTests
         member.DeletedAt.Should().Be(time);
     }
 
-    [CoversMutation(typeof(AccountMember), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(AccountMember), "Remove(System.Int32,System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldRaiseEvent()
+    public void Remove_ShouldRaiseEvent()
     {
         var member = CreateMember();
-        member.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
-        member.DomainEvents.Should().ContainSingle(e => e.GetType().Name == "AccountMemberRemovedDomainEvent");
-    }
-
-    [CoversMutation(typeof(AccountMember), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
-    [Fact]
-    public void SoftDelete_IsIdempotent_ShouldNotRaiseEvent()
-    {
-        var member = CreateMember();
-        member.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
-        ((IHasDomainEvents)member).ClearDomainEvents();
-        member.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
-        member.DomainEvents.Should().BeEmpty();
-    }
-
-    [CoversMutation(typeof(AccountMember), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
-    [Fact]
-    public void SoftDelete_IsIdempotent_ShouldNotIncrementVersion()
-    {
-        var member = CreateMember();
-        member.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
-        var before = member.Version;
-        member.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
-        member.Version.Should().Be(before);
-    }
-
-    [CoversMutation(typeof(AccountMember), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
-    [Fact]
-    public void Restore_ShouldIncrementVersion()
-    {
-        var member = CreateMember();
-        member.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
-        var before = member.Version;
-        member.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        member.Version.Should().Be(before + 1);
-    }
-
-    [CoversMutation(typeof(AccountMember), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
-    [Fact]
-    public void Restore_ShouldSetRestoreAudit()
-    {
-        var member = CreateMember();
-        member.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
-        var actor = Guid.NewGuid();
-        var time = DateTimeOffset.UtcNow;
-        member.Restore(actor, time);
-        member.RestoredBy.Should().Be(actor);
-        member.RestoredAt.Should().Be(time);
+        member.Remove(2, Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        member.DomainEvents.Should().ContainSingle(e => e is AccountMemberRemovedDomainEvent);
     }
 
     [CoversMutation(typeof(AccountMember), "Remove(System.Int32,System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
@@ -395,7 +320,7 @@ public class AccountMemberTests
     public void ChangeRole_AfterRemove_ShouldThrow()
     {
         var member = CreateMember();
-        member.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        member.Remove(2, Guid.NewGuid(), DateTimeOffset.UtcNow, null);
         var act = () => member.ChangeRole(AccountRole.Admin, Guid.NewGuid(), 2, DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>();
     }
@@ -405,7 +330,7 @@ public class AccountMemberTests
     public void Suspend_AfterRemove_ShouldThrow()
     {
         var member = CreateMember();
-        member.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        member.Remove(2, Guid.NewGuid(), DateTimeOffset.UtcNow, null);
         var act = () => member.Suspend(Guid.NewGuid(), DateTimeOffset.UtcNow, 2);
         act.Should().Throw<BusinessRuleException>();
     }

@@ -1,11 +1,11 @@
 using Notrelix.API.Extensions;
-using Notrelix.Application.Features.WorkManagement.Forms.Commands.SoftDeleteForm;
+using Notrelix.Application.Features.WorkManagement.Forms.Commands.DeleteForm;
 
 namespace Notrelix.API.Endpoints.WorkManagement.Forms.Commands;
 
-public static class SoftDeleteFormEndpoint
+public static class DeleteFormEndpoint
 {
-    public static IEndpointRouteBuilder MapSoftDeleteForm(this IEndpointRouteBuilder group)
+    public static IEndpointRouteBuilder MapDeleteForm(this IEndpointRouteBuilder group)
     {
         group.MapResourceDelete("/", HandleAsync)
             .WithName("WorkManagement.Forms.SoftDelete")
@@ -19,7 +19,7 @@ public static class SoftDeleteFormEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new SoftDeleteFormCommand(formId), cancellationToken);
+        var result = await sender.Send(new DeleteFormCommand(formId), cancellationToken);
         return result.ToNoContentResult();
     }
 }

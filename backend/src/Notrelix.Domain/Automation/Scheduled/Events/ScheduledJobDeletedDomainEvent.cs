@@ -1,7 +1,7 @@
 namespace Notrelix.Domain.Automation.Scheduled.Events;
 
-[EventName("automation.scheduled-job-soft-deleted")]
-public sealed record ScheduledJobSoftDeletedDomainEvent(
+[EventName("automation.scheduled-job-deleted")]
+public sealed record ScheduledJobDeletedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
     Guid JobId,

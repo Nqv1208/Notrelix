@@ -13,7 +13,7 @@ public class BoardRelationEventTests
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
     [CoversMutation(typeof(BoardRelation), "Pause(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
-    [CoversMutation(typeof(BoardRelation), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(BoardRelation), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [CoversMutation(typeof(BoardRelation), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void BoardRelation_Pause_ShouldRaiseEvent()

@@ -111,7 +111,7 @@ public class AiAgent : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         if (newStatus == AiAgentStatus.Deleted)
         {
-            SoftDelete(updatedBy, updatedAt);
+            Delete(updatedBy, updatedAt);
             return;
         }
 
@@ -134,7 +134,7 @@ public class AiAgent : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new AiAgentStatusChangedDomainEvent(AccountId, WorkspaceId, Id, Status, updatedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
         if (Status == AiAgentStatus.Deleted) return;

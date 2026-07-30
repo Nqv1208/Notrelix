@@ -1,7 +1,7 @@
 namespace Notrelix.Domain.WorkManagement.Items.Events;
 
-[EventName("work-management.board-item-soft-deleted")]
-public sealed record BoardItemSoftDeletedDomainEvent(
+[EventName("work-management.board-item-deleted")]
+public sealed record BoardItemDeletedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
     Guid ItemId,

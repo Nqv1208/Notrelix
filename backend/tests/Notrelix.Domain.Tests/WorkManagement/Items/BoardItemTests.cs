@@ -46,7 +46,7 @@ public class BoardItemTests
         var groupId = Guid.NewGuid();
 
         var item = BoardItem.Create(Guid.NewGuid(), workspaceId, boardId, groupId, "Item 1", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        item.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        item.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var field = BoardField.Create(Guid.NewGuid(), workspaceId, boardId, "My Field", FieldType.Text, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         var value = FieldValue.Create(JsonValue.Create("\"Hello\""));
@@ -75,17 +75,17 @@ public class BoardItemTests
         item.DomainEvents.Should().ContainSingle(e => e is BoardItemMovedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardItem), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(BoardItem), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [CoversMutation(typeof(BoardItem), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDeleteAndRestore_ShouldWorkCorrectly()
+    public void DeleteAndRestore_ShouldWorkCorrectly()
     {
         var item = CreateValidItem();
         ((IHasDomainEvents)item).ClearDomainEvents();
 
-        item.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        item.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         item.IsDeleted.Should().BeTrue();
-        item.DomainEvents.Should().ContainSingle(e => e is BoardItemSoftDeletedDomainEvent);
+        item.DomainEvents.Should().ContainSingle(e => e is BoardItemDeletedDomainEvent);
 
         ((IHasDomainEvents)item).ClearDomainEvents();
         item.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -192,7 +192,7 @@ public class BoardItemTests
     public void Archive_ShouldThrow_WhenDeleted()
     {
         var item = CreateValidItem();
-        item.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        item.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         Action act = () => item.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -231,7 +231,7 @@ public class BoardItemTests
     {
         var item = CreateValidItem();
         item.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        item.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        item.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         Action act = () => item.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

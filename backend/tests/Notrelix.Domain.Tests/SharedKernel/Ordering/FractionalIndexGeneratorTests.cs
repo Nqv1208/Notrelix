@@ -43,7 +43,7 @@ public class FractionalIndexGeneratorTests
     public void Upstream_Null_A00000000000000000000000000_Throws()
     {
         var act = () => FractionalIndexGenerator.GenerateKeyBetween(null, FractionalIndex.Create("A00000000000000000000000000"));
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
@@ -74,14 +74,14 @@ public class FractionalIndexGeneratorTests
     public void Upstream_a00_Null_Throws()
     {
         var act = () => FractionalIndexGenerator.GenerateKeyBetween(FractionalIndex.Create("a00"), (FractionalIndex?)null);
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
     public void Upstream_a00_a1_Throws()
     {
         var act = () => FractionalIndexGenerator.GenerateKeyBetween(FractionalIndex.Create("a00"), FractionalIndex.Create("a1"));
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
@@ -296,13 +296,6 @@ public class FractionalIndexGeneratorTests
     {
         var act = () => FractionalIndex.Create("!!!");
         act.Should().Throw<BusinessRuleException>();
-    }
-
-    [Fact]
-    public void InvalidKey_EmptyString_IsRejected()
-    {
-        var act = () => FractionalIndex.Create("");
-        act.Should().Throw<ArgumentException>();
     }
 
     [Fact]

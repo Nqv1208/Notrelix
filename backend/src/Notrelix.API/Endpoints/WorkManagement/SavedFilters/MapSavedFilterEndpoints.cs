@@ -25,7 +25,7 @@ public static class MapSavedFilterEndpoints
         group.MapUpdateSavedFilterFilters();
         group.MapUpdateSavedFilterSorts();
         group.MapUpdateSavedFilterGroup();
-        group.MapSoftDeleteSavedFilter();
+        group.MapDeleteSavedFilter();
         group.MapRestoreSavedFilter();
 
         return app;

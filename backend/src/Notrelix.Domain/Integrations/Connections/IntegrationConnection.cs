@@ -229,7 +229,7 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
         RaiseDomainEvent(new IntegrationScopeRemovedDomainEvent(AccountId, WorkspaceId, Id, trimmedScope, removedBy, occurredAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;

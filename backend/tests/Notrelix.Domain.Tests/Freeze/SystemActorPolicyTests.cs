@@ -34,22 +34,22 @@ public class SystemActorPolicyTests
             "SetAuditOnCreate",
             BindingFlags.NonPublic | BindingFlags.Instance);
 
-        var setAuditOnUpdate = auditableEntityType.GetMethod(
-            "SetAuditOnUpdate",
+        var prepareAuditUpdate = auditableEntityType.GetMethod(
+            "PrepareAuditUpdate",
             BindingFlags.NonPublic | BindingFlags.Instance);
 
         setAuditOnCreate.Should().NotBeNull("AuditableEntity must have SetAuditOnCreate");
-        setAuditOnUpdate.Should().NotBeNull("AuditableEntity must have SetAuditOnUpdate (private, for Infrastructure interceptor)");
+        prepareAuditUpdate.Should().NotBeNull("AuditableEntity must have PrepareAuditUpdate");
 
         // Both methods accept Guid? (nullable) actor
         var createParams = setAuditOnCreate!.GetParameters();
-        var updateParams = setAuditOnUpdate!.GetParameters();
+        var updateParams = prepareAuditUpdate!.GetParameters();
 
         createParams[0].ParameterType.Should().Be(typeof(Guid?),
             "SetAuditOnCreate actor parameter must be nullable Guid to support system operations");
 
         updateParams[0].ParameterType.Should().Be(typeof(Guid?),
-            "SetAuditOnUpdate actor parameter must be nullable Guid to support system operations");
+            "PrepareAuditUpdate actor parameter must be nullable Guid to support system operations");
     }
 
     [Fact]

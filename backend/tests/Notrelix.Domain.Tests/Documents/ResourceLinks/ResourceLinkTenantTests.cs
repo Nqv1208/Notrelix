@@ -35,16 +35,16 @@ public class ResourceLinkTenantTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(ResourceLink), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Event)]
+    [CoversMutation(typeof(ResourceLink), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Event)]
     [Fact]
-    public void SoftDelete_ShouldRaiseEvent()
+    public void Delete_ShouldRaiseEvent()
     {
         var ws = Guid.NewGuid();
         var source = ResourceRef.Create(ResourceType.Page, Guid.NewGuid(), ws);
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), ws);
         var link = ResourceLink.Create(Guid.NewGuid(), ws, source, target, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)link).ClearDomainEvents();
-        link.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        link.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         link.DomainEvents.Should().ContainSingle(e => e is ResourceLinkDeletedDomainEvent);
     }
 
@@ -56,24 +56,24 @@ public class ResourceLinkTenantTests
         var source = ResourceRef.Create(ResourceType.Page, Guid.NewGuid(), ws);
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), ws);
         var link = ResourceLink.Create(Guid.NewGuid(), ws, source, target, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        link.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        link.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)link).ClearDomainEvents();
         link.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
         link.DomainEvents.Should().ContainSingle(e => e is ResourceLinkRestoredDomainEvent);
     }
 
-    [CoversMutation(typeof(ResourceLink), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
-    [CoversMutation(typeof(ResourceLink), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Version)]
+    [CoversMutation(typeof(ResourceLink), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(ResourceLink), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Version)]
     [Fact]
-    public void SoftDelete_IsIdempotent_ShouldNotIncrementVersion()
+    public void Delete_IsIdempotent_ShouldNotIncrementVersion()
     {
         var ws = Guid.NewGuid();
         var source = ResourceRef.Create(ResourceType.Page, Guid.NewGuid(), ws);
         var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), ws);
         var link = ResourceLink.Create(Guid.NewGuid(), ws, source, target, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        link.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        link.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         var before = link.Version;
-        link.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        link.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         link.Version.Should().Be(before);
     }
 }

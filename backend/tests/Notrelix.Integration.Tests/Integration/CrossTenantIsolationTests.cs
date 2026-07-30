@@ -244,7 +244,7 @@ public class CrossTenantIsolationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task SystemContext_StillAppliesSoftDeleteFilter()
+    public async Task SystemContext_StillAppliesDeleteFilter()
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
@@ -255,7 +255,7 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         context.Boards.Add(board);
         await context.SaveChangesAsync();
 
-        board.SoftDelete(OwnerId, FixedTime);
+        board.Delete(OwnerId, FixedTime);
         await context.SaveChangesAsync();
 
         var activeBoards = await context.Boards.ToListAsync();
@@ -263,7 +263,7 @@ public class CrossTenantIsolationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task SoftDeleted_Boards_InOtherWorkspace_AreInvisible()
+    public async Task Deleted_Boards_InOtherWorkspace_AreInvisible()
     {
         var wsA = TestIds.NewWorkspaceId();
         var wsB = TestIds.NewWorkspaceId();
@@ -282,7 +282,7 @@ public class CrossTenantIsolationTests : IAsyncLifetime
         context.Boards.AddRange(boardA, boardADeleted, boardB);
         await context.SaveChangesAsync();
 
-        boardADeleted.SoftDelete(OwnerId, FixedTime);
+        boardADeleted.Delete(OwnerId, FixedTime);
         await context.SaveChangesAsync();
 
         tenant.SetWorkspace(AccountId, wsA, null);

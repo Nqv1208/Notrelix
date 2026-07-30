@@ -107,12 +107,12 @@ public class ScheduledJob : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new ScheduledJobUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         EnsureNotDeleted();
         var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         ApplyDeletion(pendingDeletion);
-        RaiseDomainEvent(new ScheduledJobSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
+        RaiseDomainEvent(new ScheduledJobDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)

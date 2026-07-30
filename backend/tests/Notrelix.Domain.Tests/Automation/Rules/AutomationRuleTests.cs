@@ -60,7 +60,7 @@ public class AutomationRuleTests
     public void Enable_WhenDeleted_ShouldThrow()
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        rule.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        rule.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => rule.Enable(Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
@@ -98,7 +98,7 @@ public class AutomationRuleTests
     public void Disable_WhenDeleted_ShouldThrow()
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        rule.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        rule.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => rule.Disable(Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
@@ -135,7 +135,7 @@ public class AutomationRuleTests
     public void UpdateConfiguration_WhenDeleted_ShouldThrow()
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        rule.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        rule.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => rule.UpdateConfiguration(CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
@@ -153,29 +153,29 @@ public class AutomationRuleTests
         rule.DomainEvents.Should().ContainSingle(e => e is AutomationConfigurationChangedDomainEvent);
     }
 
-    [CoversMutation(typeof(AutomationRule), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(AutomationRule), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldSetStatus_AndRaiseEvent()
+    public void Delete_ShouldSetStatus_AndRaiseEvent()
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)rule).ClearDomainEvents();
 
-        rule.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        rule.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         rule.IsDeleted.Should().BeTrue();
         rule.Status.Should().Be(AutomationRuleStatus.Disabled);
         rule.DomainEvents.Should().ContainSingle(e => e is AutomationRuleDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(AutomationRule), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(AutomationRule), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
-    public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
+    public void Delete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        rule.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        rule.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)rule).ClearDomainEvents();
 
-        rule.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        rule.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         rule.DomainEvents.Should().BeEmpty();
     }
@@ -185,7 +185,7 @@ public class AutomationRuleTests
     public void Restore_ShouldSetStatus_AndRaiseEvent()
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        rule.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        rule.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)rule).ClearDomainEvents();
 
         rule.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);

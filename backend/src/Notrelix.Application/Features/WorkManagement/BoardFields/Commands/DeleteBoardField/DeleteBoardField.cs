@@ -33,7 +33,7 @@ public class DeleteBoardFieldCommandHandler : IRequestHandler<DeleteBoardFieldCo
         if (column is null) throw new NotFoundException(nameof(BoardField), request.ColumnId);
 
         var now = _dateTimeProvider.UtcNow;
-        column.SoftDelete(_currentUser.UserId, now);
+        column.Delete(_currentUser.UserId, now);
         return Result.Success();
     }
 }

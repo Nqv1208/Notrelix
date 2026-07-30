@@ -104,15 +104,15 @@ public class WorkspaceRoute : SoftDeletableAggregateRoot, IAccountScoped
             AccountId, Id, RouteSlug, actorId, occurredAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        RaiseDomainEvent(new WorkspaceRouteSoftDeletedDomainEvent(
-            AccountId, Id, RouteSlug, deletedBy, deletedAt));
+        RaiseDomainEvent(new WorkspaceRouteDeletedDomainEvent(
+            AccountId, Id, RouteSlug, deletedBy, deletedAt, pendingDeletion.Reason));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)

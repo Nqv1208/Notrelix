@@ -1,8 +1,9 @@
 namespace Notrelix.Domain.Accounts.Accounts.Events;
 
-[EventName("accounts.account-soft-deleted")]
-public sealed record AccountSoftDeletedDomainEvent(
+[EventName("accounts.account-deleted")]
+public sealed record AccountDeletedDomainEvent(
     Guid AccountId,
+    AccountStatus Status,
     Guid DeletedBy,
     DateTimeOffset OccurredAt,
     string? Reason

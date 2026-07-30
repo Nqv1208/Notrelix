@@ -91,15 +91,14 @@ public class Page : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new PageArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
-        Status = PageStatus.SoftDeleted;
         ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        RaiseDomainEvent(new PageSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new PageDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -107,7 +106,6 @@ public class Page : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         var pendingRestore = PrepareRestore(restoredBy, restoredAt);
-        Status = PageStatus.Active;
         ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new PageRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));

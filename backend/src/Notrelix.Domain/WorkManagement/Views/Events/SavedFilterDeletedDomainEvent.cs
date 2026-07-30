@@ -1,7 +1,7 @@
 namespace Notrelix.Domain.WorkManagement.Views.Events;
 
-[EventName("work-management.saved-filter-soft-deleted")]
-public sealed record SavedFilterSoftDeletedDomainEvent(
+[EventName("work-management.saved-filter-deleted")]
+public sealed record SavedFilterDeletedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
     Guid FilterId,

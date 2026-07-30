@@ -9,7 +9,7 @@ public class AutomationTemplateTests
 {
     [CoversMutation(typeof(AutomationTemplate), "Publish(System.DateTimeOffset)", MutationScenario.Event)]
     [CoversMutation(typeof(AutomationTemplate), "Archive(System.DateTimeOffset)", MutationScenario.Event)]
-    [CoversMutation(typeof(AutomationTemplate), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(AutomationTemplate), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [CoversMutation(typeof(AutomationTemplate), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Create_ShouldSucceed_AndRaiseEvent()

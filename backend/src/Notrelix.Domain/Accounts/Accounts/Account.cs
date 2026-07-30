@@ -105,15 +105,14 @@ public class Account : SoftDeletableAggregateRoot, IAccountScoped
         RaiseDomainEvent(new AccountActivatedDomainEvent(Id, previousStatus, activatedBy, activatedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
-        Status = AccountStatus.SoftDeleted;
         ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        RaiseDomainEvent(new AccountSoftDeletedDomainEvent(Id, deletedBy, deletedAt, reason));
+        RaiseDomainEvent(new AccountDeletedDomainEvent(Id, Status, deletedBy, deletedAt, pendingDeletion.Reason));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -121,10 +120,9 @@ public class Account : SoftDeletableAggregateRoot, IAccountScoped
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         var pendingRestore = PrepareRestore(restoredBy, restoredAt);
-        Status = AccountStatus.Active;
         ApplyRestore(pendingRestore);
         IncrementVersion();
-        RaiseDomainEvent(new AccountRestoredDomainEvent(Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new AccountRestoredDomainEvent(Id, Status, restoredBy, restoredAt));
     }
 
     public void UpdatePlanCode(string? planCode, Guid updatedBy, DateTimeOffset updatedAt)

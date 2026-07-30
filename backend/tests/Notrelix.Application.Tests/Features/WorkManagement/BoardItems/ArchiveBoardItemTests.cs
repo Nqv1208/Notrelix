@@ -17,7 +17,7 @@ public class ArchiveBoardItemTests : WorkManagementHandlerTestBase
     }
 
     [Fact]
-    public async Task Handle_ValidCommand_SoftDeletesItem()
+    public async Task Handle_ValidCommand_DeletesItem()
     {
         var item = CreateBoardItem();
         SetupBoardItems(item);

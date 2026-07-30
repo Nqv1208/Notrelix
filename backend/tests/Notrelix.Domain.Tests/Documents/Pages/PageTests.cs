@@ -125,26 +125,25 @@ public class PageTests
     }
 
     [Fact]
-    public void SoftDelete_ShouldSetStatus_AndRaiseEvent()
+    public void Delete_ShouldSetStatus_AndRaiseEvent()
     {
         var page = Page.Create(Guid.NewGuid(), Guid.NewGuid(), "Title", Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)page).ClearDomainEvents();
 
-        page.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        page.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         page.IsDeleted.Should().BeTrue();
-        page.Status.Should().Be(PageStatus.SoftDeleted);
-        page.DomainEvents.Should().ContainSingle(e => e is PageSoftDeletedDomainEvent);
+        page.DomainEvents.Should().ContainSingle(e => e is PageDeletedDomainEvent);
     }
 
     [Fact]
-    public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
+    public void Delete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
         var page = Page.Create(Guid.NewGuid(), Guid.NewGuid(), "Title", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        page.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        page.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)page).ClearDomainEvents();
 
-        page.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        page.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         page.DomainEvents.Should().BeEmpty();
     }
@@ -153,7 +152,7 @@ public class PageTests
     public void Restore_ShouldSetStatus_AndRaiseEvent()
     {
         var page = Page.Create(Guid.NewGuid(), Guid.NewGuid(), "Title", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        page.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        page.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)page).ClearDomainEvents();
 
         page.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);

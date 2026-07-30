@@ -76,15 +76,14 @@ public class Label : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new LabelUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         ApplyDeletion(pendingDeletion);
-        Status = LabelStatus.SoftDeleted;
         IncrementVersion();
-        RaiseDomainEvent(new LabelSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new LabelDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -93,7 +92,6 @@ public class Label : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (!IsDeleted) return;
         var pendingRestore = PrepareRestore(restoredBy, restoredAt);
         ApplyRestore(pendingRestore);
-        Status = LabelStatus.Active;
         IncrementVersion();
         RaiseDomainEvent(new LabelRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }

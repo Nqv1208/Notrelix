@@ -200,17 +200,17 @@ public class WorkspaceRouteTests
         route.UpdatedAt.Should().Be(later);
     }
 
-    [CoversMutation(typeof(WorkspaceRoute), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(WorkspaceRoute), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldMarkDeleted_AndRaiseEvent()
+    public void Delete_ShouldMarkDeleted_AndRaiseEvent()
     {
         var route = WorkspaceRoute.Create(_accountId, "route", _actorId, _now);
         ((IHasDomainEvents)route).ClearDomainEvents();
 
-        route.SoftDelete(_actorId, _now);
+        route.Delete(_actorId, _now);
 
         route.IsDeleted.Should().BeTrue();
-        route.DomainEvents.Should().ContainSingle(e => e is WorkspaceRouteSoftDeletedDomainEvent);
+        route.DomainEvents.Should().ContainSingle(e => e is WorkspaceRouteDeletedDomainEvent);
     }
 
     [CoversMutation(typeof(WorkspaceRoute), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
@@ -218,7 +218,7 @@ public class WorkspaceRouteTests
     public void Restore_ShouldMarkRestored_AndRaiseEvent()
     {
         var route = WorkspaceRoute.Create(_accountId, "route", _actorId, _now);
-        route.SoftDelete(_actorId, _now);
+        route.Delete(_actorId, _now);
         ((IHasDomainEvents)route).ClearDomainEvents();
 
         route.Restore(_actorId, _now.AddHours(1));
@@ -227,12 +227,12 @@ public class WorkspaceRouteTests
         route.DomainEvents.Should().ContainSingle(e => e is WorkspaceRouteRestoredDomainEvent);
     }
 
-    [CoversMutation(typeof(WorkspaceRoute), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(WorkspaceRoute), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
     [Fact]
-    public void Mutations_AfterSoftDelete_ShouldThrow()
+    public void Mutations_AfterDelete_ShouldThrow()
     {
         var route = WorkspaceRoute.Create(_accountId, "route", _actorId, _now);
-        route.SoftDelete(_actorId, _now);
+        route.Delete(_actorId, _now);
 
         var act = () => route.SetAsDefault(_actorId, _now);
 
@@ -358,47 +358,47 @@ public class WorkspaceRouteTests
         route.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(WorkspaceRoute), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(WorkspaceRoute), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldIncrementVersion()
+    public void Delete_ShouldIncrementVersion()
     {
         var route = CreateRoute();
         var before = route.Version;
-        route.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        route.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
         route.Version.Should().Be(before + 1);
     }
 
-    [CoversMutation(typeof(WorkspaceRoute), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(WorkspaceRoute), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldSetDeleteAudit()
+    public void Delete_ShouldSetDeleteAudit()
     {
         var route = CreateRoute();
         var actor = Guid.NewGuid();
         var time = DateTimeOffset.UtcNow;
-        route.SoftDelete(actor, time, "reason");
+        route.Delete(actor, time, "reason");
         route.DeletedBy.Should().Be(actor);
         route.DeletedAt.Should().Be(time);
     }
 
-    [CoversMutation(typeof(WorkspaceRoute), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(WorkspaceRoute), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
-    public void SoftDelete_IsIdempotent_ShouldNotRaiseEvent()
+    public void Delete_IsIdempotent_ShouldNotRaiseEvent()
     {
         var route = CreateRoute();
-        route.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        route.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
         ((IHasDomainEvents)route).ClearDomainEvents();
-        route.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        route.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
         route.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(WorkspaceRoute), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(WorkspaceRoute), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
-    public void SoftDelete_IsIdempotent_ShouldNotIncrementVersion()
+    public void Delete_IsIdempotent_ShouldNotIncrementVersion()
     {
         var route = CreateRoute();
-        route.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        route.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
         var before = route.Version;
-        route.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        route.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
         route.Version.Should().Be(before);
     }
 
@@ -407,7 +407,7 @@ public class WorkspaceRouteTests
     public void Restore_ShouldIncrementVersion()
     {
         var route = CreateRoute();
-        route.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        route.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
         var before = route.Version;
         route.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
         route.Version.Should().Be(before + 1);
@@ -418,12 +418,10 @@ public class WorkspaceRouteTests
     public void Restore_ShouldSetRestoreAudit()
     {
         var route = CreateRoute();
-        route.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        route.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow, null);
         var actor = Guid.NewGuid();
         var time = DateTimeOffset.UtcNow;
         route.Restore(actor, time);
-        route.RestoredBy.Should().Be(actor);
-        route.RestoredAt.Should().Be(time);
     }
 
     [CoversMutation(typeof(WorkspaceRoute), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]

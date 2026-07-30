@@ -86,7 +86,7 @@ public class BlockHierarchyTests
     {
         var block = Block.CreateRoot(_accountId, _workspaceId, _pageId, BlockType.Text,
             BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), _actorId, _now);
-        block.SoftDelete(_actorId, _now);
+        block.Delete(_actorId, _now);
 
         var act = () => block.MoveUnder(
             BlockAncestorPath.Create(_accountId, _workspaceId, _pageId, Guid.NewGuid(), new[] { Guid.NewGuid() }),

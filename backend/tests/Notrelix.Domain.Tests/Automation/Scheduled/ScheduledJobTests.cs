@@ -11,7 +11,7 @@ public class ScheduledJobTests
     [CoversMutation(typeof(ScheduledJob), "Fail(System.String,System.DateTimeOffset)", MutationScenario.Event)]
     [CoversMutation(typeof(ScheduledJob), "MarkRunCompleted(System.DateTimeOffset,System.DateTimeOffset)", MutationScenario.Event)]
     [CoversMutation(typeof(ScheduledJob), "UpdateSchedule(Notrelix.Domain.Automation.Scheduled.ScheduleDefinition,System.DateTimeOffset)", MutationScenario.Event)]
-    [CoversMutation(typeof(ScheduledJob), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(ScheduledJob), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [CoversMutation(typeof(ScheduledJob), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
     public void Create_ShouldSucceed_AndRaiseEvent()

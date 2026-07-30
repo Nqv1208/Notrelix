@@ -32,7 +32,7 @@ public class AutomationRuleMutationAtomicityTests
     public void Enable_WhenDeleted_ShouldThrow()
     {
         var rule = AutomationRule.Create(_accountId, _workspaceId, "Rule", CreateConfig(), _actorId, _now);
-        rule.SoftDelete(_actorId, _now);
+        rule.Delete(_actorId, _now);
         var act = () => rule.Enable(_actorId, _now);
         act.Should().Throw<DomainException>();
     }
@@ -64,7 +64,7 @@ public class AutomationRuleMutationAtomicityTests
     public void Disable_WhenDeleted_ShouldThrow()
     {
         var rule = AutomationRule.Create(_accountId, _workspaceId, "Rule", CreateConfig(), _actorId, _now);
-        rule.SoftDelete(_actorId, _now);
+        rule.Delete(_actorId, _now);
         var act = () => rule.Disable(_actorId, _now);
         act.Should().Throw<DomainException>();
     }
@@ -86,7 +86,7 @@ public class AutomationRuleMutationAtomicityTests
     public void UpdateConfiguration_WhenDeleted_ShouldThrow()
     {
         var rule = AutomationRule.Create(_accountId, _workspaceId, "Rule", CreateConfig(), _actorId, _now);
-        rule.SoftDelete(_actorId, _now);
+        rule.Delete(_actorId, _now);
         var act = () => rule.UpdateConfiguration(CreateConfig(), _actorId, _now);
         act.Should().Throw<DomainException>();
     }
@@ -101,23 +101,23 @@ public class AutomationRuleMutationAtomicityTests
         rule.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(AutomationRule), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(AutomationRule), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldSetDeleted()
+    public void Delete_ShouldSetDeleted()
     {
         var rule = AutomationRule.Create(_accountId, _workspaceId, "Rule", CreateConfig(), _actorId, _now);
-        rule.SoftDelete(_actorId, _now);
+        rule.Delete(_actorId, _now);
         rule.IsDeleted.Should().BeTrue();
     }
 
-    [CoversMutation(typeof(AutomationRule), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(AutomationRule), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
-    public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
+    public void Delete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
         var rule = AutomationRule.Create(_accountId, _workspaceId, "Rule", CreateConfig(), _actorId, _now);
-        rule.SoftDelete(_actorId, _now);
+        rule.Delete(_actorId, _now);
         var before = rule.Version;
-        rule.SoftDelete(_actorId, _now);
+        rule.Delete(_actorId, _now);
         rule.Version.Should().Be(before);
     }
 
@@ -126,7 +126,7 @@ public class AutomationRuleMutationAtomicityTests
     public void Restore_ShouldClearDeleted()
     {
         var rule = AutomationRule.Create(_accountId, _workspaceId, "Rule", CreateConfig(), _actorId, _now);
-        rule.SoftDelete(_actorId, _now);
+        rule.Delete(_actorId, _now);
         rule.Restore(_actorId, _now);
         rule.IsDeleted.Should().BeFalse();
     }

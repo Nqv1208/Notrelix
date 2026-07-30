@@ -1,11 +1,11 @@
 using Notrelix.API.Extensions;
-using Notrelix.Application.Features.WorkManagement.Views.Commands.SoftDeleteSavedFilter;
+using Notrelix.Application.Features.WorkManagement.Views.Commands.DeleteSavedFilter;
 
 namespace Notrelix.API.Endpoints.WorkManagement.SavedFilters.Commands;
 
-public static class SoftDeleteSavedFilterEndpoint
+public static class DeleteSavedFilterEndpoint
 {
-    public static IEndpointRouteBuilder MapSoftDeleteSavedFilter(this IEndpointRouteBuilder group)
+    public static IEndpointRouteBuilder MapDeleteSavedFilter(this IEndpointRouteBuilder group)
     {
         group.MapResourceDelete("/", HandleAsync)
             .WithName("WorkManagement.SavedFilters.SoftDelete")
@@ -20,7 +20,7 @@ public static class SoftDeleteSavedFilterEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new SoftDeleteSavedFilterCommand(filterId, expectedVersion), cancellationToken);
+        var result = await sender.Send(new DeleteSavedFilterCommand(filterId, expectedVersion), cancellationToken);
         return result.ToNoContentResult();
     }
 }

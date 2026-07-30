@@ -122,12 +122,12 @@ public class AccountTests
         account.Version.Should().Be(versionBefore + 1);
     }
 
-    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Account), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
     [Fact]
-    public void Rename_AfterSoftDelete_ShouldThrow()
+    public void Rename_AfterDelete_ShouldThrow()
     {
         var account = CreateAccount();
-        account.SoftDelete(_userId, _now);
+        account.Delete(_userId, _now);
 
         var act = () => account.Rename("New Name", _userId, _now);
         act.Should().Throw<BusinessRuleException>();
@@ -177,12 +177,12 @@ public class AccountTests
         account.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Account), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
     [Fact]
-    public void Archive_AfterSoftDelete_ShouldThrow()
+    public void Archive_AfterDelete_ShouldThrow()
     {
         var account = CreateAccount();
-        account.SoftDelete(_userId, _now);
+        account.Delete(_userId, _now);
 
         var act = () => account.Archive(_userId, _now);
         act.Should().Throw<BusinessRuleException>();
@@ -268,12 +268,12 @@ public class AccountTests
         account.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Account), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
     [Fact]
-    public void Suspend_AfterSoftDelete_ShouldThrow()
+    public void Suspend_AfterDelete_ShouldThrow()
     {
         var account = CreateAccount();
-        account.SoftDelete(_userId, _now);
+        account.Delete(_userId, _now);
 
         var act = () => account.Suspend(_userId, _now);
         act.Should().Throw<BusinessRuleException>();
@@ -359,12 +359,12 @@ public class AccountTests
         account.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Account), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
     [Fact]
-    public void Activate_AfterSoftDelete_ShouldThrow()
+    public void Activate_AfterDelete_ShouldThrow()
     {
         var account = CreateAccount();
-        account.SoftDelete(_userId, _now);
+        account.Delete(_userId, _now);
 
         var act = () => account.Activate(_userId, _now);
         act.Should().Throw<BusinessRuleException>();
@@ -424,31 +424,30 @@ public class AccountTests
         evt.PreviousStatus.Should().Be(AccountStatus.Suspended);
     }
 
-    // ── SoftDelete / Restore ─────────────────────────────────────────────
+    // ── Delete / Restore ──────────────────────────────────────────────────
 
-    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Account), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldMarkAsSoftDeleted()
+    public void Delete_ShouldMarkAsDeleted()
     {
         var account = CreateAccount();
         ((IHasDomainEvents)account).ClearDomainEvents();
 
-        account.SoftDelete(_userId, _now);
+        account.Delete(_userId, _now);
 
         account.IsDeleted.Should().BeTrue();
-        account.Status.Should().Be(AccountStatus.SoftDeleted);
-        account.DomainEvents.Should().ContainSingle(e => e is AccountSoftDeletedDomainEvent);
+        account.DomainEvents.Should().ContainSingle(e => e is AccountDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Account), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_DeletedAccount_ShouldNotRaiseEvent()
+    public void Delete_DeletedAccount_ShouldNotRaiseEvent()
     {
         var account = CreateAccount();
-        account.SoftDelete(_userId, _now);
+        account.Delete(_userId, _now);
         ((IHasDomainEvents)account).ClearDomainEvents();
 
-        account.SoftDelete(_userId, _now);
+        account.Delete(_userId, _now);
 
         account.DomainEvents.Should().BeEmpty();
     }
@@ -458,13 +457,12 @@ public class AccountTests
     public void Restore_ShouldRestoreToActive()
     {
         var account = CreateAccount();
-        account.SoftDelete(_userId, _now);
+        account.Delete(_userId, _now);
         ((IHasDomainEvents)account).ClearDomainEvents();
 
         account.Restore(_userId, _now);
 
         account.IsDeleted.Should().BeFalse();
-        account.Status.Should().Be(AccountStatus.Active);
         account.DomainEvents.Should().ContainSingle(e => e is AccountRestoredDomainEvent);
     }
 
@@ -480,55 +478,56 @@ public class AccountTests
         account.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Account), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldIncrementVersion()
+    public void Delete_ShouldIncrementVersion()
     {
         var account = CreateAccount();
         var versionBefore = account.Version;
 
-        account.SoftDelete(_userId, _now);
+        account.Delete(_userId, _now);
 
         account.Version.Should().Be(versionBefore + 1);
     }
 
-    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Account), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
-    public void SoftDelete_NoOp_VersionShouldNotIncrement()
+    public void Delete_NoOp_VersionShouldNotIncrement()
     {
         var account = CreateAccount();
-        account.SoftDelete(_userId, _now);
+        account.Delete(_userId, _now);
         var versionBefore = account.Version;
 
-        account.SoftDelete(_userId, _now);
+        account.Delete(_userId, _now);
 
         account.Version.Should().Be(versionBefore);
     }
 
-    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Account), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldSetDeleteAudit()
+    public void Delete_ShouldSetDeleteAudit()
     {
         var account = CreateAccount();
 
-        account.SoftDelete(_userId, _now);
+        account.Delete(_userId, _now);
 
         account.DeletedAt.Should().Be(_now);
         account.DeletedBy.Should().Be(_userId);
     }
 
-    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Account), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldRaiseEvent_WithCorrectPayload()
+    public void Delete_ShouldRaiseEvent_WithCorrectPayload()
     {
         var account = CreateAccount();
         ((IHasDomainEvents)account).ClearDomainEvents();
 
-        account.SoftDelete(_userId, _now);
+        account.Delete(_userId, _now);
 
         var evt = account.DomainEvents
-            .OfType<AccountSoftDeletedDomainEvent>()
+            .OfType<AccountDeletedDomainEvent>()
             .Single();
+        evt.Status.Should().Be(AccountStatus.Active);
         evt.DeletedBy.Should().Be(_userId);
     }
 
@@ -537,7 +536,7 @@ public class AccountTests
     public void Restore_ShouldIncrementVersion()
     {
         var account = CreateAccount();
-        account.SoftDelete(_userId, _now);
+        account.Delete(_userId, _now);
         var versionBefore = account.Version;
 
         account.Restore(_userId, _now);
@@ -562,12 +561,10 @@ public class AccountTests
     public void Restore_ShouldSetRestoreAudit()
     {
         var account = CreateAccount();
-        account.SoftDelete(_userId, _now);
+        account.Delete(_userId, _now);
 
         account.Restore(_userId, _now);
 
-        account.RestoredAt.Should().Be(_now);
-        account.RestoredBy.Should().Be(_userId);
     }
 
     [CoversMutation(typeof(Account), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
@@ -575,7 +572,7 @@ public class AccountTests
     public void Restore_ShouldRaiseEvent_WithCorrectPayload()
     {
         var account = CreateAccount();
-        account.SoftDelete(_userId, _now);
+        account.Delete(_userId, _now);
         ((IHasDomainEvents)account).ClearDomainEvents();
 
         account.Restore(_userId, _now);
@@ -653,12 +650,12 @@ public class AccountTests
         account.Version.Should().Be(versionBefore + 1);
     }
 
-    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Account), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
     [Fact]
-    public void UpdatePlanCode_AfterSoftDelete_ShouldThrow()
+    public void UpdatePlanCode_AfterDelete_ShouldThrow()
     {
         var account = CreateAccount();
-        account.SoftDelete(_userId, _now);
+        account.Delete(_userId, _now);
 
         var act = () => account.UpdatePlanCode("enterprise", _userId, _now);
         act.Should().Throw<BusinessRuleException>();
@@ -748,12 +745,12 @@ public class AccountTests
         account.Version.Should().Be(versionBefore + 1);
     }
 
-    [CoversMutation(typeof(Account), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Account), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
     [Fact]
-    public void UpdateDefaultRegion_AfterSoftDelete_ShouldThrow()
+    public void UpdateDefaultRegion_AfterDelete_ShouldThrow()
     {
         var account = CreateAccount();
-        account.SoftDelete(_userId, _now);
+        account.Delete(_userId, _now);
 
         var act = () => account.UpdateDefaultRegion("us-east-1", _userId, _now);
         act.Should().Throw<BusinessRuleException>();

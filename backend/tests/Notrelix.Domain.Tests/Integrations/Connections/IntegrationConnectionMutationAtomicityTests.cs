@@ -139,24 +139,24 @@ public class IntegrationConnectionMutationAtomicityTests
         c.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(IntegrationConnection), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldIncrementVersion()
+    public void Delete_ShouldIncrementVersion()
     {
         var c = CreateActive();
         var before = c.Version;
-        c.SoftDelete(Actor, Now);
+        c.Delete(Actor, Now);
         c.Version.Should().Be(before + 1);
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(IntegrationConnection), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
-    public void SoftDelete_NoOp_ShouldNotIncrementVersion()
+    public void Delete_NoOp_ShouldNotIncrementVersion()
     {
         var c = CreateActive();
-        c.SoftDelete(Actor, Now);
+        c.Delete(Actor, Now);
         var before = c.Version;
-        c.SoftDelete(Actor, Now);
+        c.Delete(Actor, Now);
         c.Version.Should().Be(before);
     }
 
@@ -165,7 +165,7 @@ public class IntegrationConnectionMutationAtomicityTests
     public void Restore_ShouldIncrementVersion()
     {
         var c = CreateActive();
-        c.SoftDelete(Actor, Now);
+        c.Delete(Actor, Now);
         var before = c.Version;
         c.Restore(Actor, Now);
         c.Version.Should().Be(before + 1);

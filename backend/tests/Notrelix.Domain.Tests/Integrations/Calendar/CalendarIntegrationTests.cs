@@ -254,16 +254,16 @@ public class CalendarIntegrationTests
             .WithMessage("*No event link found*");
     }
 
-    [CoversMutation(typeof(CalendarIntegration), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(CalendarIntegration), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [CoversMutation(typeof(CalendarIntegration), "Deactivate(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [CoversMutation(typeof(CalendarIntegration), "Activate(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
-    public void SoftDelete_ShouldDeactivate_AndMarkDeleted()
+    public void Delete_ShouldDeactivate_AndMarkDeleted()
     {
         var integration = CreateIntegration();
         ((IHasDomainEvents)integration).ClearDomainEvents();
 
-        integration.SoftDelete(Actor, Now);
+        integration.Delete(Actor, Now);
 
         integration.IsActive.Should().BeFalse();
         integration.IsDeleted.Should().BeTrue();
@@ -275,7 +275,7 @@ public class CalendarIntegrationTests
     public void Restore_ShouldRestoreState()
     {
         var integration = CreateIntegration();
-        integration.SoftDelete(Actor, Now);
+        integration.Delete(Actor, Now);
         ((IHasDomainEvents)integration).ClearDomainEvents();
 
         integration.Restore(Actor, Now.AddHours(1));

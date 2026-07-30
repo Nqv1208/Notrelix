@@ -34,7 +34,7 @@ public class DeleteAttachmentCommandHandler : IRequestHandler<DeleteAttachmentCo
             throw new NotFoundException(nameof(Attachment), request.AttachmentId);
 
         var now = _dateTimeProvider.UtcNow;
-        attachment.SoftDelete(_currentUser.UserId, now);
+        attachment.Delete(_currentUser.UserId, now);
         return Result.Success();
     }
 }

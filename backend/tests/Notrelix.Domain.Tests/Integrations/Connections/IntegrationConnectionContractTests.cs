@@ -69,16 +69,16 @@ public class IntegrationConnectionContractTests
         connection.Scopes.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(IntegrationConnection), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldSetAudit()
+    public void Delete_ShouldSetAudit()
     {
         var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now);
         ((IHasDomainEvents)connection).ClearDomainEvents();
 
         var deletedBy = Guid.NewGuid();
         var deletedAt = DateTimeOffset.UtcNow;
-        connection.SoftDelete(deletedBy, deletedAt);
+        connection.Delete(deletedBy, deletedAt);
 
         connection.IsDeleted.Should().BeTrue();
         connection.UpdatedAt.Should().Be(deletedAt);
@@ -92,7 +92,7 @@ public class IntegrationConnectionContractTests
     public void Restore_ShouldSetAudit()
     {
         var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now);
-        connection.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        connection.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)connection).ClearDomainEvents();
 
         var restoredBy = Guid.NewGuid();
@@ -107,15 +107,15 @@ public class IntegrationConnectionContractTests
         connection.DomainEvents.Should().ContainSingle(e => e is IntegrationConnectionRestoredDomainEvent);
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(IntegrationConnection), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
-    public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
+    public void Delete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
         var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now);
-        connection.SoftDelete(Actor, Now);
+        connection.Delete(Actor, Now);
         ((IHasDomainEvents)connection).ClearDomainEvents();
 
-        connection.SoftDelete(Actor, Now);
+        connection.Delete(Actor, Now);
 
         connection.DomainEvents.Should().BeEmpty();
     }

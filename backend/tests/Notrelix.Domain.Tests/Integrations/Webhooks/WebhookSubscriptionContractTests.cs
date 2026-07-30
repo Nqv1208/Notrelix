@@ -89,24 +89,24 @@ public class WebhookSubscriptionContractTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(WebhookSubscription), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(WebhookSubscription), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldDeactivate()
+    public void Delete_ShouldDeactivate()
     {
         var sub = CreateActive();
-        sub.SoftDelete(Actor, Now);
+        sub.Delete(Actor, Now);
         sub.IsDeleted.Should().BeTrue();
         sub.IsActive.Should().BeFalse();
     }
 
-    [CoversMutation(typeof(WebhookSubscription), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(WebhookSubscription), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
-    public void SoftDelete_NoOp_ShouldNotChangeState()
+    public void Delete_NoOp_ShouldNotChangeState()
     {
         var sub = CreateActive();
-        sub.SoftDelete(Actor, Now);
+        sub.Delete(Actor, Now);
         var before = sub.Version;
-        sub.SoftDelete(Actor, Now);
+        sub.Delete(Actor, Now);
         sub.Version.Should().Be(before);
     }
 }

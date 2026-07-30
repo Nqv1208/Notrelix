@@ -37,14 +37,14 @@ public class WebhookSubscriptionTests
         sub.IsActive.Should().BeTrue();
     }
 
-    [CoversMutation(typeof(WebhookSubscription), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(WebhookSubscription), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldDisableSubscription()
+    public void Delete_ShouldDisableSubscription()
     {
         var url = Url.Create("https://example.com/webhook");
         var sub = WebhookSubscription.Create(Guid.NewGuid(), Guid.NewGuid(), url, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        sub.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        sub.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         sub.IsDeleted.Should().BeTrue();
         sub.IsActive.Should().BeFalse();
@@ -67,7 +67,7 @@ public class WebhookSubscriptionTests
     public void RotateSecret_WhenDeleted_ShouldThrow()
     {
         var sub = WebhookSubscription.Create(Guid.NewGuid(), Guid.NewGuid(), Url.Create("https://example.com/webhook"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        sub.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        sub.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => sub.RotateSecret(WebhookSecretHash.Create("sha256=x"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
@@ -87,7 +87,7 @@ public class WebhookSubscriptionTests
     public void Enable_WhenDeleted_ShouldThrow()
     {
         var sub = WebhookSubscription.Create(Guid.NewGuid(), Guid.NewGuid(), Url.Create("https://example.com/webhook"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        sub.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        sub.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => sub.Enable(Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
@@ -98,7 +98,7 @@ public class WebhookSubscriptionTests
     public void Disable_WhenDeleted_ShouldThrow()
     {
         var sub = WebhookSubscription.Create(Guid.NewGuid(), Guid.NewGuid(), Url.Create("https://example.com/webhook"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        sub.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        sub.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => sub.Disable(Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");

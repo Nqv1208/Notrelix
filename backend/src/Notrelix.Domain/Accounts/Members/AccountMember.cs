@@ -85,17 +85,14 @@ public class AccountMember : SoftDeletableAggregateRoot, IAccountScoped
         RaiseDomainEvent(new AccountMemberActivatedDomainEvent(AccountId, Id, UserId, updatedBy, updatedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    private void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
-
         if (IsDeleted) return;
-
         var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
-        Status = AccountMemberStatus.Removed;
         ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        RaiseDomainEvent(new AccountMemberRemovedDomainEvent(AccountId, Id, UserId, deletedBy, deletedAt));
+        RaiseDomainEvent(new AccountMemberRemovedDomainEvent(AccountId, Id, UserId, deletedBy, deletedAt, pendingDeletion.Reason));
     }
 
     public void Remove(int activeOwnerCount, Guid removedBy, DateTimeOffset removedAt, string? reason = null)
@@ -105,15 +102,14 @@ public class AccountMember : SoftDeletableAggregateRoot, IAccountScoped
 
         AccountOwnerRules.EnsureCanRemoveOwner(Role, activeOwnerCount);
 
-        SoftDelete(removedBy, removedAt, reason);
+        Delete(removedBy, removedAt, reason);
     }
 
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    private void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         var pendingRestore = PrepareRestore(restoredBy, restoredAt);
-        Status = AccountMemberStatus.Active;
         ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new AccountMemberRestoredDomainEvent(AccountId, Id, UserId, restoredBy, restoredAt));

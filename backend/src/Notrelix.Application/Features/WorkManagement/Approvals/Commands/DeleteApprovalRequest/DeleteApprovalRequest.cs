@@ -1,9 +1,9 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
-namespace Notrelix.Application.Features.WorkManagement.Approvals.Commands.SoftDeleteApprovalRequest;
+namespace Notrelix.Application.Features.WorkManagement.Approvals.Commands.DeleteApprovalRequest;
 
-public record SoftDeleteApprovalRequestCommand(
+public record DeleteApprovalRequestCommand(
     Guid RequestId,
     long ExpectedVersion,
     string? IdempotencyKey = null)
@@ -16,13 +16,13 @@ public record SoftDeleteApprovalRequestCommand(
     string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"delete-approval:{RequestId}";
 }
 
-public class SoftDeleteApprovalRequestCommandHandler : IRequestHandler<SoftDeleteApprovalRequestCommand, Result>
+public class DeleteApprovalRequestCommandHandler : IRequestHandler<DeleteApprovalRequestCommand, Result>
 {
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public SoftDeleteApprovalRequestCommandHandler(
+    public DeleteApprovalRequestCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider)
@@ -32,13 +32,13 @@ public class SoftDeleteApprovalRequestCommandHandler : IRequestHandler<SoftDelet
         _dateTimeProvider = dateTimeProvider;
     }
 
-    public async Task<Result> Handle(SoftDeleteApprovalRequestCommand request, CancellationToken ct)
+    public async Task<Result> Handle(DeleteApprovalRequestCommand request, CancellationToken ct)
     {
         var approvalRequest = await _context.ApprovalRequests
             .FirstOrDefaultAsync(r => r.Id == request.RequestId, ct);
         if (approvalRequest is null) throw new NotFoundException("ApprovalRequest", request.RequestId);
 
-        approvalRequest.SoftDelete(_requestContext.UserId, _dateTimeProvider.UtcNow);
+        approvalRequest.Delete(_requestContext.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }
