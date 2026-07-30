@@ -79,7 +79,7 @@ public class CommentTests
     public void UpdateContent_WhenDeleted_ShouldThrow()
     {
         var comment = Comment.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceType.Page, Guid.NewGuid()), "Content", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        comment.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        comment.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => comment.UpdateContent("New", Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
@@ -118,35 +118,34 @@ public class CommentTests
     public void Resolve_WhenDeleted_ShouldThrow()
     {
         var comment = Comment.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceType.Page, Guid.NewGuid()), "Content", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        comment.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        comment.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => comment.Resolve(Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
-    [CoversMutation(typeof(Comment), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Comment), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldSetStatus_AndRaiseEvent()
+    public void Delete_ShouldSetStatus_AndRaiseEvent()
     {
         var comment = Comment.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceType.Page, Guid.NewGuid()), "Content", Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)comment).ClearDomainEvents();
 
-        comment.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        comment.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         comment.IsDeleted.Should().BeTrue();
-        comment.CommentStatus.Should().Be(CommentStatus.SoftDeleted);
-        comment.DomainEvents.Should().ContainSingle(e => e is CommentSoftDeletedDomainEvent);
+        comment.DomainEvents.Should().ContainSingle(e => e is CommentDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(Comment), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Comment), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
-    public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
+    public void Delete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
         var comment = Comment.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceType.Page, Guid.NewGuid()), "Content", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        comment.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        comment.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)comment).ClearDomainEvents();
 
-        comment.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        comment.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         comment.DomainEvents.Should().BeEmpty();
     }
@@ -156,7 +155,7 @@ public class CommentTests
     public void Restore_ShouldSetStatus_AndRaiseEvent()
     {
         var comment = Comment.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceType.Page, Guid.NewGuid()), "Content", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        comment.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        comment.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)comment).ClearDomainEvents();
 
         comment.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);

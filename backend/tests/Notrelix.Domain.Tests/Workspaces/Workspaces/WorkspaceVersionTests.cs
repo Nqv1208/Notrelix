@@ -81,19 +81,19 @@ public class WorkspaceVersionTests
         workspace.DomainEvents.Should().Contain(e => e is WorkspaceSettingsUpdatedDomainEvent);
     }
 
-    [CoversMutation(typeof(Workspace), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Workspace), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldIncrementVersion()
+    public void Delete_ShouldIncrementVersion()
     {
         var workspace = Workspace.Create(_accountId, _actorId, "Workspace", "workspace", _now);
         ((IHasDomainEvents)workspace).ClearDomainEvents();
         var version = workspace.Version;
 
-        workspace.SoftDelete(_actorId, _now);
+        workspace.Delete(_actorId, _now);
 
         workspace.Version.Should().Be(version + 1);
         workspace.IsDeleted.Should().BeTrue();
-        workspace.DomainEvents.Should().Contain(e => e is WorkspaceSoftDeletedDomainEvent);
+        workspace.DomainEvents.Should().Contain(e => e is WorkspaceDeletedDomainEvent);
     }
 
     [CoversMutation(typeof(Workspace), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
@@ -101,7 +101,7 @@ public class WorkspaceVersionTests
     public void Restore_ShouldIncrementVersion()
     {
         var workspace = Workspace.Create(_accountId, _actorId, "Workspace", "workspace", _now);
-        workspace.SoftDelete(_actorId, _now);
+        workspace.Delete(_actorId, _now);
         ((IHasDomainEvents)workspace).ClearDomainEvents();
         var version = workspace.Version;
 

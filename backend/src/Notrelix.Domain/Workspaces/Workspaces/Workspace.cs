@@ -56,14 +56,13 @@ public sealed class Workspace :
         Guard.MaxLength(newName, 160);
         Guard.NotEmpty(updatedBy);
 
-        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
-
         if (Status == WorkspaceStatus.Archived)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Workspace_CannotRenameArchived, "Cannot rename an archived workspace.");
 
-        var oldName = Name;
         if (Name == newName.Trim()) return;
 
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
+        var oldName = Name;
         Name = newName.Trim();
         ApplyAuditUpdate(audit);
         IncrementVersion();
@@ -75,10 +74,9 @@ public sealed class Workspace :
         EnsureNotDeleted();
         Guard.NotEmpty(archivedBy);
 
-        var audit = PrepareAuditUpdate(archivedBy, archivedAt);
-
         if (Status == WorkspaceStatus.Archived) return;
 
+        var audit = PrepareAuditUpdate(archivedBy, archivedAt);
         Status = WorkspaceStatus.Archived;
         ApplyAuditUpdate(audit);
         IncrementVersion();
@@ -90,8 +88,6 @@ public sealed class Workspace :
         EnsureNotDeleted();
         Guard.NotEmpty(unarchivedBy);
 
-        var audit = PrepareAuditUpdate(unarchivedBy, unarchivedAt);
-
         if (Status == WorkspaceStatus.Active) return;
 
         if (Status != WorkspaceStatus.Archived)
@@ -99,22 +95,22 @@ public sealed class Workspace :
                 WorkspaceRuleCodes.Workspaces_Workspace_CannotUnarchiveNonArchived,
                 "Only an archived workspace can be unarchived.");
 
+        var audit = PrepareAuditUpdate(unarchivedBy, unarchivedAt);
         Status = WorkspaceStatus.Active;
         ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceUnarchivedDomainEvent(AccountId, Id, unarchivedBy, unarchivedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
 
         var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
-        Status = WorkspaceStatus.SoftDeleted;
         ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        RaiseDomainEvent(new WorkspaceSoftDeletedDomainEvent(AccountId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new WorkspaceDeletedDomainEvent(AccountId, Id, deletedBy, Status, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -123,18 +119,15 @@ public sealed class Workspace :
         if (!IsDeleted) return;
 
         var pendingRestore = PrepareRestore(restoredBy, restoredAt);
-        Status = WorkspaceStatus.Active;
         ApplyRestore(pendingRestore);
         IncrementVersion();
-        RaiseDomainEvent(new WorkspaceRestoredDomainEvent(AccountId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new WorkspaceRestoredDomainEvent(AccountId, Id, restoredBy, Status, restoredAt));
     }
 
     public void UpdateDescription(string? newDescription, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
-
-        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
 
         if (Status == WorkspaceStatus.Archived)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Workspace_CannotUpdateDescriptionArchived, "Cannot update description of an archived workspace.");
@@ -149,6 +142,7 @@ public sealed class Workspace :
         if (Description == normalized)
             return;
 
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
         var oldDescription = Description;
         Description = normalized;
         ApplyAuditUpdate(audit);
@@ -162,13 +156,12 @@ public sealed class Workspace :
         Guard.NotEmpty(updatedBy);
         Guard.NotNull(newSettings);
 
-        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
-
         if (Status == WorkspaceStatus.Archived)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Workspace_CannotUpdateSettingsArchived, "Cannot update settings of an archived workspace.");
 
         if (Settings == newSettings) return;
 
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
         Settings = newSettings;
         ApplyAuditUpdate(audit);
         IncrementVersion();

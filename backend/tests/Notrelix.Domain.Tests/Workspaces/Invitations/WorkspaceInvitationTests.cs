@@ -73,30 +73,6 @@ public class WorkspaceInvitationTests
         invitation.DomainEvents.Should().NotContain(e => e is WorkspaceInvitationExpiredDomainEvent);
     }
 
-    [CoversMutation(typeof(WorkspaceInvitation), "Accept(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
-    [Fact]
-    public void Accept_ShouldThrow_WhenDeleted()
-    {
-        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"), 1, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        invitation.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        Action act = () => invitation.Accept(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        act.Should().Throw<DomainException>().WithMessage("*deleted*");
-    }
-
-    [CoversMutation(typeof(WorkspaceInvitation), "Revoke(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
-    [Fact]
-    public void Revoke_ShouldThrow_WhenDeleted()
-    {
-        var invitation = WorkspaceInvitation.Create(Guid.NewGuid(), Guid.NewGuid(), "test@example.com", WorkspaceRole.Member, InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"), 1, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        invitation.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        Action act = () => invitation.Revoke(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        act.Should().Throw<DomainException>().WithMessage("*deleted*");
-    }
-
     [CoversMutation(typeof(WorkspaceInvitation), "Expire(System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Invitation_ExpiredExactlyAtExpiresAt()
@@ -199,25 +175,6 @@ public class WorkspaceInvitationTests
 
         var act = () => invitation.Decline(Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>().WithMessage("Invitation is not pending.");
-    }
-
-    [CoversMutation(typeof(WorkspaceInvitation), "Decline(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
-    [Fact]
-    public void Decline_ShouldThrow_WhenDeleted()
-    {
-        var invitation = WorkspaceInvitation.Create(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            "test@example.com",
-            WorkspaceRole.Member,
-            InvitationTokenHash.Create("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"),
-            1,
-            Guid.NewGuid(),
-            DateTimeOffset.UtcNow);
-        invitation.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        var act = () => invitation.Decline(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
     [CoversMutation(typeof(WorkspaceInvitation), "ChangeRole(Notrelix.Domain.Workspaces.Members.WorkspaceRole,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]

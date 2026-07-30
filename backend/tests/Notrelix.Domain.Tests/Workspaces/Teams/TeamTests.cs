@@ -24,31 +24,29 @@ public class TeamTests
         team.DomainEvents.Should().ContainSingle(e => e is TeamMemberAddedDomainEvent);
     }
 
-    [CoversMutation(typeof(Team), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Team), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldSetStatusToSoftDeleted_AndRaiseEvent()
+    public void Delete_ShouldSetIsDeleted_AndRaiseEvent()
     {
         var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)team).ClearDomainEvents();
 
-        team.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        team.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        team.Status.Should().Be(TeamStatus.SoftDeleted);
         team.IsDeleted.Should().BeTrue();
-        team.DomainEvents.Should().Contain(e => e is TeamSoftDeletedDomainEvent);
+        team.DomainEvents.Should().Contain(e => e is TeamDeletedDomainEvent);
     }
 
     [CoversMutation(typeof(Team), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
-    public void Restore_ShouldSetStatusToActive_AndRaiseEvent()
+    public void Restore_ShouldSetIsDeleted_AndRaiseEvent()
     {
         var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        team.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        team.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)team).ClearDomainEvents();
 
         team.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        team.Status.Should().Be(TeamStatus.Active);
         team.IsDeleted.Should().BeFalse();
         team.DomainEvents.Should().Contain(e => e is TeamRestoredDomainEvent);
     }
@@ -86,7 +84,7 @@ public class TeamTests
     public void AddMember_ShouldThrow_WhenDeleted()
     {
         var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        team.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        team.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => team.AddMember(Guid.NewGuid(), TeamMemberRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -200,12 +198,12 @@ public class TeamTests
         team.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Team), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Team), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
     [Fact]
-    public void Unarchive_SoftDeleted_ShouldThrow()
+    public void Unarchive_Deleted_ShouldThrow()
     {
         var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        team.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        team.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => team.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");

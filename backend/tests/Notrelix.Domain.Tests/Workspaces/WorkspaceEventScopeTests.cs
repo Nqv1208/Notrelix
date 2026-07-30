@@ -63,16 +63,16 @@ public class WorkspaceEventScopeTests
         evt.WorkspaceId.Should().Be(workspace.Id);
     }
 
-    [CoversMutation(typeof(Workspace), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Workspace), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void WorkspaceSoftDeleted_ShouldCarryCorrectAccountId()
+    public void WorkspaceDeleted_ShouldCarryCorrectAccountId()
     {
         var workspace = Workspace.Create(AccountId, ActorId, "Test", "test", Now);
         ((IHasDomainEvents)workspace).ClearDomainEvents();
 
-        workspace.SoftDelete(ActorId, Now);
+        workspace.Delete(ActorId, Now);
 
-        var evt = workspace.DomainEvents.OfType<WorkspaceSoftDeletedDomainEvent>().Single();
+        var evt = workspace.DomainEvents.OfType<WorkspaceDeletedDomainEvent>().Single();
         evt.AccountId.Should().Be(AccountId);
         evt.WorkspaceId.Should().Be(workspace.Id);
     }
@@ -82,7 +82,7 @@ public class WorkspaceEventScopeTests
     public void WorkspaceRestored_ShouldCarryCorrectAccountId()
     {
         var workspace = Workspace.Create(AccountId, ActorId, "Test", "test", Now);
-        workspace.SoftDelete(ActorId, Now);
+        workspace.Delete(ActorId, Now);
         ((IHasDomainEvents)workspace).ClearDomainEvents();
 
         workspace.Restore(ActorId, Now);

@@ -111,15 +111,15 @@ public class WorkspaceMemberTests
     public void Activate_FromRemoved_ShouldThrow()
     {
         var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        member.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        member.Remove(2, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => member.Activate(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        act.Should().Throw<DomainException>().WithMessage("*deleted and cannot be modified*");
+        act.Should().Throw<DomainException>().WithMessage("*removed member*");
     }
 
     [CoversMutation(typeof(WorkspaceMember), "Remove(System.Int32,System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void RemoveMember_ShouldSetIsDeleted_AndRaiseEvent()
+    public void RemoveMember_ShouldSetStatusToRemoved_AndRaiseEvent()
     {
         var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)member).ClearDomainEvents();
@@ -128,7 +128,6 @@ public class WorkspaceMemberTests
 
         member.Remove(2, actor, now);
 
-        member.IsDeleted.Should().BeTrue();
         member.Status.Should().Be(WorkspaceMemberStatus.Removed);
         member.DomainEvents.Should().ContainSingle(e => e is WorkspaceMemberRemovedDomainEvent);
     }
@@ -145,26 +144,9 @@ public class WorkspaceMemberTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot remove the last owner of the workspace.");
     }
 
-    [CoversMutation(typeof(WorkspaceMember), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
-    [Fact]
-    public void Restore_ShouldSetStatusToActive_AndRaiseEvent()
-    {
-        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        member.Remove(2, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        ((IHasDomainEvents)member).ClearDomainEvents();
-        var actor = Guid.NewGuid();
-        var now = DateTimeOffset.UtcNow;
-
-        member.Restore(actor, now);
-
-        member.Status.Should().Be(WorkspaceMemberStatus.Active);
-        member.IsDeleted.Should().BeFalse();
-        member.DomainEvents.Should().ContainSingle(e => e is WorkspaceMemberRestoredDomainEvent);
-    }
-
     [CoversMutation(typeof(WorkspaceMember), "ChangeRole(Notrelix.Domain.Workspaces.Members.WorkspaceRole,System.Guid,System.Int32,System.DateTimeOffset)", MutationScenario.Invalid)]
     [Fact]
-    public void ChangeRole_OnDeletedMember_ShouldThrow()
+    public void ChangeRole_OnRemovedMember_ShouldThrow()
     {
         var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
         member.Remove(2, Guid.NewGuid(), DateTimeOffset.UtcNow);

@@ -38,28 +38,16 @@ public class ResourceWatcherTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(ResourceWatcher), "Unwatch(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(ResourceWatcher), "Unwatch(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
-    public void Unwatch_ShouldRaiseEvent_AndSetDeleted()
+    public void Unwatch_ShouldRaiseEvent()
     {
         var watcher = CreateWatcher();
         ((IHasDomainEvents)watcher).ClearDomainEvents();
 
         watcher.Unwatch(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        watcher.IsDeleted.Should().BeTrue();
         watcher.DomainEvents.Should().ContainSingle(e => e is ResourceUnwatchedDomainEvent);
-    }
-
-    [CoversMutation(typeof(ResourceWatcher), "Unwatch(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
-    [Fact]
-    public void Unwatch_WhenAlreadyDeleted_ShouldThrow()
-    {
-        var watcher = CreateWatcher();
-        watcher.Unwatch(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        var act = () => watcher.Unwatch(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
     private static ResourceWatcher CreateWatcher()

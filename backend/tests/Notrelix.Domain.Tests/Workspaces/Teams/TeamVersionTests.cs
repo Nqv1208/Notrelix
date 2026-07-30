@@ -67,19 +67,19 @@ public class TeamVersionTests
         team.DomainEvents.Should().Contain(e => e is TeamMemberRemovedDomainEvent);
     }
 
-    [CoversMutation(typeof(Team), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Team), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldIncrementVersion()
+    public void Delete_ShouldIncrementVersion()
     {
         var team = Team.Create(_accountId, _workspaceId, "Team", _actorId, _now);
         ((IHasDomainEvents)team).ClearDomainEvents();
         var version = team.Version;
 
-        team.SoftDelete(_actorId, _now);
+        team.Delete(_actorId, _now);
 
         team.Version.Should().Be(version + 1);
         team.IsDeleted.Should().BeTrue();
-        team.DomainEvents.Should().Contain(e => e is TeamSoftDeletedDomainEvent);
+        team.DomainEvents.Should().Contain(e => e is TeamDeletedDomainEvent);
     }
 
     [CoversMutation(typeof(Team), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
@@ -87,7 +87,7 @@ public class TeamVersionTests
     public void Restore_ShouldIncrementVersion()
     {
         var team = Team.Create(_accountId, _workspaceId, "Team", _actorId, _now);
-        team.SoftDelete(_actorId, _now);
+        team.Delete(_actorId, _now);
         ((IHasDomainEvents)team).ClearDomainEvents();
         var version = team.Version;
 

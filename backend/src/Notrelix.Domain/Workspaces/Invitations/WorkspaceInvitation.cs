@@ -2,7 +2,7 @@ using Notrelix.Domain.Workspaces.Invitations.Events;
 using Notrelix.Domain.Workspaces.Members;
 namespace Notrelix.Domain.Workspaces.Invitations;
 
-public class WorkspaceInvitation : SoftDeletableAggregateRoot, IWorkspaceScoped
+public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -67,7 +67,6 @@ public class WorkspaceInvitation : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void Accept(Guid acceptedUserId, DateTimeOffset acceptedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(acceptedUserId);
 
         var audit = PrepareAuditUpdate(acceptedUserId, acceptedAt);
@@ -90,7 +89,6 @@ public class WorkspaceInvitation : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void Decline(Guid declinedBy, DateTimeOffset declinedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(declinedBy);
 
         var audit = PrepareAuditUpdate(declinedBy, declinedAt);
@@ -108,7 +106,6 @@ public class WorkspaceInvitation : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void ChangeRole(WorkspaceRole newRole, Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
 
         var audit = PrepareAuditUpdate(updatedBy, updatedAt);
@@ -134,8 +131,6 @@ public class WorkspaceInvitation : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void Expire(DateTimeOffset expiredAt)
     {
-        EnsureNotDeleted();
-
         var audit = PrepareAuditUpdate(null, expiredAt);
 
         if (Status != WorkspaceInvitationStatus.Pending) return;
@@ -150,7 +145,6 @@ public class WorkspaceInvitation : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void Revoke(Guid revokedBy, DateTimeOffset revokedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(revokedBy);
 
         var audit = PrepareAuditUpdate(revokedBy, revokedAt);
@@ -172,7 +166,6 @@ public class WorkspaceInvitation : SoftDeletableAggregateRoot, IWorkspaceScoped
         TimeSpan expiry,
         Guid resentBy)
     {
-        EnsureNotDeleted();
         Guard.NotNull(newTokenHash);
         Guard.NotEmpty(resentBy);
 
@@ -197,27 +190,5 @@ public class WorkspaceInvitation : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         RaiseDomainEvent(new WorkspaceInvitationResentDomainEvent(
             AccountId, Id, WorkspaceId, resentBy, resentAt));
-    }
-
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        Guard.NotEmpty(deletedBy);
-        if (IsDeleted) return;
-
-        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
-        ApplyDeletion(pendingDeletion);
-        IncrementVersion();
-        RaiseDomainEvent(new WorkspaceInvitationSoftDeletedDomainEvent(AccountId, Id, WorkspaceId, deletedBy, deletedAt));
-    }
-
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        Guard.NotEmpty(restoredBy);
-        if (!IsDeleted) return;
-
-        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
-        ApplyRestore(pendingRestore);
-        IncrementVersion();
-        RaiseDomainEvent(new WorkspaceInvitationRestoredDomainEvent(AccountId, Id, WorkspaceId, restoredBy, restoredAt));
     }
 }

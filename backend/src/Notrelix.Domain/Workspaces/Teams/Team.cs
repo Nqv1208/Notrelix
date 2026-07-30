@@ -44,15 +44,14 @@ public class Team : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.MaxLength(name, 160);
         Guard.NotEmpty(updatedBy);
 
-        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
-
         if (Status == TeamStatus.Archived)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Team_CannotRenameArchived, "Cannot rename an archived team.");
 
-        var oldName = Name;
         var normalizedName = name.Trim();
         if (Name == normalizedName) return;
 
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
+        var oldName = Name;
         Name = normalizedName;
         ApplyAuditUpdate(audit);
         IncrementVersion();
@@ -63,8 +62,6 @@ public class Team : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
-
-        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
 
         if (Status == TeamStatus.Archived)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Team_CannotUpdateDescriptionArchived, "Cannot update description of an archived team.");
@@ -78,6 +75,7 @@ public class Team : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         if (Description == normalized) return;
 
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
         var oldDescription = Description;
         Description = normalized;
         ApplyAuditUpdate(audit);
@@ -91,10 +89,9 @@ public class Team : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(archivedBy);
 
-        var audit = PrepareAuditUpdate(archivedBy, archivedAt);
-
         if (Status == TeamStatus.Archived) return;
 
+        var audit = PrepareAuditUpdate(archivedBy, archivedAt);
         Status = TeamStatus.Archived;
         ApplyAuditUpdate(audit);
         IncrementVersion();
@@ -106,8 +103,6 @@ public class Team : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(unarchivedBy);
 
-        var audit = PrepareAuditUpdate(unarchivedBy, unarchivedAt);
-
         if (Status == TeamStatus.Active) return;
 
         if (Status != TeamStatus.Archived)
@@ -115,6 +110,7 @@ public class Team : SoftDeletableAggregateRoot, IWorkspaceScoped
                 WorkspaceRuleCodes.Workspaces_Team_CannotUnarchiveNonArchived,
                 "Only an archived team can be unarchived.");
 
+        var audit = PrepareAuditUpdate(unarchivedBy, unarchivedAt);
         Status = TeamStatus.Active;
         ApplyAuditUpdate(audit);
         IncrementVersion();
@@ -127,8 +123,6 @@ public class Team : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(userId);
         Guard.NotEmpty(addedBy);
-
-        var audit = PrepareAuditUpdate(addedBy, addedAt);
 
         if (Status == TeamStatus.Archived)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Team_CannotAddMemberArchived, "Cannot add a member to an archived team.");
@@ -146,6 +140,7 @@ public class Team : SoftDeletableAggregateRoot, IWorkspaceScoped
             _members.Add(member);
         }
 
+        var audit = PrepareAuditUpdate(addedBy, addedAt);
         ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new TeamMemberAddedDomainEvent(AccountId, WorkspaceId, Id, userId, role, addedBy, addedAt));
@@ -156,8 +151,6 @@ public class Team : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(userId);
         Guard.NotEmpty(removedBy);
-
-        var audit = PrepareAuditUpdate(removedBy, removedAt);
 
         if (Status == TeamStatus.Archived)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Team_CannotRemoveMemberArchived, "Cannot remove a member from an archived team.");
@@ -172,6 +165,7 @@ public class Team : SoftDeletableAggregateRoot, IWorkspaceScoped
         }
 
         member.Remove(removedBy, removedAt);
+        var audit = PrepareAuditUpdate(removedBy, removedAt);
         ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new TeamMemberRemovedDomainEvent(AccountId, WorkspaceId, Id, userId, removedBy, removedAt));
@@ -182,8 +176,6 @@ public class Team : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(userId);
         Guard.NotEmpty(updatedBy);
-
-        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
 
         if (Status == TeamStatus.Archived)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Team_CannotChangeMemberRoleArchived, "Cannot change member role in an archived team.");
@@ -197,6 +189,7 @@ public class Team : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         if (member.Role == newRole) return;
 
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
         var oldRole = member.Role;
         member.ChangeRole(newRole, updatedBy, updatedAt);
 
@@ -206,16 +199,15 @@ public class Team : SoftDeletableAggregateRoot, IWorkspaceScoped
             AccountId, WorkspaceId, Id, userId, oldRole, newRole, updatedBy, updatedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
 
         var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
-        Status = TeamStatus.SoftDeleted;
         ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        RaiseDomainEvent(new TeamSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new TeamDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, Status, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -224,9 +216,8 @@ public class Team : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (!IsDeleted) return;
 
         var pendingRestore = PrepareRestore(restoredBy, restoredAt);
-        Status = TeamStatus.Active;
         ApplyRestore(pendingRestore);
         IncrementVersion();
-        RaiseDomainEvent(new TeamRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new TeamRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, Status, restoredAt));
     }
 }

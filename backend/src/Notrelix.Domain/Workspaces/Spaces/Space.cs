@@ -53,15 +53,14 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.MaxLength(newName, 160);
         Guard.NotEmpty(updatedBy);
 
-        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
-
         if (Status == SpaceStatus.Archived)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Space_CannotRenameArchived, "Cannot rename an archived space.");
 
-        var oldName = Name;
         var normalizedName = newName.Trim();
         if (Name == normalizedName) return;
 
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
+        var oldName = Name;
         Name = normalizedName;
         ApplyAuditUpdate(audit);
         IncrementVersion();
@@ -72,8 +71,6 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
-
-        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
 
         if (Status == SpaceStatus.Archived)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Space_CannotUpdateDescriptionArchived, "Cannot update description of an archived space.");
@@ -87,6 +84,7 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         if (Description == normalized) return;
 
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
         var oldDescription = Description;
         Description = normalized;
         ApplyAuditUpdate(audit);
@@ -100,13 +98,12 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
 
-        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
-
         if (Status == SpaceStatus.Archived)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Space_CannotChangeVisibilityArchived, "Cannot change visibility of an archived space.");
 
         if (Visibility == newVisibility) return;
 
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
         var oldVisibility = Visibility;
         Visibility = newVisibility;
         ApplyAuditUpdate(audit);
@@ -120,13 +117,12 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
 
-        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
-
         if (Status == SpaceStatus.Archived)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Space_CannotChangeTypeArchived, "Cannot change type of an archived space.");
 
         if (SpaceType == newType) return;
 
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
         var oldType = SpaceType;
         SpaceType = newType;
         ApplyAuditUpdate(audit);
@@ -140,10 +136,9 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(archivedBy);
 
-        var audit = PrepareAuditUpdate(archivedBy, archivedAt);
-
         if (Status == SpaceStatus.Archived) return;
 
+        var audit = PrepareAuditUpdate(archivedBy, archivedAt);
         Status = SpaceStatus.Archived;
         ApplyAuditUpdate(audit);
         IncrementVersion();
@@ -155,8 +150,6 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(unarchivedBy);
 
-        var audit = PrepareAuditUpdate(unarchivedBy, unarchivedAt);
-
         if (Status == SpaceStatus.Active) return;
 
         if (Status != SpaceStatus.Archived)
@@ -164,6 +157,7 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
                 WorkspaceRuleCodes.Workspaces_Space_CannotUnarchiveNonArchived,
                 "Only an archived space can be unarchived.");
 
+        var audit = PrepareAuditUpdate(unarchivedBy, unarchivedAt);
         Status = SpaceStatus.Active;
         ApplyAuditUpdate(audit);
         IncrementVersion();
@@ -171,16 +165,15 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
             AccountId, WorkspaceId, Id, unarchivedBy, unarchivedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
 
         var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
-        Status = SpaceStatus.SoftDeleted;
         ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        RaiseDomainEvent(new SpaceSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new SpaceDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, Status, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
@@ -189,9 +182,8 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (!IsDeleted) return;
 
         var pendingRestore = PrepareRestore(restoredBy, restoredAt);
-        Status = SpaceStatus.Active;
         ApplyRestore(pendingRestore);
         IncrementVersion();
-        RaiseDomainEvent(new SpaceRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new SpaceRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, Status, restoredAt));
     }
 }

@@ -112,34 +112,4 @@ public class WorkspaceInvitationVersionTests
         invitation.DomainEvents.Should().Contain(e => e is WorkspaceInvitationResentDomainEvent);
     }
 
-    [CoversMutation(typeof(WorkspaceInvitation), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
-    [Fact]
-    public void SoftDelete_ShouldIncrementVersion()
-    {
-        var invitation = CreatePendingInvitation();
-        ((IHasDomainEvents)invitation).ClearDomainEvents();
-        var version = invitation.Version;
-
-        invitation.SoftDelete(_actorId, _now);
-
-        invitation.Version.Should().Be(version + 1);
-        invitation.IsDeleted.Should().BeTrue();
-        invitation.DomainEvents.Should().Contain(e => e is WorkspaceInvitationSoftDeletedDomainEvent);
-    }
-
-    [CoversMutation(typeof(WorkspaceInvitation), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
-    [Fact]
-    public void Restore_ShouldIncrementVersion()
-    {
-        var invitation = CreatePendingInvitation();
-        invitation.SoftDelete(_actorId, _now);
-        ((IHasDomainEvents)invitation).ClearDomainEvents();
-        var version = invitation.Version;
-
-        invitation.Restore(_actorId, _now);
-
-        invitation.Version.Should().Be(version + 1);
-        invitation.IsDeleted.Should().BeFalse();
-        invitation.DomainEvents.Should().Contain(e => e is WorkspaceInvitationRestoredDomainEvent);
-    }
 }

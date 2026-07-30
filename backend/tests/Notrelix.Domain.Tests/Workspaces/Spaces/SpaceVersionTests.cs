@@ -38,19 +38,19 @@ public class SpaceVersionTests
         space.DomainEvents.Should().Contain(e => e is SpaceArchivedDomainEvent);
     }
 
-    [CoversMutation(typeof(Space), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Space), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldIncrementVersion()
+    public void Delete_ShouldIncrementVersion()
     {
         var space = Space.Create(_accountId, _workspaceId, "Space", SpaceVisibility.Private, _actorId, _now);
         ((IHasDomainEvents)space).ClearDomainEvents();
         var version = space.Version;
 
-        space.SoftDelete(_actorId, _now);
+        space.Delete(_actorId, _now);
 
         space.Version.Should().Be(version + 1);
         space.IsDeleted.Should().BeTrue();
-        space.DomainEvents.Should().Contain(e => e is SpaceSoftDeletedDomainEvent);
+        space.DomainEvents.Should().Contain(e => e is SpaceDeletedDomainEvent);
     }
 
     [CoversMutation(typeof(Space), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
@@ -58,7 +58,7 @@ public class SpaceVersionTests
     public void Restore_ShouldIncrementVersion()
     {
         var space = Space.Create(_accountId, _workspaceId, "Space", SpaceVisibility.Private, _actorId, _now);
-        space.SoftDelete(_actorId, _now);
+        space.Delete(_actorId, _now);
         ((IHasDomainEvents)space).ClearDomainEvents();
         var version = space.Version;
 

@@ -72,12 +72,12 @@ public class SpaceTests
         space.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Space), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Space), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
     [Fact]
-    public void Unarchive_SoftDeleted_ShouldThrow()
+    public void Unarchive_Deleted_ShouldThrow()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => space.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
@@ -219,30 +219,28 @@ public class SpaceTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*archived*");
     }
 
-    [CoversMutation(typeof(Space), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Space), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldSetStatusToSoftDeleted_AndRaiseEvent()
+    public void Delete_ShouldSetIsDeleted_AndRaiseEvent()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        space.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        space.Status.Should().Be(SpaceStatus.SoftDeleted);
         space.IsDeleted.Should().BeTrue();
-        space.DomainEvents.Should().Contain(e => e is SpaceSoftDeletedDomainEvent);
+        space.DomainEvents.Should().Contain(e => e is SpaceDeletedDomainEvent);
     }
 
     [CoversMutation(typeof(Space), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
-    public void Restore_ShouldSetStatusToActive_AndRaiseEvent()
+    public void Restore_ShouldSetIsDeleted_AndRaiseEvent()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)space).ClearDomainEvents();
 
         space.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        space.Status.Should().Be(SpaceStatus.Active);
         space.IsDeleted.Should().BeFalse();
         space.DomainEvents.Should().Contain(e => e is SpaceRestoredDomainEvent);
     }
@@ -252,7 +250,7 @@ public class SpaceTests
     public void Rename_OnDeletedSpace_ShouldThrow()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        space.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => space.Rename("Sales", Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted and cannot be modified*");

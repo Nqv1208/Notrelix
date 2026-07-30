@@ -13,55 +13,54 @@ public class CommentDeletionAtomicityTests
 
     private ResourceRef Target => ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
 
-    [CoversMutation(typeof(Comment), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Comment), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldTransitionStatus()
+    public void Delete_ShouldTransitionStatus()
     {
         var comment = Comment.Create(_accountId, _workspaceId, Target, "Content", _actorId, _now);
-        comment.SoftDelete(_actorId, _now);
-        comment.CommentStatus.Should().Be(CommentStatus.SoftDeleted);
+        comment.Delete(_actorId, _now);
         comment.IsDeleted.Should().BeTrue();
     }
 
-    [CoversMutation(typeof(Comment), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Comment), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldRaiseEvent()
+    public void Delete_ShouldRaiseEvent()
     {
         var comment = Comment.Create(_accountId, _workspaceId, Target, "Content", _actorId, _now);
         ((IHasDomainEvents)comment).ClearDomainEvents();
-        comment.SoftDelete(_actorId, _now);
-        comment.DomainEvents.Should().ContainSingle(e => e is CommentSoftDeletedDomainEvent);
+        comment.Delete(_actorId, _now);
+        comment.DomainEvents.Should().ContainSingle(e => e is CommentDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(Comment), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Comment), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldIncrementVersion()
+    public void Delete_ShouldIncrementVersion()
     {
         var comment = Comment.Create(_accountId, _workspaceId, Target, "Content", _actorId, _now);
         var before = comment.Version;
-        comment.SoftDelete(_actorId, _now);
+        comment.Delete(_actorId, _now);
         comment.Version.Should().Be(before + 1);
     }
 
-    [CoversMutation(typeof(Comment), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Comment), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
-    public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
+    public void Delete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
         var comment = Comment.Create(_accountId, _workspaceId, Target, "Content", _actorId, _now);
-        comment.SoftDelete(_actorId, _now);
+        comment.Delete(_actorId, _now);
         var before = comment.Version;
         ((IHasDomainEvents)comment).ClearDomainEvents();
-        comment.SoftDelete(_actorId, _now);
+        comment.Delete(_actorId, _now);
         comment.Version.Should().Be(before);
         comment.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Comment), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Comment), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void Restore_AfterSoftDelete_ShouldRevertStatus()
+    public void Restore_AfterDelete_ShouldRevertStatus()
     {
         var comment = Comment.Create(_accountId, _workspaceId, Target, "Content", _actorId, _now);
-        comment.SoftDelete(_actorId, _now);
+        comment.Delete(_actorId, _now);
         comment.Restore(_actorId, _now);
         comment.CommentStatus.Should().Be(CommentStatus.Active);
         comment.IsDeleted.Should().BeFalse();
@@ -72,7 +71,7 @@ public class CommentDeletionAtomicityTests
     public void Restore_ShouldRaiseEvent()
     {
         var comment = Comment.Create(_accountId, _workspaceId, Target, "Content", _actorId, _now);
-        comment.SoftDelete(_actorId, _now);
+        comment.Delete(_actorId, _now);
         ((IHasDomainEvents)comment).ClearDomainEvents();
         comment.Restore(_actorId, _now);
         comment.DomainEvents.Should().ContainSingle(e => e is CommentRestoredDomainEvent);
@@ -83,7 +82,7 @@ public class CommentDeletionAtomicityTests
     public void Restore_ShouldIncrementVersion()
     {
         var comment = Comment.Create(_accountId, _workspaceId, Target, "Content", _actorId, _now);
-        comment.SoftDelete(_actorId, _now);
+        comment.Delete(_actorId, _now);
         var before = comment.Version;
         comment.Restore(_actorId, _now);
         comment.Version.Should().Be(before + 1);

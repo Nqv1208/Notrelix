@@ -35,7 +35,7 @@ public class Attachment : SoftDeletableAggregateRoot, IWorkspaceScoped
         return attachment;
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;

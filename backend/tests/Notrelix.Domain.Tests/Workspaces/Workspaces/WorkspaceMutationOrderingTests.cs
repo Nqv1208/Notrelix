@@ -71,12 +71,12 @@ public class WorkspaceMutationOrderingTests
         workspace.UpdatedBy.Should().Be(ActorId);
     }
 
-    [CoversMutation(typeof(Workspace), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Workspace), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
     [Fact]
     public void Unarchive_NonArchived_ShouldThrow()
     {
         var workspace = CreateWorkspace();
-        workspace.SoftDelete(ActorId, Now);
+        workspace.Delete(ActorId, Now);
         var act = () => workspace.Unarchive(ActorId, Now);
         act.Should().Throw<BusinessRuleException>();
     }

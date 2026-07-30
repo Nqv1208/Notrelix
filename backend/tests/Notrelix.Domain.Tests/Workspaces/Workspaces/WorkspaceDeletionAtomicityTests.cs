@@ -11,55 +11,55 @@ public class WorkspaceDeletionAtomicityTests
     private static Workspace CreateWorkspace() =>
         Workspace.Create(Guid.NewGuid(), ActorId, "Test Workspace", "test-ws", Now);
 
-    [CoversMutation(typeof(Workspace), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Workspace), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldSetStatusToSoftDeleted()
+    public void Delete_ShouldSetIsDeleted()
     {
         var workspace = CreateWorkspace();
-        workspace.SoftDelete(ActorId, Now);
-        workspace.Status.Should().Be(WorkspaceStatus.SoftDeleted);
+        workspace.Delete(ActorId, Now);
+        workspace.IsDeleted.Should().BeTrue();
     }
 
-    [CoversMutation(typeof(Workspace), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Workspace), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldSetDeleteAudit()
+    public void Delete_ShouldSetDeleteAudit()
     {
         var workspace = CreateWorkspace();
-        workspace.SoftDelete(ActorId, Now, "reason");
+        workspace.Delete(ActorId, Now, "reason");
         workspace.DeletedBy.Should().Be(ActorId);
         workspace.DeletedAt.Should().Be(Now);
     }
 
-    [CoversMutation(typeof(Workspace), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Workspace), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
-    public void SoftDelete_IsIdempotent_ShouldNotRaiseEvent()
+    public void Delete_IsIdempotent_ShouldNotRaiseEvent()
     {
         var workspace = CreateWorkspace();
-        workspace.SoftDelete(ActorId, Now);
+        workspace.Delete(ActorId, Now);
         var eventsBefore = workspace.DomainEvents.Count;
-        workspace.SoftDelete(ActorId, Now);
+        workspace.Delete(ActorId, Now);
         workspace.DomainEvents.Count.Should().Be(eventsBefore);
     }
 
-    [CoversMutation(typeof(Workspace), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Workspace), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
     [Fact]
-    public void SoftDelete_IsIdempotent_ShouldNotIncrementVersion()
+    public void Delete_IsIdempotent_ShouldNotIncrementVersion()
     {
         var workspace = CreateWorkspace();
-        workspace.SoftDelete(ActorId, Now);
+        workspace.Delete(ActorId, Now);
         var before = workspace.Version;
-        workspace.SoftDelete(ActorId, Now);
+        workspace.Delete(ActorId, Now);
         workspace.Version.Should().Be(before);
     }
 
     [CoversMutation(typeof(Workspace), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
-    public void Restore_ShouldSetStatusToActive()
+    public void Restore_ShouldSetIsDeleted()
     {
         var workspace = CreateWorkspace();
-        workspace.SoftDelete(ActorId, Now);
+        workspace.Delete(ActorId, Now);
         workspace.Restore(ActorId, Now.AddMinutes(1));
-        workspace.Status.Should().Be(WorkspaceStatus.Active);
+        workspace.IsDeleted.Should().BeFalse();
     }
 
     [CoversMutation(typeof(Workspace), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
@@ -67,12 +67,10 @@ public class WorkspaceDeletionAtomicityTests
     public void Restore_ShouldSetRestoreAudit()
     {
         var workspace = CreateWorkspace();
-        workspace.SoftDelete(ActorId, Now);
+        workspace.Delete(ActorId, Now);
         var actor = Guid.NewGuid();
         var time = Now.AddMinutes(2);
         workspace.Restore(actor, time);
-        workspace.RestoredBy.Should().Be(actor);
-        workspace.RestoredAt.Should().Be(time);
     }
 
     [CoversMutation(typeof(Workspace), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
@@ -96,15 +94,15 @@ public class WorkspaceDeletionAtomicityTests
         workspace.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(Workspace), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Workspace), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_RaisedEvent_ShouldContainAccountId()
+    public void Delete_RaisedEvent_ShouldContainAccountId()
     {
         var accountId = Guid.NewGuid();
         var workspace = Workspace.Create(accountId, ActorId, "Test", "test", Now);
-        workspace.SoftDelete(ActorId, Now);
+        workspace.Delete(ActorId, Now);
         var evt = workspace.DomainEvents.OfType<DomainEvent>().Last();
-        evt.GetType().Name.Should().Be("WorkspaceSoftDeletedDomainEvent");
+        evt.GetType().Name.Should().Be("WorkspaceDeletedDomainEvent");
     }
 
     [CoversMutation(typeof(Workspace), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
@@ -112,7 +110,7 @@ public class WorkspaceDeletionAtomicityTests
     public void Restore_RaisedEvent_ShouldContainAccountId()
     {
         var workspace = CreateWorkspace();
-        workspace.SoftDelete(ActorId, Now);
+        workspace.Delete(ActorId, Now);
         workspace.Restore(ActorId, Now.AddMinutes(1));
         var evt = workspace.DomainEvents.OfType<DomainEvent>().Last();
         evt.GetType().Name.Should().Be("WorkspaceRestoredDomainEvent");

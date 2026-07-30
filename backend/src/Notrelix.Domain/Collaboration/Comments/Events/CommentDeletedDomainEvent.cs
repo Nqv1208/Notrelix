@@ -1,7 +1,7 @@
 namespace Notrelix.Domain.Collaboration.Comments.Events;
 
-[EventName("collaboration.comment-soft-deleted")]
-public sealed record CommentSoftDeletedDomainEvent(
+[EventName("collaboration.comment-deleted")]
+public sealed record CommentDeletedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
     Guid CommentId,

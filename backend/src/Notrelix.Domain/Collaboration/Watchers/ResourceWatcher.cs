@@ -8,7 +8,7 @@ public enum WatchLevel
     None
 }
 
-public class ResourceWatcher : SoftDeletableAggregateRoot, IWorkspaceScoped
+public class ResourceWatcher : AggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -45,11 +45,10 @@ public class ResourceWatcher : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void Unwatch(Guid unwatchedBy, DateTimeOffset removedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(unwatchedBy);
 
-        var pendingDeletion = PrepareDeletion(unwatchedBy, removedAt, null);
-        ApplyDeletion(pendingDeletion);
+        var pending = PrepareAuditUpdate(unwatchedBy, removedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new ResourceUnwatchedDomainEvent(AccountId, WorkspaceId, Id, removedAt));
     }

@@ -104,33 +104,31 @@ public class WorkspaceTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot update settings of an archived workspace.");
     }
 
-    [CoversMutation(typeof(Workspace), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Workspace), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
-    public void SoftDelete_ShouldSetStatusToSoftDeleted_AndRaiseEvent()
+    public void Delete_ShouldSetIsDeleted_AndRaiseEvent()
     {
         var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
         ((IHasDomainEvents)workspace).ClearDomainEvents();
         var actor = Guid.NewGuid();
 
-        workspace.SoftDelete(actor, Now);
+        workspace.Delete(actor, Now);
 
-        workspace.Status.Should().Be(WorkspaceStatus.SoftDeleted);
         workspace.IsDeleted.Should().BeTrue();
-        workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceSoftDeletedDomainEvent);
+        workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceDeletedDomainEvent);
     }
 
     [CoversMutation(typeof(Workspace), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
     [Fact]
-    public void Restore_ShouldSetStatusToActive_AndRaiseEvent()
+    public void Restore_ShouldSetIsDeleted_AndRaiseEvent()
     {
         var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
-        workspace.SoftDelete(Guid.NewGuid(), Now);
+        workspace.Delete(Guid.NewGuid(), Now);
         ((IHasDomainEvents)workspace).ClearDomainEvents();
 
         var actor = Guid.NewGuid();
         workspace.Restore(actor, Now);
 
-        workspace.Status.Should().Be(WorkspaceStatus.Active);
         workspace.IsDeleted.Should().BeFalse();
         workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceRestoredDomainEvent);
     }
@@ -190,12 +188,12 @@ public class WorkspaceTests
         workspace.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Workspace), "SoftDelete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Workspace), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
     [Fact]
-    public void Unarchive_SoftDeleted_ShouldThrow()
+    public void Unarchive_Deleted_ShouldThrow()
     {
         var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
-        workspace.SoftDelete(Guid.NewGuid(), Now);
+        workspace.Delete(Guid.NewGuid(), Now);
 
         var act = () => workspace.Unarchive(Guid.NewGuid(), Now);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");

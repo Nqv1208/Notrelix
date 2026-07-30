@@ -2,7 +2,7 @@ using Notrelix.Domain.Workspaces.Members.Events;
 using Notrelix.Domain.Workspaces.Rules;
 namespace Notrelix.Domain.Workspaces.Members;
 
-public class WorkspaceMember : SoftDeletableAggregateRoot, IWorkspaceScoped
+public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -39,7 +39,6 @@ public class WorkspaceMember : SoftDeletableAggregateRoot, IWorkspaceScoped
         int activeOwnerCount,
         DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
 
         var audit = PrepareAuditUpdate(updatedBy, updatedAt);
@@ -71,7 +70,6 @@ public class WorkspaceMember : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void PromoteToOwner(Guid promotedBy, DateTimeOffset promotedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(promotedBy);
 
         var audit = PrepareAuditUpdate(promotedBy, promotedAt);
@@ -95,10 +93,12 @@ public class WorkspaceMember : SoftDeletableAggregateRoot, IWorkspaceScoped
         DateTimeOffset updatedAt,
         int activeOwnerCount)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
 
         var audit = PrepareAuditUpdate(updatedBy, updatedAt);
+
+        if (Status == WorkspaceMemberStatus.Removed)
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotSuspendRemoved, "Cannot suspend a removed member.");
 
         if (Status == WorkspaceMemberStatus.Suspended) return;
 
@@ -114,7 +114,6 @@ public class WorkspaceMember : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void Activate(Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
 
         var audit = PrepareAuditUpdate(updatedBy, updatedAt);
@@ -123,7 +122,7 @@ public class WorkspaceMember : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         if (Status == WorkspaceMemberStatus.Removed)
         {
-            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotActivateRemoved, "Cannot activate a removed member. Restore the member first.");
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotActivateRemoved, "Cannot activate a removed member.");
         }
 
         Status = WorkspaceMemberStatus.Active;
@@ -132,43 +131,14 @@ public class WorkspaceMember : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new WorkspaceMemberActivatedDomainEvent(AccountId, WorkspaceId, Id, UserId, updatedBy, updatedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        Guard.NotEmpty(deletedBy);
-        if (IsDeleted) return;
-
-        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
-        Status = WorkspaceMemberStatus.Removed;
-        ApplyDeletion(pendingDeletion);
-        IncrementVersion();
-        RaiseDomainEvent(new WorkspaceMemberRemovedDomainEvent(AccountId, WorkspaceId, Id, UserId, deletedBy, deletedAt));
-    }
-
     public void Remove(int activeOwnerCount, Guid removedBy, DateTimeOffset removedAt, string? reason = null)
     {
-        EnsureNotDeleted();
         Guard.NotEmpty(removedBy);
 
         WorkspaceOwnerRules.EnsureCanRemoveOwner(Role, activeOwnerCount);
 
-        SoftDelete(removedBy, removedAt, reason);
-    }
-
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        Guard.NotEmpty(restoredBy);
-        if (!IsDeleted) return;
-
-        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
-        Status = WorkspaceMemberStatus.Active;
-        ApplyRestore(pendingRestore);
+        Status = WorkspaceMemberStatus.Removed;
         IncrementVersion();
-        RaiseDomainEvent(new WorkspaceMemberRestoredDomainEvent(
-            AccountId,
-            WorkspaceId,
-            Id,
-            UserId,
-            restoredBy,
-            restoredAt));
+        RaiseDomainEvent(new WorkspaceMemberRemovedDomainEvent(AccountId, WorkspaceId, Id, UserId, removedBy, removedAt));
     }
 }
