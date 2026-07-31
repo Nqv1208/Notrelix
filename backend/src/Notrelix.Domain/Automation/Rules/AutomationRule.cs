@@ -48,7 +48,11 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
-        if (Status == AutomationRuleStatus.Active) return;
+
+        if (Status == AutomationRuleStatus.Active)
+            return;
+
+        AutomationRuleValidator.ValidateForActivation(Name, Configuration);
 
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = AutomationRuleStatus.Active;
@@ -70,16 +74,22 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new AutomationRuleDisabledDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
 
-    public void UpdateConfiguration(AutomationConfiguration config, Guid updatedBy, DateTimeOffset updatedAt)
+    public void UpdateConfiguration(AutomationConfiguration configuration, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        Guard.NotNull(config);
         Guard.NotEmpty(updatedBy);
+        Guard.NotNull(configuration);
 
-        if (Configuration == config) return;
+        if (Configuration == configuration)
+            return;
+
+        if (Status == AutomationRuleStatus.Active)
+        {
+            AutomationRuleValidator.ValidateForActivation(Name, configuration);
+        }
 
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
-        Configuration = config;
+        Configuration = configuration;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AutomationConfigurationChangedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));

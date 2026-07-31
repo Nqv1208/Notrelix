@@ -8,10 +8,18 @@ namespace Notrelix.Domain.Tests.Automation;
 [CoversAggregate(typeof(AutomationRule))]
 public class AutomationRuleTests
 {
+    private static string? GetActionConfig(string actionType) => actionType switch
+    {
+        "Webhook" => """{"url":"https://example.com/webhook"}""",
+        "SendEmail" => """{"templateId":"tpl_1"}""",
+        "SlackMessage" => """{"channelId":"C123","text":"test"}""",
+        _ => null
+    };
+
     private static AutomationConfiguration CreateConfig(string triggerType = "ItemCreated", string actionType = "Webhook")
     {
         var trigger = AutomationTriggerDefinition.Create(triggerType);
-        var action = AutomationActionDefinition.Create(actionType);
+        var action = AutomationActionDefinition.Create(actionType, GetActionConfig(actionType));
         return AutomationConfiguration.Create(trigger, action);
     }
 

@@ -426,7 +426,7 @@ Notrelix.Domain.Automation.Rules.AutomationRule|Delete|Method|public|False|False
 Notrelix.Domain.Automation.Rules.AutomationRule|Disable|Method|public|False|False|System.Void|System.Guid updatedBy, System.DateTimeOffset updatedAt
 Notrelix.Domain.Automation.Rules.AutomationRule|Enable|Method|public|False|False|System.Void|System.Guid updatedBy, System.DateTimeOffset updatedAt
 Notrelix.Domain.Automation.Rules.AutomationRule|Restore|Method|public|False|False|System.Void|System.Guid restoredBy, System.DateTimeOffset restoredAt
-Notrelix.Domain.Automation.Rules.AutomationRule|UpdateConfiguration|Method|public|False|False|System.Void|Notrelix.Domain.Automation.RulesEngine.AutomationConfiguration config, System.Guid updatedBy, System.DateTimeOffset updatedAt
+Notrelix.Domain.Automation.Rules.AutomationRule|UpdateConfiguration|Method|public|False|False|System.Void|Notrelix.Domain.Automation.RulesEngine.AutomationConfiguration configuration, System.Guid updatedBy, System.DateTimeOffset updatedAt
 Notrelix.Domain.Automation.Rules.AutomationRule|AccountId|Property|public|False|True|readonly|System.Guid
 Notrelix.Domain.Automation.Rules.AutomationRule|Configuration|Property|public|False|False|readonly|Notrelix.Domain.Automation.RulesEngine.AutomationConfiguration
 Notrelix.Domain.Automation.Rules.AutomationRule|Description|Property|public|False|False|readonly|System.String

@@ -13,8 +13,8 @@ public class AutomationRuleMutationAtomicityTests
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
 
     private AutomationConfiguration CreateConfig() => AutomationConfiguration.Create(
-        AutomationTriggerDefinition.Create("FieldChanged"),
-        AutomationActionDefinition.Create("SendEmail"));
+        AutomationTriggerDefinition.Create("FieldChanged", """{"fieldId":"fld_123"}"""),
+        AutomationActionDefinition.Create("SendEmail", """{"templateId":"tpl_1"}"""));
 
     [CoversMutation(typeof(AutomationRule), "Enable(System.Guid,System.DateTimeOffset)", MutationScenario.Audit)]
     [Fact]
