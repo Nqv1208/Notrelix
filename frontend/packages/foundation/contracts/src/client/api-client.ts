@@ -10,6 +10,7 @@ export type ApiRequestOptions = {
   skipAuthRefresh?: boolean
   skipGlobalErrorToast?: boolean
   correlationId?: string
+  idempotencyKey?: string
 }
 
 export interface SessionExpiredEvent {
@@ -104,6 +105,10 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
       "Content-Type": "application/json",
       "X-Correlation-ID": correlationId,
       ...(options.headers as Record<string, string>),
+    }
+
+    if (options.idempotencyKey) {
+      headers["Idempotency-Key"] = options.idempotencyKey
     }
 
     const csrfToken = getCsrfToken()

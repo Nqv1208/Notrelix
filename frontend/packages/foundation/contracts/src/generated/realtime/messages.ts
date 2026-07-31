@@ -1,27 +1,29 @@
 /**
- * Generated Realtime Event Messages from /Users/nqvinh/Documents/projects/Notrelix/artifacts/contracts/realtime.v1.json
- * DO NOT EDIT MANUALLY.
+ * Generated from artifacts/contracts/realtime.v1.json
+ * DO NOT EDIT.
  */
 
 export interface BoardItemCreatedPayload {
-  itemId: string;
-  boardId: string;
-  title: string;
-}
-
-export interface BoardItemUpdatedPayload {
-  itemId: string;
-  field: string;
-  value?: string;
+  "boardId": string;
+  "itemId": string;
+  "title": string;
 }
 
 export interface BoardItemMovedPayload {
-  itemId: string;
-  targetGroupId: string;
-  position: number;
+  "itemId": string;
+  "position": number;
+  "targetGroupId": string;
 }
 
-export type RealtimeEventMessage =
-  | { type: 'board.item.created'; payload: BoardItemCreatedPayload }
-  | { type: 'board.item.updated'; payload: BoardItemUpdatedPayload }
-  | { type: 'board.item.moved'; payload: BoardItemMovedPayload };
+export interface BoardItemUpdatedPayload {
+  "field": string;
+  "itemId": string;
+  "value"?: string;
+}
+
+export type GeneratedRealtimeMessage =
+  | { eventType: "board.item.created"; payload: BoardItemCreatedPayload }
+  | { eventType: "board.item.moved"; payload: BoardItemMovedPayload }
+  | { eventType: "board.item.updated"; payload: BoardItemUpdatedPayload };
+
+export type RealtimeEventMessage = GeneratedRealtimeMessage;

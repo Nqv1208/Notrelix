@@ -1,22 +1,25 @@
 /**
- * Generated REST Contract Types from /Users/nqvinh/Documents/projects/Notrelix/artifacts/contracts/openapi.v1.json
- * DO NOT EDIT MANUALLY.
+ * Generated from artifacts/contracts/openapi.v1.json
+ * DO NOT EDIT.
  */
 
 export interface paths {
   "/workspaces/{workspaceId}/boards/{boardId}": {
     get: {
       parameters: {
-        path: { workspaceId: string; boardId: string };
-      };
+              path: {
+                "boardId": string;
+                "workspaceId": string;
+              };
+            };
       responses: {
         200: {
           content: {
             "application/json": {
-              id: string;
-              workspaceId: string;
-              name: string;
-              description?: string;
+              "description"?: string;
+              "id": string;
+              "name": string;
+              "workspaceId": string;
             };
           };
         };
@@ -26,14 +29,16 @@ export interface paths {
   "/workspaces/{workspaceId}/items": {
     post: {
       parameters: {
-        path: { workspaceId: string };
-      };
+              path: {
+                "workspaceId": string;
+              };
+            };
       requestBody: {
         content: {
           "application/json": {
-            boardId: string;
-            title: string;
-            groupId?: string;
+            "boardId": string;
+            "groupId"?: string;
+            "title": string;
           };
         };
       };
@@ -41,10 +46,10 @@ export interface paths {
         201: {
           content: {
             "application/json": {
-              id: string;
-              boardId: string;
-              title: string;
-              sequence?: number;
+              "boardId": string;
+              "id": string;
+              "sequence"?: number;
+              "title": string;
             };
           };
         };
@@ -53,7 +58,16 @@ export interface paths {
   };
 }
 
-export type operations = {
-  getBoardDetail: paths["/workspaces/{workspaceId}/boards/{boardId}"]["get"];
-  createBoardItem: paths["/workspaces/{workspaceId}/items"]["post"];
-};
+export interface operations {
+  "createBoardItem": paths["/workspaces/{workspaceId}/items"]["post"];
+  "getBoardDetail": paths["/workspaces/{workspaceId}/boards/{boardId}"]["get"];
+}
+
+export type OperationRequestBody<TOperation extends keyof operations> =
+  operations[TOperation] extends { requestBody: { content: { "application/json": infer TBody } } } ? TBody : never;
+
+export type OperationResponse<TOperation extends keyof operations, TStatus extends keyof operations[TOperation]["responses"] = 200 & keyof operations[TOperation]["responses"]> =
+  operations[TOperation]["responses"][TStatus] extends { content: { "application/json": infer TResponse } } ? TResponse : never;
+
+export type OperationPathParams<TOperation extends keyof operations> =
+  operations[TOperation] extends { parameters: { path: infer TPath } } ? TPath : never;

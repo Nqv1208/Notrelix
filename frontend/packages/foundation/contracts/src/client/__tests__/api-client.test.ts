@@ -25,6 +25,30 @@ describe('createNotrelixClient — Instance-scoped API Client', () => {
     );
   });
 
+  it('adds Idempotency-Key header when request option is provided', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ data: 'ok' }), { status: 200 })
+    );
+
+    const client = createNotrelixClient({
+      baseUrl: 'http://api.test',
+      fetchImpl: mockFetch as unknown as typeof fetch,
+      createCorrelationId: () => 'corr-id',
+    });
+
+    await client.api.post('/commands', { title: 'Run' }, { idempotencyKey: 'idem-1' });
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://api.test/commands',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'X-Correlation-ID': 'corr-id',
+          'Idempotency-Key': 'idem-1',
+        }),
+      }),
+    );
+  });
+
   it('triggers refreshOnce only ONCE for multiple concurrent 401 requests', async () => {
     let refreshCallCount = 0;
 
