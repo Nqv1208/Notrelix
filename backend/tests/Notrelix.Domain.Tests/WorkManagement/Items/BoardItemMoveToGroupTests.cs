@@ -18,7 +18,7 @@ public class BoardItemMoveToGroupTests
     public void MoveToGroup_WithMatchingWorkspaceAndBoard_ShouldSucceed()
     {
         var groupId = Guid.NewGuid();
-        var item = BoardItem.Create(Guid.NewGuid(), WsA, BoardA, groupId, "Item", FractionalIndex.Create("a0"), Actor, Now);
+        var item = BoardItem.CreateRoot(Guid.NewGuid(), WsA, BoardA, groupId, "Item", FractionalIndex.Create("a0"), Actor, Now);
         ((IHasDomainEvents)item).ClearDomainEvents();
 
         var newGroup = Guid.NewGuid();
@@ -37,7 +37,7 @@ public class BoardItemMoveToGroupTests
     [Fact]
     public void MoveToGroup_WithMismatchedWorkspace_ShouldThrow()
     {
-        var item = BoardItem.Create(Guid.NewGuid(), WsA, BoardA, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Actor, Now);
+        var item = BoardItem.CreateRoot(Guid.NewGuid(), WsA, BoardA, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Actor, Now);
         var groupRef = new BoardGroupRef(Guid.NewGuid(), WsB, BoardA, Guid.NewGuid());
 
         var act = () => item.MoveToGroup(groupRef, FractionalIndex.Create("a1"), Actor, Now);
@@ -48,7 +48,7 @@ public class BoardItemMoveToGroupTests
     [Fact]
     public void MoveToGroup_WithMismatchedBoard_ShouldThrow()
     {
-        var item = BoardItem.Create(Guid.NewGuid(), WsA, BoardA, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Actor, Now);
+        var item = BoardItem.CreateRoot(Guid.NewGuid(), WsA, BoardA, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Actor, Now);
         var groupRef = new BoardGroupRef(Guid.NewGuid(), WsA, Guid.NewGuid(), Guid.NewGuid());
 
         var act = () => item.MoveToGroup(groupRef, FractionalIndex.Create("a1"), Actor, Now);
@@ -61,7 +61,7 @@ public class BoardItemMoveToGroupTests
     {
         var groupId = Guid.NewGuid();
         var position = FractionalIndex.Create("a0");
-        var item = BoardItem.Create(Guid.NewGuid(), WsA, BoardA, groupId, "Item", position, Actor, Now);
+        var item = BoardItem.CreateRoot(Guid.NewGuid(), WsA, BoardA, groupId, "Item", position, Actor, Now);
         var version = item.Version;
 
         var groupRef = new BoardGroupRef(Guid.NewGuid(), WsA, BoardA, groupId);

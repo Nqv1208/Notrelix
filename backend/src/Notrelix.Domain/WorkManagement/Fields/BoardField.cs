@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Notrelix.Domain.WorkManagement.Fields.Events;
 namespace Notrelix.Domain.WorkManagement.Fields;
 
@@ -10,7 +11,7 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
     public FieldType Type { get; private set; }
     public FieldSettings Settings { get; private set; } = null!;
     public FractionalIndex Position { get; private set; } = null!;
-    public string? DefaultValue { get; private set; }
+    public FieldValue? DefaultValue { get; private set; }
     public bool IsSystem { get; private set; }
     public DataClassification DataClassification { get; private set; } = DataClassification.Internal;
     public bool IsSensitive { get; private set; }
@@ -18,6 +19,8 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     private readonly List<FieldOption> _options = new();
     public IReadOnlyCollection<FieldOption> Options => _options.AsReadOnly();
+
+    private bool IsOptionBacked => Type is FieldType.Select or FieldType.MultiSelect or FieldType.Status;
 
     private BoardField() : base() { }
 
@@ -31,7 +34,7 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         FractionalIndex position,
         Guid createdBy,
         DateTimeOffset createdAt,
-        string? defaultValue = null,
+        FieldValue? defaultValue = null,
         bool isSystem = false,
         DataClassification dataClassification = DataClassification.Internal,
         bool isSensitive = false)
@@ -45,6 +48,18 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         FieldSettingsValidator.Validate(settings, type);
         Guard.NotEmpty(accountId);
+
+        if (defaultValue is not null)
+        {
+            if (type is FieldType.Select or FieldType.MultiSelect or FieldType.Status)
+            {
+                throw new BusinessRuleException(
+                    WorkManagementRuleCodes.WorkManagement_Field_DefaultRequiresConfiguredOptions,
+                    "An option-backed field cannot carry a default value at creation because options are not configured yet. Use SetDefaultValue after adding options.");
+            }
+
+            FieldValueValidator.Validate(defaultValue, type, settings);
+        }
 
         var field = new BoardField
         {
@@ -70,14 +85,17 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void UpdateSettings(FieldSettings settings, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNull(settings);
-
-        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
 
         FieldSettingsValidator.Validate(settings, Type);
 
         if (Settings == settings) return;
 
+        if (DefaultValue is not null)
+            ValidateDefaultValue(DefaultValue, settings);
+
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
         Settings = settings;
         ApplyAuditUpdate(audit);
         IncrementVersion();
@@ -87,6 +105,7 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void AddOption(string name, Color color, FractionalIndex position, Guid addedBy, DateTimeOffset addedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(addedBy);
         if (Type != FieldType.Select && Type != FieldType.MultiSelect && Type != FieldType.Status)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_CannotAddOptionsForType, $"Cannot add options to field of type {Type}");
 
@@ -95,9 +114,8 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (_options.Any(o => string.Equals(o.Name, normalizedName, StringComparison.OrdinalIgnoreCase)))
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_DuplicateOptionName, $"Duplicate option name '{normalizedName}'.");
 
-        var audit = PrepareAuditUpdate(addedBy, addedAt);
-
         var option = FieldOption.Create(Id, normalizedName, color, position);
+        var audit = PrepareAuditUpdate(addedBy, addedAt);
         _options.Add(option);
         ApplyAuditUpdate(audit);
         IncrementVersion();
@@ -109,12 +127,16 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(removedBy);
 
-        var audit = PrepareAuditUpdate(removedBy, removedAt);
-
         var option = _options.FirstOrDefault(o => o.Id == optionId);
         if (option is null)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_OptionNotFound, $"Field option '{optionId}' not found.");
 
+        if (DefaultValueReferencesOption(optionId))
+            throw new BusinessRuleException(
+                WorkManagementRuleCodes.WorkManagement_Field_OptionUsedByDefault,
+                $"Option '{optionId}' is referenced by the field default value and cannot be removed.");
+
+        var audit = PrepareAuditUpdate(removedBy, removedAt);
         _options.Remove(option);
         ApplyAuditUpdate(audit);
         IncrementVersion();
@@ -124,6 +146,7 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void UpdateOption(Guid optionId, string name, Color color, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(name);
 
         var normalizedName = NormalizeOptionName(name);
@@ -168,11 +191,11 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
                 WorkManagementRuleCodes.WorkManagement_Field_OptionNotFound,
                 "Reorder list must contain every field option exactly once.");
 
-        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
-
-        // ── No-op check ──────────────────────────────────────────────────
+        // ── No-op check before audit preparation ─────────────────────────
         var currentOrder = _options.OrderBy(o => o.Position).Select(o => o.Id).ToList();
         if (currentOrder.SequenceEqual(orderedOptionIds)) return;
+
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
 
         // ── Generate evenly distributed positions ────────────────────────
         var positions = FractionalIndexGenerator.GenerateNKeysBetween(
@@ -190,6 +213,22 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         // Defensive copy: event payload must not reference caller's mutable list
         var orderedCopy = orderedOptionIds.ToArray();
         RaiseDomainEvent(new FieldOptionsReorderedDomainEvent(AccountId, WorkspaceId, BoardId, Id, orderedCopy, updatedBy, updatedAt));
+    }
+
+    public void SetDefaultValue(FieldValue? defaultValue, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+
+        ValidateDefaultValue(defaultValue, Settings);
+
+        if (Equals(DefaultValue, defaultValue)) return;
+
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
+        DefaultValue = defaultValue;
+        ApplyAuditUpdate(audit);
+        IncrementVersion();
+        RaiseDomainEvent(new BoardFieldDefaultValueUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, defaultValue, updatedBy, updatedAt));
     }
 
     public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
@@ -225,9 +264,9 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
 
-        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
-
         if (DataClassification == classification && IsSensitive == isSensitive) return;
+
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
         DataClassification = classification;
         IsSensitive = isSensitive;
         ApplyAuditUpdate(audit);
@@ -235,16 +274,15 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardFieldClassificationUpdatedDomainEvent(AccountId, WorkspaceId, BoardId, Id, classification, isSensitive, updatedBy, updatedAt));
     }
 
-    public void UpdatePosition(FractionalIndex position, Guid updatedBy, DateTimeOffset updatedAt)
+    internal void UpdatePosition(FractionalIndex position, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Guard.NotNull(position);
         Guard.NotEmpty(updatedBy);
 
-        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
-
         if (Position.Value == position.Value) return;
 
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
         Position = position;
         ApplyAuditUpdate(audit);
         IncrementVersion();
@@ -259,5 +297,86 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new BoardFieldRestoredDomainEvent(AccountId, WorkspaceId, BoardId, Id, restoredBy, restoredAt));
+    }
+
+    private void ValidateDefaultValue(FieldValue? defaultValue, FieldSettings settings)
+    {
+        if (defaultValue is null) return;
+
+        if (IsOptionBacked)
+        {
+            ValidateDefaultOptionIds(defaultValue);
+            return;
+        }
+
+        FieldValueValidator.Validate(defaultValue, Type, settings);
+    }
+
+    private void ValidateDefaultOptionIds(FieldValue defaultValue)
+    {
+        var data = defaultValue.Data.Value;
+        if (data is null or "null") return;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(data);
+            var element = doc.RootElement;
+
+            if (element.ValueKind == JsonValueKind.Null)
+                return;
+
+            foreach (var optionId in ExtractOptionIds(element))
+            {
+                if (!_options.Any(o => o.Id == optionId))
+                {
+                    throw new BusinessRuleException(
+                        WorkManagementRuleCodes.WorkManagement_Field_InvalidOptionValue,
+                        $"Option '{optionId}' is not a configured option of this field.");
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            throw new BusinessRuleException(
+                WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidJsonFormat,
+                "Invalid JSON format in field value.");
+        }
+    }
+
+    private bool DefaultValueReferencesOption(Guid optionId)
+    {
+        if (DefaultValue is null) return false;
+
+        var data = DefaultValue.Data.Value;
+        if (data is null or "null") return false;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(data);
+            return ExtractOptionIds(doc.RootElement).Contains(optionId);
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    private static IEnumerable<Guid> ExtractOptionIds(JsonElement element)
+    {
+        if (element.ValueKind == JsonValueKind.Array)
+        {
+            var ids = new List<Guid>();
+            foreach (var item in element.EnumerateArray())
+            {
+                if (item.ValueKind == JsonValueKind.String && Guid.TryParse(item.GetString(), out var id))
+                    ids.Add(id);
+            }
+            return ids;
+        }
+
+        if (element.ValueKind == JsonValueKind.String && Guid.TryParse(element.GetString(), out var single))
+            return new[] { single };
+
+        return Array.Empty<Guid>();
     }
 }

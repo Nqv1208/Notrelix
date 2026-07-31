@@ -43,7 +43,7 @@ public class GetBoardSchemaQueryHandler : IRequestHandler<GetBoardSchemaQuery, B
                 f.Name,
                 f.Type.ToString(),
                 f.Settings.Data.Value,
-                f.DefaultValue,
+                f.DefaultValue == null ? null : f.DefaultValue.Data.Value,
                 f.Position.Value,
                 f.IsSystem
             )).ToListAsync(cancellationToken);

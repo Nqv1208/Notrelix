@@ -80,7 +80,7 @@ public class V4DomainRulesTests
     public void BoardItem_SetTimeline_ShouldThrow_WhenDueDateIsBeforeStartDate()
     {
         var group = BoardGroup.Create(Guid.NewGuid(), _workspaceId, _boardId, "Group", Color.Create("#0079BF"), FractionalIndex.Initial(), _actorId, _now);
-        var item = BoardItem.Create(Guid.NewGuid(), _workspaceId, _boardId, group.Id, "Item", FractionalIndex.Initial(), _actorId, _now);
+        var item = BoardItem.CreateRoot(Guid.NewGuid(), _workspaceId, _boardId, group.Id, "Item", FractionalIndex.Initial(), _actorId, _now);
 
         Action act = () => item.SetTimeline(_now, _now.AddDays(-1), _actorId, _now);
 

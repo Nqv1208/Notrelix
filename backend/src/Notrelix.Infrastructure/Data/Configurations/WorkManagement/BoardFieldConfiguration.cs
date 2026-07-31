@@ -17,7 +17,11 @@ public class BoardFieldConfiguration : IEntityTypeConfiguration<BoardField>
         builder.Property(x => x.BoardId).HasColumnName("board_id").IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
         builder.Property(x => x.Type).HasColumnName("type").HasConversion<string>().IsRequired().HasMaxLength(50);
-        builder.Property(x => x.DefaultValue).HasColumnName("default_value");
+        builder.Property(x => x.DefaultValue)
+            .HasColumnName("default_value")
+            .HasConversion(
+                v => v == null ? null : v.Data.Value,
+                v => v == null ? null : FieldValue.Create(JsonValue.Create(v)));
         builder.Property(x => x.IsSystem).HasColumnName("is_system");
 
         builder.OwnsOne(x => x.Settings, settings =>

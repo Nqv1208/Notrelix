@@ -36,7 +36,7 @@ public class ApprovalStep : Entity
         };
     }
 
-    public void Approve(DateTimeOffset decidedAt, string? note = null)
+    internal void Approve(DateTimeOffset decidedAt, string? note = null)
     {
         if (Status != ApprovalStatus.Pending)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_Step_CannotApproveUnlessPending, "Only pending steps can be approved.");
@@ -48,7 +48,7 @@ public class ApprovalStep : Entity
         Note = note;
     }
 
-    public void Reject(DateTimeOffset decidedAt, string? note = null)
+    internal void Reject(DateTimeOffset decidedAt, string? note = null)
     {
         if (Status != ApprovalStatus.Pending)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_Step_CannotRejectUnlessPending, "Only pending steps can be rejected.");

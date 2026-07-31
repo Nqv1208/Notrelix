@@ -415,7 +415,7 @@ internal static class InitDb
                         _ => $"Task {itemIndex + 1}"
                     };
 
-                    var item = BoardItem.Create(
+                    var item = BoardItem.CreateRoot(
                         account.Id, bs.Board.WorkspaceId, bs.Board.Id, group.Id,
                         itemName, FractionalIndex.Create($"a{i}"),
                         creator.Id, Epoch.AddDays(itemIndex));

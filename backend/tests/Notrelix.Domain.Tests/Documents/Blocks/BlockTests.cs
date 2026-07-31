@@ -25,6 +25,38 @@ public class BlockTests
         block.DomainEvents.Should().ContainSingle(e => e is BlockCreatedDomainEvent);
     }
 
+    [Fact]
+    public void BlockCreated_ShouldBeNotificationOnly_WithoutParentId()
+    {
+        var createdEventProps = typeof(BlockCreatedDomainEvent)
+            .GetProperties()
+            .Select(p => p.Name)
+            .ToHashSet();
+
+        createdEventProps.Should().Contain(nameof(BlockCreatedDomainEvent.BlockId));
+        createdEventProps.Should().NotContain("ParentId",
+            "documents.block-created is a creation notification; hierarchy facts live on Block.ParentId and documents.block-moved");
+    }
+
+    [Fact]
+    public void CreateChild_ShouldPersistParent_AndEmitNotificationEvent()
+    {
+        var accountId = Guid.NewGuid();
+        var workspaceId = Guid.NewGuid();
+        var pageId = Guid.NewGuid();
+        var parentPath = BlockAncestorPath.Create(accountId, workspaceId, pageId, Guid.NewGuid(), new[] { Guid.NewGuid() });
+        var content = BlockContent.Create(JsonValue.Create("{\"text\":\"Child\"}"));
+        var position = FractionalIndex.Create("a1");
+        var createdBy = Guid.NewGuid();
+
+        var child = Block.CreateChild(accountId, workspaceId, pageId, BlockType.Text, content, position, createdBy, DateTimeOffset.UtcNow, parentPath);
+
+        child.ParentId.Should().Be(parentPath.TargetParentId);
+        var evt = child.DomainEvents.OfType<BlockCreatedDomainEvent>().Single();
+        evt.BlockId.Should().Be(child.Id);
+        evt.PageId.Should().Be(pageId);
+    }
+
     [CoversMutation(typeof(Block), "UpdateProperties(Notrelix.Domain.Documents.Blocks.BlockProperties,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
     [Fact]
     public void Create_ShouldApplyDefaultProperties_WhenNoneProvided()

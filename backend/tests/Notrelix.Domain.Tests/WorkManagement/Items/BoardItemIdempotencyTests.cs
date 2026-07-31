@@ -17,7 +17,7 @@ public class BoardItemIdempotencyTests
     public void Rename_ShouldNotIncrementVersion_WhenNameIsSame()
     {
         var position = FractionalIndex.Create("a0");
-        var item = BoardItem.Create(Guid.NewGuid(), _workspaceId, _boardId, Guid.NewGuid(), "Item", position, _actorId, _now);
+        var item = BoardItem.CreateRoot(Guid.NewGuid(), _workspaceId, _boardId, Guid.NewGuid(), "Item", position, _actorId, _now);
         var version = item.Version;
 
         item.Rename("Item", _actorId, _now);
@@ -32,7 +32,7 @@ public class BoardItemIdempotencyTests
     {
         var groupId = Guid.NewGuid();
         var position = FractionalIndex.Create("a0");
-        var item = BoardItem.Create(Guid.NewGuid(), _workspaceId, _boardId, groupId, "Item", position, _actorId, _now);
+        var item = BoardItem.CreateRoot(Guid.NewGuid(), _workspaceId, _boardId, groupId, "Item", position, _actorId, _now);
         var version = item.Version;
 
         var boardGroupRef = new BoardGroupRef(Guid.NewGuid(), _workspaceId, _boardId, groupId);
@@ -45,7 +45,7 @@ public class BoardItemIdempotencyTests
     [Fact]
     public void Delete_ShouldIncrementVersion_AndRaiseEvent()
     {
-        var item = BoardItem.Create(Guid.NewGuid(), _workspaceId, _boardId, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), _actorId, _now);
+        var item = BoardItem.CreateRoot(Guid.NewGuid(), _workspaceId, _boardId, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), _actorId, _now);
         var version = item.Version;
 
         item.Delete(_actorId, _now);

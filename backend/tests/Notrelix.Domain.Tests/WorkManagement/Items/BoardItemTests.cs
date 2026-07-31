@@ -11,7 +11,7 @@ public class BoardItemTests
 {
     private BoardItem CreateValidItem()
     {
-        return BoardItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Item 1", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        return BoardItem.CreateRoot(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Item 1", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
     }
 
     [CoversMutation(typeof(BoardItem), "UpdateFieldValue(Notrelix.Domain.WorkManagement.Fields.BoardField,Notrelix.Domain.WorkManagement.Fields.FieldValue,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
@@ -22,7 +22,7 @@ public class BoardItemTests
         var boardId = Guid.NewGuid();
         var groupId = Guid.NewGuid();
 
-        var item = BoardItem.Create(Guid.NewGuid(), workspaceId, boardId, groupId, "Item 1", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var item = BoardItem.CreateRoot(Guid.NewGuid(), workspaceId, boardId, groupId, "Item 1", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)item).ClearDomainEvents();
 
         var field = BoardField.Create(Guid.NewGuid(), workspaceId, boardId, "My Field", FieldType.Text, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -45,7 +45,7 @@ public class BoardItemTests
         var boardId = Guid.NewGuid();
         var groupId = Guid.NewGuid();
 
-        var item = BoardItem.Create(Guid.NewGuid(), workspaceId, boardId, groupId, "Item 1", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var item = BoardItem.CreateRoot(Guid.NewGuid(), workspaceId, boardId, groupId, "Item 1", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         item.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var field = BoardField.Create(Guid.NewGuid(), workspaceId, boardId, "My Field", FieldType.Text, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -97,7 +97,7 @@ public class BoardItemTests
     [Fact]
     public void UpdateFieldValue_ShouldThrow_WhenFieldFromDifferentWorkspace()
     {
-        var item = BoardItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var item = BoardItem.CreateRoot(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)item).ClearDomainEvents();
 
         var field = BoardField.Create(Guid.NewGuid(), Guid.NewGuid(), item.BoardId, "Field", FieldType.Text, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -112,7 +112,7 @@ public class BoardItemTests
     [Fact]
     public void UpdateFieldValue_ShouldThrow_WhenFieldFromDifferentBoard()
     {
-        var item = BoardItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var item = BoardItem.CreateRoot(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)item).ClearDomainEvents();
 
         var field = BoardField.Create(Guid.NewGuid(), item.WorkspaceId, Guid.NewGuid(), "Field", FieldType.Text, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -129,7 +129,7 @@ public class BoardItemTests
     {
         var workspaceId = Guid.NewGuid();
         var boardId = Guid.NewGuid();
-        var item = BoardItem.Create(Guid.NewGuid(), workspaceId, boardId, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var item = BoardItem.CreateRoot(Guid.NewGuid(), workspaceId, boardId, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)item).ClearDomainEvents();
 
         var field = BoardField.Create(Guid.NewGuid(), workspaceId, boardId, "Status", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -147,7 +147,7 @@ public class BoardItemTests
     {
         var workspaceId = Guid.NewGuid();
         var boardId = Guid.NewGuid();
-        var item = BoardItem.Create(Guid.NewGuid(), workspaceId, boardId, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var item = BoardItem.CreateRoot(Guid.NewGuid(), workspaceId, boardId, Guid.NewGuid(), "Item", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)item).ClearDomainEvents();
 
         var field = BoardField.Create(Guid.NewGuid(), workspaceId, boardId, "Status", FieldType.Select, FieldSettings.Empty(), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);

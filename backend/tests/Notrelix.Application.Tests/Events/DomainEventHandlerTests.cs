@@ -62,7 +62,7 @@ public class DomainEventHandlerTests
         var now = DateTimeOffset.UtcNow;
         var position = FractionalIndex.Initial();
 
-        var item = BoardItem.Create(Guid.NewGuid(), workspaceId, boardId, groupId, "Task", position, createdBy, now);
+        var item = BoardItem.CreateRoot(Guid.NewGuid(), workspaceId, boardId, groupId, "Task", position, createdBy, now);
 
         var domainEvents = item.DomainEvents;
         domainEvents.Should().ContainSingle(e => e is BoardItemCreatedDomainEvent);

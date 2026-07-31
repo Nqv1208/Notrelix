@@ -27,7 +27,7 @@ public class ChecklistItem : Entity
         };
     }
 
-    public void Toggle(DateTimeOffset toggledAt)
+    internal void Toggle(DateTimeOffset toggledAt)
     {
         Status = Status == ChecklistItemStatus.Open ? ChecklistItemStatus.Done : ChecklistItemStatus.Open;
         CompletedAt = Status == ChecklistItemStatus.Done ? toggledAt : null;

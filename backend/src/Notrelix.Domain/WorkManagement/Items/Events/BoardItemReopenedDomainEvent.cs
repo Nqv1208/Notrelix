@@ -1,12 +1,11 @@
 namespace Notrelix.Domain.WorkManagement.Items.Events;
 
-[EventName("work-management.board-item-completed", Version = 2)]
-public sealed record BoardItemCompletedDomainEvent(
+[EventName("work-management.board-item-reopened")]
+public sealed record BoardItemReopenedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
     Guid BoardId,
     Guid ItemId,
-    DateTimeOffset CompletedAt,
-    Guid CompletedBy,
+    Guid ReopenedBy,
     DateTimeOffset OccurredAt
 ) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

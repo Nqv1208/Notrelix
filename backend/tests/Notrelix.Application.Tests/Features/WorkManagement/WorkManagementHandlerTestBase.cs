@@ -157,7 +157,7 @@ public abstract class WorkManagementHandlerTestBase
 
     protected BoardItem CreateBoardItem(Guid? id = null, Guid? boardId = null, Guid? groupId = null)
     {
-        var item = BoardItem.Create(
+        var item = BoardItem.CreateRoot(
             TestAccountId,
             TestWorkspaceId,
             boardId ?? Guid.CreateVersion7(),

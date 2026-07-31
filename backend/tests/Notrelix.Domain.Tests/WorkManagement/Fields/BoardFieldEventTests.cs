@@ -12,7 +12,6 @@ public class BoardFieldEventTests
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
     [CoversMutation(typeof(BoardField), "UpdateClassification(Notrelix.Domain.WorkManagement.Fields.DataClassification,System.Boolean,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
-    [CoversMutation(typeof(BoardField), "UpdatePosition(Notrelix.Domain.SharedKernel.Ordering.FractionalIndex,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [CoversMutation(typeof(BoardField), "UpdateSettings(Notrelix.Domain.WorkManagement.Fields.FieldSettings,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void BoardField_UpdateClassification_ShouldRaiseEvent()
@@ -32,7 +31,6 @@ public class BoardFieldEventTests
     }
 
     [CoversMutation(typeof(BoardField), "UpdateClassification(Notrelix.Domain.WorkManagement.Fields.DataClassification,System.Boolean,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
-    [CoversMutation(typeof(BoardField), "UpdatePosition(Notrelix.Domain.SharedKernel.Ordering.FractionalIndex,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [CoversMutation(typeof(BoardField), "UpdateSettings(Notrelix.Domain.WorkManagement.Fields.FieldSettings,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
     [Fact]
     public void BoardField_UpdateClassification_WhenSameValue_ShouldNotRaiseEvent()
