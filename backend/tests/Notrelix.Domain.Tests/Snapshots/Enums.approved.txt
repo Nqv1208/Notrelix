@@ -426,7 +426,6 @@ Notrelix.Domain.WorkManagement.Relations.BoardItemSyncStatus|System.Int32|Failed
 Notrelix.Domain.WorkManagement.Relations.BoardRelationStatus|System.Int32|Active|0
 Notrelix.Domain.WorkManagement.Relations.BoardRelationStatus|System.Int32|Paused|1
 Notrelix.Domain.WorkManagement.Relations.BoardRelationStatus|System.Int32|Broken|2
-Notrelix.Domain.WorkManagement.Relations.BoardRelationStatus|System.Int32|Deleted|3
 Notrelix.Domain.WorkManagement.Relations.BoardRelationSyncMode|System.Int32|Manual|0
 Notrelix.Domain.WorkManagement.Relations.BoardRelationSyncMode|System.Int32|Realtime|1
 Notrelix.Domain.WorkManagement.Relations.BoardRelationSyncMode|System.Int32|Scheduled|2

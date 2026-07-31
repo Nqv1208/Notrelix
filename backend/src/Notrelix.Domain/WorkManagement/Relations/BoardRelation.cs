@@ -116,9 +116,9 @@ public class BoardRelation : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
+
         var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         ApplyDeletion(pendingDeletion);
-        Status = BoardRelationStatus.Deleted;
         IncrementVersion();
         RaiseDomainEvent(new BoardRelationDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
@@ -127,9 +127,9 @@ public class BoardRelation : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
+
         var pendingRestore = PrepareRestore(restoredBy, restoredAt);
         ApplyRestore(pendingRestore);
-        Status = BoardRelationStatus.Active;
         IncrementVersion();
         RaiseDomainEvent(new BoardRelationRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
