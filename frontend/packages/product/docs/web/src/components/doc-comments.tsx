@@ -6,7 +6,7 @@ import {
   type DocsApiClient,
   type PageApiEndpoints,
   type PageComment,
-} from '@notrelix/docs-core';
+} from '@notrelix/docs-state';
 import { Button, Avatar, AvatarFallback } from '@notrelix/ui-web';
 import { MessageSquare, Trash2, Send } from 'lucide-react';
 

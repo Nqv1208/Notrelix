@@ -1,5 +1,5 @@
 {
-  "name": "@notrelix/docs-core",
+  "name": "@notrelix/docs-state",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -10,15 +10,19 @@
     "./query/keys": "./src/query/keys.ts"
   },
   "scripts": {
-    "test": "vitest run",
     "clean": "rm -rf node_modules dist",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@notrelix/docs-core": "workspace:*",
+    "@tanstack/react-query": "^5.95.2"
   },
   "peerDependencies": {
+    "react": "^19.0.0"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0"
   }
 }

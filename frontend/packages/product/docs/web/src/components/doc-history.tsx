@@ -3,7 +3,7 @@ import {
   type DocsApiClient,
   type PageApiEndpoints,
   type PageActivity,
-} from '@notrelix/docs-core';
+} from '@notrelix/docs-state';
 import { Clock, FileText, MessageSquare, Share2, ArrowRight, Sparkles } from 'lucide-react';
 
 interface DocHistoryProps {

@@ -4,7 +4,7 @@ import {
   createUseToggleFavorite,
   type DocsApiClient,
   type PageApiEndpoints,
-} from '@notrelix/docs-core';
+} from '@notrelix/docs-state';
 import { Button } from '@notrelix/ui-web';
 import { Star, Share2, MoreHorizontal, ChevronRight, BookOpen } from 'lucide-react';
 import { useState } from 'react';

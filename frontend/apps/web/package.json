@@ -16,6 +16,7 @@
     "@notrelix/automation-web": "workspace:*",
     "@notrelix/contracts": "workspace:*",
     "@notrelix/docs-core": "workspace:*",
+    "@notrelix/docs-state": "workspace:*",
     "@notrelix/docs-web": "workspace:*",
     "@notrelix/features-account": "workspace:*",
     "@notrelix/features-auth": "workspace:*",

@@ -13,7 +13,7 @@ import {
   type Block,
   type BlockType,
   type BreadcrumbItem,
-} from '@notrelix/docs-core';
+} from '@notrelix/docs-state';
 import { Button, Skeleton } from '@notrelix/ui-web';
 import {
   DndContext,

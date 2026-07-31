@@ -2,8 +2,8 @@ import { useMemo } from 'react';
 import { useParams } from '@tanstack/react-router';
 import { useWorkspaceContext } from '@/providers/workspace-provider';
 import { useWorkspaceBoards } from '@notrelix/work-management-state';
-import { createUsePageList, createUseDocsFavorites } from '@notrelix/docs-core';
-import { createUseWorkspaceMembers } from '@notrelix/features-workspace/core';
+import { createUsePageList, createUseDocsFavorites } from '@notrelix/docs-state';
+import { createUseWorkspaceMembers } from '@notrelix/features-workspace/web';
 import { useAppRuntime } from '@notrelix/runtime-web';
 import {
   WorkspaceOverview,
