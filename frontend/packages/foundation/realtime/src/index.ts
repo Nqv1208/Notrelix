@@ -8,6 +8,7 @@
  */
 
 export * from './protocol';
+export { ReconnectPolicy, type ReconnectPolicyConfig } from './connection/reconnect-policy';
 export {
   RealtimeClient,
   type RealtimeConnectionState,

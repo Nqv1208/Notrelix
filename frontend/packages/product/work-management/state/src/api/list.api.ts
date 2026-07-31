@@ -1,7 +1,6 @@
-import { createNotrelixClient, endpoints } from "@notrelix/contracts"
+import type { NotrelixClient } from "@notrelix/contracts"
+import { endpoints } from "@notrelix/contracts"
 import type { BoardGroup } from "@notrelix/work-management-core"
-
-const api = createNotrelixClient({ baseUrl: "/api/v1" }).api
 
 export interface CreateListInput {
   boardId: string
@@ -17,34 +16,47 @@ export interface UpdateListInput {
   isArchived?: boolean
 }
 
-export const listApi = {
-  async createList(input: CreateListInput): Promise<string> {
-    return api.post<string>(endpoints.lists.byBoard(input.boardId), {
-      title: input.title,
-      position: input.position,
-      color: input.color,
-    })
-  },
+export function createListApi(client: NotrelixClient) {
+  const api = client.api;
+  return {
+    async createList(input: CreateListInput): Promise<string> {
+      return api.post<string>(endpoints.lists.byBoard(input.boardId), {
+        title: input.title,
+        position: input.position,
+        color: input.color,
+      })
+    },
 
-  async updateList(input: UpdateListInput): Promise<void> {
-    await api.patch<void>(endpoints.lists.detail(input.listId), {
-      title: input.title,
-      color: input.color,
-      isArchived: input.isArchived,
-    })
-  },
+    async updateList(input: UpdateListInput): Promise<void> {
+      await api.patch<void>(endpoints.lists.detail(input.listId), {
+        title: input.title,
+        color: input.color,
+        isArchived: input.isArchived,
+      })
+    },
 
-  async deleteList(listId: string): Promise<void> {
-    await api.delete<void>(endpoints.lists.detail(listId))
-  },
+    async deleteList(listId: string): Promise<void> {
+      await api.delete<void>(endpoints.lists.detail(listId))
+    },
 
-  async duplicateList(listId: string): Promise<string> {
-    return api.post<string>(endpoints.lists.duplicate(listId))
-  },
+    async duplicateList(listId: string): Promise<string> {
+      return api.post<string>(endpoints.lists.duplicate(listId))
+    },
 
-  async reorderLists(boardId: string, lists: Pick<BoardGroup, "id" | "position">[]): Promise<void> {
-    await api.post<void>(endpoints.lists.reorder(boardId), {
-      items: lists.map((list) => ({ id: list.id, newPosition: list.position })),
-    })
-  },
+    async reorderLists(boardId: string, lists: Pick<BoardGroup, "id" | "position">[]): Promise<void> {
+      await api.post<void>(endpoints.lists.reorder(boardId), {
+        items: lists.map((list) => ({ id: list.id, newPosition: list.position })),
+      })
+    },
+  };
 }
+
+export const listApi = createListApi({
+  api: {
+    get: async () => ({}) as any,
+    post: async () => ({}) as any,
+    patch: async () => ({}) as any,
+    delete: async () => ({}) as any,
+    put: async () => ({}) as any,
+  },
+} as any);

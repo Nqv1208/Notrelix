@@ -1,0 +1,80 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Notrelix Enterprise Work-Management OS API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/workspaces/{workspaceId}/boards/{boardId}": {
+      "get": {
+        "operationId": "getBoardDetail",
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "boardId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Board detail response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "workspaceId": { "type": "string" },
+                    "name": { "type": "string" },
+                    "description": { "type": "string" }
+                  },
+                  "required": ["id", "workspaceId", "name"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{workspaceId}/items": {
+      "post": {
+        "operationId": "createBoardItem",
+        "parameters": [
+          { "name": "workspaceId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "boardId": { "type": "string" },
+                  "title": { "type": "string" },
+                  "groupId": { "type": "string" }
+                },
+                "required": ["boardId", "title"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Item created response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "boardId": { "type": "string" },
+                    "title": { "type": "string" },
+                    "sequence": { "type": "integer" }
+                  },
+                  "required": ["id", "boardId", "title"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -509,3 +509,11 @@ When asked to implement:
 When unsure, do not invent architecture. Ask or write a clearly marked assumption.
 
 Do not claim the whole Domain is complete unless all bounded contexts have been audited and tests pass.
+
+---
+
+# 18. Git Commit Rules
+
+NEVER execute `git commit` automatically unless explicitly commanded by the USER in their prompt.
+Do not auto-commit changes after refactoring, writing docs, or running tests.
+Always report progress to the USER and wait for user approval before making any git commit.

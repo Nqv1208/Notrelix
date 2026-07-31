@@ -31,6 +31,30 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: frontend
 
+  contract-codegen:
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Check contract codegen drift
+        run: pnpm codegen:check
+        working-directory: frontend
+
   typecheck:
     needs: install
     runs-on: ubuntu-latest
@@ -147,7 +171,7 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: frontend
 
-      - name: Check dependency boundaries
+      - name: Check frontend architecture
         run: pnpm check:deps
         working-directory: frontend
 
@@ -272,6 +296,7 @@ jobs:
   frontend-gate:
     if: always()
     needs:
+      - contract-codegen
       - typecheck
       - lint
       - test-node
@@ -285,6 +310,7 @@ jobs:
       - name: Evaluate gate results
         run: |
           results=(
+            "${{ needs.contract-codegen.result }}"
             "${{ needs.typecheck.result }}"
             "${{ needs.lint.result }}"
             "${{ needs.test-node.result }}"

@@ -1,6 +1,7 @@
 import ts from 'typescript';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join, resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { ALLOWED_IMPORTS } from './allowed-imports';
 import { FORBIDDEN_IMPORTS } from './forbidden-imports';
 import {
@@ -9,6 +10,9 @@ import {
   isForbiddenQueryClientInstantiation,
   isDeepSrcImport,
 } from './forbidden-source-patterns';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const DEFAULT_ROOT = resolve(__dirname, '../../..');
 
@@ -45,7 +49,7 @@ export function checkArchitecture(rootDir = DEFAULT_ROOT): { ok: boolean; violat
         const full = join(dir, entry);
         const stat = statSync(full);
         if (stat.isDirectory() && !entry.startsWith('.') && entry !== 'node_modules' && entry !== 'dist') {
-          results.push(...walkDir(full, exts));
+          results.push(...walkDir(full));
         } else if (stat.isFile() && exts.some((e) => full.endsWith(e))) {
           results.push(full);
         }
@@ -88,14 +92,18 @@ export function checkArchitecture(rootDir = DEFAULT_ROOT): { ok: boolean; violat
             violations.push(`[DEEP_IMPORT] ${pkgName} → "${imported}" in ${relPath}`);
           }
 
-          const internalPkg = imported.match(/^(@notrelix\/[^/]+)/)?.[1] ?? imported;
-          if (forbidden.includes(imported) || forbidden.includes(internalPkg)) {
-            violations.push(`[FORBIDDEN_IMPORT] ${pkgName} → "${imported}" in ${relPath}`);
+          const basePkg = imported.startsWith('next/')
+            ? 'next'
+            : (imported.match(/^(@notrelix\/[^/]+)/)?.[1] ?? imported);
+
+          if (forbidden.includes(imported) || forbidden.includes(basePkg)) {
+            const tag = imported.startsWith('@notrelix/') ? '[FORBIDDEN]' : '[EXTERNAL_FORBIDDEN]';
+            violations.push(`${tag} ${pkgName} → "${imported}" in ${relPath}`);
           }
 
-          if (allowed !== null && internalPkg.startsWith('@notrelix/')) {
-            if (!allowed.some((a) => internalPkg === a || internalPkg.startsWith(a + '/'))) {
-              violations.push(`[NOT_ALLOWED_IMPORT] ${pkgName} → "${internalPkg}" in ${relPath}`);
+          if (allowed !== null && basePkg.startsWith('@notrelix/')) {
+            if (!allowed.some((a) => basePkg === a || basePkg.startsWith(a + '/'))) {
+              violations.push(`[NOT_ALLOWED_IMPORT] ${pkgName} → "${basePkg}" in ${relPath}`);
             }
           }
         }
@@ -119,7 +127,7 @@ export function checkArchitecture(rootDir = DEFAULT_ROOT): { ok: boolean; violat
           }
         }
 
-        // Check direct PropertyAccessExpression (import.meta.env or process.env outside approved adapters)
+        // Check direct PropertyAccessExpression (process.env / import.meta.env inside packages outside app config adapters)
         if (ts.isPropertyAccessExpression(node)) {
           const propText = node.getText(sourceFile);
           if (

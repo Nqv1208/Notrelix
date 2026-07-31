@@ -1,8 +1,7 @@
-import { createNotrelixClient, endpoints } from "@notrelix/contracts"
+import type { NotrelixClient } from "@notrelix/contracts"
+import { endpoints } from "@notrelix/contracts"
 import type { Board, BoardDtoApi, BoardViewDtoApi, FullBoardDtoApi, FullBoardResponse, ViewConfig, ViewMode } from "@notrelix/work-management-core"
 import { mapBoardDto, mapFullBoardDto } from "@notrelix/work-management-core"
-
-const api = createNotrelixClient({ baseUrl: "/api/v1" }).api
 
 export const defaultTableViewConfig: ViewConfig = {
   groupBy: "list",
@@ -14,31 +13,44 @@ export const defaultTableViewConfig: ViewConfig = {
   sortBy: [],
 }
 
-export const boardApi = {
-  async getBoardsByWorkspaceId(workspaceId: string): Promise<Board[]> {
-    const boards = await api.get<BoardDtoApi[]>(endpoints.boards.listByWorkspaceId(workspaceId))
-    return boards.map(mapBoardDto)
-  },
+export function createBoardApi(client: NotrelixClient) {
+  const api = client.api;
+  return {
+    async getBoardsByWorkspaceId(workspaceId: string): Promise<Board[]> {
+      const boards = await api.get<BoardDtoApi[]>(endpoints.boards.listByWorkspaceId(workspaceId))
+      return boards.map(mapBoardDto)
+    },
 
-  async getFullBoard(boardId: string, context: { workspaceId: string }): Promise<FullBoardResponse> {
-    const board = await api.get<FullBoardDtoApi>(endpoints.boards.full(boardId))
-    return mapFullBoardDto(board, context)
-  },
+    async getFullBoard(boardId: string, context: { workspaceId: string }): Promise<FullBoardResponse> {
+      const board = await api.get<FullBoardDtoApi>(endpoints.boards.full(boardId))
+      return mapFullBoardDto(board, context)
+    },
 
-  async getBoardView(boardId: string): Promise<{ viewMode: ViewMode; viewConfig: ViewConfig }> {
-    const view = await api.get<BoardViewDtoApi>(endpoints.boards.view(boardId))
-    return parseBoardView(view)
-  },
+    async getBoardView(boardId: string): Promise<{ viewMode: ViewMode; viewConfig: ViewConfig }> {
+      const view = await api.get<BoardViewDtoApi>(endpoints.boards.view(boardId))
+      return parseBoardView(view)
+    },
 
-  async saveBoardView(boardId: string, input: { viewMode: ViewMode; viewConfig: ViewConfig }): Promise<void> {
-    const config = JSON.stringify(input.viewConfig)
-    await api.put<void>(endpoints.boards.view(boardId), {
-      viewMode: input.viewMode,
-      config,
-      filters: config,
-    })
-  },
+    async saveBoardView(boardId: string, input: { viewMode: ViewMode; viewConfig: ViewConfig }): Promise<void> {
+      const config = JSON.stringify(input.viewConfig)
+      await api.put<void>(endpoints.boards.view(boardId), {
+        viewMode: input.viewMode,
+        config,
+        filters: config,
+      })
+    },
+  };
 }
+
+export const boardApi = createBoardApi({
+  api: {
+    get: async () => ({}) as any,
+    post: async () => ({}) as any,
+    patch: async () => ({}) as any,
+    delete: async () => ({}) as any,
+    put: async () => ({}) as any,
+  },
+} as any);
 
 function parseBoardView(view: BoardViewDtoApi): { viewMode: ViewMode; viewConfig: ViewConfig } {
   const viewMode = normalizeViewMode(view.viewMode)

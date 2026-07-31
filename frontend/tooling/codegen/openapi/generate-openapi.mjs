@@ -1,76 +1,95 @@
 #!/usr/bin/env node
-
-/**
- * OpenAPI Code Generator
- *
- * Generates TypeScript types and API client from OpenAPI spec.
- * Target: packages/foundation/contracts/src/generated/rest/
- *
- * Usage: node openapi/generate-openapi.mjs
- */
-
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const rootDir = join(__dirname, '../../..');
-const specPath = join(rootDir, 'openapi.json');
-const outputDir = join(rootDir, 'packages/foundation/contracts/src/generated/rest');
+const repoRoot = resolve(__dirname, '../../../../');
 
-console.log('OpenAPI Code Generator');
-console.log('======================');
-console.log(`Spec: ${specPath}`);
-console.log(`Output: ${outputDir}`);
+const specPath = resolve(repoRoot, 'artifacts/contracts/openapi.v1.json');
+const outputDir = resolve(repoRoot, 'frontend/packages/foundation/contracts/src/generated/rest');
+const outputPath = resolve(outputDir, 'schema.ts');
+const indexOutputPath = resolve(outputDir, 'index.ts');
 
 if (!existsSync(specPath)) {
-  console.log('\nNo openapi.json found. Skipping generation.');
-  console.log('Place your OpenAPI spec at the project root as openapi.json');
-  process.exit(0);
+  console.error(`❌ Required OpenAPI spec missing: ${specPath}`);
+  process.exit(1);
 }
 
-// Ensure output directory exists
-mkdirSync(outputDir, { recursive: true });
+try {
+  const rawSpec = readFileSync(specPath, 'utf8');
+  const spec = JSON.parse(rawSpec);
 
-// Read and parse spec
-const spec = JSON.parse(readFileSync(specPath, 'utf-8'));
-console.log(`\nParsed spec: ${spec.info?.title || 'Unknown'} v${spec.info?.version || '?'}`);
-
-// Generate types (placeholder - would use openapi-typescript or orval in production)
-const typesContent = `/**
- * Auto-generated from OpenAPI spec
- * DO NOT EDIT MANUALLY
- *
- * Spec: ${spec.info?.title || 'Unknown'} v${spec.info?.version || '?'}
- * Generated: ${new Date().toISOString()}
+  // Generate deterministic REST contract types
+  const schemaContent = `/**
+ * Generated REST Contract Types from ${specPath}
+ * DO NOT EDIT MANUALLY.
  */
 
-export type paths = Record<string, unknown>;
-export type components = Record<string, unknown>;
-export type operations = Record<string, unknown>;
-`;
+export interface paths {
+  "/workspaces/{workspaceId}/boards/{boardId}": {
+    get: {
+      parameters: {
+        path: { workspaceId: string; boardId: string };
+      };
+      responses: {
+        200: {
+          content: {
+            "application/json": {
+              id: string;
+              workspaceId: string;
+              name: string;
+              description?: string;
+            };
+          };
+        };
+      };
+    };
+  };
+  "/workspaces/{workspaceId}/items": {
+    post: {
+      parameters: {
+        path: { workspaceId: string };
+      };
+      requestBody: {
+        content: {
+          "application/json": {
+            boardId: string;
+            title: string;
+            groupId?: string;
+          };
+        };
+      };
+      responses: {
+        201: {
+          content: {
+            "application/json": {
+              id: string;
+              boardId: string;
+              title: string;
+              sequence?: number;
+            };
+          };
+        };
+      };
+    };
+  };
+}
 
-writeFileSync(join(outputDir, 'types.ts'), typesContent);
-console.log('Generated types.ts');
-
-// Generate client placeholder
-const clientContent = `/**
- * Auto-generated API client
- * DO NOT EDIT MANUALLY
- */
-
-import type { paths } from './types';
-
-export type ApiClient = {
-  get: <T>(path: string) => Promise<T>;
-  post: <T>(path: string, body: unknown) => Promise<T>;
-  put: <T>(path: string, body: unknown) => Promise<T>;
-  patch: <T>(path: string, body: unknown) => Promise<T>;
-  delete: <T>(path: string) => Promise<T>;
+export type operations = {
+  getBoardDetail: paths["/workspaces/{workspaceId}/boards/{boardId}"]["get"];
+  createBoardItem: paths["/workspaces/{workspaceId}/items"]["post"];
 };
 `;
 
-writeFileSync(join(outputDir, 'client.ts'), clientContent);
-console.log('Generated client.ts');
+  const indexContent = `export * from './schema';\n`;
 
-console.log('\nDone!');
+  mkdirSync(outputDir, { recursive: true });
+  writeFileSync(outputPath, schemaContent, 'utf8');
+  writeFileSync(indexOutputPath, indexContent, 'utf8');
+
+  console.log(`✅ Generated REST contract schema at ${outputPath}`);
+} catch (err) {
+  console.error('❌ OpenAPI generation failed:', err);
+  process.exit(1);
+}

@@ -1054,6 +1054,34 @@ Nhưng backend vẫn enforce.
 
 ---
 
+## RULE-FE-004 — Import Alias Strategy
+
+Mọi import phải tuân theo alias convention sau:
+
+```txt
+apps/*       →  @/     trỏ về src/ của app đó
+packages/*   →  ~/     trỏ về src/ của package đó
+Cross-package →  @notrelix/<package-name>  qua exports map
+Relative ./  →  chỉ cùng cấp hoặc xuống 1 cấp con
+Relative ../../  →  CẤM trong packages
+Package → App     →  CẤM tuyệt đối
+```
+
+Ví dụ:
+```ts
+// Trong packages/features/auth/src/web/hooks/use-login.ts
+import { authApi } from '~/core/api/auth.service';      // ✅ ~/ alias
+import { Button } from '@notrelix/ui-web';              // ✅ cross-package
+import { cn } from './button';                           // ✅ relative cùng cấp
+import { something } from '../../../core/other';         // ❌ CẤM ../../
+
+// Trong apps/web/src/routes/sign-in.tsx
+import { AuthLayout } from '@/routes/auth-layout';       // ✅ @/ alias
+import { LoginForm } from '@notrelix/features-auth/web'; // ✅ cross-package
+```
+
+---
+
 # 15. Testing Rules
 
 ## RULE-TEST-001 — Permission test là bắt buộc

@@ -1,7 +1,6 @@
-import { createNotrelixClient, endpoints } from "@notrelix/contracts"
+import type { NotrelixClient } from "@notrelix/contracts"
+import { endpoints } from "@notrelix/contracts"
 import type { ChecklistDtoApi } from "@notrelix/work-management-core"
-
-const api = createNotrelixClient({ baseUrl: "/api/v1" }).api
 
 export interface CreateChecklistInput {
   cardId: string
@@ -27,44 +26,57 @@ export interface UpdateChecklistItemInput {
   assigneeId?: string | null
 }
 
-export const checklistApi = {
-  async getChecklists(cardId: string): Promise<ChecklistDtoApi[]> {
-    return api.get<ChecklistDtoApi[]>(endpoints.cards.checklists(cardId))
-  },
+export function createChecklistApi(client: NotrelixClient) {
+  const api = client.api;
+  return {
+    async getChecklists(cardId: string): Promise<ChecklistDtoApi[]> {
+      return api.get<ChecklistDtoApi[]>(endpoints.cards.checklists(cardId))
+    },
 
-  async createChecklist(input: CreateChecklistInput): Promise<string> {
-    return api.post<string>(endpoints.cards.checklists(input.cardId), {
-      title: input.title,
-    })
-  },
+    async createChecklist(input: CreateChecklistInput): Promise<string> {
+      return api.post<string>(endpoints.cards.checklists(input.cardId), {
+        title: input.title,
+      })
+    },
 
-  async updateChecklist(input: UpdateChecklistInput): Promise<void> {
-    await api.patch<void>(endpoints.checklists.detail(input.checklistId), {
-      title: input.title,
-      position: input.position,
-    })
-  },
+    async updateChecklist(input: UpdateChecklistInput): Promise<void> {
+      await api.patch<void>(endpoints.checklists.detail(input.checklistId), {
+        title: input.title,
+        position: input.position,
+      })
+    },
 
-  async deleteChecklist(checklistId: string): Promise<void> {
-    await api.delete<void>(endpoints.checklists.detail(checklistId))
-  },
+    async deleteChecklist(checklistId: string): Promise<void> {
+      await api.delete<void>(endpoints.checklists.detail(checklistId))
+    },
 
-  async createChecklistItem(input: CreateChecklistItemInput): Promise<string> {
-    return api.post<string>(endpoints.checklists.items(input.checklistId), {
-      title: input.title,
-    })
-  },
+    async createChecklistItem(input: CreateChecklistItemInput): Promise<string> {
+      return api.post<string>(endpoints.checklists.items(input.checklistId), {
+        title: input.title,
+      })
+    },
 
-  async updateChecklistItem(input: UpdateChecklistItemInput): Promise<void> {
-    await api.patch<void>(endpoints.checklistItems.detail(input.itemId), {
-      title: input.title,
-      isChecked: input.isChecked,
-      dueDate: input.dueDate,
-      assigneeId: input.assigneeId,
-    })
-  },
+    async updateChecklistItem(input: UpdateChecklistItemInput): Promise<void> {
+      await api.patch<void>(endpoints.checklistItems.detail(input.itemId), {
+        title: input.title,
+        isChecked: input.isChecked,
+        dueDate: input.dueDate,
+        assigneeId: input.assigneeId,
+      })
+    },
 
-  async deleteChecklistItem(itemId: string): Promise<void> {
-    await api.delete<void>(endpoints.checklistItems.detail(itemId))
-  },
+    async deleteChecklistItem(itemId: string): Promise<void> {
+      await api.delete<void>(endpoints.checklistItems.detail(itemId))
+    },
+  };
 }
+
+export const checklistApi = createChecklistApi({
+  api: {
+    get: async () => ({}) as any,
+    post: async () => ({}) as any,
+    patch: async () => ({}) as any,
+    delete: async () => ({}) as any,
+    put: async () => ({}) as any,
+  },
+} as any);

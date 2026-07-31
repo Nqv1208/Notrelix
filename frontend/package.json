@@ -19,7 +19,9 @@
     "e2e:report": "playwright show-report",
     "format": "turbo format",
     "codegen": "turbo codegen",
-    "check:deps": "pnpm --filter @notrelix/dependency-rules check",
+    "codegen:check": "pnpm codegen && git diff --exit-code -- packages/foundation/contracts/src/generated",
+    "check:architecture": "pnpm --filter @notrelix/dependency-rules check",
+    "check:deps": "pnpm check:architecture",
     "clean": "turbo run clean && rm -rf node_modules .turbo",
     "validate": "pnpm typecheck && pnpm lint && pnpm test && pnpm check:deps && pnpm build",
     "freeze:audit": "node ./scripts/freeze-audit.mjs"
