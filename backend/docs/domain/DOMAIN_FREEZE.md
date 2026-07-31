@@ -2,8 +2,8 @@
 
 ## Certified Commit
 
-**HEAD SHA**: `7a381b185c507bcb982c1bcb5c33786cb39a7345`
-**Certification Date**: 2026-07-30
+**HEAD SHA**: `eb0e4a2d828a9fdb7eff4306aeaa373f7efe010b`
+**Certification Date**: 2026-07-31
 
 ---
 
@@ -17,7 +17,7 @@
 ### Domain Tests
 | Command | Exit Code | Passed | Failed | Skipped |
 |---|---|---|---|---|
-| `dotnet test tests/Notrelix.Domain.Tests/Notrelix.Domain.Tests.csproj -c Release` | 0 | 2507 | 0 | 0 |
+| `dotnet test tests/Notrelix.Domain.Tests/Notrelix.Domain.Tests.csproj -c Release` | 0 | 2610 | 0 | 0 |
 
 ### Full Solution Build
 | Command | Exit Code | Projects | Errors | Warnings |
@@ -177,3 +177,7 @@ Adding a new capability:
 > Contract snapshots and architecture gates pass without regeneration or skipped tests.
 > All 73 aggregate roots have explicit deletion policies enforced by architecture tests.
 > Non-recoverable types have been cleaned of `SoftDeletableAggregateRoot` inheritance and use business-status lifecycle.
+> Business status is independent from deletion state; Delete/Restore never modify business status.
+> AutomationRule enforces activation invariant: Active ⇒ valid configuration ⇒ valid trigger ⇒ valid action.
+> BoardRelation provides pure Domain rules for duplicate and cardinality enforcement.
+> Capability registry uses Exact/Subtree matching for fail-closed classification.
