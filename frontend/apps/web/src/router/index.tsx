@@ -1,32 +1,35 @@
-import { createRouter as createTanStackRouter, createRoute, createRootRoute, redirect } from '@tanstack/react-router';
-import { z } from 'zod';
+import { createRouter as createTanStackRouter, createRoute, createRootRouteWithContext } from '@tanstack/react-router';
+import { ErrorState, LoadingState, NotFoundState } from '@notrelix/ui-web';
+import type { AppRouterContext } from './context';
+import { requireWorkspaceId } from './guards/require-workspace-membership';
+import { boardSearchSchema } from './board-search-schema';
 
 // Import route components
-import { SignInPage } from './routes/sign-in';
-import { SignUpPage } from './routes/sign-up';
-import { ForgotPasswordPage } from './routes/forgot-password';
-import { HomePage } from './routes/home';
-import { IndexPage } from './routes/index';
-import { InvitePage } from './routes/invite/$token';
-import { WorkspaceLayout } from './routes/workspaces/$workspaceId/route';
-import { WorkspaceHomePage } from './routes/workspaces/$workspaceId/index';
-import { BoardPage } from './routes/workspaces/$workspaceId/boards/$boardId';
-import { DocPage } from './routes/workspaces/$workspaceId/docs/$docId';
-import { DashboardPage } from './routes/workspaces/$workspaceId/dashboard';
-import { SettingsPage } from './routes/workspaces/$workspaceId/settings';
-import { MembersPage } from './routes/workspaces/$workspaceId/members';
-import { BillingPage } from './routes/workspaces/$workspaceId/billing';
-import { AccountLayout } from './routes/workspaces/$workspaceId/account';
-import { AccountProfilePage } from './routes/workspaces/$workspaceId/account/profile';
-import { AccountSecurityPage } from './routes/workspaces/$workspaceId/account/security';
-import { AccountAppearancePage } from './routes/workspaces/$workspaceId/account/appearance';
-import { AccountNotificationsPage } from './routes/workspaces/$workspaceId/account/notifications';
-import { SearchResultsPage } from './routes/workspaces/$workspaceId/search';
-import { ChatPage } from './routes/workspaces/$workspaceId/chat';
-import { RootLayout } from './routes/__root';
+import { SignInPage } from '../routes/sign-in';
+import { SignUpPage } from '../routes/sign-up';
+import { ForgotPasswordPage } from '../routes/forgot-password';
+import { HomePage } from '../routes/home';
+import { IndexPage } from '../routes/index';
+import { InvitePage } from '../routes/invite/$token';
+import { WorkspaceLayout } from '../routes/workspaces/$workspaceId/route';
+import { WorkspaceHomePage } from '../routes/workspaces/$workspaceId/index';
+import { BoardPage } from '../routes/workspaces/$workspaceId/boards/$boardId';
+import { DocPage } from '../routes/workspaces/$workspaceId/docs/$docId';
+import { DashboardPage } from '../routes/workspaces/$workspaceId/dashboard';
+import { SettingsPage } from '../routes/workspaces/$workspaceId/settings';
+import { MembersPage } from '../routes/workspaces/$workspaceId/members';
+import { BillingPage } from '../routes/workspaces/$workspaceId/billing';
+import { AccountLayout } from '../routes/workspaces/$workspaceId/account';
+import { AccountProfilePage } from '../routes/workspaces/$workspaceId/account/profile';
+import { AccountSecurityPage } from '../routes/workspaces/$workspaceId/account/security';
+import { AccountAppearancePage } from '../routes/workspaces/$workspaceId/account/appearance';
+import { AccountNotificationsPage } from '../routes/workspaces/$workspaceId/account/notifications';
+import { SearchResultsPage } from '../routes/workspaces/$workspaceId/search';
+import { ChatPage } from '../routes/workspaces/$workspaceId/chat';
+import { RootLayout } from '../routes/__root';
 
 // Create routes
-const rootRoute = createRootRoute({
+const rootRoute = createRootRouteWithContext<AppRouterContext>()({
   component: RootLayout,
 });
 
@@ -71,9 +74,7 @@ const workspaceRoute = createRoute({
   path: '/workspaces/$workspaceId',
   component: WorkspaceLayout,
   beforeLoad: ({ params }) => {
-    if (!params.workspaceId || params.workspaceId.trim() === '') {
-      throw redirect({ to: '/home' });
-    }
+    requireWorkspaceId(params);
   },
 });
 
@@ -81,17 +82,6 @@ const workspaceIndexRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: '/',
   component: WorkspaceHomePage,
-});
-
-/**
- * Search params schema for board routes.
- * Exported for use in tests and typed route hooks.
- */
-export const boardSearchSchema = z.object({
-  view: z.enum(['table', 'kanban', 'calendar', 'timeline']).default('kanban'),
-  filter: z.string().optional(),
-  sort: z.string().optional(),
-  item: z.string().optional(),
 });
 
 const boardRoute = createRoute({
@@ -203,7 +193,17 @@ const routeTree = rootRoute.addChildren([
 export function createRouter() {
   const router = createTanStackRouter({
     routeTree,
+    context: undefined as unknown as AppRouterContext,
     defaultPreload: 'intent',
+    defaultPendingComponent: () => (
+      <LoadingState title="Loading" description="Preparing workspace..." />
+    ),
+    defaultErrorComponent: ({ error }) => (
+      <ErrorState error={error} title="Route error" />
+    ),
+    defaultNotFoundComponent: () => (
+      <NotFoundState title="Page not found" description="The requested route does not exist." />
+    ),
     scrollRestoration: true,
   });
 
@@ -211,3 +211,4 @@ export function createRouter() {
 }
 
 export const router = createRouter();
+export { boardSearchSchema };

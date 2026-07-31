@@ -15,11 +15,12 @@ describe('boardSearchSchema', () => {
     expect(() => boardSearchSchema.parse({ view: 'invalid-view' })).toThrow();
   });
 
-  it('preserves optional filter, sort, and item params', () => {
+  it('preserves optional filter, sort, groupBy, and item params', () => {
     const parsed = boardSearchSchema.parse({
       view: 'table',
       filter: 'status:in_progress',
       sort: 'dueDate:asc',
+      groupBy: 'status',
       item: 'item-123',
     });
 
@@ -27,6 +28,7 @@ describe('boardSearchSchema', () => {
       view: 'table',
       filter: 'status:in_progress',
       sort: 'dueDate:asc',
+      groupBy: 'status',
       item: 'item-123',
     });
   });

@@ -34,24 +34,43 @@ describe('AppRuntime', () => {
     expect(runtime.clock.isoNow()).toBe('2026-01-01T00:00:00Z');
   });
 
-  it('executes dispose idempotently and cleans up session events and realtime connection', () => {
+  it('executes dispose idempotently and cleans up session events and realtime connection', async () => {
     const mockRealtime = {
-      disconnect: vi.fn(),
+      dispose: vi.fn(),
     } as any;
+    const telemetry = {
+      track: vi.fn(),
+      reportError: vi.fn(),
+      withContext: vi.fn(function withContext() {
+        return telemetry;
+      }),
+      flush: vi.fn(),
+    };
 
     const runtime = createAppRuntime(
       { apiUrl: 'http://api.test' },
-      { createRealtimeClient: () => mockRealtime }
+      { createRealtimeClient: () => mockRealtime, telemetry }
     );
 
     const sessionSpy = vi.fn();
     runtime.sessionEvents.subscribe(sessionSpy);
 
-    runtime.dispose();
-    expect(mockRealtime.disconnect).toHaveBeenCalledTimes(1);
+    await runtime.dispose();
+    expect(mockRealtime.dispose).toHaveBeenCalledTimes(1);
+    expect(telemetry.flush).toHaveBeenCalledTimes(1);
 
     // Second dispose call should do nothing (idempotent)
-    runtime.dispose();
-    expect(mockRealtime.disconnect).toHaveBeenCalledTimes(1);
+    await runtime.dispose();
+    expect(mockRealtime.dispose).toHaveBeenCalledTimes(1);
+    expect(telemetry.flush).toHaveBeenCalledTimes(1);
+  });
+
+  it('defaults unknown feature flags to disabled', () => {
+    const runtime = createAppRuntime({
+      apiUrl: 'http://api.test',
+      realtimeUrl: 'ws://realtime.test',
+    });
+
+    expect(runtime.featureFlags.isEnabled('unknown.flag')).toBe(false);
   });
 });

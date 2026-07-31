@@ -34,14 +34,16 @@ describe('boardSearchSchema (from router.tsx)', () => {
       expect(parsed.filter).toBeUndefined();
     });
 
-    it('preserves filter, sort and item when provided', () => {
+    it('preserves filter, sort, groupBy and item when provided', () => {
       const parsed = boardSearchSchema.parse({
         filter: 'status=done',
         sort: 'priority:asc',
+        groupBy: 'assignee',
         item: 'item-100',
       });
       expect(parsed.filter).toBe('status=done');
       expect(parsed.sort).toBe('priority:asc');
+      expect(parsed.groupBy).toBe('assignee');
       expect(parsed.item).toBe('item-100');
     });
   });

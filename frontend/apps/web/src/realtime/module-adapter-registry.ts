@@ -12,10 +12,12 @@ export class ModuleAdapterRegistry {
   public async dispatch(
     envelope: RealtimeEnvelope<unknown>,
     context: ModuleRealtimeContext
-  ): Promise<void> {
+  ): Promise<{ handled: boolean; adapterIds: readonly string[] }> {
     const supportingAdapters = this.adapters.filter((a) => a.supports(envelope));
+    const adapterIds = supportingAdapters.map((adapter) => adapter.id);
     for (const adapter of supportingAdapters) {
       await adapter.validateAndHandle(envelope, context);
     }
+    return { handled: supportingAdapters.length > 0, adapterIds };
   }
 }

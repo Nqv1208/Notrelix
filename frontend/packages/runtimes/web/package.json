@@ -15,6 +15,7 @@
   "dependencies": {
     "@notrelix/contracts": "workspace:*",
     "@notrelix/kernel": "workspace:*",
+    "@notrelix/observability": "workspace:*",
     "@notrelix/platform": "workspace:*",
     "@notrelix/realtime": "workspace:*"
   },

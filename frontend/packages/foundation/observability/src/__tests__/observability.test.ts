@@ -1,5 +1,12 @@
 import { describe, expect, test, vi } from 'vitest';
-import { initObservability, trackEvent, reportError, getObservabilityConfig } from '../index';
+import {
+  initObservability,
+  trackEvent,
+  reportError,
+  getObservabilityConfig,
+  RecordingTelemetryAdapter,
+  redactTelemetryProperties,
+} from '../index';
 
 describe('Observability', () => {
   test('initializes with custom configuration', () => {
@@ -17,5 +24,39 @@ describe('Observability', () => {
     expect(consoleSpy).not.toHaveBeenCalled();
 
     consoleSpy.mockRestore();
+  });
+
+  test('redacts sensitive telemetry properties', () => {
+    expect(
+      redactTelemetryProperties({
+        email: 'person@example.com',
+        accessToken: 'secret',
+        workspaceId: 'workspace-1',
+      })
+    ).toEqual({
+      email: '[redacted]',
+      accessToken: '[redacted]',
+      workspaceId: 'workspace-1',
+    });
+  });
+
+  test('records events and merges context immutably', () => {
+    const root = new RecordingTelemetryAdapter({ releaseSha: 'abc' });
+    const scoped = root.withContext({ workspaceId: 'workspace-1' });
+
+    scoped.track('route.navigation', { route: '/workspaces/a' });
+    scoped.reportError(new Error('boom'), { token: 'secret' });
+
+    expect(root.events).toHaveLength(0);
+    expect((scoped as RecordingTelemetryAdapter).events[0]).toMatchObject({
+      name: 'route.navigation',
+      context: {
+        releaseSha: 'abc',
+        workspaceId: 'workspace-1',
+      },
+    });
+    expect((scoped as RecordingTelemetryAdapter).errors[0]?.context).toMatchObject({
+      token: '[redacted]',
+    });
   });
 });

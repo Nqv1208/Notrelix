@@ -4,6 +4,10 @@ import { Button } from '@notrelix/ui-web';
 
 interface Props {
   children: ReactNode;
+  telemetry?: {
+    reportError(error: unknown, context?: Record<string, unknown>): void;
+  };
+  releaseSha?: string;
 }
 
 interface State {
@@ -22,8 +26,11 @@ export class GlobalErrorBoundary extends Component<Props, State> {
   }
 
   public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Report to telemetry (error contains full detail — safe server-side)
-    console.error('[GlobalErrorBoundary] Uncaught React Error:', error, errorInfo);
+    this.props.telemetry?.reportError(error, {
+      componentStack: errorInfo.componentStack,
+      releaseSha: this.props.releaseSha ?? 'unknown',
+      route: typeof window !== 'undefined' ? window.location.pathname : 'unknown',
+    });
   }
 
   private handleReset = () => {

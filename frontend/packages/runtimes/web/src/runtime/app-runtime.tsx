@@ -1,8 +1,10 @@
 import React, { createContext, useContext, type ReactNode } from 'react';
 import { createNotrelixClient, type NotrelixClient, type NotrelixClientConfig, type SessionExpiredEvent } from '@notrelix/contracts';
 import { parseEnv, type ResolvedRuntimeEnvironment, type RuntimeEnvironmentInput } from '@notrelix/kernel';
-import { RealtimeClient } from '@notrelix/realtime';
+import { ConsoleTelemetryAdapter, type TelemetryPort } from '@notrelix/observability';
+import { RealtimeClient, type RealtimeTransport } from '@notrelix/realtime';
 import { createSessionEventBus, type SessionEventBus } from './session-event-bus';
+import { createBrowserWebSocketFactory } from '../realtime/browser-websocket-factory';
 
 export type { SessionEventBus, SessionExpiredEvent } from './session-event-bus';
 export { useFeatureRuntimeDependencies, type FeatureRuntimeDependencies } from './use-feature-runtime-dependencies';
@@ -12,12 +14,6 @@ export interface ClockPort {
   isoNow(): string;
 }
 
-export interface TelemetryPort {
-  track(event: string, properties?: Record<string, unknown>): void;
-  reportError(error: unknown, context?: Record<string, unknown>): void;
-  flush?(): Promise<void> | void;
-}
-
 export interface FeatureFlagsPort {
   isEnabled(flag: string): boolean;
   getFlags(): Record<string, boolean>;
@@ -25,7 +21,7 @@ export interface FeatureFlagsPort {
 
 export interface AppRuntimeFactories {
   readonly createApiClient?: (config: NotrelixClientConfig) => NotrelixClient;
-  readonly createRealtimeClient?: (url: string) => RealtimeClient;
+  readonly createRealtimeClient?: (url: string) => RealtimeTransport;
   readonly clock?: ClockPort;
   readonly telemetry?: TelemetryPort;
   readonly featureFlags?: FeatureFlagsPort;
@@ -33,13 +29,13 @@ export interface AppRuntimeFactories {
 
 export interface AppRuntime {
   readonly api: NotrelixClient;
-  readonly realtime: RealtimeClient;
+  readonly realtime: RealtimeTransport;
   readonly sessionEvents: SessionEventBus;
   readonly clock: ClockPort;
   readonly telemetry: TelemetryPort;
   readonly featureFlags: FeatureFlagsPort;
   readonly env: ResolvedRuntimeEnvironment;
-  dispose(): void;
+  dispose(): Promise<void>;
 }
 
 export function createAppRuntime(
@@ -53,18 +49,10 @@ export function createAppRuntime(
     isoNow: () => new Date().toISOString(),
   };
 
-  const telemetry: TelemetryPort = factories.telemetry ?? {
-    track: (event, properties) => {
-      if (!resolvedEnv.isProduction) {
-        console.debug(`[Telemetry] ${event}`, properties);
-      }
-    },
-    reportError: (error, context) => {
-      if (!resolvedEnv.isProduction) {
-        console.error('[Telemetry Error]', error, context);
-      }
-    },
-  };
+  const telemetry: TelemetryPort = factories.telemetry ?? new ConsoleTelemetryAdapter({
+    releaseSha: resolvedEnv.releaseSha,
+    environment: resolvedEnv.mode,
+  });
 
   const sessionEvents = createSessionEventBus((err, ctx) => telemetry.reportError(err, ctx));
 
@@ -86,10 +74,12 @@ export function createAppRuntime(
 
   const realtimeClient = factories.createRealtimeClient
     ? factories.createRealtimeClient(resolvedEnv.realtimeUrl)
-    : new RealtimeClient(resolvedEnv.realtimeUrl);
+    : new RealtimeClient(resolvedEnv.realtimeUrl, {
+        socketFactory: createBrowserWebSocketFactory(),
+      });
 
   const featureFlags: FeatureFlagsPort = factories.featureFlags ?? {
-    isEnabled: () => true,
+    isEnabled: () => false,
     getFlags: () => ({}),
   };
 
@@ -103,13 +93,13 @@ export function createAppRuntime(
     telemetry,
     featureFlags,
     env: resolvedEnv,
-    dispose(): void {
+    async dispose(): Promise<void> {
       if (disposed) return;
       disposed = true;
 
       sessionEvents.clear();
-      realtimeClient.disconnect();
-      telemetry.flush?.();
+      realtimeClient.dispose();
+      await telemetry.flush();
     },
   };
 
