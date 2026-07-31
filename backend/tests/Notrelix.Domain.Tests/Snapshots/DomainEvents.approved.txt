@@ -263,9 +263,10 @@ collaboration.resource-unwatched|1|Notrelix.Domain.Collaboration.Watchers.Events
 collaboration.resource-watched|1|Notrelix.Domain.Collaboration.Watchers.Events.ResourceWatchedDomainEvent|Workspace|Target|Notrelix.Domain.SharedKernel.ResourceRef|False
 collaboration.resource-watched|1|Notrelix.Domain.Collaboration.Watchers.Events.ResourceWatchedDomainEvent|Workspace|UserId|System.Guid|False
 collaboration.resource-watched|1|Notrelix.Domain.Collaboration.Watchers.Events.ResourceWatchedDomainEvent|Workspace|WatcherId|System.Guid|False
-documents.block-content-updated|1|Notrelix.Domain.Documents.Blocks.Events.BlockContentUpdatedDomainEvent|Workspace|BlockId|System.Guid|False
-documents.block-content-updated|1|Notrelix.Domain.Documents.Blocks.Events.BlockContentUpdatedDomainEvent|Workspace|PageId|System.Guid|False
-documents.block-content-updated|1|Notrelix.Domain.Documents.Blocks.Events.BlockContentUpdatedDomainEvent|Workspace|UpdatedBy|System.Guid|False
+documents.block-content-updated|2|Notrelix.Domain.Documents.Blocks.Events.BlockContentUpdatedDomainEvent|Workspace|BlockId|System.Guid|False
+documents.block-content-updated|2|Notrelix.Domain.Documents.Blocks.Events.BlockContentUpdatedDomainEvent|Workspace|BlockType|Notrelix.Domain.Documents.Blocks.BlockType|False
+documents.block-content-updated|2|Notrelix.Domain.Documents.Blocks.Events.BlockContentUpdatedDomainEvent|Workspace|PageId|System.Guid|False
+documents.block-content-updated|2|Notrelix.Domain.Documents.Blocks.Events.BlockContentUpdatedDomainEvent|Workspace|UpdatedBy|System.Guid|False
 documents.block-created|1|Notrelix.Domain.Documents.Blocks.Events.BlockCreatedDomainEvent|Workspace|BlockId|System.Guid|False
 documents.block-created|1|Notrelix.Domain.Documents.Blocks.Events.BlockCreatedDomainEvent|Workspace|CreatedBy|System.Guid|False
 documents.block-created|1|Notrelix.Domain.Documents.Blocks.Events.BlockCreatedDomainEvent|Workspace|PageId|System.Guid|False

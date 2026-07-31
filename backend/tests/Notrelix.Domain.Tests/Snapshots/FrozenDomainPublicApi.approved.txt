@@ -1213,11 +1213,12 @@ Notrelix.Domain.Documents.Blocks.BlockAncestorPath|TargetParentId|Property|publi
 Notrelix.Domain.Documents.Blocks.BlockAncestorPath|WorkspaceId|Property|public|False|False|readonly|System.Guid
 Notrelix.Domain.Documents.Blocks.BlockContent|Data|Property|public|False|False|readonly|Notrelix.Domain.SharedKernel.JsonValue
 Notrelix.Domain.Documents.Blocks.BlockProperties|Data|Property|public|False|False|readonly|Notrelix.Domain.SharedKernel.JsonValue
-Notrelix.Domain.Documents.Blocks.Events.BlockContentUpdatedDomainEvent|.ctor|Constructor|public|False|False|System.Guid AccountId, System.Guid WorkspaceId, System.Guid BlockId, System.Guid PageId, System.Guid UpdatedBy, System.DateTimeOffset OccurredAt
+Notrelix.Domain.Documents.Blocks.Events.BlockContentUpdatedDomainEvent|.ctor|Constructor|public|False|False|System.Guid AccountId, System.Guid WorkspaceId, System.Guid BlockId, System.Guid PageId, Notrelix.Domain.Documents.Blocks.BlockType BlockType, System.Guid UpdatedBy, System.DateTimeOffset OccurredAt
 Notrelix.Domain.Documents.Blocks.Events.BlockContentUpdatedDomainEvent|<Clone>$|Method|public|False|True|Notrelix.Domain.Documents.Blocks.Events.BlockContentUpdatedDomainEvent|
-Notrelix.Domain.Documents.Blocks.Events.BlockContentUpdatedDomainEvent|Deconstruct|Method|public|False|False|System.Void|System.Guid& AccountId, System.Guid& WorkspaceId, System.Guid& BlockId, System.Guid& PageId, System.Guid& UpdatedBy, System.DateTimeOffset& OccurredAt
+Notrelix.Domain.Documents.Blocks.Events.BlockContentUpdatedDomainEvent|Deconstruct|Method|public|False|False|System.Void|System.Guid& AccountId, System.Guid& WorkspaceId, System.Guid& BlockId, System.Guid& PageId, Notrelix.Domain.Documents.Blocks.BlockType& BlockType, System.Guid& UpdatedBy, System.DateTimeOffset& OccurredAt
 Notrelix.Domain.Documents.Blocks.Events.BlockContentUpdatedDomainEvent|Equals|Method|public|False|True|System.Boolean|Notrelix.Domain.Documents.Blocks.Events.BlockContentUpdatedDomainEvent other
 Notrelix.Domain.Documents.Blocks.Events.BlockContentUpdatedDomainEvent|BlockId|Property|public|False|False|readwrite|System.Guid
+Notrelix.Domain.Documents.Blocks.Events.BlockContentUpdatedDomainEvent|BlockType|Property|public|False|False|readwrite|Notrelix.Domain.Documents.Blocks.BlockType
 Notrelix.Domain.Documents.Blocks.Events.BlockContentUpdatedDomainEvent|PageId|Property|public|False|False|readwrite|System.Guid
 Notrelix.Domain.Documents.Blocks.Events.BlockContentUpdatedDomainEvent|UpdatedBy|Property|public|False|False|readwrite|System.Guid
 Notrelix.Domain.Documents.Blocks.Events.BlockCreatedDomainEvent|.ctor|Constructor|public|False|False|System.Guid AccountId, System.Guid WorkspaceId, System.Guid PageId, System.Guid BlockId, Notrelix.Domain.Documents.Blocks.BlockType Type, System.Guid CreatedBy, System.DateTimeOffset OccurredAt

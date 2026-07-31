@@ -113,7 +113,7 @@ public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
         Content = newContent;
         ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new BlockContentUpdatedDomainEvent(AccountId, WorkspaceId, Id, PageId, updatedBy, updatedAt));
+        RaiseDomainEvent(new BlockContentUpdatedDomainEvent(AccountId, WorkspaceId, Id, PageId, Type, updatedBy, updatedAt));
     }
 
     public void UpdateProperties(BlockProperties newProperties, Guid updatedBy, DateTimeOffset updatedAt)
