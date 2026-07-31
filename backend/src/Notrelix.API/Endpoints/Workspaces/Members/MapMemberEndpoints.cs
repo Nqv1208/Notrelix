@@ -19,8 +19,6 @@ public static class MapMemberEndpoints
         group.MapRemoveMember();
         group.MapSuspendMember();
         group.MapActivateMember();
-        group.MapRestoreMember();
-
         return app;
     }
 }

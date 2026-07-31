@@ -41,8 +41,6 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(updatedBy);
 
-        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
-
         if (newRole == WorkspaceRole.Owner)
         {
             throw new BusinessRuleException(
@@ -59,6 +57,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
 
         if (Role == newRole) return;
 
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
         var oldRole = Role;
         Role = newRole;
 
@@ -72,13 +71,12 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(promotedBy);
 
-        var audit = PrepareAuditUpdate(promotedBy, promotedAt);
-
         if (Status != WorkspaceMemberStatus.Active)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotPromoteInactiveToOwner, "Cannot promote an inactive member to owner.");
 
         if (Role == WorkspaceRole.Owner) return;
 
+        var audit = PrepareAuditUpdate(promotedBy, promotedAt);
         var oldRole = Role;
         Role = WorkspaceRole.Owner;
 
@@ -95,8 +93,6 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(updatedBy);
 
-        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
-
         if (Status == WorkspaceMemberStatus.Removed)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotSuspendRemoved, "Cannot suspend a removed member.");
 
@@ -104,6 +100,7 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
 
         WorkspaceOwnerRules.EnsureCanSuspendOwner(Role, activeOwnerCount);
 
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = WorkspaceMemberStatus.Suspended;
 
         ApplyAuditUpdate(audit);
@@ -116,15 +113,14 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(updatedBy);
 
-        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
-
-        if (Status == WorkspaceMemberStatus.Active) return;
-
         if (Status == WorkspaceMemberStatus.Removed)
         {
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotActivateRemoved, "Cannot activate a removed member.");
         }
 
+        if (Status == WorkspaceMemberStatus.Active) return;
+
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = WorkspaceMemberStatus.Active;
         ApplyAuditUpdate(audit);
         IncrementVersion();
@@ -135,9 +131,13 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(removedBy);
 
+        if (Status == WorkspaceMemberStatus.Removed) return;
+
         WorkspaceOwnerRules.EnsureCanRemoveOwner(Role, activeOwnerCount);
 
+        var audit = PrepareAuditUpdate(removedBy, removedAt);
         Status = WorkspaceMemberStatus.Removed;
+        ApplyAuditUpdate(audit);
         IncrementVersion();
         RaiseDomainEvent(new WorkspaceMemberRemovedDomainEvent(AccountId, WorkspaceId, Id, UserId, removedBy, removedAt));
     }
