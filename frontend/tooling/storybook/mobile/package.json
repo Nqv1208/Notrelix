@@ -1,0 +1,13 @@
+{
+  "name": "@notrelix/storybook-mobile",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "storybook dev -p 6007",
+    "build": "storybook build",
+    "clean": "rm -rf node_modules storybook-static"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

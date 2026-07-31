@@ -1,73 +1,39 @@
 {
-  "name": "frontend",
+  "name": "notrelix-client",
   "version": "0.1.0",
   "private": true,
+  "description": "Notrelix Client Workspace",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint",
-    "react-doctor": "react-doctor .",
-    "type-check": "tsc --noEmit",
-    "test": "bun test",
-    "arch-check": "node scripts/check-architecture.mjs",
-    "quality": "bun run type-check && bun run lint && bun run test && bun run arch-check"
-  },
-  "dependencies": {
-    "@base-ui/react": "^1.0.0",
-    "@dnd-kit/core": "^6.3.1",
-    "@dnd-kit/modifiers": "^9.0.0",
-    "@dnd-kit/sortable": "^10.0.0",
-    "@dnd-kit/utilities": "^3.2.2",
-    "@hookform/resolvers": "^5.2.2",
-    "@radix-ui/react-label": "^2.1.8",
-    "@radix-ui/react-slot": "^1.2.4",
-    "@tanstack/react-query": "^5.95.2",
-    "@tanstack/react-table": "^8.21.3",
-    "animejs": "^4.3.6",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "cmdk": "^1.1.1",
-    "date-fns": "^4.1.0",
-    "embla-carousel-react": "^8.6.0",
-    "framer-motion": "^12.38.0",
-    "input-otp": "^1.4.2",
-    "lucide-react": "^0.562.0",
-    "next": "16.1.1",
-    "next-intl": "^4.8.3",
-    "next-themes": "^0.4.6",
-    "radix-ui": "^1.4.3",
-    "react": "19.2.3",
-    "react-day-picker": "^9.13.0",
-    "react-dom": "19.2.3",
-    "react-hook-form": "^7.71.2",
-    "react-resizable-panels": "^4.4.1",
-    "recharts": "2.15.4",
-    "shadcn": "^3.6.3",
-    "sonner": "^2.0.7",
-    "tailwind-merge": "^3.4.0",
-    "tw-animate-css": "^1.4.0",
-    "vaul": "^1.1.2",
-    "zod": "^4.3.6",
-    "zustand": "^5.0.12"
+    "dev": "turbo dev",
+    "dev:marketing": "pnpm --filter @notrelix/app-marketing dev",
+    "dev:web": "pnpm --filter @notrelix/app-web dev",
+    "dev:mobile": "pnpm --filter @notrelix/app-mobile dev",
+    "build": "turbo build",
+    "typecheck": "turbo typecheck",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "format": "turbo format",
+    "codegen": "turbo codegen",
+    "check:deps": "pnpm --filter @notrelix/dependency-rules check",
+    "clean": "turbo run clean && rm -rf node_modules .turbo",
+    "validate": "pnpm typecheck && pnpm lint && pnpm test && pnpm check:deps"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.1.1",
-    "react-doctor": "^0.2.16",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "turbo": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
-  "ignoreScripts": [
-    "sharp",
-    "unrs-resolver"
-  ],
-  "trustedDependencies": [
-    "sharp",
-    "unrs-resolver"
-  ]
+  "packageManager": "pnpm@10.0.0",
+  "pnpm": {
+    "overrides": {
+      "react": "^19.2.7",
+      "react-dom": "^19.2.7"
+    }
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=10.0.0"
+  }
 }

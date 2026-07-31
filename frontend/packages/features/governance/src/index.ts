@@ -1,0 +1,2 @@
+// @notrelix/feature-governance — barrel export
+export * from './core';

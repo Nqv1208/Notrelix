@@ -10,5 +10,10 @@
 .gemini/
 .opencode/
 .antigravitycli/
-.mimicode/
 .qwen/
+.mimocode/
+.playwright-cli/
+
+.vite/
+
+.gstack/

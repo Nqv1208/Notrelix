@@ -1,37 +1,37 @@
-# syntax=docker/dockerfile:1.7
-# Production image: Bun cài dependency; Node chạy `next build` (Next.js 16 + Turbopack cần N-API Node).
-# Build args: NEXT_PUBLIC_* được embed lúc build.
+# Multi-stage Dockerfile for Notrelix Frontend
 
-FROM oven/bun:1.2-alpine AS deps
+# Stage 1: Install dependencies
+FROM node:22-alpine AS base
+RUN corepack enable
 WORKDIR /app
-RUN apk update && apk upgrade --no-cache
-COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
 
-FROM node:22-alpine AS builder
-WORKDIR /app
-RUN apk update && apk upgrade --no-cache
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-ARG NEXT_PUBLIC_API_URL=/api/v1
-ARG NEXT_PUBLIC_APP_ENV=production
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-ENV NEXT_PUBLIC_APP_ENV=${NEXT_PUBLIC_APP_ENV}
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-RUN node ./node_modules/next/dist/bin/next build
+# Stage 2: Build web app
+FROM base AS builder
+RUN corepack enable pnpm@10.0.0
 
-FROM node:22-alpine AS runner
-WORKDIR /app
-RUN apk update && apk upgrade --no-cache \
-  && addgroup -S nextjs && adduser -S nextjs -G nextjs
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=3000
-ENV HOSTNAME=0.0.0.0
-COPY --from=builder --chown=nextjs:nextjs /app/public ./public
-COPY --from=builder --chown=nextjs:nextjs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nextjs /app/.next/static ./.next/static
-USER nextjs
-EXPOSE 3000
-CMD ["node", "server.js"]
+COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./
+COPY frontend/turbo.json ./
+COPY frontend/tooling ./tooling
+COPY frontend/packages ./packages
+COPY frontend/apps/web ./apps/web
+
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @notrelix/app-web build
+
+# Stage 3: Production image
+FROM nginx:alpine AS production
+
+# Copy nginx config
+COPY frontend/apps/web/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy built assets
+COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
+
+# Expose port
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]

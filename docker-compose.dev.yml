@@ -169,12 +169,12 @@ services:
         max-size: "20m"
         max-file: "5"
 
-  frontend:
-    image: oven/bun:1.2-alpine
-    container_name: notrelix-frontend-dev
+  frontend-marketing:
+    image: node:22-alpine
+    container_name: notrelix-frontend-marketing-dev
     working_dir: /app
     ports:
-      - "0.0.0.0:${FRONTEND_PORT:-3000}:3000"
+      - "0.0.0.0:${FRONTEND_MARKETING_PORT:-3000}:3000"
     environment:
       NODE_ENV: development
       NEXT_TELEMETRY_DISABLED: "1"
@@ -185,7 +185,33 @@ services:
     volumes:
       - ./frontend:/app
       - frontend_node_modules:/app/node_modules
-    command: sh -c "bun install && bun run dev -- --hostname 0.0.0.0 --port 3000"
+    command: sh -c "corepack enable pnpm && pnpm install && pnpm dev:marketing"
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - frontend-network
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend-web:
+    image: node:22-alpine
+    container_name: notrelix-frontend-web-dev
+    working_dir: /app
+    ports:
+      - "0.0.0.0:${FRONTEND_WEB_PORT:-5173}:5173"
+    environment:
+      NODE_ENV: development
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+      VITE_API_URL: ${VITE_API_URL:-/api}
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    command: sh -c "corepack enable pnpm && pnpm install && pnpm dev:web -- --host 0.0.0.0 --port 5173"
     depends_on:
       backend:
         condition: service_started
@@ -202,13 +228,15 @@ services:
     container_name: notrelix-nginx-dev
     restart: unless-stopped
     volumes:
-      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro
     ports:
       - "0.0.0.0:${GATEWAY_PORT:-3080}:80"
     depends_on:
       backend:
         condition: service_started
-      frontend:
+      frontend-marketing:
+        condition: service_started
+      frontend-web:
         condition: service_started
     networks:
       - frontend-network

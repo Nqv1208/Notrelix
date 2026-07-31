@@ -1,0 +1,14 @@
+{
+  "name": "@notrelix/codegen",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "codegen": "pnpm generate:openapi && pnpm generate:asyncapi",
+    "generate:openapi": "node openapi/generate-openapi.mjs",
+    "generate:asyncapi": "node asyncapi/generate-events.mjs",
+    "clean": "rm -rf node_modules"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
