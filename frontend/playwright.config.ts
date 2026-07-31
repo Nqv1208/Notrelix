@@ -8,8 +8,14 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'list',
   use: {
-    baseURL: process.env.VITE_APP_URL || 'http://localhost:3000',
+    baseURL: process.env.VITE_APP_URL ?? 'http://127.0.0.1:4173',
     trace: 'on-first-retry',
+  },
+  webServer: {
+    command: 'pnpm --filter @notrelix/app-web preview --host 127.0.0.1 --port 4173',
+    url: 'http://127.0.0.1:4173',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
   },
   projects: [
     {

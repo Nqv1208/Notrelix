@@ -17,6 +17,7 @@
     "test:packages": "turbo test",
     "e2e": "playwright test",
     "e2e:report": "playwright show-report",
+    "production:startup": "node ./scripts/check-production-startup.mjs",
     "format": "turbo format",
     "codegen": "turbo codegen",
     "codegen:check": "pnpm codegen && git diff --exit-code -- packages/foundation/contracts/src/generated",
