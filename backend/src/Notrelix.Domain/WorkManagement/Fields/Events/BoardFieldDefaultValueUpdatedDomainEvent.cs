@@ -1,4 +1,3 @@
-using Notrelix.Domain.WorkManagement.Fields;
 namespace Notrelix.Domain.WorkManagement.Fields.Events;
 
 [EventName("work-management.field-default-value-updated")]
