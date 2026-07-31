@@ -415,6 +415,7 @@ Notrelix.Domain.Analytics.Snapshots.ReportingSnapshot|CapturedAt|Property|public
 Notrelix.Domain.Analytics.Snapshots.ReportingSnapshot|Data|Property|public|False|False|readonly|Notrelix.Domain.SharedKernel.JsonValue
 Notrelix.Domain.Analytics.Snapshots.ReportingSnapshot|Payload|Property|public|False|False|readonly|Notrelix.Domain.Analytics.Snapshots.ReportSnapshotPayload
 Notrelix.Domain.Analytics.Snapshots.ReportingSnapshot|ReportType|Property|public|False|False|readonly|System.String
+Notrelix.Domain.Analytics.Snapshots.ReportingSnapshot|SchemaVersion|Property|public|False|False|readonly|System.Int32
 Notrelix.Domain.Analytics.Snapshots.ReportingSnapshot|WorkspaceId|Property|public|False|True|readonly|System.Guid
 Notrelix.Domain.Analytics.Widgets.WidgetConfig|Data|Property|public|False|False|readonly|Notrelix.Domain.SharedKernel.JsonValue
 Notrelix.Domain.Analytics.Widgets.WidgetPosition|H|Property|public|False|False|readonly|System.Int32
@@ -970,6 +971,7 @@ Notrelix.Domain.Collaboration.Attachments.FileMetadata|Size|Property|public|Fals
 Notrelix.Domain.Collaboration.Attachments.FileMetadata|StorageKey|Property|public|False|False|readonly|System.String
 Notrelix.Domain.Collaboration.Attachments.FileMetadata|Url|Property|public|False|False|readonly|System.String
 Notrelix.Domain.Collaboration.Comments.Comment|Delete|Method|public|False|False|System.Void|System.Guid deletedBy, System.DateTimeOffset deletedAt, System.String reason
+Notrelix.Domain.Collaboration.Comments.Comment|Reopen|Method|public|False|False|System.Void|System.Guid reopenedBy, System.DateTimeOffset reopenedAt
 Notrelix.Domain.Collaboration.Comments.Comment|Resolve|Method|public|False|False|System.Void|System.Guid resolvedBy, System.DateTimeOffset resolvedAt
 Notrelix.Domain.Collaboration.Comments.Comment|Restore|Method|public|False|False|System.Void|System.Guid restoredBy, System.DateTimeOffset restoredAt
 Notrelix.Domain.Collaboration.Comments.Comment|UpdateContent|Method|public|False|False|System.Void|System.String newContent, System.Guid updatedBy, System.DateTimeOffset updatedAt
@@ -995,6 +997,12 @@ Notrelix.Domain.Collaboration.Comments.Events.CommentDeletedDomainEvent|Deconstr
 Notrelix.Domain.Collaboration.Comments.Events.CommentDeletedDomainEvent|Equals|Method|public|False|True|System.Boolean|Notrelix.Domain.Collaboration.Comments.Events.CommentDeletedDomainEvent other
 Notrelix.Domain.Collaboration.Comments.Events.CommentDeletedDomainEvent|CommentId|Property|public|False|False|readwrite|System.Guid
 Notrelix.Domain.Collaboration.Comments.Events.CommentDeletedDomainEvent|DeletedBy|Property|public|False|False|readwrite|System.Guid
+Notrelix.Domain.Collaboration.Comments.Events.CommentReopenedDomainEvent|.ctor|Constructor|public|False|False|System.Guid AccountId, System.Guid WorkspaceId, System.Guid CommentId, System.Guid ReopenedBy, System.DateTimeOffset OccurredAt
+Notrelix.Domain.Collaboration.Comments.Events.CommentReopenedDomainEvent|<Clone>$|Method|public|False|True|Notrelix.Domain.Collaboration.Comments.Events.CommentReopenedDomainEvent|
+Notrelix.Domain.Collaboration.Comments.Events.CommentReopenedDomainEvent|Deconstruct|Method|public|False|False|System.Void|System.Guid& AccountId, System.Guid& WorkspaceId, System.Guid& CommentId, System.Guid& ReopenedBy, System.DateTimeOffset& OccurredAt
+Notrelix.Domain.Collaboration.Comments.Events.CommentReopenedDomainEvent|Equals|Method|public|False|True|System.Boolean|Notrelix.Domain.Collaboration.Comments.Events.CommentReopenedDomainEvent other
+Notrelix.Domain.Collaboration.Comments.Events.CommentReopenedDomainEvent|CommentId|Property|public|False|False|readwrite|System.Guid
+Notrelix.Domain.Collaboration.Comments.Events.CommentReopenedDomainEvent|ReopenedBy|Property|public|False|False|readwrite|System.Guid
 Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|.ctor|Constructor|public|False|False|System.Guid AccountId, System.Guid WorkspaceId, System.Guid CommentId, System.Guid ParentCommentId, Notrelix.Domain.SharedKernel.ResourceRef Target, System.Guid CreatedBy, System.DateTimeOffset OccurredAt
 Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|<Clone>$|Method|public|False|True|Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|
 Notrelix.Domain.Collaboration.Comments.Events.CommentReplyCreatedDomainEvent|Deconstruct|Method|public|False|False|System.Void|System.Guid& AccountId, System.Guid& WorkspaceId, System.Guid& CommentId, System.Guid& ParentCommentId, Notrelix.Domain.SharedKernel.ResourceRef& Target, System.Guid& CreatedBy, System.DateTimeOffset& OccurredAt
@@ -1636,13 +1644,20 @@ Notrelix.Domain.Governance.Templates.Events.PermissionTemplateArchivedDomainEven
 Notrelix.Domain.Governance.Templates.Events.PermissionTemplateArchivedDomainEvent|Equals|Method|public|False|True|System.Boolean|Notrelix.Domain.Governance.Templates.Events.PermissionTemplateArchivedDomainEvent other
 Notrelix.Domain.Governance.Templates.Events.PermissionTemplateArchivedDomainEvent|ArchivedBy|Property|public|False|False|readwrite|System.Guid
 Notrelix.Domain.Governance.Templates.Events.PermissionTemplateArchivedDomainEvent|TemplateId|Property|public|False|False|readwrite|System.Guid
-Notrelix.Domain.Governance.Templates.Events.PermissionTemplateCreatedDomainEvent|.ctor|Constructor|public|False|False|System.Guid TemplateId, System.String Name, System.Guid CreatedBy, System.DateTimeOffset OccurredAt
-Notrelix.Domain.Governance.Templates.Events.PermissionTemplateCreatedDomainEvent|<Clone>$|Method|public|False|True|Notrelix.Domain.Governance.Templates.Events.PermissionTemplateCreatedDomainEvent|
-Notrelix.Domain.Governance.Templates.Events.PermissionTemplateCreatedDomainEvent|Deconstruct|Method|public|False|False|System.Void|System.Guid& TemplateId, System.String& Name, System.Guid& CreatedBy, System.DateTimeOffset& OccurredAt
-Notrelix.Domain.Governance.Templates.Events.PermissionTemplateCreatedDomainEvent|Equals|Method|public|False|True|System.Boolean|Notrelix.Domain.Governance.Templates.Events.PermissionTemplateCreatedDomainEvent other
-Notrelix.Domain.Governance.Templates.Events.PermissionTemplateCreatedDomainEvent|CreatedBy|Property|public|False|False|readwrite|System.Guid
-Notrelix.Domain.Governance.Templates.Events.PermissionTemplateCreatedDomainEvent|Name|Property|public|False|False|readwrite|System.String
-Notrelix.Domain.Governance.Templates.Events.PermissionTemplateCreatedDomainEvent|TemplateId|Property|public|False|False|readwrite|System.Guid
+Notrelix.Domain.Governance.Templates.Events.SystemPermissionTemplateCreatedDomainEvent|.ctor|Constructor|public|False|False|System.Guid TemplateId, System.String Name, System.Guid CreatedBy, System.DateTimeOffset OccurredAt
+Notrelix.Domain.Governance.Templates.Events.SystemPermissionTemplateCreatedDomainEvent|<Clone>$|Method|public|False|True|Notrelix.Domain.Governance.Templates.Events.SystemPermissionTemplateCreatedDomainEvent|
+Notrelix.Domain.Governance.Templates.Events.SystemPermissionTemplateCreatedDomainEvent|Deconstruct|Method|public|False|False|System.Void|System.Guid& TemplateId, System.String& Name, System.Guid& CreatedBy, System.DateTimeOffset& OccurredAt
+Notrelix.Domain.Governance.Templates.Events.SystemPermissionTemplateCreatedDomainEvent|Equals|Method|public|False|True|System.Boolean|Notrelix.Domain.Governance.Templates.Events.SystemPermissionTemplateCreatedDomainEvent other
+Notrelix.Domain.Governance.Templates.Events.SystemPermissionTemplateCreatedDomainEvent|CreatedBy|Property|public|False|False|readwrite|System.Guid
+Notrelix.Domain.Governance.Templates.Events.SystemPermissionTemplateCreatedDomainEvent|Name|Property|public|False|False|readwrite|System.String
+Notrelix.Domain.Governance.Templates.Events.SystemPermissionTemplateCreatedDomainEvent|TemplateId|Property|public|False|False|readwrite|System.Guid
+Notrelix.Domain.Governance.Templates.Events.WorkspacePermissionTemplateCreatedDomainEvent|.ctor|Constructor|public|False|False|System.Guid AccountId, System.Guid WorkspaceId, System.Guid TemplateId, System.String Name, System.Guid CreatedBy, System.DateTimeOffset OccurredAt
+Notrelix.Domain.Governance.Templates.Events.WorkspacePermissionTemplateCreatedDomainEvent|<Clone>$|Method|public|False|True|Notrelix.Domain.Governance.Templates.Events.WorkspacePermissionTemplateCreatedDomainEvent|
+Notrelix.Domain.Governance.Templates.Events.WorkspacePermissionTemplateCreatedDomainEvent|Deconstruct|Method|public|False|False|System.Void|System.Guid& AccountId, System.Guid& WorkspaceId, System.Guid& TemplateId, System.String& Name, System.Guid& CreatedBy, System.DateTimeOffset& OccurredAt
+Notrelix.Domain.Governance.Templates.Events.WorkspacePermissionTemplateCreatedDomainEvent|Equals|Method|public|False|True|System.Boolean|Notrelix.Domain.Governance.Templates.Events.WorkspacePermissionTemplateCreatedDomainEvent other
+Notrelix.Domain.Governance.Templates.Events.WorkspacePermissionTemplateCreatedDomainEvent|CreatedBy|Property|public|False|False|readwrite|System.Guid
+Notrelix.Domain.Governance.Templates.Events.WorkspacePermissionTemplateCreatedDomainEvent|Name|Property|public|False|False|readwrite|System.String
+Notrelix.Domain.Governance.Templates.Events.WorkspacePermissionTemplateCreatedDomainEvent|TemplateId|Property|public|False|False|readwrite|System.Guid
 Notrelix.Domain.Governance.Templates.PermissionTemplate|Archive|Method|public|False|False|System.Void|System.Guid updatedBy, System.DateTimeOffset updatedAt
 Notrelix.Domain.Governance.Templates.PermissionTemplate|AccountId|Property|public|False|False|readonly|System.Guid?
 Notrelix.Domain.Governance.Templates.PermissionTemplate|Definition|Property|public|False|False|readonly|Notrelix.Domain.Governance.Templates.PermissionTemplateDefinition
@@ -2580,7 +2595,6 @@ Notrelix.Domain.WorkManagement.Checklists.Checklist|Items|Property|public|False|
 Notrelix.Domain.WorkManagement.Checklists.Checklist|Position|Property|public|False|False|readonly|Notrelix.Domain.SharedKernel.Ordering.FractionalIndex
 Notrelix.Domain.WorkManagement.Checklists.Checklist|Title|Property|public|False|False|readonly|System.String
 Notrelix.Domain.WorkManagement.Checklists.Checklist|WorkspaceId|Property|public|False|True|readonly|System.Guid
-Notrelix.Domain.WorkManagement.Checklists.ChecklistItem|Toggle|Method|public|False|False|System.Void|System.DateTimeOffset toggledAt
 Notrelix.Domain.WorkManagement.Checklists.ChecklistItem|AssigneeUserId|Property|public|False|False|readonly|System.Guid?
 Notrelix.Domain.WorkManagement.Checklists.ChecklistItem|ChecklistId|Property|public|False|False|readonly|System.Guid
 Notrelix.Domain.WorkManagement.Checklists.ChecklistItem|CompletedAt|Property|public|False|False|readonly|System.DateTimeOffset?
@@ -2633,14 +2647,14 @@ Notrelix.Domain.WorkManagement.Fields.BoardField|Delete|Method|public|False|Fals
 Notrelix.Domain.WorkManagement.Fields.BoardField|RemoveOption|Method|public|False|False|System.Void|System.Guid optionId, System.Guid removedBy, System.DateTimeOffset removedAt
 Notrelix.Domain.WorkManagement.Fields.BoardField|ReorderOptions|Method|public|False|False|System.Void|System.Collections.Generic.IReadOnlyList<System.Guid> orderedOptionIds, System.Guid updatedBy, System.DateTimeOffset updatedAt
 Notrelix.Domain.WorkManagement.Fields.BoardField|Restore|Method|public|False|False|System.Void|System.Guid restoredBy, System.DateTimeOffset restoredAt
+Notrelix.Domain.WorkManagement.Fields.BoardField|SetDefaultValue|Method|public|False|False|System.Void|Notrelix.Domain.WorkManagement.Fields.FieldValue defaultValue, System.Guid updatedBy, System.DateTimeOffset updatedAt
 Notrelix.Domain.WorkManagement.Fields.BoardField|UpdateClassification|Method|public|False|False|System.Void|Notrelix.Domain.WorkManagement.Fields.DataClassification classification, System.Boolean isSensitive, System.Guid updatedBy, System.DateTimeOffset updatedAt
 Notrelix.Domain.WorkManagement.Fields.BoardField|UpdateOption|Method|public|False|False|System.Void|System.Guid optionId, System.String name, Notrelix.Domain.SharedKernel.Color color, System.Guid updatedBy, System.DateTimeOffset updatedAt
-Notrelix.Domain.WorkManagement.Fields.BoardField|UpdatePosition|Method|public|False|False|System.Void|Notrelix.Domain.SharedKernel.Ordering.FractionalIndex position, System.Guid updatedBy, System.DateTimeOffset updatedAt
 Notrelix.Domain.WorkManagement.Fields.BoardField|UpdateSettings|Method|public|False|False|System.Void|Notrelix.Domain.WorkManagement.Fields.FieldSettings settings, System.Guid updatedBy, System.DateTimeOffset updatedAt
 Notrelix.Domain.WorkManagement.Fields.BoardField|AccountId|Property|public|False|True|readonly|System.Guid
 Notrelix.Domain.WorkManagement.Fields.BoardField|BoardId|Property|public|False|False|readonly|System.Guid
 Notrelix.Domain.WorkManagement.Fields.BoardField|DataClassification|Property|public|False|False|readonly|Notrelix.Domain.WorkManagement.Fields.DataClassification
-Notrelix.Domain.WorkManagement.Fields.BoardField|DefaultValue|Property|public|False|False|readonly|System.String
+Notrelix.Domain.WorkManagement.Fields.BoardField|DefaultValue|Property|public|False|False|readonly|Notrelix.Domain.WorkManagement.Fields.FieldValue
 Notrelix.Domain.WorkManagement.Fields.BoardField|IsSensitive|Property|public|False|False|readonly|System.Boolean
 Notrelix.Domain.WorkManagement.Fields.BoardField|IsSystem|Property|public|False|False|readonly|System.Boolean
 Notrelix.Domain.WorkManagement.Fields.BoardField|Name|Property|public|False|False|readonly|System.String
@@ -2667,6 +2681,14 @@ Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldCreatedDomainEvent|Create
 Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldCreatedDomainEvent|FieldId|Property|public|False|False|readwrite|System.Guid
 Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldCreatedDomainEvent|Name|Property|public|False|False|readwrite|System.String
 Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldCreatedDomainEvent|Type|Property|public|False|False|readwrite|Notrelix.Domain.WorkManagement.Fields.FieldType
+Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldDefaultValueUpdatedDomainEvent|.ctor|Constructor|public|False|False|System.Guid AccountId, System.Guid WorkspaceId, System.Guid FieldId, System.Guid BoardId, Notrelix.Domain.WorkManagement.Fields.FieldValue DefaultValue, System.Guid UpdatedBy, System.DateTimeOffset OccurredAt
+Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldDefaultValueUpdatedDomainEvent|<Clone>$|Method|public|False|True|Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldDefaultValueUpdatedDomainEvent|
+Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldDefaultValueUpdatedDomainEvent|Deconstruct|Method|public|False|False|System.Void|System.Guid& AccountId, System.Guid& WorkspaceId, System.Guid& FieldId, System.Guid& BoardId, Notrelix.Domain.WorkManagement.Fields.FieldValue& DefaultValue, System.Guid& UpdatedBy, System.DateTimeOffset& OccurredAt
+Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldDefaultValueUpdatedDomainEvent|Equals|Method|public|False|True|System.Boolean|Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldDefaultValueUpdatedDomainEvent other
+Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldDefaultValueUpdatedDomainEvent|BoardId|Property|public|False|False|readwrite|System.Guid
+Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldDefaultValueUpdatedDomainEvent|DefaultValue|Property|public|False|False|readwrite|Notrelix.Domain.WorkManagement.Fields.FieldValue
+Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldDefaultValueUpdatedDomainEvent|FieldId|Property|public|False|False|readwrite|System.Guid
+Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldDefaultValueUpdatedDomainEvent|UpdatedBy|Property|public|False|False|readwrite|System.Guid
 Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldDeletedDomainEvent|.ctor|Constructor|public|False|False|System.Guid AccountId, System.Guid WorkspaceId, System.Guid FieldId, System.Guid BoardId, System.Guid DeletedBy, System.DateTimeOffset OccurredAt
 Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldDeletedDomainEvent|<Clone>$|Method|public|False|True|Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldDeletedDomainEvent|
 Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldDeletedDomainEvent|Deconstruct|Method|public|False|False|System.Void|System.Guid& AccountId, System.Guid& WorkspaceId, System.Guid& FieldId, System.Guid& BoardId, System.Guid& DeletedBy, System.DateTimeOffset& OccurredAt
@@ -2867,11 +2889,13 @@ Notrelix.Domain.WorkManagement.Forms.FormSubmission|SubmitterUserId|Property|pub
 Notrelix.Domain.WorkManagement.Forms.FormSubmission|UserAgent|Property|public|False|False|readonly|System.String
 Notrelix.Domain.WorkManagement.Forms.FormSubmission|WorkspaceId|Property|public|False|True|readonly|System.Guid
 Notrelix.Domain.WorkManagement.Items.BoardItem|Archive|Method|public|False|False|System.Void|System.Guid archivedBy, System.DateTimeOffset archivedAt
-Notrelix.Domain.WorkManagement.Items.BoardItem|AssignParentItem|Method|public|False|False|System.Void|System.Guid? parentItemId, System.Int32 itemLevel, System.Collections.Generic.IReadOnlyDictionary<System.Guid,Notrelix.Domain.WorkManagement.Items.ItemParentSnapshot> parentChain, System.Guid updatedBy, System.DateTimeOffset updatedAt
-Notrelix.Domain.WorkManagement.Items.BoardItem|Complete|Method|public|False|False|System.Void|System.DateTimeOffset? completedAt, System.Guid updatedBy, System.DateTimeOffset updatedAt
+Notrelix.Domain.WorkManagement.Items.BoardItem|Complete|Method|public|False|False|System.Void|System.DateTimeOffset completedAt, System.Guid updatedBy, System.DateTimeOffset updatedAt
 Notrelix.Domain.WorkManagement.Items.BoardItem|Delete|Method|public|False|False|System.Void|System.Guid deletedBy, System.DateTimeOffset deletedAt, System.String reason
 Notrelix.Domain.WorkManagement.Items.BoardItem|MoveToGroup|Method|public|False|False|System.Void|Notrelix.Domain.WorkManagement.BoardGroups.BoardGroupRef group, Notrelix.Domain.SharedKernel.Ordering.FractionalIndex newPosition, System.Guid updatedBy, System.DateTimeOffset updatedAt
+Notrelix.Domain.WorkManagement.Items.BoardItem|MoveToRoot|Method|public|False|False|System.Void|System.Guid updatedBy, System.DateTimeOffset updatedAt
+Notrelix.Domain.WorkManagement.Items.BoardItem|MoveUnder|Method|public|False|False|System.Void|Notrelix.Domain.WorkManagement.Items.ItemParentPath parentPath, System.Guid updatedBy, System.DateTimeOffset updatedAt
 Notrelix.Domain.WorkManagement.Items.BoardItem|Rename|Method|public|False|False|System.Void|System.String name, System.Guid updatedBy, System.DateTimeOffset updatedAt
+Notrelix.Domain.WorkManagement.Items.BoardItem|Reopen|Method|public|False|False|System.Void|System.Guid reopenedBy, System.DateTimeOffset reopenedAt
 Notrelix.Domain.WorkManagement.Items.BoardItem|Restore|Method|public|False|False|System.Void|System.Guid restoredBy, System.DateTimeOffset restoredAt
 Notrelix.Domain.WorkManagement.Items.BoardItem|SetTimeline|Method|public|False|False|System.Void|System.DateTimeOffset? startedAt, System.DateTimeOffset? dueAt, System.Guid updatedBy, System.DateTimeOffset updatedAt
 Notrelix.Domain.WorkManagement.Items.BoardItem|Unarchive|Method|public|False|False|System.Void|System.Guid unarchivedBy, System.DateTimeOffset unarchivedAt
@@ -2924,23 +2948,25 @@ Notrelix.Domain.WorkManagement.Items.Events.BoardItemArchivedDomainEvent|Equals|
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemArchivedDomainEvent|ArchivedBy|Property|public|False|False|readwrite|System.Guid
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemArchivedDomainEvent|BoardId|Property|public|False|False|readwrite|System.Guid
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemArchivedDomainEvent|ItemId|Property|public|False|False|readwrite|System.Guid
-Notrelix.Domain.WorkManagement.Items.Events.BoardItemCompletedDomainEvent|.ctor|Constructor|public|False|False|System.Guid AccountId, System.Guid WorkspaceId, System.Guid BoardId, System.Guid ItemId, System.DateTimeOffset? CompletedAt, System.Guid CompletedBy, System.DateTimeOffset OccurredAt
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemCompletedDomainEvent|.ctor|Constructor|public|False|False|System.Guid AccountId, System.Guid WorkspaceId, System.Guid BoardId, System.Guid ItemId, System.DateTimeOffset CompletedAt, System.Guid CompletedBy, System.DateTimeOffset OccurredAt
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemCompletedDomainEvent|<Clone>$|Method|public|False|True|Notrelix.Domain.WorkManagement.Items.Events.BoardItemCompletedDomainEvent|
-Notrelix.Domain.WorkManagement.Items.Events.BoardItemCompletedDomainEvent|Deconstruct|Method|public|False|False|System.Void|System.Guid& AccountId, System.Guid& WorkspaceId, System.Guid& BoardId, System.Guid& ItemId, System.DateTimeOffset?& CompletedAt, System.Guid& CompletedBy, System.DateTimeOffset& OccurredAt
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemCompletedDomainEvent|Deconstruct|Method|public|False|False|System.Void|System.Guid& AccountId, System.Guid& WorkspaceId, System.Guid& BoardId, System.Guid& ItemId, System.DateTimeOffset& CompletedAt, System.Guid& CompletedBy, System.DateTimeOffset& OccurredAt
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemCompletedDomainEvent|Equals|Method|public|False|True|System.Boolean|Notrelix.Domain.WorkManagement.Items.Events.BoardItemCompletedDomainEvent other
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemCompletedDomainEvent|BoardId|Property|public|False|False|readwrite|System.Guid
-Notrelix.Domain.WorkManagement.Items.Events.BoardItemCompletedDomainEvent|CompletedAt|Property|public|False|False|readwrite|System.DateTimeOffset?
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemCompletedDomainEvent|CompletedAt|Property|public|False|False|readwrite|System.DateTimeOffset
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemCompletedDomainEvent|CompletedBy|Property|public|False|False|readwrite|System.Guid
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemCompletedDomainEvent|ItemId|Property|public|False|False|readwrite|System.Guid
-Notrelix.Domain.WorkManagement.Items.Events.BoardItemCreatedDomainEvent|.ctor|Constructor|public|False|False|System.Guid AccountId, System.Guid WorkspaceId, System.Guid BoardId, System.Guid GroupId, System.Guid ItemId, System.String Name, System.Guid CreatedBy, System.DateTimeOffset OccurredAt
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemCreatedDomainEvent|.ctor|Constructor|public|False|False|System.Guid AccountId, System.Guid WorkspaceId, System.Guid BoardId, System.Guid GroupId, System.Guid ItemId, System.String Name, System.Guid CreatedBy, System.DateTimeOffset OccurredAt, System.Guid? ParentItemId, System.Int32 ItemLevel
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemCreatedDomainEvent|<Clone>$|Method|public|False|True|Notrelix.Domain.WorkManagement.Items.Events.BoardItemCreatedDomainEvent|
-Notrelix.Domain.WorkManagement.Items.Events.BoardItemCreatedDomainEvent|Deconstruct|Method|public|False|False|System.Void|System.Guid& AccountId, System.Guid& WorkspaceId, System.Guid& BoardId, System.Guid& GroupId, System.Guid& ItemId, System.String& Name, System.Guid& CreatedBy, System.DateTimeOffset& OccurredAt
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemCreatedDomainEvent|Deconstruct|Method|public|False|False|System.Void|System.Guid& AccountId, System.Guid& WorkspaceId, System.Guid& BoardId, System.Guid& GroupId, System.Guid& ItemId, System.String& Name, System.Guid& CreatedBy, System.DateTimeOffset& OccurredAt, System.Guid?& ParentItemId, System.Int32& ItemLevel
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemCreatedDomainEvent|Equals|Method|public|False|True|System.Boolean|Notrelix.Domain.WorkManagement.Items.Events.BoardItemCreatedDomainEvent other
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemCreatedDomainEvent|BoardId|Property|public|False|False|readwrite|System.Guid
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemCreatedDomainEvent|CreatedBy|Property|public|False|False|readwrite|System.Guid
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemCreatedDomainEvent|GroupId|Property|public|False|False|readwrite|System.Guid
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemCreatedDomainEvent|ItemId|Property|public|False|False|readwrite|System.Guid
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemCreatedDomainEvent|ItemLevel|Property|public|False|False|readwrite|System.Int32
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemCreatedDomainEvent|Name|Property|public|False|False|readwrite|System.String
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemCreatedDomainEvent|ParentItemId|Property|public|False|False|readwrite|System.Guid?
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemDeletedDomainEvent|.ctor|Constructor|public|False|False|System.Guid AccountId, System.Guid WorkspaceId, System.Guid ItemId, System.Guid BoardId, System.Guid DeletedBy, System.DateTimeOffset OccurredAt
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemDeletedDomainEvent|<Clone>$|Method|public|False|True|Notrelix.Domain.WorkManagement.Items.Events.BoardItemDeletedDomainEvent|
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemDeletedDomainEvent|Deconstruct|Method|public|False|False|System.Void|System.Guid& AccountId, System.Guid& WorkspaceId, System.Guid& ItemId, System.Guid& BoardId, System.Guid& DeletedBy, System.DateTimeOffset& OccurredAt
@@ -3001,15 +3027,17 @@ Notrelix.Domain.WorkManagement.Items.Events.BoardItemMovedDomainEvent|NewGroupId
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemMovedDomainEvent|NewPosition|Property|public|False|False|readwrite|System.String
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemMovedDomainEvent|OldGroupId|Property|public|False|False|readwrite|System.Guid
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemMovedDomainEvent|UpdatedBy|Property|public|False|False|readwrite|System.Guid
-Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentAssignedDomainEvent|.ctor|Constructor|public|False|False|System.Guid AccountId, System.Guid WorkspaceId, System.Guid BoardId, System.Guid ItemId, System.Guid? ParentItemId, System.Int32 ItemLevel, System.Guid UpdatedBy, System.DateTimeOffset OccurredAt
-Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentAssignedDomainEvent|<Clone>$|Method|public|False|True|Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentAssignedDomainEvent|
-Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentAssignedDomainEvent|Deconstruct|Method|public|False|False|System.Void|System.Guid& AccountId, System.Guid& WorkspaceId, System.Guid& BoardId, System.Guid& ItemId, System.Guid?& ParentItemId, System.Int32& ItemLevel, System.Guid& UpdatedBy, System.DateTimeOffset& OccurredAt
-Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentAssignedDomainEvent|Equals|Method|public|False|True|System.Boolean|Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentAssignedDomainEvent other
-Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentAssignedDomainEvent|BoardId|Property|public|False|False|readwrite|System.Guid
-Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentAssignedDomainEvent|ItemId|Property|public|False|False|readwrite|System.Guid
-Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentAssignedDomainEvent|ItemLevel|Property|public|False|False|readwrite|System.Int32
-Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentAssignedDomainEvent|ParentItemId|Property|public|False|False|readwrite|System.Guid?
-Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentAssignedDomainEvent|UpdatedBy|Property|public|False|False|readwrite|System.Guid
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentChangedDomainEvent|.ctor|Constructor|public|False|False|System.Guid AccountId, System.Guid WorkspaceId, System.Guid BoardId, System.Guid ItemId, System.Guid? PreviousParentItemId, System.Guid? NewParentItemId, System.Int32 PreviousLevel, System.Int32 NewLevel, System.Guid UpdatedBy, System.DateTimeOffset OccurredAt
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentChangedDomainEvent|<Clone>$|Method|public|False|True|Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentChangedDomainEvent|
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentChangedDomainEvent|Deconstruct|Method|public|False|False|System.Void|System.Guid& AccountId, System.Guid& WorkspaceId, System.Guid& BoardId, System.Guid& ItemId, System.Guid?& PreviousParentItemId, System.Guid?& NewParentItemId, System.Int32& PreviousLevel, System.Int32& NewLevel, System.Guid& UpdatedBy, System.DateTimeOffset& OccurredAt
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentChangedDomainEvent|Equals|Method|public|False|True|System.Boolean|Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentChangedDomainEvent other
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentChangedDomainEvent|BoardId|Property|public|False|False|readwrite|System.Guid
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentChangedDomainEvent|ItemId|Property|public|False|False|readwrite|System.Guid
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentChangedDomainEvent|NewLevel|Property|public|False|False|readwrite|System.Int32
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentChangedDomainEvent|NewParentItemId|Property|public|False|False|readwrite|System.Guid?
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentChangedDomainEvent|PreviousLevel|Property|public|False|False|readwrite|System.Int32
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentChangedDomainEvent|PreviousParentItemId|Property|public|False|False|readwrite|System.Guid?
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemParentChangedDomainEvent|UpdatedBy|Property|public|False|False|readwrite|System.Guid
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemRenamedDomainEvent|.ctor|Constructor|public|False|False|System.Guid AccountId, System.Guid WorkspaceId, System.Guid ItemId, System.Guid BoardId, System.String OldName, System.String NewName, System.Guid UpdatedBy, System.DateTimeOffset OccurredAt
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemRenamedDomainEvent|<Clone>$|Method|public|False|True|Notrelix.Domain.WorkManagement.Items.Events.BoardItemRenamedDomainEvent|
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemRenamedDomainEvent|Deconstruct|Method|public|False|False|System.Void|System.Guid& AccountId, System.Guid& WorkspaceId, System.Guid& ItemId, System.Guid& BoardId, System.String& OldName, System.String& NewName, System.Guid& UpdatedBy, System.DateTimeOffset& OccurredAt
@@ -3019,6 +3047,13 @@ Notrelix.Domain.WorkManagement.Items.Events.BoardItemRenamedDomainEvent|ItemId|P
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemRenamedDomainEvent|NewName|Property|public|False|False|readwrite|System.String
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemRenamedDomainEvent|OldName|Property|public|False|False|readwrite|System.String
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemRenamedDomainEvent|UpdatedBy|Property|public|False|False|readwrite|System.Guid
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemReopenedDomainEvent|.ctor|Constructor|public|False|False|System.Guid AccountId, System.Guid WorkspaceId, System.Guid BoardId, System.Guid ItemId, System.Guid ReopenedBy, System.DateTimeOffset OccurredAt
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemReopenedDomainEvent|<Clone>$|Method|public|False|True|Notrelix.Domain.WorkManagement.Items.Events.BoardItemReopenedDomainEvent|
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemReopenedDomainEvent|Deconstruct|Method|public|False|False|System.Void|System.Guid& AccountId, System.Guid& WorkspaceId, System.Guid& BoardId, System.Guid& ItemId, System.Guid& ReopenedBy, System.DateTimeOffset& OccurredAt
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemReopenedDomainEvent|Equals|Method|public|False|True|System.Boolean|Notrelix.Domain.WorkManagement.Items.Events.BoardItemReopenedDomainEvent other
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemReopenedDomainEvent|BoardId|Property|public|False|False|readwrite|System.Guid
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemReopenedDomainEvent|ItemId|Property|public|False|False|readwrite|System.Guid
+Notrelix.Domain.WorkManagement.Items.Events.BoardItemReopenedDomainEvent|ReopenedBy|Property|public|False|False|readwrite|System.Guid
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemRestoredDomainEvent|.ctor|Constructor|public|False|False|System.Guid AccountId, System.Guid WorkspaceId, System.Guid ItemId, System.Guid BoardId, System.Guid RestoredBy, System.DateTimeOffset OccurredAt
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemRestoredDomainEvent|<Clone>$|Method|public|False|True|Notrelix.Domain.WorkManagement.Items.Events.BoardItemRestoredDomainEvent|
 Notrelix.Domain.WorkManagement.Items.Events.BoardItemRestoredDomainEvent|Deconstruct|Method|public|False|False|System.Void|System.Guid& AccountId, System.Guid& WorkspaceId, System.Guid& ItemId, System.Guid& BoardId, System.Guid& RestoredBy, System.DateTimeOffset& OccurredAt
@@ -3053,10 +3088,13 @@ Notrelix.Domain.WorkManagement.Items.ItemDependency|WorkspaceId|Property|public|
 Notrelix.Domain.WorkManagement.Items.ItemDependencySnapshot|.ctor|Constructor|public|False|False|System.Guid itemId, System.Collections.Generic.IReadOnlyList<System.Guid> dependencyIds
 Notrelix.Domain.WorkManagement.Items.ItemDependencySnapshot|DependencyIds|Property|public|False|False|readwrite|System.Collections.Generic.IReadOnlyList<System.Guid>
 Notrelix.Domain.WorkManagement.Items.ItemDependencySnapshot|ItemId|Property|public|False|False|readwrite|System.Guid
-Notrelix.Domain.WorkManagement.Items.ItemParentSnapshot|.ctor|Constructor|public|False|False|System.Guid itemId, System.Guid boardId, System.Guid? parentItemId
-Notrelix.Domain.WorkManagement.Items.ItemParentSnapshot|BoardId|Property|public|False|False|readwrite|System.Guid
-Notrelix.Domain.WorkManagement.Items.ItemParentSnapshot|ItemId|Property|public|False|False|readwrite|System.Guid
-Notrelix.Domain.WorkManagement.Items.ItemParentSnapshot|ParentItemId|Property|public|False|False|readwrite|System.Guid?
+Notrelix.Domain.WorkManagement.Items.ItemParentPath|AccountId|Property|public|False|False|readonly|System.Guid
+Notrelix.Domain.WorkManagement.Items.ItemParentPath|AncestorIds|Property|public|False|False|readonly|System.Collections.Generic.IReadOnlyList<System.Guid>
+Notrelix.Domain.WorkManagement.Items.ItemParentPath|BoardId|Property|public|False|False|readonly|System.Guid
+Notrelix.Domain.WorkManagement.Items.ItemParentPath|ChildLevel|Property|public|False|False|readonly|System.Int32
+Notrelix.Domain.WorkManagement.Items.ItemParentPath|ParentItemId|Property|public|False|False|readonly|System.Guid
+Notrelix.Domain.WorkManagement.Items.ItemParentPath|ParentLevel|Property|public|False|False|readonly|System.Int32
+Notrelix.Domain.WorkManagement.Items.ItemParentPath|WorkspaceId|Property|public|False|False|readonly|System.Guid
 Notrelix.Domain.WorkManagement.Items.ItemSubscriber|AccountId|Property|public|False|True|readonly|System.Guid
 Notrelix.Domain.WorkManagement.Items.ItemSubscriber|BoardId|Property|public|False|False|readonly|System.Guid
 Notrelix.Domain.WorkManagement.Items.ItemSubscriber|ItemId|Property|public|False|False|readonly|System.Guid

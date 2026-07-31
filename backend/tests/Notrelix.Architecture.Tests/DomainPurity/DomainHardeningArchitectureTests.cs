@@ -59,11 +59,6 @@ public class DomainHardeningArchitectureTests
             AllowlistClassification.LegacyGap,
             "Mirror snapshots are computed projections.",
             "Keep computation/projection outside aggregate behavior."),
-        ["ItemParentSnapshot"] = new(
-            "ItemParentSnapshot",
-            AllowlistClassification.Intentional,
-            "Application-supplied input data for Domain cycle-detection rules; not a persisted projection.",
-            "Consider renaming to ItemParentChain if projection confusion persists."),
         ["ItemDependencySnapshot"] = new(
             "ItemDependencySnapshot",
             AllowlistClassification.Intentional,
@@ -112,7 +107,12 @@ public class DomainHardeningArchitectureTests
             "WorkspaceRouteLinkedDomainEvent",
             AllowlistClassification.Intentional,
             "Account-scoped event carrying non-nullable WorkspaceId only for the link operation. WorkspaceRoute is IAccountScoped with optional WorkspaceId.",
-            "Keep as AccountScopedDomainEvent. The WorkspaceId is operation data, not lifecycle scope.")
+            "Keep as AccountScopedDomainEvent. The WorkspaceId is operation data, not lifecycle scope."),
+        ["ItemParentPath"] = new(
+            "ItemParentPath",
+            AllowlistClassification.Intentional,
+            "Value object carrying WorkspaceId for item parent resolution, not an independently persisted entity.",
+            "Value objects use WorkspaceId for equality, not lifecycle.")
     };
 
     private static readonly string[] CoreAggregates =

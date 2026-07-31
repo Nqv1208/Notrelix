@@ -5,6 +5,23 @@ using DomainCapability = Notrelix.Domain.Tests.Freeze.DomainCapabilityRegistry.D
 namespace Notrelix.Domain.Tests.Freeze;
 
 /// <summary>
+/// Defines how a capability namespace prefix matches types.
+/// </summary>
+internal enum NamespaceMatch
+{
+    /// <summary>
+    /// Matches only types directly in the exact namespace.
+    /// Sub-namespaces are NOT matched and must be registered separately.
+    /// </summary>
+    Exact,
+
+    /// <summary>
+    /// Matches the namespace and all sub-namespaces (prefix match).
+    /// </summary>
+    Subtree
+}
+
+/// <summary>
 /// Single source of truth for capability maturity and tenant scope.
 /// Every freeze gate uses this registry instead of maintaining separate lists.
 /// </summary>
@@ -12,7 +29,8 @@ internal static class DomainCapabilityRegistry
 {
     internal sealed record DomainCapability(
         string NamespacePrefix,
-        DomainCapabilityStatus Status);
+        DomainCapabilityStatus Status,
+        NamespaceMatch Match = NamespaceMatch.Subtree);
 
     private static readonly DomainCapability[] Capabilities =
     [
@@ -32,8 +50,9 @@ internal static class DomainCapabilityRegistry
         new("Notrelix.Domain.Workspaces", DomainCapabilityStatus.Frozen),
 
         // ── WorkManagement stable core ────────────────────────────────────
-        // Root prefix for RuleCodes/enums; specific sub-namespaces below.
-        new("Notrelix.Domain.WorkManagement", DomainCapabilityStatus.Frozen),
+        // Root prefix for RuleCodes/enums only; sub-namespaces registered separately.
+        // Exact match ensures new sub-capabilities must be explicitly classified.
+        new("Notrelix.Domain.WorkManagement", DomainCapabilityStatus.Frozen, NamespaceMatch.Exact),
         new("Notrelix.Domain.WorkManagement.Boards", DomainCapabilityStatus.Frozen),
         new("Notrelix.Domain.WorkManagement.BoardGroups", DomainCapabilityStatus.Frozen),
         new("Notrelix.Domain.WorkManagement.Fields", DomainCapabilityStatus.Frozen),
@@ -55,11 +74,8 @@ internal static class DomainCapabilityRegistry
         new("Notrelix.Domain.Documents", DomainCapabilityStatus.Frozen),
 
         // ── Collaboration ─────────────────────────────────────────────────
-        // Root prefix for RuleCodes; specific sub-namespaces below.
-        new("Notrelix.Domain.Collaboration", DomainCapabilityStatus.Frozen),
-        // Presence is Experimental; other Collaboration sub-namespaces are Frozen.
-        // Do not register "Notrelix.Domain.Collaboration" as a blanket Frozen prefix
-        // because Collaboration.Presence must be independently Experimental.
+        // Root prefix for RuleCodes only; sub-namespaces registered separately.
+        new("Notrelix.Domain.Collaboration", DomainCapabilityStatus.Frozen, NamespaceMatch.Exact),
         new("Notrelix.Domain.Collaboration.Attachments", DomainCapabilityStatus.Frozen),
         new("Notrelix.Domain.Collaboration.Comments", DomainCapabilityStatus.Frozen),
         new("Notrelix.Domain.Collaboration.Mentions", DomainCapabilityStatus.Frozen),
@@ -70,8 +86,8 @@ internal static class DomainCapabilityRegistry
         new("Notrelix.Domain.Collaboration.Presence", DomainCapabilityStatus.Experimental),
 
         // ── Governance ────────────────────────────────────────────────────
-        // Root prefix covers RuleCodes; sub-namespaces below win by longest-prefix.
-        new("Notrelix.Domain.Governance", DomainCapabilityStatus.Frozen),
+        // Root prefix for RuleCodes only; sub-namespaces registered separately.
+        new("Notrelix.Domain.Governance", DomainCapabilityStatus.Frozen, NamespaceMatch.Exact),
         new("Notrelix.Domain.Governance.Permissions", DomainCapabilityStatus.Frozen),
         new("Notrelix.Domain.Governance.Policies", DomainCapabilityStatus.Frozen),
         new("Notrelix.Domain.Governance.Roles", DomainCapabilityStatus.Frozen),
@@ -79,7 +95,8 @@ internal static class DomainCapabilityRegistry
         new("Notrelix.Domain.Governance.Templates", DomainCapabilityStatus.Frozen),
 
         // ── Automation ────────────────────────────────────────────────────
-        new("Notrelix.Domain.Automation", DomainCapabilityStatus.Frozen),
+        // Root prefix for RuleCodes only; sub-namespaces registered separately.
+        new("Notrelix.Domain.Automation", DomainCapabilityStatus.Frozen, NamespaceMatch.Exact),
         new("Notrelix.Domain.Automation.RulesEngine", DomainCapabilityStatus.Frozen),
         new("Notrelix.Domain.Automation.Scheduled", DomainCapabilityStatus.Frozen),
         new("Notrelix.Domain.Automation.Rules", DomainCapabilityStatus.Frozen),
@@ -99,8 +116,8 @@ internal static class DomainCapabilityRegistry
         new("Notrelix.Domain.Billing", DomainCapabilityStatus.Frozen),
 
         // ── Analytics ─────────────────────────────────────────────────────
-        // Root prefix covers RuleCodes; sub-namespaces below win by longest-prefix.
-        new("Notrelix.Domain.Analytics", DomainCapabilityStatus.Frozen),
+        // Root prefix for RuleCodes only; sub-namespaces registered separately.
+        new("Notrelix.Domain.Analytics", DomainCapabilityStatus.Frozen, NamespaceMatch.Exact),
         new("Notrelix.Domain.Analytics.Dashboards", DomainCapabilityStatus.Frozen),
         new("Notrelix.Domain.Analytics.Widgets", DomainCapabilityStatus.Frozen),
         new("Notrelix.Domain.Analytics.Snapshots", DomainCapabilityStatus.Frozen),
@@ -193,10 +210,18 @@ internal static class DomainCapabilityRegistry
             throw new InvalidOperationException(
                 $"Domain capability cannot be resolved for type with null namespace: {type.FullName}");
 
-        // Find the longest matching prefix (namespace boundary enforced)
+        // Find the best matching capability using Exact/Subtree semantics.
+        // Exact: matches only the exact namespace (ns == prefix)
+        // Subtree: matches the namespace and all sub-namespaces (ns == prefix || ns.StartsWith(prefix + "."))
+        // Longest prefix wins among matches.
         var best = Capabilities
-            .Where(c => ns.StartsWith(c.NamespacePrefix + ".", StringComparison.Ordinal) ||
-                        ns == c.NamespacePrefix)
+            .Where(c => c.Match switch
+            {
+                NamespaceMatch.Exact => ns == c.NamespacePrefix,
+                NamespaceMatch.Subtree => ns == c.NamespacePrefix ||
+                                          ns.StartsWith(c.NamespacePrefix + ".", StringComparison.Ordinal),
+                _ => false
+            })
             .MaxBy(c => c.NamespacePrefix.Length);
 
         return best?.Status
@@ -491,12 +516,29 @@ public class DomainCapabilityRegistryTests
             .Where(t => t is not null)
             .ToList();
 
+        var testsAssembly = typeof(DomainCapabilityRegistry).Assembly;
+        var testTypes = testsAssembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract).ToList();
+
         foreach (var type in hybridTypes)
         {
             var ns = type!.Namespace!;
             var resolvedStatus = DomainCapabilityRegistry.ResolveCapability(type);
             resolvedStatus.Should().Be(DomainCapabilityStatus.Frozen,
                 $"hybrid aggregate {type.FullName} must be Frozen");
+
+            var fixtures = testTypes
+                .Where(t => t.GetCustomAttributes<CoversHybridAggregateAttribute>(inherit: false)
+                    .Any(a => a.AggregateType == type))
+                .ToList();
+
+            fixtures.Should().NotBeEmpty(
+                $"hybrid aggregate {type.FullName} must have a [CoversHybridAggregate] fixture");
+
+            fixtures.Should().Contain(f =>
+                    f.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                        .Any(m => m.GetCustomAttributes(typeof(FactAttribute), true).Length > 0 ||
+                                  m.GetCustomAttributes(typeof(TheoryAttribute), true).Length > 0),
+                $"hybrid aggregate {type.FullName} fixtures must contain executable test methods");
         }
     }
 

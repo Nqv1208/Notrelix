@@ -62,9 +62,10 @@ public static class FreezeSnapshotBuilder
 
     public static string BuildRuleCodesSnapshot()
     {
+        // Static classes in C# are compiled as abstract+sealed at the IL level.
         var ruleCodeTypes = DomainAssembly
             .GetTypes()
-            .Where(t => t is { IsClass: true, IsAbstract: false, IsPublic: true }
+            .Where(t => t is { IsClass: true, IsAbstract: true, IsSealed: true, IsPublic: true }
                      && t.Name.EndsWith("RuleCodes", StringComparison.Ordinal)
                      && t.Namespace?.StartsWith("Notrelix.Domain", StringComparison.Ordinal) == true)
             .OrderBy(t => t.FullName, StringComparer.Ordinal)
