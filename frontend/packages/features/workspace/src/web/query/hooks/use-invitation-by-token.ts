@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { createInvitationsService, type InvitationsEndpoints } from '../../api/invitations.service';
-import type { WorkspaceApiClient } from '../../api/workspace.service';
-import { workspaceQueryKeys } from '../keys';
+import { createInvitationsService, type InvitationsEndpoints } from '../../../core/api/invitations.service';
+import type { WorkspaceApiClient } from '../../../core/api/workspace.service';
+import { workspaceQueryKeys } from '../../../core/query/keys';
 
 interface UseInvitationByTokenDeps {
   api: WorkspaceApiClient;

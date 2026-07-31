@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { createIntegrationsService, type IntegrationsApiClient, type IntegrationsEndpoints } from '../../api/integrations.service';
-import { integrationsQueryKeys } from '../keys';
+import { createIntegrationsService, type IntegrationsApiClient, type IntegrationsEndpoints } from '../../../core/api/integrations.service';
+import { integrationsQueryKeys } from '../../../core/query/keys';
 
 export function createUseConnections(api: IntegrationsApiClient, endpoints: IntegrationsEndpoints) {
   const service = createIntegrationsService(api, endpoints);

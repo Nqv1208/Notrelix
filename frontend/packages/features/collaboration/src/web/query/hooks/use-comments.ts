@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { createCommentService, type CollaborationApiClient, type CollaborationEndpoints } from '../../api/comment.service';
-import { collaborationQueryKeys } from '../keys';
+import { createCommentService, type CollaborationApiClient, type CollaborationEndpoints } from '../../../core/api/comment.service';
+import { collaborationQueryKeys } from '../../../core/query/keys';
 
 export function createUseComments(api: CollaborationApiClient, endpoints: CollaborationEndpoints) {
   const service = createCommentService(api, endpoints);

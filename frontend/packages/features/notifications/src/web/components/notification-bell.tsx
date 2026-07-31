@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import {
-  createUseNotifications,
-  createUseUnreadCount,
-  createUseMarkRead,
-  createUseArchiveNotification,
-} from '../../core';
+import { createUseNotifications } from '../query/hooks/use-notifications';
+import { createUseUnreadCount } from '../query/hooks/use-unread-count';
+import { createUseMarkRead } from '../query/hooks/use-mark-read';
+import { createUseArchiveNotification } from '../query/hooks/use-archive-notification';
 import type { NotificationsApiClient, NotificationsEndpoints } from '../../core/api/notifications.service';
 import {
   Button,

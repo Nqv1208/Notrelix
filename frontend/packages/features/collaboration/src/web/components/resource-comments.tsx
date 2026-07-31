@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { createUseComments, createUseCreateComment, createUseDeleteComment, type Comment } from '../../core';
+import type { Comment } from '../../core';
+import { createUseComments, createUseCreateComment, createUseDeleteComment } from '../query/hooks/use-comments';
 import { Button, Input, Avatar } from '@notrelix/ui-web';
 import { MessageSquare, Send, Trash2 } from 'lucide-react';
 

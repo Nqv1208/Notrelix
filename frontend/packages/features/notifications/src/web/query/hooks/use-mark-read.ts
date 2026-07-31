@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createNotificationsService, type NotificationsApiClient, type NotificationsEndpoints } from '../../api/notifications.service';
-import { notificationsQueryKeys } from '../keys';
+import { createNotificationsService, type NotificationsApiClient, type NotificationsEndpoints } from '../../../core/api/notifications.service';
+import { notificationsQueryKeys } from '../../../core/query/keys';
 
 interface UseMarkReadDeps {
   api: NotificationsApiClient;

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { createNotificationsService, type NotificationsApiClient, type NotificationsEndpoints } from '../../api/notifications.service';
-import { notificationsQueryKeys } from '../keys';
-import type { NotificationPreferences } from '../../types/notifications';
+import { createNotificationsService, type NotificationsApiClient, type NotificationsEndpoints } from '../../../core/api/notifications.service';
+import { notificationsQueryKeys } from '../../../core/query/keys';
+import type { NotificationPreferences } from '../../../core/types/notifications';
 
 interface UseNotificationPreferencesDeps {
   api: NotificationsApiClient;

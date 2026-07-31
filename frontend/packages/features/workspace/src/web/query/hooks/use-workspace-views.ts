@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { createViewsService } from '../../api/views.service';
-import type { WorkspaceApiClient } from '../../api/workspace.service';
-import { workspaceQueryKeys } from '../keys';
+import { createViewsService } from '../../../core/api/views.service';
+import type { WorkspaceApiClient } from '../../../core/api/workspace.service';
+import { workspaceQueryKeys } from '../../../core/query/keys';
 
 interface UseWorkspaceViewsDeps {
   api: WorkspaceApiClient;

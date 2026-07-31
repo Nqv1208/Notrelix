@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { createMembersService } from '../../api/members.service';
-import type { WorkspaceApiClient } from '../../api/workspace.service';
-import { workspaceQueryKeys } from '../keys';
+import { createMembersService } from '../../../core/api/members.service';
+import type { WorkspaceApiClient } from '../../../core/api/workspace.service';
+import { workspaceQueryKeys } from '../../../core/query/keys';
 
 interface UseWorkspaceMembersDeps {
   api: WorkspaceApiClient;

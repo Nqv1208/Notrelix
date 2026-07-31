@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { createAccountService, type AccountApiClient, type AccountEndpoints } from '../../api/account.service';
-import { accountQueryKeys } from '../keys';
+import { createAccountService, type AccountApiClient, type AccountEndpoints } from '../../../core/api/account.service';
+import { accountQueryKeys } from '../../../core/query/keys';
 
 interface UseSecuritySettingsDeps {
   api: AccountApiClient;

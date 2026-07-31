@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link, useLocation } from '@tanstack/react-router';
 import { useWorkspaceContext } from '../../providers/workspace-provider';
-import { createUseWorkspaceShellData, createUseWorkspaceMembers } from '@notrelix/features-workspace/core';
+import { createUseWorkspaceShellData, createUseWorkspaceMembers } from '@notrelix/features-workspace/web';
 import { useAppRuntime } from '@notrelix/runtime-web';
 import { Avatar, AvatarFallback, Collapsible, CollapsibleContent, CollapsibleTrigger } from '@notrelix/ui-web';
 import { ScrollArea } from '@notrelix/ui-web';

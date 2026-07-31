@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { UserPlus, Loader2, Check, X, Calendar, User, Briefcase } from 'lucide-react';
 import { Button, Popover, PopoverContent, PopoverTrigger } from '@notrelix/ui-web';
-import { createUsePendingInvitations } from '../../core';
+import { createUsePendingInvitations } from '../query/hooks/use-pending-invitations';
 import { createUseAcceptInvitation } from '../hooks/mutations/use-accept-invitation';
 import type { WorkspaceInvitation } from '../../core';
 import { cn } from '@notrelix/ui-web';
