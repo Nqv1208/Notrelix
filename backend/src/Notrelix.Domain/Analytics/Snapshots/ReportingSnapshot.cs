@@ -7,8 +7,9 @@ public class ReportingSnapshot : Entity, IWorkspaceScoped
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public string ReportType { get; private set; } = null!;
+    public int SchemaVersion { get; private set; }
     public JsonValue Data { get; private set; } = null!;
-    public ReportSnapshotPayload Payload => ReportSnapshotPayload.Create(ReportType, Data);
+    public ReportSnapshotPayload Payload => ReportSnapshotPayload.Create(ReportType, SchemaVersion, Data);
     public DateTimeOffset CapturedAt { get; private set; }
 
     private ReportingSnapshot() : base() { }
@@ -26,6 +27,7 @@ public class ReportingSnapshot : Entity, IWorkspaceScoped
             AccountId = accountId,
             WorkspaceId = workspaceId,
             ReportType = payload.ReportType,
+            SchemaVersion = payload.SchemaVersion,
             Data = payload.Data,
             CapturedAt = capturedAt
         };

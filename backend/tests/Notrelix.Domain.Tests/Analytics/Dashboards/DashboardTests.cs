@@ -135,4 +135,148 @@ public class DashboardTests
         dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetRemovedDomainEvent);
     }
 
+    [CoversMutation(typeof(Dashboard), "RemoveWidget(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [Fact]
+    public void RemoveWidget_WithMissingWidget_ShouldBeNoOp()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Dashboard", actor, now);
+
+        dashboard.RemoveWidget(Guid.NewGuid(), actor, now);
+
+        dashboard.Widgets.Should().BeEmpty();
+        dashboard.DomainEvents.Should().NotContain(e => e is DashboardWidgetRemovedDomainEvent);
+    }
+
+    [CoversMutation(typeof(Dashboard), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [Fact]
+    public void Archive_AlreadyArchived_ShouldBeNoOp()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Dashboard", actor, now);
+        dashboard.Archive(actor, now);
+
+        dashboard.Archive(actor, now.AddDays(1));
+
+        dashboard.DomainEvents.OfType<DashboardCreatedDomainEvent>().Should().ContainSingle();
+        dashboard.DomainEvents.OfType<DashboardArchivedDomainEvent>().Should().ContainSingle();
+    }
+
+    [Fact]
+    public void AddWidget_OnArchivedDashboard_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Dashboard", actor, now);
+        dashboard.Archive(actor, now);
+
+        var act = () => dashboard.AddWidget("Widget", DashboardWidgetType.TextWidget, JsonValue.Create("{}"), WidgetPosition.Create(0, 0, 2, 2), actor, now);
+
+        act.Should().Throw<DomainException>().WithMessage("Archived dashboards cannot be modified.");
+    }
+
+    [Fact]
+    public void RemoveWidget_OnArchivedDashboard_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Dashboard", actor, now);
+        dashboard.Archive(actor, now);
+
+        var act = () => dashboard.RemoveWidget(Guid.NewGuid(), actor, now);
+
+        act.Should().Throw<DomainException>().WithMessage("Archived dashboards cannot be modified.");
+    }
+
+    [Fact]
+    public void MoveWidget_OnArchivedDashboard_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Dashboard", actor, now);
+        dashboard.Archive(actor, now);
+
+        var act = () => dashboard.MoveWidget(Guid.NewGuid(), WidgetPosition.Create(0, 0, 2, 2), actor, now);
+
+        act.Should().Throw<DomainException>().WithMessage("Archived dashboards cannot be modified.");
+    }
+
+    [Fact]
+    public void Rename_OnArchivedDashboard_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Dashboard", actor, now);
+        dashboard.Archive(actor, now);
+
+        var act = () => dashboard.Rename("New Name", actor, now);
+
+        act.Should().Throw<DomainException>().WithMessage("Archived dashboards cannot be modified.");
+    }
+
+    [Fact]
+    public void ChangeVisibility_OnArchivedDashboard_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Dashboard", actor, now);
+        dashboard.Archive(actor, now);
+
+        var act = () => dashboard.ChangeVisibility(DashboardVisibility.Public, actor, now);
+
+        act.Should().Throw<DomainException>().WithMessage("Archived dashboards cannot be modified.");
+    }
+
+    [Fact]
+    public void AddWidget_ExceedingLimit_ShouldNotAddWidgetOrRaiseEvent()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Dashboard", actor, now);
+
+        for (int i = 0; i < 50; i++)
+        {
+            dashboard.AddWidget($"Widget {i}", DashboardWidgetType.TextWidget, JsonValue.Create("{\"content\":\"test\"}"), WidgetPosition.Create(i % 10, i / 10, 2, 2), actor, now);
+        }
+
+        var act = () => dashboard.AddWidget("Overflow", DashboardWidgetType.TextWidget, JsonValue.Create("{\"content\":\"test\"}"), WidgetPosition.Create(0, 0, 2, 2), actor, now);
+        act.Should().Throw<DomainException>();
+
+        dashboard.Widgets.Should().HaveCount(50);
+    }
+
+    [Fact]
+    public void RemoveWidget_InvalidTimestamp_ShouldNotRemoveWidget()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Dashboard", actor, now);
+        dashboard.AddWidget("Widget", DashboardWidgetType.TextWidget, JsonValue.Create("{\"content\":\"test\"}"), WidgetPosition.Create(0, 0, 2, 2), actor, now);
+        var widgetId = dashboard.Widgets.First().Id;
+
+        var act = () => dashboard.RemoveWidget(widgetId, actor, default);
+        act.Should().Throw<DomainException>();
+
+        dashboard.Widgets.Should().ContainSingle();
+    }
+
+    [Fact]
+    public void MoveWidget_InvalidTimestamp_ShouldNotChangePosition()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Dashboard", actor, now);
+        var initial = WidgetPosition.Create(0, 0, 2, 2);
+        dashboard.AddWidget("Widget", DashboardWidgetType.TextWidget, JsonValue.Create("{\"content\":\"test\"}"), initial, actor, now);
+        var widgetId = dashboard.Widgets.First().Id;
+
+        var next = WidgetPosition.Create(2, 2, 4, 4);
+        var act = () => dashboard.MoveWidget(widgetId, next, actor, default);
+        act.Should().Throw<DomainException>();
+
+        dashboard.Widgets.First().Position.Should().Be(initial);
+    }
+
 }

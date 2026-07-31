@@ -42,6 +42,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
 
     public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
     {
+        EnsureActive();
         Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(name);
 
@@ -57,6 +58,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
 
     public void ChangeVisibility(DashboardVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
     {
+        EnsureActive();
         Guard.NotEmpty(updatedBy);
         if (Visibility == visibility) return;
 
@@ -69,6 +71,7 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
 
     public void AddWidget(string title, DashboardWidgetType type, JsonValue config, WidgetPosition position, Guid updatedBy, DateTimeOffset updatedAt)
     {
+        EnsureActive();
         Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(title);
         WidgetRules.ValidatePosition(position);
@@ -77,8 +80,8 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(Analytics_Dashboard_WidgetLimitExceeded, $"Cannot add more than {MaxWidgets} widgets to a dashboard.");
 
         var widget = DashboardWidget.Create(AccountId, WorkspaceId, Id, title, type, config, position);
-        _widgets.Add(widget);
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        _widgets.Add(widget);
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new DashboardWidgetAddedDomainEvent(AccountId, WorkspaceId, Id, widget.Id, updatedBy, updatedAt));
@@ -86,12 +89,13 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
 
     public void RemoveWidget(Guid widgetId, Guid updatedBy, DateTimeOffset updatedAt)
     {
+        EnsureActive();
         Guard.NotEmpty(updatedBy);
         var widget = _widgets.FirstOrDefault(w => w.Id == widgetId);
         if (widget is null) return;
 
-        _widgets.Remove(widget);
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        _widgets.Remove(widget);
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new DashboardWidgetRemovedDomainEvent(AccountId, WorkspaceId, Id, widgetId, updatedBy, updatedAt));
@@ -99,7 +103,10 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
 
     public void MoveWidget(Guid widgetId, WidgetPosition newPosition, Guid updatedBy, DateTimeOffset updatedAt)
     {
+        EnsureActive();
         Guard.NotEmpty(updatedBy);
+        WidgetRules.ValidatePosition(newPosition);
+
         var widget = _widgets.FirstOrDefault(w => w.Id == widgetId);
         if (widget is null)
         {
@@ -108,8 +115,8 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
 
         if (widget.Position == newPosition) return;
 
-        widget.UpdatePosition(newPosition);
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        widget.UpdatePosition(newPosition);
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new DashboardWidgetMovedDomainEvent(AccountId, WorkspaceId, Id, widgetId, newPosition, updatedBy, updatedAt));
@@ -124,5 +131,15 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new DashboardArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
+    }
+
+    private void EnsureActive()
+    {
+        if (Status != DashboardStatus.Active)
+        {
+            throw new BusinessRuleException(
+                Analytics_Dashboard_ArchivedReadOnly,
+                "Archived dashboards cannot be modified.");
+        }
     }
 }

@@ -8,6 +8,7 @@ public static class AnalyticsRuleCodes
     public const string Analytics_Dashboard_WidgetNotFound = "Analytics_Dashboard_WidgetNotFound";
     public const string Analytics_Dashboard_InvalidWidgetConfig = "Analytics_Dashboard_InvalidWidgetConfig";
     public const string Analytics_Dashboard_WidgetLimitExceeded = "Analytics_Dashboard_WidgetLimitExceeded";
+    public const string Analytics_Dashboard_ArchivedReadOnly = "Analytics_Dashboard_ArchivedReadOnly";
 
     // ── Widget position/dimensions ─────────────────────────────────────────
     public const string Analytics_Widget_CoordinatesMustBeNonNegative = "Analytics_Widget_CoordinatesMustBeNonNegative";
@@ -17,4 +18,5 @@ public static class AnalyticsRuleCodes
     public const string Analytics_Snapshot_DataMustBeJsonObject = "Analytics_Snapshot_DataMustBeJsonObject";
     public const string Analytics_Snapshot_InvalidDataJson = "Analytics_Snapshot_InvalidDataJson";
     public const string Analytics_Snapshot_CapturedAtDefault = "Analytics_Snapshot_CapturedAtDefault";
+    public const string Analytics_Snapshot_SchemaVersionMustBePositive = "Analytics_Snapshot_SchemaVersionMustBePositive";
 }
