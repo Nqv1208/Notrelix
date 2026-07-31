@@ -124,6 +124,70 @@ public class CommentTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
+    [CoversMutation(typeof(Comment), "Reopen(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [Fact]
+    public void Reopen_ShouldUpdateStatus_AndRaiseEvent()
+    {
+        var comment = Comment.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceType.Page, Guid.NewGuid()), "Content", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        comment.Resolve(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)comment).ClearDomainEvents();
+
+        var reopenedBy = Guid.NewGuid();
+        comment.Reopen(reopenedBy, DateTimeOffset.UtcNow);
+
+        comment.CommentStatus.Should().Be(CommentStatus.Active);
+        comment.UpdatedBy.Should().Be(reopenedBy);
+        comment.DomainEvents.Should().ContainSingle(e => e is CommentReopenedDomainEvent);
+    }
+
+    [CoversMutation(typeof(Comment), "Reopen(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [Fact]
+    public void Reopen_WhenAlreadyActive_ShouldBeNoOp()
+    {
+        var comment = Comment.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceType.Page, Guid.NewGuid()), "Content", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)comment).ClearDomainEvents();
+
+        comment.Reopen(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        comment.DomainEvents.Should().BeEmpty();
+    }
+
+    [CoversMutation(typeof(Comment), "Reopen(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [Fact]
+    public void Reopen_WhenDeleted_ShouldThrow()
+    {
+        var comment = Comment.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceType.Page, Guid.NewGuid()), "Content", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        comment.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        var act = () => comment.Reopen(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        act.Should().Throw<DomainException>().WithMessage("*deleted*");
+    }
+
+    [Fact]
+    public void ResolveThenDelete_ShouldPreserveResolutionStatus()
+    {
+        var comment = Comment.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceType.Page, Guid.NewGuid()), "Content", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        comment.Resolve(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        comment.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        comment.CommentStatus.Should().Be(CommentStatus.Resolved);
+        comment.IsDeleted.Should().BeTrue();
+    }
+
+    [Fact]
+    public void DeleteThenRestore_ShouldPreserveResolutionStatus()
+    {
+        var comment = Comment.Create(Guid.NewGuid(), Guid.NewGuid(), ResourceRef.Create(ResourceType.Page, Guid.NewGuid()), "Content", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        comment.Resolve(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        comment.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        comment.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        comment.CommentStatus.Should().Be(CommentStatus.Resolved);
+        comment.IsDeleted.Should().BeFalse();
+    }
+
     [CoversMutation(typeof(Comment), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
     [Fact]
     public void Delete_ShouldSetStatus_AndRaiseEvent()

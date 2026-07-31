@@ -130,6 +130,19 @@ public class Comment : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new CommentResolvedDomainEvent(AccountId, WorkspaceId, Id, resolvedBy, resolvedAt));
     }
 
+    public void Reopen(Guid reopenedBy, DateTimeOffset reopenedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(reopenedBy);
+        if (CommentStatus == CommentStatus.Active) return;
+
+        var pending = PrepareAuditUpdate(reopenedBy, reopenedAt);
+        CommentStatus = CommentStatus.Active;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new CommentReopenedDomainEvent(AccountId, WorkspaceId, Id, reopenedBy, reopenedAt));
+    }
+
     public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         Guard.NotEmpty(deletedBy);
