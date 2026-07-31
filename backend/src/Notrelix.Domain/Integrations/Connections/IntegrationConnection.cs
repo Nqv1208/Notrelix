@@ -68,6 +68,13 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
 
     private IntegrationConnection() : base() { }
 
+    private static string? NormalizeProviderAccountId(string? providerAccountId)
+    {
+        return string.IsNullOrWhiteSpace(providerAccountId)
+            ? null
+            : providerAccountId.Trim();
+    }
+
     public static IntegrationConnection Create(
         Guid accountId,
         Guid workspaceId,
@@ -86,13 +93,15 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
             throw new BusinessRuleException(Integrations_Connection_ExpirationMustBeFuture, "Expiration time must be in the future.");
         }
 
+        var normalizedProviderAccountId = NormalizeProviderAccountId(providerAccountId);
+
         var connection = new IntegrationConnection
         {
             AccountId = accountId,
             WorkspaceId = workspaceId,
             Provider = provider,
             Status = IntegrationConnectionStatus.Active,
-            ProviderAccountId = providerAccountId,
+            ProviderAccountId = normalizedProviderAccountId,
             ExpiresAt = expiresAt
         };
 
@@ -122,8 +131,7 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
             throw new BusinessRuleException(Integrations_Connection_ExpirationMustBeFuture, "Expiration time must be in the future.");
         }
 
-        // Normalize provider account ID
-        var normalizedProviderAccountId = providerAccountId?.Trim();
+        var normalizedProviderAccountId = NormalizeProviderAccountId(providerAccountId);
 
         // No-op detection: already Active with same values and no pending error
         if (Status == IntegrationConnectionStatus.Active &&
@@ -234,7 +242,6 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
         var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
-        Status = IntegrationConnectionStatus.Revoked;
         ApplyDeletion(pendingDeletion);
         IncrementVersion();
         RaiseDomainEvent(new IntegrationConnectionDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
@@ -245,7 +252,6 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
         var pendingRestore = PrepareRestore(restoredBy, restoredAt);
-        Status = IntegrationConnectionStatus.Active;
         ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new IntegrationConnectionRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
