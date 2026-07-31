@@ -31,16 +31,32 @@ export function ThemeProvider({
   );
 
   React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
+    const applyTheme = (nextTheme: Theme) => {
+      root.classList.remove('light', 'dark');
 
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      root.classList.add(systemTheme);
-      return;
-    }
+      if (nextTheme === 'system') {
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        root.classList.add(systemTheme);
+        return;
+      }
 
-    root.classList.add(theme);
+      root.classList.add(nextTheme);
+    };
+
+    applyTheme(theme);
+
+    if (theme !== 'system') return;
+
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const onSystemThemeChange = () => applyTheme('system');
+    media.addEventListener('change', onSystemThemeChange);
+
+    return () => {
+      media.removeEventListener('change', onSystemThemeChange);
+    };
   }, [theme, storageKey]);
 
   const value = React.useMemo(

@@ -16,7 +16,7 @@ export { useLocalStorage } from "./hooks/use-local-storage"
 export { useMediaQuery } from "./hooks/use-media-query"
 
 // ── Theme ──────────────────────────────────────────────────────────
-export { ThemeProvider } from "./theme/theme-provider"
+export { ThemeProvider, useTheme } from "./theme/theme-provider"
 export { useColorTheme, COLOR_THEMES } from "./theme/use-color-theme"
 export type { ColorTheme, ColorThemeMeta } from "./theme/use-color-theme"
 export { colorThemeScript } from "./theme/color-theme-script"
@@ -75,10 +75,16 @@ export * from "./components/ui/toggle"
 export * from "./components/ui/toggle-group"
 export * from "./components/ui/tooltip"
 
+// ── Form Conventions ──────────────────────────────────────────────
+export * from "./components/forms/submit-state"
+export * from "./components/forms/server-validation-mapper"
+
 // ── Feedback Components ────────────────────────────────────────────
 export * from "./components/feedback/access-denied-state"
 export * from "./components/feedback/empty-state"
 export * from "./components/feedback/error-state"
+export * from "./components/feedback/forbidden-state"
 export * from "./components/feedback/loading-state"
 export * from "./components/feedback/mock-disabled-state"
 export * from "./components/feedback/not-found-state"
+export * from "./components/feedback/upgrade-required-state"
