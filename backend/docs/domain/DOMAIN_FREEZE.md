@@ -1,9 +1,9 @@
-# Notrelix Domain Freeze Certification
+# Notrelix Production Core Domain Freeze Certification
 
 ## Certified Commit
 
-**HEAD SHA**: `eb0e4a2d828a9fdb7eff4306aeaa373f7efe010b`
-**Certification Date**: 2026-07-31
+**Certified Code SHA**: `a0ed08194dd1c5232f755704070c4a8049f8e3a5`
+**Certification Date**: 2026-08-01
 
 ---
 
@@ -17,7 +17,7 @@
 ### Domain Tests
 | Command | Exit Code | Passed | Failed | Skipped |
 |---|---|---|---|---|
-| `dotnet test tests/Notrelix.Domain.Tests/Notrelix.Domain.Tests.csproj -c Release` | 0 | 2610 | 0 | 0 |
+| `dotnet test tests/Notrelix.Domain.Tests/Notrelix.Domain.Tests.csproj -c Release` | 0 | 2639 | 0 | 0 |
 
 ### Full Solution Build
 | Command | Exit Code | Projects | Errors | Warnings |
@@ -30,50 +30,73 @@
 
 ## Capability Status
 
-### Frozen Capabilities
+### Frozen Production Core
 
-| # | Capability | Namespace Prefix | Aggregate Roots |
-|---|---|---|---|
-| 1 | Accounts Core | `Notrelix.Domain.Accounts` | `Account`, `AccountMember`, `AccountDomain`, `AccountIdentityProvider`, `AccountInvitation`, `ScimDirectory`, `WorkspaceRoute` |
-| 2 | Identity | `Notrelix.Domain.Identity` | `User`, `UserProfile`, `UserSession`, `UserSecuritySettings`, `UserMfaMethod`, `ApiToken`, `EmailVerificationToken`, `PasswordResetToken`, `UserLoginAttempt` |
-| 3 | Workspaces | `Notrelix.Domain.Workspaces` | `Workspace`, `WorkspaceMember`, `WorkspaceInvitation`, `Space`, `Team` |
-| 4 | WorkManagement | `Notrelix.Domain.WorkManagement` | `Board`, `BoardField`, `BoardGroup`, `BoardItem`, `BoardView`, `BoardViewUserPreference`, `SavedFilter`, `Checklist`, `Form`, `Label`, `BoardRelation`, `ApprovalRequest`, `BoardTemplate`, `ItemTemplate`, `TimeTrackingEntry` |
-| 5 | Documents | `Notrelix.Domain.Documents` | `Page`, `Block`, `ResourceLink`, `DocumentVersion`, `PageTemplate` |
-| 6 | Collaboration | `Notrelix.Domain.Collaboration` | `Comment`, `Reaction`, `ResourceWatcher`, `Attachment` |
-| 7 | Automation Frozen | `Notrelix.Domain.Automation.Rules`, `.RulesEngine`, `.Scheduled`, `.Templates` | `AutomationRule`, `ScheduledJob`, `AutomationTemplate` |
-| 8 | Integrations | `Notrelix.Domain.Integrations` | `IntegrationConnection`, `CalendarIntegration`, `WebhookSubscription`, `WebhookDelivery`, `InboundWebhookEvent` |
-| 9 | Billing | `Notrelix.Domain.Billing` | `Plan`, `BillingCustomer`, `Subscription`, `Invoice`, `PaymentMethod`, `Entitlement`, `UsageMetric`, `WorkspaceFeatureUsage`, `BillingEvent` |
-| 10 | Governance | `Notrelix.Domain.Governance` | `PermissionTemplate`, `PermissionRule`, `ResourcePermission`, `CustomRole`, `ShareLink` |
-| 11 | Analytics | `Notrelix.Domain.Analytics` | `Dashboard`, `DashboardSource`, `ReportingSnapshot` |
-
-### Experimental Capabilities
-
-| # | Capability | Namespace Prefix | Aggregate Roots |
-|---|---|---|---|
-| 1 | Automation Experimental | `Notrelix.Domain.Automation.Triggers`, `.Actions`, `.Conditions`, `.Executions`, `.Agents` | `AiAgent`, `AiAgentRun`, `AutomationExecution` |
-| 2 | Collaboration Presence | `Notrelix.Domain.Collaboration.Presence` | `PresenceSession` (entity, not agg. root) |
+| # | Capability | Namespace Prefix |
+|---|---|---|
+| 1 | Common | `Notrelix.Domain.Common` |
+| 2 | SharedKernel | `Notrelix.Domain.SharedKernel` |
+| 3 | Accounts | `Notrelix.Domain.Accounts` |
+| 4 | Identity | `Notrelix.Domain.Identity` |
+| 5 | Workspaces | `Notrelix.Domain.Workspaces` |
+| 6 | WorkManagement.Boards | `Notrelix.Domain.WorkManagement.Boards` |
+| 7 | WorkManagement.BoardGroups | `Notrelix.Domain.WorkManagement.BoardGroups` |
+| 8 | WorkManagement.Fields | `Notrelix.Domain.WorkManagement.Fields` |
+| 9 | WorkManagement.Items | `Notrelix.Domain.WorkManagement.Items` |
+| 10 | WorkManagement.Views | `Notrelix.Domain.WorkManagement.Views` |
+| 11 | WorkManagement.Checklists | `Notrelix.Domain.WorkManagement.Checklists` |
+| 12 | WorkManagement.Labels | `Notrelix.Domain.WorkManagement.Labels` |
+| 13 | WorkManagement.Forms | `Notrelix.Domain.WorkManagement.Forms` |
+| 14 | WorkManagement.Relations | `Notrelix.Domain.WorkManagement.Relations` |
+| 15 | WorkManagement.Templates | `Notrelix.Domain.WorkManagement.Templates` |
+| 16 | Documents | `Notrelix.Domain.Documents` |
+| 17 | Collaboration.Attachments | `Notrelix.Domain.Collaboration.Attachments` |
+| 18 | Collaboration.Comments | `Notrelix.Domain.Collaboration.Comments` |
+| 19 | Collaboration.Mentions | `Notrelix.Domain.Collaboration.Mentions` |
+| 20 | Collaboration.ReadStates | `Notrelix.Domain.Collaboration.ReadStates` |
+| 21 | Collaboration.Rules | `Notrelix.Domain.Collaboration.Rules` |
+| 22 | Governance | `Notrelix.Domain.Governance` |
+| 23 | Automation.Rules | `Notrelix.Domain.Automation.Rules` |
+| 24 | Automation.RulesEngine | `Notrelix.Domain.Automation.RulesEngine` |
+| 25 | Integrations.Connections | `Notrelix.Domain.Integrations.Connections` |
+| 26 | Billing | `Notrelix.Domain.Billing` |
+| 27 | Analytics | `Notrelix.Domain.Analytics` |
 
 ### Stabilizing Capabilities
 
-None. All capabilities classified as either `Frozen` or `Experimental`.
+These capabilities have unresolved product semantics and do not block the production-core freeze.
 
----
+| # | Capability | Namespace Prefix | Reason |
+|---|---|---|---|
+| 1 | Automation.Scheduled | `Notrelix.Domain.Automation.Scheduled` | Inconsistent Version increments, missing Resume/Cancel events |
+| 2 | Automation.Templates | `Notrelix.Domain.Automation.Templates` | Missing no-op detection, Version increments |
+| 3 | Collaboration.Reactions | `Notrelix.Domain.Collaboration.Reactions` | Query callback in Domain, unclear removal contract |
+| 4 | Collaboration.Watchers | `Notrelix.Domain.Collaboration.Watchers` | Unwatch not idempotent, unclear lifecycle |
+| 5 | Integrations.Calendar | `Notrelix.Domain.Integrations.Calendar` | Delete/Restore state mismatch |
+| 6 | Integrations.Webhooks | `Notrelix.Domain.Integrations.Webhooks` | Delete deactivates, no restore lifecycle |
+| 7 | Integrations.Sync | `Notrelix.Domain.Integrations.Sync` | Related to Calendar sync |
 
-## Aggregate Scopes
+### Experimental Capabilities
 
-| Scope | Aggregate Roots |
-|---|---|
-| **Global** | `User`, `UserProfile`, `UserSession`, `UserSecuritySettings`, `UserMfaMethod`, `EmailVerificationToken`, `PasswordResetToken`, `UserLoginAttempt`, `Plan`, `BillingEvent`, `BoardTemplate`, `PageTemplate`, `InboundWebhookEvent`, `AutomationTemplate` |
-| **Hybrid** | `PermissionTemplate` |
-| **Account** | `Account`, `AccountMember`, `AccountDomain`, `AccountIdentityProvider`, `AccountInvitation`, `ScimDirectory`, `WorkspaceRoute`, `BillingCustomer`, `Subscription`, `Invoice`, `Entitlement` |
-| **Workspace** | `Workspace`, `WorkspaceMember`, `WorkspaceInvitation`, `Space`, `Team`, `Board`, `BoardField`, `BoardGroup`, `BoardItem`, `BoardView`, `BoardViewUserPreference`, `SavedFilter`, `Checklist`, `Form`, `Label`, `BoardRelation`, `ApprovalRequest`, `ItemTemplate`, `TimeTrackingEntry`, `Page`, `Block`, `ResourceLink`, `DocumentVersion`, `Comment`, `Reaction`, `ResourceWatcher`, `Attachment`, `IntegrationConnection`, `CalendarIntegration`, `WebhookSubscription`, `WebhookDelivery`, `PermissionRule`, `ResourcePermission`, `CustomRole`, `ShareLink`, `AutomationRule`, `ScheduledJob`, `AiAgent`, `AiAgentRun`, `AutomationExecution`, `UsageMetric`, `WorkspaceFeatureUsage`, `PaymentMethod`, `ApiToken`, `Dashboard`, `DashboardSource`, `ReportingSnapshot` |
+| # | Capability | Namespace Prefix |
+|---|---|---|
+| 1 | WorkManagement.Formulas | `Notrelix.Domain.WorkManagement.Formulas` |
+| 2 | WorkManagement.Rollups | `Notrelix.Domain.WorkManagement.Rollups` |
+| 3 | WorkManagement.Workload | `Notrelix.Domain.WorkManagement.Workload` |
+| 4 | WorkManagement.Approvals | `Notrelix.Domain.WorkManagement.Approvals` |
+| 5 | Automation.Triggers | `Notrelix.Domain.Automation.Triggers` |
+| 6 | Automation.Actions | `Notrelix.Domain.Automation.Actions` |
+| 7 | Automation.Conditions | `Notrelix.Domain.Automation.Conditions` |
+| 8 | Automation.Executions | `Notrelix.Domain.Automation.Executions` |
+| 9 | Automation.Agents | `Notrelix.Domain.Automation.Agents` |
+| 10 | Collaboration.Presence | `Notrelix.Domain.Collaboration.Presence` |
 
 ---
 
 ## Snapshot Schemas
 
 ### Frozen Domain Public API
-**Schema**: `FrozenApi|Type|Member|MemberType|Visibility|IsAbstract|IsVirtual|ReturnType|Parameters`
+**Schema**: `FrozenApi|Type|Member|MemberType|Visibility|IsAbstract|IsVirtual|Parameters`
 **File**: `tests/Notrelix.Domain.Tests/Snapshots/FrozenDomainPublicApi.approved.txt`
 
 ### Domain Events (Frozen only)
@@ -92,42 +115,33 @@ None. All capabilities classified as either `Frozen` or `Experimental`.
 
 ## Mutation Coverage Gate
 
-**Status**: PASSING (unskipped)
+**Status**: PASSING
 
-- 4 mutation coverage tests enforce:
-  - Every mutation method on every frozen aggregate has `[CoversMutation]`
-  - Signatures reference methods that exist on the target type (fuzzy match: name + parameter count)
-  - No duplicate signatures per aggregate
-  - Attribute only on `[Fact]` or `[Theory]` methods
-- All Frozen aggregates have full mutation coverage with Event, Invalid, NoOp, Valid, and Audit variants
-- Non-mutation query methods excluded via `NonMutationMethodRegistry`
+- Exact mutation-to-test mapping enforced via `[CoversMutation]` with nameof + Type[]
+- Every public mutation on every Frozen aggregate maps to at least one executable test
+- Compiler-safe method resolution via reflection
 
 ---
 
 ## Deletion Policy Architecture Gate
 
-**All 7 DeletionPolicyArchitectureTests pass:**
+**All DeletionPolicyArchitectureTests pass:**
 
-- `DeletionPolicy_EveryAggregateRoot_HasExactlyOnePolicy` — all 73 aggregate roots classified
-- `DeletionPolicy_NonRecoverable_MustNotDeriveSoftDeletable` — non-recoverable types use `AggregateRoot`
-- `DeletionPolicy_RecoverableDelete_MustDeriveSoftDeletable` — recoverable types use `SoftDeletableAggregateRoot`
-- `DeletionPolicy_OwnedRemoval_MustNotExposePublicDeleteOrRestore` — owned-removal types use business status
-- `DeletionPolicy_AppendOnly_MustNotDeriveSoftDeletable` — append-only types are plain `AggregateRoot`
-- `DeletionPolicy_BusinessTombstone_MustDeriveSoftDeletable` — tombstone types use `SoftDeletableAggregateRoot`
-- `DeletionPolicy_ConsistentInheritance_AcrossAllPolicies` — all policies consistent with base type
+- Every aggregate root has exactly one deletion policy
+- Non-recoverable types use `AggregateRoot`
+- Recoverable types use `SoftDeletableAggregateRoot`
+- Business status is independent from deletion state
+- Delete/Restore never modify business status
 
 ---
 
-## Architecture Gates
+## Critical Invariant Suites
 
-**All architecture tests pass:**
+The following high-risk operations have direct scenario tests:
 
-- Domain capability registry validation (every public type resolves to a capability)
-- Aggregate scope resolution (every aggregate maps to exactly one scope)
-- Frozen type snapshot determinism (public API, domain events, enums, rule codes)
-- Cross-context reference constraints
-- State encapsulation tests
-- System-actor policy tests
+- **AutomationRule Delete/Restore**: Status preserved through deletion lifecycle
+- **BoardRelation Delete/Restore**: Status preserved, Deleted enum retired
+- **BoardField SetDefaultValue**: Canonical validation always runs first
 
 ---
 
@@ -170,14 +184,19 @@ Adding a new capability:
 
 ## Certification Statement
 
-> Notrelix Domain production surface is frozen at HEAD.
-> All production capabilities are classified Frozen.
-> Experimental capabilities are isolated and excluded from Frozen compatibility snapshots.
-> Every Frozen aggregate mutation has explicit executable scenario coverage.
+> Notrelix production-core Domain is Frozen at `a0ed08194dd1c5232f755704070c4a8049f8e3a5`.
+>
+> **Frozen production core**: 27 capabilities certified.
+> **Stabilizing**: 7 capabilities isolated with unresolved semantics.
+> **Experimental**: 10 capabilities remain isolated.
+>
+> All production-core invariants are correct.
+> Frozen public APIs, enums, rule codes, and event contracts are protected.
+> Frozen capabilities have executable tests for their public mutations.
+> Stabilizing capabilities are isolated and do not block the production-core freeze.
 > Contract snapshots and architecture gates pass without regeneration or skipped tests.
-> All 73 aggregate roots have explicit deletion policies enforced by architecture tests.
-> Non-recoverable types have been cleaned of `SoftDeletableAggregateRoot` inheritance and use business-status lifecycle.
-> Business status is independent from deletion state; Delete/Restore never modify business status.
-> AutomationRule enforces activation invariant: Active ⇒ valid configuration ⇒ valid trigger ⇒ valid action.
+> Business status is independent from deletion state.
+> AutomationRule enforces activation invariant.
 > BoardRelation provides pure Domain rules for duplicate and cardinality enforcement.
 > Capability registry uses Exact/Subtree matching for fail-closed classification.
+> Frozen snapshots use effective registry status (exclude Stabilizing).
