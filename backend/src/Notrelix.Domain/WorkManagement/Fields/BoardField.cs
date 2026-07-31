@@ -303,44 +303,45 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         if (defaultValue is null) return;
 
-        if (IsOptionBacked)
-        {
-            ValidateDefaultOptionIds(defaultValue);
-            return;
-        }
-
+        // Always run canonical shape validation first
         FieldValueValidator.Validate(defaultValue, Type, settings);
-    }
 
-    private void ValidateDefaultOptionIds(FieldValue defaultValue)
-    {
-        var data = defaultValue.Data.Value;
-        if (data is null or "null") return;
+        // For option-backed fields, additionally verify option membership
+        if (!IsOptionBacked) return;
 
-        try
-        {
-            using var doc = JsonDocument.Parse(data);
-            var element = doc.RootElement;
+        var optionIds = ExtractValidatedOptionIds(defaultValue);
+        var configuredOptionIds = _options.Select(o => o.Id).ToHashSet();
+        var unknownOptionIds = optionIds.Where(id => !configuredOptionIds.Contains(id)).ToArray();
 
-            if (element.ValueKind == JsonValueKind.Null)
-                return;
-
-            foreach (var optionId in ExtractOptionIds(element))
-            {
-                if (!_options.Any(o => o.Id == optionId))
-                {
-                    throw new BusinessRuleException(
-                        WorkManagementRuleCodes.WorkManagement_Field_InvalidOptionValue,
-                        $"Option '{optionId}' is not a configured option of this field.");
-                }
-            }
-        }
-        catch (JsonException)
+        if (unknownOptionIds.Length > 0)
         {
             throw new BusinessRuleException(
-                WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidJsonFormat,
-                "Invalid JSON format in field value.");
+                WorkManagementRuleCodes.WorkManagement_Field_InvalidOptionValue,
+                $"Default value references an option that does not belong to the field: {string.Join(", ", unknownOptionIds)}");
         }
+    }
+
+    /// <summary>
+    /// Extracts option IDs from a default value that has already passed FieldValueValidator.
+    /// Assumes the JSON shape is valid.
+    /// </summary>
+    private IReadOnlyCollection<Guid> ExtractValidatedOptionIds(FieldValue value)
+    {
+        using var doc = JsonDocument.Parse(value.Data.Value);
+        var root = doc.RootElement;
+
+        return Type switch
+        {
+            FieldType.Select or FieldType.Status =>
+                [Guid.Parse(root.GetString()!)],
+
+            FieldType.MultiSelect =>
+                root.EnumerateArray()
+                    .Select(item => Guid.Parse(item.GetString()!))
+                    .ToArray(),
+
+            _ => Array.Empty<Guid>()
+        };
     }
 
     private bool DefaultValueReferencesOption(Guid optionId)
