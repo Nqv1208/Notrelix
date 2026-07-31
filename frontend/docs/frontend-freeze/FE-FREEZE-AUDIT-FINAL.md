@@ -1,12 +1,12 @@
 # Notrelix Frontend Architecture Freeze — Audit Certificate
 
-**Audit Timestamp:** 2026-07-28T10:32:00Z  
-**Status:** **CONDITIONAL — NOT YET FROZEN** (Pending P0/P1 remediation gates)  
-**Baseline Commit:** `69eafb110e32be040d82c1d87c9df8245e249345`
+**Audit Timestamp:** Updated by current FE-FZ-00 audit runs  
+**Status:** **NOT_FROZEN**  
+**Baseline Commit:** captured by `frontend/scripts/freeze-audit.mjs` from `git rev-parse HEAD`
 
 > [!WARNING]  
-> **Do not create `frontend-platform-v1.0` tag.**  
-> Do not begin module-scale feature development until all P0 remediation gates in the Reassessment & Completion Plan are fulfilled and verified.
+> **Do not create `frontend-web-platform-v1.0.0` tag.**  
+> Do not begin module-scale feature development until the relevant FE-FZ platform and module admission gates in the V2 freeze plan are fulfilled and verified.
 
 ---
 

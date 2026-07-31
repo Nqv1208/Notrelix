@@ -1,13 +1,13 @@
 # Frontend Platform Final Architecture Audit
 
-**Status:** CONDITIONAL — NOT YET FROZEN  
-**Target Freeze Tag:** `frontend-platform-v1.0`  
-**Baseline Commit:** `69eafb110e32be040d82c1d87c9df8245e249345`  
-**Audit Date:** 2026-07-28  
+**Status:** NOT_FROZEN  
+**Target Freeze Tag:** `frontend-web-platform-v1.0.0`  
+**Baseline Commit:** captured by `frontend/scripts/freeze-audit.mjs` from `git rev-parse HEAD`  
+**Audit Date:** Updated by current FE-FZ-00 audit runs  
 
 > [!WARNING]  
-> **Do not create `frontend-platform-v1.0` tag.**  
-> The earlier approval was revoked after source-level reassessment found uncovered production lifecycle gates.
+> **Do not create `frontend-web-platform-v1.0.0` tag.**  
+> The platform certificate is only allowed after FE-FZ-00 through FE-FZ-17 in the V2 freeze plan are implemented and verified.
 
 ---
 
@@ -23,4 +23,4 @@ The earlier approval was revoked after source-level reassessment found uncovered
 
 ## Required Remediation Gates
 
-All tasks from `FE-RF-00` to `FE-RF-15` in `.gemini/plans/frontend-freeze-reassessment-and-remediation-plan-69eafb1.md` must be sequentially implemented and verified before signing off on freeze approval.
+All tasks from `FE-FZ-00` to `FE-FZ-17` in `plans/notrelix-frontend-web-platform-freeze-plan-v2.md` must be sequentially implemented and verified before signing off on freeze approval.

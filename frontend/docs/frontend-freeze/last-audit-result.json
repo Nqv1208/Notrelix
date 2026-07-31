@@ -1,12 +1,15 @@
 {
-  "commit": "69eafb110e32be040d82c1d87c9df8245e249345",
-  "timestamp": "2026-07-31T08:08:58.872Z",
+  "scope": "frontend-web-platform-v1.0.0",
+  "commit": "e197d8648e0e0eed82938897538cd1a90f340dd0",
+  "timestamp": "2026-07-31T09:22:29.401Z",
+  "workingTreeClean": false,
   "node": "v24.15.0",
-  "pnpm": "10.0.0",
-  "status": "FROZEN",
+  "pnpm": "11.5.2",
+  "status": "NOT_FROZEN",
+  "reason": "One or more FE-FZ-00 baseline gates failed.",
   "summary": {
-    "pass": 7,
-    "fail": 0
+    "pass": 4,
+    "fail": 3
   },
   "commands": [
     {
@@ -15,7 +18,7 @@
       "command": "pnpm typecheck",
       "status": "passed",
       "exitCode": 0,
-      "durationMs": 337,
+      "durationMs": 306,
       "errorOutput": ""
     },
     {
@@ -31,10 +34,10 @@
       "name": "test_node",
       "gate": "TEST_NODE",
       "command": "pnpm test:node",
-      "status": "passed",
-      "exitCode": 0,
-      "durationMs": 3006,
-      "errorOutput": ""
+      "status": "failed",
+      "exitCode": 1,
+      "durationMs": 1726,
+      "errorOutput": "\n> notrelix-client@0.1.0 test:node /Users/nqvinh/Documents/projects/Notrelix/frontend\n> vitest run --config tooling/testing/vitest.node.config.ts\n\n\n RUN  v3.2.7 /Users/nqvinh/Documents/projects/Notrelix/frontend\n\n ✓ |node| packages/foundation/realtime/src/__tests__/reconnect-policy.test.ts (3 tests) 1ms\n ✓ |node| packages/foundation/realtime/src/protocol/__tests__/protocol.test.ts (12 tests) 4ms\n ✓ |node| packages/features/integrations/src/__tests__/integrations.test.ts (2 tests) 2ms\n ✓ |node| packages/foundation/kernel/src/__tests__/invariant.test.ts (5 tests) 5ms\n ✓ |node| packages/features/billing/src/__tests__/billing.test.ts (2 tests) 3ms\n ✓ |node| packages/foundation/query/src/__tests__/optimistic-command.test.ts (3 tests) 6ms\n ✓ |node| packages/foundation/realtime/src/__tests__/realtime-client.test.ts (8 tests) 5ms\n ✓ |node| packages/foundation/contracts/src/client/__tests__/api-client.test.ts (4 tests) 11ms\n ✓ |node| packages/product/work-management/plugins/src/__tests__/plugin-registry.test.ts (2 tests) 2ms\n ✓ |node| packages/features/auth/src/__tests__/auth.test.ts (2 tests) 2ms\n ✓ |node| packages/features/notifications/src/__tests__/notifications.test.ts (3 tests) 4ms\n ✓ |node| packages/product/automation/core/src/__tests__/automation.test.ts (3 tests) 2ms\n ✓ |node| tooling/dependency-rules/src/__tests__/allowed-imports.test.ts (2 tests) 2ms\n ✓ |node| packages/features/activity/src/__tests__/activity.test.ts (2 tests) 3ms\n ✓ |node| packages/features/collaboration/src/__tests__/collaboration.test.ts (2 tests) 1ms\n ✓ |node| packages/runtimes/web/src/__tests__/app-runtime.test.ts (3 tests) 4ms\n ✓ |node| packages/product/docs/core/src/__tests__/docs-core.test.ts (2 tests) 3ms\n ✓ |node| packages/foundation/kernel/src/__tests__/app-error.test.ts (4 tests) 2ms\n ✓ |node| packages/features/governance/src/__tests__/governance.test.ts (3 tests) 1ms\n ✓ |node| tooling/dependency-rules/src/__tests__/dependency-checker.test.ts (4 tests) 1ms\n ✓ |node| packages/features/s"
     },
     {
       "name": "test_web",
@@ -42,17 +45,17 @@
       "command": "pnpm test:web",
       "status": "passed",
       "exitCode": 0,
-      "durationMs": 6568,
+      "durationMs": 4120,
       "errorOutput": ""
     },
     {
       "name": "check_deps",
       "gate": "CHECK_DEPS",
       "command": "pnpm check:deps",
-      "status": "passed",
-      "exitCode": 0,
-      "durationMs": 2084,
-      "errorOutput": ""
+      "status": "failed",
+      "exitCode": 1,
+      "durationMs": 495,
+      "errorOutput": "\n> notrelix-client@0.1.0 check:deps /Users/nqvinh/Documents/projects/Notrelix/frontend\n> pnpm check:architecture\n\n\n> notrelix-client@0.1.0 check:architecture /Users/nqvinh/Documents/projects/Notrelix/frontend\n> pnpm --filter @notrelix/dependency-rules check\n\n\n> @notrelix/dependency-rules@0.0.1 check /Users/nqvinh/Documents/projects/Notrelix/frontend/tooling/dependency-rules\n> tsx src/run-checks.ts\n\n/Users/nqvinh/Documents/projects/Notrelix/frontend/tooling/dependency-rules:\n ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @notrelix/dependency-rules@0.0.1 check: `tsx src/run-checks.ts`\nExit status 1\n ELIFECYCLE  Command failed with exit code 1.\n ELIFECYCLE  Command failed with exit code 1.\n\n(node:82009) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.\n(Use `node --trace-deprecation ...` to show where the warning was created)\nnode:net:1986\n      const error = new UVExceptionWithHostPort(rval, 'listen', address, port);\n                    ^\n\nError: listen EPERM: operation not permitted /var/folders/fc/hj5h_4_j24s5yr87dctnfkh00000gn/T/tsx-501/82034.pipe\n    at Server.setupListenHandle [as _listen2] (node:net:1986:21)\n    at listenInCluster (node:net:2065:12)\n    at Server.listen (node:net:2187:5)\n    at file:///Users/nqvinh/Documents/projects/Notrelix/frontend/node_modules/.pnpm/tsx@4.23.1/node_modules/tsx/dist/cli.mjs:53:31472\n    at new Promise (<anonymous>)\n    at createIpcServer (file:///Users/nqvinh/Documents/projects/Notrelix/frontend/node_modules/.pnpm/tsx@4.23.1/node_modules/tsx/dist/cli.mjs:53:31450)\n    at async file:///Users/nqvinh/Documents/projects/Notrelix/frontend/node_modules/.pnpm/tsx@4.23.1/node_modules/tsx/dist/cli.mjs:55:500 {\n  code: 'EPERM',\n  errno: -1,\n  syscall: 'listen',\n  address: '/var/folders/fc/hj5h_4_j24s5yr87dctnfkh00000gn/T/tsx-501/82034.pipe',\n  port: -1\n}\n\nNode.js v24.15.0\n"
     },
     {
       "name": "build",
@@ -60,17 +63,17 @@
       "command": "pnpm build",
       "status": "passed",
       "exitCode": 0,
-      "durationMs": 488,
+      "durationMs": 234,
       "errorOutput": ""
     },
     {
       "name": "validate",
       "gate": "VALIDATE",
       "command": "pnpm validate",
-      "status": "passed",
-      "exitCode": 0,
-      "durationMs": 13904,
-      "errorOutput": ""
+      "status": "failed",
+      "exitCode": 1,
+      "durationMs": 2286,
+      "errorOutput": "\n> notrelix-client@0.1.0 validate /Users/nqvinh/Documents/projects/Notrelix/frontend\n> pnpm typecheck && pnpm lint && pnpm test && pnpm check:deps && pnpm build\n\n\n> notrelix-client@0.1.0 typecheck /Users/nqvinh/Documents/projects/Notrelix/frontend\n> turbo typecheck\n\n\n   • Packages in scope: @notrelix/app-marketing, @notrelix/app-mobile, @notrelix/app-web, @notrelix/automation-core, @notrelix/automation-mobile, @notrelix/automation-web, @notrelix/codegen, @notrelix/contracts, @notrelix/dependency-rules, @notrelix/docs-collaboration, @notrelix/docs-core, @notrelix/docs-mobile, @notrelix/docs-web, @notrelix/eslint-config, @notrelix/features-account, @notrelix/features-activity, @notrelix/features-auth, @notrelix/features-billing, @notrelix/features-collaboration, @notrelix/features-governance, @notrelix/features-integrations, @notrelix/features-notifications, @notrelix/features-search, @notrelix/features-workspace, @notrelix/kernel, @notrelix/observability, @notrelix/platform, @notrelix/query, @notrelix/realtime, @notrelix/runtime-mobile, @notrelix/runtime-web, @notrelix/testing, @notrelix/tsconfig, @notrelix/ui-icons, @notrelix/ui-mobile, @notrelix/ui-tokens, @notrelix/ui-web, @notrelix/work-management-core, @notrelix/work-management-mobile, @notrelix/work-management-plugins, @notrelix/work-management-state, @notrelix/work-management-testing, @notrelix/work-management-web\n   • Running typecheck in 43 packages\n   • Remote caching disabled\n\n@notrelix/observability:typecheck: cache hit, replaying logs 44297190659bc7f8\n@notrelix/observability:typecheck: \n@notrelix/observability:typecheck: > @notrelix/observability@0.0.1 typecheck /Users/nqvinh/Documents/projects/Notrelix/frontend/packages/foundation/observability\n@notrelix/observability:typecheck: > tsc --noEmit\n@notrelix/observability:typecheck: \n@notrelix/realtime:typecheck: cache hit, replaying logs d8a93b71edbc50f1\n@notrelix/realtime:typecheck: \n@notrelix/realtime:typecheck: > @notrelix/realtime@0.0.1 typecheck /Users"
     }
   ]
 }
