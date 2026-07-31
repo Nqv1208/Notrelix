@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query"
 import { queryKeys } from "@notrelix/work-management-core"
-import { boardApi } from "../api/board.api"
+import { useWorkManagementServices } from "../services"
 
 export function useFullBoard(boardId?: string, workspaceId?: string) {
+  const { boards } = useWorkManagementServices()
   const query = useQuery({
     queryKey: queryKeys.boards.fullBoard(boardId ?? "pending", workspaceId),
-    queryFn: () => boardApi.getFullBoard(boardId!, { workspaceId: workspaceId! }),
+    queryFn: () => boards.getFullBoard(boardId!, { workspaceId: workspaceId! }),
     enabled: Boolean(boardId && workspaceId),
     staleTime: 10_000,
   })

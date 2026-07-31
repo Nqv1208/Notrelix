@@ -50,13 +50,3 @@ export function createListApi(client: NotrelixClient) {
     },
   };
 }
-
-export const listApi = createListApi({
-  api: {
-    get: async () => ({}) as any,
-    post: async () => ({}) as any,
-    patch: async () => ({}) as any,
-    delete: async () => ({}) as any,
-    put: async () => ({}) as any,
-  },
-} as any);

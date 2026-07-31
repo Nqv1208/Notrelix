@@ -1,17 +1,17 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
 import { queryKeys } from "@notrelix/work-management-core"
-import { cardApi } from "../api/item.api"
 import type { UpdateFieldValueInput } from "@notrelix/work-management-core"
 import type { Card, FullBoardResponse } from "@notrelix/work-management-core"
 import { updateCardInFullBoard } from "@notrelix/work-management-core"
+import { useWorkManagementServices } from "../services"
 
 export function useUpdateFieldValue(boardId: string, workspaceId?: string) {
   const queryClient = useQueryClient()
+  const { cards } = useWorkManagementServices()
   const queryKey = queryKeys.boards.fullBoard(boardId, workspaceId)
 
   return useMutation({
-    mutationFn: (payload: UpdateFieldValueInput) => cardApi.updateFieldValue(payload),
+    mutationFn: (payload: UpdateFieldValueInput) => cards.updateFieldValue(payload),
     onMutate: async (payload) => {
       await queryClient.cancelQueries({ queryKey })
       const previous = queryClient.getQueryData<FullBoardResponse>(queryKey)
@@ -49,7 +49,6 @@ export function useUpdateFieldValue(boardId: string, workspaceId?: string) {
     },
     onError: (_error, _variables, context) => {
       queryClient.setQueryData(queryKey, context?.previous)
-      toast.error("Failed to update field. Changes reverted.")
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey })

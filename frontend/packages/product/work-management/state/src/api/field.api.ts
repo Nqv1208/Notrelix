@@ -54,13 +54,3 @@ export function createColumnApi(client: NotrelixClient) {
     },
   };
 }
-
-export const columnApi = createColumnApi({
-  api: {
-    get: async () => ({}) as any,
-    post: async () => ({}) as any,
-    patch: async () => ({}) as any,
-    delete: async () => ({}) as any,
-    put: async () => ({}) as any,
-  },
-} as any);

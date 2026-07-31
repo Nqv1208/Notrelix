@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
 import { queryKeys } from "@notrelix/work-management-core"
-import { checklistApi } from "../api/checklist.api"
 import type { CreateChecklistInput, UpdateChecklistInput, CreateChecklistItemInput, UpdateChecklistItemInput } from "../api/checklist.api"
+import { useWorkManagementServices } from "../services"
 
 export function useCardChecklists(cardId: string, boardId?: string, workspaceId?: string) {
   const queryClient = useQueryClient()
+  const { checklists } = useWorkManagementServices()
   const detailKey = queryKeys.cards.detail(cardId)
   const fullBoardKey = boardId ? queryKeys.boards.fullBoard(boardId, workspaceId) : null
 
@@ -17,64 +17,44 @@ export function useCardChecklists(cardId: string, boardId?: string, workspaceId?
   }
 
   const createChecklistMutation = useMutation({
-    mutationFn: (title: string) => checklistApi.createChecklist({ cardId, title }),
+    mutationFn: (title: string) => checklists.createChecklist({ cardId, title }),
     onSuccess: () => {
-      toast.success("Checklist created.")
       invalidate()
-    },
-    onError: () => {
-      toast.error("Failed to create checklist.")
     },
   })
 
   const updateChecklistMutation = useMutation({
-    mutationFn: (input: Omit<UpdateChecklistInput, "cardId">) => checklistApi.updateChecklist(input),
+    mutationFn: (input: Omit<UpdateChecklistInput, "cardId">) => checklists.updateChecklist(input),
     onSuccess: () => {
       invalidate()
-    },
-    onError: () => {
-      toast.error("Failed to update checklist.")
     },
   })
 
   const deleteChecklistMutation = useMutation({
-    mutationFn: (checklistId: string) => checklistApi.deleteChecklist(checklistId),
+    mutationFn: (checklistId: string) => checklists.deleteChecklist(checklistId),
     onSuccess: () => {
-      toast.success("Checklist deleted.")
       invalidate()
-    },
-    onError: () => {
-      toast.error("Failed to delete checklist.")
     },
   })
 
   const createItemMutation = useMutation({
-    mutationFn: (input: { checklistId: string; title: string }) => checklistApi.createChecklistItem(input),
+    mutationFn: (input: { checklistId: string; title: string }) => checklists.createChecklistItem(input),
     onSuccess: () => {
       invalidate()
-    },
-    onError: () => {
-      toast.error("Failed to create checklist item.")
     },
   })
 
   const updateItemMutation = useMutation({
-    mutationFn: (input: UpdateChecklistItemInput) => checklistApi.updateChecklistItem(input),
+    mutationFn: (input: UpdateChecklistItemInput) => checklists.updateChecklistItem(input),
     onSuccess: () => {
       invalidate()
-    },
-    onError: () => {
-      toast.error("Failed to update checklist item.")
     },
   })
 
   const deleteItemMutation = useMutation({
-    mutationFn: (itemId: string) => checklistApi.deleteChecklistItem(itemId),
+    mutationFn: (itemId: string) => checklists.deleteChecklistItem(itemId),
     onSuccess: () => {
       invalidate()
-    },
-    onError: () => {
-      toast.error("Failed to delete checklist item.")
     },
   })
 

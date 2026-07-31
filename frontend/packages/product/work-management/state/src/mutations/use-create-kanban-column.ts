@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
 import { queryKeys } from "@notrelix/work-management-core"
-import { listApi } from "../api/list.api"
+import { useWorkManagementServices } from "../services"
 import type { CreateListInput } from "../api/list.api"
 import type { FullBoardResponse, BoardGroup } from "@notrelix/work-management-core"
 
@@ -9,10 +8,11 @@ type MutationContext = { previous?: FullBoardResponse }
 
 export function useCreateKanbanColumn(boardId: string, workspaceId: string) {
   const queryClient = useQueryClient()
+  const { lists } = useWorkManagementServices()
   const queryKey = queryKeys.boards.fullBoard(boardId, workspaceId)
 
   return useMutation<string, Error, { title: string; color?: string; position?: number }, MutationContext>({
-    mutationFn: (input) => listApi.createList({ boardId, ...input }),
+    mutationFn: (input) => lists.createList({ boardId, ...input }),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey })
       const previous = queryClient.getQueryData<FullBoardResponse>(queryKey)
@@ -38,10 +38,6 @@ export function useCreateKanbanColumn(boardId: string, workspaceId: string) {
     },
     onError: (_error, _input, context) => {
       queryClient.setQueryData(queryKey, context?.previous)
-      toast.error("Failed to create column. Changes reverted.")
-    },
-    onSuccess: () => {
-      toast.success("Column created.")
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey })

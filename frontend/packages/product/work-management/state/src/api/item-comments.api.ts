@@ -40,13 +40,3 @@ export function createCommentApi(client: NotrelixClient) {
     },
   };
 }
-
-export const commentApi = createCommentApi({
-  api: {
-    get: async () => ({}) as any,
-    post: async () => ({}) as any,
-    patch: async () => ({}) as any,
-    delete: async () => ({}) as any,
-    put: async () => ({}) as any,
-  },
-} as any);

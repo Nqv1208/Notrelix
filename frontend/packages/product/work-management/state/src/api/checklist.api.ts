@@ -70,13 +70,3 @@ export function createChecklistApi(client: NotrelixClient) {
     },
   };
 }
-
-export const checklistApi = createChecklistApi({
-  api: {
-    get: async () => ({}) as any,
-    post: async () => ({}) as any,
-    patch: async () => ({}) as any,
-    delete: async () => ({}) as any,
-    put: async () => ({}) as any,
-  },
-} as any);

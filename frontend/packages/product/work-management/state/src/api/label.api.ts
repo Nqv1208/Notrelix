@@ -51,13 +51,3 @@ export function createLabelApi(client: NotrelixClient) {
     },
   };
 }
-
-export const labelApi = createLabelApi({
-  api: {
-    get: async () => ({}) as any,
-    post: async () => ({}) as any,
-    patch: async () => ({}) as any,
-    delete: async () => ({}) as any,
-    put: async () => ({}) as any,
-  },
-} as any);

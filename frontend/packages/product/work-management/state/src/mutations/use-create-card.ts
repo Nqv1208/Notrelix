@@ -1,10 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
 import { queryKeys } from "@notrelix/work-management-core"
-import { cardApi } from "../api/item.api"
 import type { CreateCardInput } from "@notrelix/work-management-core"
 import type { Card, FullBoardResponse } from "@notrelix/work-management-core"
 import { createOptimisticCard } from "../cache/optimistic-card"
+import { useWorkManagementServices } from "../services"
 
 type CreateCardContext = {
   previous?: FullBoardResponse
@@ -13,10 +12,11 @@ type CreateCardContext = {
 
 export function useCreateCard(boardId: string, workspaceId?: string) {
   const queryClient = useQueryClient()
+  const { cards } = useWorkManagementServices()
   const queryKey = queryKeys.boards.fullBoard(boardId, workspaceId)
 
   return useMutation<Card, Error, CreateCardInput, CreateCardContext>({
-    mutationFn: (payload) => cardApi.createCard(boardId, payload),
+    mutationFn: (payload) => cards.createCard(boardId, payload),
     onMutate: async (payload) => {
       await queryClient.cancelQueries({ queryKey })
       const previous = queryClient.getQueryData<FullBoardResponse>(queryKey)
@@ -44,7 +44,6 @@ export function useCreateCard(boardId: string, workspaceId?: string) {
     },
     onError: (_error, _payload, context) => {
       queryClient.setQueryData(queryKey, context?.previous)
-      toast.error("Failed to add task. Changes reverted.")
     },
     onSuccess: (card, _payload, context) => {
       queryClient.setQueryData<FullBoardResponse>(queryKey, (old) => {

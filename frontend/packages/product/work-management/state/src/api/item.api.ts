@@ -1,4 +1,4 @@
-import type { NotrelixClient } from "@notrelix/contracts"
+import type { ApiRequestOptions, NotrelixClient } from "@notrelix/contracts"
 import { endpoints } from "@notrelix/contracts"
 import type {
   ActivityLogResponseApi,
@@ -43,11 +43,16 @@ export function createCardApi(client: NotrelixClient) {
       return api.post<string>(endpoints.cards.duplicate(cardId))
     },
 
-    async moveCard(payload: MoveCardInput): Promise<void> {
-      await api.post<void>(endpoints.cards.move(payload.cardId), {
+    async moveCard(payload: MoveCardInput, options?: ApiRequestOptions): Promise<void> {
+      const body = {
         listId: payload.listId,
         position: payload.position,
-      })
+      }
+      if (options) {
+        await api.post<void>(endpoints.cards.move(payload.cardId), body, options)
+        return
+      }
+      await api.post<void>(endpoints.cards.move(payload.cardId), body)
     },
 
     async updateFieldValue(payload: UpdateFieldValueInput): Promise<void> {
@@ -73,13 +78,3 @@ export function createCardApi(client: NotrelixClient) {
     },
   };
 }
-
-export const cardApi = createCardApi({
-  api: {
-    get: async () => ({}) as any,
-    post: async () => ({}) as any,
-    patch: async () => ({}) as any,
-    delete: async () => ({}) as any,
-    put: async () => ({}) as any,
-  },
-} as any);

@@ -42,16 +42,6 @@ export function createBoardApi(client: NotrelixClient) {
   };
 }
 
-export const boardApi = createBoardApi({
-  api: {
-    get: async () => ({}) as any,
-    post: async () => ({}) as any,
-    patch: async () => ({}) as any,
-    delete: async () => ({}) as any,
-    put: async () => ({}) as any,
-  },
-} as any);
-
 function parseBoardView(view: BoardViewDtoApi): { viewMode: ViewMode; viewConfig: ViewConfig } {
   const viewMode = normalizeViewMode(view.viewMode)
   const rawConfig = view.config ?? view.filters
