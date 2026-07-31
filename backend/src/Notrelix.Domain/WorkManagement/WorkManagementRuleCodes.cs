@@ -141,6 +141,8 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Relation_SourceAndTargetMustBeDifferent = "WorkManagement_Relation_SourceAndTargetMustBeDifferent";
     public const string WorkManagement_Relation_CannotCreateSelfReferencing = "WorkManagement_Relation_CannotCreateSelfReferencing";
     public const string WorkManagement_Relation_CannotResumeBroken = "WorkManagement_Relation_CannotResumeBroken";
+    public const string WorkManagement_Relation_DuplicateNotAllowed = "WorkManagement_Relation_DuplicateNotAllowed";
+    public const string WorkManagement_Relation_CardinalityExceeded = "WorkManagement_Relation_CardinalityExceeded";
 
     // ── Scope ────────────────────────────────────────────────────────────
     public const string WorkManagement_BoardScopeMismatch = "WorkManagement_BoardScopeMismatch";
