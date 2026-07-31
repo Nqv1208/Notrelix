@@ -16,12 +16,8 @@
   "dependencies": {
     "zod": "^3.23.0"
   },
-  "peerDependencies": {
-    "react-hook-form": "^7.0.0"
-  },
   "devDependencies": {
     "typescript": "^5.0.0",
-    "react-hook-form": "^7.0.0",
     "@types/node": "^20.0.0",
     "vitest": "^3.2.1"
   }

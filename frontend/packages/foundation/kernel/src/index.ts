@@ -8,7 +8,6 @@
 // Result types and error handling
 export { AppError, type AppErrorKind } from './result/app-error';
 export { errorMap, getErrorMessage, mapStatusToKind } from './result/error-map';
-export { applyServerValidationErrors } from './result/apply-server-validation-errors';
 export { getFormErrorMessage } from './result/get-form-error-message';
 export { type NormalizedAppError, isAppError, getUserFacingErrorMessage } from './errors/app-error';
 

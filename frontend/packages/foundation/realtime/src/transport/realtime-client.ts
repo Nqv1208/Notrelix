@@ -44,13 +44,8 @@ export interface WebSocketLike {
 
 export type WebSocketFactory = (descriptor: RealtimeConnectionDescriptor) => WebSocketLike;
 
-export const defaultBrowserWebSocketFactory: WebSocketFactory = (descriptor) => {
-  if (typeof WebSocket === 'undefined') {
-    throw new Error('WebSocket is not supported in this environment.');
-  }
-  // Cast needed: browser WebSocket event handlers have stricter 'this' bindings
-  // than our minimal WebSocketLike contract, but they are structurally compatible at runtime.
-  return new WebSocket(descriptor.url, descriptor.protocols ? [...descriptor.protocols] : undefined) as unknown as WebSocketLike;
+const missingSocketFactory: WebSocketFactory = () => {
+  throw new Error('Realtime socketFactory is required by the runtime composition root.');
 };
 
 export interface RealtimeSubscriptionFilter {
@@ -255,7 +250,7 @@ export class RealtimeClient implements RealtimeTransport {
         : realtimeUrlOrOptions;
 
     this.descriptorProvider = opts.connectionDescriptorProvider ?? createCookieConnectionDescriptorProvider({ realtimeUrl: 'ws://localhost:5000/realtime' });
-    this.socketFactory = opts.socketFactory ?? defaultBrowserWebSocketFactory;
+    this.socketFactory = opts.socketFactory ?? missingSocketFactory;
     this.clock = opts.clock ?? { now: () => new Date() };
     this.scheduler = opts.scheduler ?? {
       setTimeout: (fn, ms) => setTimeout(fn, ms),
@@ -392,20 +387,33 @@ export class RealtimeClient implements RealtimeTransport {
       const channelKey = `${envelope.workspaceId}:${envelope.subscriptionId || 'default'}`;
       const previousSeq = this.sequenceTracker.get(channelKey);
 
-      if (previousSeq !== undefined && envelope.sequence > previousSeq + 1) {
-        const gap: RealtimeSequenceGap = {
-          workspaceId: envelope.workspaceId,
-          subscriptionId: envelope.subscriptionId,
-          expected: previousSeq + 1,
-          received: envelope.sequence,
-        };
-        this.recoveryListeners.forEach((listener) => {
-          try {
-            listener(gap);
-          } catch (err) {
-            this.telemetry?.reportError(err, { context: 'recoveryListener' });
-          }
-        });
+      if (previousSeq !== undefined) {
+        if (envelope.sequence <= previousSeq) {
+          this.telemetry?.track('realtime.stale_sequence_ignored', {
+            workspaceId: envelope.workspaceId,
+            subscriptionId: envelope.subscriptionId,
+            previous: previousSeq,
+            received: envelope.sequence,
+          });
+          return;
+        }
+
+        if (envelope.sequence > previousSeq + 1) {
+          const gap: RealtimeSequenceGap = {
+            workspaceId: envelope.workspaceId,
+            subscriptionId: envelope.subscriptionId,
+            expected: previousSeq + 1,
+            received: envelope.sequence,
+          };
+          this.recoveryListeners.forEach((listener) => {
+            try {
+              listener(gap);
+            } catch (err) {
+              this.telemetry?.reportError(err, { context: 'recoveryListener' });
+            }
+          });
+          return;
+        }
       }
 
       this.sequenceTracker.set(channelKey, envelope.sequence);

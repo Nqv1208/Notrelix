@@ -109,7 +109,9 @@ describe('RealtimeClient Unit Tests', () => {
     const client = new RealtimeClient({ socketFactory: mockSocketFactory });
 
     const recoverySpy = vi.fn();
+    const eventSpy = vi.fn();
     client.subscribeRecovery(recoverySpy);
+    client.subscribe({ workspaceId: 'ws-1' }, eventSpy);
 
     const connectPromise = client.connect({ sessionGeneration: 'gen-1' });
     await Promise.resolve();
@@ -147,6 +149,46 @@ describe('RealtimeClient Unit Tests', () => {
       expected: 2,
       received: 5,
     });
+    expect(eventSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores stale sequence events without moving the tracker backwards', async () => {
+    const client = new RealtimeClient({ socketFactory: mockSocketFactory });
+
+    const eventSpy = vi.fn();
+    client.subscribe({ workspaceId: 'ws-1' }, eventSpy);
+
+    const connectPromise = client.connect({ sessionGeneration: 'gen-1' });
+    await Promise.resolve();
+    mockSocket.onopen?.({});
+    await connectPromise;
+
+    const msgSeq2 = JSON.stringify({
+      schemaVersion: 1,
+      eventId: 'evt-2',
+      eventType: 'test',
+      workspaceId: 'ws-1',
+      correlationId: 'corr-2',
+      timestamp: new Date().toISOString(),
+      sequence: 2,
+      payload: {},
+    });
+
+    const msgSeq1 = JSON.stringify({
+      schemaVersion: 1,
+      eventId: 'evt-1',
+      eventType: 'test',
+      workspaceId: 'ws-1',
+      correlationId: 'corr-1',
+      timestamp: new Date().toISOString(),
+      sequence: 1,
+      payload: {},
+    });
+
+    mockSocket.onmessage?.({ data: msgSeq2 });
+    mockSocket.onmessage?.({ data: msgSeq1 });
+
+    expect(eventSpy).toHaveBeenCalledTimes(1);
   });
 
   it('deduplicates events with identical eventId', async () => {

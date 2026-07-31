@@ -22,5 +22,7 @@ export {
   type RealtimeRecoveryListener,
   type RealtimeTransport,
   type RealtimeClientOptions,
+  type WebSocketFactory,
+  type WebSocketLike,
 } from './transport/realtime-client';
 export type { BoardEvent, BoardPatchEvent, BoardPresenceEvent } from './events';
