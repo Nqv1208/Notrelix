@@ -1,5 +1,5 @@
 {
-  "name": "@notrelix/automation-web",
+  "name": "@notrelix/automation-testing",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -14,13 +14,10 @@
   },
   "dependencies": {
     "@notrelix/automation-core": "workspace:*",
-    "@notrelix/ui-web": "workspace:*",
-    "@notrelix/platform": "workspace:*",
-    "react": "^19.0.0",
-    "lucide-react": "^0.562.0"
+    "@notrelix/automation-state": "workspace:*",
+    "@notrelix/realtime": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
-    "@types/react": "^19.0.0"
+    "typescript": "^5.0.0"
   }
 }

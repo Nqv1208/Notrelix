@@ -1,12 +1,13 @@
 {
-  "name": "@notrelix/automation-web",
+  "name": "@notrelix/automation-state",
   "version": "0.0.1",
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./query/keys": "./src/query/keys.ts"
   },
   "scripts": {
     "clean": "rm -rf node_modules dist",
@@ -14,13 +15,16 @@
   },
   "dependencies": {
     "@notrelix/automation-core": "workspace:*",
-    "@notrelix/ui-web": "workspace:*",
-    "@notrelix/platform": "workspace:*",
-    "react": "^19.0.0",
-    "lucide-react": "^0.562.0"
+    "@notrelix/query": "workspace:*",
+    "@notrelix/realtime": "workspace:*",
+    "@tanstack/react-query": "^5.95.2"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
-    "@types/react": "^19.0.0"
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0"
   }
 }
