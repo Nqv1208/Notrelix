@@ -190,12 +190,8 @@ public static class FreezeSnapshotBuilder
     {
         if (type.Namespace is null) return false;
 
-        var experimentalPrefixes = DomainCapabilityRegistry.GetExperimental()
-            .Select(c => c.NamespacePrefix)
-            .ToList();
-
-        return !experimentalPrefixes.Any(p =>
-            type.Namespace.StartsWith(p, StringComparison.Ordinal));
+        return DomainCapabilityRegistry.ResolveCapability(type)
+            == DomainCapabilityStatus.Frozen;
     }
 
     private static bool IsNullableProperty(PropertyInfo prop, NullabilityInfo nullabilityInfo)
