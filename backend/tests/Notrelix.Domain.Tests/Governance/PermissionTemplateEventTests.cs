@@ -21,7 +21,7 @@ public class PermissionTemplateEventTests
 
         var template = PermissionTemplate.CreateSystem("System", ValidDefinition(), createdBy, now);
 
-        var evt = template.DomainEvents.OfType<PermissionTemplateCreatedDomainEvent>().Single();
+        var evt = template.DomainEvents.OfType<SystemPermissionTemplateCreatedDomainEvent>().Single();
         evt.TemplateId.Should().Be(template.Id);
         evt.Name.Should().Be("System");
         evt.CreatedBy.Should().Be(createdBy);
@@ -31,12 +31,16 @@ public class PermissionTemplateEventTests
     [Fact]
     public void CreateWorkspace_ShouldEmitCreatedEvent()
     {
+        var accountId = Guid.NewGuid();
+        var workspaceId = Guid.NewGuid();
         var createdBy = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
-        var template = PermissionTemplate.CreateWorkspace(Guid.NewGuid(), Guid.NewGuid(), "Workspace Template", ValidDefinition(), createdBy, now);
+        var template = PermissionTemplate.CreateWorkspace(accountId, workspaceId, "Workspace Template", ValidDefinition(), createdBy, now);
 
-        var evt = template.DomainEvents.OfType<PermissionTemplateCreatedDomainEvent>().Single();
+        var evt = template.DomainEvents.OfType<WorkspacePermissionTemplateCreatedDomainEvent>().Single();
+        evt.AccountId.Should().Be(accountId);
+        evt.WorkspaceId.Should().Be(workspaceId);
         evt.TemplateId.Should().Be(template.Id);
         evt.Name.Should().Be("Workspace Template");
         evt.CreatedBy.Should().Be(createdBy);
@@ -64,12 +68,21 @@ public class PermissionTemplateEventTests
     }
 
     [Fact]
-    public void CreatedEvent_ShouldNotBeGlobalDomainEvent()
+    public void CreateSystem_Event_ShouldBeGlobal()
     {
         var template = PermissionTemplate.CreateSystem("System", ValidDefinition(), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        var evt = template.DomainEvents.OfType<PermissionTemplateCreatedDomainEvent>().Single();
-        evt.Should().BeAssignableTo<IDomainEvent>();
+        var evt = template.DomainEvents.OfType<SystemPermissionTemplateCreatedDomainEvent>().Single();
+        evt.Should().BeAssignableTo<GlobalDomainEvent>();
+    }
+
+    [Fact]
+    public void CreateWorkspace_Event_ShouldBeWorkspaceScoped()
+    {
+        var template = PermissionTemplate.CreateWorkspace(Guid.NewGuid(), Guid.NewGuid(), "Template", ValidDefinition(), Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        var evt = template.DomainEvents.OfType<WorkspacePermissionTemplateCreatedDomainEvent>().Single();
+        evt.Should().BeAssignableTo<IWorkspaceScoped>();
     }
 
     [CoversMutation(typeof(PermissionTemplate), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Scope)]

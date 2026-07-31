@@ -45,7 +45,7 @@ public class PermissionTemplateLifecycleTests
     {
         var template = PermissionTemplate.CreateSystem("Template", ValidDefinition(), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        template.DomainEvents.Should().ContainSingle(e => e is PermissionTemplateCreatedDomainEvent);
+        template.DomainEvents.Should().ContainSingle(e => e is SystemPermissionTemplateCreatedDomainEvent);
     }
 
     [Fact]

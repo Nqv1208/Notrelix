@@ -38,7 +38,7 @@ public class PermissionTemplate : AggregateRoot
         };
 
         template.SetAuditOnCreate(createdBy, createdAt);
-        template.RaiseDomainEvent(new PermissionTemplateCreatedDomainEvent(template.Id, template.Name, createdBy, createdAt));
+        template.RaiseDomainEvent(new SystemPermissionTemplateCreatedDomainEvent(template.Id, template.Name, createdBy, createdAt));
         return template;
     }
 
@@ -70,7 +70,13 @@ public class PermissionTemplate : AggregateRoot
         };
 
         template.SetAuditOnCreate(createdBy, createdAt);
-        template.RaiseDomainEvent(new PermissionTemplateCreatedDomainEvent(template.Id, template.Name, createdBy, createdAt));
+        template.RaiseDomainEvent(new WorkspacePermissionTemplateCreatedDomainEvent(
+            accountId,
+            workspaceId,
+            template.Id,
+            template.Name,
+            createdBy,
+            createdAt));
         return template;
     }
 
