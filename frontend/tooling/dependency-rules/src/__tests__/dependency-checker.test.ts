@@ -5,6 +5,7 @@ import {
   isForbiddenQueryClientInstantiation,
   isDeepSrcImport,
 } from '../forbidden-source-patterns';
+import { classifyLayer } from '../layer-classifier';
 
 describe('AST Architecture Checker Rules', () => {
   it('guards createNotrelixClient invocation sites', () => {
@@ -27,5 +28,9 @@ describe('AST Architecture Checker Rules', () => {
   it('prohibits deep src imports', () => {
     expect(isDeepSrcImport('@notrelix/kernel/src/errors')).toBe(true);
     expect(isDeepSrcImport('@notrelix/kernel')).toBe(false);
+  });
+
+  it('classifies package-core layout as core', () => {
+    expect(classifyLayer('/packages/product/docs/core/src/query/hooks/use-page.ts', '@notrelix/docs-core')).toBe('core');
   });
 });

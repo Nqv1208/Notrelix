@@ -42,6 +42,8 @@ export const FORBIDDEN_IMPORTS: Record<string, string[]> = {
     "@notrelix/ui-web", "@notrelix/ui-mobile",
   ],
   "@notrelix/docs-core": [
+    "react", "react-dom", "react-native",
+    "@tanstack/react-query",
     "@notrelix/ui-web", "@notrelix/ui-mobile",
   ],
   "@notrelix/automation-core": [

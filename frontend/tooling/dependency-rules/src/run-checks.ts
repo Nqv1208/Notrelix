@@ -9,8 +9,9 @@ const __dirname = dirname(__filename);
 
 const args = process.argv.slice(2);
 const rootArgIndex = args.indexOf('--root');
-const rootDir = rootArgIndex !== -1 && args[rootArgIndex + 1]
-  ? resolve(args[rootArgIndex + 1])
+const rootArg = rootArgIndex !== -1 ? args[rootArgIndex + 1] : undefined;
+const rootDir = rootArg
+  ? resolve(rootArg)
   : resolve(__dirname, '../../..');
 
 const results = [

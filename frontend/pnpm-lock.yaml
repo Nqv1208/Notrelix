@@ -116,10 +116,10 @@ importers:
         version: 2.1.1
       lucide-react:
         specifier: latest
-        version: 1.25.0(react@19.2.7)
+        version: 1.26.0(react@19.2.7)
       next:
         specifier: latest
-        version: 16.2.10(@playwright/test@1.61.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 16.2.10(@babel/core@7.29.7)(@playwright/test@1.61.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       react:
         specifier: ^19.2.7
         version: 19.2.7
@@ -215,6 +215,9 @@ importers:
       '@notrelix/docs-core':
         specifier: workspace:*
         version: link:../../packages/product/docs/core
+      '@notrelix/docs-state':
+        specifier: workspace:*
+        version: link:../../packages/product/docs/state
       '@notrelix/docs-web':
         specifier: workspace:*
         version: link:../../packages/product/docs/web
@@ -708,9 +711,6 @@ importers:
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.43
-      react-hook-form:
-        specifier: ^7.0.0
-        version: 7.81.0(react@19.2.7)
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -800,6 +800,47 @@ importers:
         specifier: ^5.0.0
         version: 5.9.3
 
+  packages/product/automation/state:
+    dependencies:
+      '@notrelix/automation-core':
+        specifier: workspace:*
+        version: link:../core
+      '@notrelix/query':
+        specifier: workspace:*
+        version: link:../../../foundation/query
+      '@notrelix/realtime':
+        specifier: workspace:*
+        version: link:../../../foundation/realtime
+      '@tanstack/react-query':
+        specifier: ^5.95.2
+        version: 5.101.2(react@19.2.7)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.17
+      react:
+        specifier: ^19.2.7
+        version: 19.2.7
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+
+  packages/product/automation/testing:
+    dependencies:
+      '@notrelix/automation-core':
+        specifier: workspace:*
+        version: link:../core
+      '@notrelix/automation-state':
+        specifier: workspace:*
+        version: link:../state
+      '@notrelix/realtime':
+        specifier: workspace:*
+        version: link:../../../foundation/realtime
+    devDependencies:
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+
   packages/product/automation/web:
     dependencies:
       '@notrelix/automation-core':
@@ -817,9 +858,6 @@ importers:
       react:
         specifier: ^19.2.7
         version: 19.2.7
-      sonner:
-        specifier: ^2.0.7
-        version: 2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
     devDependencies:
       '@types/react':
         specifier: ^19.0.0
@@ -842,17 +880,7 @@ importers:
         version: 5.9.3
 
   packages/product/docs/core:
-    dependencies:
-      '@tanstack/react-query':
-        specifier: ^5.95.2
-        version: 5.101.2(react@19.2.7)
     devDependencies:
-      '@types/react':
-        specifier: ^19.0.0
-        version: 19.2.17
-      react:
-        specifier: ^19.2.7
-        version: 19.2.7
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -876,6 +904,25 @@ importers:
         specifier: ^5.0.0
         version: 5.9.3
 
+  packages/product/docs/state:
+    dependencies:
+      '@notrelix/docs-core':
+        specifier: workspace:*
+        version: link:../core
+      '@tanstack/react-query':
+        specifier: ^5.95.2
+        version: 5.101.2(react@19.2.7)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.17
+      react:
+        specifier: ^19.2.7
+        version: 19.2.7
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+
   packages/product/docs/web:
     dependencies:
       '@dnd-kit/core':
@@ -893,6 +940,9 @@ importers:
       '@notrelix/docs-core':
         specifier: workspace:*
         version: link:../core
+      '@notrelix/docs-state':
+        specifier: workspace:*
+        version: link:../state
       '@notrelix/platform':
         specifier: workspace:*
         version: link:../../../foundation/platform
@@ -1096,6 +1146,9 @@ importers:
       '@notrelix/kernel':
         specifier: workspace:*
         version: link:../../foundation/kernel
+      '@notrelix/observability':
+        specifier: workspace:*
+        version: link:../../foundation/observability
       '@notrelix/platform':
         specifier: workspace:*
         version: link:../../foundation/platform
@@ -6579,8 +6632,8 @@ packages:
     peerDependencies:
       react: ^19.2.7
 
-  lucide-react@1.25.0:
-    resolution: {integrity: sha512-/mdJTRbiwcLOQ1NZZK1amZF9rIZyvO18D6r9TngE6TG1NmqHgFuT4eE7Xrkm9UsXMbBJD1NlfwHVltCDWHrOTw==}
+  lucide-react@1.26.0:
+    resolution: {integrity: sha512-raglYVR2+VkMfJL158krjVmE+rV5ST2lzA/KQm1FRSjMHT4MnWaegHxoVEpmc2So3nOEhp9oGejJwAPX8MoAjg==}
     peerDependencies:
       react: ^19.2.7
 
@@ -14056,7 +14109,7 @@ snapshots:
     dependencies:
       react: 19.2.7
 
-  lucide-react@1.25.0(react@19.2.7):
+  lucide-react@1.26.0(react@19.2.7):
     dependencies:
       react: 19.2.7
 
@@ -14356,7 +14409,7 @@ snapshots:
 
   negotiator@1.0.0: {}
 
-  next@16.2.10(@playwright/test@1.61.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7):
+  next@16.2.10(@babel/core@7.29.7)(@playwright/test@1.61.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7):
     dependencies:
       '@next/env': 16.2.10
       '@swc/helpers': 0.5.15
@@ -14365,7 +14418,7 @@ snapshots:
       postcss: 8.4.31
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
-      styled-jsx: 5.1.6(react@19.2.7)
+      styled-jsx: 5.1.6(@babel/core@7.29.7)(react@19.2.7)
     optionalDependencies:
       '@next/swc-darwin-arm64': 16.2.10
       '@next/swc-darwin-x64': 16.2.10
@@ -15529,10 +15582,12 @@ snapshots:
 
   structured-headers@0.4.1: {}
 
-  styled-jsx@5.1.6(react@19.2.7):
+  styled-jsx@5.1.6(@babel/core@7.29.7)(react@19.2.7):
     dependencies:
       client-only: 0.0.1
       react: 19.2.7
+    optionalDependencies:
+      '@babel/core': 7.29.7
 
   supports-color@5.5.0:
     dependencies:

@@ -10,6 +10,7 @@ import {
   isForbiddenQueryClientInstantiation,
   isDeepSrcImport,
 } from './forbidden-source-patterns';
+import { classifyLayer } from './layer-classifier';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -74,6 +75,7 @@ export function checkArchitecture(rootDir = DEFAULT_ROOT): { ok: boolean; violat
     for (const file of files) {
       const relPath = file.replace(rootDir, '');
       const content = readFileSync(file, 'utf8');
+      const layer = classifyLayer(relPath, pkgName);
 
       // Create AST SourceFile
       const sourceFile = ts.createSourceFile(
@@ -104,6 +106,28 @@ export function checkArchitecture(rootDir = DEFAULT_ROOT): { ok: boolean; violat
           if (allowed !== null && basePkg.startsWith('@notrelix/')) {
             if (!allowed.some((a) => basePkg === a || basePkg.startsWith(a + '/'))) {
               violations.push(`[NOT_ALLOWED_IMPORT] ${pkgName} → "${basePkg}" in ${relPath}`);
+            }
+          }
+
+          if (layer === 'data' && (imported === 'sonner' || imported.startsWith('@notrelix/ui-'))) {
+            violations.push(`[DATA_UI_SIDE_EFFECT] ${pkgName} data layer imported UI side-effect package "${imported}" in ${relPath}`);
+          }
+        }
+
+        if (ts.isVariableStatement(node) && node.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)) {
+          for (const declaration of node.declarationList.declarations) {
+            if (!ts.isIdentifier(declaration.name) || !declaration.initializer) continue;
+            if (!/(Api|Repository)$/.test(declaration.name.text)) continue;
+
+            let initializer = declaration.initializer;
+            if (ts.isAsExpression(initializer)) {
+              initializer = initializer.expression;
+            }
+            if (!ts.isCallExpression(initializer)) continue;
+
+            const expressionText = initializer.expression.getText(sourceFile);
+            if (/^create[A-Z].*(Api|Repository)$/.test(expressionText)) {
+              violations.push(`[EXPORTED_API_INSTANCE] ${pkgName} exported production API/repository instance "${declaration.name.text}" in ${relPath}`);
             }
           }
         }
