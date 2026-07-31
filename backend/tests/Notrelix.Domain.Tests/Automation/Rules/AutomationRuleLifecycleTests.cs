@@ -52,7 +52,7 @@ public class AutomationRuleLifecycleTests
         var act = () => rule.Enable(Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>();
 
-        rule.Status.Should().Be(AutomationRuleStatus.Disabled);
+        rule.Status.Should().Be(AutomationRuleStatus.Draft);
     }
 
     [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
@@ -84,7 +84,7 @@ public class AutomationRuleLifecycleTests
 
     [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
-    public void Delete_ShouldSetStatusAndAudit()
+    public void Delete_ShouldPreserveStatusAndAudit()
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
         rule.Enable(Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -95,7 +95,7 @@ public class AutomationRuleLifecycleTests
         rule.Delete(deletedBy, deletedAt);
 
         rule.IsDeleted.Should().BeTrue();
-        rule.Status.Should().Be(AutomationRuleStatus.Disabled);
+        rule.Status.Should().Be(AutomationRuleStatus.Active);
         rule.UpdatedAt.Should().Be(deletedAt);
         rule.UpdatedBy.Should().Be(deletedBy);
         rule.Version.Should().Be(3);
@@ -103,9 +103,10 @@ public class AutomationRuleLifecycleTests
 
     [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
-    public void Restore_ShouldSetStatusAndAudit()
+    public void Restore_ShouldPreserveStatusAndAudit()
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        rule.Enable(Guid.NewGuid(), DateTimeOffset.UtcNow);
         rule.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)rule).ClearDomainEvents();
 
@@ -114,10 +115,10 @@ public class AutomationRuleLifecycleTests
         rule.Restore(restoredBy, restoredAt);
 
         rule.IsDeleted.Should().BeFalse();
-        rule.Status.Should().Be(AutomationRuleStatus.Draft);
+        rule.Status.Should().Be(AutomationRuleStatus.Active);
         rule.UpdatedAt.Should().Be(restoredAt);
         rule.UpdatedBy.Should().Be(restoredBy);
-        rule.Version.Should().Be(3);
+        rule.Version.Should().Be(4);
     }
 
     [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Enable), MutationScenario.Version, typeof(Guid), typeof(DateTimeOffset))]

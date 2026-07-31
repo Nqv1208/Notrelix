@@ -163,7 +163,7 @@ public class AutomationRuleTests
 
     [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
-    public void Delete_ShouldSetStatus_AndRaiseEvent()
+    public void Delete_ShouldPreserveStatus_AndRaiseEvent()
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)rule).ClearDomainEvents();
@@ -171,7 +171,7 @@ public class AutomationRuleTests
         rule.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         rule.IsDeleted.Should().BeTrue();
-        rule.Status.Should().Be(AutomationRuleStatus.Disabled);
+        rule.Status.Should().Be(AutomationRuleStatus.Draft);
         rule.DomainEvents.Should().ContainSingle(e => e is AutomationRuleDeletedDomainEvent);
     }
 
@@ -190,7 +190,7 @@ public class AutomationRuleTests
 
     [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
-    public void Restore_ShouldSetStatus_AndRaiseEvent()
+    public void Restore_ShouldPreserveStatus_AndRaiseEvent()
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
         rule.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);

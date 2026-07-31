@@ -99,8 +99,8 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
+
         var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
-        Status = AutomationRuleStatus.Disabled;
         ApplyDeletion(pendingDeletion);
         IncrementVersion();
         RaiseDomainEvent(new AutomationRuleDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
@@ -110,8 +110,8 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
+
         var pendingRestore = PrepareRestore(restoredBy, restoredAt);
-        Status = AutomationRuleStatus.Draft;
         ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new AutomationRuleRestoredDomainEvent(AccountId, WorkspaceId, Id, Name, restoredBy, restoredAt));
