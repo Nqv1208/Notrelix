@@ -12,7 +12,7 @@ public class BoardItemIdempotencyTests
     private readonly Guid _actorId = Guid.NewGuid();
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(BoardItem), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Rename), MutationScenario.Version, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Rename_ShouldNotIncrementVersion_WhenNameIsSame()
     {
@@ -26,7 +26,7 @@ public class BoardItemIdempotencyTests
         item.DomainEvents.Should().NotContain(e => e is BoardItemRenamedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardItem), "MoveToGroup(Notrelix.Domain.WorkManagement.BoardGroups.BoardGroupRef,Notrelix.Domain.SharedKernel.Ordering.FractionalIndex,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveToGroup), MutationScenario.Version, typeof(BoardGroupRef), typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveToGroup_ShouldNotIncrementVersion_WhenGroupAndPositionAreSame()
     {
@@ -41,7 +41,7 @@ public class BoardItemIdempotencyTests
         item.Version.Should().Be(version);
     }
 
-    [CoversMutation(typeof(BoardItem), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldIncrementVersion_AndRaiseEvent()
     {

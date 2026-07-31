@@ -26,7 +26,7 @@ public class PageHierarchyTests
         page.ParentId.Should().Be(parentId);
     }
 
-    [CoversMutation(typeof(Page), "Move(System.Guid?,System.Guid,System.DateTimeOffset,System.Func<System.Guid,System.Guid?>)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Page), nameof(Page.Move), MutationScenario.Valid, typeof(Guid?), typeof(Guid), typeof(DateTimeOffset), typeof(System.Func<System.Guid,System.Guid?>))]
     [Fact]
     public void Move_ShouldChangeParent()
     {
@@ -36,7 +36,7 @@ public class PageHierarchyTests
         page.ParentId.Should().Be(newParent);
     }
 
-    [CoversMutation(typeof(Page), "Move(System.Guid?,System.Guid,System.DateTimeOffset,System.Func<System.Guid,System.Guid?>)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Page), nameof(Page.Move), MutationScenario.NoOp, typeof(Guid?), typeof(Guid), typeof(DateTimeOffset), typeof(System.Func<System.Guid,System.Guid?>))]
     [Fact]
     public void Move_NoOp_ShouldNotIncrementVersion()
     {
@@ -46,8 +46,8 @@ public class PageHierarchyTests
         page.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(Page), "Move(System.Guid?,System.Guid,System.DateTimeOffset,System.Func<System.Guid,System.Guid?>)", MutationScenario.Valid)]
-    [CoversMutation(typeof(Page), "Move(System.Guid?,System.Guid,System.DateTimeOffset,System.Func<System.Guid,System.Guid?>)", MutationScenario.Version)]
+    [CoversMutation(typeof(Page), nameof(Page.Move), MutationScenario.Valid, typeof(Guid?), typeof(Guid), typeof(DateTimeOffset), typeof(System.Func<System.Guid,System.Guid?>))]
+    [CoversMutation(typeof(Page), nameof(Page.Move), MutationScenario.Version, typeof(Guid?), typeof(Guid), typeof(DateTimeOffset), typeof(System.Func<System.Guid,System.Guid?>))]
     [Fact]
     public void Move_ShouldIncrementVersion()
     {
@@ -57,7 +57,7 @@ public class PageHierarchyTests
         page.Version.Should().Be(before + 1);
     }
 
-    [CoversMutation(typeof(Page), "Move(System.Guid?,System.Guid,System.DateTimeOffset,System.Func<System.Guid,System.Guid?>)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Page), nameof(Page.Move), MutationScenario.Invalid, typeof(Guid?), typeof(Guid), typeof(DateTimeOffset), typeof(System.Func<System.Guid,System.Guid?>))]
     [Fact]
     public void Move_ToCycle_ShouldThrow()
     {
@@ -66,7 +66,7 @@ public class PageHierarchyTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(Page), "Move(System.Guid?,System.Guid,System.DateTimeOffset,System.Func<System.Guid,System.Guid?>)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Page), nameof(Page.Move), MutationScenario.Invalid, typeof(Guid?), typeof(Guid), typeof(DateTimeOffset), typeof(System.Func<System.Guid,System.Guid?>))]
     [Fact]
     public void Move_Archived_ShouldThrow()
     {
@@ -76,7 +76,7 @@ public class PageHierarchyTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(Page), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Page), nameof(Page.Rename), MutationScenario.Invalid, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Rename_Archived_ShouldThrow()
     {
@@ -86,7 +86,7 @@ public class PageHierarchyTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(Page), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Page), nameof(Page.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldSetStatus()
     {
@@ -94,7 +94,7 @@ public class PageHierarchyTests
         page.Delete(_actorId, _now);
     }
 
-    [CoversMutation(typeof(Page), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Page), nameof(Page.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldSetStatusActive()
     {

@@ -38,7 +38,7 @@ public class ResourceWatcherTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(ResourceWatcher), "Unwatch(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(ResourceWatcher), nameof(ResourceWatcher.Unwatch), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Unwatch_ShouldRaiseEvent()
     {

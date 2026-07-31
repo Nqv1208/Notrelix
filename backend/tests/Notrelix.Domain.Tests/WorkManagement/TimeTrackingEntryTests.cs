@@ -54,7 +54,7 @@ public class TimeTrackingEntryTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(TimeTrackingEntry), "Stop(System.DateTimeOffset,System.Guid)", MutationScenario.Valid)]
+    [CoversMutation(typeof(TimeTrackingEntry), nameof(TimeTrackingEntry.Stop), MutationScenario.Valid, typeof(DateTimeOffset), typeof(Guid))]
     [Fact]
     public void Stop_WhenRunning_ShouldSucceed()
     {
@@ -67,7 +67,7 @@ public class TimeTrackingEntryTests
         entry.EndedAt.Should().Be(endedAt);
     }
 
-    [CoversMutation(typeof(TimeTrackingEntry), "Stop(System.DateTimeOffset,System.Guid)", MutationScenario.Valid)]
+    [CoversMutation(typeof(TimeTrackingEntry), nameof(TimeTrackingEntry.Stop), MutationScenario.Valid, typeof(DateTimeOffset), typeof(Guid))]
     [Fact]
     public void Stop_ShouldCalculateDurationSeconds()
     {
@@ -79,7 +79,7 @@ public class TimeTrackingEntryTests
         entry.DurationSeconds.Should().Be(300);
     }
 
-    [CoversMutation(typeof(TimeTrackingEntry), "Stop(System.DateTimeOffset,System.Guid)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(TimeTrackingEntry), nameof(TimeTrackingEntry.Stop), MutationScenario.Invalid, typeof(DateTimeOffset), typeof(Guid))]
     [Fact]
     public void Stop_WhenNotRunning_ShouldThrow()
     {
@@ -92,7 +92,7 @@ public class TimeTrackingEntryTests
             .WithMessage("*not running*");
     }
 
-    [CoversMutation(typeof(TimeTrackingEntry), "Stop(System.DateTimeOffset,System.Guid)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(TimeTrackingEntry), nameof(TimeTrackingEntry.Stop), MutationScenario.Invalid, typeof(DateTimeOffset), typeof(Guid))]
     [Fact]
     public void Stop_WithEndTimeBeforeStart_ShouldThrow()
     {
@@ -104,7 +104,7 @@ public class TimeTrackingEntryTests
             .WithMessage("*after start*");
     }
 
-    [CoversMutation(typeof(TimeTrackingEntry), "Stop(System.DateTimeOffset,System.Guid)", MutationScenario.Version)]
+    [CoversMutation(typeof(TimeTrackingEntry), nameof(TimeTrackingEntry.Stop), MutationScenario.Version, typeof(DateTimeOffset), typeof(Guid))]
     [Fact]
     public void Stop_ShouldIncrementVersion()
     {
@@ -116,7 +116,7 @@ public class TimeTrackingEntryTests
         entry.Version.Should().Be(versionBefore + 1);
     }
 
-    [CoversMutation(typeof(TimeTrackingEntry), "Stop(System.DateTimeOffset,System.Guid)", MutationScenario.Audit)]
+    [CoversMutation(typeof(TimeTrackingEntry), nameof(TimeTrackingEntry.Stop), MutationScenario.Audit, typeof(DateTimeOffset), typeof(Guid))]
     [Fact]
     public void Stop_ShouldSetAudit()
     {

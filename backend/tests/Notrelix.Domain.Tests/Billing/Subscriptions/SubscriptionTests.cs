@@ -36,7 +36,7 @@ public class SubscriptionTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Subscription), "ChangePlan(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Subscription), nameof(Subscription.ChangePlan), MutationScenario.Valid, typeof(Guid), typeof(Guid), typeof(DateTimeOffset))]
     public void ChangePlan_ShouldUpdatePlanId_AndRaiseEvent()
     {
         var now = DateTimeOffset.UtcNow;
@@ -51,7 +51,7 @@ public class SubscriptionTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Subscription), "CancelImmediately(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Subscription), nameof(Subscription.CancelImmediately), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     public void CancelImmediately_ShouldUpdateStatus_AndRaiseEvent()
     {
         var now = DateTimeOffset.UtcNow;
@@ -66,7 +66,7 @@ public class SubscriptionTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Subscription), "Renew(System.DateTimeOffset,System.DateTimeOffset,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Subscription), nameof(Subscription.Renew), MutationScenario.Valid, typeof(DateTimeOffset), typeof(DateTimeOffset), typeof(Guid), typeof(DateTimeOffset))]
     public void Renew_ShouldUpdatePeriod_AndRaiseEvent()
     {
         var now = DateTimeOffset.UtcNow;
@@ -85,7 +85,7 @@ public class SubscriptionTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Subscription), "Expire(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Subscription), nameof(Subscription.Expire), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     public void Expire_ShouldUpdateStatus_AndRaiseEvent()
     {
         var now = DateTimeOffset.UtcNow;
@@ -99,7 +99,7 @@ public class SubscriptionTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Subscription), "MarkPastDue(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Subscription), nameof(Subscription.MarkPastDue), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     public void MarkPastDue_ShouldUpdateStatus_AndRaiseEvent()
     {
         var now = DateTimeOffset.UtcNow;
@@ -113,7 +113,7 @@ public class SubscriptionTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Subscription), "ScheduleCancellation(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Subscription), nameof(Subscription.ScheduleCancellation), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     public void ScheduleCancellation_ShouldSetFlag_AndRaiseEvent()
     {
         var now = DateTimeOffset.UtcNow;
@@ -127,7 +127,7 @@ public class SubscriptionTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Subscription), "ScheduleCancellation(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Subscription), nameof(Subscription.ScheduleCancellation), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     public void ScheduleCancellation_WhenAlreadyScheduled_ShouldBeNoOp()
     {
         var now = DateTimeOffset.UtcNow;
@@ -142,7 +142,7 @@ public class SubscriptionTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Subscription), "CancelImmediately(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Subscription), nameof(Subscription.CancelImmediately), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     public void CancelImmediately_WhenAlreadyCanceled_ShouldBeNoOp()
     {
         var now = DateTimeOffset.UtcNow;
@@ -157,7 +157,7 @@ public class SubscriptionTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Subscription), "Expire(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Subscription), nameof(Subscription.Expire), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     public void Expire_WhenAlreadyExpired_ShouldBeNoOp()
     {
         var now = DateTimeOffset.UtcNow;
@@ -172,7 +172,7 @@ public class SubscriptionTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Subscription), "MarkPastDue(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Subscription), nameof(Subscription.MarkPastDue), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     public void MarkPastDue_WhenAlreadyPastDue_ShouldBeNoOp()
     {
         var now = DateTimeOffset.UtcNow;
@@ -187,7 +187,7 @@ public class SubscriptionTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Subscription), "ChangePlan(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Subscription), nameof(Subscription.ChangePlan), MutationScenario.Invalid, typeof(Guid), typeof(Guid), typeof(DateTimeOffset))]
     public void ChangePlan_WhenCanceled_ShouldThrow()
     {
         var now = DateTimeOffset.UtcNow;
@@ -200,7 +200,7 @@ public class SubscriptionTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Subscription), "ChangePlan(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Subscription), nameof(Subscription.ChangePlan), MutationScenario.Invalid, typeof(Guid), typeof(Guid), typeof(DateTimeOffset))]
     public void ChangePlan_WhenExpired_ShouldThrow()
     {
         var now = DateTimeOffset.UtcNow;
@@ -213,7 +213,7 @@ public class SubscriptionTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Subscription), "Renew(System.DateTimeOffset,System.DateTimeOffset,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Subscription), nameof(Subscription.Renew), MutationScenario.Invalid, typeof(DateTimeOffset), typeof(DateTimeOffset), typeof(Guid), typeof(DateTimeOffset))]
     public void Renew_WithInvalidPeriod_ShouldThrow()
     {
         var now = DateTimeOffset.UtcNow;
@@ -225,7 +225,7 @@ public class SubscriptionTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Subscription), "Renew(System.DateTimeOffset,System.DateTimeOffset,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Subscription), nameof(Subscription.Renew), MutationScenario.Valid, typeof(DateTimeOffset), typeof(DateTimeOffset), typeof(Guid), typeof(DateTimeOffset))]
     public void Renew_ShouldResetCancelFlag()
     {
         var now = DateTimeOffset.UtcNow;
@@ -239,7 +239,7 @@ public class SubscriptionTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Subscription), "CancelImmediately(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Subscription), nameof(Subscription.CancelImmediately), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     public void CancelImmediately_ScheduledCancellation_ShouldClearFlag()
     {
         var now = DateTimeOffset.UtcNow;

@@ -21,7 +21,7 @@ public class PermissionRuleLifecycleTests
         rule.DomainEvents.Should().ContainSingle(e => e is PermissionRuleCreatedDomainEvent);
     }
 
-    [CoversMutation(typeof(PermissionRule), "Disable(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(PermissionRule), nameof(PermissionRule.Disable), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void PermissionRule_Disable_ShouldUpdateStatus()
     {
@@ -41,7 +41,7 @@ public class PermissionRuleLifecycleTests
         rule.IsActive(Now).Should().BeTrue();
     }
 
-    [CoversMutation(typeof(PermissionRule), "Disable(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(PermissionRule), nameof(PermissionRule.Disable), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void PermissionRule_IsActive_WhenDisabled_ShouldReturnFalse()
     {
@@ -64,7 +64,7 @@ public class PermissionRuleLifecycleTests
         rule.IsActive(Now).Should().BeFalse();
     }
 
-    [CoversMutation(typeof(PermissionRule), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(PermissionRule), nameof(PermissionRule.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void PermissionRule_Delete_ShouldRaiseEvent()
     {
@@ -81,7 +81,7 @@ public class PermissionRuleLifecycleTests
         evt.RuleId.Should().Be(rule.Id);
     }
 
-    [CoversMutation(typeof(PermissionRule), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(PermissionRule), nameof(PermissionRule.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void PermissionRule_Restore_ShouldRaiseEvent()
     {
@@ -99,7 +99,7 @@ public class PermissionRuleLifecycleTests
         evt.RuleId.Should().Be(rule.Id);
     }
 
-    [CoversMutation(typeof(PermissionRule), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(PermissionRule), nameof(PermissionRule.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void PermissionRule_Delete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
@@ -114,8 +114,8 @@ public class PermissionRuleLifecycleTests
         rule.DomainEvents.Should().NotContain(e => e is PermissionRuleDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(PermissionRule), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
-    [CoversMutation(typeof(PermissionRule), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(PermissionRule), nameof(PermissionRule.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
+    [CoversMutation(typeof(PermissionRule), nameof(PermissionRule.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void PermissionRule_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {

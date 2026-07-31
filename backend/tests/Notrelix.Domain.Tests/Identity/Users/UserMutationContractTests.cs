@@ -11,7 +11,7 @@ public class UserMutationContractTests
         return User.Create("test@example.com", "Test User", "hash123", now);
     }
 
-    [CoversMutation(typeof(User), "UpdateProfile(System.String,System.String,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(User), nameof(User.UpdateProfile), MutationScenario.NoOp, typeof(string), typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateProfile_NoOp_ShouldNotIncreaseVersion()
     {
@@ -24,7 +24,7 @@ public class UserMutationContractTests
         user.Version.Should().Be(versionBefore);
     }
 
-    [CoversMutation(typeof(User), "UpdateProfile(System.String,System.String,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(User), nameof(User.UpdateProfile), MutationScenario.NoOp, typeof(string), typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateProfile_NoOp_ShouldNotRaiseEvent()
     {
@@ -37,7 +37,7 @@ public class UserMutationContractTests
         user.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(User), "UpdateProfile(System.String,System.String,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(User), nameof(User.UpdateProfile), MutationScenario.NoOp, typeof(string), typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateProfile_NoOp_ShouldNotUpdateTimestamp()
     {
@@ -50,7 +50,7 @@ public class UserMutationContractTests
         user.UpdatedAt.Should().Be(updatedAtBefore);
     }
 
-    [CoversMutation(typeof(User), "UpdateProfile(System.String,System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(User), nameof(User.UpdateProfile), MutationScenario.Valid, typeof(string), typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateProfile_ChangedName_ShouldMutate()
     {
@@ -66,7 +66,7 @@ public class UserMutationContractTests
         user.DomainEvents.Should().ContainSingle(e => e is UserProfileUpdatedDomainEvent);
     }
 
-    [CoversMutation(typeof(User), "UpdateProfile(System.String,System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(User), nameof(User.UpdateProfile), MutationScenario.Valid, typeof(string), typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateProfile_ChangedAvatar_ShouldMutate()
     {
@@ -82,7 +82,7 @@ public class UserMutationContractTests
         user.DomainEvents.Should().ContainSingle(e => e is UserProfileUpdatedDomainEvent);
     }
 
-    [CoversMutation(typeof(User), "RecordLogin(System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(User), nameof(User.RecordLogin), MutationScenario.Valid, typeof(DateTimeOffset))]
     [Fact]
     public void RecordLogin_FirstLogin_ShouldSucceed()
     {
@@ -96,7 +96,7 @@ public class UserMutationContractTests
         user.DomainEvents.Should().ContainSingle(e => e is UserLoggedInDomainEvent);
     }
 
-    [CoversMutation(typeof(User), "RecordLogin(System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(User), nameof(User.RecordLogin), MutationScenario.Valid, typeof(DateTimeOffset))]
     [Fact]
     public void RecordLogin_LaterTime_ShouldSucceed()
     {
@@ -112,7 +112,7 @@ public class UserMutationContractTests
         user.DomainEvents.Should().ContainSingle(e => e is UserLoggedInDomainEvent);
     }
 
-    [CoversMutation(typeof(User), "RecordLogin(System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(User), nameof(User.RecordLogin), MutationScenario.Invalid, typeof(DateTimeOffset))]
     [Fact]
     public void RecordLogin_SameTime_ShouldThrow()
     {
@@ -126,7 +126,7 @@ public class UserMutationContractTests
             .WithMessage("*cannot move backwards*");
     }
 
-    [CoversMutation(typeof(User), "RecordLogin(System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(User), nameof(User.RecordLogin), MutationScenario.Invalid, typeof(DateTimeOffset))]
     [Fact]
     public void RecordLogin_EarlierTime_ShouldThrow()
     {
@@ -144,7 +144,7 @@ public class UserMutationContractTests
         user.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(User), "RecordLogin(System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(User), nameof(User.RecordLogin), MutationScenario.Version, typeof(DateTimeOffset))]
     [Fact]
     public void RecordLogin_EarlierTime_ShouldNotIncreaseVersion()
     {

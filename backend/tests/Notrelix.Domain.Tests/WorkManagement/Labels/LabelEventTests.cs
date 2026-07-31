@@ -11,8 +11,8 @@ public class LabelEventTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(Label), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
-    [CoversMutation(typeof(Label), "Update(System.String,Notrelix.Domain.WorkManagement.Labels.LabelColor,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Label), nameof(Label.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
+    [CoversMutation(typeof(Label), nameof(Label.Update), MutationScenario.Event, typeof(string), typeof(LabelColor), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Label_Restore_ShouldRaiseEvent()
     {
@@ -28,8 +28,8 @@ public class LabelEventTests
         label.DomainEvents.Should().ContainSingle(e => e is LabelRestoredDomainEvent);
     }
 
-    [CoversMutation(typeof(Label), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
-    [CoversMutation(typeof(Label), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Label), nameof(Label.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
+    [CoversMutation(typeof(Label), nameof(Label.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Label_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {

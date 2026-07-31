@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Tests.Freeze;
+using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Forms;
 
 namespace Notrelix.Domain.Tests.WorkManagement.Forms;
@@ -12,8 +13,8 @@ public class FormLifecycleTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(Form), "Publish(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
-    [CoversMutation(typeof(Form), "UpdateDetails(System.String,Notrelix.Domain.WorkManagement.Boards.BoardVisibility,System.String,System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Form), nameof(Form.Publish), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
+    [CoversMutation(typeof(Form), nameof(Form.UpdateDetails), MutationScenario.Event, typeof(string), typeof(BoardVisibility), typeof(string), typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Form_Publish_ShouldEmitEventAndUpdateStatus()
     {
@@ -28,7 +29,7 @@ public class FormLifecycleTests
         form.Version.Should().Be(3);
     }
 
-    [CoversMutation(typeof(Form), "Publish(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Form), nameof(Form.Publish), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Form_Publish_WithNoQuestions_ShouldThrow()
     {
@@ -38,7 +39,7 @@ public class FormLifecycleTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*no questions*");
     }
 
-    [CoversMutation(typeof(Form), "Publish(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Form), nameof(Form.Publish), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Form_Publish_WhenClosed_ShouldThrow()
     {
@@ -50,8 +51,8 @@ public class FormLifecycleTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*closed*");
     }
 
-    [CoversMutation(typeof(Form), "Close(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
-    [CoversMutation(typeof(Form), "UpdateDetails(System.String,Notrelix.Domain.WorkManagement.Boards.BoardVisibility,System.String,System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Form), nameof(Form.Close), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
+    [CoversMutation(typeof(Form), nameof(Form.UpdateDetails), MutationScenario.Event, typeof(string), typeof(BoardVisibility), typeof(string), typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Form_Close_ShouldEmitEventAndUpdateStatus()
     {
@@ -65,7 +66,7 @@ public class FormLifecycleTests
         form.Version.Should().Be(2);
     }
 
-    [CoversMutation(typeof(Form), "Close(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Form), nameof(Form.Close), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Form_Close_WhenAlreadyClosed_ShouldNotIncrementVersion()
     {
@@ -78,7 +79,7 @@ public class FormLifecycleTests
         form.Version.Should().Be(version);
     }
 
-    [CoversMutation(typeof(Form), "AddQuestion(Notrelix.Domain.WorkManagement.Forms.FormQuestion,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Form), nameof(Form.AddQuestion), MutationScenario.Event, typeof(FormQuestion), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Form_AddQuestion_ShouldEmitEvent()
     {
@@ -92,7 +93,7 @@ public class FormLifecycleTests
         form.DomainEvents.Should().ContainSingle(e => e is FormQuestionAddedDomainEvent);
     }
 
-    [CoversMutation(typeof(Form), "Close(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Form), nameof(Form.Close), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Form_AddQuestion_WhenClosed_ShouldThrow()
     {

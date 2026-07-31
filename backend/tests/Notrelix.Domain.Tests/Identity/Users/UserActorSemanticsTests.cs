@@ -10,7 +10,7 @@ public class UserActorSemanticsTests
 
     private static User CreateUser() => User.Create("test@example.com", "Test User", "hash", Now);
 
-    [CoversMutation(typeof(User), "UpdateProfile(System.String,System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(User), nameof(User.UpdateProfile), MutationScenario.Valid, typeof(string), typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateProfile_ShouldSetUpdatedByToActor()
     {
@@ -20,7 +20,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
-    [CoversMutation(typeof(User), "UpdateEmail(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(User), nameof(User.UpdateEmail), MutationScenario.Valid, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateEmail_ShouldSetUpdatedByToActor()
     {
@@ -30,7 +30,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
-    [CoversMutation(typeof(User), "UpdatePassword(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(User), nameof(User.UpdatePassword), MutationScenario.Valid, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdatePassword_ShouldSetUpdatedByToActor()
     {
@@ -40,7 +40,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
-    [CoversMutation(typeof(User), "RecordLogin(System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(User), nameof(User.RecordLogin), MutationScenario.Valid, typeof(DateTimeOffset))]
     [Fact]
     public void RecordLogin_ShouldSetUpdatedByToSelf()
     {
@@ -49,7 +49,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(user.Id);
     }
 
-    [CoversMutation(typeof(User), "Activate(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Valid)]
+    [CoversMutation(typeof(User), nameof(User.Activate), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Activate_ShouldSetUpdatedByToActor()
     {
@@ -60,7 +60,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
-    [CoversMutation(typeof(User), "Deactivate(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Valid)]
+    [CoversMutation(typeof(User), nameof(User.Deactivate), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Deactivate_ShouldSetUpdatedByToActor()
     {
@@ -70,7 +70,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
-    [CoversMutation(typeof(User), "Suspend(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Valid)]
+    [CoversMutation(typeof(User), nameof(User.Suspend), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Suspend_ShouldSetUpdatedByToActor()
     {
@@ -80,7 +80,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
-    [CoversMutation(typeof(User), "ConfirmEmail(System.Guid?,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(User), nameof(User.ConfirmEmail), MutationScenario.Valid, typeof(Guid?), typeof(DateTimeOffset))]
     [Fact]
     public void ConfirmEmail_ShouldSetUpdatedByToActor()
     {
@@ -90,7 +90,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
-    [CoversMutation(typeof(User), "ConfirmEmail(System.Guid?,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(User), nameof(User.ConfirmEmail), MutationScenario.Valid, typeof(Guid?), typeof(DateTimeOffset))]
     [Fact]
     public void ConfirmEmail_SystemActor_ShouldAllowNull()
     {
@@ -99,7 +99,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().BeNull();
     }
 
-    [CoversMutation(typeof(User), "LinkOAuthAccount(Notrelix.Domain.Identity.OAuth.OAuthProvider,System.String,Notrelix.Domain.Identity.OAuth.OAuthProfileSnapshot,Notrelix.Domain.Identity.OAuth.OAuthToken,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(User), nameof(User.LinkOAuthAccount), MutationScenario.Valid, typeof(OAuthProvider), typeof(string), typeof(OAuthProfileSnapshot), typeof(OAuthToken), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void LinkOAuthAccount_ShouldSetUpdatedByToActor()
     {
@@ -110,7 +110,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
-    [CoversMutation(typeof(User), "UpdateOAuthProfile(Notrelix.Domain.Identity.OAuth.OAuthProvider,Notrelix.Domain.Identity.OAuth.OAuthProfileSnapshot,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(User), nameof(User.UpdateOAuthProfile), MutationScenario.Valid, typeof(OAuthProvider), typeof(OAuthProfileSnapshot), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateOAuthProfile_ShouldSetUpdatedByToActor()
     {
@@ -123,7 +123,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
-    [CoversMutation(typeof(User), "RotateOAuthToken(Notrelix.Domain.Identity.OAuth.OAuthProvider,Notrelix.Domain.Identity.OAuth.OAuthToken,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(User), nameof(User.RotateOAuthToken), MutationScenario.Valid, typeof(OAuthProvider), typeof(OAuthToken), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateOAuthToken_ShouldSetUpdatedByToActor()
     {
@@ -137,7 +137,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
-    [CoversMutation(typeof(User), "UnlinkOAuthAccount(Notrelix.Domain.Identity.OAuth.OAuthProvider,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(User), nameof(User.UnlinkOAuthAccount), MutationScenario.Valid, typeof(OAuthProvider), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UnlinkOAuthAccount_ShouldSetUpdatedByToActor()
     {
@@ -149,7 +149,7 @@ public class UserActorSemanticsTests
         user.UpdatedBy.Should().Be(actor);
     }
 
-    [CoversMutation(typeof(User), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(User), nameof(User.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldSetDeletedByToActor()
     {
@@ -159,7 +159,7 @@ public class UserActorSemanticsTests
         user.DeletedBy.Should().Be(actor);
     }
 
-    [CoversMutation(typeof(User), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(User), nameof(User.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldSetRestoredByToActor()
     {

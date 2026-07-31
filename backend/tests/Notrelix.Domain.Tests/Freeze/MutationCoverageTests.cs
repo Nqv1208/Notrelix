@@ -103,7 +103,7 @@ public class MutationCoverageTests
                 sigs = new HashSet<string>();
                 coverageByAggregate[attr.AggregateType] = sigs;
             }
-            sigs.Add(attr.MethodSignature);
+            sigs.Add(attr.FormatSignature());
         }
 
         var violations = new List<string>();
@@ -131,54 +131,26 @@ public class MutationCoverageTests
             $"Missing: {string.Join("\n", violations)}");
     }
 
-    private static int CountTopLevelCommas(string s)
-    {
-        var count = 0;
-        var depth = 0;
-        foreach (var c in s)
-        {
-            if (c == '<') depth++;
-            else if (c == '>') depth--;
-            else if (c == ',' && depth == 0) count++;
-        }
-        return count;
-    }
-
     [Fact]
-    public void CoversMutation_Signatures_ShouldExistOnTargetType()
+    public void CoversMutation_Signatures_ShouldResolveToExactMethod()
     {
         var covered = GetCoveredMutations();
         var violations = new List<string>();
 
         foreach (var (testType, testMethod, attr) in covered)
         {
-            var signatureParts = attr.MethodSignature.Split('(');
-            var methodName = signatureParts[0];
-            var paramCount = 0;
-            if (signatureParts.Length > 1)
-            {
-                var paramsStr = signatureParts[1].TrimEnd(')');
-                paramCount = CountTopLevelCommas(paramsStr) + 1;
-                if (string.IsNullOrEmpty(paramsStr))
-                    paramCount = 0;
-            }
+            var resolvedMethod = attr.ResolveMethod();
 
-            var methods = attr.AggregateType
-                .GetMethods(BindingFlags.Public | BindingFlags.Instance)
-                .Where(m => !m.IsSpecialName && m.DeclaringType != typeof(object))
-                .Where(m => m.Name == methodName && m.GetParameters().Length == paramCount)
-                .ToList();
-
-            if (methods.Count == 0)
+            if (resolvedMethod is null)
             {
                 violations.Add(
                     $"{testType.Name}.{testMethod.Name} references non-existent " +
-                    $"{attr.AggregateType.Name}.{methodName} with {paramCount} parameters");
+                    $"{attr.AggregateType.Name}.{attr.FormatSignature()}");
             }
         }
 
         violations.Should().BeEmpty(
-            "[CoversMutation] signatures must reference methods that exist on the target type: " +
+            "[CoversMutation] must resolve to an exact method overload on the target type: " +
             string.Join("\n", violations));
     }
 

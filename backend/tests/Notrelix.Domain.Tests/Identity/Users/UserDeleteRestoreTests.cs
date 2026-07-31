@@ -8,7 +8,7 @@ public class UserDeleteRestoreTests
     private readonly Guid _actorId = Guid.NewGuid();
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(User), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(User), nameof(User.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldIncrementVersion_AndRaiseEvent()
     {
@@ -27,7 +27,7 @@ public class UserDeleteRestoreTests
         evt.OccurredAt.Should().Be(_now);
     }
 
-    [CoversMutation(typeof(User), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(User), nameof(User.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldIncrementVersion_AndRaiseEvent()
     {
@@ -47,7 +47,7 @@ public class UserDeleteRestoreTests
         evt.RestoredBy.Should().Be(_actorId);
     }
 
-    [CoversMutation(typeof(User), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(User), nameof(User.Delete), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldNotIncrementOrRaiseEvent_WhenAlreadyDeleted()
     {
@@ -62,7 +62,7 @@ public class UserDeleteRestoreTests
         user.DomainEvents.Should().NotContain(e => e is UserDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(User), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(User), nameof(User.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldNotIncrementOrRaiseEvent_WhenNotDeleted()
     {

@@ -34,7 +34,7 @@ public class UserSessionTests
         session.CreatedAt.Should().Be(now);
     }
 
-    [CoversMutation(typeof(UserSession), "Revoke(System.DateTimeOffset,System.String)", MutationScenario.Event)]
+    [CoversMutation(typeof(UserSession), nameof(UserSession.Revoke), MutationScenario.Event, typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Revoke_ShouldChangeStatusAndRaiseEvent()
     {
@@ -52,7 +52,7 @@ public class UserSessionTests
         evt.UserId.Should().Be(session.UserId);
     }
 
-    [CoversMutation(typeof(UserSession), "Revoke(System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(UserSession), nameof(UserSession.Revoke), MutationScenario.NoOp, typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Revoke_AlreadyRevoked_ShouldNotRaiseEventAgain()
     {
@@ -66,7 +66,7 @@ public class UserSessionTests
         session.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(UserSession), "Revoke(System.DateTimeOffset,System.String)", MutationScenario.Valid)]
+    [CoversMutation(typeof(UserSession), nameof(UserSession.Revoke), MutationScenario.Valid, typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Revoke_ShouldSetUpdatedAt()
     {
@@ -88,7 +88,7 @@ public class UserSessionTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*after creation time*");
     }
 
-    [CoversMutation(typeof(UserSession), "Expire(System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(UserSession), nameof(UserSession.Expire), MutationScenario.Event, typeof(DateTimeOffset))]
     [Fact]
     public void Expire_ShouldChangeStatusAndRaiseEvent()
     {
@@ -107,7 +107,7 @@ public class UserSessionTests
         evt.ExpiredAt.Should().Be(expireTime);
     }
 
-    [CoversMutation(typeof(UserSession), "Expire(System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(UserSession), nameof(UserSession.Expire), MutationScenario.NoOp, typeof(DateTimeOffset))]
     [Fact]
     public void Expire_AlreadyExpired_ShouldBeIdempotent()
     {
@@ -121,7 +121,7 @@ public class UserSessionTests
         session.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(UserSession), "Expire(System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(UserSession), nameof(UserSession.Expire), MutationScenario.Invalid, typeof(DateTimeOffset))]
     [Fact]
     public void Revoke_OnExpiredSession_ShouldThrow()
     {
@@ -134,7 +134,7 @@ public class UserSessionTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*expired session*");
     }
 
-    [CoversMutation(typeof(UserSession), "Expire(System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(UserSession), nameof(UserSession.Expire), MutationScenario.Invalid, typeof(DateTimeOffset))]
     [Fact]
     public void Expire_OnRevokedSession_ShouldThrow()
     {
@@ -147,7 +147,7 @@ public class UserSessionTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*revoked session*");
     }
 
-    [CoversMutation(typeof(UserSession), "UpdateRefreshToken(Notrelix.Domain.Identity.Sessions.RefreshTokenHash,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(UserSession), nameof(UserSession.UpdateRefreshToken), MutationScenario.Event, typeof(RefreshTokenHash), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateRefreshToken_ShouldRotateTokenAndRaiseEvent()
     {

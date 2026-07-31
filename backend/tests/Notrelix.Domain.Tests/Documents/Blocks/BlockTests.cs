@@ -57,7 +57,7 @@ public class BlockTests
         evt.PageId.Should().Be(pageId);
     }
 
-    [CoversMutation(typeof(Block), "UpdateProperties(Notrelix.Domain.Documents.Blocks.BlockProperties,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Block), nameof(Block.UpdateProperties), MutationScenario.Valid, typeof(BlockProperties), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Create_ShouldApplyDefaultProperties_WhenNoneProvided()
     {
@@ -66,8 +66,8 @@ public class BlockTests
         block.Properties.Should().NotBeNull();
     }
 
-    [CoversMutation(typeof(Block), "UpdateProperties(Notrelix.Domain.Documents.Blocks.BlockProperties,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
-    [CoversMutation(typeof(Block), "UpdateContent(Notrelix.Domain.Documents.Blocks.BlockContent,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Block), nameof(Block.UpdateProperties), MutationScenario.Event, typeof(BlockProperties), typeof(Guid), typeof(DateTimeOffset))]
+    [CoversMutation(typeof(Block), nameof(Block.UpdateContent), MutationScenario.Event, typeof(BlockContent), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateContent_ShouldUpdate_AndRaiseEvent()
     {
@@ -85,8 +85,8 @@ public class BlockTests
         block.DomainEvents.Should().ContainSingle(e => e is BlockContentUpdatedDomainEvent);
     }
 
-    [CoversMutation(typeof(Block), "UpdateProperties(Notrelix.Domain.Documents.Blocks.BlockProperties,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
-    [CoversMutation(typeof(Block), "UpdateContent(Notrelix.Domain.Documents.Blocks.BlockContent,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Block), nameof(Block.UpdateProperties), MutationScenario.NoOp, typeof(BlockProperties), typeof(Guid), typeof(DateTimeOffset))]
+    [CoversMutation(typeof(Block), nameof(Block.UpdateContent), MutationScenario.NoOp, typeof(BlockContent), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateContent_WhenSameContent_ShouldBeNoOp()
     {
@@ -99,9 +99,9 @@ public class BlockTests
         block.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Block), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
-    [CoversMutation(typeof(Block), "UpdateProperties(Notrelix.Domain.Documents.Blocks.BlockProperties,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
-    [CoversMutation(typeof(Block), "UpdateContent(Notrelix.Domain.Documents.Blocks.BlockContent,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Block), nameof(Block.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
+    [CoversMutation(typeof(Block), nameof(Block.UpdateProperties), MutationScenario.Invalid, typeof(BlockProperties), typeof(Guid), typeof(DateTimeOffset))]
+    [CoversMutation(typeof(Block), nameof(Block.UpdateContent), MutationScenario.Invalid, typeof(BlockContent), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateContent_WhenDeleted_ShouldThrow()
     {
@@ -112,8 +112,8 @@ public class BlockTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
-    [CoversMutation(typeof(Block), "UpdateProperties(Notrelix.Domain.Documents.Blocks.BlockProperties,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
-    [CoversMutation(typeof(Block), "UpdateContent(Notrelix.Domain.Documents.Blocks.BlockContent,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Block), nameof(Block.UpdateProperties), MutationScenario.Event, typeof(BlockProperties), typeof(Guid), typeof(DateTimeOffset))]
+    [CoversMutation(typeof(Block), nameof(Block.UpdateContent), MutationScenario.Event, typeof(BlockContent), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateProperties_ShouldUpdate_AndRaiseEvent()
     {
@@ -128,8 +128,8 @@ public class BlockTests
         block.DomainEvents.Should().ContainSingle(e => e is BlockPropertiesUpdatedDomainEvent);
     }
 
-    [CoversMutation(typeof(Block), "UpdateProperties(Notrelix.Domain.Documents.Blocks.BlockProperties,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
-    [CoversMutation(typeof(Block), "UpdateContent(Notrelix.Domain.Documents.Blocks.BlockContent,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Block), nameof(Block.UpdateProperties), MutationScenario.NoOp, typeof(BlockProperties), typeof(Guid), typeof(DateTimeOffset))]
+    [CoversMutation(typeof(Block), nameof(Block.UpdateContent), MutationScenario.NoOp, typeof(BlockContent), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateProperties_WhenSame_ShouldBeNoOp()
     {
@@ -142,9 +142,9 @@ public class BlockTests
         block.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Block), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
-    [CoversMutation(typeof(Block), "UpdateProperties(Notrelix.Domain.Documents.Blocks.BlockProperties,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
-    [CoversMutation(typeof(Block), "UpdateContent(Notrelix.Domain.Documents.Blocks.BlockContent,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Block), nameof(Block.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
+    [CoversMutation(typeof(Block), nameof(Block.UpdateProperties), MutationScenario.Invalid, typeof(BlockProperties), typeof(Guid), typeof(DateTimeOffset))]
+    [CoversMutation(typeof(Block), nameof(Block.UpdateContent), MutationScenario.Invalid, typeof(BlockContent), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateProperties_WhenDeleted_ShouldThrow()
     {
@@ -184,7 +184,7 @@ public class BlockTests
         block.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Block), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Block), nameof(Block.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void MoveToRoot_WhenDeleted_ShouldThrow()
     {
@@ -195,7 +195,7 @@ public class BlockTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
-    [CoversMutation(typeof(Block), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Block), nameof(Block.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldSucceed_AndRaiseEvent()
     {
@@ -208,7 +208,7 @@ public class BlockTests
         block.DomainEvents.Should().ContainSingle(e => e is BlockDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(Block), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Block), nameof(Block.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
@@ -221,7 +221,7 @@ public class BlockTests
         block.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Block), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Block), nameof(Block.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldSucceed_AndRaiseEvent()
     {
@@ -235,8 +235,8 @@ public class BlockTests
         block.DomainEvents.Should().ContainSingle(e => e is BlockRestoredDomainEvent);
     }
 
-    [CoversMutation(typeof(Block), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
-    [CoversMutation(typeof(Block), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Block), nameof(Block.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
+    [CoversMutation(typeof(Block), nameof(Block.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {

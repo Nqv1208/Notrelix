@@ -23,7 +23,7 @@ public class WebhookSubscriptionTests
         sub.DomainEvents.Should().ContainSingle(e => e is WebhookSubscriptionCreatedDomainEvent);
     }
 
-    [CoversMutation(typeof(WebhookSubscription), "Enable(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(WebhookSubscription), nameof(WebhookSubscription.Enable), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void EnableDisable_ShouldModifyIsActive()
     {
@@ -37,7 +37,7 @@ public class WebhookSubscriptionTests
         sub.IsActive.Should().BeTrue();
     }
 
-    [CoversMutation(typeof(WebhookSubscription), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(WebhookSubscription), nameof(WebhookSubscription.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldDisableSubscription()
     {
@@ -50,7 +50,7 @@ public class WebhookSubscriptionTests
         sub.IsActive.Should().BeFalse();
     }
 
-    [CoversMutation(typeof(WebhookSubscription), "RotateSecret(Notrelix.Domain.Integrations.Webhooks.WebhookSecretHash,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(WebhookSubscription), nameof(WebhookSubscription.RotateSecret), MutationScenario.Valid, typeof(WebhookSecretHash), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_ShouldUpdateHash()
     {
@@ -62,7 +62,7 @@ public class WebhookSubscriptionTests
         sub.SecretHash.Should().Be(newHash);
     }
 
-    [CoversMutation(typeof(WebhookSubscription), "RotateSecret(Notrelix.Domain.Integrations.Webhooks.WebhookSecretHash,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(WebhookSubscription), nameof(WebhookSubscription.RotateSecret), MutationScenario.Invalid, typeof(WebhookSecretHash), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_WhenDeleted_ShouldThrow()
     {
@@ -73,7 +73,7 @@ public class WebhookSubscriptionTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
-    [CoversMutation(typeof(WebhookSubscription), "RotateSecret(Notrelix.Domain.Integrations.Webhooks.WebhookSecretHash,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(WebhookSubscription), nameof(WebhookSubscription.RotateSecret), MutationScenario.Invalid, typeof(WebhookSecretHash), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_WithNullHash_ShouldThrow()
     {
@@ -82,7 +82,7 @@ public class WebhookSubscriptionTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(WebhookSubscription), "Enable(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(WebhookSubscription), nameof(WebhookSubscription.Enable), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Enable_WhenDeleted_ShouldThrow()
     {
@@ -93,7 +93,7 @@ public class WebhookSubscriptionTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
-    [CoversMutation(typeof(WebhookSubscription), "Disable(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(WebhookSubscription), nameof(WebhookSubscription.Disable), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Disable_WhenDeleted_ShouldThrow()
     {

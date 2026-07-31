@@ -22,8 +22,8 @@ public class WebhookDeliveryTests
         delivery.DomainEvents.Should().ContainSingle(e => e is WebhookDeliveryRecordedDomainEvent);
     }
 
-    [CoversMutation(typeof(WebhookDelivery), "MarkFailed(System.Int32?,System.String,System.DateTimeOffset,System.String)", MutationScenario.Event)]
-    [CoversMutation(typeof(WebhookDelivery), "MarkDelivered(System.Int32,System.String,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(WebhookDelivery), nameof(WebhookDelivery.MarkFailed), MutationScenario.Event, typeof(int?), typeof(string), typeof(DateTimeOffset), typeof(string))]
+    [CoversMutation(typeof(WebhookDelivery), nameof(WebhookDelivery.MarkDelivered), MutationScenario.Event, typeof(int), typeof(string), typeof(DateTimeOffset))]
     [Fact]
     public void MarkDelivered_ShouldTransition_AndRaiseEvent()
     {
@@ -38,8 +38,8 @@ public class WebhookDeliveryTests
         delivery.DomainEvents.Should().ContainSingle(e => e is WebhookDeliveryRecordedDomainEvent);
     }
 
-    [CoversMutation(typeof(WebhookDelivery), "MarkFailed(System.Int32?,System.String,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
-    [CoversMutation(typeof(WebhookDelivery), "MarkDelivered(System.Int32,System.String,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(WebhookDelivery), nameof(WebhookDelivery.MarkFailed), MutationScenario.NoOp, typeof(int?), typeof(string), typeof(DateTimeOffset), typeof(string))]
+    [CoversMutation(typeof(WebhookDelivery), nameof(WebhookDelivery.MarkDelivered), MutationScenario.NoOp, typeof(int), typeof(string), typeof(DateTimeOffset))]
     [Fact]
     public void MarkDelivered_WhenAlreadySent_ShouldThrow()
     {
@@ -50,8 +50,8 @@ public class WebhookDeliveryTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*status*");
     }
 
-    [CoversMutation(typeof(WebhookDelivery), "MarkFailed(System.Int32?,System.String,System.DateTimeOffset,System.String)", MutationScenario.Event)]
-    [CoversMutation(typeof(WebhookDelivery), "MarkDelivered(System.Int32,System.String,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(WebhookDelivery), nameof(WebhookDelivery.MarkFailed), MutationScenario.Event, typeof(int?), typeof(string), typeof(DateTimeOffset), typeof(string))]
+    [CoversMutation(typeof(WebhookDelivery), nameof(WebhookDelivery.MarkDelivered), MutationScenario.Event, typeof(int), typeof(string), typeof(DateTimeOffset))]
     [Fact]
     public void MarkFailed_ShouldTransition_AndRaiseEvent()
     {
@@ -65,8 +65,8 @@ public class WebhookDeliveryTests
         delivery.DomainEvents.Should().ContainSingle(e => e is WebhookDeliveryRecordedDomainEvent);
     }
 
-    [CoversMutation(typeof(WebhookDelivery), "MarkFailed(System.Int32?,System.String,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
-    [CoversMutation(typeof(WebhookDelivery), "MarkDelivered(System.Int32,System.String,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(WebhookDelivery), nameof(WebhookDelivery.MarkFailed), MutationScenario.NoOp, typeof(int?), typeof(string), typeof(DateTimeOffset), typeof(string))]
+    [CoversMutation(typeof(WebhookDelivery), nameof(WebhookDelivery.MarkDelivered), MutationScenario.NoOp, typeof(int), typeof(string), typeof(DateTimeOffset))]
     [Fact]
     public void MarkFailed_WhenAlreadySent_ShouldThrow()
     {
@@ -77,7 +77,7 @@ public class WebhookDeliveryTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*status*");
     }
 
-    [CoversMutation(typeof(WebhookDelivery), "ScheduleRetry(System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(WebhookDelivery), nameof(WebhookDelivery.ScheduleRetry), MutationScenario.Version, typeof(DateTimeOffset))]
     [Fact]
     public void ScheduleRetry_ShouldTransition_AndIncrementCount()
     {
@@ -91,8 +91,8 @@ public class WebhookDeliveryTests
         delivery.NextRetryAt.Should().NotBeNull();
     }
 
-    [CoversMutation(typeof(WebhookDelivery), "ScheduleRetry(System.DateTimeOffset)", MutationScenario.Invalid)]
-    [CoversMutation(typeof(WebhookDelivery), "MarkFailed(System.Int32?,System.String,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(WebhookDelivery), nameof(WebhookDelivery.ScheduleRetry), MutationScenario.Invalid, typeof(DateTimeOffset))]
+    [CoversMutation(typeof(WebhookDelivery), nameof(WebhookDelivery.MarkFailed), MutationScenario.Invalid, typeof(int?), typeof(string), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void ScheduleRetry_WhenNotFailed_ShouldThrow()
     {
@@ -102,7 +102,7 @@ public class WebhookDeliveryTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*failed*");
     }
 
-    [CoversMutation(typeof(WebhookDelivery), "ScheduleRetry(System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(WebhookDelivery), nameof(WebhookDelivery.ScheduleRetry), MutationScenario.Invalid, typeof(DateTimeOffset))]
     [Fact]
     public void ScheduleRetry_WhenMaxRetriesReached_ShouldThrow()
     {
@@ -116,9 +116,9 @@ public class WebhookDeliveryTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*retry count*");
     }
 
-    [CoversMutation(typeof(WebhookDelivery), "ScheduleRetry(System.DateTimeOffset)", MutationScenario.Valid)]
-    [CoversMutation(typeof(WebhookDelivery), "MarkFailed(System.Int32?,System.String,System.DateTimeOffset,System.String)", MutationScenario.Valid)]
-    [CoversMutation(typeof(WebhookDelivery), "MarkDelivered(System.Int32,System.String,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(WebhookDelivery), nameof(WebhookDelivery.ScheduleRetry), MutationScenario.Valid, typeof(DateTimeOffset))]
+    [CoversMutation(typeof(WebhookDelivery), nameof(WebhookDelivery.MarkFailed), MutationScenario.Valid, typeof(int?), typeof(string), typeof(DateTimeOffset), typeof(string))]
+    [CoversMutation(typeof(WebhookDelivery), nameof(WebhookDelivery.MarkDelivered), MutationScenario.Valid, typeof(int), typeof(string), typeof(DateTimeOffset))]
     [Fact]
     public void FullLifecycle_MarkDeliveredAfterRetry_ShouldSucceed()
     {

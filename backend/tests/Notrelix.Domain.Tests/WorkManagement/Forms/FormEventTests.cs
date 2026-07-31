@@ -27,7 +27,7 @@ public class FormEventTests
         evt.Name.Should().Be("Updated Form");
     }
 
-    [CoversMutation(typeof(Form), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Form), nameof(Form.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Form_Delete_ShouldRaiseEvent()
     {
@@ -42,7 +42,7 @@ public class FormEventTests
         form.DomainEvents.Should().ContainSingle(e => e is FormDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(Form), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Form), nameof(Form.Delete), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Form_Delete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
@@ -57,7 +57,7 @@ public class FormEventTests
         form.DomainEvents.Should().NotContain(e => e is FormDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(Form), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Form), nameof(Form.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Form_Restore_ShouldRaiseEvent()
     {
@@ -73,7 +73,7 @@ public class FormEventTests
         form.DomainEvents.Should().ContainSingle(e => e is FormRestoredDomainEvent);
     }
 
-    [CoversMutation(typeof(Form), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Form), nameof(Form.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Form_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {

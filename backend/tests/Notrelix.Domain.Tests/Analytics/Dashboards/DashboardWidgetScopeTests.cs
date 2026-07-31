@@ -8,7 +8,7 @@ namespace Notrelix.Domain.Tests.Analytics.Dashboards;
 [CoversAggregate(typeof(Dashboard))]
 public class DashboardWidgetScopeTests
 {
-    [CoversMutation(typeof(Dashboard), "AddWidget(System.String,Notrelix.Domain.Analytics.Dashboards.DashboardWidgetType,Notrelix.Domain.SharedKernel.JsonValue,Notrelix.Domain.Analytics.Widgets.WidgetPosition,System.Guid,System.DateTimeOffset)", MutationScenario.Scope)]
+    [CoversMutation(typeof(Dashboard), nameof(Dashboard.AddWidget), MutationScenario.Scope, typeof(string), typeof(DashboardWidgetType), typeof(JsonValue), typeof(WidgetPosition), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void AddWidget_ShouldSetScopeMatchingDashboard()
     {
@@ -40,7 +40,7 @@ public class DashboardWidgetScopeTests
         });
     }
 
-    [CoversMutation(typeof(Dashboard), "AddWidget(System.String,Notrelix.Domain.Analytics.Dashboards.DashboardWidgetType,Notrelix.Domain.SharedKernel.JsonValue,Notrelix.Domain.Analytics.Widgets.WidgetPosition,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Dashboard), nameof(Dashboard.AddWidget), MutationScenario.Invalid, typeof(string), typeof(DashboardWidgetType), typeof(JsonValue), typeof(WidgetPosition), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void AddWidget_WithUnknownWidgetType_ShouldThrow()
     {
@@ -52,7 +52,7 @@ public class DashboardWidgetScopeTests
             .WithMessage("*Unknown widget type*");
     }
 
-    [CoversMutation(typeof(Dashboard), "AddWidget(System.String,Notrelix.Domain.Analytics.Dashboards.DashboardWidgetType,Notrelix.Domain.SharedKernel.JsonValue,Notrelix.Domain.Analytics.Widgets.WidgetPosition,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Dashboard), nameof(Dashboard.AddWidget), MutationScenario.Valid, typeof(string), typeof(DashboardWidgetType), typeof(JsonValue), typeof(WidgetPosition), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void AddWidget_WithUnknownWidgetType_ShouldNotMutateDashboard()
     {

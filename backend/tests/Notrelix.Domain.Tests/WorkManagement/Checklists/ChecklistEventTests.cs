@@ -10,7 +10,7 @@ public class ChecklistEventTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(Checklist), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Checklist), nameof(Checklist.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Checklist_Delete_ShouldRaiseEvent()
     {
@@ -25,7 +25,7 @@ public class ChecklistEventTests
         checklist.DomainEvents.Should().ContainSingle(e => e is ChecklistDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(Checklist), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Checklist), nameof(Checklist.Delete), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Checklist_Delete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
@@ -40,7 +40,7 @@ public class ChecklistEventTests
         checklist.DomainEvents.Should().NotContain(e => e is ChecklistDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(Checklist), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Checklist), nameof(Checklist.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Checklist_Restore_ShouldRaiseEvent()
     {
@@ -56,7 +56,7 @@ public class ChecklistEventTests
         checklist.DomainEvents.Should().ContainSingle(e => e is ChecklistRestoredDomainEvent);
     }
 
-    [CoversMutation(typeof(Checklist), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Checklist), nameof(Checklist.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Checklist_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {

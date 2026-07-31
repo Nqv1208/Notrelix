@@ -7,8 +7,8 @@ namespace Notrelix.Domain.Tests.Governance;
 [CoversAggregate(typeof(CustomRole))]
 public class CustomRoleTests
 {
-    [CoversMutation(typeof(CustomRole), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
-    [CoversMutation(typeof(CustomRole), "AssignToMember(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(CustomRole), nameof(CustomRole.Rename), MutationScenario.Event, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
+    [CoversMutation(typeof(CustomRole), nameof(CustomRole.AssignToMember), MutationScenario.Event, typeof(Guid), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Create_ShouldSucceed_AndRaiseEvent()
     {
@@ -23,8 +23,8 @@ public class CustomRoleTests
         role.DomainEvents.Should().ContainSingle(e => e is CustomRoleCreatedDomainEvent);
     }
 
-    [CoversMutation(typeof(CustomRole), "AddPermission(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
-    [CoversMutation(typeof(CustomRole), "RemovePermission(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(CustomRole), nameof(CustomRole.AddPermission), MutationScenario.Event, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
+    [CoversMutation(typeof(CustomRole), nameof(CustomRole.RemovePermission), MutationScenario.Event, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void AddPermission_ShouldAddToList_AndRaiseEvent()
     {
@@ -39,8 +39,8 @@ public class CustomRoleTests
         role.DomainEvents.Should().ContainSingle(e => e is CustomRoleUpdatedDomainEvent);
     }
 
-    [CoversMutation(typeof(CustomRole), "RevokeFromMember(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
-    [CoversMutation(typeof(CustomRole), "RemovePermission(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(CustomRole), nameof(CustomRole.RevokeFromMember), MutationScenario.Event, typeof(Guid), typeof(Guid), typeof(DateTimeOffset))]
+    [CoversMutation(typeof(CustomRole), nameof(CustomRole.RemovePermission), MutationScenario.Event, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RemovePermission_ShouldRemoveFromList_AndRaiseEvent()
     {
@@ -55,7 +55,7 @@ public class CustomRoleTests
         role.DomainEvents.Should().ContainSingle(e => e is CustomRoleUpdatedDomainEvent);
     }
 
-    [CoversMutation(typeof(CustomRole), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(CustomRole), nameof(CustomRole.Archive), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_ShouldSetStatusAndRaiseEvent()
     {
@@ -68,7 +68,7 @@ public class CustomRoleTests
         role.DomainEvents.Should().ContainSingle(e => e is CustomRoleArchivedDomainEvent);
     }
 
-    [CoversMutation(typeof(CustomRole), "Activate(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(CustomRole), nameof(CustomRole.Activate), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Activate_ShouldRestoreStatusAndRaiseEvent()
     {

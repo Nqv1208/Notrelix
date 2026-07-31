@@ -36,7 +36,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "Consume(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), nameof(WorkspaceFeatureUsage.Consume), MutationScenario.Valid, typeof(decimal), typeof(Guid), typeof(DateTimeOffset))]
     public void Consume_WithinLimit_ShouldSucceed_AndRaiseEvent()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
@@ -49,8 +49,8 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "Consume(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "Consume(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), nameof(WorkspaceFeatureUsage.Consume), MutationScenario.Invalid, typeof(decimal), typeof(Guid), typeof(DateTimeOffset))]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), nameof(WorkspaceFeatureUsage.Consume), MutationScenario.Event, typeof(decimal), typeof(Guid), typeof(DateTimeOffset))]
     public void Consume_ExceedingHardLimit_WhenOverageDisallowed_ShouldThrow()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 80, 100, null, DateTimeOffset.UtcNow);
@@ -61,7 +61,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "Consume(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), nameof(WorkspaceFeatureUsage.Consume), MutationScenario.Valid, typeof(decimal), typeof(Guid), typeof(DateTimeOffset))]
     public void Consume_ExceedingHardLimit_WhenOverageAllowed_ShouldSucceed()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 80, 100, null, DateTimeOffset.UtcNow, overageAllowed: true);
@@ -72,7 +72,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "Consume(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), nameof(WorkspaceFeatureUsage.Consume), MutationScenario.Invalid, typeof(decimal), typeof(Guid), typeof(DateTimeOffset))]
     public void Consume_WithNonPositiveAmount_ShouldThrow()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 0, 100, null, DateTimeOffset.UtcNow);
@@ -81,7 +81,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "Release(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), nameof(WorkspaceFeatureUsage.Release), MutationScenario.Valid, typeof(decimal), typeof(Guid), typeof(DateTimeOffset))]
     public void Release_ShouldSucceed_AndRaiseEvent()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 50, 100, null, DateTimeOffset.UtcNow);
@@ -94,7 +94,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "Release(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), nameof(WorkspaceFeatureUsage.Release), MutationScenario.Invalid, typeof(decimal), typeof(Guid), typeof(DateTimeOffset))]
     public void Release_WithAmountExceedingCurrent_ShouldThrow()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 10, 100, null, DateTimeOffset.UtcNow);
@@ -103,7 +103,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "Release(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), nameof(WorkspaceFeatureUsage.Release), MutationScenario.Invalid, typeof(decimal), typeof(Guid), typeof(DateTimeOffset))]
     public void Release_WithNonPositiveAmount_ShouldThrow()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 50, 100, null, DateTimeOffset.UtcNow);
@@ -112,7 +112,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "Reset(System.DateTimeOffset,System.Guid)", MutationScenario.Valid)]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), nameof(WorkspaceFeatureUsage.Reset), MutationScenario.Valid, typeof(DateTimeOffset), typeof(Guid))]
     public void Reset_ShouldClearUsage_AndRaiseEvent()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 75, 100, null, DateTimeOffset.UtcNow);
@@ -155,7 +155,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "Reset(System.DateTimeOffset,System.Guid)", MutationScenario.Valid)]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), nameof(WorkspaceFeatureUsage.Reset), MutationScenario.Valid, typeof(DateTimeOffset), typeof(Guid))]
     public void Reset_ShouldClearUsage_AndSetLastResetAt()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 75, 100, null, DateTimeOffset.UtcNow);
@@ -167,7 +167,7 @@ public class WorkspaceFeatureUsageTests
     }
 
     [Fact]
-    [CoversMutation(typeof(WorkspaceFeatureUsage), "Consume(System.Decimal,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(WorkspaceFeatureUsage), nameof(WorkspaceFeatureUsage.Consume), MutationScenario.Valid, typeof(decimal), typeof(Guid), typeof(DateTimeOffset))]
     public void Consume_WhenUsageExceedsSoftLimit_ShouldNotThrow()
     {
         var usage = WorkspaceFeatureUsage.Create(Guid.NewGuid(), Guid.NewGuid(), SampleFeature, 70, 100, 80, DateTimeOffset.UtcNow, overageAllowed: true);

@@ -10,7 +10,7 @@ public class BoardIdempotencyTests
     private readonly Guid _actorId = Guid.NewGuid();
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(Board), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(Board), nameof(Board.Rename), MutationScenario.Version, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Rename_ShouldNotIncrementVersion_WhenTitleIsSame()
     {
@@ -23,7 +23,7 @@ public class BoardIdempotencyTests
         board.DomainEvents.Should().NotContain(e => e is BoardRenamedDomainEvent);
     }
 
-    [CoversMutation(typeof(Board), "UpdateDescription(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(Board), nameof(Board.UpdateDescription), MutationScenario.Version, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateDescription_ShouldNotIncrementVersion_WhenDescriptionIsSame()
     {
@@ -36,7 +36,7 @@ public class BoardIdempotencyTests
         board.Version.Should().Be(version);
     }
 
-    [CoversMutation(typeof(Board), "ChangeVisibility(Notrelix.Domain.WorkManagement.Boards.BoardVisibility,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(Board), nameof(Board.ChangeVisibility), MutationScenario.Version, typeof(BoardVisibility), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ChangeVisibility_ShouldNotIncrementVersion_WhenVisibilityIsSame()
     {
@@ -49,7 +49,7 @@ public class BoardIdempotencyTests
         board.Version.Should().Be(version);
     }
 
-    [CoversMutation(typeof(Board), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Board), nameof(Board.Archive), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_ShouldNotIncrementVersion_WhenAlreadyArchived()
     {
@@ -62,7 +62,7 @@ public class BoardIdempotencyTests
         board.Version.Should().Be(version);
     }
 
-    [CoversMutation(typeof(Board), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(Board), nameof(Board.Archive), MutationScenario.Version, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Unarchive_ShouldNotIncrementVersion_WhenNotArchived()
     {
@@ -75,7 +75,7 @@ public class BoardIdempotencyTests
         board.Version.Should().Be(version);
     }
 
-    [CoversMutation(typeof(Board), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Board), nameof(Board.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldIncrementVersion_AndRaiseEvent()
     {
@@ -89,7 +89,7 @@ public class BoardIdempotencyTests
         board.DomainEvents.Should().ContainSingle(e => e is BoardDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(Board), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Board), nameof(Board.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldIncrementVersion_AndRaiseEvent()
     {
@@ -105,7 +105,7 @@ public class BoardIdempotencyTests
         board.DomainEvents.Should().ContainSingle(e => e is BoardRestoredDomainEvent);
     }
 
-    [CoversMutation(typeof(Board), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Board), nameof(Board.Delete), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldNotIncrementOrRaiseEvent_WhenAlreadyDeleted()
     {
@@ -120,7 +120,7 @@ public class BoardIdempotencyTests
         board.DomainEvents.Should().NotContain(e => e is BoardDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(Board), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Board), nameof(Board.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldNotIncrementOrRaiseEvent_WhenNotDeleted()
     {
@@ -145,7 +145,7 @@ public class BoardIdempotencyTests
         board.DomainEvents.Single(e => e is BoardRenamedDomainEvent).Should().NotBeNull();
     }
 
-    [CoversMutation(typeof(Board), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Board), nameof(Board.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void DomainEvent_ShouldRaiseCorrectType_ForDelete()
     {
@@ -157,7 +157,7 @@ public class BoardIdempotencyTests
         board.DomainEvents.Single(e => e is BoardDeletedDomainEvent).Should().NotBeNull();
     }
 
-    [CoversMutation(typeof(Board), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Board), nameof(Board.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void DomainEvent_ShouldRaiseCorrectType_ForRestore()
     {

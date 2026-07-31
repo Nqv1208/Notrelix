@@ -13,7 +13,7 @@ public class BoardItemMoveToGroupTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(BoardItem), "MoveToGroup(Notrelix.Domain.WorkManagement.BoardGroups.BoardGroupRef,Notrelix.Domain.SharedKernel.Ordering.FractionalIndex,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveToGroup), MutationScenario.Valid, typeof(BoardGroupRef), typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveToGroup_WithMatchingWorkspaceAndBoard_ShouldSucceed()
     {
@@ -33,7 +33,7 @@ public class BoardItemMoveToGroupTests
         item.Version.Should().Be(2);
     }
 
-    [CoversMutation(typeof(BoardItem), "MoveToGroup(Notrelix.Domain.WorkManagement.BoardGroups.BoardGroupRef,Notrelix.Domain.SharedKernel.Ordering.FractionalIndex,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveToGroup), MutationScenario.Invalid, typeof(BoardGroupRef), typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveToGroup_WithMismatchedWorkspace_ShouldThrow()
     {
@@ -44,7 +44,7 @@ public class BoardItemMoveToGroupTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(BoardItem), "MoveToGroup(Notrelix.Domain.WorkManagement.BoardGroups.BoardGroupRef,Notrelix.Domain.SharedKernel.Ordering.FractionalIndex,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveToGroup), MutationScenario.Invalid, typeof(BoardGroupRef), typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveToGroup_WithMismatchedBoard_ShouldThrow()
     {
@@ -55,7 +55,7 @@ public class BoardItemMoveToGroupTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(BoardItem), "MoveToGroup(Notrelix.Domain.WorkManagement.BoardGroups.BoardGroupRef,Notrelix.Domain.SharedKernel.Ordering.FractionalIndex,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveToGroup), MutationScenario.Version, typeof(BoardGroupRef), typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveToGroup_WithSameGroupAndPosition_ShouldNotIncrementVersion()
     {

@@ -11,7 +11,7 @@ public class IntegrationScopeCanonicalizationTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(IntegrationConnection), "AddScope(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Scope)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.AddScope), MutationScenario.Scope, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void AddScope_ShouldTrim()
     {
@@ -20,7 +20,7 @@ public class IntegrationScopeCanonicalizationTests
         c.Scopes.Should().ContainSingle(s => s.Scope == "read");
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "AddScope(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.AddScope), MutationScenario.Invalid, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void AddScope_WithEmpty_ShouldThrow()
     {
@@ -29,7 +29,7 @@ public class IntegrationScopeCanonicalizationTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "AddScope(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.AddScope), MutationScenario.Invalid, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void AddScope_WithWhitespace_ShouldThrow()
     {
@@ -38,7 +38,7 @@ public class IntegrationScopeCanonicalizationTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "AddScope(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Scope)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.AddScope), MutationScenario.Scope, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void AddScope_CaseSensitive_ShouldTreatDifferentAsNonDuplicate()
     {
@@ -48,7 +48,7 @@ public class IntegrationScopeCanonicalizationTests
         c.Scopes.Should().HaveCount(2);
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "AddScope(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.AddScope), MutationScenario.NoOp, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void AddScope_ExactSame_ShouldBeNoOp()
     {

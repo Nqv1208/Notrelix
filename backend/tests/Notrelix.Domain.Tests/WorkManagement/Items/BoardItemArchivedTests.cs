@@ -23,7 +23,7 @@ public class BoardItemArchivedTests
         return item;
     }
 
-    [CoversMutation(typeof(BoardItem), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Rename), MutationScenario.Invalid, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ArchivedItem_Rename_ShouldThrow()
     {
@@ -33,7 +33,7 @@ public class BoardItemArchivedTests
             .WithMessage("*archived*");
     }
 
-    [CoversMutation(typeof(BoardItem), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Archive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ArchivedItem_MoveToGroup_ShouldThrow()
     {
@@ -44,7 +44,7 @@ public class BoardItemArchivedTests
             .WithMessage("*archived*");
     }
 
-    [CoversMutation(typeof(BoardItem), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Archive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ArchivedItem_UpdateFieldValue_ShouldThrow()
     {
@@ -56,7 +56,7 @@ public class BoardItemArchivedTests
             .WithMessage("*archived*");
     }
 
-    [CoversMutation(typeof(BoardItem), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Archive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ArchivedItem_SetTimeline_ShouldThrow()
     {
@@ -66,7 +66,7 @@ public class BoardItemArchivedTests
             .WithMessage("*archived*");
     }
 
-    [CoversMutation(typeof(BoardItem), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Archive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ArchivedItem_Complete_ShouldThrow()
     {
@@ -76,7 +76,7 @@ public class BoardItemArchivedTests
             .WithMessage("*archived*");
     }
 
-    [CoversMutation(typeof(BoardItem), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Archive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ArchivedItem_MoveUnder_ShouldThrow()
     {

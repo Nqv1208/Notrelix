@@ -51,7 +51,7 @@ public class IntegrationConnectionTests
         connection.DomainEvents.Should().Contain(e => e is IntegrationConnectionRevokedDomainEvent);
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "Reconnect(System.String,System.DateTimeOffset?,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.Reconnect), MutationScenario.Valid, typeof(string), typeof(DateTimeOffset?), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Reconnect_ShouldSetActiveStatus_AndValidateExpiration()
     {
@@ -68,7 +68,7 @@ public class IntegrationConnectionTests
         act.Should().Throw<DomainException>().WithMessage("Expiration time must be in the future.");
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "Reconnect(System.String,System.DateTimeOffset?,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.Reconnect), MutationScenario.NoOp, typeof(string), typeof(DateTimeOffset?), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Reconnect_WhenAlreadyActiveWithSameValues_ShouldBeNoOp()
     {
@@ -83,7 +83,7 @@ public class IntegrationConnectionTests
         connection.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "Reconnect(System.String,System.DateTimeOffset?,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.Reconnect), MutationScenario.Valid, typeof(string), typeof(DateTimeOffset?), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Reconnect_ShouldNormalizeProviderAccountId()
     {
@@ -94,7 +94,7 @@ public class IntegrationConnectionTests
         connection.ProviderAccountId.Should().Be("provider-acc-1");
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "Reconnect(System.String,System.DateTimeOffset?,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.Reconnect), MutationScenario.Valid, typeof(string), typeof(DateTimeOffset?), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Reconnect_ShouldClearErrorDetail()
     {
@@ -106,7 +106,7 @@ public class IntegrationConnectionTests
         connection.ErrorDetail.Should().BeNull();
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "MarkExpired(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.MarkExpired), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MarkExpired_ShouldSetExpiredStatus()
     {
@@ -116,8 +116,8 @@ public class IntegrationConnectionTests
         connection.Status.Should().Be(IntegrationConnectionStatus.Expired);
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "MarkError(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
-    [CoversMutation(typeof(IntegrationConnection), "MarkExpired(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.MarkError), MutationScenario.Event, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.MarkExpired), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MarkError_ShouldSetErrorStatus_AndRaiseEvent()
     {
@@ -131,8 +131,8 @@ public class IntegrationConnectionTests
         connection.DomainEvents.Should().ContainSingle(e => e is IntegrationConnectionErrorRecordedDomainEvent);
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "MarkError(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
-    [CoversMutation(typeof(IntegrationConnection), "MarkExpired(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.MarkError), MutationScenario.NoOp, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.MarkExpired), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MarkError_WhenSameErrorAlreadySet_ShouldBeNoOp()
     {
@@ -147,8 +147,8 @@ public class IntegrationConnectionTests
         connection.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "MarkError(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
-    [CoversMutation(typeof(IntegrationConnection), "MarkExpired(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.MarkError), MutationScenario.Valid, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.MarkExpired), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MarkError_ShouldTrimErrorDetail()
     {
@@ -159,7 +159,7 @@ public class IntegrationConnectionTests
         connection.ErrorDetail.Should().Be("Connection failed");
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.RotateSecret), MutationScenario.Event, typeof(string), typeof(SecretRef), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_ShouldUpdateCurrentSecret_AndRaiseEvent()
     {
@@ -180,7 +180,7 @@ public class IntegrationConnectionTests
         connection.DomainEvents.Should().Contain(e => e is IntegrationSecretRotatedDomainEvent);
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.RotateSecret), MutationScenario.NoOp, typeof(string), typeof(SecretRef), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_WhenSameVersionAndSecret_ShouldBeNoOp()
     {
@@ -197,7 +197,7 @@ public class IntegrationConnectionTests
         connection.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "RemoveScope(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Scope)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.RemoveScope), MutationScenario.Scope, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void AddAndRemoveScope_ShouldManageScopes_AndRaiseEvents()
     {

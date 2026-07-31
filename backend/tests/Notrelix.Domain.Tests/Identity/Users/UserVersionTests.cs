@@ -11,7 +11,7 @@ public class UserVersionTests
     private static readonly OAuthProfileSnapshot TestSnapshot =
         OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, JsonValue.EmptyObject());
 
-    [CoversMutation(typeof(User), "UpdateProfile(System.String,System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(User), nameof(User.UpdateProfile), MutationScenario.Version, typeof(string), typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateProfile_ShouldIncrementVersion_AndEmitEvent()
     {
@@ -24,7 +24,7 @@ public class UserVersionTests
         user.DomainEvents.Should().Contain(e => e is UserProfileUpdatedDomainEvent);
     }
 
-    [CoversMutation(typeof(User), "UpdateEmail(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(User), nameof(User.UpdateEmail), MutationScenario.Version, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateEmail_ShouldIncrementVersion()
     {
@@ -37,7 +37,7 @@ public class UserVersionTests
         user.DomainEvents.Should().Contain(e => e is UserEmailChangedDomainEvent);
     }
 
-    [CoversMutation(typeof(User), "UpdatePassword(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(User), nameof(User.UpdatePassword), MutationScenario.Version, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdatePassword_ShouldIncrementVersion()
     {
@@ -50,7 +50,7 @@ public class UserVersionTests
         user.DomainEvents.Should().Contain(e => e is UserPasswordChangedDomainEvent);
     }
 
-    [CoversMutation(typeof(User), "RecordLogin(System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(User), nameof(User.RecordLogin), MutationScenario.Version, typeof(DateTimeOffset))]
     [Fact]
     public void RecordLogin_ShouldIncrementVersion_AndSetAudit()
     {
@@ -64,7 +64,7 @@ public class UserVersionTests
         user.DomainEvents.Should().Contain(e => e is UserLoggedInDomainEvent);
     }
 
-    [CoversMutation(typeof(User), "Activate(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Version)]
+    [CoversMutation(typeof(User), nameof(User.Activate), MutationScenario.Version, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Activate_ShouldIncrementVersion()
     {
@@ -78,7 +78,7 @@ public class UserVersionTests
         user.DomainEvents.Should().Contain(e => e is UserActivatedDomainEvent);
     }
 
-    [CoversMutation(typeof(User), "Deactivate(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Version)]
+    [CoversMutation(typeof(User), nameof(User.Deactivate), MutationScenario.Version, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Deactivate_ShouldIncrementVersion()
     {
@@ -91,7 +91,7 @@ public class UserVersionTests
         user.DomainEvents.Should().Contain(e => e is UserDeactivatedDomainEvent);
     }
 
-    [CoversMutation(typeof(User), "Suspend(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Version)]
+    [CoversMutation(typeof(User), nameof(User.Suspend), MutationScenario.Version, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Suspend_ShouldIncrementVersion()
     {
@@ -104,7 +104,7 @@ public class UserVersionTests
         user.DomainEvents.Should().Contain(e => e is UserSuspendedDomainEvent);
     }
 
-    [CoversMutation(typeof(User), "LinkOAuthAccount(Notrelix.Domain.Identity.OAuth.OAuthProvider,System.String,Notrelix.Domain.Identity.OAuth.OAuthProfileSnapshot,Notrelix.Domain.Identity.OAuth.OAuthToken,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(User), nameof(User.LinkOAuthAccount), MutationScenario.Version, typeof(OAuthProvider), typeof(string), typeof(OAuthProfileSnapshot), typeof(OAuthToken), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void LinkOAuthAccount_ShouldIncrementVersion()
     {
@@ -117,7 +117,7 @@ public class UserVersionTests
         user.DomainEvents.Should().Contain(e => e is OAuthAccountLinkedDomainEvent);
     }
 
-    [CoversMutation(typeof(User), "UnlinkOAuthAccount(Notrelix.Domain.Identity.OAuth.OAuthProvider,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(User), nameof(User.UnlinkOAuthAccount), MutationScenario.Version, typeof(OAuthProvider), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UnlinkOAuthAccount_ShouldIncrementVersion()
     {
@@ -132,7 +132,7 @@ public class UserVersionTests
         user.DomainEvents.Should().Contain(e => e is OAuthAccountUnlinkedDomainEvent);
     }
 
-    [CoversMutation(typeof(User), "RotateOAuthToken(Notrelix.Domain.Identity.OAuth.OAuthProvider,Notrelix.Domain.Identity.OAuth.OAuthToken,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(User), nameof(User.RotateOAuthToken), MutationScenario.Version, typeof(OAuthProvider), typeof(OAuthToken), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateOAuthToken_ShouldIncrementVersion()
     {
@@ -149,7 +149,7 @@ public class UserVersionTests
         user.DomainEvents.Should().Contain(e => e is OAuthTokenReferenceRotatedDomainEvent);
     }
 
-    [CoversMutation(typeof(User), "Activate(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(User), nameof(User.Activate), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Activate_WhenAlreadyActive_ShouldNotIncrementVersion()
     {

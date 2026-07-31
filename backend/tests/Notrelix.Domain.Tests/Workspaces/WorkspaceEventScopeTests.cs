@@ -20,7 +20,7 @@ public class WorkspaceEventScopeTests
         evt.WorkspaceId.Should().Be(workspace.Id);
     }
 
-    [CoversMutation(typeof(Workspace), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Rename), MutationScenario.Valid, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void WorkspaceRenamed_ShouldCarryCorrectAccountId()
     {
@@ -34,7 +34,7 @@ public class WorkspaceEventScopeTests
         evt.WorkspaceId.Should().Be(workspace.Id);
     }
 
-    [CoversMutation(typeof(Workspace), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Archive), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void WorkspaceArchived_ShouldCarryCorrectAccountId()
     {
@@ -48,7 +48,7 @@ public class WorkspaceEventScopeTests
         evt.WorkspaceId.Should().Be(workspace.Id);
     }
 
-    [CoversMutation(typeof(Workspace), "Unarchive(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Unarchive), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void WorkspaceUnarchived_ShouldCarryCorrectAccountId()
     {
@@ -63,7 +63,7 @@ public class WorkspaceEventScopeTests
         evt.WorkspaceId.Should().Be(workspace.Id);
     }
 
-    [CoversMutation(typeof(Workspace), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void WorkspaceDeleted_ShouldCarryCorrectAccountId()
     {
@@ -77,7 +77,7 @@ public class WorkspaceEventScopeTests
         evt.WorkspaceId.Should().Be(workspace.Id);
     }
 
-    [CoversMutation(typeof(Workspace), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void WorkspaceRestored_ShouldCarryCorrectAccountId()
     {

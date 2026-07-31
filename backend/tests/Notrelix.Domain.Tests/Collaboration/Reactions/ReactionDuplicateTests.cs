@@ -67,7 +67,7 @@ public class ReactionDuplicateTests
         reaction.DomainEvents.Should().ContainSingle(e => e is ReactionCreatedDomainEvent);
     }
 
-    [CoversMutation(typeof(Reaction), "Remove(System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Reaction), nameof(Reaction.Remove), MutationScenario.Event, typeof(DateTimeOffset))]
     [Fact]
     public void Remove_ShouldRaiseEvent()
     {
@@ -81,7 +81,7 @@ public class ReactionDuplicateTests
         reaction.DomainEvents.Should().ContainSingle(e => e is ReactionRemovedDomainEvent);
     }
 
-    [CoversMutation(typeof(Reaction), "Remove(System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Reaction), nameof(Reaction.Remove), MutationScenario.Invalid, typeof(DateTimeOffset))]
     [Fact]
     public void Remove_ShouldNotThrowOnMultipleCalls()
     {

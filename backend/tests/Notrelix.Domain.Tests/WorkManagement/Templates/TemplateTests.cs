@@ -22,7 +22,7 @@ public class TemplateTests
         template.Status.Should().Be(TemplateStatus.Published);
     }
 
-    [CoversMutation(typeof(BoardTemplate), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(BoardTemplate), nameof(BoardTemplate.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardTemplate_Restore_ShouldClearIsDeleted()
     {
@@ -36,7 +36,7 @@ public class TemplateTests
         template.Status.Should().Be(TemplateStatus.Draft);
     }
 
-    [CoversMutation(typeof(BoardTemplate), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardTemplate), nameof(BoardTemplate.Rename), MutationScenario.Invalid, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardTemplate_Rename_ShouldThrow_WhenDeleted()
     {
@@ -47,7 +47,7 @@ public class TemplateTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(BoardTemplate), "Draft(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardTemplate), nameof(BoardTemplate.Draft), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardTemplate_Draft_ShouldThrow_WhenDeleted()
     {
@@ -58,7 +58,7 @@ public class TemplateTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(BoardTemplate), "Publish(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardTemplate), nameof(BoardTemplate.Publish), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardTemplate_Publish_ShouldThrow_WhenDeleted()
     {
@@ -69,7 +69,7 @@ public class TemplateTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(BoardTemplate), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardTemplate), nameof(BoardTemplate.Archive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardTemplate_Archive_ShouldThrow_WhenDeleted()
     {
@@ -91,7 +91,7 @@ public class TemplateTests
         template.Name.Should().Be("Item Template");
     }
 
-    [CoversMutation(typeof(BoardTemplate), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(BoardTemplate), nameof(BoardTemplate.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ItemTemplate_Restore_ShouldClearIsDeleted()
     {
@@ -105,7 +105,7 @@ public class TemplateTests
         template.Status.Should().Be(TemplateStatus.Draft);
     }
 
-    [CoversMutation(typeof(BoardTemplate), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardTemplate), nameof(BoardTemplate.Rename), MutationScenario.Invalid, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ItemTemplate_Rename_ShouldThrow_WhenDeleted()
     {

@@ -10,7 +10,7 @@ public class BoardEventTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(Board), "UpdateDescription(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Board), nameof(Board.UpdateDescription), MutationScenario.Event, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Board_UpdateDescription_ShouldRaiseEvent()
     {
@@ -29,7 +29,7 @@ public class BoardEventTests
         evt.NewDescription.Should().Be("New desc");
     }
 
-    [CoversMutation(typeof(Board), "UpdateDescription(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Board), nameof(Board.UpdateDescription), MutationScenario.Event, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Board_UpdateDescription_WhenSameValue_ShouldNotRaiseEvent()
     {
@@ -43,7 +43,7 @@ public class BoardEventTests
         board.DomainEvents.Should().NotContain(e => e is BoardDescriptionUpdatedDomainEvent);
     }
 
-    [CoversMutation(typeof(Board), "UpdateBackground(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Board), nameof(Board.UpdateBackground), MutationScenario.Event, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Board_UpdateBackground_ShouldRaiseEvent()
     {
@@ -61,7 +61,7 @@ public class BoardEventTests
         evt.NewBackground.Should().Be("new-bg");
     }
 
-    [CoversMutation(typeof(Board), "SetDefaultGroup(System.Guid,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Board), nameof(Board.SetDefaultGroup), MutationScenario.Event, typeof(Guid), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Board_SetDefaultGroup_ShouldRaiseEvent()
     {

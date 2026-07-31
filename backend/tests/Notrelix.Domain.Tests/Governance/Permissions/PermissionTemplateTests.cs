@@ -64,7 +64,7 @@ public class PermissionTemplateTests
         template.Name.Should().Be("Template");
     }
 
-    [CoversMutation(typeof(PermissionTemplate), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(PermissionTemplate), nameof(PermissionTemplate.Archive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_SystemTemplate_ShouldThrow()
     {
@@ -78,7 +78,7 @@ public class PermissionTemplateTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*System*");
     }
 
-    [CoversMutation(typeof(PermissionTemplate), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(PermissionTemplate), nameof(PermissionTemplate.Archive), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_WorkspaceTemplate_ShouldSucceed()
     {

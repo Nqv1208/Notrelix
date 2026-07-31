@@ -33,7 +33,7 @@ public class ReactionTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(Reaction), "Remove(System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Reaction), nameof(Reaction.Remove), MutationScenario.Event, typeof(DateTimeOffset))]
     [Fact]
     public void Remove_ShouldRaiseEvent()
     {

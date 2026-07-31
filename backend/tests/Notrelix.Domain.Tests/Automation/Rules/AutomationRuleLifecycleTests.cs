@@ -42,7 +42,7 @@ public class AutomationRuleLifecycleTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
-    [CoversMutation(typeof(AutomationRule), "Enable(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Enable), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Enable_DeletedRule_ShouldNotChangeStatus()
     {
@@ -55,7 +55,7 @@ public class AutomationRuleLifecycleTests
         rule.Status.Should().Be(AutomationRuleStatus.Disabled);
     }
 
-    [CoversMutation(typeof(AutomationRule), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_thenEnable_ShouldSucceed()
     {
@@ -68,7 +68,7 @@ public class AutomationRuleLifecycleTests
         rule.Status.Should().Be(AutomationRuleStatus.Active);
     }
 
-    [CoversMutation(typeof(AutomationRule), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Enable_afterRestore_ShouldRaiseEnabledEvent()
     {
@@ -82,7 +82,7 @@ public class AutomationRuleLifecycleTests
         rule.DomainEvents.Should().ContainSingle(e => e is AutomationRuleEnabledDomainEvent);
     }
 
-    [CoversMutation(typeof(AutomationRule), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldSetStatusAndAudit()
     {
@@ -101,7 +101,7 @@ public class AutomationRuleLifecycleTests
         rule.Version.Should().Be(3);
     }
 
-    [CoversMutation(typeof(AutomationRule), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldSetStatusAndAudit()
     {
@@ -120,7 +120,7 @@ public class AutomationRuleLifecycleTests
         rule.Version.Should().Be(3);
     }
 
-    [CoversMutation(typeof(AutomationRule), "Enable(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Enable), MutationScenario.Version, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Enable_thenDisable_ShouldBeCorrectVersion()
     {

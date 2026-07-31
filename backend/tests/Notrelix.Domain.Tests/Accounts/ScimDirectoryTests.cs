@@ -48,7 +48,7 @@ public class ScimDirectoryTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(ScimDirectory), "Disable()", MutationScenario.Valid)]
+    [CoversMutation(typeof(ScimDirectory), nameof(ScimDirectory.Disable), MutationScenario.Valid)]
     [Fact]
     public void Disable_ShouldSetStatusToDisabled()
     {
@@ -59,7 +59,7 @@ public class ScimDirectoryTests
         directory.Status.Should().Be("Disabled");
     }
 
-    [CoversMutation(typeof(ScimDirectory), "Enable()", MutationScenario.Valid)]
+    [CoversMutation(typeof(ScimDirectory), nameof(ScimDirectory.Enable), MutationScenario.Valid)]
     [Fact]
     public void Enable_WhenDisabled_ShouldSetStatusToActive()
     {
@@ -71,7 +71,7 @@ public class ScimDirectoryTests
         directory.Status.Should().Be("Active");
     }
 
-    [CoversMutation(typeof(ScimDirectory), "Enable()", MutationScenario.NoOp)]
+    [CoversMutation(typeof(ScimDirectory), nameof(ScimDirectory.Enable), MutationScenario.NoOp)]
     [Fact]
     public void Enable_WhenAlreadyActive_ShouldBeIdempotent()
     {
@@ -82,7 +82,7 @@ public class ScimDirectoryTests
         directory.Status.Should().Be("Active");
     }
 
-    [CoversMutation(typeof(ScimDirectory), "MarkError()", MutationScenario.Valid)]
+    [CoversMutation(typeof(ScimDirectory), nameof(ScimDirectory.MarkError), MutationScenario.Valid)]
     [Fact]
     public void MarkError_ShouldSetStatusToError()
     {
@@ -93,7 +93,7 @@ public class ScimDirectoryTests
         directory.Status.Should().Be("Error");
     }
 
-    [CoversMutation(typeof(ScimDirectory), "RecordSync(System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(ScimDirectory), nameof(ScimDirectory.RecordSync), MutationScenario.Valid, typeof(DateTimeOffset))]
     [Fact]
     public void RecordSync_ShouldUpdateLastSyncAt()
     {
@@ -105,7 +105,7 @@ public class ScimDirectoryTests
         directory.LastSyncAt.Should().Be(syncedAt);
     }
 
-    [CoversMutation(typeof(ScimDirectory), "UpdateCredentials(System.String)", MutationScenario.Valid)]
+    [CoversMutation(typeof(ScimDirectory), nameof(ScimDirectory.UpdateCredentials), MutationScenario.Valid, typeof(string))]
     [Fact]
     public void UpdateCredentials_ShouldUpdateBearerTokenHash()
     {
@@ -116,7 +116,7 @@ public class ScimDirectoryTests
         directory.BearerTokenHash.Should().Be("hashed-token");
     }
 
-    [CoversMutation(typeof(ScimDirectory), "UpdateCredentials(System.String)", MutationScenario.Valid)]
+    [CoversMutation(typeof(ScimDirectory), nameof(ScimDirectory.UpdateCredentials), MutationScenario.Valid, typeof(string))]
     [Fact]
     public void UpdateCredentials_WithNull_ShouldClear()
     {

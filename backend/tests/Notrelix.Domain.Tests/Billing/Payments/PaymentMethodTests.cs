@@ -44,7 +44,7 @@ public class PaymentMethodTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(PaymentMethod), "SetAsDefault(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(PaymentMethod), nameof(PaymentMethod.SetAsDefault), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void SetAsDefault_ShouldSetFlag_WhenNotDefault()
     {
@@ -56,7 +56,7 @@ public class PaymentMethodTests
         method.IsDefault.Should().BeTrue();
     }
 
-    [CoversMutation(typeof(PaymentMethod), "UnsetAsDefault(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(PaymentMethod), nameof(PaymentMethod.UnsetAsDefault), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UnsetAsDefault_ShouldClearFlag_WhenDefault()
     {
@@ -68,7 +68,7 @@ public class PaymentMethodTests
         method.IsDefault.Should().BeFalse();
     }
 
-    [CoversMutation(typeof(PaymentMethod), "Deactivate(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(PaymentMethod), nameof(PaymentMethod.Deactivate), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Deactivate_ShouldExpireMethod()
     {
@@ -80,7 +80,7 @@ public class PaymentMethodTests
         method.Status.Should().Be(PaymentMethodStatus.Expired);
     }
 
-    [CoversMutation(typeof(PaymentMethod), "Reactivate(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(PaymentMethod), nameof(PaymentMethod.Reactivate), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Reactivate_ShouldRestoreMethod_WhenExpired()
     {

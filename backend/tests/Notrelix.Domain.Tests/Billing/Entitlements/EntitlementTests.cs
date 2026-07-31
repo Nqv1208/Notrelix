@@ -28,7 +28,7 @@ public class EntitlementTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Entitlement), "ChangeLimit(System.Int32,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Entitlement), nameof(Entitlement.ChangeLimit), MutationScenario.Valid, typeof(int), typeof(Guid), typeof(DateTimeOffset))]
     public void ChangeLimit_ShouldUpdate_AndRaiseEvent()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 100, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -41,7 +41,7 @@ public class EntitlementTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Entitlement), "ChangeLimit(System.Int32,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Entitlement), nameof(Entitlement.ChangeLimit), MutationScenario.NoOp, typeof(int), typeof(Guid), typeof(DateTimeOffset))]
     public void ChangeLimit_WhenSameLimit_ShouldBeNoOp()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 100, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -53,7 +53,7 @@ public class EntitlementTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Entitlement), "ChangeLimit(System.Int32,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Entitlement), nameof(Entitlement.ChangeLimit), MutationScenario.Invalid, typeof(int), typeof(Guid), typeof(DateTimeOffset))]
     public void ChangeLimit_WhenNegative_ShouldThrow()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -62,7 +62,7 @@ public class EntitlementTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Entitlement), "ChangeLimit(System.Int32,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Entitlement), nameof(Entitlement.ChangeLimit), MutationScenario.Invalid, typeof(int), typeof(Guid), typeof(DateTimeOffset))]
     public void ChangeLimit_WhenDisabled_ShouldThrow()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -73,7 +73,7 @@ public class EntitlementTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Entitlement), "Disable(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Entitlement), nameof(Entitlement.Disable), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     public void Disable_ShouldTransition_AndRaiseEvent()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -86,7 +86,7 @@ public class EntitlementTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Entitlement), "Disable(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Entitlement), nameof(Entitlement.Disable), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     public void Disable_WhenAlreadyDisabled_ShouldBeNoOp()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -99,7 +99,7 @@ public class EntitlementTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Entitlement), "Disable(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Entitlement), nameof(Entitlement.Disable), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     public void Disable_WhenRevoked_ShouldThrow()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -110,7 +110,7 @@ public class EntitlementTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Entitlement), "Revoke(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Entitlement), nameof(Entitlement.Revoke), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     public void Revoke_ShouldTransition_AndRaiseEvent()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -124,7 +124,7 @@ public class EntitlementTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Entitlement), "Revoke(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Entitlement), nameof(Entitlement.Revoke), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     public void Revoke_WhenAlreadyRevoked_ShouldBeNoOp()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -137,7 +137,7 @@ public class EntitlementTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Entitlement), "MarkExpired(System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Entitlement), nameof(Entitlement.MarkExpired), MutationScenario.Valid, typeof(DateTimeOffset))]
     public void MarkExpired_ShouldTransition_AndRaiseEvent()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -150,7 +150,7 @@ public class EntitlementTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Entitlement), "MarkExpired(System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Entitlement), nameof(Entitlement.MarkExpired), MutationScenario.NoOp, typeof(DateTimeOffset))]
     public void MarkExpired_WhenAlreadyExpired_ShouldBeNoOp()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -163,7 +163,7 @@ public class EntitlementTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Entitlement), "MarkExpired(System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Entitlement), nameof(Entitlement.MarkExpired), MutationScenario.Invalid, typeof(DateTimeOffset))]
     public void MarkExpired_WhenRevoked_ShouldThrow()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);

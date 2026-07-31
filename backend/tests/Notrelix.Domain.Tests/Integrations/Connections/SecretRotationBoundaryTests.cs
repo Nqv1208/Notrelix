@@ -11,7 +11,7 @@ public class SecretRotationBoundaryTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.RotateSecret), MutationScenario.Valid, typeof(string), typeof(SecretRef), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_ShouldSetCurrentSecretState()
     {
@@ -24,7 +24,7 @@ public class SecretRotationBoundaryTests
         connection.CurrentSecretRef.Should().Be(secretRef);
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.RotateSecret), MutationScenario.Valid, typeof(string), typeof(SecretRef), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_ShouldSetSecretRotatedAt()
     {
@@ -36,7 +36,7 @@ public class SecretRotationBoundaryTests
         connection.SecretRotatedAt.Should().Be(Now);
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.RotateSecret), MutationScenario.Event, typeof(string), typeof(SecretRef), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_ShouldRaiseEvent()
     {
@@ -51,7 +51,7 @@ public class SecretRotationBoundaryTests
         @event.Version.Should().Be("v1");
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.RotateSecret), MutationScenario.NoOp, typeof(string), typeof(SecretRef), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_WhenSameVersionAndRef_ShouldBeNoOp()
     {
@@ -66,7 +66,7 @@ public class SecretRotationBoundaryTests
         connection.SecretRotatedAt.Should().Be(Now);
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.RotateSecret), MutationScenario.Version, typeof(string), typeof(SecretRef), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_WhenDifferentVersion_ShouldRaiseEvent()
     {
@@ -81,7 +81,7 @@ public class SecretRotationBoundaryTests
         connection.DomainEvents.Should().ContainSingle(e => e is IntegrationSecretRotatedDomainEvent);
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.RotateSecret), MutationScenario.Event, typeof(string), typeof(SecretRef), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_WhenDifferentRef_ShouldRaiseEvent()
     {
@@ -97,7 +97,7 @@ public class SecretRotationBoundaryTests
         connection.DomainEvents.Should().ContainSingle(e => e is IntegrationSecretRotatedDomainEvent);
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.RotateSecret), MutationScenario.Version, typeof(string), typeof(SecretRef), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_ShouldTrimVersion()
     {
@@ -109,7 +109,7 @@ public class SecretRotationBoundaryTests
         connection.CurrentSecretVersion.Should().Be("v1");
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.RotateSecret), MutationScenario.Invalid, typeof(string), typeof(SecretRef), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_EmptyVersion_ShouldThrow()
     {
@@ -121,7 +121,7 @@ public class SecretRotationBoundaryTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.RotateSecret), MutationScenario.Invalid, typeof(string), typeof(SecretRef), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_NullSecretRef_ShouldThrow()
     {
@@ -132,7 +132,7 @@ public class SecretRotationBoundaryTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.RotateSecret), MutationScenario.Version, typeof(string), typeof(SecretRef), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_ShouldIncrementVersion()
     {
@@ -145,7 +145,7 @@ public class SecretRotationBoundaryTests
         connection.Version.Should().Be(initialVersion + 1);
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Audit)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.RotateSecret), MutationScenario.Audit, typeof(string), typeof(SecretRef), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_ShouldUpdateAuditFields()
     {
@@ -160,7 +160,7 @@ public class SecretRotationBoundaryTests
         connection.UpdatedAt.Should().Be(rotatedAt);
     }
 
-    [CoversMutation(typeof(IntegrationConnection), "RotateSecret(System.String,Notrelix.Domain.SharedKernel.SecretRef,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.RotateSecret), MutationScenario.Invalid, typeof(string), typeof(SecretRef), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_WhenDeleted_ShouldThrow()
     {

@@ -7,8 +7,8 @@ public class PasswordResetTokenTests
 {
     private static readonly TokenHash ValidHash = TokenHash.Create("test-reset-hash");
 
-    [CoversMutation(typeof(PasswordResetToken), "Revoke(System.DateTimeOffset,System.String)", MutationScenario.Valid)]
-    [CoversMutation(typeof(PasswordResetToken), "TryRevoke(System.DateTimeOffset,System.String,Notrelix.Domain.Common.DomainEvent)", MutationScenario.Valid)]
+    [CoversMutation(typeof(PasswordResetToken), nameof(PasswordResetToken.Revoke), MutationScenario.Valid, typeof(DateTimeOffset), typeof(string))]
+    [CoversMutation(typeof(PasswordResetToken), nameof(PasswordResetToken.TryRevoke), MutationScenario.Valid, typeof(DateTimeOffset), typeof(string), typeof(DomainEvent))]
     [Fact]
     public void Create_ShouldSetPropertiesAndRaiseEvent()
     {
@@ -41,8 +41,8 @@ public class PasswordResetTokenTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*after creation time*");
     }
 
-    [CoversMutation(typeof(PasswordResetToken), "MarkUsed(System.DateTimeOffset,Notrelix.Domain.Common.DomainEvent)", MutationScenario.Event)]
-    [CoversMutation(typeof(PasswordResetToken), "MarkUsed(System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(PasswordResetToken), nameof(PasswordResetToken.MarkUsed), MutationScenario.Event, typeof(DateTimeOffset), typeof(DomainEvent))]
+    [CoversMutation(typeof(PasswordResetToken), nameof(PasswordResetToken.MarkUsed), MutationScenario.Event, typeof(DateTimeOffset))]
     [Fact]
     public void MarkUsed_ShouldChangeStatusAndRaiseEvent()
     {
@@ -63,8 +63,8 @@ public class PasswordResetTokenTests
         evt.UsedAt.Should().Be(useTime);
     }
 
-    [CoversMutation(typeof(PasswordResetToken), "MarkUsed(System.DateTimeOffset,Notrelix.Domain.Common.DomainEvent)", MutationScenario.NoOp)]
-    [CoversMutation(typeof(PasswordResetToken), "MarkUsed(System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(PasswordResetToken), nameof(PasswordResetToken.MarkUsed), MutationScenario.NoOp, typeof(DateTimeOffset), typeof(DomainEvent))]
+    [CoversMutation(typeof(PasswordResetToken), nameof(PasswordResetToken.MarkUsed), MutationScenario.NoOp, typeof(DateTimeOffset))]
     [Fact]
     public void MarkUsed_AlreadyUsed_ShouldThrow()
     {
@@ -77,8 +77,8 @@ public class PasswordResetTokenTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*already been used*");
     }
 
-    [CoversMutation(typeof(PasswordResetToken), "TryExpire(System.DateTimeOffset,Notrelix.Domain.Common.DomainEvent)", MutationScenario.Invalid)]
-    [CoversMutation(typeof(PasswordResetToken), "Expire(System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(PasswordResetToken), nameof(PasswordResetToken.TryExpire), MutationScenario.Invalid, typeof(DateTimeOffset), typeof(DomainEvent))]
+    [CoversMutation(typeof(PasswordResetToken), nameof(PasswordResetToken.Expire), MutationScenario.Invalid, typeof(DateTimeOffset))]
     [Fact]
     public void MarkUsed_AfterExpiresAt_ShouldThrowWithoutMutating()
     {
@@ -95,8 +95,8 @@ public class PasswordResetTokenTests
         token.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(PasswordResetToken), "TryExpire(System.DateTimeOffset,Notrelix.Domain.Common.DomainEvent)", MutationScenario.Event)]
-    [CoversMutation(typeof(PasswordResetToken), "Expire(System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(PasswordResetToken), nameof(PasswordResetToken.TryExpire), MutationScenario.Event, typeof(DateTimeOffset), typeof(DomainEvent))]
+    [CoversMutation(typeof(PasswordResetToken), nameof(PasswordResetToken.Expire), MutationScenario.Event, typeof(DateTimeOffset))]
     [Fact]
     public void Expire_ShouldSetStatusAndRaiseEvent()
     {
@@ -117,8 +117,8 @@ public class PasswordResetTokenTests
         evt.ExpiredAt.Should().Be(expireTime);
     }
 
-    [CoversMutation(typeof(PasswordResetToken), "TryExpire(System.DateTimeOffset,Notrelix.Domain.Common.DomainEvent)", MutationScenario.NoOp)]
-    [CoversMutation(typeof(PasswordResetToken), "Expire(System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(PasswordResetToken), nameof(PasswordResetToken.TryExpire), MutationScenario.NoOp, typeof(DateTimeOffset), typeof(DomainEvent))]
+    [CoversMutation(typeof(PasswordResetToken), nameof(PasswordResetToken.Expire), MutationScenario.NoOp, typeof(DateTimeOffset))]
     [Fact]
     public void Expire_AlreadyExpired_ShouldBeIdempotent()
     {
@@ -132,8 +132,8 @@ public class PasswordResetTokenTests
         token.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(PasswordResetToken), "TryExpire(System.DateTimeOffset,Notrelix.Domain.Common.DomainEvent)", MutationScenario.Invalid)]
-    [CoversMutation(typeof(PasswordResetToken), "Expire(System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(PasswordResetToken), nameof(PasswordResetToken.TryExpire), MutationScenario.Invalid, typeof(DateTimeOffset), typeof(DomainEvent))]
+    [CoversMutation(typeof(PasswordResetToken), nameof(PasswordResetToken.Expire), MutationScenario.Invalid, typeof(DateTimeOffset))]
     [Fact]
     public void Expire_OnUsedToken_ShouldThrow()
     {

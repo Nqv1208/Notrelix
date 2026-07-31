@@ -79,7 +79,7 @@ public class BoardItemHierarchyTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(BoardItem), "MoveUnder(Notrelix.Domain.WorkManagement.Items.ItemParentPath,System.Guid,System.DateTimeOffset)", MutationScenario.FailureAtomicity)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveUnder), MutationScenario.FailureAtomicity, typeof(ItemParentPath), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveUnder_ShouldNotChangeState_WhenCycleDetected()
     {
@@ -100,7 +100,7 @@ public class BoardItemHierarchyTests
         item.DomainEvents.Should().NotContain(e => e is BoardItemParentChangedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardItem), "MoveUnder(Notrelix.Domain.WorkManagement.Items.ItemParentPath,System.Guid,System.DateTimeOffset)", MutationScenario.FailureAtomicity)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveUnder), MutationScenario.FailureAtomicity, typeof(ItemParentPath), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveUnder_ShouldNotChangeState_WhenScopeMismatch()
     {

@@ -33,7 +33,7 @@ public class BoardItemOptionIdentityTests
         return field;
     }
 
-    [CoversMutation(typeof(BoardItem), "UpdateFieldValue(Notrelix.Domain.WorkManagement.Fields.BoardField,Notrelix.Domain.WorkManagement.Fields.FieldValue,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.UpdateFieldValue), MutationScenario.Valid, typeof(BoardField), typeof(FieldValue), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void SelectValue_WithUppercaseBracedGuid_ShouldBeAccepted()
     {
@@ -49,7 +49,7 @@ public class BoardItemOptionIdentityTests
         item.FieldValues.First().Value.Should().Be(value);
     }
 
-    [CoversMutation(typeof(BoardItem), "UpdateFieldValue(Notrelix.Domain.WorkManagement.Fields.BoardField,Notrelix.Domain.WorkManagement.Fields.FieldValue,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.UpdateFieldValue), MutationScenario.Invalid, typeof(BoardField), typeof(FieldValue), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void SelectValue_WithNonParsableId_ShouldThrow()
     {
@@ -61,7 +61,7 @@ public class BoardItemOptionIdentityTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*GUID*");
     }
 
-    [CoversMutation(typeof(BoardItem), "UpdateFieldValue(Notrelix.Domain.WorkManagement.Fields.BoardField,Notrelix.Domain.WorkManagement.Fields.FieldValue,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.UpdateFieldValue), MutationScenario.Valid, typeof(BoardField), typeof(FieldValue), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MultiSelectValue_WithUppercaseBracedGuids_ShouldBeAccepted()
     {
@@ -75,7 +75,7 @@ public class BoardItemOptionIdentityTests
         item.FieldValues.Should().ContainSingle();
     }
 
-    [CoversMutation(typeof(BoardItem), "UpdateFieldValue(Notrelix.Domain.WorkManagement.Fields.BoardField,Notrelix.Domain.WorkManagement.Fields.FieldValue,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.UpdateFieldValue), MutationScenario.Invalid, typeof(BoardField), typeof(FieldValue), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MultiSelectValue_WithDuplicateOptionIds_ShouldThrow()
     {
@@ -90,7 +90,7 @@ public class BoardItemOptionIdentityTests
         item.FieldValues.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(BoardItem), "UpdateFieldValue(Notrelix.Domain.WorkManagement.Fields.BoardField,Notrelix.Domain.WorkManagement.Fields.FieldValue,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.UpdateFieldValue), MutationScenario.Invalid, typeof(BoardField), typeof(FieldValue), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MultiSelectValue_WithUnknownOption_ShouldThrow()
     {

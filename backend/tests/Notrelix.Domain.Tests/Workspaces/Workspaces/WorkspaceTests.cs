@@ -38,7 +38,7 @@ public class WorkspaceTests
         result.OwnerMember.Status.Should().Be(WorkspaceMemberStatus.Active);
     }
 
-    [CoversMutation(typeof(Workspace), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Rename), MutationScenario.Event, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Rename_ShouldSucceed_AndRaiseEvent()
     {
@@ -52,7 +52,7 @@ public class WorkspaceTests
         workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceRenamedDomainEvent);
     }
 
-    [CoversMutation(typeof(Workspace), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Rename), MutationScenario.Invalid, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Rename_ArchivedWorkspace_ShouldThrow()
     {
@@ -63,7 +63,7 @@ public class WorkspaceTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot rename an archived workspace.");
     }
 
-    [CoversMutation(typeof(Workspace), "UpdateSettings(Notrelix.Domain.Workspaces.Workspaces.WorkspaceSettings,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.UpdateSettings), MutationScenario.Event, typeof(WorkspaceSettings), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateSettings_ShouldSucceed_AndRaiseEvent()
     {
@@ -79,7 +79,7 @@ public class WorkspaceTests
         workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceSettingsUpdatedDomainEvent);
     }
 
-    [CoversMutation(typeof(Workspace), "UpdateSettings(Notrelix.Domain.Workspaces.Workspaces.WorkspaceSettings,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.UpdateSettings), MutationScenario.NoOp, typeof(WorkspaceSettings), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateSettings_WhenSameSettings_ShouldBeNoOp()
     {
@@ -92,7 +92,7 @@ public class WorkspaceTests
         workspace.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Workspace), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Archive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateSettings_ArchivedWorkspace_ShouldThrow()
     {
@@ -104,7 +104,7 @@ public class WorkspaceTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot update settings of an archived workspace.");
     }
 
-    [CoversMutation(typeof(Workspace), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldSetIsDeleted_AndRaiseEvent()
     {
@@ -118,7 +118,7 @@ public class WorkspaceTests
         workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(Workspace), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldSetIsDeleted_AndRaiseEvent()
     {
@@ -133,7 +133,7 @@ public class WorkspaceTests
         workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceRestoredDomainEvent);
     }
 
-    [CoversMutation(typeof(Workspace), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Archive), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_ShouldSetStatusToArchived_AndRaiseEvent()
     {
@@ -146,7 +146,7 @@ public class WorkspaceTests
         workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceArchivedDomainEvent);
     }
 
-    [CoversMutation(typeof(Workspace), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Archive), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_WhenAlreadyArchived_ShouldBeNoOp()
     {
@@ -160,7 +160,7 @@ public class WorkspaceTests
         workspace.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Workspace), "Unarchive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Unarchive), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Unarchive_ShouldSetStatusToActive_AndRaiseEvent()
     {
@@ -175,7 +175,7 @@ public class WorkspaceTests
         workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceUnarchivedDomainEvent);
     }
 
-    [CoversMutation(typeof(Workspace), "Unarchive(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Unarchive), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Unarchive_WhenAlreadyActive_ShouldBeNoOp()
     {
@@ -188,7 +188,7 @@ public class WorkspaceTests
         workspace.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Workspace), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Delete), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Unarchive_Deleted_ShouldThrow()
     {
@@ -199,7 +199,7 @@ public class WorkspaceTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
-    [CoversMutation(typeof(Workspace), "UpdateDescription(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.UpdateDescription), MutationScenario.Event, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateDescription_ShouldSucceed_AndRaiseEvent()
     {
@@ -218,7 +218,7 @@ public class WorkspaceTests
         domainEvent.UpdatedBy.Should().Be(actor);
     }
 
-    [CoversMutation(typeof(Workspace), "UpdateDescription(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.UpdateDescription), MutationScenario.Valid, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateDescription_ShouldClearDescription_WhenSetToNull()
     {
@@ -235,7 +235,7 @@ public class WorkspaceTests
         domainEvent.NewDescription.Should().BeNull();
     }
 
-    [CoversMutation(typeof(Workspace), "UpdateDescription(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.UpdateDescription), MutationScenario.NoOp, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateDescription_WhenSameValue_ShouldBeNoOp()
     {
@@ -247,7 +247,7 @@ public class WorkspaceTests
         workspace.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Workspace), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Archive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateDescription_ArchivedWorkspace_ShouldThrow()
     {
@@ -267,7 +267,7 @@ public class WorkspaceTests
         workspace.IsPersonal.Should().BeTrue();
     }
 
-    [CoversMutation(typeof(Workspace), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Rename), MutationScenario.Valid, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Rename_ArchivedWorkspace_ShouldNotMutateName()
     {
@@ -283,7 +283,7 @@ public class WorkspaceTests
         workspace.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Workspace), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Archive), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateDescription_ArchivedWorkspace_ShouldNotMutateDescription()
     {
@@ -299,7 +299,7 @@ public class WorkspaceTests
         workspace.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Workspace), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Archive), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateSettings_ArchivedWorkspace_ShouldNotMutateSettings()
     {
@@ -316,7 +316,7 @@ public class WorkspaceTests
         workspace.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Workspace), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Rename), MutationScenario.Valid, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Rename_EmptyActor_ShouldNotMutateName()
     {
@@ -331,7 +331,7 @@ public class WorkspaceTests
         workspace.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Workspace), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Archive), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_EmptyActor_ShouldNotMutateStatus()
     {

@@ -11,7 +11,7 @@ public class WorkspaceDeletionAtomicityTests
     private static Workspace CreateWorkspace() =>
         Workspace.Create(Guid.NewGuid(), ActorId, "Test Workspace", "test-ws", Now);
 
-    [CoversMutation(typeof(Workspace), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldSetIsDeleted()
     {
@@ -20,7 +20,7 @@ public class WorkspaceDeletionAtomicityTests
         workspace.IsDeleted.Should().BeTrue();
     }
 
-    [CoversMutation(typeof(Workspace), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldSetDeleteAudit()
     {
@@ -30,7 +30,7 @@ public class WorkspaceDeletionAtomicityTests
         workspace.DeletedAt.Should().Be(Now);
     }
 
-    [CoversMutation(typeof(Workspace), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Delete), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_IsIdempotent_ShouldNotRaiseEvent()
     {
@@ -41,7 +41,7 @@ public class WorkspaceDeletionAtomicityTests
         workspace.DomainEvents.Count.Should().Be(eventsBefore);
     }
 
-    [CoversMutation(typeof(Workspace), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Delete), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_IsIdempotent_ShouldNotIncrementVersion()
     {
@@ -52,7 +52,7 @@ public class WorkspaceDeletionAtomicityTests
         workspace.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(Workspace), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldSetIsDeleted()
     {
@@ -62,7 +62,7 @@ public class WorkspaceDeletionAtomicityTests
         workspace.IsDeleted.Should().BeFalse();
     }
 
-    [CoversMutation(typeof(Workspace), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldSetRestoreAudit()
     {
@@ -73,7 +73,7 @@ public class WorkspaceDeletionAtomicityTests
         workspace.Restore(actor, time);
     }
 
-    [CoversMutation(typeof(Workspace), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Restore), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_IsIdempotent_ShouldNotRaiseEvent()
     {
@@ -84,7 +84,7 @@ public class WorkspaceDeletionAtomicityTests
         workspace.DomainEvents.Count.Should().Be(eventsBefore);
     }
 
-    [CoversMutation(typeof(Workspace), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Restore), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_IsIdempotent_ShouldNotIncrementVersion()
     {
@@ -94,7 +94,7 @@ public class WorkspaceDeletionAtomicityTests
         workspace.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(Workspace), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_RaisedEvent_ShouldContainAccountId()
     {
@@ -105,7 +105,7 @@ public class WorkspaceDeletionAtomicityTests
         evt.GetType().Name.Should().Be("WorkspaceDeletedDomainEvent");
     }
 
-    [CoversMutation(typeof(Workspace), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Workspace), nameof(Workspace.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_RaisedEvent_ShouldContainAccountId()
     {

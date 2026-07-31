@@ -47,7 +47,7 @@ public class PermissionTemplateEventTests
         evt.OccurredAt.Should().Be(now);
     }
 
-    [CoversMutation(typeof(PermissionTemplate), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(PermissionTemplate), nameof(PermissionTemplate.Archive), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_ShouldEmitArchivedEvent()
     {
@@ -85,7 +85,7 @@ public class PermissionTemplateEventTests
         evt.Should().BeAssignableTo<IWorkspaceScoped>();
     }
 
-    [CoversMutation(typeof(PermissionTemplate), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Scope)]
+    [CoversMutation(typeof(PermissionTemplate), nameof(PermissionTemplate.Archive), MutationScenario.Scope, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ArchivedEvent_ShouldBeWorkspaceScoped()
     {

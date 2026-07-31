@@ -11,7 +11,7 @@ public class BoardViewEventTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(BoardView), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(BoardView), nameof(BoardView.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardView_Restore_ShouldRaiseEvent()
     {
@@ -28,7 +28,7 @@ public class BoardViewEventTests
         view.DomainEvents.Should().ContainSingle(e => e is BoardViewRestoredDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardView), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(BoardView), nameof(BoardView.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardView_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {

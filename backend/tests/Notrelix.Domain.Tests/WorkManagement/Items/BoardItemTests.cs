@@ -14,7 +14,7 @@ public class BoardItemTests
         return BoardItem.CreateRoot(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Item 1", FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
     }
 
-    [CoversMutation(typeof(BoardItem), "UpdateFieldValue(Notrelix.Domain.WorkManagement.Fields.BoardField,Notrelix.Domain.WorkManagement.Fields.FieldValue,System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.UpdateFieldValue), MutationScenario.Event, typeof(BoardField), typeof(FieldValue), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateFieldValue_ShouldAddValueAndRaiseEvent()
     {
@@ -37,7 +37,7 @@ public class BoardItemTests
         item.DomainEvents.Should().ContainSingle(e => e is BoardItemFieldValueChangedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardItem), "UpdateFieldValue(Notrelix.Domain.WorkManagement.Fields.BoardField,Notrelix.Domain.WorkManagement.Fields.FieldValue,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.UpdateFieldValue), MutationScenario.Invalid, typeof(BoardField), typeof(FieldValue), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateFieldValue_ShouldThrow_WhenItemIsDeleted()
     {
@@ -56,7 +56,7 @@ public class BoardItemTests
         act.Should().Throw<DomainException>();
     }
 
-    [CoversMutation(typeof(BoardItem), "MoveToGroup(Notrelix.Domain.WorkManagement.BoardGroups.BoardGroupRef,Notrelix.Domain.SharedKernel.Ordering.FractionalIndex,System.Guid,System.DateTimeOffset)", MutationScenario.Valid)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveToGroup), MutationScenario.Valid, typeof(BoardGroupRef), typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveToGroup_ShouldUpdateGroupAndPosition()
     {
@@ -75,8 +75,8 @@ public class BoardItemTests
         item.DomainEvents.Should().ContainSingle(e => e is BoardItemMovedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardItem), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
-    [CoversMutation(typeof(BoardItem), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void DeleteAndRestore_ShouldWorkCorrectly()
     {
@@ -93,7 +93,7 @@ public class BoardItemTests
         item.DomainEvents.Should().ContainSingle(e => e is BoardItemRestoredDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardItem), "UpdateFieldValue(Notrelix.Domain.WorkManagement.Fields.BoardField,Notrelix.Domain.WorkManagement.Fields.FieldValue,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.UpdateFieldValue), MutationScenario.Invalid, typeof(BoardField), typeof(FieldValue), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateFieldValue_ShouldThrow_WhenFieldFromDifferentWorkspace()
     {
@@ -108,7 +108,7 @@ public class BoardItemTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*workspace*");
     }
 
-    [CoversMutation(typeof(BoardItem), "UpdateFieldValue(Notrelix.Domain.WorkManagement.Fields.BoardField,Notrelix.Domain.WorkManagement.Fields.FieldValue,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.UpdateFieldValue), MutationScenario.Invalid, typeof(BoardField), typeof(FieldValue), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateFieldValue_ShouldThrow_WhenFieldFromDifferentBoard()
     {
@@ -123,7 +123,7 @@ public class BoardItemTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*board*");
     }
 
-    [CoversMutation(typeof(BoardItem), "UpdateFieldValue(Notrelix.Domain.WorkManagement.Fields.BoardField,Notrelix.Domain.WorkManagement.Fields.FieldValue,System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.UpdateFieldValue), MutationScenario.Invalid, typeof(BoardField), typeof(FieldValue), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateFieldValue_ShouldThrow_WhenSelectValueNotInOptions()
     {
@@ -161,7 +161,7 @@ public class BoardItemTests
         item.DomainEvents.Should().ContainSingle(e => e is BoardItemFieldValueChangedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardItem), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Archive), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_ShouldSetIsArchived_AndRaiseEvent()
     {
@@ -174,7 +174,7 @@ public class BoardItemTests
         item.DomainEvents.Should().ContainSingle(e => e is BoardItemArchivedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardItem), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Archive), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_ShouldBeIdempotent()
     {
@@ -187,7 +187,7 @@ public class BoardItemTests
         item.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(BoardItem), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Archive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_ShouldThrow_WhenDeleted()
     {
@@ -199,7 +199,7 @@ public class BoardItemTests
         act.Should().Throw<DomainException>();
     }
 
-    [CoversMutation(typeof(BoardItem), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Archive), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Unarchive_ShouldClearIsArchived_AndRaiseEvent()
     {
@@ -213,7 +213,7 @@ public class BoardItemTests
         item.DomainEvents.Should().ContainSingle(e => e is BoardItemUnarchivedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardItem), "Unarchive(System.Guid,System.DateTimeOffset)", MutationScenario.NoOp)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Unarchive), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Unarchive_ShouldBeIdempotent()
     {
@@ -225,7 +225,7 @@ public class BoardItemTests
         item.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(BoardItem), "Unarchive(System.Guid,System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Unarchive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Unarchive_ShouldThrow_WhenDeleted()
     {

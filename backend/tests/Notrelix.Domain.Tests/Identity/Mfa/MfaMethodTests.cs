@@ -74,7 +74,7 @@ public class MfaMethodTests
         evt.VerifiedAt.Should().Be(now.AddMinutes(5));
     }
 
-    [CoversMutation(typeof(UserMfaMethod), "Verify(System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(UserMfaMethod), nameof(UserMfaMethod.Verify), MutationScenario.Invalid, typeof(DateTimeOffset))]
     [Fact]
     public void Verify_OnDisabledMethod_ShouldThrow()
     {
@@ -87,7 +87,7 @@ public class MfaMethodTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*disabled MFA method*");
     }
 
-    [CoversMutation(typeof(UserMfaMethod), "SetAsPrimary(System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(UserMfaMethod), nameof(UserMfaMethod.SetAsPrimary), MutationScenario.Event, typeof(DateTimeOffset))]
     [Fact]
     public void SetAsPrimary_OnActiveMethod_ShouldSucceedAndRaiseEvent()
     {
@@ -107,7 +107,7 @@ public class MfaMethodTests
         evt.UpdatedAt.Should().Be(now.AddMinutes(2));
     }
 
-    [CoversMutation(typeof(UserMfaMethod), "UnsetAsPrimary(System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(UserMfaMethod), nameof(UserMfaMethod.UnsetAsPrimary), MutationScenario.Event, typeof(DateTimeOffset))]
     [Fact]
     public void UnsetAsPrimary_ShouldClearPrimaryAndRaiseEvent()
     {
@@ -128,7 +128,7 @@ public class MfaMethodTests
         evt.UpdatedAt.Should().Be(now.AddMinutes(3));
     }
 
-    [CoversMutation(typeof(UserMfaMethod), "SetAsPrimary(System.DateTimeOffset)", MutationScenario.Invalid)]
+    [CoversMutation(typeof(UserMfaMethod), nameof(UserMfaMethod.SetAsPrimary), MutationScenario.Invalid, typeof(DateTimeOffset))]
     [Fact]
     public void SetAsPrimary_OnPendingMethod_ShouldThrow()
     {
@@ -140,7 +140,7 @@ public class MfaMethodTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*verified and active*");
     }
 
-    [CoversMutation(typeof(UserMfaMethod), "Disable(System.DateTimeOffset)", MutationScenario.Event)]
+    [CoversMutation(typeof(UserMfaMethod), nameof(UserMfaMethod.Disable), MutationScenario.Event, typeof(DateTimeOffset))]
     [Fact]
     public void Disable_ShouldDeactivateMethodAndClearPrimary()
     {

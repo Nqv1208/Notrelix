@@ -11,7 +11,7 @@ public class TeamVersionTests
     private readonly Guid _userId = Guid.NewGuid();
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(Team), "Rename(System.String,System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(Team), nameof(Team.Rename), MutationScenario.Version, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Rename_ShouldIncrementVersion()
     {
@@ -25,7 +25,7 @@ public class TeamVersionTests
         team.DomainEvents.Should().Contain(e => e is TeamRenamedDomainEvent);
     }
 
-    [CoversMutation(typeof(Team), "Archive(System.Guid,System.DateTimeOffset)", MutationScenario.Version)]
+    [CoversMutation(typeof(Team), nameof(Team.Archive), MutationScenario.Version, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_ShouldIncrementVersion()
     {
@@ -39,7 +39,7 @@ public class TeamVersionTests
         team.DomainEvents.Should().Contain(e => e is TeamArchivedDomainEvent);
     }
 
-    [CoversMutation(typeof(Team), "AddMember(System.Guid,Notrelix.Domain.Workspaces.Teams.TeamMemberRole,System.Guid,System.DateTimeOffset,System.Guid?)", MutationScenario.Version)]
+    [CoversMutation(typeof(Team), nameof(Team.AddMember), MutationScenario.Version, typeof(Guid), typeof(TeamMemberRole), typeof(Guid), typeof(DateTimeOffset), typeof(Guid?))]
     [Fact]
     public void AddMember_ShouldIncrementVersion()
     {
@@ -67,7 +67,7 @@ public class TeamVersionTests
         team.DomainEvents.Should().Contain(e => e is TeamMemberRemovedDomainEvent);
     }
 
-    [CoversMutation(typeof(Team), "Delete(System.Guid,System.DateTimeOffset,System.String)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Team), nameof(Team.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldIncrementVersion()
     {
@@ -82,7 +82,7 @@ public class TeamVersionTests
         team.DomainEvents.Should().Contain(e => e is TeamDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(Team), "Restore(System.Guid,System.DateTimeOffset)", MutationScenario.Lifecycle)]
+    [CoversMutation(typeof(Team), nameof(Team.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldIncrementVersion()
     {
