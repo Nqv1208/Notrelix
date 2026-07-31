@@ -79,10 +79,10 @@ internal static class DomainCapabilityRegistry
         new("Notrelix.Domain.Collaboration.Attachments", DomainCapabilityStatus.Frozen),
         new("Notrelix.Domain.Collaboration.Comments", DomainCapabilityStatus.Frozen),
         new("Notrelix.Domain.Collaboration.Mentions", DomainCapabilityStatus.Frozen),
-        new("Notrelix.Domain.Collaboration.Reactions", DomainCapabilityStatus.Frozen),
+        new("Notrelix.Domain.Collaboration.Reactions", DomainCapabilityStatus.Stabilizing),
         new("Notrelix.Domain.Collaboration.ReadStates", DomainCapabilityStatus.Frozen),
         new("Notrelix.Domain.Collaboration.Rules", DomainCapabilityStatus.Frozen),
-        new("Notrelix.Domain.Collaboration.Watchers", DomainCapabilityStatus.Frozen),
+        new("Notrelix.Domain.Collaboration.Watchers", DomainCapabilityStatus.Stabilizing),
         new("Notrelix.Domain.Collaboration.Presence", DomainCapabilityStatus.Experimental),
 
         // ── Governance ────────────────────────────────────────────────────
@@ -98,9 +98,9 @@ internal static class DomainCapabilityRegistry
         // Root prefix for RuleCodes only; sub-namespaces registered separately.
         new("Notrelix.Domain.Automation", DomainCapabilityStatus.Frozen, NamespaceMatch.Exact),
         new("Notrelix.Domain.Automation.RulesEngine", DomainCapabilityStatus.Frozen),
-        new("Notrelix.Domain.Automation.Scheduled", DomainCapabilityStatus.Frozen),
         new("Notrelix.Domain.Automation.Rules", DomainCapabilityStatus.Frozen),
-        new("Notrelix.Domain.Automation.Templates", DomainCapabilityStatus.Frozen),
+        new("Notrelix.Domain.Automation.Scheduled", DomainCapabilityStatus.Stabilizing),
+        new("Notrelix.Domain.Automation.Templates", DomainCapabilityStatus.Stabilizing),
 
         // ── Automation experimental (runtime/orchestration) ────────────────
         new("Notrelix.Domain.Automation.Triggers", DomainCapabilityStatus.Experimental),
@@ -110,7 +110,13 @@ internal static class DomainCapabilityRegistry
         new("Notrelix.Domain.Automation.Agents", DomainCapabilityStatus.Experimental),
 
         // ── Integrations ──────────────────────────────────────────────────
-        new("Notrelix.Domain.Integrations", DomainCapabilityStatus.Frozen),
+        // Root prefix for shared types only; sub-namespaces registered separately.
+        new("Notrelix.Domain.Integrations", DomainCapabilityStatus.Frozen, NamespaceMatch.Exact),
+        new("Notrelix.Domain.Integrations.Rules", DomainCapabilityStatus.Frozen, NamespaceMatch.Exact),
+        new("Notrelix.Domain.Integrations.Connections", DomainCapabilityStatus.Frozen),
+        new("Notrelix.Domain.Integrations.Calendar", DomainCapabilityStatus.Stabilizing),
+        new("Notrelix.Domain.Integrations.Webhooks", DomainCapabilityStatus.Stabilizing),
+        new("Notrelix.Domain.Integrations.Sync", DomainCapabilityStatus.Stabilizing),
 
         // ── Billing ───────────────────────────────────────────────────────
         new("Notrelix.Domain.Billing", DomainCapabilityStatus.Frozen),
