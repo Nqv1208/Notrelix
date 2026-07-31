@@ -1,7 +1,9 @@
 using FluentAssertions;
+using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.WorkManagement;
 using Notrelix.Domain.WorkManagement.Fields;
+using Notrelix.Domain.WorkManagement.Fields.Events;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 
@@ -237,8 +239,9 @@ public class BoardFieldDefaultValueTests
         field.DomainEvents.Should().BeEmpty();
     }
 
+    [CoversMutation(typeof(BoardField), nameof(BoardField.UpdatePosition), MutationScenario.Event, typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
-    public void UpdatePosition_ShouldNotRaiseEvent()
+    public void UpdatePosition_ShouldRaiseReorderedEvent()
     {
         var field = CreateSelectFieldWithOptions(out _);
         ((IHasDomainEvents)field).ClearDomainEvents();
@@ -247,6 +250,6 @@ public class BoardFieldDefaultValueTests
         field.UpdatePosition(newPosition, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         field.Position.Should().Be(newPosition);
-        field.DomainEvents.Should().BeEmpty();
+        field.DomainEvents.Should().ContainSingle(e => e is BoardFieldReorderedDomainEvent);
     }
 }

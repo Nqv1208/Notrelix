@@ -2360,6 +2360,7 @@ Notrelix.Domain.WorkManagement.Fields.BoardField|Restore|Method|public|False|Fal
 Notrelix.Domain.WorkManagement.Fields.BoardField|SetDefaultValue|Method|public|False|False|System.Void|Notrelix.Domain.WorkManagement.Fields.FieldValue defaultValue, System.Guid updatedBy, System.DateTimeOffset updatedAt
 Notrelix.Domain.WorkManagement.Fields.BoardField|UpdateClassification|Method|public|False|False|System.Void|Notrelix.Domain.WorkManagement.Fields.DataClassification classification, System.Boolean isSensitive, System.Guid updatedBy, System.DateTimeOffset updatedAt
 Notrelix.Domain.WorkManagement.Fields.BoardField|UpdateOption|Method|public|False|False|System.Void|System.Guid optionId, System.String name, Notrelix.Domain.SharedKernel.Color color, System.Guid updatedBy, System.DateTimeOffset updatedAt
+Notrelix.Domain.WorkManagement.Fields.BoardField|UpdatePosition|Method|public|False|False|System.Void|Notrelix.Domain.SharedKernel.Ordering.FractionalIndex position, System.Guid updatedBy, System.DateTimeOffset updatedAt
 Notrelix.Domain.WorkManagement.Fields.BoardField|UpdateSettings|Method|public|False|False|System.Void|Notrelix.Domain.WorkManagement.Fields.FieldSettings settings, System.Guid updatedBy, System.DateTimeOffset updatedAt
 Notrelix.Domain.WorkManagement.Fields.BoardField|AccountId|Property|public|False|True|readonly|System.Guid
 Notrelix.Domain.WorkManagement.Fields.BoardField|BoardId|Property|public|False|False|readonly|System.Guid
@@ -2415,6 +2416,14 @@ Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldRenamedDomainEvent|FieldI
 Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldRenamedDomainEvent|NewName|Property|public|False|False|readwrite|System.String
 Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldRenamedDomainEvent|OldName|Property|public|False|False|readwrite|System.String
 Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldRenamedDomainEvent|UpdatedBy|Property|public|False|False|readwrite|System.Guid
+Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldReorderedDomainEvent|.ctor|Constructor|public|False|False|System.Guid AccountId, System.Guid WorkspaceId, System.Guid BoardId, System.Guid FieldId, Notrelix.Domain.SharedKernel.Ordering.FractionalIndex NewPosition, System.Guid UpdatedBy, System.DateTimeOffset OccurredAt
+Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldReorderedDomainEvent|<Clone>$|Method|public|False|True|Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldReorderedDomainEvent|
+Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldReorderedDomainEvent|Deconstruct|Method|public|False|False|System.Void|System.Guid& AccountId, System.Guid& WorkspaceId, System.Guid& BoardId, System.Guid& FieldId, Notrelix.Domain.SharedKernel.Ordering.FractionalIndex& NewPosition, System.Guid& UpdatedBy, System.DateTimeOffset& OccurredAt
+Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldReorderedDomainEvent|Equals|Method|public|False|True|System.Boolean|Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldReorderedDomainEvent other
+Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldReorderedDomainEvent|BoardId|Property|public|False|False|readwrite|System.Guid
+Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldReorderedDomainEvent|FieldId|Property|public|False|False|readwrite|System.Guid
+Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldReorderedDomainEvent|NewPosition|Property|public|False|False|readwrite|Notrelix.Domain.SharedKernel.Ordering.FractionalIndex
+Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldReorderedDomainEvent|UpdatedBy|Property|public|False|False|readwrite|System.Guid
 Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldRestoredDomainEvent|.ctor|Constructor|public|False|False|System.Guid AccountId, System.Guid WorkspaceId, System.Guid BoardId, System.Guid FieldId, System.Guid RestoredBy, System.DateTimeOffset OccurredAt
 Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldRestoredDomainEvent|<Clone>$|Method|public|False|True|Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldRestoredDomainEvent|
 Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldRestoredDomainEvent|Deconstruct|Method|public|False|False|System.Void|System.Guid& AccountId, System.Guid& WorkspaceId, System.Guid& BoardId, System.Guid& FieldId, System.Guid& RestoredBy, System.DateTimeOffset& OccurredAt

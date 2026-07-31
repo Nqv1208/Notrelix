@@ -636,6 +636,10 @@ work-management.board-field-renamed|1|Notrelix.Domain.WorkManagement.Fields.Even
 work-management.board-field-renamed|1|Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldRenamedDomainEvent|Workspace|NewName|System.String|False
 work-management.board-field-renamed|1|Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldRenamedDomainEvent|Workspace|OldName|System.String|False
 work-management.board-field-renamed|1|Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldRenamedDomainEvent|Workspace|UpdatedBy|System.Guid|False
+work-management.field-reordered|1|Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldReorderedDomainEvent|Workspace|BoardId|System.Guid|False
+work-management.field-reordered|1|Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldReorderedDomainEvent|Workspace|FieldId|System.Guid|False
+work-management.field-reordered|1|Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldReorderedDomainEvent|Workspace|NewPosition|Notrelix.Domain.SharedKernel.Ordering.FractionalIndex|False
+work-management.field-reordered|1|Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldReorderedDomainEvent|Workspace|UpdatedBy|System.Guid|False
 work-management.board-field-restored|1|Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldRestoredDomainEvent|Workspace|BoardId|System.Guid|False
 work-management.board-field-restored|1|Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldRestoredDomainEvent|Workspace|FieldId|System.Guid|False
 work-management.board-field-restored|1|Notrelix.Domain.WorkManagement.Fields.Events.BoardFieldRestoredDomainEvent|Workspace|RestoredBy|System.Guid|False

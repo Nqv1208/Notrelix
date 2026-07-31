@@ -274,7 +274,7 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BoardFieldClassificationUpdatedDomainEvent(AccountId, WorkspaceId, BoardId, Id, classification, isSensitive, updatedBy, updatedAt));
     }
 
-    internal void UpdatePosition(FractionalIndex position, Guid updatedBy, DateTimeOffset updatedAt)
+    public void UpdatePosition(FractionalIndex position, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         Guard.NotNull(position);
@@ -286,6 +286,7 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
         Position = position;
         ApplyAuditUpdate(audit);
         IncrementVersion();
+        RaiseDomainEvent(new BoardFieldReorderedDomainEvent(AccountId, WorkspaceId, BoardId, Id, position, updatedBy, updatedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)

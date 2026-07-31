@@ -6,7 +6,6 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Notrelix.Domain.Tests" />
-    <InternalsVisibleTo Include="Notrelix.Application" />
   </ItemGroup>
 
   <!-- NO PACKAGES - Domain layer must be PURE according to Clean Architecture rules -->
