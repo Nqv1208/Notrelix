@@ -44,7 +44,7 @@ public class HandleN8nCallbackCommandHandler : IRequestHandler<HandleN8nCallback
                 execution.Fail(request.Error ?? "Unknown error", now);
                 break;
             default:
-                return Result.Failure($"Unsupported n8n callback status '{request.Status}'.");
+                return Result.Failure(new ApplicationError("integrations.n8n.unsupported-status", $"Unsupported n8n callback status '{request.Status}'.", ApplicationErrorType.Validation));
         }
 
         return Result.Success();

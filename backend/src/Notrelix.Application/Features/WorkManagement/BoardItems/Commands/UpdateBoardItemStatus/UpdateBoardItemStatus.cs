@@ -38,7 +38,7 @@ public class UpdateBoardItemStatusCommandHandler : IRequestHandler<UpdateBoardIt
 
         var statusField = statusFields.FirstOrDefault();
         if (statusField == null)
-            return Result.Failure("No status field found on this board.");
+            return Result.Failure(new ApplicationError("work.board-item.no-status-field", "No status field found on this board.", ApplicationErrorType.BusinessRule));
 
         var now = _timeProvider.UtcNow;
         var fieldValue = FieldValue.Create(JsonValue.Create(System.Text.Json.JsonSerializer.Serialize(request.Status)));

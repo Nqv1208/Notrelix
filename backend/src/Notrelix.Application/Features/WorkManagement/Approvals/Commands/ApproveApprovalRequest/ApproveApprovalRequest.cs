@@ -44,7 +44,7 @@ public class ApproveApprovalRequestCommandHandler : IRequestHandler<ApproveAppro
         var step = approvalRequest.Steps
             .FirstOrDefault(s => s.Status == ApprovalStatus.Pending && s.ApproverUserId == userId);
         if (step is null)
-            return Result.Failure("No pending approval step assigned to the current user.");
+            return Result.Failure(new ApplicationError("work.approval.no-pending-step", "No pending approval step assigned to the current user.", ApplicationErrorType.BusinessRule));
 
         approvalRequest.Approve(step.Id, userId, now, request.Note);
         return Result.Success();

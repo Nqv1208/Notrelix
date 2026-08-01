@@ -52,7 +52,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
             }
 
             if (!columns.TryGetValue(columnId, out var column))
-                return Result.Failure($"Unsupported field '{columnId}'.");
+                return Result.Failure(new ApplicationError("work.board-item.unsupported-field", $"Unsupported field '{columnId}'.", ApplicationErrorType.Validation));
 
             var semanticField = ResolveSemanticField(column);
             switch (semanticField)
@@ -117,7 +117,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
                         break;
                     }
                 default:
-                    return Result.Failure($"Unsupported field '{column.Name}'.");
+                    return Result.Failure(new ApplicationError("work.board-item.unsupported-field", $"Unsupported field '{column.Name}'.", ApplicationErrorType.Validation));
             }
         }
 
