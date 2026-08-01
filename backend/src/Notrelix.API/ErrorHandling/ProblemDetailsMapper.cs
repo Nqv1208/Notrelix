@@ -84,6 +84,13 @@ public static class ProblemDetailsMapper
                 exception.Message,
                 null
             ),
+            Notrelix.Application.Common.Exceptions.PreconditionFailedException precondition => (
+                StatusCodes.Status412PreconditionFailed,
+                precondition.ErrorCode,
+                "Precondition failed",
+                precondition.Message,
+                null
+            ),
             _ => (
                 StatusCodes.Status500InternalServerError,
                 ErrorCodes.InternalServerError,

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Notrelix.Infrastructure.Data.Events;
 using Notrelix.Infrastructure.Data.Messaging;
 
@@ -11,6 +12,9 @@ public class DomainEventInterceptor : SaveChangesInterceptor
     private readonly IDeliveryPolicy _deliveryPolicy;
     private readonly IIntegrationEventMapper _integrationEventMapper;
     private readonly IIntegrationEventCollector _integrationEventCollector;
+
+    private readonly List<IHasDomainEvents> _pendingClear = [];
+    private readonly List<object> _generatedEntries = [];
 
     public DomainEventInterceptor(
         IDateTimeProvider dateTimeProvider,
@@ -32,7 +36,7 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         DbContextEventData eventData,
         InterceptionResult<int> result)
     {
-        CaptureAndHandle(eventData.Context as ApplicationDbContext);
+        CaptureAndWriteOutbox(eventData.Context as ApplicationDbContext);
         return result;
     }
 
@@ -41,13 +45,44 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
-        CaptureAndHandle(eventData.Context as ApplicationDbContext);
+        CaptureAndWriteOutbox(eventData.Context as ApplicationDbContext);
         return new ValueTask<InterceptionResult<int>>(result);
     }
 
-    private void CaptureAndHandle(ApplicationDbContext? context)
+    public override int SavedChanges(SaveChangesCompletedEventData eventData, int result)
+    {
+        ClearDomainEvents();
+        return result;
+    }
+
+    public override ValueTask<int> SavedChangesAsync(
+        SaveChangesCompletedEventData eventData,
+        int result,
+        CancellationToken cancellationToken = default)
+    {
+        ClearDomainEvents();
+        return new ValueTask<int>(result);
+    }
+
+    public override void SaveChangesFailed(DbContextErrorEventData eventData)
+    {
+        DetachGeneratedEntries(eventData.Context);
+    }
+
+    public override Task SaveChangesFailedAsync(
+        DbContextErrorEventData eventData,
+        CancellationToken cancellationToken = default)
+    {
+        DetachGeneratedEntries(eventData.Context);
+        return Task.CompletedTask;
+    }
+
+    private void CaptureAndWriteOutbox(ApplicationDbContext? context)
     {
         if (context is null) return;
+
+        _pendingClear.Clear();
+        _generatedEntries.Clear();
 
         var now = _dateTimeProvider.UtcNow;
 
@@ -63,15 +98,11 @@ public class DomainEventInterceptor : SaveChangesInterceptor
                 var messageName = _eventTypeRegistry.GetMessageName(domainEvent.GetType());
                 WriteOutboxEntries(context, (DomainEvent)domainEvent, messageName, now);
             }
-        }
 
-        foreach (var entry in entries)
-        {
             if (entry.Entity is IHasDomainEvents hasDomainEvents)
-                hasDomainEvents.ClearDomainEvents();
+                _pendingClear.Add(hasDomainEvents);
         }
 
-        // Persist use-case integration events (collected at Application layer)
         var pendingIntegrationEvents = _integrationEventCollector.DequeueAll() ?? [];
         foreach (var integrationEvent in pendingIntegrationEvents)
         {
@@ -79,16 +110,42 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         }
     }
 
+    private void ClearDomainEvents()
+    {
+        foreach (var entity in _pendingClear)
+            entity.ClearDomainEvents();
+
+        _pendingClear.Clear();
+        _generatedEntries.Clear();
+    }
+
+    private void DetachGeneratedEntries(DbContext? context)
+    {
+        if (context is null) return;
+
+        foreach (var entry in _generatedEntries)
+        {
+            var tracked = context.Entry(entry);
+            if (tracked.State != Microsoft.EntityFrameworkCore.EntityState.Detached)
+                tracked.State = Microsoft.EntityFrameworkCore.EntityState.Detached;
+        }
+
+        _generatedEntries.Clear();
+        _pendingClear.Clear();
+    }
+
     private void WriteOutboxEntries(ApplicationDbContext context, DomainEvent domainEvent, string messageName, DateTimeOffset now)
     {
         var eventLog = DomainEventLog.FromDomainEvent(domainEvent, messageName, now);
         context.Set<DomainEventLog>().Add(eventLog);
+        _generatedEntries.Add(eventLog);
 
         var mappings = _integrationEventMapper.Map(domainEvent);
         foreach (var mapping in mappings)
         {
             var outboxMsg = MessagingOutboxMessage.FromIntegrationEvent(mapping.IntegrationEvent, domainEvent, now);
             context.Set<MessagingOutboxMessage>().Add(outboxMsg);
+            _generatedEntries.Add(outboxMsg);
         }
     }
 
@@ -99,5 +156,6 @@ public class DomainEventInterceptor : SaveChangesInterceptor
     {
         var outboxMsg = MessagingOutboxMessage.FromIntegrationEvent(integrationEvent, now);
         context.Set<MessagingOutboxMessage>().Add(outboxMsg);
+        _generatedEntries.Add(outboxMsg);
     }
 }
