@@ -118,7 +118,8 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
         deliveryPolicy.Setup(x => x.GetDecision(It.IsAny<Type>()))
             .Returns(new DeliveryDecision { Outbox = true });
         var integrationEventCollector = new Mock<IIntegrationEventCollector>();
-        integrationEventCollector.Setup(x => x.DequeueAll()).Returns([]);
+        integrationEventCollector.Setup(x => x.CapturePending())
+            .Returns(new IntegrationEventBatch(Guid.NewGuid(), []));
         var interceptor = new DomainEventInterceptor(dateTimeProvider.Object, eventTypeRegistry.Object, classificationPolicy.Object, deliveryPolicy.Object, integrationEventMapper.Object, integrationEventCollector.Object);
         await using var context = _db.CreateContext(tenant, interceptor);
 

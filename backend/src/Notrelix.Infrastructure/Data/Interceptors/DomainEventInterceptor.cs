@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Messaging;
 using Notrelix.Infrastructure.Data.Events;
 using Notrelix.Infrastructure.Data.Messaging;
 
@@ -14,6 +15,7 @@ public class DomainEventInterceptor : SaveChangesInterceptor
 
     private readonly List<IHasDomainEvents> _pendingClear = [];
     private readonly List<object> _generatedEntries = [];
+    private IntegrationEventBatch? _capturedBatch;
 
     public DomainEventInterceptor(
         IDateTimeProvider dateTimeProvider,
@@ -50,7 +52,7 @@ public class DomainEventInterceptor : SaveChangesInterceptor
 
     public override int SavedChanges(SaveChangesCompletedEventData eventData, int result)
     {
-        ClearDomainEvents();
+        CommitCapture();
         return result;
     }
 
@@ -59,20 +61,20 @@ public class DomainEventInterceptor : SaveChangesInterceptor
         int result,
         CancellationToken cancellationToken = default)
     {
-        ClearDomainEvents();
+        CommitCapture();
         return new ValueTask<int>(result);
     }
 
     public override void SaveChangesFailed(DbContextErrorEventData eventData)
     {
-        DetachGeneratedEntries(eventData.Context);
+        RollbackCapture(eventData.Context);
     }
 
     public override Task SaveChangesFailedAsync(
         DbContextErrorEventData eventData,
         CancellationToken cancellationToken = default)
     {
-        DetachGeneratedEntries(eventData.Context);
+        RollbackCapture(eventData.Context);
         return Task.CompletedTask;
     }
 
@@ -85,6 +87,7 @@ public class DomainEventInterceptor : SaveChangesInterceptor
 
         var now = _dateTimeProvider.UtcNow;
 
+        // Phase 1: Capture Domain Events without clearing
         var entries = context.ChangeTracker
             .Entries<Entity>()
             .Where(e => e.Entity.DomainEvents.Any())
@@ -102,31 +105,52 @@ public class DomainEventInterceptor : SaveChangesInterceptor
                 _pendingClear.Add(hasDomainEvents);
         }
 
-        var pendingIntegrationEvents = _integrationEventCollector.DequeueAll() ?? [];
-        foreach (var integrationEvent in pendingIntegrationEvents)
+        // Phase 2: Capture Integration Events reversibly (not destructive)
+        _capturedBatch = _integrationEventCollector.CapturePending();
+        foreach (var integrationEvent in _capturedBatch.Events)
         {
             WriteIntegrationEventOutboxEntry(context, integrationEvent, now);
         }
     }
 
-    private void ClearDomainEvents()
+    /// <summary>
+    /// Called after SaveChanges succeeds: clear Domain Events, acknowledge Integration Events.
+    /// </summary>
+    private void CommitCapture()
     {
         foreach (var entity in _pendingClear)
             entity.ClearDomainEvents();
+
+        if (_capturedBatch is not null)
+        {
+            _integrationEventCollector.Acknowledge(_capturedBatch);
+            _capturedBatch = null;
+        }
 
         _pendingClear.Clear();
         _generatedEntries.Clear();
     }
 
-    private void DetachGeneratedEntries(DbContext? context)
+    /// <summary>
+    /// Called when SaveChanges fails: restore Integration Events, detach generated entries.
+    /// Domain Events are NOT cleared — they remain available for retry.
+    /// </summary>
+    private void RollbackCapture(DbContext? context)
     {
-        if (context is null) return;
-
-        foreach (var entry in _generatedEntries)
+        if (_capturedBatch is not null)
         {
-            var tracked = context.Entry(entry);
-            if (tracked.State != Microsoft.EntityFrameworkCore.EntityState.Detached)
-                tracked.State = Microsoft.EntityFrameworkCore.EntityState.Detached;
+            _integrationEventCollector.Restore(_capturedBatch);
+            _capturedBatch = null;
+        }
+
+        if (context is not null)
+        {
+            foreach (var entry in _generatedEntries)
+            {
+                var tracked = context.Entry(entry);
+                if (tracked.State != Microsoft.EntityFrameworkCore.EntityState.Detached)
+                    tracked.State = Microsoft.EntityFrameworkCore.EntityState.Detached;
+            }
         }
 
         _generatedEntries.Clear();
