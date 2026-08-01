@@ -42,6 +42,27 @@ builder.Services
 
 var app = builder.Build();
 
+// OpenAPI export mode: generate spec without DB/workers/network
+if (args.Contains("--export-openapi"))
+{
+    var outputPath = args.SkipWhile(a => a != "--export-openapi").Skip(1).FirstOrDefault()
+        ?? "contracts/openapi/notrelix.v1.json";
+
+    app.MapEndpoints();
+
+    var swaggerProvider = app.Services.GetRequiredService<Swashbuckle.AspNetCore.Swagger.ISwaggerProvider>();
+    var document = swaggerProvider.GetSwagger("v1");
+
+    var fullPath = Path.GetFullPath(outputPath);
+    Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+
+    using var writer = new StreamWriter(fullPath, false, new System.Text.UTF8Encoding(false));
+    document.SerializeAsV3(new Microsoft.OpenApi.Writers.OpenApiJsonWriter(writer));
+
+    Console.WriteLine($"OpenAPI spec exported to {fullPath}");
+    return;
+}
+
 if (await app.RunDatabaseCommandsAsync(args))
 {
     return;

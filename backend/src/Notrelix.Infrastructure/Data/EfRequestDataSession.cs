@@ -1,8 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
-using Notrelix.Application.Common.Data;
-using Notrelix.Application.Common.Data.Rls;
-
 namespace Notrelix.Infrastructure.Data;
 
 /// <summary>

@@ -1,5 +1,4 @@
 using FluentValidation;
-using Notrelix.Application.Common.Data;
 using ValidationException = Notrelix.Application.Common.Exceptions.ValidationException;
 
 namespace Notrelix.Application.Tests.Behaviors;

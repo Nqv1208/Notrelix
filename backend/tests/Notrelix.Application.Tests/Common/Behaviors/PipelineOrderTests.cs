@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using FluentAssertions;
 
 namespace Notrelix.Application.Tests.Common.Behaviors;
 

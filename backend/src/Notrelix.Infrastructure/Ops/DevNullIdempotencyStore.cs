@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Idempotency;
-
 namespace Notrelix.Infrastructure.Ops;
 
 public sealed class DevNullIdempotencyStore : IIdempotencyStore

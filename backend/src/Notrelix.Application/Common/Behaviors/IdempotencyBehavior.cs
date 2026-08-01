@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Common.Behaviors;
 

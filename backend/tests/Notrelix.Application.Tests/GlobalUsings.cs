@@ -10,7 +10,6 @@ global using Notrelix.Domain.WorkManagement.Items.Events;
 global using Notrelix.Application.Common.Context;
 global using Notrelix.Application.Common.Requests;
 global using Notrelix.Application.Common.Data;
-global using Notrelix.Application.Common.Data.Rls;
 global using Notrelix.Application.Common.Events;
 global using Notrelix.Application.Common.Exceptions;
 global using Notrelix.Application.Common.Idempotency;

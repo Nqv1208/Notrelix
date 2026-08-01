@@ -188,6 +188,18 @@ jobs:
           --
           tests/Notrelix.Domain.Tests/Snapshots
 
+      - name: Export OpenAPI spec and verify no drift
+        working-directory: backend
+        run: >
+          dotnet run
+          --project src/Notrelix.API/Notrelix.API.csproj
+          --configuration $DOTNET_CONFIGURATION
+          --no-build
+          --
+          --export-openapi
+          contracts/openapi/notrelix.v1.json
+          && git diff --exit-code -- contracts/openapi/notrelix.v1.json
+
       - name: Application tests
         working-directory: backend
         run: >

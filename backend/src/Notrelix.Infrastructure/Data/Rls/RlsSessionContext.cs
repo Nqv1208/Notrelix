@@ -1,9 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.Extensions.Options;
-using Notrelix.Application.Common.Data.Rls;
-using Notrelix.Infrastructure.Data.Rls;
-
 namespace Notrelix.Infrastructure.Data.Rls;
 
 public sealed class RlsSessionContext : IRlsSessionContext

@@ -1,5 +1,4 @@
 using System.Reflection;
-using FluentAssertions;
 using Notrelix.Application.Common.Requests.Execution;
 
 namespace Notrelix.Architecture.Tests.ApplicationLayer;

@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Data;
 using Notrelix.Application.Common.Requests.Scoping;
 
 namespace Notrelix.Application.Tests.Common.Behaviors;

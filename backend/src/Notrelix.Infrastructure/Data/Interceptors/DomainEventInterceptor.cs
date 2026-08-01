@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Notrelix.Infrastructure.Data.Events;
 using Notrelix.Infrastructure.Data.Messaging;
 

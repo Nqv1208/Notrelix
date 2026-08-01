@@ -3,7 +3,6 @@ global using MediatR;
 global using FluentValidation;
 global using FluentValidation.Results;
 global using Microsoft.EntityFrameworkCore;
-global using Microsoft.EntityFrameworkCore.Infrastructure;
 global using Microsoft.Extensions.Hosting;
 global using Microsoft.Extensions.Logging;
 
@@ -58,7 +57,6 @@ global using Notrelix.Application.Common.Requests.Caching;
 global using Notrelix.Application.Common.Requests.Security;
 global using Notrelix.Application.Common.SystemOperations;
 global using Notrelix.Application.Common.Data;
-global using Notrelix.Application.Common.Data.Rls;
 global using Notrelix.Application.Common.Email;
 global using Notrelix.Application.Common.Entitlements;
 global using Notrelix.Application.Common.Events;
