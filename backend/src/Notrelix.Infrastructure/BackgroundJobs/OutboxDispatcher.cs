@@ -56,7 +56,7 @@ internal sealed class OutboxDispatcher : BackgroundService
     private async Task ProcessBatchAsync(CancellationToken cancellationToken)
     {
         // Phase 1: Short claim transaction — select + mark Processing + commit
-        var claimed = await ClaimBatchAsync(cancellationToken);
+        var (claimed, lockId) = await ClaimBatchAsync(cancellationToken);
         if (claimed.Count == 0) return;
 
         // Phase 2: Publish outside database transaction
@@ -74,6 +74,15 @@ internal sealed class OutboxDispatcher : BackgroundService
 
         foreach (var message in messages)
         {
+            // Verify lease ownership before processing
+            if (message.LockId != lockId)
+            {
+                _logger.LogWarning(
+                    "Outbox {MsgId}: lease lost (expected {ExpectedLock}, found {ActualLock}). Skipping.",
+                    message.Id, lockId, message.LockId);
+                continue;
+            }
+
             await ProcessMessageAsync(message, context, eventTypeRegistry, eventCatalog, integrationEventBus, dateTimeProvider, cancellationToken);
         }
 
@@ -81,7 +90,7 @@ internal sealed class OutboxDispatcher : BackgroundService
         await context.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task<List<Guid>> ClaimBatchAsync(CancellationToken cancellationToken)
+    private async Task<(List<Guid> Ids, Guid LockId)> ClaimBatchAsync(CancellationToken cancellationToken)
     {
         await using var scope = _scopeFactory.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -89,6 +98,7 @@ internal sealed class OutboxDispatcher : BackgroundService
 
         var now = dateTimeProvider.UtcNow;
         var processingCutoff = now.AddSeconds(-ProcessingTimeoutSeconds);
+        var lockId = Guid.NewGuid();
 
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
@@ -113,19 +123,19 @@ internal sealed class OutboxDispatcher : BackgroundService
             if (messages.Count == 0)
             {
                 await transaction.RollbackAsync(cancellationToken);
-                return [];
+                return ([], Guid.Empty);
             }
 
             foreach (var message in messages)
             {
-                message.MarkProcessing(now);
+                message.MarkProcessing(now, lockId);
             }
 
             await context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
-            _logger.LogDebug("Claimed {Count} outbox messages for dispatch", messages.Count);
-            return messages.Select(m => m.Id).ToList();
+            _logger.LogDebug("Claimed {Count} outbox messages for dispatch (lock={LockId})", messages.Count, lockId);
+            return (messages.Select(m => m.Id).ToList(), lockId);
         }
         catch
         {
