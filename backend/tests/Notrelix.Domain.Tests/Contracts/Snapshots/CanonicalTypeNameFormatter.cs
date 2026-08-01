@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace Notrelix.Domain.Tests.Freeze.Snapshots;
+namespace Notrelix.Domain.Tests.Contracts.Snapshots;
 
 public static class CanonicalTypeNameFormatter
 {

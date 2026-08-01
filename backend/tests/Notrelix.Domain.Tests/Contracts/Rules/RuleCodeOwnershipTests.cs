@@ -12,7 +12,7 @@ using Notrelix.Domain.Integrations;
 using Notrelix.Domain.WorkManagement;
 using Notrelix.Domain.Workspaces;
 
-namespace Notrelix.Domain.Tests.Freeze;
+namespace Notrelix.Domain.Tests.Contracts.Rules;
 
 /// <summary>
 /// Ensures rule code constants are owned by the correct bounded context class,

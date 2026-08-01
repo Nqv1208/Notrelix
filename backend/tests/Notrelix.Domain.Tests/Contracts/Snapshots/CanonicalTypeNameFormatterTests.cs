@@ -1,7 +1,7 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze.Snapshots;
+using Notrelix.Domain.Tests.Contracts.Snapshots;
 
-namespace Notrelix.Domain.Tests.Freeze.Architecture;
+namespace Notrelix.Domain.Tests.Contracts.Snapshots;
 
 public class CanonicalTypeNameFormatterTests
 {
