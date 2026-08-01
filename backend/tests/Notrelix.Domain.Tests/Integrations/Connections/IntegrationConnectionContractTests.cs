@@ -65,14 +65,14 @@ public class IntegrationConnectionContractTests
     }
 
     [Fact]
-    public void SoftDelete_ShouldSetAudit()
+    public void Delete_ShouldSetAudit()
     {
         var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now);
         ((IHasDomainEvents)connection).ClearDomainEvents();
 
         var deletedBy = Guid.NewGuid();
         var deletedAt = DateTimeOffset.UtcNow;
-        connection.SoftDelete(deletedBy, deletedAt);
+        connection.Delete(deletedBy, deletedAt);
 
         connection.IsDeleted.Should().BeTrue();
         connection.UpdatedAt.Should().Be(deletedAt);
@@ -85,7 +85,7 @@ public class IntegrationConnectionContractTests
     public void Restore_ShouldSetAudit()
     {
         var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now);
-        connection.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        connection.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)connection).ClearDomainEvents();
 
         var restoredBy = Guid.NewGuid();
@@ -101,13 +101,13 @@ public class IntegrationConnectionContractTests
     }
 
     [Fact]
-    public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
+    public void Delete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
         var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now);
-        connection.SoftDelete(Actor, Now);
+        connection.Delete(Actor, Now);
         ((IHasDomainEvents)connection).ClearDomainEvents();
 
-        connection.SoftDelete(Actor, Now);
+        connection.Delete(Actor, Now);
 
         connection.DomainEvents.Should().BeEmpty();
     }

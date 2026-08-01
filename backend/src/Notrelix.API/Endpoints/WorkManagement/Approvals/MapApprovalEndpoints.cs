@@ -21,7 +21,7 @@ public static class MapApprovalEndpoints
         group.MapApproveApprovalRequest();
         group.MapRejectApprovalRequest();
         group.MapCancelApprovalRequest();
-        group.MapSoftDeleteApprovalRequest();
+        group.MapDeleteApprovalRequest();
         group.MapRestoreApprovalRequest();
 
         return app;

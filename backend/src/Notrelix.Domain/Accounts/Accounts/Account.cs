@@ -47,6 +47,7 @@ public class Account : SoftDeletableAggregateRoot, IAccountScoped
     public void Rename(string newName, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(newName);
         Guard.MaxLength(newName, 160);
 
@@ -56,8 +57,9 @@ public class Account : SoftDeletableAggregateRoot, IAccountScoped
         var oldName = Name;
         if (Name == newName.Trim()) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Name = newName.Trim();
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AccountRenamedDomainEvent(Id, oldName, Name, updatedBy, updatedAt));
     }
@@ -65,10 +67,12 @@ public class Account : SoftDeletableAggregateRoot, IAccountScoped
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(archivedBy);
         if (Status == AccountStatus.Closed) return;
 
+        var pending = PrepareAuditUpdate(archivedBy, archivedAt);
         Status = AccountStatus.Closed;
-        SetAuditOnUpdate(archivedBy, archivedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AccountArchivedDomainEvent(Id, archivedBy, archivedAt));
     }
@@ -76,11 +80,13 @@ public class Account : SoftDeletableAggregateRoot, IAccountScoped
     public void Suspend(Guid suspendedBy, DateTimeOffset suspendedAt, string? reason = null)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(suspendedBy);
         if (Status == AccountStatus.Suspended) return;
 
         var previousStatus = Status;
+        var pending = PrepareAuditUpdate(suspendedBy, suspendedAt);
         Status = AccountStatus.Suspended;
-        SetAuditOnUpdate(suspendedBy, suspendedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AccountSuspendedDomainEvent(Id, previousStatus, suspendedBy, suspendedAt, reason));
     }
@@ -88,44 +94,48 @@ public class Account : SoftDeletableAggregateRoot, IAccountScoped
     public void Activate(Guid activatedBy, DateTimeOffset activatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(activatedBy);
         if (Status == AccountStatus.Active || Status == AccountStatus.Trialing) return;
 
         var previousStatus = Status;
+        var pending = PrepareAuditUpdate(activatedBy, activatedAt);
         Status = AccountStatus.Active;
-        SetAuditOnUpdate(activatedBy, activatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AccountActivatedDomainEvent(Id, previousStatus, activatedBy, activatedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        Status = AccountStatus.SoftDeleted;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        RaiseDomainEvent(new AccountSoftDeletedDomainEvent(Id, deletedBy, deletedAt, reason));
+        RaiseDomainEvent(new AccountDeletedDomainEvent(Id, Status, deletedBy, deletedAt, pendingDeletion.Reason));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        Status = AccountStatus.Active;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
-        RaiseDomainEvent(new AccountRestoredDomainEvent(Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new AccountRestoredDomainEvent(Id, Status, restoredBy, restoredAt));
     }
 
     public void UpdatePlanCode(string? planCode, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         var normalized = planCode?.Trim();
         if (PlanCode == normalized) return;
 
         var oldPlanCode = PlanCode;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         PlanCode = normalized;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AccountPlanCodeChangedDomainEvent(Id, oldPlanCode, PlanCode, updatedBy, updatedAt));
     }
@@ -133,12 +143,14 @@ public class Account : SoftDeletableAggregateRoot, IAccountScoped
     public void UpdateDefaultRegion(string? regionCode, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         var normalized = regionCode?.Trim();
         if (DefaultRegionCode == normalized) return;
 
         var oldRegionCode = DefaultRegionCode;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         DefaultRegionCode = normalized;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AccountDefaultRegionChangedDomainEvent(Id, oldRegionCode, DefaultRegionCode, updatedBy, updatedAt));
     }

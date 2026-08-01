@@ -15,7 +15,7 @@ public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     private Block() : base() { }
 
-    public static Block Create(
+    public static Block CreateRoot(
         Guid accountId,
         Guid workspaceId,
         Guid pageId,
@@ -24,7 +24,6 @@ public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
         FractionalIndex position,
         Guid createdBy,
         DateTimeOffset createdAt,
-        Guid? parentId = null,
         BlockProperties? properties = null)
     {
         Guard.NotEmpty(accountId);
@@ -41,7 +40,54 @@ public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
             AccountId = accountId,
             WorkspaceId = workspaceId,
             PageId = pageId,
-            ParentId = parentId,
+            ParentId = null,
+            Type = type,
+            Content = content,
+            Properties = properties ?? BlockProperties.Empty(),
+            Position = position
+        };
+
+        block.SetAuditOnCreate(createdBy, createdAt);
+        block.RaiseDomainEvent(new BlockCreatedDomainEvent(accountId, workspaceId, pageId, block.Id, type, createdBy, createdAt));
+
+        return block;
+    }
+
+    public static Block CreateChild(
+        Guid accountId,
+        Guid workspaceId,
+        Guid pageId,
+        BlockType type,
+        BlockContent content,
+        FractionalIndex position,
+        Guid createdBy,
+        DateTimeOffset createdAt,
+        BlockAncestorPath parentPath,
+        BlockProperties? properties = null)
+    {
+        Guard.NotEmpty(accountId);
+        Guard.NotEmpty(workspaceId);
+        Guard.NotEmpty(pageId);
+        Guard.NotEmpty(createdBy);
+        Guard.NotNull(content);
+        Guard.NotNull(position);
+        Guard.NotNull(parentPath);
+
+        if (parentPath.AccountId != accountId)
+            throw new BusinessRuleException(DocumentRuleCodes.Documents_BlockTree_ScopeMismatch, "Parent block must belong to the same account.");
+        if (parentPath.WorkspaceId != workspaceId)
+            throw new BusinessRuleException(DocumentRuleCodes.Documents_BlockTree_ScopeMismatch, "Parent block must belong to the same workspace.");
+        if (parentPath.PageId != pageId)
+            throw new BusinessRuleException(DocumentRuleCodes.Documents_BlockTree_ScopeMismatch, "Parent block must belong to the same page.");
+
+        Rules.BlockContentValidator.Validate(type, content);
+
+        var block = new Block
+        {
+            AccountId = accountId,
+            WorkspaceId = workspaceId,
+            PageId = pageId,
+            ParentId = parentPath.TargetParentId,
             Type = type,
             Content = content,
             Properties = properties ?? BlockProperties.Empty(),
@@ -57,26 +103,30 @@ public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void UpdateContent(BlockContent newContent, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNull(newContent);
         Rules.BlockContentValidator.Validate(Type, newContent);
 
         if (Content == newContent) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Content = newContent;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new BlockContentUpdatedDomainEvent(AccountId, WorkspaceId, Id, PageId, updatedBy, updatedAt));
+        RaiseDomainEvent(new BlockContentUpdatedDomainEvent(AccountId, WorkspaceId, Id, PageId, Type, updatedBy, updatedAt));
     }
 
     public void UpdateProperties(BlockProperties newProperties, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNull(newProperties);
 
         if (Properties == newProperties) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Properties = newProperties;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BlockPropertiesUpdatedDomainEvent(AccountId, WorkspaceId, Id, PageId, updatedBy, updatedAt));
     }
@@ -84,14 +134,16 @@ public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void MoveToRoot(FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNull(newPosition);
 
         if (ParentId == null && Position == newPosition) return;
 
         var oldParentId = ParentId;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         ParentId = null;
         Position = newPosition;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BlockMovedDomainEvent(AccountId, WorkspaceId, Id, PageId, oldParentId, null, newPosition.Value, updatedBy, updatedAt));
     }
@@ -99,6 +151,7 @@ public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void MoveUnder(BlockAncestorPath parentPath, FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNull(parentPath);
         Guard.NotNull(newPosition);
 
@@ -115,27 +168,30 @@ public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (ParentId == parentPath.TargetParentId && Position == newPosition) return;
 
         var oldParentId = ParentId;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         ParentId = parentPath.TargetParentId;
         Position = newPosition;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BlockMovedDomainEvent(AccountId, WorkspaceId, Id, PageId, oldParentId, parentPath.TargetParentId, newPosition.Value, updatedBy, updatedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        RaiseDomainEvent(new BlockSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, PageId, deletedBy, deletedAt));
+        RaiseDomainEvent(new BlockDeletedDomainEvent(AccountId, WorkspaceId, Id, PageId, deletedBy, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new BlockRestoredDomainEvent(AccountId, WorkspaceId, Id, PageId, restoredBy, restoredAt));
     }

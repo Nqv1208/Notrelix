@@ -6,5 +6,6 @@ public sealed record SpaceRestoredDomainEvent(
     Guid WorkspaceId,
     Guid SpaceId,
     Guid RestoredBy,
+    SpaceStatus Status,
     DateTimeOffset OccurredAt
 ) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

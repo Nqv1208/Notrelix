@@ -220,12 +220,12 @@ public class CalendarIntegrationTests
     }
 
     [Fact]
-    public void SoftDelete_ShouldDeactivate_AndMarkDeleted()
+    public void Delete_ShouldDeactivate_AndMarkDeleted()
     {
         var integration = CreateIntegration();
         ((IHasDomainEvents)integration).ClearDomainEvents();
 
-        integration.SoftDelete(Actor, Now);
+        integration.Delete(Actor, Now);
 
         integration.IsActive.Should().BeFalse();
         integration.IsDeleted.Should().BeTrue();
@@ -236,7 +236,7 @@ public class CalendarIntegrationTests
     public void Restore_ShouldRestoreState()
     {
         var integration = CreateIntegration();
-        integration.SoftDelete(Actor, Now);
+        integration.Delete(Actor, Now);
         ((IHasDomainEvents)integration).ClearDomainEvents();
 
         integration.Restore(Actor, Now.AddHours(1));

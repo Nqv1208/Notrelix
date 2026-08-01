@@ -32,7 +32,7 @@ public class DeleteBoardItemCommandHandler : IRequestHandler<DeleteBoardItemComm
             .FirstOrDefaultAsync(i => i.Id == request.BoardItemId, ct);
         if (item is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
-        item.SoftDelete(_currentUser.UserId, _timeProvider.UtcNow);
+        item.Delete(_currentUser.UserId, _timeProvider.UtcNow);
         return Result.Success();
     }
 }

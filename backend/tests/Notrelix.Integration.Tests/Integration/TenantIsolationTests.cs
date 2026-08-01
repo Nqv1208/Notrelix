@@ -142,7 +142,7 @@ public class TenantIsolationTests
     }
 
     [Fact]
-    public void QueryFilter_SoftDeleteAndWorkspace_CombineCorrectly()
+    public void QueryFilter_DeleteAndWorkspace_CombineCorrectly()
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetWorkspace(Guid.NewGuid(), WorkspaceA, null);
@@ -157,7 +157,7 @@ public class TenantIsolationTests
     }
 
     [Fact]
-    public void QueryFilter_WithoutWorkspace_SoftDeleteStillApplies()
+    public void QueryFilter_WithoutWorkspace_DeleteStillApplies()
     {
         var model = BuildModel(null);
 

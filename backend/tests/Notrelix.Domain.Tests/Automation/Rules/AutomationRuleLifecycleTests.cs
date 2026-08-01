@@ -6,10 +6,18 @@ namespace Notrelix.Domain.Tests.Automation.Rules;
 
 public class AutomationRuleLifecycleTests
 {
+    private static string? GetActionConfig(string actionType) => actionType switch
+    {
+        "Webhook" => """{"url":"https://example.com/webhook"}""",
+        "SendEmail" => """{"templateId":"tpl_1"}""",
+        "SlackMessage" => """{"channelId":"C123","text":"test"}""",
+        _ => null
+    };
+
     private static AutomationConfiguration CreateConfig(string triggerType = "ItemCreated", string actionType = "Webhook")
     {
         var trigger = AutomationTriggerDefinition.Create(triggerType);
-        var action = AutomationActionDefinition.Create(actionType);
+        var action = AutomationActionDefinition.Create(actionType, GetActionConfig(actionType));
         return AutomationConfiguration.Create(trigger, action);
     }
 
@@ -17,7 +25,7 @@ public class AutomationRuleLifecycleTests
     public void Enable_DeletedRule_ShouldReject()
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        rule.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        rule.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => rule.Enable(Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
@@ -27,7 +35,7 @@ public class AutomationRuleLifecycleTests
     public void Disable_DeletedRule_ShouldReject()
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        rule.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        rule.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => rule.Disable(Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
@@ -37,19 +45,19 @@ public class AutomationRuleLifecycleTests
     public void Enable_DeletedRule_ShouldNotChangeStatus()
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        rule.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        rule.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         var act = () => rule.Enable(Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<DomainException>();
 
-        rule.Status.Should().Be(AutomationRuleStatus.Disabled);
+        rule.Status.Should().Be(AutomationRuleStatus.Draft);
     }
 
     [Fact]
     public void Restore_thenEnable_ShouldSucceed()
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        rule.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        rule.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         rule.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
         rule.Enable(Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -61,7 +69,7 @@ public class AutomationRuleLifecycleTests
     public void Enable_afterRestore_ShouldRaiseEnabledEvent()
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        rule.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        rule.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         rule.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)rule).ClearDomainEvents();
 
@@ -71,7 +79,7 @@ public class AutomationRuleLifecycleTests
     }
 
     [Fact]
-    public void SoftDelete_ShouldSetStatusAndAudit()
+    public void Delete_ShouldPreserveStatusAndAudit()
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
         rule.Enable(Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -79,20 +87,21 @@ public class AutomationRuleLifecycleTests
 
         var deletedBy = Guid.NewGuid();
         var deletedAt = DateTimeOffset.UtcNow;
-        rule.SoftDelete(deletedBy, deletedAt);
+        rule.Delete(deletedBy, deletedAt);
 
         rule.IsDeleted.Should().BeTrue();
-        rule.Status.Should().Be(AutomationRuleStatus.Disabled);
+        rule.Status.Should().Be(AutomationRuleStatus.Active);
         rule.UpdatedAt.Should().Be(deletedAt);
         rule.UpdatedBy.Should().Be(deletedBy);
         rule.Version.Should().Be(3);
     }
 
     [Fact]
-    public void Restore_ShouldSetStatusAndAudit()
+    public void Restore_ShouldPreserveStatusAndAudit()
     {
         var rule = AutomationRule.Create(Guid.NewGuid(), Guid.NewGuid(), "Rule", CreateConfig(), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        rule.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        rule.Enable(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        rule.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)rule).ClearDomainEvents();
 
         var restoredBy = Guid.NewGuid();
@@ -100,10 +109,10 @@ public class AutomationRuleLifecycleTests
         rule.Restore(restoredBy, restoredAt);
 
         rule.IsDeleted.Should().BeFalse();
-        rule.Status.Should().Be(AutomationRuleStatus.Draft);
+        rule.Status.Should().Be(AutomationRuleStatus.Active);
         rule.UpdatedAt.Should().Be(restoredAt);
         rule.UpdatedBy.Should().Be(restoredBy);
-        rule.Version.Should().Be(3);
+        rule.Version.Should().Be(4);
     }
 
     [Fact]

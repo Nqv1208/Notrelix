@@ -166,7 +166,7 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 column.Name,
                 column.Type.ToString(),
                 JsonSerializer.Serialize(column.Settings, (JsonSerializerOptions?)null),
-                column.DefaultValue,
+                column.DefaultValue == null ? null : column.DefaultValue.Data.Value,
                 column.Position.Value,
                 column.IsSystem,
                 column.IsDeleted

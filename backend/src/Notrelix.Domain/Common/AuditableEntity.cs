@@ -4,6 +4,10 @@ namespace Notrelix.Domain.Common;
 
 public abstract class AuditableEntity : Entity
 {
+    public readonly record struct PendingAuditUpdate(
+        Guid? ActorId,
+        DateTimeOffset OccurredAt);
+
     public DateTimeOffset CreatedAt { get; protected set; }
     public Guid? CreatedBy { get; protected set; }
     public DateTimeOffset? UpdatedAt { get; protected set; }
@@ -38,29 +42,40 @@ public abstract class AuditableEntity : Entity
         CreatedAt = createdAt;
     }
 
-    protected void SetAuditOnUpdate(Guid? updatedBy, DateTimeOffset updatedAt)
+    protected PendingAuditUpdate PrepareAuditUpdate(
+        Guid? actorId,
+        DateTimeOffset occurredAt)
     {
-        if (updatedAt == default || updatedAt == DateTimeOffset.MinValue)
+        ValidateAuditUpdate(actorId, occurredAt);
+        return new PendingAuditUpdate(actorId, occurredAt);
+    }
+
+    protected void ApplyAuditUpdate(PendingAuditUpdate update)
+    {
+        UpdatedBy = update.ActorId;
+        UpdatedAt = update.OccurredAt;
+    }
+
+    private void ValidateAuditUpdate(Guid? actorId, DateTimeOffset occurredAt)
+    {
+        if (occurredAt == default || occurredAt == DateTimeOffset.MinValue)
             throw new BusinessRuleException(
                 Common_Audit_InvalidTimestamp,
                 "Updated timestamp must be a valid date.");
 
-        if (updatedBy.HasValue && updatedBy.Value == Guid.Empty)
+        if (actorId.HasValue && actorId.Value == Guid.Empty)
             throw new BusinessRuleException(
                 Common_Audit_EmptyActor,
                 "UpdatedBy actor cannot be Guid.Empty.");
 
-        if (CreatedAt != default && updatedAt < CreatedAt)
+        if (CreatedAt != default && occurredAt < CreatedAt)
             throw new BusinessRuleException(
                 Common_Audit_UpdatedAtBeforeCreatedAt,
                 "Updated timestamp cannot be earlier than created timestamp.");
 
-        if (UpdatedAt.HasValue && updatedAt < UpdatedAt.Value)
+        if (UpdatedAt.HasValue && occurredAt < UpdatedAt.Value)
             throw new BusinessRuleException(
                 Common_Audit_UpdatedAtRegression,
                 "Updated timestamp cannot be earlier than previous UpdatedAt.");
-
-        UpdatedBy = updatedBy;
-        UpdatedAt = updatedAt;
     }
 }

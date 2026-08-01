@@ -75,13 +75,13 @@ public class BoardViewTests
     }
 
     [Fact]
-    public void SoftDelete_ShouldSucceed_WhenNotDefaultView()
+    public void Delete_ShouldSucceed_WhenNotDefaultView()
     {
         var workspaceId = Guid.NewGuid();
         var boardId = Guid.NewGuid();
         var view = BoardView.Create(Guid.NewGuid(), workspaceId, boardId, "View", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), Guid.NewGuid(), DateTimeOffset.UtcNow, isDefault: false);
 
-        view.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        view.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         view.IsDeleted.Should().BeTrue();
     }
@@ -138,7 +138,7 @@ public class BoardViewTests
     public void Archive_ShouldThrow_WhenDeleted()
     {
         var view = BoardView.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "View", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        view.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        view.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         Action act = () => view.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -174,7 +174,7 @@ public class BoardViewTests
     {
         var view = BoardView.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "View", ViewType.Table, TableViewConfig.Create(JsonValue.EmptyObject()), Guid.NewGuid(), DateTimeOffset.UtcNow);
         view.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        view.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        view.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         Action act = () => view.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

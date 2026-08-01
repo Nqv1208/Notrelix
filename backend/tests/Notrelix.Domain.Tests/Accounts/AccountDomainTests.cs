@@ -214,4 +214,166 @@ public class AccountDomainTests
 
         domain.Version.Should().Be(versionBefore + 1);
     }
+
+    private AccountDomain CreateDomain()
+    {
+        return AccountDomain.Create(_accountId, "example.com", _actorId, _now);
+    }
+
+    private AccountDomain CreateVerifiedDomain()
+    {
+        var domain = AccountDomain.Create(_accountId, "example.com", _actorId, _now);
+        domain.Verify(_now, _actorId);
+        ((IHasDomainEvents)domain).ClearDomainEvents();
+        return domain;
+    }
+
+    [Fact]
+    public void InitialVersion_ShouldBe1()
+    {
+        var domain = AccountDomain.Create(_accountId, "example.com", Guid.NewGuid(), DateTimeOffset.UtcNow, null);
+        domain.Version.Should().Be(1);
+    }
+
+    [Fact]
+    public void Reject_ShouldIncrementVersion()
+    {
+        var domain = CreateDomain();
+        var before = domain.Version;
+        domain.Reject(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        domain.Version.Should().Be(before + 1);
+    }
+
+    [Fact]
+    public void Reject_ShouldSetAudit()
+    {
+        var domain = CreateDomain();
+        var actor = Guid.NewGuid();
+        var time = DateTimeOffset.UtcNow;
+        domain.Reject(actor, time);
+        domain.UpdatedBy.Should().Be(actor);
+        domain.UpdatedAt.Should().Be(time);
+    }
+
+    [Fact]
+    public void EnableAutoJoin_ShouldIncrementVersion()
+    {
+        var domain = CreateVerifiedDomain();
+        var before = domain.Version;
+        domain.EnableAutoJoin(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        domain.Version.Should().Be(before + 1);
+    }
+
+    [Fact]
+    public void EnableAutoJoin_ShouldSetAudit()
+    {
+        var domain = CreateVerifiedDomain();
+        var actor = Guid.NewGuid();
+        var time = DateTimeOffset.UtcNow;
+        domain.EnableAutoJoin(actor, time);
+        domain.UpdatedBy.Should().Be(actor);
+        domain.UpdatedAt.Should().Be(time);
+    }
+
+    [Fact]
+    public void DisableAutoJoin_ShouldIncrementVersion()
+    {
+        var domain = CreateVerifiedDomain();
+        domain.EnableAutoJoin(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var before = domain.Version;
+        domain.DisableAutoJoin(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        domain.Version.Should().Be(before + 1);
+    }
+
+    [Fact]
+    public void DisableAutoJoin_ShouldSetAudit()
+    {
+        var domain = CreateVerifiedDomain();
+        domain.EnableAutoJoin(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var actor = Guid.NewGuid();
+        var time = DateTimeOffset.UtcNow;
+        domain.DisableAutoJoin(actor, time);
+        domain.UpdatedBy.Should().Be(actor);
+        domain.UpdatedAt.Should().Be(time);
+    }
+
+    [Fact]
+    public void Verify_NoOp_VersionShouldNotIncrement()
+    {
+        var domain = CreateVerifiedDomain();
+        var before = domain.Version;
+        domain.Verify(DateTimeOffset.UtcNow, Guid.NewGuid());
+        domain.Version.Should().Be(before);
+    }
+
+    [Fact]
+    public void Reject_NoOp_VersionShouldNotIncrement()
+    {
+        var domain = CreateDomain();
+        domain.Reject(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var before = domain.Version;
+        domain.Reject(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        domain.Version.Should().Be(before);
+    }
+
+    [Fact]
+    public void EnableAutoJoin_NoOp_VersionShouldNotIncrement()
+    {
+        var domain = CreateVerifiedDomain();
+        domain.EnableAutoJoin(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var before = domain.Version;
+        domain.EnableAutoJoin(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        domain.Version.Should().Be(before);
+    }
+
+    [Fact]
+    public void DisableAutoJoin_NoOp_VersionShouldNotIncrement()
+    {
+        var domain = CreateVerifiedDomain();
+        var before = domain.Version;
+        domain.DisableAutoJoin(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        domain.Version.Should().Be(before);
+    }
+
+    [Fact]
+    public void Verify_ShouldRaiseEvent_WithCorrectPayload()
+    {
+        var domain = CreateDomain();
+        var actor = Guid.NewGuid();
+        var time = DateTimeOffset.UtcNow;
+        domain.Verify(time, actor);
+        var evt = domain.DomainEvents.OfType<DomainEvent>().Last();
+        evt.Should().BeOfType<AccountDomainVerifiedDomainEvent>();
+    }
+
+    [Fact]
+    public void Reject_ShouldRaiseEvent_WithCorrectPayload()
+    {
+        var domain = CreateDomain();
+        var actor = Guid.NewGuid();
+        domain.Reject(actor, DateTimeOffset.UtcNow);
+        var evt = domain.DomainEvents.OfType<DomainEvent>().Last();
+        evt.Should().BeOfType<AccountDomainRejectedDomainEvent>();
+    }
+
+    [Fact]
+    public void EnableAutoJoin_ShouldRaiseEvent_WithCorrectPayload()
+    {
+        var domain = CreateVerifiedDomain();
+        var actor = Guid.NewGuid();
+        domain.EnableAutoJoin(actor, DateTimeOffset.UtcNow);
+        var evt = domain.DomainEvents.OfType<DomainEvent>().Last();
+        evt.Should().BeOfType<AccountDomainAutoJoinEnabledDomainEvent>();
+    }
+
+    [Fact]
+    public void DisableAutoJoin_ShouldRaiseEvent_WithCorrectPayload()
+    {
+        var domain = CreateVerifiedDomain();
+        domain.EnableAutoJoin(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var actor = Guid.NewGuid();
+        domain.DisableAutoJoin(actor, DateTimeOffset.UtcNow);
+        var evt = domain.DomainEvents.OfType<DomainEvent>().Last();
+        evt.Should().BeOfType<AccountDomainAutoJoinDisabledDomainEvent>();
+    }
 }

@@ -2,7 +2,7 @@ using Notrelix.Domain.Identity.Sessions.Events;
 
 namespace Notrelix.Domain.Identity.Sessions;
 
-public class UserSession : SoftDeletableAggregateRoot
+public sealed class UserSession : AggregateRoot
 {
     public Guid UserId { get; private set; }
     public RefreshTokenHash RefreshTokenHash { get; private set; } = null!;
@@ -49,7 +49,6 @@ public class UserSession : SoftDeletableAggregateRoot
 
     public void UpdateRefreshToken(RefreshTokenHash newTokenHash, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotNull(newTokenHash);
 
         if (Status != SessionStatus.Active)
@@ -57,15 +56,15 @@ public class UserSession : SoftDeletableAggregateRoot
             throw new BusinessRuleException(IdentityRuleCodes.Identity_Session_CannotUpdateRefreshTokenOfInactive, "Cannot update refresh token for an inactive session.");
         }
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         RefreshTokenHash = newTokenHash;
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserSessionRefreshTokenRotatedDomainEvent(Id, UserId, updatedAt));
     }
 
     public void Revoke(DateTimeOffset revokedAt, string? reason = null)
     {
-        EnsureNotDeleted();
         if (Status == SessionStatus.Revoked) return;
 
         if (Status == SessionStatus.Expired)
@@ -73,17 +72,16 @@ public class UserSession : SoftDeletableAggregateRoot
             throw new BusinessRuleException(IdentityRuleCodes.Identity_Session_CannotRevokeExpired, "Cannot revoke an expired session.");
         }
 
+        var pending = PrepareAuditUpdate(UserId, revokedAt);
         Status = SessionStatus.Revoked;
         RevokedAt = revokedAt;
-
-        SetAuditOnUpdate(UserId, revokedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserSessionRevokedDomainEvent(Id, UserId, revokedAt, reason));
     }
 
     public void Expire(DateTimeOffset expiredAt)
     {
-        EnsureNotDeleted();
         if (Status == SessionStatus.Expired) return;
 
         if (Status == SessionStatus.Revoked)
@@ -91,29 +89,11 @@ public class UserSession : SoftDeletableAggregateRoot
             throw new BusinessRuleException(IdentityRuleCodes.Identity_Session_CannotExpireRevoked, "Cannot expire a revoked session.");
         }
 
+        var pending = PrepareAuditUpdate(UserId, expiredAt);
         Status = SessionStatus.Expired;
         ExpiredAt = expiredAt;
-
-        SetAuditOnUpdate(UserId, expiredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserSessionExpiredDomainEvent(Id, UserId, expiredAt));
-    }
-
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        if (IsDeleted) return;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
-        IncrementVersion();
-        RaiseDomainEvent(new UserSessionSoftDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, reason));
-    }
-
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        if (!IsDeleted) return;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
-        IncrementVersion();
-        RaiseDomainEvent(new UserSessionRestoredDomainEvent(Id, UserId, restoredBy, restoredAt));
     }
 }

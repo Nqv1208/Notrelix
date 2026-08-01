@@ -146,7 +146,7 @@ public class FieldValueValidatorContractTests
     [Fact]
     public void Date_ShouldAcceptIso8601Format()
     {
-        var value = FieldValue.Create(JsonValue.Create("\"2024-01-15T10:30:00.000Z\""));
+        var value = FieldValue.Create(JsonValue.Create("\"2024-01-15T10:30:00.0000000+00:00\""));
         var settings = FieldSettings.Empty();
 
         Action act = () => FieldValueValidator.Validate(value, FieldType.Date, settings);

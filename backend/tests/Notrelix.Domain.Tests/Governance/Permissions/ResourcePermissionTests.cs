@@ -48,7 +48,7 @@ public class ResourcePermissionTests
     }
 
     [Fact]
-    public void Revoke_ShouldSoftDelete_AndRaiseEvent()
+    public void Revoke_ShouldDelete_AndRaiseEvent()
     {
         var workspaceId = Guid.NewGuid();
         var permission = ResourcePermission.Grant(Guid.NewGuid(),

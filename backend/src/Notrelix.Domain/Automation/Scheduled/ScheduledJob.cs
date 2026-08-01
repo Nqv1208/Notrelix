@@ -39,8 +39,9 @@ public class ScheduledJob : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (Status == ScheduledJobStatus.Paused) return;
+        var pending = PrepareAuditUpdate(null, updatedAt);
         Status = ScheduledJobStatus.Paused;
-        SetAuditOnUpdate(null, updatedAt);
+        ApplyAuditUpdate(pending);
         RaiseDomainEvent(new ScheduledJobPausedDomainEvent(AccountId, WorkspaceId, Id, updatedAt));
     }
 
@@ -48,16 +49,18 @@ public class ScheduledJob : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         if (Status != ScheduledJobStatus.Paused) return;
+        var pending = PrepareAuditUpdate(null, updatedAt);
         Status = ScheduledJobStatus.Active;
-        SetAuditOnUpdate(null, updatedAt);
+        ApplyAuditUpdate(pending);
     }
 
     public void Cancel(DateTimeOffset cancelledAt)
     {
         EnsureNotDeleted();
         if (Status == ScheduledJobStatus.Cancelled) return;
+        var pending = PrepareAuditUpdate(null, cancelledAt);
         Status = ScheduledJobStatus.Cancelled;
-        SetAuditOnUpdate(null, cancelledAt);
+        ApplyAuditUpdate(pending);
     }
 
     public void Complete(DateTimeOffset completedAt)
@@ -66,8 +69,9 @@ public class ScheduledJob : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (Status == ScheduledJobStatus.Completed) return;
         if (Status == ScheduledJobStatus.Cancelled || Status == ScheduledJobStatus.Failed)
             throw new BusinessRuleException(AutomationRuleCodes.Automation_ScheduledJob_CannotCompleteFromStatus, $"Cannot complete a job in '{Status}' status.");
+        var pending = PrepareAuditUpdate(null, completedAt);
         Status = ScheduledJobStatus.Completed;
-        SetAuditOnUpdate(null, completedAt);
+        ApplyAuditUpdate(pending);
         RaiseDomainEvent(new ScheduledJobCompletedDomainEvent(AccountId, WorkspaceId, Id, completedAt));
     }
 
@@ -77,17 +81,19 @@ public class ScheduledJob : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (Status == ScheduledJobStatus.Failed) return;
         if (Status == ScheduledJobStatus.Completed || Status == ScheduledJobStatus.Cancelled)
             throw new BusinessRuleException(AutomationRuleCodes.Automation_ScheduledJob_CannotFailFromStatus, $"Cannot fail a job in '{Status}' status.");
+        var pending = PrepareAuditUpdate(null, failedAt);
         Status = ScheduledJobStatus.Failed;
-        SetAuditOnUpdate(null, failedAt);
+        ApplyAuditUpdate(pending);
         RaiseDomainEvent(new ScheduledJobFailedDomainEvent(AccountId, WorkspaceId, Id, reason, failedAt));
     }
 
     public void MarkRunCompleted(DateTimeOffset nextRunAt, DateTimeOffset completedAt)
     {
         EnsureNotDeleted();
+        var pending = PrepareAuditUpdate(null, completedAt);
         LastRunAt = completedAt;
         NextRunAt = nextRunAt;
-        SetAuditOnUpdate(null, completedAt);
+        ApplyAuditUpdate(pending);
         RaiseDomainEvent(new ScheduledJobRunCompletedDomainEvent(AccountId, WorkspaceId, Id, completedAt, nextRunAt));
     }
 
@@ -95,22 +101,25 @@ public class ScheduledJob : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotNull(newSchedule);
+        var pending = PrepareAuditUpdate(null, updatedAt);
         Schedule = newSchedule;
-        SetAuditOnUpdate(null, updatedAt);
+        ApplyAuditUpdate(pending);
         RaiseDomainEvent(new ScheduledJobUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
         EnsureNotDeleted();
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        RaiseDomainEvent(new ScheduledJobSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
+        RaiseDomainEvent(new ScheduledJobDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
         if (!IsDeleted) return;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
         RaiseDomainEvent(new ScheduledJobRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredAt));
     }
 }

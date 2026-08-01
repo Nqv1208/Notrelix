@@ -2,7 +2,7 @@ using Notrelix.Domain.Identity.Tokens.Events;
 
 namespace Notrelix.Domain.Identity.Tokens;
 
-public class ApiToken : SoftDeletableAggregateRoot, IWorkspaceScoped
+public sealed class ApiToken : AggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -53,21 +53,20 @@ public class ApiToken : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void Revoke(Guid revokedBy, DateTimeOffset revokedAt)
     {
-        EnsureNotDeleted();
+        Guard.NotEmpty(revokedBy);
         if (Status == ApiTokenStatus.Revoked) return;
 
+        var pending = PrepareAuditUpdate(revokedBy, revokedAt);
         Status = ApiTokenStatus.Revoked;
         RevokedAt = revokedAt;
         RevokedBy = revokedBy;
-        SetAuditOnUpdate(revokedBy, revokedAt);
+        ApplyAuditUpdate(pending);
         RaiseDomainEvent(new ApiTokenRevokedDomainEvent(AccountId, WorkspaceId, Id, revokedAt));
         IncrementVersion();
     }
 
     public void RecordUse(DateTimeOffset usedAt)
     {
-        EnsureNotDeleted();
-
         if (Status != ApiTokenStatus.Active)
             throw new BusinessRuleException(IdentityRuleCodes.Identity_ApiToken_CannotUseInactive, "Cannot use an inactive API token.");
 
@@ -78,27 +77,10 @@ public class ApiToken : SoftDeletableAggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(IdentityRuleCodes.Identity_ApiToken_CannotUseExpired, "Cannot use an expired API token.");
         }
 
+        var pending = PrepareAuditUpdate(AccountId, usedAt);
         LastUsedAt = usedAt;
-        SetAuditOnUpdate(AccountId, usedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new ApiTokenRecordedUseDomainEvent(AccountId, WorkspaceId, Id, usedAt));
-    }
-
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        if (IsDeleted) return;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
-        IncrementVersion();
-        RaiseDomainEvent(new ApiTokenSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedAt));
-    }
-
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        if (!IsDeleted) return;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
-        IncrementVersion();
-        RaiseDomainEvent(new ApiTokenRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredAt));
     }
 }

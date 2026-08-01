@@ -30,8 +30,6 @@ public class WorkspaceRouteConfiguration : IEntityTypeConfiguration<WorkspaceRou
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason").HasMaxLength(500);
-        builder.Property(x => x.RestoredAt).HasColumnName("restored_at");
-        builder.Property(x => x.RestoredBy).HasColumnName("restored_by");
 
         builder.HasIndex(x => new { x.AccountId, x.RouteSlug }).IsUnique().HasDatabaseName("idx_workspace_routes_account_slug");
         builder.HasIndex(x => x.IsDeleted).HasDatabaseName("idx_workspace_routes_is_deleted");

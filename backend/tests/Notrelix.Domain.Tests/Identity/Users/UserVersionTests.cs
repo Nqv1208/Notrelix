@@ -116,7 +116,7 @@ public class UserVersionTests
         ((IHasDomainEvents)user).ClearDomainEvents();
         var version = user.Version;
 
-        user.UnlinkOAuthAccount(OAuthProvider.Google, _now);
+        user.UnlinkOAuthAccount(OAuthProvider.Google, _actorId, _now);
 
         user.Version.Should().Be(version + 1);
         user.DomainEvents.Should().Contain(e => e is OAuthAccountUnlinkedDomainEvent);

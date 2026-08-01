@@ -70,23 +70,23 @@ public class BoardIdempotencyTests
     }
 
     [Fact]
-    public void SoftDelete_ShouldIncrementVersion_AndRaiseEvent()
+    public void Delete_ShouldIncrementVersion_AndRaiseEvent()
     {
         var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
         var version = board.Version;
 
-        board.SoftDelete(_actorId, _now);
+        board.Delete(_actorId, _now);
 
         board.IsDeleted.Should().BeTrue();
         board.Version.Should().Be(version + 1);
-        board.DomainEvents.Should().ContainSingle(e => e is BoardSoftDeletedDomainEvent);
+        board.DomainEvents.Should().ContainSingle(e => e is BoardDeletedDomainEvent);
     }
 
     [Fact]
     public void Restore_ShouldIncrementVersion_AndRaiseEvent()
     {
         var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
-        board.SoftDelete(_actorId, _now);
+        board.Delete(_actorId, _now);
         ((IHasDomainEvents)board).ClearDomainEvents();
         var version = board.Version;
 
@@ -98,17 +98,17 @@ public class BoardIdempotencyTests
     }
 
     [Fact]
-    public void SoftDelete_ShouldNotIncrementOrRaiseEvent_WhenAlreadyDeleted()
+    public void Delete_ShouldNotIncrementOrRaiseEvent_WhenAlreadyDeleted()
     {
         var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
-        board.SoftDelete(_actorId, _now);
+        board.Delete(_actorId, _now);
         ((IHasDomainEvents)board).ClearDomainEvents();
         var version = board.Version;
 
-        board.SoftDelete(_actorId, _now);
+        board.Delete(_actorId, _now);
 
         board.Version.Should().Be(version);
-        board.DomainEvents.Should().NotContain(e => e is BoardSoftDeletedDomainEvent);
+        board.DomainEvents.Should().NotContain(e => e is BoardDeletedDomainEvent);
     }
 
     [Fact]
@@ -136,21 +136,21 @@ public class BoardIdempotencyTests
     }
 
     [Fact]
-    public void DomainEvent_ShouldRaiseCorrectType_ForSoftDelete()
+    public void DomainEvent_ShouldRaiseCorrectType_ForDelete()
     {
         var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
         ((IHasDomainEvents)board).ClearDomainEvents();
 
-        board.SoftDelete(_actorId, _now);
+        board.Delete(_actorId, _now);
 
-        board.DomainEvents.Single(e => e is BoardSoftDeletedDomainEvent).Should().NotBeNull();
+        board.DomainEvents.Single(e => e is BoardDeletedDomainEvent).Should().NotBeNull();
     }
 
     [Fact]
     public void DomainEvent_ShouldRaiseCorrectType_ForRestore()
     {
         var board = Board.Create(Guid.NewGuid(), _workspaceId, _actorId, "Board", null, _now);
-        board.SoftDelete(_actorId, _now);
+        board.Delete(_actorId, _now);
         ((IHasDomainEvents)board).ClearDomainEvents();
 
         board.Restore(_actorId, _now);

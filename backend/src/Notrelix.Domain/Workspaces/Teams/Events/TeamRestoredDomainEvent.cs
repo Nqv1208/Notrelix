@@ -6,5 +6,6 @@ public sealed record TeamRestoredDomainEvent(
     Guid WorkspaceId,
     Guid TeamId,
     Guid RestoredBy,
+    TeamStatus Status,
     DateTimeOffset OccurredAt
 ) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

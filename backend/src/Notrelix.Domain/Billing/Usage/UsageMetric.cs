@@ -4,7 +4,7 @@ using static Notrelix.Domain.Billing.BillingRuleCodes;
 
 namespace Notrelix.Domain.Billing.Usage;
 
-public class UsageMetric : SoftDeletableAggregateRoot, IWorkspaceScoped
+public class UsageMetric : AggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -39,7 +39,6 @@ public class UsageMetric : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void Increase(int amount, int limit, bool isHardLimit, DateTimeOffset occurredAt)
     {
-        EnsureNotDeleted();
         Guard.Positive(amount);
 
         if (CurrentValue + amount > limit)
@@ -55,7 +54,6 @@ public class UsageMetric : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void Decrease(int amount, DateTimeOffset occurredAt)
     {
-        EnsureNotDeleted();
         Guard.Positive(amount);
 
         if (CurrentValue - amount < 0)
@@ -71,28 +69,11 @@ public class UsageMetric : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void Reset(UsagePeriod newPeriod, DateTimeOffset occurredAt)
     {
-        EnsureNotDeleted();
         Guard.NotNull(newPeriod);
 
         CurrentValue = 0;
         CurrentPeriod = newPeriod;
         IncrementVersion();
         RaiseDomainEvent(new UsageMetricResetDomainEvent(AccountId, WorkspaceId, Key, occurredAt));
-    }
-
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        if (IsDeleted) return;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        IncrementVersion();
-        RaiseDomainEvent(new UsageMetricSoftDeletedDomainEvent(AccountId, WorkspaceId, Key, deletedBy, deletedAt));
-    }
-
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        if (!IsDeleted) return;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        IncrementVersion();
-        RaiseDomainEvent(new UsageMetricRestoredDomainEvent(AccountId, WorkspaceId, Key, restoredBy, restoredAt));
     }
 }

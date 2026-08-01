@@ -64,24 +64,24 @@ public class TeamVersionTests
     }
 
     [Fact]
-    public void SoftDelete_ShouldIncrementVersion()
+    public void Delete_ShouldIncrementVersion()
     {
         var team = Team.Create(_accountId, _workspaceId, "Team", _actorId, _now);
         ((IHasDomainEvents)team).ClearDomainEvents();
         var version = team.Version;
 
-        team.SoftDelete(_actorId, _now);
+        team.Delete(_actorId, _now);
 
         team.Version.Should().Be(version + 1);
         team.IsDeleted.Should().BeTrue();
-        team.DomainEvents.Should().Contain(e => e is TeamSoftDeletedDomainEvent);
+        team.DomainEvents.Should().Contain(e => e is TeamDeletedDomainEvent);
     }
 
     [Fact]
     public void Restore_ShouldIncrementVersion()
     {
         var team = Team.Create(_accountId, _workspaceId, "Team", _actorId, _now);
-        team.SoftDelete(_actorId, _now);
+        team.Delete(_actorId, _now);
         ((IHasDomainEvents)team).ClearDomainEvents();
         var version = team.Version;
 

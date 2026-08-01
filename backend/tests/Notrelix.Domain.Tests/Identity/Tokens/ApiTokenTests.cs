@@ -138,27 +138,4 @@ public class ApiTokenTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*inactive*");
     }
 
-    [Fact]
-    public void SoftDelete_ShouldMarkAsDeleted()
-    {
-        var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
-
-        token.SoftDelete(UserId, Now);
-
-        token.IsDeleted.Should().BeTrue();
-        token.DomainEvents.Should().Contain(e => e is ApiTokenSoftDeletedDomainEvent);
-    }
-
-    [Fact]
-    public void Restore_AfterSoftDelete_ShouldSucceed()
-    {
-        var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
-        token.SoftDelete(UserId, Now);
-        ((IHasDomainEvents)token).ClearDomainEvents();
-
-        token.Restore(UserId, Now);
-
-        token.IsDeleted.Should().BeFalse();
-        token.DomainEvents.Should().Contain(e => e is ApiTokenRestoredDomainEvent);
-    }
 }

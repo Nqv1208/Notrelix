@@ -68,6 +68,13 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
 
     private IntegrationConnection() : base() { }
 
+    private static string? NormalizeProviderAccountId(string? providerAccountId)
+    {
+        return string.IsNullOrWhiteSpace(providerAccountId)
+            ? null
+            : providerAccountId.Trim();
+    }
+
     public static IntegrationConnection Create(
         Guid accountId,
         Guid workspaceId,
@@ -86,13 +93,15 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
             throw new BusinessRuleException(Integrations_Connection_ExpirationMustBeFuture, "Expiration time must be in the future.");
         }
 
+        var normalizedProviderAccountId = NormalizeProviderAccountId(providerAccountId);
+
         var connection = new IntegrationConnection
         {
             AccountId = accountId,
             WorkspaceId = workspaceId,
             Provider = provider,
             Status = IntegrationConnectionStatus.Active,
-            ProviderAccountId = providerAccountId,
+            ProviderAccountId = normalizedProviderAccountId,
             ExpiresAt = expiresAt
         };
 
@@ -107,8 +116,9 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
         EnsureNotDeleted();
         if (Status == IntegrationConnectionStatus.Revoked) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, occurredAt);
         Status = IntegrationConnectionStatus.Revoked;
-        SetAuditOnUpdate(updatedBy, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new IntegrationConnectionRevokedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
     }
@@ -121,8 +131,7 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
             throw new BusinessRuleException(Integrations_Connection_ExpirationMustBeFuture, "Expiration time must be in the future.");
         }
 
-        // Normalize provider account ID
-        var normalizedProviderAccountId = providerAccountId?.Trim();
+        var normalizedProviderAccountId = NormalizeProviderAccountId(providerAccountId);
 
         // No-op detection: already Active with same values and no pending error
         if (Status == IntegrationConnectionStatus.Active &&
@@ -133,11 +142,12 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
             return;
         }
 
+        var pending = PrepareAuditUpdate(updatedBy, occurredAt);
         Status = IntegrationConnectionStatus.Active;
         ProviderAccountId = normalizedProviderAccountId;
         ExpiresAt = expiresAt;
         ErrorDetail = null;
-        SetAuditOnUpdate(updatedBy, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new IntegrationConnectionReauthorizedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
     }
@@ -147,8 +157,9 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
         EnsureNotDeleted();
         if (Status == IntegrationConnectionStatus.Expired) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, occurredAt);
         Status = IntegrationConnectionStatus.Expired;
-        SetAuditOnUpdate(updatedBy, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new IntegrationConnectionExpiredDomainEvent(AccountId, WorkspaceId, Id, updatedBy, occurredAt));
     }
@@ -166,9 +177,10 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
             return;
         }
 
+        var pending = PrepareAuditUpdate(updatedBy, occurredAt);
         ErrorDetail = trimmedError;
         Status = IntegrationConnectionStatus.Error;
-        SetAuditOnUpdate(updatedBy, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new IntegrationConnectionErrorRecordedDomainEvent(AccountId, WorkspaceId, Id, trimmedError, updatedBy, occurredAt));
     }
@@ -187,11 +199,11 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
             return;
         }
 
+        var pending = PrepareAuditUpdate(updatedBy, occurredAt);
         CurrentSecretVersion = trimmedVersion;
         CurrentSecretRef = secretRef;
         SecretRotatedAt = occurredAt;
-
-        SetAuditOnUpdate(updatedBy, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new IntegrationSecretRotatedDomainEvent(AccountId, WorkspaceId, Id, trimmedVersion, updatedBy, occurredAt));
     }
@@ -203,8 +215,9 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
         var trimmedScope = scope.Trim();
         if (_scopes.Any(s => s.Scope == trimmedScope)) return;
 
+        var pending = PrepareAuditUpdate(addedBy, occurredAt);
         _scopes.Add(IntegrationScope.Create(Id, trimmedScope));
-        SetAuditOnUpdate(addedBy, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new IntegrationScopeAddedDomainEvent(AccountId, WorkspaceId, Id, trimmedScope, addedBy, occurredAt));
     }
@@ -217,28 +230,29 @@ public class IntegrationConnection : SoftDeletableAggregateRoot, IWorkspaceScope
         var scopeObj = _scopes.FirstOrDefault(s => s.Scope == trimmedScope);
         if (scopeObj == null) return;
 
+        var pending = PrepareAuditUpdate(removedBy, occurredAt);
         _scopes.Remove(scopeObj);
-        SetAuditOnUpdate(removedBy, occurredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new IntegrationScopeRemovedDomainEvent(AccountId, WorkspaceId, Id, trimmedScope, removedBy, occurredAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        Status = IntegrationConnectionStatus.Revoked;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
         RaiseDomainEvent(new IntegrationConnectionDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        Status = IntegrationConnectionStatus.Active;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new IntegrationConnectionRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }

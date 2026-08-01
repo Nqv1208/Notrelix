@@ -27,7 +27,7 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     private BoardItem() : base() { }
 
-    public static BoardItem Create(
+    public static BoardItem CreateRoot(
         Guid accountId,
         Guid workspaceId,
         Guid boardId,
@@ -36,12 +36,51 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         FractionalIndex position,
         Guid createdBy,
         DateTimeOffset createdAt,
-        Guid? parentItemId = null,
         string? itemKey = null,
         long? itemSequence = null,
-        int itemLevel = 0,
         DateTimeOffset? startedAt = null,
         DateTimeOffset? dueAt = null)
+    {
+        return CreateCore(
+            accountId, workspaceId, boardId, groupId, name, position, createdBy, createdAt,
+            parentItemId: null, itemLevel: 0,
+            itemKey, itemSequence, startedAt, dueAt);
+    }
+
+    public static BoardItem CreateChild(
+        ItemParentPath parentPath,
+        Guid groupId,
+        string name,
+        FractionalIndex position,
+        Guid createdBy,
+        DateTimeOffset createdAt,
+        string? itemKey = null,
+        long? itemSequence = null,
+        DateTimeOffset? startedAt = null,
+        DateTimeOffset? dueAt = null)
+    {
+        Guard.NotNull(parentPath);
+        return CreateCore(
+            parentPath.AccountId, parentPath.WorkspaceId, parentPath.BoardId, groupId, name, position, createdBy, createdAt,
+            parentPath.ParentItemId, parentPath.ChildLevel,
+            itemKey, itemSequence, startedAt, dueAt);
+    }
+
+    private static BoardItem CreateCore(
+        Guid accountId,
+        Guid workspaceId,
+        Guid boardId,
+        Guid groupId,
+        string name,
+        FractionalIndex position,
+        Guid createdBy,
+        DateTimeOffset createdAt,
+        Guid? parentItemId,
+        int itemLevel,
+        string? itemKey,
+        long? itemSequence,
+        DateTimeOffset? startedAt,
+        DateTimeOffset? dueAt)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(boardId);
@@ -69,7 +108,7 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         };
 
         item.SetAuditOnCreate(createdBy, createdAt);
-        item.RaiseDomainEvent(new BoardItemCreatedDomainEvent(accountId, workspaceId, boardId, groupId, item.Id, item.Name, createdBy, createdAt));
+        item.RaiseDomainEvent(new BoardItemCreatedDomainEvent(accountId, workspaceId, boardId, groupId, item.Id, item.Name, createdBy, createdAt, parentItemId, itemLevel));
 
         return item;
     }
@@ -78,15 +117,17 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(name);
         Guard.MaxLength(name, 500);
 
-        var oldName = Name;
         var normalizedName = name.Trim();
         if (Name == normalizedName) return;
 
+        var oldName = Name;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Name = normalizedName;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemRenamedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldName, Name, updatedBy, updatedAt));
     }
@@ -95,6 +136,7 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNull(group);
         Guard.NotNull(newPosition);
 
@@ -102,14 +144,15 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{WorkspaceId}', got '{group.WorkspaceId}'.");
 
         if (group.BoardId != BoardId)
-            throw new BusinessRuleException(CommonRuleCodes.Common_BoardScopeMismatch, $"Board scope mismatch. Expected '{BoardId}', got '{group.BoardId}'.");
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_BoardScopeMismatch, $"Board scope mismatch. Expected '{BoardId}', got '{group.BoardId}'.");
 
-        var oldGroupId = GroupId;
         if (GroupId == group.GroupId && Position == newPosition) return;
 
+        var oldGroupId = GroupId;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         GroupId = group.GroupId;
         Position = newPosition;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemMovedDomainEvent(AccountId, WorkspaceId, Id, BoardId, oldGroupId, group.GroupId, newPosition.Value, updatedBy, updatedAt));
     }
@@ -118,6 +161,7 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNull(field);
         Guard.NotNull(newValue);
 
@@ -140,26 +184,25 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         if (field.Type is FieldType.Select or FieldType.Status)
         {
-            var optionId = newValue.Data.Value.Trim('"');
-            if (!field.Options.Any(o => o.Id.ToString() == optionId))
+            var optionId = ParseOptionId(newValue, WorkManagementRuleCodes.WorkManagement_Field_InvalidOptionValue);
+            if (!field.Options.Any(option => option.Id == optionId))
                 throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_InvalidOptionValue, $"Value '{optionId}' is not a valid option for field '{field.Name}'.");
         }
         else if (field.Type == FieldType.MultiSelect)
         {
-            using var msDoc = JsonDocument.Parse(newValue.Data.Value);
-            if (msDoc.RootElement.ValueKind != JsonValueKind.Array)
-                throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidMultiSelectValue, "Value for field type MultiSelect must be an array of option IDs.");
-
-            foreach (var element in msDoc.RootElement.EnumerateArray())
-            {
-                var optionId = element.GetString();
-                if (!field.Options.Any(o => o.Id.ToString() == optionId))
-                    throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidSelectValue, $"Value '{optionId}' is not a valid option for field '{field.Name}'.");
-            }
+            var selectedIds = ParseDistinctOptionIds(newValue);
+            var allowedIds = field.Options.Select(option => option.Id).ToHashSet();
+            if (!selectedIds.All(allowedIds.Contains))
+                throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidMultiSelectValue, $"Value contains an option that is not valid for field '{field.Name}'.");
         }
 
         var existingValue = _fieldValues.FirstOrDefault(fv => fv.FieldId == field.Id);
         var oldValue = existingValue?.Value ?? FieldValue.Empty();
+
+        if (existingValue != null && existingValue.Value == newValue)
+            return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
 
         if (existingValue == null)
         {
@@ -167,81 +210,166 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         }
         else
         {
-            if (existingValue.Value == newValue) return;
             existingValue.UpdateValue(newValue);
         }
 
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemFieldValueChangedDomainEvent(AccountId, WorkspaceId, Id, BoardId, field.Id, oldValue, newValue, updatedBy, updatedAt));
     }
 
-    public void AssignParentItem(Guid? parentItemId, int itemLevel, IReadOnlyDictionary<Guid, ItemParentSnapshot> parentChain, Guid updatedBy, DateTimeOffset updatedAt)
+    private static Guid ParseOptionId(FieldValue value, string ruleCode)
+    {
+        var raw = value.Data.Value.Trim('"');
+        if (!Guid.TryParse(raw, out var optionId))
+            throw new BusinessRuleException(ruleCode, $"Value '{raw}' is not a valid option id.");
+        return optionId;
+    }
+
+    private static IReadOnlyList<Guid> ParseDistinctOptionIds(FieldValue value)
+    {
+        using var msDoc = JsonDocument.Parse(value.Data.Value);
+        if (msDoc.RootElement.ValueKind != JsonValueKind.Array)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidMultiSelectValue, "Value for field type MultiSelect must be an array of option IDs.");
+
+        var ids = new List<Guid>();
+        var seen = new HashSet<Guid>();
+        foreach (var element in msDoc.RootElement.EnumerateArray())
+        {
+            var raw = element.GetString();
+            if (!Guid.TryParse(raw, out var optionId))
+                throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidMultiSelectValue, $"Value '{raw}' is not a valid option id.");
+
+            if (!seen.Add(optionId))
+                throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_DuplicateOptionId, $"Option id '{optionId}' appears more than once.");
+
+            ids.Add(optionId);
+        }
+
+        return ids;
+    }
+
+    public void MoveToRoot(Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
 
-        if (parentItemId.HasValue)
-        {
-            if (!parentChain.TryGetValue(parentItemId.Value, out var parentSnapshot))
-                throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_ParentMustBelongToSameBoard, "Parent item must belong to the same board.");
+        if (ParentItemId is null && ItemLevel == 0) return;
 
-            if (parentSnapshot.BoardId != BoardId)
-                throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_ParentMustBelongToSameBoard, "Parent item must belong to the same board.");
-        }
-
-        BoardItemRules.EnsureNoCycle(Id, parentItemId, parentChain);
-
-        if (ParentItemId == parentItemId && ItemLevel == itemLevel) return;
-
-        ParentItemId = parentItemId;
-        ItemLevel = itemLevel;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        var previousParentItemId = ParentItemId;
+        var previousLevel = ItemLevel;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        ParentItemId = null;
+        ItemLevel = 0;
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new BoardItemParentAssignedDomainEvent(AccountId, WorkspaceId, BoardId, Id, parentItemId, itemLevel, updatedBy, updatedAt));
+        RaiseDomainEvent(new BoardItemParentChangedDomainEvent(AccountId, WorkspaceId, BoardId, Id, previousParentItemId, null, previousLevel, 0, updatedBy, updatedAt));
+    }
+
+    public void MoveUnder(ItemParentPath parentPath, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
+        Guard.NotNull(parentPath);
+
+        if (parentPath.AccountId != AccountId)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_ParentMustBelongToSameAccount, $"Parent item must belong to the same account. Expected '{AccountId}', got '{parentPath.AccountId}'.");
+
+        if (parentPath.WorkspaceId != WorkspaceId)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_ParentMustBelongToSameWorkspace, $"Parent item must belong to the same workspace. Expected '{WorkspaceId}', got '{parentPath.WorkspaceId}'.");
+
+        if (parentPath.BoardId != BoardId)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_ParentMustBelongToSameBoard, $"Parent item must belong to the same board. Expected '{BoardId}', got '{parentPath.BoardId}'.");
+
+        if (parentPath.ParentItemId == Id)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_CannotBeOwnParent, "An item cannot be its own parent.");
+
+        if (parentPath.AncestorIds.Contains(Id))
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_ParentAssignmentWouldCreateCycle, "Item parent assignment would create a cycle.");
+
+        var newLevel = parentPath.ChildLevel;
+        if (ParentItemId == parentPath.ParentItemId && ItemLevel == newLevel) return;
+
+        var previousParentItemId = ParentItemId;
+        var previousLevel = ItemLevel;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        ParentItemId = parentPath.ParentItemId;
+        ItemLevel = newLevel;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new BoardItemParentChangedDomainEvent(AccountId, WorkspaceId, BoardId, Id, previousParentItemId, ParentItemId, previousLevel, ItemLevel, updatedBy, updatedAt));
     }
 
     public void SetTimeline(DateTimeOffset? startedAt, DateTimeOffset? dueAt, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         EnsureNotArchived();
+        Guard.NotEmpty(updatedBy);
         if (startedAt != null && dueAt != null && dueAt < startedAt)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_DueDateMustBeAfterStartDate, "Due date must be after start date.");
 
         if (StartedAt == startedAt && DueAt == dueAt) return;
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         StartedAt = startedAt;
         DueAt = dueAt;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemTimelineSetDomainEvent(AccountId, WorkspaceId, BoardId, Id, startedAt, dueAt, updatedBy, updatedAt));
     }
 
-    public void Complete(DateTimeOffset? completedAt, Guid updatedBy, DateTimeOffset updatedAt)
+    public void Complete(DateTimeOffset completedAt, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
         EnsureNotArchived();
-        if (CompletedAt == completedAt) return;
+        Guard.NotEmpty(updatedBy);
+
+        if (completedAt == default)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_CompletedAtRequired, "Completion timestamp must be provided.");
+
+        if (CompletedAt.HasValue) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         CompletedAt = completedAt;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemCompletedDomainEvent(AccountId, WorkspaceId, BoardId, Id, completedAt, updatedBy, updatedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Reopen(Guid reopenedBy, DateTimeOffset reopenedAt)
     {
-        if (IsDeleted) return;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        EnsureNotDeleted();
+        EnsureNotArchived();
+        Guard.NotEmpty(reopenedBy);
+
+        if (!CompletedAt.HasValue) return;
+
+        var pending = PrepareAuditUpdate(reopenedBy, reopenedAt);
+        CompletedAt = null;
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new BoardItemSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
+        RaiseDomainEvent(new BoardItemReopenedDomainEvent(AccountId, WorkspaceId, BoardId, Id, reopenedBy, reopenedAt));
+    }
+
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        Guard.NotEmpty(deletedBy);
+        if (IsDeleted) return;
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
+        IncrementVersion();
+        RaiseDomainEvent(new BoardItemDeletedDomainEvent(AccountId, WorkspaceId, Id, BoardId, deletedBy, deletedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(archivedBy);
         if (IsArchived) return;
+        var pending = PrepareAuditUpdate(archivedBy, archivedAt);
         IsArchived = true;
-        SetAuditOnUpdate(archivedBy, archivedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemArchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, archivedBy, archivedAt));
     }
@@ -249,18 +377,21 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Unarchive(Guid unarchivedBy, DateTimeOffset unarchivedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(unarchivedBy);
         if (!IsArchived) return;
+        var pending = PrepareAuditUpdate(unarchivedBy, unarchivedAt);
         IsArchived = false;
-        SetAuditOnUpdate(unarchivedBy, unarchivedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemUnarchivedDomainEvent(AccountId, WorkspaceId, BoardId, Id, unarchivedBy, unarchivedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new BoardItemRestoredDomainEvent(AccountId, WorkspaceId, Id, BoardId, restoredBy, restoredAt));
     }

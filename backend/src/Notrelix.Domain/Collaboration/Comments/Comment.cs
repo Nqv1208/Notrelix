@@ -104,13 +104,15 @@ public class Comment : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void UpdateContent(string newContent, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(newContent);
         Guard.MaxLength(newContent, 10000);
 
         if (Content == newContent.Trim()) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Content = newContent.Trim();
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new CommentUpdatedDomainEvent(AccountId, WorkspaceId, Id, updatedBy, updatedAt));
     }
@@ -118,30 +120,45 @@ public class Comment : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Resolve(Guid resolvedBy, DateTimeOffset resolvedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(resolvedBy);
         if (CommentStatus == CommentStatus.Resolved) return;
 
+        var pending = PrepareAuditUpdate(resolvedBy, resolvedAt);
         CommentStatus = CommentStatus.Resolved;
-        SetAuditOnUpdate(resolvedBy, resolvedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new CommentResolvedDomainEvent(AccountId, WorkspaceId, Id, resolvedBy, resolvedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Reopen(Guid reopenedBy, DateTimeOffset reopenedAt)
     {
-        if (IsDeleted) return;
-        CommentStatus = CommentStatus.SoftDeleted;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        EnsureNotDeleted();
+        Guard.NotEmpty(reopenedBy);
+        if (CommentStatus == CommentStatus.Active) return;
+
+        var pending = PrepareAuditUpdate(reopenedBy, reopenedAt);
+        CommentStatus = CommentStatus.Active;
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new CommentSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new CommentReopenedDomainEvent(AccountId, WorkspaceId, Id, reopenedBy, reopenedAt));
+    }
+
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    {
+        Guard.NotEmpty(deletedBy);
+        if (IsDeleted) return;
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
+        IncrementVersion();
+        RaiseDomainEvent(new CommentDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        CommentStatus = CommentStatus.Active;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new CommentRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }

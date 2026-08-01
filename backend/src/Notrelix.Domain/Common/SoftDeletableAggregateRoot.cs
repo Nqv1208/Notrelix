@@ -2,55 +2,78 @@ using static Notrelix.Domain.Common.Exceptions.CommonRuleCodes;
 
 namespace Notrelix.Domain.Common;
 
-/// <summary>
-/// Aggregate root with soft-delete lifecycle (Version + deletion).
-/// Use this for aggregates that have public SoftDelete/Restore with business logic.
-/// </summary>
 public abstract class SoftDeletableAggregateRoot : AggregateRoot
 {
+    public readonly record struct PendingDeletion(
+        PendingAuditUpdate Audit,
+        Guid? ActorId,
+        DateTimeOffset OccurredAt,
+        string? Reason);
+
+    public readonly record struct PendingRestore(
+        PendingAuditUpdate Audit,
+        Guid? ActorId,
+        DateTimeOffset OccurredAt);
+
     public bool IsDeleted { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
     public Guid? DeletedBy { get; private set; }
     public string? DeleteReason { get; private set; }
-    public DateTimeOffset? RestoredAt { get; private set; }
-    public Guid? RestoredBy { get; private set; }
 
     protected SoftDeletableAggregateRoot() : base() { }
     protected SoftDeletableAggregateRoot(Guid id) : base(id) { }
 
-    protected bool MarkDeleted(Guid? deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    protected PendingDeletion PrepareDeletion(
+        Guid? actorId,
+        DateTimeOffset occurredAt,
+        string? reason)
     {
-        if (deletedAt == default || deletedAt == DateTimeOffset.MinValue)
+        if (occurredAt == default || occurredAt == DateTimeOffset.MinValue)
             throw new BusinessRuleException(Common_InvalidDeletionTime, "Deleted timestamp must be a valid date.");
 
-        if (IsDeleted) return false;
-
-        DeletedAt = deletedAt;
-        DeletedBy = deletedBy;
-        DeleteReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
-        IsDeleted = true;
-        return true;
+        var audit = PrepareAuditUpdate(actorId, occurredAt);
+        var normalizedReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+        return new PendingDeletion(audit, actorId, occurredAt, normalizedReason);
     }
 
-    protected bool MarkRestored(Guid? restoredBy, DateTimeOffset restoredAt)
+    protected void ApplyDeletion(PendingDeletion deletion)
     {
-        if (restoredAt == default || restoredAt == DateTimeOffset.MinValue)
+        DeletedAt = deletion.OccurredAt;
+        DeletedBy = deletion.ActorId;
+        DeleteReason = deletion.Reason;
+        IsDeleted = true;
+        ApplyAuditUpdate(deletion.Audit);
+    }
+
+    protected PendingRestore PrepareRestore(
+        Guid? actorId,
+        DateTimeOffset occurredAt)
+    {
+        if (occurredAt == default || occurredAt == DateTimeOffset.MinValue)
             throw new BusinessRuleException(Common_InvalidRestoreTime, "Restored timestamp must be a valid date.");
 
-        if (!IsDeleted) return false;
+        var audit = PrepareAuditUpdate(actorId, occurredAt);
+        return new PendingRestore(audit, actorId, occurredAt);
+    }
 
+    protected void ApplyRestore(PendingRestore restore)
+    {
         DeletedAt = null;
         DeletedBy = null;
         DeleteReason = null;
         IsDeleted = false;
-        RestoredAt = restoredAt;
-        RestoredBy = restoredBy;
-        return true;
+        ApplyAuditUpdate(restore.Audit);
     }
 
     protected void EnsureNotDeleted()
     {
         if (IsDeleted)
             throw new BusinessRuleException(Common_EntityAlreadyDeleted, $"{GetType().Name} with Id '{Id}' has been deleted and cannot be modified.");
+    }
+
+    protected void EnsureDeleted()
+    {
+        if (!IsDeleted)
+            throw new BusinessRuleException(Common_EntityNotDeleted, $"{GetType().Name} with Id '{Id}' is not deleted.");
     }
 }

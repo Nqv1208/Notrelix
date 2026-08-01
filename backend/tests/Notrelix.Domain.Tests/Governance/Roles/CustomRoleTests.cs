@@ -46,4 +46,29 @@ public class CustomRoleTests
         role.Permissions.Should().BeEmpty();
         role.DomainEvents.Should().ContainSingle(e => e is CustomRoleUpdatedDomainEvent);
     }
+
+    [Fact]
+    public void Archive_ShouldSetStatusAndRaiseEvent()
+    {
+        var role = CustomRole.Create(Guid.NewGuid(), Guid.NewGuid(), "Role", null, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)role).ClearDomainEvents();
+
+        role.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        role.Status.Should().Be(CustomRoleStatus.Archived);
+        role.DomainEvents.Should().ContainSingle(e => e is CustomRoleArchivedDomainEvent);
+    }
+
+    [Fact]
+    public void Activate_ShouldRestoreStatusAndRaiseEvent()
+    {
+        var role = CustomRole.Create(Guid.NewGuid(), Guid.NewGuid(), "Role", null, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        role.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)role).ClearDomainEvents();
+
+        role.Activate(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        role.Status.Should().Be(CustomRoleStatus.Active);
+        role.DomainEvents.Should().ContainSingle(e => e is CustomRoleActivatedDomainEvent);
+    }
 }

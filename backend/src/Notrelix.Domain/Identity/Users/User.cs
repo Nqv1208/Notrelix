@@ -5,7 +5,7 @@ using Notrelix.Domain.Identity.Users.Events;
 
 namespace Notrelix.Domain.Identity.Users;
 
-public class User : SoftDeletableAggregateRoot
+public sealed class User : SoftDeletableAggregateRoot
 {
     public Email Email { get; private set; } = null!;
     public string NormalizedEmail { get; private set; } = string.Empty;
@@ -62,9 +62,9 @@ public class User : SoftDeletableAggregateRoot
         DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(name);
         Guard.MaxLength(name, 100);
-        Guard.NotEmpty(updatedBy);
 
         var trimmedName = name.Trim();
         var normalizedAvatar = avatar?.Trim();
@@ -72,10 +72,10 @@ public class User : SoftDeletableAggregateRoot
         if (trimmedName == Name && normalizedAvatar == Avatar)
             return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Name = trimmedName;
         Avatar = normalizedAvatar;
-
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserProfileUpdatedDomainEvent(Id, updatedBy, updatedAt));
     }
@@ -94,12 +94,12 @@ public class User : SoftDeletableAggregateRoot
 
         var oldEmail = Email;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Email = emailValue;
         NormalizedEmail = NormalizeEmail(emailValue.Value);
         EmailConfirmed = false;
         EmailConfirmedAt = null;
-
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserEmailChangedDomainEvent(
             Id,
@@ -115,12 +115,15 @@ public class User : SoftDeletableAggregateRoot
         DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        Guard.NotNullOrWhiteSpace(passwordHash);
         Guard.NotEmpty(updatedBy);
+        Guard.NotNullOrWhiteSpace(passwordHash);
 
+        if (string.Equals(PasswordHash, passwordHash, StringComparison.Ordinal))
+            return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         PasswordHash = passwordHash;
-
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserPasswordChangedDomainEvent(Id, updatedBy, updatedAt));
     }
@@ -134,9 +137,9 @@ public class User : SoftDeletableAggregateRoot
                 IdentityRuleCodes.Identity_Login_TimeCannotMoveBackwards,
                 "Login timestamp cannot move backwards.");
 
+        var pending = PrepareAuditUpdate(Id, loggedInAt);
         LastLoginAt = loggedInAt;
-
-        SetAuditOnUpdate(Id, loggedInAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new UserLoggedInDomainEvent(Id, loggedInAt));
     }
@@ -149,9 +152,9 @@ public class User : SoftDeletableAggregateRoot
         if (Status == UserStatus.Active) return;
 
         var previousStatus = Status;
-
+        var pending = PrepareAuditUpdate(activatedBy, activatedAt);
         Status = UserStatus.Active;
-        SetAuditOnUpdate(activatedBy, activatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
         RaiseDomainEvent(new UserActivatedDomainEvent(
@@ -173,9 +176,9 @@ public class User : SoftDeletableAggregateRoot
         if (Status == UserStatus.Inactive) return;
 
         var previousStatus = Status;
-
+        var pending = PrepareAuditUpdate(deactivatedBy, deactivatedAt);
         Status = UserStatus.Inactive;
-        SetAuditOnUpdate(deactivatedBy, deactivatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
         RaiseDomainEvent(new UserDeactivatedDomainEvent(
@@ -197,9 +200,9 @@ public class User : SoftDeletableAggregateRoot
         if (Status == UserStatus.Suspended) return;
 
         var previousStatus = Status;
-
+        var pending = PrepareAuditUpdate(suspendedBy, suspendedAt);
         Status = UserStatus.Suspended;
-        SetAuditOnUpdate(suspendedBy, suspendedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
         RaiseDomainEvent(new UserSuspendedDomainEvent(
@@ -217,6 +220,7 @@ public class User : SoftDeletableAggregateRoot
         if (EmailConfirmed)
             return;
 
+        var pending = PrepareAuditUpdate(confirmedBy, confirmedAt);
         EmailConfirmed = true;
         EmailConfirmedAt = confirmedAt;
 
@@ -224,8 +228,7 @@ public class User : SoftDeletableAggregateRoot
         {
             Status = UserStatus.Active;
         }
-
-        SetAuditOnUpdate(confirmedBy, confirmedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
         RaiseDomainEvent(new UserEmailConfirmedDomainEvent(
@@ -241,9 +244,9 @@ public class User : SoftDeletableAggregateRoot
         DateTimeOffset linkedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(linkedBy);
         Guard.NotNullOrWhiteSpace(providerId);
         Guard.NotNull(profileSnapshot);
-        Guard.NotEmpty(linkedBy);
 
         if (profileSnapshot.Provider != provider)
             throw new BusinessRuleException(
@@ -256,10 +259,11 @@ public class User : SoftDeletableAggregateRoot
                 IdentityRuleCodes.Identity_User_OAuthProviderAlreadyLinked,
                 $"Provider {provider} is already linked. Use UpdateOAuthProfile or RotateOAuthToken instead.");
 
+        var pending = PrepareAuditUpdate(linkedBy, linkedAt);
+
         var oauth = OAuthAccount.Create(Id, provider, providerId, profileSnapshot, token);
         _oauthAccounts.Add(oauth);
-
-        SetAuditOnUpdate(linkedBy, linkedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new OAuthAccountLinkedDomainEvent(Id, provider, providerId, linkedBy, linkedAt));
     }
@@ -271,8 +275,8 @@ public class User : SoftDeletableAggregateRoot
         DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();
-        Guard.NotNull(profileSnapshot);
         Guard.NotEmpty(updatedBy);
+        Guard.NotNull(profileSnapshot);
 
         if (profileSnapshot.Provider != provider)
             throw new BusinessRuleException(
@@ -288,29 +292,33 @@ public class User : SoftDeletableAggregateRoot
         if (existing.ProfileSnapshot == profileSnapshot)
             return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         existing.UpdateProfileSnapshot(profileSnapshot);
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new OAuthProfileUpdatedDomainEvent(Id, provider, updatedBy, updatedAt));
     }
 
-    public void UnlinkOAuthAccount(OAuthProvider provider, DateTimeOffset unlinkedAt)
+    public void UnlinkOAuthAccount(OAuthProvider provider, Guid unlinkedBy, DateTimeOffset unlinkedAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(unlinkedBy);
+
         var existing = _oauthAccounts.FirstOrDefault(x => x.Provider == provider);
         if (existing == null) return;
 
+        var pending = PrepareAuditUpdate(unlinkedBy, unlinkedAt);
         _oauthAccounts.Remove(existing);
-        SetAuditOnUpdate(Id, unlinkedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new OAuthAccountUnlinkedDomainEvent(Id, provider, existing.ProviderId, unlinkedAt));
+        RaiseDomainEvent(new OAuthAccountUnlinkedDomainEvent(Id, provider, existing.ProviderId, unlinkedBy, unlinkedAt));
     }
 
     public void RotateOAuthToken(OAuthProvider provider, OAuthToken newToken, Guid rotatedBy, DateTimeOffset rotatedAt)
     {
         EnsureNotDeleted();
-        Guard.NotNull(newToken);
         Guard.NotEmpty(rotatedBy);
+        Guard.NotNull(newToken);
 
         var existing = _oauthAccounts.FirstOrDefault(x => x.Provider == provider);
         if (existing == null)
@@ -318,27 +326,32 @@ public class User : SoftDeletableAggregateRoot
             throw new BusinessRuleException(IdentityRuleCodes.Identity_User_NoOAuthAccountForProvider, $"No OAuth account linked for provider {provider}.");
         }
 
+        if (existing.Token == newToken) return;
+
+        var pending = PrepareAuditUpdate(rotatedBy, rotatedAt);
         existing.UpdateToken(newToken);
-        SetAuditOnUpdate(rotatedBy, rotatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new OAuthTokenReferenceRotatedDomainEvent(Id, provider, rotatedBy, rotatedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        RaiseDomainEvent(new UserSoftDeletedDomainEvent(Id, deletedBy, deletedAt, reason));
+        RaiseDomainEvent(new UserDeletedDomainEvent(Id, Status, deletedBy, deletedAt, pendingDeletion.Reason));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
-        RaiseDomainEvent(new UserRestoredDomainEvent(Id, restoredBy, restoredAt));
+        RaiseDomainEvent(new UserRestoredDomainEvent(Id, Status, restoredBy, restoredAt));
     }
 }

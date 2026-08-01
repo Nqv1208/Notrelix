@@ -181,54 +181,6 @@ public class InvoiceTests
         invoice.Status.Should().Be(InvoiceStatus.Paid);
     }
 
-    [Fact]
-    public void SoftDelete_ShouldMarkDeleted_AndRaiseEvent()
-    {
-        var invoice = CreateDraftInvoice();
-        ((IHasDomainEvents)invoice).ClearDomainEvents();
-
-        invoice.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        invoice.IsDeleted.Should().BeTrue();
-        invoice.DomainEvents.Should().Contain(e => e is InvoiceSoftDeletedDomainEvent);
-    }
-
-    [Fact]
-    public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
-    {
-        var invoice = CreateDraftInvoice();
-        invoice.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        ((IHasDomainEvents)invoice).ClearDomainEvents();
-
-        invoice.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        invoice.DomainEvents.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void Restore_ShouldRestore_AndRaiseEvent()
-    {
-        var invoice = CreateDraftInvoice();
-        invoice.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        ((IHasDomainEvents)invoice).ClearDomainEvents();
-
-        invoice.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        invoice.IsDeleted.Should().BeFalse();
-        invoice.DomainEvents.Should().Contain(e => e is InvoiceRestoredDomainEvent);
-    }
-
-    [Fact]
-    public void Restore_WhenNotDeleted_ShouldBeNoOp()
-    {
-        var invoice = CreateDraftInvoice();
-        ((IHasDomainEvents)invoice).ClearDomainEvents();
-
-        invoice.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        invoice.DomainEvents.Should().BeEmpty();
-    }
-
     private static Invoice CreateDraftInvoice()
     {
         return Invoice.Create(Guid.NewGuid(), Guid.NewGuid(), "INV-001", SampleAmount, DateTimeOffset.UtcNow.AddDays(30), DateTimeOffset.UtcNow);

@@ -1,7 +1,7 @@
 using Notrelix.Domain.Collaboration.Reactions.Events;
 namespace Notrelix.Domain.Collaboration.Reactions;
 
-public class Reaction : SoftDeletableAggregateRoot, IWorkspaceScoped
+public class Reaction : AggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -41,7 +41,6 @@ public class Reaction : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void Remove(DateTimeOffset removedAt)
     {
-        EnsureNotDeleted();
         RaiseDomainEvent(new ReactionRemovedDomainEvent(AccountId, WorkspaceId, Id, Target, UserId, Emoji, removedAt));
     }
 }

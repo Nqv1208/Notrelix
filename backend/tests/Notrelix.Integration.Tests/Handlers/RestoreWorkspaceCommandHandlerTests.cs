@@ -32,14 +32,14 @@ public class RestoreWorkspaceCommandHandlerTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Handle_WhenWorkspaceIsSoftDeleted_ShouldRestore()
+    public async Task Handle_WhenWorkspaceIsDeleted_ShouldRestore()
     {
         await using var context = _db.CreateContext(SystemTenant());
         var userId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
         var workspace = Workspace.Create(Guid.NewGuid(), userId, "Test", "test", now);
-        workspace.SoftDelete(userId, now);
+        workspace.Delete(userId, now);
         context.Workspaces.Add(workspace);
         await context.SaveChangesAsync();
 

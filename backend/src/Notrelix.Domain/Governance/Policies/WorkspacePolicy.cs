@@ -36,11 +36,11 @@ public class WorkspacePolicy : AuditableEntity, IWorkspaceScoped
         Guid updatedBy,
         DateTimeOffset updatedAt)
     {
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         if (guestPolicy != null) GuestPolicy = guestPolicy;
         if (resourcePolicy != null) ResourcePolicy = resourcePolicy;
         if (sharingPolicy != null) SharingPolicy = sharingPolicy;
-
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         RaiseDomainEvent(new WorkspacePolicyUpdatedDomainEvent(AccountId, WorkspaceId, updatedBy, updatedAt));
     }
 }

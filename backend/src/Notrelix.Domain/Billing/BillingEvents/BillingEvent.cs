@@ -30,8 +30,9 @@ public class BillingEvent : AggregateRoot
     {
         if (Status != BillingEventStatus.Received) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, processedAt);
         Status = BillingEventStatus.Processed;
-        SetAuditOnUpdate(updatedBy, processedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 
@@ -39,9 +40,10 @@ public class BillingEvent : AggregateRoot
     {
         if (Status == BillingEventStatus.Failed) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, failedAt);
         Status = BillingEventStatus.Failed;
         Error = error;
-        SetAuditOnUpdate(updatedBy, failedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 
@@ -49,8 +51,9 @@ public class BillingEvent : AggregateRoot
     {
         if (Status != BillingEventStatus.Received) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, ignoredAt);
         Status = BillingEventStatus.Ignored;
-        SetAuditOnUpdate(updatedBy, ignoredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 }

@@ -59,7 +59,7 @@ public class CreateBoardItemLinkTests : WorkManagementHandlerTestBase
     {
         var sourceItem = CreateBoardItem();
         var otherWorkspaceId = Guid.CreateVersion7();
-        var targetItem = BoardItem.Create(
+        var targetItem = BoardItem.CreateRoot(
             TestAccountId,
             otherWorkspaceId,
             sourceItem.BoardId,

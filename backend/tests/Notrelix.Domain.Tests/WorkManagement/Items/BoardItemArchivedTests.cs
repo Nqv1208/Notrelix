@@ -16,7 +16,7 @@ public class BoardItemArchivedTests
 
     private static BoardItem CreateArchivedItem()
     {
-        var item = BoardItem.Create(AccountId, WsA, BoardA, GroupA, "Item",
+        var item = BoardItem.CreateRoot(AccountId, WsA, BoardA, GroupA, "Item",
             FractionalIndex.Create("a0"), Actor, Now);
         item.Archive(Actor, Now);
         return item;
@@ -71,10 +71,11 @@ public class BoardItemArchivedTests
     }
 
     [Fact]
-    public void ArchivedItem_AssignParentItem_ShouldThrow()
+    public void ArchivedItem_MoveUnder_ShouldThrow()
     {
         var item = CreateArchivedItem();
-        var act = () => item.AssignParentItem(null, 0, new Dictionary<Guid, ItemParentSnapshot>(), Actor, Now);
+        var parentPath = ItemParentPath.Create(AccountId, WsA, BoardA, Guid.NewGuid(), 0, Array.Empty<Guid>());
+        var act = () => item.MoveUnder(parentPath, Actor, Now);
         act.Should().Throw<BusinessRuleException>()
             .WithMessage("*archived*");
     }
@@ -82,7 +83,7 @@ public class BoardItemArchivedTests
     [Fact]
     public void FormulaField_ManualWrite_ShouldThrow()
     {
-        var item = BoardItem.Create(AccountId, WsA, BoardA, GroupA, "Item",
+        var item = BoardItem.CreateRoot(AccountId, WsA, BoardA, GroupA, "Item",
             FractionalIndex.Create("a0"), Actor, Now);
         var field = BoardField.Create(AccountId, WsA, BoardA, "Formula", FieldType.Formula,
             FieldSettings.Empty(), FractionalIndex.Create("a0"), Actor, Now);
@@ -95,7 +96,7 @@ public class BoardItemArchivedTests
     [Fact]
     public void RollupField_ManualWrite_ShouldThrow()
     {
-        var item = BoardItem.Create(AccountId, WsA, BoardA, GroupA, "Item",
+        var item = BoardItem.CreateRoot(AccountId, WsA, BoardA, GroupA, "Item",
             FractionalIndex.Create("a0"), Actor, Now);
         var field = BoardField.Create(AccountId, WsA, BoardA, "Rollup", FieldType.Rollup,
             FieldSettings.Empty(), FractionalIndex.Create("a0"), Actor, Now);

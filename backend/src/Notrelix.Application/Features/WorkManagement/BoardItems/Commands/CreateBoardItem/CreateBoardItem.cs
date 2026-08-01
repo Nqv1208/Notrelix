@@ -41,7 +41,7 @@ public class CreateBoardItemCommandHandler : IRequestHandler<CreateBoardItemComm
         var now = _timeProvider.UtcNow;
         var position = FractionalIndexGenerator.GenerateKeyBetween(null, null);
 
-        var item = BoardItem.Create(
+        var item = BoardItem.CreateRoot(
             _requestContext.RequireAccountId(),
             _requestContext.RequireWorkspaceId(),
             request.BoardId,

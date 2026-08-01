@@ -136,7 +136,7 @@ public abstract class WorkManagementHandlerTestBase
         else if (status == ApprovalStatus.Cancelled)
             request.Cancel(TestUserId, TestNow);
         if (isDeleted)
-            request.SoftDelete(TestUserId, TestNow);
+            request.Delete(TestUserId, TestNow);
         return request;
     }
 
@@ -157,7 +157,7 @@ public abstract class WorkManagementHandlerTestBase
 
     protected BoardItem CreateBoardItem(Guid? id = null, Guid? boardId = null, Guid? groupId = null)
     {
-        var item = BoardItem.Create(
+        var item = BoardItem.CreateRoot(
             TestAccountId,
             TestWorkspaceId,
             boardId ?? Guid.CreateVersion7(),
@@ -182,7 +182,7 @@ public abstract class WorkManagementHandlerTestBase
             TestUserId,
             TestNow);
         if (isDeleted)
-            filter.SoftDelete(TestUserId, TestNow);
+            filter.Delete(TestUserId, TestNow);
         if (id.HasValue)
             filter.GetType().GetProperty(nameof(SavedFilter.Id))!.SetValue(filter, id.Value);
         return filter;
@@ -248,7 +248,7 @@ public abstract class WorkManagementHandlerTestBase
         else if (status == FormStatus.Closed)
             form.Close(TestUserId, TestNow);
         else if (status == FormStatus.Deleted)
-            form.SoftDelete(TestUserId, TestNow);
+            form.Delete(TestUserId, TestNow);
         return form;
     }
 

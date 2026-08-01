@@ -43,7 +43,7 @@ public class FractionalIndexGeneratorTests
     public void Upstream_Null_A00000000000000000000000000_Throws()
     {
         var act = () => FractionalIndexGenerator.GenerateKeyBetween(null, FractionalIndex.Create("A00000000000000000000000000"));
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
@@ -74,22 +74,135 @@ public class FractionalIndexGeneratorTests
     public void Upstream_a00_Null_Throws()
     {
         var act = () => FractionalIndexGenerator.GenerateKeyBetween(FractionalIndex.Create("a00"), (FractionalIndex?)null);
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
     public void Upstream_a00_a1_Throws()
     {
         var act = () => FractionalIndexGenerator.GenerateKeyBetween(FractionalIndex.Create("a00"), FractionalIndex.Create("a1"));
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
     public void Upstream_InvalidHead_0_Rejected()
     {
-        // "0" is not a valid head character in the A-Z/a-z alphabet
         var act = () => FractionalIndex.Create("0");
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    // ── Invalid character rejection (FZ02) ─────────────────────────────
+
+    [Theory]
+    [InlineData("a0!")]
+    [InlineData("a0_")]
+    [InlineData("a0-")]
+    [InlineData("a0 é")]
+    [InlineData("a0@")]
+    [InlineData("a0#")]
+    [InlineData("a0$")]
+    [InlineData("a0%")]
+    [InlineData("a0^")]
+    [InlineData("a0&")]
+    [InlineData("a0*")]
+    [InlineData("a0(")]
+    [InlineData("a0)")]
+    [InlineData("a0+")]
+    [InlineData("a0=")]
+    [InlineData("a0[")]
+    [InlineData("a0]")]
+    [InlineData("a0{")]
+    [InlineData("a0}")]
+    [InlineData("a0|")]
+    [InlineData("a0\\")]
+    [InlineData("a0;")]
+    [InlineData("a0'")]
+    [InlineData("a0\"")]
+    [InlineData("a0,")]
+    [InlineData("a0.")]
+    [InlineData("a0<")]
+    [InlineData("a0>")]
+    [InlineData("a0?")]
+    [InlineData("a0/")]
+    [InlineData("a0~")]
+    [InlineData("a0`")]
+    public void InvalidCharacter_InFractionalPart_Rejected(string value)
+    {
+        var act = () => FractionalIndex.Create(value);
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    [Theory]
+    [InlineData("0a")]
+    [InlineData("1a")]
+    [InlineData("9a")]
+    [InlineData("!a")]
+    [InlineData("@a")]
+    public void InvalidHeadCharacter_Rejected(string value)
+    {
+        var act = () => FractionalIndex.Create(value);
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void NonAsciiCharacter_Rejected()
+    {
+        var act = () => FractionalIndex.Create("a0\u00e9");
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void NonAsciiHeadCharacter_Rejected()
+    {
+        var act = () => FractionalIndex.Create("\u00e90");
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void DigitLookup_SentinelRejectsUnknownCharacters()
+    {
+        var act = () => FractionalIndex.Create("a0!");
+        act.Should().Throw<BusinessRuleException>()
+            .WithMessage("*Invalid*character*");
+    }
+
+    [Fact]
+    public void IntLookup_SentinelRejectsUnknownCharacters()
+    {
+        var act = () => FractionalIndex.Create("0a");
+        act.Should().Throw<BusinessRuleException>();
+    }
+
+    // ── Deterministic ordering (FZ02) ──────────────────────────────────
+
+    [Fact]
+    public void DeterministicSequence_100_StrictlyOrdinalAndUnique()
+    {
+        for (var trial = 0; trial < 10; trial++)
+        {
+            var keys = FractionalIndexGenerator.GenerateNKeysBetween(null, null, 100);
+
+            keys.Select(k => k.Value).Distinct().Should().HaveCount(100,
+                "all generated keys must be unique");
+
+            for (var i = 1; i < keys.Count; i++)
+                keys[i - 1].CompareTo(keys[i]).Should().BeNegative(
+                    "keys must be strictly ordered");
+        }
+    }
+
+    [Fact]
+    public void GeneratedKeys_OnlyContainCanonicalAlphabet()
+    {
+        const string canonical = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+        var keys = FractionalIndexGenerator.GenerateNKeysBetween(null, null, 200);
+
+        foreach (var key in keys)
+        {
+            foreach (var c in key.Value)
+                canonical.Should().Contain(c.ToString(),
+                    $"key '{key.Value}' contains non-canonical character '{c}'");
+        }
     }
 
     // ── Existing custom fixtures ─────────────────────────────────────────
@@ -182,14 +295,7 @@ public class FractionalIndexGeneratorTests
     public void InvalidKey_IsRejected()
     {
         var act = () => FractionalIndex.Create("!!!");
-        act.Should().Throw<ArgumentException>();
-    }
-
-    [Fact]
-    public void InvalidKey_EmptyString_IsRejected()
-    {
-        var act = () => FractionalIndex.Create("");
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
@@ -271,7 +377,7 @@ public class FractionalIndexGeneratorTests
     public void Create_DoesNotTrim_WhitespaceIsRejected()
     {
         var act = () => FractionalIndex.Create(" a0");
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<BusinessRuleException>();
     }
 
     // ── Large batch ──────────────────────────────────────────────────────

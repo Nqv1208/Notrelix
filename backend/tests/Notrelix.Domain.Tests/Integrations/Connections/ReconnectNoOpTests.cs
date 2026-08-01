@@ -155,7 +155,7 @@ public class ReconnectNoOpTests
     {
         var connection = IntegrationConnection.Create(
             AccountId, WorkspaceId, IntegrationProvider.Google, Actor, Now);
-        connection.SoftDelete(Actor, Now);
+        connection.Delete(Actor, Now);
 
         var act = () => connection.Reconnect("p1", null, Actor, Now);
 

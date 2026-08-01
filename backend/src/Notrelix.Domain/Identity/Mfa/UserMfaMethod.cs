@@ -2,7 +2,7 @@ using Notrelix.Domain.Identity.Mfa.Events;
 
 namespace Notrelix.Domain.Identity.Mfa;
 
-public class UserMfaMethod : SoftDeletableAggregateRoot
+public sealed class UserMfaMethod : AggregateRoot
 {
     public Guid UserId { get; private set; }
     public MfaMethodType Type { get; private set; }
@@ -45,7 +45,6 @@ public class UserMfaMethod : SoftDeletableAggregateRoot
 
     public void Verify(DateTimeOffset verifiedAt)
     {
-        EnsureNotDeleted();
         if (Status == MfaMethodStatus.Active) return;
 
         if (Status == MfaMethodStatus.Disabled)
@@ -53,9 +52,10 @@ public class UserMfaMethod : SoftDeletableAggregateRoot
             throw new BusinessRuleException(IdentityRuleCodes.Identity_Mfa_CannotVerifyDisabled, "Cannot verify a disabled MFA method.");
         }
 
+        var pending = PrepareAuditUpdate(UserId, verifiedAt);
         Status = MfaMethodStatus.Active;
         VerifiedAt = verifiedAt;
-        SetAuditOnUpdate(UserId, verifiedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
         RaiseDomainEvent(new UserMfaMethodVerifiedDomainEvent(Id, UserId, Type, verifiedAt));
@@ -63,7 +63,6 @@ public class UserMfaMethod : SoftDeletableAggregateRoot
 
     public void SetAsPrimary(DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         if (Status != MfaMethodStatus.Active)
         {
             throw new BusinessRuleException(IdentityRuleCodes.Identity_Mfa_CannotSetPrimaryUnlessVerifiedActive, "Only verified and active MFA methods can be set as primary.");
@@ -71,8 +70,9 @@ public class UserMfaMethod : SoftDeletableAggregateRoot
 
         if (IsPrimary) return;
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         IsPrimary = true;
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
         RaiseDomainEvent(new UserMfaMethodSetAsPrimaryDomainEvent(Id, UserId, Type, updatedAt));
@@ -80,11 +80,11 @@ public class UserMfaMethod : SoftDeletableAggregateRoot
 
     public void UnsetAsPrimary(DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
         if (!IsPrimary) return;
 
+        var pending = PrepareAuditUpdate(UserId, updatedAt);
         IsPrimary = false;
-        SetAuditOnUpdate(UserId, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
         RaiseDomainEvent(new UserMfaMethodUnsetAsPrimaryDomainEvent(Id, UserId, Type, updatedAt));
@@ -92,33 +92,15 @@ public class UserMfaMethod : SoftDeletableAggregateRoot
 
     public void Disable(DateTimeOffset disabledAt)
     {
-        EnsureNotDeleted();
         if (Status == MfaMethodStatus.Disabled) return;
 
+        var pending = PrepareAuditUpdate(UserId, disabledAt);
         Status = MfaMethodStatus.Disabled;
         IsPrimary = false;
         DisabledAt = disabledAt;
-        SetAuditOnUpdate(UserId, disabledAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
         RaiseDomainEvent(new UserMfaMethodDisabledDomainEvent(Id, UserId, Type, disabledAt));
-    }
-
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        if (IsDeleted) return;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
-        IncrementVersion();
-        RaiseDomainEvent(new UserMfaMethodSoftDeletedDomainEvent(Id, UserId, deletedBy, deletedAt, reason));
-    }
-
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        if (!IsDeleted) return;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
-        IncrementVersion();
-        RaiseDomainEvent(new UserMfaMethodRestoredDomainEvent(Id, UserId, restoredBy, restoredAt));
     }
 }

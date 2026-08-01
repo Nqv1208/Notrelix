@@ -6,5 +6,6 @@ public sealed record AccountMemberRemovedDomainEvent(
     Guid MemberId,
     Guid UserId,
     Guid ActorId,
-    DateTimeOffset OccurredAt
+    DateTimeOffset OccurredAt,
+    string? Reason
 ) : AccountScopedDomainEvent(AccountId, OccurredAt);

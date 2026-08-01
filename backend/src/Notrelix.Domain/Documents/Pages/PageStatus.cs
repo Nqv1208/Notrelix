@@ -2,7 +2,7 @@ namespace Notrelix.Domain.Documents.Pages;
 
 public enum PageStatus
 {
-    Active,
-    Archived,
-    SoftDeleted
+    Active = 0,
+    Archived = 1
+    // 2 retired: SoftDeleted
 }

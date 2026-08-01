@@ -36,7 +36,7 @@ public class ApprovalStep : Entity
         };
     }
 
-    public void Approve(DateTimeOffset decidedAt, string? note = null)
+    internal void Approve(DateTimeOffset decidedAt, string? note = null)
     {
         if (Status != ApprovalStatus.Pending)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_Step_CannotApproveUnlessPending, "Only pending steps can be approved.");
@@ -48,7 +48,7 @@ public class ApprovalStep : Entity
         Note = note;
     }
 
-    public void Reject(DateTimeOffset decidedAt, string? note = null)
+    internal void Reject(DateTimeOffset decidedAt, string? note = null)
     {
         if (Status != ApprovalStatus.Pending)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_Step_CannotRejectUnlessPending, "Only pending steps can be rejected.");
@@ -79,6 +79,7 @@ public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void AddStep(int position, Guid addedBy, DateTimeOffset addedAt, Guid? approverUserId = null, Guid? approverTeamId = null)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(addedBy);
         if (Status != ApprovalStatus.Pending)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_CannotAddStepsNonPending, "Cannot add steps to a non-pending approval request.");
 
@@ -90,16 +91,17 @@ public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (approverTeamId.HasValue && _steps.Any(s => s.ApproverTeamId == approverTeamId))
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_DuplicateApprover, "Duplicate approver team in approval steps.");
 
+        var pending = PrepareAuditUpdate(addedBy, addedAt);
         var step = ApprovalStep.Create(Id, position, approverUserId, approverTeamId);
         _steps.Add(step);
-
-        SetAuditOnUpdate(addedBy, addedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 
     public void Approve(Guid stepId, Guid decidedBy, DateTimeOffset decidedAt, string? note = null)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(decidedBy);
         if (Status != ApprovalStatus.Pending)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_CannotApproveUnlessPending, "Only pending approval requests can be approved.");
         if (decidedAt == default)
@@ -116,6 +118,7 @@ public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (step.ApproverTeamId.HasValue)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_TeamDecisionNotSupported, "Team-assigned approval steps require team membership resolution, which is not yet supported.");
 
+        var pending = PrepareAuditUpdate(decidedBy, decidedAt);
         step.Approve(decidedAt, note);
 
         if (_steps.All(s => s.Status == ApprovalStatus.Approved))
@@ -123,14 +126,14 @@ public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
             Status = ApprovalStatus.Approved;
             RaiseDomainEvent(new ApprovalRequestApprovedDomainEvent(AccountId, WorkspaceId, Id, decidedBy, note, decidedAt));
         }
-
-        SetAuditOnUpdate(decidedBy, decidedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 
     public void Reject(Guid stepId, Guid decidedBy, DateTimeOffset decidedAt, string? note = null)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(decidedBy);
         if (Status != ApprovalStatus.Pending)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_CannotRejectUnlessPending, "Only pending approval requests can be rejected.");
         if (decidedAt == default)
@@ -147,10 +150,10 @@ public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (step.ApproverTeamId.HasValue)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_TeamDecisionNotSupported, "Team-assigned approval steps require team membership resolution, which is not yet supported.");
 
+        var pending = PrepareAuditUpdate(decidedBy, decidedAt);
         step.Reject(decidedAt, note);
         Status = ApprovalStatus.Rejected;
-
-        SetAuditOnUpdate(decidedBy, decidedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new ApprovalRequestRejectedDomainEvent(AccountId, WorkspaceId, Id, decidedBy, note, decidedAt));
     }
@@ -158,11 +161,13 @@ public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
     public void Cancel(Guid cancelledBy, DateTimeOffset cancelledAt)
     {
         EnsureNotDeleted();
+        Guard.NotEmpty(cancelledBy);
         if (Status != ApprovalStatus.Pending)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_CannotCancelUnlessPending, "Only pending approval requests can be cancelled.");
 
+        var pending = PrepareAuditUpdate(cancelledBy, cancelledAt);
         Status = ApprovalStatus.Cancelled;
-        SetAuditOnUpdate(cancelledBy, cancelledAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new ApprovalRequestCancelledDomainEvent(AccountId, WorkspaceId, Id, cancelledBy, cancelledAt));
     }
@@ -194,20 +199,22 @@ public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
         return request;
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
+        ApplyDeletion(pendingDeletion);
         IncrementVersion();
-        RaiseDomainEvent(new ApprovalRequestSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new ApprovalRequestDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pendingRestore);
         IncrementVersion();
         RaiseDomainEvent(new ApprovalRequestRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }

@@ -25,7 +25,7 @@ public class DeleteCommentCommandHandler : IRequestHandler<DeleteCommentCommand,
     {
         var comment = await _context.Comments.FirstOrDefaultAsync(c => c.Id == request.CommentId, ct);
         if (comment is null) throw new NotFoundException(nameof(Comment), request.CommentId);
-        comment.SoftDelete(_currentUser.UserId, _dateTimeProvider.UtcNow);
+        comment.Delete(_currentUser.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }

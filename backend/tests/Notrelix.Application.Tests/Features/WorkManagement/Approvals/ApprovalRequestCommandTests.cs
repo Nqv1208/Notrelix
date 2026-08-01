@@ -2,7 +2,7 @@ using Notrelix.Application.Features.WorkManagement.Approvals.Commands.CreateAppr
 using Notrelix.Application.Features.WorkManagement.Approvals.Commands.ApproveApprovalRequest;
 using Notrelix.Application.Features.WorkManagement.Approvals.Commands.RejectApprovalRequest;
 using Notrelix.Application.Features.WorkManagement.Approvals.Commands.CancelApprovalRequest;
-using Notrelix.Application.Features.WorkManagement.Approvals.Commands.SoftDeleteApprovalRequest;
+using Notrelix.Application.Features.WorkManagement.Approvals.Commands.DeleteApprovalRequest;
 using Notrelix.Application.Features.WorkManagement.Approvals.Commands.RestoreApprovalRequest;
 
 namespace Notrelix.Application.Tests.Features.WorkManagement.Approvals;
@@ -282,27 +282,27 @@ public class ApprovalRequestCommandTests : WorkManagementHandlerTestBase
         }
     }
 
-    // ── SoftDeleteApprovalRequest ─────────────────────────────
+    // ── DeleteApprovalRequest ─────────────────────────────
 
-    public class SoftDeleteApprovalRequestTests : ApprovalRequestCommandTests
+    public class DeleteApprovalRequestTests : ApprovalRequestCommandTests
     {
-        private readonly SoftDeleteApprovalRequestCommandHandler _handler;
+        private readonly DeleteApprovalRequestCommandHandler _handler;
 
-        public SoftDeleteApprovalRequestTests()
+        public DeleteApprovalRequestTests()
         {
-            _handler = new SoftDeleteApprovalRequestCommandHandler(
+            _handler = new DeleteApprovalRequestCommandHandler(
                 DbContextMock.Object,
                 RequestContextMock.Object,
                 DateTimeProviderMock.Object);
         }
 
         [Fact]
-        public async Task Handle_ActiveRequest_SoftDeletes()
+        public async Task Handle_ActiveRequest_Deletes()
         {
             var approvalRequest = CreateApprovalRequest();
             SetupApprovalRequests(approvalRequest);
 
-            var command = new SoftDeleteApprovalRequestCommand(approvalRequest.Id, 1);
+            var command = new DeleteApprovalRequestCommand(approvalRequest.Id, 1);
 
             var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -312,7 +312,7 @@ public class ApprovalRequestCommandTests : WorkManagementHandlerTestBase
         [Fact]
         public async Task Handle_RequestNotFound_ThrowsNotFoundException()
         {
-            var command = new SoftDeleteApprovalRequestCommand(Guid.CreateVersion7(), 0);
+            var command = new DeleteApprovalRequestCommand(Guid.CreateVersion7(), 0);
 
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<NotFoundException>();
@@ -324,7 +324,7 @@ public class ApprovalRequestCommandTests : WorkManagementHandlerTestBase
             var approvalRequest = CreateApprovalRequest(isDeleted: true);
             SetupApprovalRequests(approvalRequest);
 
-            var command = new SoftDeleteApprovalRequestCommand(approvalRequest.Id, 1);
+            var command = new DeleteApprovalRequestCommand(approvalRequest.Id, 1);
 
             var result = await _handler.Handle(command, CancellationToken.None);
 
