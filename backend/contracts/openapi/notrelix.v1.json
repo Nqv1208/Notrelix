@@ -24,7 +24,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/admin/outbox/pending": {
@@ -56,7 +61,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/admin/outbox/failed": {
@@ -88,7 +98,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/admin/outbox/{id}": {
@@ -120,7 +135,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/automations/{automationId}/executions": {
@@ -171,7 +191,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/automations": {
@@ -204,7 +229,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -245,7 +275,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/automations/{automationId}/enabled": {
@@ -288,7 +323,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-items/{boardItemId}/activity": {
@@ -339,7 +379,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-items/{boardItemId}/attachments": {
@@ -372,7 +417,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -413,7 +463,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-items/{boardItemId}/attachments/{attachmentId}": {
@@ -446,7 +501,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-items/{boardItemId}/comments": {
@@ -479,7 +539,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -520,7 +585,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/pages/{pageId}/comments": {
@@ -553,7 +623,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -594,7 +669,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/comments/{commentId}": {
@@ -637,7 +717,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -668,7 +753,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/comments/{commentId}/resolve": {
@@ -701,7 +791,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/pages/{pageId}/blocks": {
@@ -734,7 +829,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -775,7 +875,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/pages/{pageId}/blocks/batch": {
@@ -818,7 +923,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/blocks/{blockId}": {
@@ -861,7 +971,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -892,7 +1007,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/blocks/reorder": {
@@ -924,7 +1044,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/pages": {
@@ -957,7 +1082,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -998,7 +1128,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/pages/tree": {
@@ -1031,7 +1166,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/pages/search": {
@@ -1072,7 +1212,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/pages/{pageId}": {
@@ -1105,7 +1250,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "patch": {
         "tags": [
@@ -1146,7 +1296,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -1177,7 +1332,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/pages/{pageId}/breadcrumb": {
@@ -1210,7 +1370,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/pages/{pageId}/history": {
@@ -1243,7 +1408,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/resources/{resourceType}/{resourceId}/permissions": {
@@ -1284,7 +1454,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -1333,7 +1508,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/resources/{resourceType}/{resourceId}/permissions/{permissionId}": {
@@ -1383,7 +1563,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/resources/{resourceType}/{resourceId}/share-links": {
@@ -1434,7 +1619,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/resources/{resourceType}/{resourceId}/share-links/{shareLinkId}": {
@@ -1484,7 +1674,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/health": {
@@ -1505,7 +1700,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/health/live": {
@@ -1519,7 +1719,12 @@
           "200": {
             "description": "OK"
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/health/ready": {
@@ -1540,7 +1745,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/auth/register": {
@@ -1572,7 +1782,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/auth/login": {
@@ -1604,7 +1819,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/auth/forgot-password": {
@@ -1636,7 +1856,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/auth/reset-password": {
@@ -1668,7 +1893,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/auth/refresh": {
@@ -1690,7 +1920,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/auth/oauth/{provider}/start": {
@@ -1730,7 +1965,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/auth/oauth/{provider}/callback": {
@@ -1791,7 +2031,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/auth/email-verification/confirm": {
@@ -1822,7 +2067,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/auth/email-verification/resend": {
@@ -1853,7 +2103,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/auth/email-verification/request": {
@@ -1874,7 +2129,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/auth/logout": {
@@ -1896,7 +2156,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/auth/me": {
@@ -1918,7 +2183,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/auth/bootstrap": {
@@ -1940,7 +2210,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/profile": {
@@ -1972,7 +2247,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/profile/email": {
@@ -2004,7 +2284,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/approvals": {
@@ -2047,7 +2332,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "get": {
         "tags": [
@@ -2078,7 +2368,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/approvals/{requestId}/approve": {
@@ -2121,7 +2416,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/approvals/{requestId}/reject": {
@@ -2164,7 +2464,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/approvals/{requestId}/cancel": {
@@ -2197,7 +2502,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/approvals/{requestId}": {
@@ -2230,7 +2540,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/approvals/{requestId}/restore": {
@@ -2263,7 +2578,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/fields": {
@@ -2305,7 +2625,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/fields/{fieldId}": {
@@ -2356,7 +2681,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -2395,7 +2725,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/fields/reorder": {
@@ -2437,7 +2772,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/fields/{fieldId}/options": {
@@ -2488,7 +2828,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/fields/{fieldId}/options/{optionId}": {
@@ -2538,7 +2883,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "patch": {
         "tags": [
@@ -2596,7 +2946,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/fields/{fieldId}/options/reorder": {
@@ -2647,7 +3002,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/schema": {
@@ -2679,7 +3039,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/groups": {
@@ -2722,7 +3087,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/groups/reorder": {
@@ -2765,7 +3135,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-groups/{groupId}": {
@@ -2808,7 +3183,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -2839,7 +3219,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-groups/{groupId}/duplicate": {
@@ -2872,7 +3257,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-groups/{groupId}/archive": {
@@ -2905,7 +3295,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-groups/{groupId}/unarchive": {
@@ -2938,7 +3333,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/items": {
@@ -2981,7 +3381,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "get": {
         "tags": [
@@ -3012,7 +3417,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-items/{itemId}": {
@@ -3045,7 +3455,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "patch": {
         "tags": [
@@ -3086,7 +3501,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -3117,7 +3537,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-items/{itemId}/archive": {
@@ -3150,7 +3575,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-items/{itemId}/unarchive": {
@@ -3183,7 +3613,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-items/{itemId}/duplicate": {
@@ -3216,7 +3651,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-items/{itemId}/move": {
@@ -3259,7 +3699,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-items/{itemId}/field-values": {
@@ -3302,7 +3747,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-items/{itemId}/link-page": {
@@ -3345,7 +3795,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -3376,7 +3831,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-items/{itemId}/assignees": {
@@ -3419,7 +3879,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-items/{itemId}/assignees/{userId}": {
@@ -3461,7 +3926,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-items/{itemId}/labels": {
@@ -3504,7 +3974,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-items/{itemId}/labels/{labelId}": {
@@ -3546,7 +4021,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-items/{itemId}/values/{fieldId}": {
@@ -3598,7 +4078,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -3638,7 +4123,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-items/{itemId}/restore": {
@@ -3671,7 +4161,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-items/{itemId}/complete": {
@@ -3714,7 +4209,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-items/{itemId}/due-date": {
@@ -3757,7 +4257,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-items/{itemId}/status": {
@@ -3800,7 +4305,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-items/{itemId}/links": {
@@ -3833,7 +4343,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/preferences/{viewId}": {
@@ -3875,7 +4390,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "put": {
         "tags": [
@@ -3925,7 +4445,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/preferences/{viewId}/filters": {
@@ -3977,7 +4502,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/preferences/{viewId}/sorts": {
@@ -4029,7 +4559,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/preferences/{viewId}/group": {
@@ -4081,7 +4616,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/boards": {
@@ -4114,7 +4654,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -4155,7 +4700,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}": {
@@ -4188,7 +4738,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "patch": {
         "tags": [
@@ -4229,7 +4784,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -4258,7 +4818,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/full": {
@@ -4291,7 +4856,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/archive": {
@@ -4322,7 +4892,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/unarchive": {
@@ -4353,7 +4928,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/restore": {
@@ -4386,7 +4966,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/visibility": {
@@ -4429,7 +5014,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/members": {
@@ -4460,7 +5050,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -4499,7 +5094,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/members/{userId}": {
@@ -4539,7 +5139,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/members/{userId}/role": {
@@ -4589,7 +5194,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/views": {
@@ -4622,7 +5232,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "put": {
         "tags": [
@@ -4663,7 +5278,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -4704,7 +5324,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/views/{viewId}": {
@@ -4756,7 +5381,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -4796,7 +5426,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/views/{viewId}/archive": {
@@ -4838,7 +5473,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/views/{viewId}/unarchive": {
@@ -4880,7 +5520,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/views/{viewId}/restore": {
@@ -4922,7 +5567,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/views/{viewId}/rename": {
@@ -4974,7 +5624,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/views/{viewId}/set-default": {
@@ -5016,7 +5671,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/board-items/{itemId}/checklists": {
@@ -5049,7 +5709,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -5090,7 +5755,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/checklists/{checklistId}": {
@@ -5133,7 +5803,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -5164,7 +5839,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/checklists/{checklistId}/items": {
@@ -5206,7 +5886,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/checklist-items/{itemId}": {
@@ -5249,7 +5934,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -5280,7 +5970,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/checklist-items/{itemId}/toggle": {
@@ -5313,7 +6008,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/forms": {
@@ -5356,7 +6056,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "get": {
         "tags": [
@@ -5387,7 +6092,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/forms/{formId}": {
@@ -5430,7 +6140,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -5461,7 +6176,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "get": {
         "tags": [
@@ -5492,7 +6212,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/forms/{formId}/publish": {
@@ -5525,7 +6250,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/forms/{formId}/close": {
@@ -5558,7 +6288,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/forms/{formId}/restore": {
@@ -5591,7 +6326,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/forms/{formId}/questions": {
@@ -5634,7 +6374,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/forms/{formId}/{questionId}": {
@@ -5677,7 +6422,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/form-submissions/{submissionId}/process": {
@@ -5720,7 +6470,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/form-submissions/{submissionId}/reject": {
@@ -5753,7 +6508,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/form-submissions/{submissionId}/spam": {
@@ -5786,7 +6546,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/form-submissions/{submissionId}": {
@@ -5819,7 +6584,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/labels": {
@@ -5862,7 +6632,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "get": {
         "tags": [
@@ -5893,7 +6668,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/labels/{labelId}": {
@@ -5936,7 +6716,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -5967,7 +6752,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/relations": {
@@ -6010,7 +6800,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "get": {
         "tags": [
@@ -6041,7 +6836,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/relations/{relationId}": {
@@ -6074,7 +6874,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/relations/{relationId}/pause": {
@@ -6107,7 +6912,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/relations/{relationId}/resume": {
@@ -6140,7 +6950,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/saved-filters": {
@@ -6183,7 +6998,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "get": {
         "tags": [
@@ -6214,7 +7034,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/saved-filters/{filterId}/rename": {
@@ -6257,7 +7082,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/saved-filters/{filterId}/visibility": {
@@ -6300,7 +7130,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/saved-filters/{filterId}/filters": {
@@ -6343,7 +7178,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/saved-filters/{filterId}/sorts": {
@@ -6386,7 +7226,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/saved-filters/{filterId}/group": {
@@ -6429,7 +7274,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/saved-filters/{filterId}": {
@@ -6471,7 +7321,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/saved-filters/{filterId}/restore": {
@@ -6504,7 +7359,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/boards/{boardId}/templates": {
@@ -6547,7 +7407,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/templates/{templateId}/publish": {
@@ -6580,7 +7445,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/templates/{templateId}/archive": {
@@ -6613,7 +7483,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/templates/{templateId}": {
@@ -6646,7 +7521,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/templates/{templateId}/create-board": {
@@ -6689,7 +7569,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/templates": {
@@ -6722,7 +7607,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/activity": {
@@ -6773,7 +7663,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/invitations": {
@@ -6806,7 +7701,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/invitations/{invitationId}": {
@@ -6848,7 +7748,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/invitations/{invitationId}/resend": {
@@ -6890,7 +7795,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/invitations/{invitationId}/role": {
@@ -6942,7 +7852,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/invitations/pending": {
@@ -6964,7 +7879,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/invitations/accept": {
@@ -6996,7 +7916,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/invitations/{invitationId}/decline": {
@@ -7029,7 +7954,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/invitations/preview": {
@@ -7061,7 +7991,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/members": {
@@ -7094,7 +8029,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -7135,7 +8075,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/members/add": {
@@ -7178,7 +8123,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/members/{userId}": {
@@ -7230,7 +8180,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -7270,7 +8225,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/members/{userId}/suspend": {
@@ -7312,7 +8272,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/members/{userId}/activate": {
@@ -7354,7 +8319,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/settings": {
@@ -7387,7 +8357,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "put": {
         "tags": [
@@ -7428,7 +8403,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/spaces": {
@@ -7461,7 +8441,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -7502,7 +8487,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}": {
@@ -7544,7 +8534,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "put": {
         "tags": [
@@ -7594,7 +8589,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -7634,7 +8634,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}/description": {
@@ -7686,7 +8691,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}/visibility": {
@@ -7738,7 +8748,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}/type": {
@@ -7790,7 +8805,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}/archive": {
@@ -7832,7 +8852,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}/unarchive": {
@@ -7874,7 +8899,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}/restore": {
@@ -7916,7 +8946,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/teams": {
@@ -7949,7 +8984,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -7990,7 +9030,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/teams/{teamId}": {
@@ -8032,7 +9077,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "put": {
         "tags": [
@@ -8082,7 +9132,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -8122,7 +9177,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/teams/{teamId}/description": {
@@ -8174,7 +9234,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/teams/{teamId}/archive": {
@@ -8216,7 +9281,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/teams/{teamId}/unarchive": {
@@ -8258,7 +9328,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/teams/{teamId}/restore": {
@@ -8300,7 +9375,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/teams/{teamId}/members": {
@@ -8352,7 +9432,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/teams/{teamId}/members/{userId}": {
@@ -8403,7 +9488,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/teams/{teamId}/members/{userId}/role": {
@@ -8464,7 +9554,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces": {
@@ -8486,7 +9581,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}": {
@@ -8519,7 +9619,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -8550,7 +9655,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/profile": {
@@ -8593,7 +9703,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/archive": {
@@ -8636,7 +9751,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/archive/unarchive": {
@@ -8679,7 +9799,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/restore": {
@@ -8722,7 +9847,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/transfer-ownership": {
@@ -8765,7 +9895,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/accounts/{accountId}/workspaces": {
@@ -8808,7 +9943,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       },
       "get": {
         "tags": [
@@ -8828,7 +9968,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     },
     "/api/v1/accounts/{accountId}/resolve": {
@@ -8860,7 +10005,12 @@
           "200": {
             "description": "OK"
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
       }
     }
   },
@@ -10709,10 +11859,5 @@
         "bearerFormat": "JWT"
       }
     }
-  },
-  "security": [
-    {
-      "Bearer": [ ]
-    }
-  ]
+  }
 }
