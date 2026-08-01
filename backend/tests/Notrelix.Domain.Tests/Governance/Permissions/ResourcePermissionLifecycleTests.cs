@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Governance.Permissions;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Governance.Permissions;
 
@@ -10,7 +9,6 @@ public class ResourcePermissionLifecycleTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(ResourcePermission), nameof(ResourcePermission.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void ResourcePermission_Delete_ShouldRaiseEvent()
     {
@@ -28,7 +26,6 @@ public class ResourcePermissionLifecycleTests
         evt.DeletedBy.Should().Be(Actor);
     }
 
-    [CoversMutation(typeof(ResourcePermission), nameof(ResourcePermission.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ResourcePermission_Restore_ShouldRaiseEvent()
     {
@@ -47,7 +44,6 @@ public class ResourcePermissionLifecycleTests
         evt.RestoredBy.Should().Be(Actor);
     }
 
-    [CoversMutation(typeof(ResourcePermission), nameof(ResourcePermission.Delete), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void ResourcePermission_Delete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
@@ -62,7 +58,6 @@ public class ResourcePermissionLifecycleTests
         permission.DomainEvents.Should().NotContain(e => e is ResourcePermissionDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(ResourcePermission), nameof(ResourcePermission.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ResourcePermission_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
@@ -76,7 +71,6 @@ public class ResourcePermissionLifecycleTests
         permission.DomainEvents.Should().NotContain(e => e is ResourcePermissionRestoredDomainEvent);
     }
 
-    [CoversMutation(typeof(ResourcePermission), nameof(ResourcePermission.Revoke), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ResourcePermission_Revoke_ShouldEmitOnlyRevokedEvent()
     {

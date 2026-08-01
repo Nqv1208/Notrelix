@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 
@@ -11,7 +10,6 @@ public class TeamVersionTests
     private readonly Guid _userId = Guid.NewGuid();
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(Team), nameof(Team.Rename), MutationScenario.Version, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Rename_ShouldIncrementVersion()
     {
@@ -25,7 +23,6 @@ public class TeamVersionTests
         team.DomainEvents.Should().Contain(e => e is TeamRenamedDomainEvent);
     }
 
-    [CoversMutation(typeof(Team), nameof(Team.Archive), MutationScenario.Version, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_ShouldIncrementVersion()
     {
@@ -39,7 +36,6 @@ public class TeamVersionTests
         team.DomainEvents.Should().Contain(e => e is TeamArchivedDomainEvent);
     }
 
-    [CoversMutation(typeof(Team), nameof(Team.AddMember), MutationScenario.Version, typeof(Guid), typeof(TeamMemberRole), typeof(Guid), typeof(DateTimeOffset), typeof(Guid?))]
     [Fact]
     public void AddMember_ShouldIncrementVersion()
     {
@@ -67,7 +63,6 @@ public class TeamVersionTests
         team.DomainEvents.Should().Contain(e => e is TeamMemberRemovedDomainEvent);
     }
 
-    [CoversMutation(typeof(Team), nameof(Team.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldIncrementVersion()
     {
@@ -82,7 +77,6 @@ public class TeamVersionTests
         team.DomainEvents.Should().Contain(e => e is TeamDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(Team), nameof(Team.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldIncrementVersion()
     {

@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.WorkManagement.Relations;
 
 namespace Notrelix.Domain.Tests.WorkManagement.Relations;
@@ -10,7 +9,6 @@ namespace Notrelix.Domain.Tests.WorkManagement.Relations;
 /// Business lifecycle: Active / Paused / Broken
 /// Deletion availability: IsDeleted
 /// </summary>
-[CoversAggregate(typeof(BoardRelation))]
 public class BoardRelationDeletionLifecycleTests
 {
     private static readonly Guid WsA = Guid.NewGuid();
@@ -48,7 +46,6 @@ public class BoardRelationDeletionLifecycleTests
 
     // ── Delete preserves status ───────────────────────────────────────────
 
-    [CoversMutation(typeof(BoardRelation), nameof(BoardRelation.Delete), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_Active_PreservesActive()
     {
@@ -60,7 +57,6 @@ public class BoardRelationDeletionLifecycleTests
         relation.IsDeleted.Should().BeTrue();
     }
 
-    [CoversMutation(typeof(BoardRelation), nameof(BoardRelation.Delete), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_Paused_PreservesPaused()
     {
@@ -72,7 +68,6 @@ public class BoardRelationDeletionLifecycleTests
         relation.IsDeleted.Should().BeTrue();
     }
 
-    [CoversMutation(typeof(BoardRelation), nameof(BoardRelation.Delete), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_Broken_PreservesBroken()
     {
@@ -86,7 +81,6 @@ public class BoardRelationDeletionLifecycleTests
 
     // ── Restore preserves status ──────────────────────────────────────────
 
-    [CoversMutation(typeof(BoardRelation), nameof(BoardRelation.Restore), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_Active_PreservesActive()
     {
@@ -99,7 +93,6 @@ public class BoardRelationDeletionLifecycleTests
         relation.IsDeleted.Should().BeFalse();
     }
 
-    [CoversMutation(typeof(BoardRelation), nameof(BoardRelation.Restore), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_Paused_PreservesPaused()
     {
@@ -112,7 +105,6 @@ public class BoardRelationDeletionLifecycleTests
         relation.IsDeleted.Should().BeFalse();
     }
 
-    [CoversMutation(typeof(BoardRelation), nameof(BoardRelation.Restore), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_Broken_PreservesBroken()
     {
@@ -127,7 +119,6 @@ public class BoardRelationDeletionLifecycleTests
 
     // ── No-op behavior ────────────────────────────────────────────────────
 
-    [CoversMutation(typeof(BoardRelation), nameof(BoardRelation.Delete), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_AlreadyDeleted_IsNoOp()
     {
@@ -142,7 +133,6 @@ public class BoardRelationDeletionLifecycleTests
         relation.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(BoardRelation), nameof(BoardRelation.Restore), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_NotDeleted_IsNoOp()
     {

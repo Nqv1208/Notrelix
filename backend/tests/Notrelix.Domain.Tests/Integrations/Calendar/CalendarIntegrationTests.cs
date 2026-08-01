@@ -1,11 +1,9 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Integrations;
 using Notrelix.Domain.Integrations.Calendar;
 
 namespace Notrelix.Domain.Tests.Integrations.Calendar;
 
-[CoversAggregate(typeof(CalendarIntegration))]
 public class CalendarIntegrationTests
 {
     private static readonly Guid AccountId = Guid.NewGuid();
@@ -14,8 +12,6 @@ public class CalendarIntegrationTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.UpdateEventLinkETag), MutationScenario.Event, typeof(Guid), typeof(string))]
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.LinkEvent), MutationScenario.Event, typeof(Guid), typeof(string), typeof(string))]
     [Fact]
     public void Create_ShouldSetProperties_AndRaiseEvent()
     {
@@ -63,9 +59,6 @@ public class CalendarIntegrationTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.UpdateEventLinkETag), MutationScenario.Event, typeof(Guid), typeof(string))]
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.LinkEvent), MutationScenario.Event, typeof(Guid), typeof(string), typeof(string))]
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.Activate), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Activate_WhenInactive_ShouldSetIsActive_AndRaiseEvent()
     {
@@ -79,7 +72,6 @@ public class CalendarIntegrationTests
         integration.DomainEvents.Should().ContainSingle(e => e is CalendarIntegrationActivatedDomainEvent);
     }
 
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.Activate), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Activate_WhenAlreadyActive_ShouldBeNoOp()
     {
@@ -92,10 +84,6 @@ public class CalendarIntegrationTests
         integration.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.UpdateEventLinkETag), MutationScenario.Event, typeof(Guid), typeof(string))]
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.LinkEvent), MutationScenario.Event, typeof(Guid), typeof(string), typeof(string))]
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.Deactivate), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.Activate), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Deactivate_WhenActive_ShouldSetIsActiveFalse_AndRaiseEvent()
     {
@@ -108,8 +96,6 @@ public class CalendarIntegrationTests
         integration.DomainEvents.Should().ContainSingle(e => e is CalendarIntegrationDeactivatedDomainEvent);
     }
 
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.Deactivate), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.Activate), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Deactivate_WhenAlreadyInactive_ShouldBeNoOp()
     {
@@ -123,9 +109,6 @@ public class CalendarIntegrationTests
         integration.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.UpdateEventLinkETag), MutationScenario.Event, typeof(Guid), typeof(string))]
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.LinkEvent), MutationScenario.Event, typeof(Guid), typeof(string), typeof(string))]
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.ChangeSyncDirection), MutationScenario.Event, typeof(CalendarSyncDirection), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ChangeSyncDirection_WhenActive_ShouldUpdate_AndRaiseEvent()
     {
@@ -138,7 +121,6 @@ public class CalendarIntegrationTests
         integration.DomainEvents.Should().ContainSingle(e => e is CalendarIntegrationSyncDirectionChangedDomainEvent);
     }
 
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.ChangeSyncDirection), MutationScenario.NoOp, typeof(CalendarSyncDirection), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ChangeSyncDirection_WhenSame_ShouldBeNoOp()
     {
@@ -151,9 +133,6 @@ public class CalendarIntegrationTests
         integration.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.ChangeSyncDirection), MutationScenario.Invalid, typeof(CalendarSyncDirection), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.Deactivate), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.Activate), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ChangeSyncDirection_WhenDeactivated_ShouldThrow()
     {
@@ -166,8 +145,6 @@ public class CalendarIntegrationTests
             .WithMessage("*deactivated*");
     }
 
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.UpdateEventLinkETag), MutationScenario.Event, typeof(Guid), typeof(string))]
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.LinkEvent), MutationScenario.Event, typeof(Guid), typeof(string), typeof(string))]
     [Fact]
     public void LinkEvent_WhenActive_ShouldAddLink()
     {
@@ -182,10 +159,6 @@ public class CalendarIntegrationTests
         integration.EventLinks.Single().ETag.Should().Be("etag-1");
     }
 
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.UpdateEventLinkETag), MutationScenario.Invalid, typeof(Guid), typeof(string))]
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.LinkEvent), MutationScenario.Invalid, typeof(Guid), typeof(string), typeof(string))]
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.Deactivate), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.Activate), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void LinkEvent_WhenDeactivated_ShouldThrow()
     {
@@ -198,8 +171,6 @@ public class CalendarIntegrationTests
             .WithMessage("*deactivated*");
     }
 
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.UpdateEventLinkETag), MutationScenario.Invalid, typeof(Guid), typeof(string))]
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.LinkEvent), MutationScenario.Invalid, typeof(Guid), typeof(string), typeof(string))]
     [Fact]
     public void LinkEvent_DuplicateInternalId_ShouldThrow()
     {
@@ -213,8 +184,6 @@ public class CalendarIntegrationTests
             .WithMessage("*already exists*");
     }
 
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.UpdateEventLinkETag), MutationScenario.Invalid, typeof(Guid), typeof(string))]
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.LinkEvent), MutationScenario.Invalid, typeof(Guid), typeof(string), typeof(string))]
     [Fact]
     public void LinkEvent_DuplicateExternalId_ShouldThrow()
     {
@@ -227,8 +196,6 @@ public class CalendarIntegrationTests
             .WithMessage("*already exists*");
     }
 
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.UpdateEventLinkETag), MutationScenario.Event, typeof(Guid), typeof(string))]
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.LinkEvent), MutationScenario.Event, typeof(Guid), typeof(string), typeof(string))]
     [Fact]
     public void UpdateEventLinkETag_ShouldUpdate()
     {
@@ -241,8 +208,6 @@ public class CalendarIntegrationTests
         integration.EventLinks.Single(l => l.InternalEventId == internalId).ETag.Should().Be("new-etag");
     }
 
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.UpdateEventLinkETag), MutationScenario.Invalid, typeof(Guid), typeof(string))]
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.LinkEvent), MutationScenario.Invalid, typeof(Guid), typeof(string), typeof(string))]
     [Fact]
     public void UpdateEventLinkETag_LinkNotFound_ShouldThrow()
     {
@@ -254,9 +219,6 @@ public class CalendarIntegrationTests
             .WithMessage("*No event link found*");
     }
 
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.Deactivate), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.Activate), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Delete_ShouldDeactivate_AndMarkDeleted()
     {
@@ -270,7 +232,6 @@ public class CalendarIntegrationTests
         integration.DomainEvents.Should().Contain(e => e is CalendarIntegrationDeactivatedDomainEvent);
     }
 
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldRestoreState()
     {
@@ -295,7 +256,6 @@ public class CalendarIntegrationTests
         integration.Version.Should().Be(versionBefore + 1);
     }
 
-    [CoversMutation(typeof(CalendarIntegration), nameof(CalendarIntegration.UpdateEventLinkETag), MutationScenario.Audit, typeof(Guid), typeof(string))]
     [Fact]
     public void Mutations_ShouldUpdateAudit()
     {

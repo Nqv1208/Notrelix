@@ -1,10 +1,8 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Billing.BillingEvents;
 
 namespace Notrelix.Domain.Tests.Billing;
 
-[CoversAggregate(typeof(BillingEvent))]
 public class BillingEventTests
 {
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
@@ -41,9 +39,6 @@ public class BillingEventTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(BillingEvent), nameof(BillingEvent.MarkIgnored), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BillingEvent), nameof(BillingEvent.MarkFailed), MutationScenario.Valid, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BillingEvent), nameof(BillingEvent.MarkProcessed), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MarkProcessed_WhenReceived_ShouldSucceed()
     {
@@ -55,9 +50,6 @@ public class BillingEventTests
         billingEvent.UpdatedBy.Should().Be(_actor);
     }
 
-    [CoversMutation(typeof(BillingEvent), nameof(BillingEvent.MarkIgnored), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BillingEvent), nameof(BillingEvent.MarkFailed), MutationScenario.NoOp, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BillingEvent), nameof(BillingEvent.MarkProcessed), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MarkProcessed_WhenAlreadyProcessed_ShouldBeIdempotent()
     {
@@ -71,9 +63,6 @@ public class BillingEventTests
         billingEvent.Version.Should().Be(versionAfterFirst);
     }
 
-    [CoversMutation(typeof(BillingEvent), nameof(BillingEvent.MarkIgnored), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BillingEvent), nameof(BillingEvent.MarkFailed), MutationScenario.Invalid, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BillingEvent), nameof(BillingEvent.MarkProcessed), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MarkFailed_ShouldSetStatusAndError()
     {
@@ -85,9 +74,6 @@ public class BillingEventTests
         billingEvent.Error.Should().Be("Processing error");
     }
 
-    [CoversMutation(typeof(BillingEvent), nameof(BillingEvent.MarkIgnored), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BillingEvent), nameof(BillingEvent.MarkFailed), MutationScenario.NoOp, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BillingEvent), nameof(BillingEvent.MarkProcessed), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MarkFailed_WhenAlreadyFailed_ShouldBeIdempotent()
     {
@@ -101,9 +87,6 @@ public class BillingEventTests
         billingEvent.Version.Should().Be(versionAfterFirst);
     }
 
-    [CoversMutation(typeof(BillingEvent), nameof(BillingEvent.MarkIgnored), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BillingEvent), nameof(BillingEvent.MarkFailed), MutationScenario.Valid, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BillingEvent), nameof(BillingEvent.MarkProcessed), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MarkIgnored_WhenReceived_ShouldSucceed()
     {
@@ -114,9 +97,6 @@ public class BillingEventTests
         billingEvent.Status.Should().Be(BillingEventStatus.Ignored);
     }
 
-    [CoversMutation(typeof(BillingEvent), nameof(BillingEvent.MarkIgnored), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BillingEvent), nameof(BillingEvent.MarkFailed), MutationScenario.NoOp, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BillingEvent), nameof(BillingEvent.MarkProcessed), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MarkIgnored_WhenNotReceived_ShouldBeIdempotent()
     {

@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Governance.ShareLinks;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Governance.ShareLinks;
 
@@ -37,7 +36,6 @@ public class ShareLinkBoundaryTests
         link.ExpiresAt.Should().BeNull();
     }
 
-    [CoversMutation(typeof(ShareLink), nameof(ShareLink.Expire), MutationScenario.Valid, typeof(DateTimeOffset))]
     [Fact]
     public void ShareLink_Expire_ShouldUseNullActor()
     {
@@ -47,7 +45,6 @@ public class ShareLinkBoundaryTests
         link.Status.Should().Be(ShareLinkStatus.Expired);
     }
 
-    [CoversMutation(typeof(ShareLink), nameof(ShareLink.Expire), MutationScenario.Valid, typeof(DateTimeOffset))]
     [Fact]
     public void ShareLink_IsExpired_WhenExpired_ShouldReturnTrue()
     {
@@ -57,7 +54,6 @@ public class ShareLinkBoundaryTests
         link.IsExpired(Now).Should().BeTrue();
     }
 
-    [CoversMutation(typeof(ShareLink), nameof(ShareLink.Expire), MutationScenario.Valid, typeof(DateTimeOffset))]
     [Fact]
     public void ShareLink_IsExpired_WhenPastExpiry_ShouldReturnTrue()
     {

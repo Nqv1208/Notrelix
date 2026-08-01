@@ -1,10 +1,8 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Billing.Plans;
 
 namespace Notrelix.Domain.Tests.Billing;
 
-[CoversAggregate(typeof(Plan))]
 public class PlanTests
 {
     private static readonly Money SamplePrice = Money.Create(19.99m, "USD");
@@ -21,7 +19,6 @@ public class PlanTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Plan), nameof(Plan.AddLimit), MutationScenario.Valid, typeof(FeatureCode), typeof(int), typeof(DateTimeOffset))]
     public void AddLimit_ShouldAddToList()
     {
         var plan = Plan.Create("Free", Money.Create(0, "USD"), BillingPeriod.Monthly, DateTimeOffset.UtcNow);
@@ -34,7 +31,6 @@ public class PlanTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Plan), nameof(Plan.AddLimit), MutationScenario.Invalid, typeof(FeatureCode), typeof(int), typeof(DateTimeOffset))]
     public void AddLimit_DuplicateFeature_ShouldThrow()
     {
         var plan = Plan.Create("Pro", SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
@@ -45,7 +41,6 @@ public class PlanTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Plan), nameof(Plan.AddLimit), MutationScenario.Event, typeof(FeatureCode), typeof(int), typeof(DateTimeOffset))]
     public void AddLimit_ShouldRaiseEvent()
     {
         var plan = Plan.Create("Pro", SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
@@ -57,7 +52,6 @@ public class PlanTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Plan), nameof(Plan.UpdateDescription), MutationScenario.Valid, typeof(string), typeof(DateTimeOffset))]
     public void UpdateDescription_ShouldUpdate()
     {
         var plan = Plan.Create("Pro", SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
@@ -68,7 +62,6 @@ public class PlanTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Plan), nameof(Plan.UpdateDescription), MutationScenario.Valid, typeof(string), typeof(DateTimeOffset))]
     public void UpdateDescription_WithNull_ShouldSetNull()
     {
         var plan = Plan.Create("Pro", SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
@@ -80,7 +73,6 @@ public class PlanTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Plan), nameof(Plan.Archive), MutationScenario.Valid, typeof(DateTimeOffset))]
     public void Archive_ShouldTransition_AndRaiseEvent()
     {
         var plan = Plan.Create("Legacy", SamplePrice, BillingPeriod.Yearly, DateTimeOffset.UtcNow);
@@ -93,7 +85,6 @@ public class PlanTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Plan), nameof(Plan.Archive), MutationScenario.NoOp, typeof(DateTimeOffset))]
     public void Archive_WhenAlreadyArchived_ShouldBeNoOp()
     {
         var plan = Plan.Create("Legacy", SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
@@ -106,7 +97,6 @@ public class PlanTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Plan), nameof(Plan.Deprecate), MutationScenario.Valid, typeof(DateTimeOffset))]
     public void Deprecate_ShouldTransition_AndRaiseEvent()
     {
         var plan = Plan.Create("Old", SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
@@ -119,7 +109,6 @@ public class PlanTests
     }
 
     [Fact]
-    [CoversMutation(typeof(Plan), nameof(Plan.Deprecate), MutationScenario.NoOp, typeof(DateTimeOffset))]
     public void Deprecate_WhenAlreadyDeprecated_ShouldBeNoOp()
     {
         var plan = Plan.Create("Old", SamplePrice, BillingPeriod.Monthly, DateTimeOffset.UtcNow);
@@ -139,7 +128,6 @@ public class PlanTests
     }
 
     [Fact]
-    [CoversMutation(typeof(PlanLimit), nameof(PlanLimit.UpdateLimit), MutationScenario.Invalid, typeof(int))]
     public void PlanLimit_UpdateLimit_WithNegative_ShouldThrow()
     {
         var limit = PlanLimit.Create(Guid.NewGuid(), SampleFeature, 10);
@@ -148,7 +136,6 @@ public class PlanTests
     }
 
     [Fact]
-    [CoversMutation(typeof(PlanLimit), nameof(PlanLimit.UpdateLimit), MutationScenario.Valid, typeof(int))]
     public void PlanLimit_UpdateLimit_ShouldUpdate()
     {
         var limit = PlanLimit.Create(Guid.NewGuid(), SampleFeature, 10);

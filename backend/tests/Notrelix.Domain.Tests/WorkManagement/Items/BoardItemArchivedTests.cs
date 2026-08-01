@@ -2,7 +2,6 @@ using FluentAssertions;
 using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.BoardGroups;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.WorkManagement.Items;
 
@@ -23,7 +22,6 @@ public class BoardItemArchivedTests
         return item;
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Rename), MutationScenario.Invalid, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ArchivedItem_Rename_ShouldThrow()
     {
@@ -33,7 +31,6 @@ public class BoardItemArchivedTests
             .WithMessage("*archived*");
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Archive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ArchivedItem_MoveToGroup_ShouldThrow()
     {
@@ -44,7 +41,6 @@ public class BoardItemArchivedTests
             .WithMessage("*archived*");
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Archive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ArchivedItem_UpdateFieldValue_ShouldThrow()
     {
@@ -56,7 +52,6 @@ public class BoardItemArchivedTests
             .WithMessage("*archived*");
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Archive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ArchivedItem_SetTimeline_ShouldThrow()
     {
@@ -66,7 +61,6 @@ public class BoardItemArchivedTests
             .WithMessage("*archived*");
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Archive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ArchivedItem_Complete_ShouldThrow()
     {
@@ -76,7 +70,6 @@ public class BoardItemArchivedTests
             .WithMessage("*archived*");
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Archive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ArchivedItem_MoveUnder_ShouldThrow()
     {

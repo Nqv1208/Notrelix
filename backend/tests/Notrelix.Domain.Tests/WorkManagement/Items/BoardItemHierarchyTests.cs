@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.WorkManagement.Items;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.WorkManagement.Items;
 
@@ -79,7 +78,6 @@ public class BoardItemHierarchyTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveUnder), MutationScenario.FailureAtomicity, typeof(ItemParentPath), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveUnder_ShouldNotChangeState_WhenCycleDetected()
     {
@@ -100,7 +98,6 @@ public class BoardItemHierarchyTests
         item.DomainEvents.Should().NotContain(e => e is BoardItemParentChangedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveUnder), MutationScenario.FailureAtomicity, typeof(ItemParentPath), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveUnder_ShouldNotChangeState_WhenScopeMismatch()
     {

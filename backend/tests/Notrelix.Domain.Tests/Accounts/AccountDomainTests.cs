@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Accounts.Domains;
 using Notrelix.Domain.Accounts.Domains.Events;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Accounts;
 
@@ -69,7 +68,6 @@ public class AccountDomainTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.Verify), MutationScenario.Event, typeof(DateTimeOffset), typeof(Guid))]
     [Fact]
     public void Verify_ShouldChangeStatusToVerified_AndRaiseEvent()
     {
@@ -82,7 +80,6 @@ public class AccountDomainTests
         domain.DomainEvents.Should().ContainSingle(e => e is AccountDomainVerifiedDomainEvent);
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.Verify), MutationScenario.NoOp, typeof(DateTimeOffset), typeof(Guid))]
     [Fact]
     public void Verify_WhenAlreadyVerified_ShouldBeIdempotent()
     {
@@ -97,7 +94,6 @@ public class AccountDomainTests
         domain.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.Reject), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Reject_ShouldChangeStatusToRejected_AndRaiseEvent()
     {
@@ -109,7 +105,6 @@ public class AccountDomainTests
         domain.DomainEvents.Should().ContainSingle(e => e is AccountDomainRejectedDomainEvent);
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.Reject), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Reject_WhenAlreadyRejected_ShouldBeIdempotent()
     {
@@ -123,7 +118,6 @@ public class AccountDomainTests
         domain.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.EnableAutoJoin), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void EnableAutoJoin_WhenNotVerified_ShouldThrow()
     {
@@ -135,7 +129,6 @@ public class AccountDomainTests
             .WithMessage("*unverified*");
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.Reject), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void EnableAutoJoin_WhenRejected_ShouldThrow()
     {
@@ -147,7 +140,6 @@ public class AccountDomainTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.EnableAutoJoin), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void EnableAutoJoin_WhenVerified_ShouldSucceed_AndRaiseEvent()
     {
@@ -161,7 +153,6 @@ public class AccountDomainTests
         domain.DomainEvents.Should().ContainSingle(e => e is AccountDomainAutoJoinEnabledDomainEvent);
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.EnableAutoJoin), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void EnableAutoJoin_WhenAlreadyEnabled_ShouldBeIdempotent()
     {
@@ -176,7 +167,6 @@ public class AccountDomainTests
         domain.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.DisableAutoJoin), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void DisableAutoJoin_ShouldSetToFalse_AndRaiseEvent()
     {
@@ -191,7 +181,6 @@ public class AccountDomainTests
         domain.DomainEvents.Should().ContainSingle(e => e is AccountDomainAutoJoinDisabledDomainEvent);
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.DisableAutoJoin), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void DisableAutoJoin_WhenAlreadyDisabled_ShouldBeIdempotent()
     {
@@ -204,7 +193,6 @@ public class AccountDomainTests
         domain.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.Verify), MutationScenario.Audit, typeof(DateTimeOffset), typeof(Guid))]
     [Fact]
     public void Verify_ShouldSetAuditOnUpdate()
     {
@@ -216,7 +204,6 @@ public class AccountDomainTests
         domain.UpdatedBy.Should().Be(_actorId);
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.Verify), MutationScenario.Version, typeof(DateTimeOffset), typeof(Guid))]
     [Fact]
     public void Verify_ShouldIncrementVersion()
     {
@@ -248,7 +235,6 @@ public class AccountDomainTests
         domain.Version.Should().Be(1);
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.Reject), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Reject_ShouldIncrementVersion()
     {
@@ -258,7 +244,6 @@ public class AccountDomainTests
         domain.Version.Should().Be(before + 1);
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.Reject), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Reject_ShouldSetAudit()
     {
@@ -270,7 +255,6 @@ public class AccountDomainTests
         domain.UpdatedAt.Should().Be(time);
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.EnableAutoJoin), MutationScenario.Version, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void EnableAutoJoin_ShouldIncrementVersion()
     {
@@ -280,7 +264,6 @@ public class AccountDomainTests
         domain.Version.Should().Be(before + 1);
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.EnableAutoJoin), MutationScenario.Audit, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void EnableAutoJoin_ShouldSetAudit()
     {
@@ -292,7 +275,6 @@ public class AccountDomainTests
         domain.UpdatedAt.Should().Be(time);
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.DisableAutoJoin), MutationScenario.Version, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void DisableAutoJoin_ShouldIncrementVersion()
     {
@@ -303,7 +285,6 @@ public class AccountDomainTests
         domain.Version.Should().Be(before + 1);
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.DisableAutoJoin), MutationScenario.Audit, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void DisableAutoJoin_ShouldSetAudit()
     {
@@ -316,7 +297,6 @@ public class AccountDomainTests
         domain.UpdatedAt.Should().Be(time);
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.Verify), MutationScenario.NoOp, typeof(DateTimeOffset), typeof(Guid))]
     [Fact]
     public void Verify_NoOp_VersionShouldNotIncrement()
     {
@@ -326,7 +306,6 @@ public class AccountDomainTests
         domain.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.Reject), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Reject_NoOp_VersionShouldNotIncrement()
     {
@@ -337,7 +316,6 @@ public class AccountDomainTests
         domain.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.EnableAutoJoin), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void EnableAutoJoin_NoOp_VersionShouldNotIncrement()
     {
@@ -348,7 +326,6 @@ public class AccountDomainTests
         domain.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.DisableAutoJoin), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void DisableAutoJoin_NoOp_VersionShouldNotIncrement()
     {
@@ -358,7 +335,6 @@ public class AccountDomainTests
         domain.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.Verify), MutationScenario.Event, typeof(DateTimeOffset), typeof(Guid))]
     [Fact]
     public void Verify_ShouldRaiseEvent_WithCorrectPayload()
     {
@@ -370,7 +346,6 @@ public class AccountDomainTests
         evt.Should().BeOfType<AccountDomainVerifiedDomainEvent>();
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.Reject), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Reject_ShouldRaiseEvent_WithCorrectPayload()
     {
@@ -381,7 +356,6 @@ public class AccountDomainTests
         evt.Should().BeOfType<AccountDomainRejectedDomainEvent>();
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.EnableAutoJoin), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void EnableAutoJoin_ShouldRaiseEvent_WithCorrectPayload()
     {
@@ -392,7 +366,6 @@ public class AccountDomainTests
         evt.Should().BeOfType<AccountDomainAutoJoinEnabledDomainEvent>();
     }
 
-    [CoversMutation(typeof(AccountDomain), nameof(AccountDomain.DisableAutoJoin), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void DisableAutoJoin_ShouldRaiseEvent_WithCorrectPayload()
     {

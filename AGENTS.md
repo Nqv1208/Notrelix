@@ -939,6 +939,23 @@ Freeze gates must:
 
 Use targeted tests while implementing. Run broader gates when changing public contracts, events, mappings, migrations, capability status, or snapshots.
 
+### Domain behavior tests
+
+A change to an aggregate operation must add or update behavior tests for the invariants actually affected.
+
+Review relevant scenarios:
+
+```txt
+- success;
+- rejection;
+- semantic no-op;
+- lifecycle;
+- failure atomicity;
+- audit/version/event behavior.
+```
+
+Not every trivial method requires every scenario. No custom coverage annotation is used.
+
 ---
 
 # 21. Commands

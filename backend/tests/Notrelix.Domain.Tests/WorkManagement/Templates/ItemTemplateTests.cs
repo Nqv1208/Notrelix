@@ -1,18 +1,10 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.WorkManagement.Templates;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 
-[CoversAggregate(typeof(ItemTemplate))]
 public class ItemTemplateTests
 {
-    [CoversMutation(typeof(ItemTemplate), nameof(ItemTemplate.Rename), MutationScenario.Event, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(ItemTemplate), nameof(ItemTemplate.Draft), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(ItemTemplate), nameof(ItemTemplate.Publish), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(ItemTemplate), nameof(ItemTemplate.Archive), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(ItemTemplate), nameof(ItemTemplate.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
-    [CoversMutation(typeof(ItemTemplate), nameof(ItemTemplate.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Create_ShouldSucceed()
     {

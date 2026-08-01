@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.WorkManagement.Items;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.WorkManagement.Items;
 
@@ -23,7 +22,6 @@ public class BoardItemEventTests
         return ItemParentPath.Create(AccountId, WsA, BoardA, parentId, level, ancestors);
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Complete), MutationScenario.Event, typeof(DateTimeOffset), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardItem_Complete_ShouldRaiseEvent()
     {
@@ -41,7 +39,6 @@ public class BoardItemEventTests
         evt.CompletedBy.Should().Be(Actor);
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Complete), MutationScenario.NoOp, typeof(DateTimeOffset), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardItem_Complete_WhenAlreadyCompleted_ShouldNotRaiseEventOrChangeTimestamp()
     {
@@ -57,7 +54,6 @@ public class BoardItemEventTests
         item.DomainEvents.Should().NotContain(e => e is BoardItemCompletedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Complete), MutationScenario.Invalid, typeof(DateTimeOffset), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardItem_Complete_WithDefaultTimestamp_ShouldThrow()
     {
@@ -70,7 +66,6 @@ public class BoardItemEventTests
         item.DomainEvents.Should().NotContain(e => e is BoardItemCompletedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Reopen), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardItem_Reopen_ShouldClearCompletedAtAndRaiseEvent()
     {
@@ -88,7 +83,6 @@ public class BoardItemEventTests
         evt.ReopenedBy.Should().Be(Actor);
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Reopen), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardItem_Reopen_WhenNotCompleted_ShouldNotRaiseEvent()
     {
@@ -102,7 +96,6 @@ public class BoardItemEventTests
         item.DomainEvents.Should().NotContain(e => e is BoardItemReopenedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.SetTimeline), MutationScenario.Event, typeof(DateTimeOffset?), typeof(DateTimeOffset?), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardItem_SetTimeline_ShouldRaiseEvent()
     {
@@ -119,7 +112,6 @@ public class BoardItemEventTests
         evt.DueAt.Should().Be(Now.AddDays(7));
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.SetTimeline), MutationScenario.Event, typeof(DateTimeOffset?), typeof(DateTimeOffset?), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardItem_SetTimeline_WhenSameValue_ShouldNotRaiseEvent()
     {
@@ -133,7 +125,6 @@ public class BoardItemEventTests
         item.DomainEvents.Should().NotContain(e => e is BoardItemTimelineSetDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveUnder), MutationScenario.Event, typeof(ItemParentPath), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardItem_MoveUnder_ShouldRaiseEvent()
     {
@@ -155,7 +146,6 @@ public class BoardItemEventTests
         evt.PreviousLevel.Should().Be(0);
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveUnder), MutationScenario.Event, typeof(ItemParentPath), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardItem_MoveUnder_ShouldDeriveLevelFromParentPath()
     {
@@ -170,7 +160,6 @@ public class BoardItemEventTests
         item.ItemLevel.Should().Be(3);
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveUnder), MutationScenario.Invalid, typeof(ItemParentPath), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardItem_MoveUnder_WithOwnId_ShouldThrow()
     {
@@ -181,7 +170,6 @@ public class BoardItemEventTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*own parent*");
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveUnder), MutationScenario.Invalid, typeof(ItemParentPath), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardItem_MoveUnder_WithCycle_ShouldThrow()
     {
@@ -195,7 +183,6 @@ public class BoardItemEventTests
         item.ItemLevel.Should().Be(0);
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveUnder), MutationScenario.Invalid, typeof(ItemParentPath), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardItem_MoveUnder_WithDifferentAccount_ShouldThrow()
     {
@@ -208,7 +195,6 @@ public class BoardItemEventTests
         item.ParentItemId.Should().BeNull();
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveUnder), MutationScenario.Invalid, typeof(ItemParentPath), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardItem_MoveUnder_WithDifferentWorkspace_ShouldThrow()
     {
@@ -221,7 +207,6 @@ public class BoardItemEventTests
         item.ParentItemId.Should().BeNull();
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveUnder), MutationScenario.Invalid, typeof(ItemParentPath), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardItem_MoveUnder_WithDifferentBoard_ShouldThrow()
     {
@@ -234,7 +219,6 @@ public class BoardItemEventTests
         item.ParentItemId.Should().BeNull();
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveUnder), MutationScenario.NoOp, typeof(ItemParentPath), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardItem_MoveUnder_WhenSameParentAndLevel_ShouldNotRaiseEvent()
     {
@@ -250,7 +234,6 @@ public class BoardItemEventTests
         item.DomainEvents.Should().NotContain(e => e is BoardItemParentChangedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveToRoot), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardItem_MoveToRoot_ShouldClearParentAndRaiseEvent()
     {
@@ -273,7 +256,6 @@ public class BoardItemEventTests
         evt.NewLevel.Should().Be(0);
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveToRoot), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardItem_MoveToRoot_WhenAlreadyRoot_ShouldNotRaiseEvent()
     {

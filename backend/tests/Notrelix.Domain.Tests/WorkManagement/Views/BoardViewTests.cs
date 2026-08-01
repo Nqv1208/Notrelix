@@ -1,14 +1,11 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Views;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 
-[CoversAggregate(typeof(BoardView))]
 public class BoardViewTests
 {
-    [CoversMutation(typeof(BoardView), nameof(BoardView.Rename), MutationScenario.Event, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Create_ShouldSucceed_AndRaiseEvent()
     {
@@ -24,7 +21,6 @@ public class BoardViewTests
         view.DomainEvents.Should().ContainSingle(e => e is BoardViewCreatedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardView), nameof(BoardView.UpdateConfig), MutationScenario.Event, typeof(BoardViewConfig), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateConfig_ShouldUpdate_AndRaiseEvent()
     {
@@ -78,9 +74,6 @@ public class BoardViewTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*swimlane*");
     }
 
-    [CoversMutation(typeof(BoardView), nameof(BoardView.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
-    [CoversMutation(typeof(BoardView), nameof(BoardView.ClearDefault), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BoardView), nameof(BoardView.SetDefault), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Delete_ShouldSucceed_WhenNotDefaultView()
     {
@@ -93,8 +86,6 @@ public class BoardViewTests
         view.IsDeleted.Should().BeTrue();
     }
 
-    [CoversMutation(typeof(BoardView), nameof(BoardView.ClearDefault), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BoardView), nameof(BoardView.SetDefault), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardViewRules_EnsureCanDeleteView_ShouldThrow_WhenDefaultAndOnlyView()
     {
@@ -111,8 +102,6 @@ public class BoardViewTests
         act.Should().NotThrow();
     }
 
-    [CoversMutation(typeof(BoardView), nameof(BoardView.ClearDefault), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BoardView), nameof(BoardView.SetDefault), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardViewRules_EnsureCanDeleteView_ShouldNotThrow_WhenNotDefault()
     {
@@ -121,8 +110,6 @@ public class BoardViewTests
         act.Should().NotThrow();
     }
 
-    [CoversMutation(typeof(BoardView), nameof(BoardView.Archive), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BoardView), nameof(BoardView.SetDefault), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_ShouldSetIsArchived_AndRaiseEvent()
     {
@@ -135,7 +122,6 @@ public class BoardViewTests
         view.DomainEvents.Should().ContainSingle(e => e is BoardViewArchivedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardView), nameof(BoardView.Archive), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_ShouldBeIdempotent()
     {
@@ -148,7 +134,6 @@ public class BoardViewTests
         view.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(BoardView), nameof(BoardView.Archive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_ShouldThrow_WhenDeleted()
     {
@@ -160,8 +145,6 @@ public class BoardViewTests
         act.Should().Throw<DomainException>();
     }
 
-    [CoversMutation(typeof(BoardView), nameof(BoardView.Archive), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BoardView), nameof(BoardView.ClearDefault), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Unarchive_ShouldClearIsArchived_AndRaiseEvent()
     {
@@ -175,7 +158,6 @@ public class BoardViewTests
         view.DomainEvents.Should().ContainSingle(e => e is BoardViewUnarchivedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardView), nameof(BoardView.Unarchive), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Unarchive_ShouldBeIdempotent()
     {
@@ -187,7 +169,6 @@ public class BoardViewTests
         view.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(BoardView), nameof(BoardView.Unarchive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Unarchive_ShouldThrow_WhenDeleted()
     {

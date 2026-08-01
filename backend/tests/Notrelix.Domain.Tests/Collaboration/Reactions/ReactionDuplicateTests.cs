@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Collaboration;
 using Notrelix.Domain.Collaboration.Reactions;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Collaboration.Reactions;
 
@@ -67,7 +66,6 @@ public class ReactionDuplicateTests
         reaction.DomainEvents.Should().ContainSingle(e => e is ReactionCreatedDomainEvent);
     }
 
-    [CoversMutation(typeof(Reaction), nameof(Reaction.Remove), MutationScenario.Event, typeof(DateTimeOffset))]
     [Fact]
     public void Remove_ShouldRaiseEvent()
     {
@@ -81,7 +79,6 @@ public class ReactionDuplicateTests
         reaction.DomainEvents.Should().ContainSingle(e => e is ReactionRemovedDomainEvent);
     }
 
-    [CoversMutation(typeof(Reaction), nameof(Reaction.Remove), MutationScenario.Invalid, typeof(DateTimeOffset))]
     [Fact]
     public void Remove_ShouldNotThrowOnMultipleCalls()
     {

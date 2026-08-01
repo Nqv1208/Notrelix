@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Identity.OAuth;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Identity.Users;
 
@@ -27,7 +26,6 @@ public class UserOAuthFailureAtomicityTests
             Now.AddHours(1));
     }
 
-    [CoversMutation(typeof(User), nameof(User.LinkOAuthAccount), MutationScenario.Valid, typeof(OAuthProvider), typeof(string), typeof(OAuthProfileSnapshot), typeof(OAuthToken), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void LinkOAuthAccount_WhenProviderMismatch_ShouldNotMutateRoot()
     {
@@ -43,7 +41,6 @@ public class UserOAuthFailureAtomicityTests
         user.OAuthAccounts.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(User), nameof(User.LinkOAuthAccount), MutationScenario.NoOp, typeof(OAuthProvider), typeof(string), typeof(OAuthProfileSnapshot), typeof(OAuthToken), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void LinkOAuthAccount_WhenAlreadyLinked_ShouldNotMutateRoot()
     {
@@ -59,7 +56,6 @@ public class UserOAuthFailureAtomicityTests
         user.OAuthAccounts.Should().HaveCount(1);
     }
 
-    [CoversMutation(typeof(User), nameof(User.UpdateOAuthProfile), MutationScenario.Valid, typeof(OAuthProvider), typeof(OAuthProfileSnapshot), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateOAuthProfile_WhenProviderNotFound_ShouldNotMutateRoot()
     {
@@ -73,7 +69,6 @@ public class UserOAuthFailureAtomicityTests
         user.Version.Should().Be(versionBefore);
     }
 
-    [CoversMutation(typeof(User), nameof(User.UpdateOAuthProfile), MutationScenario.Valid, typeof(OAuthProvider), typeof(OAuthProfileSnapshot), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateOAuthProfile_WhenProviderMismatch_ShouldNotMutateRoot()
     {
@@ -89,7 +84,6 @@ public class UserOAuthFailureAtomicityTests
         user.Version.Should().Be(versionBefore);
     }
 
-    [CoversMutation(typeof(User), nameof(User.RotateOAuthToken), MutationScenario.Valid, typeof(OAuthProvider), typeof(OAuthToken), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateOAuthToken_WhenProviderNotFound_ShouldNotMutateRoot()
     {
@@ -103,7 +97,6 @@ public class UserOAuthFailureAtomicityTests
         user.Version.Should().Be(versionBefore);
     }
 
-    [CoversMutation(typeof(User), nameof(User.UnlinkOAuthAccount), MutationScenario.Valid, typeof(OAuthProvider), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UnlinkOAuthAccount_WhenNotLinked_ShouldNotMutateRoot()
     {

@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.WorkManagement.Fields;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.WorkManagement.Fields;
 
@@ -11,8 +10,6 @@ public class BoardFieldEventTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(BoardField), nameof(BoardField.UpdateClassification), MutationScenario.Event, typeof(DataClassification), typeof(bool), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BoardField), nameof(BoardField.UpdateSettings), MutationScenario.Event, typeof(FieldSettings), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardField_UpdateClassification_ShouldRaiseEvent()
     {
@@ -30,8 +27,6 @@ public class BoardFieldEventTests
         evt.IsSensitive.Should().BeTrue();
     }
 
-    [CoversMutation(typeof(BoardField), nameof(BoardField.UpdateClassification), MutationScenario.Event, typeof(DataClassification), typeof(bool), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BoardField), nameof(BoardField.UpdateSettings), MutationScenario.Event, typeof(FieldSettings), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardField_UpdateClassification_WhenSameValue_ShouldNotRaiseEvent()
     {
@@ -47,7 +42,6 @@ public class BoardFieldEventTests
         field.DomainEvents.Should().NotContain(e => e is BoardFieldClassificationUpdatedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardField), nameof(BoardField.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void BoardField_Restore_ShouldRaiseEvent()
     {
@@ -64,8 +58,6 @@ public class BoardFieldEventTests
         field.DomainEvents.Should().ContainSingle(e => e is BoardFieldRestoredDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardField), nameof(BoardField.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BoardField), nameof(BoardField.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void BoardField_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {

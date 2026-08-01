@@ -1,9 +1,7 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Identity.Tokens;
 
-[CoversAggregate(typeof(ApiToken))]
 public class ApiTokenTests
 {
     private static readonly Guid WorkspaceId = Guid.NewGuid();
@@ -35,7 +33,6 @@ public class ApiTokenTests
         token.Name.Should().Be("My Token");
     }
 
-    [CoversMutation(typeof(ApiToken), nameof(ApiToken.RecordUse), MutationScenario.Valid, typeof(DateTimeOffset))]
     [Fact]
     public void Create_WithoutUserId_ShouldSucceed()
     {
@@ -52,7 +49,6 @@ public class ApiTokenTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(ApiToken), nameof(ApiToken.Revoke), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Revoke_ShouldTransitionToRevokedAndRaiseEvent()
     {
@@ -67,7 +63,6 @@ public class ApiTokenTests
         token.DomainEvents.Should().ContainSingle(e => e is ApiTokenRevokedDomainEvent);
     }
 
-    [CoversMutation(typeof(ApiToken), nameof(ApiToken.Revoke), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Revoke_AlreadyRevoked_ShouldBeIdempotent()
     {
@@ -80,7 +75,6 @@ public class ApiTokenTests
         token.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(ApiToken), nameof(ApiToken.RecordUse), MutationScenario.Valid, typeof(DateTimeOffset))]
     [Fact]
     public void RecordUse_ShouldUpdateLastUsedAt()
     {
@@ -93,7 +87,6 @@ public class ApiTokenTests
         token.LastUsedAt.Should().Be(useTime);
     }
 
-    [CoversMutation(typeof(ApiToken), nameof(ApiToken.RecordUse), MutationScenario.Version, typeof(DateTimeOffset))]
     [Fact]
     public void RecordUse_ShouldSetAuditAndUpdateVersion()
     {
@@ -108,7 +101,6 @@ public class ApiTokenTests
         token.Version.Should().Be(versionBefore + 1);
     }
 
-    [CoversMutation(typeof(ApiToken), nameof(ApiToken.RecordUse), MutationScenario.Event, typeof(DateTimeOffset))]
     [Fact]
     public void RecordUse_ShouldRaiseEvent()
     {
@@ -124,7 +116,6 @@ public class ApiTokenTests
         evt.OccurredAt.Should().Be(useTime);
     }
 
-    [CoversMutation(typeof(ApiToken), nameof(ApiToken.RecordUse), MutationScenario.Invalid, typeof(DateTimeOffset))]
     [Fact]
     public void RecordUse_ExpiredToken_ShouldThrow()
     {
@@ -136,8 +127,6 @@ public class ApiTokenTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*expired*");
     }
 
-    [CoversMutation(typeof(ApiToken), nameof(ApiToken.RecordUse), MutationScenario.Invalid, typeof(DateTimeOffset))]
-    [CoversMutation(typeof(ApiToken), nameof(ApiToken.Revoke), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RecordUse_RevokedToken_ShouldThrow()
     {

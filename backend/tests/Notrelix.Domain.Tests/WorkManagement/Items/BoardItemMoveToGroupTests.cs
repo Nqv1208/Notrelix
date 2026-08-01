@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Items;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.WorkManagement.Items;
 
@@ -13,7 +12,6 @@ public class BoardItemMoveToGroupTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveToGroup), MutationScenario.Valid, typeof(BoardGroupRef), typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveToGroup_WithMatchingWorkspaceAndBoard_ShouldSucceed()
     {
@@ -33,7 +31,6 @@ public class BoardItemMoveToGroupTests
         item.Version.Should().Be(2);
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveToGroup), MutationScenario.Invalid, typeof(BoardGroupRef), typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveToGroup_WithMismatchedWorkspace_ShouldThrow()
     {
@@ -44,7 +41,6 @@ public class BoardItemMoveToGroupTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveToGroup), MutationScenario.Invalid, typeof(BoardGroupRef), typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveToGroup_WithMismatchedBoard_ShouldThrow()
     {
@@ -55,7 +51,6 @@ public class BoardItemMoveToGroupTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveToGroup), MutationScenario.Version, typeof(BoardGroupRef), typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveToGroup_WithSameGroupAndPosition_ShouldNotIncrementVersion()
     {

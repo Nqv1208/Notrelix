@@ -166,15 +166,6 @@ internal static class DomainCapabilityRegistry
         "Notrelix.Domain.Automation.Templates.AutomationTemplate",
     };
 
-    /// <summary>
-    /// Aggregates that span multiple scopes (e.g., hybrid System/Workspace templates).
-    /// These implement a scope interface but are classified differently.
-    /// </summary>
-    internal static readonly IReadOnlySet<string> HybridAggregates = new HashSet<string>
-    {
-        "Notrelix.Domain.Governance.Templates.PermissionTemplate",
-    };
-
     public static IReadOnlyList<DomainCapability> GetAll() => Capabilities;
 
     public static DomainCapabilityStatus GetStatus(string namespacePrefix)
@@ -189,25 +180,6 @@ internal static class DomainCapabilityRegistry
 
     public static IEnumerable<DomainCapability> GetFrozen() =>
         Capabilities.Where(c => c.Status == DomainCapabilityStatus.Frozen);
-
-    public static AggregateScopeKind ResolveScope(Type aggregateType)
-    {
-        if (GlobalAggregates.Contains(aggregateType.FullName!))
-            return AggregateScopeKind.Global;
-
-        if (HybridAggregates.Contains(aggregateType.FullName!))
-            return AggregateScopeKind.Hybrid;
-
-        if (typeof(IWorkspaceScoped).IsAssignableFrom(aggregateType))
-            return AggregateScopeKind.Workspace;
-
-        if (typeof(IAccountScoped).IsAssignableFrom(aggregateType))
-            return AggregateScopeKind.Account;
-
-        throw new InvalidOperationException(
-            $"Aggregate scope is not classified: {aggregateType.FullName}. " +
-            $"Register it in GlobalAggregates, HybridAggregates, or implement IWorkspaceScoped/IAccountScoped.");
-    }
 
     public static DomainCapabilityStatus ResolveCapability(Type type)
     {
@@ -353,29 +325,6 @@ public class DomainCapabilityRegistryTests
     }
 
     [Fact]
-    public void EveryAggregateRoot_ShouldMapToExactlyOneScope()
-    {
-        var aggregateRoots = DomainAssembly.GetTypes()
-            .Where(t => t is { IsClass: true, IsAbstract: false } && typeof(AggregateRoot).IsAssignableFrom(t))
-            .ToList();
-
-        // With fail-closed registry, ResolveScope throws for unclassified aggregates.
-        // Every aggregate must be classifiable.
-        var unclassified = aggregateRoots
-            .Where(t =>
-            {
-                try { DomainCapabilityRegistry.ResolveScope(t); return false; }
-                catch (InvalidOperationException) { return true; }
-            })
-            .Select(t => t.FullName)
-            .ToList();
-
-        unclassified.Should().BeEmpty(
-            "every aggregate must be classified by scope (Global/Hybrid/Workspace/Account): " +
-            string.Join(", ", unclassified));
-    }
-
-    [Fact]
     public void FrozenAggregates_ShouldNotBeExperimental()
     {
         var aggregateRoots = DomainAssembly.GetTypes()
@@ -515,46 +464,9 @@ public class DomainCapabilityRegistryTests
     }
 
     [Fact]
-    public void HybridAggregate_ShouldHaveDirectHybridInvariantTests()
-    {
-        var hybridTypes = DomainCapabilityRegistry.HybridAggregates
-            .Select(n => DomainAssembly.GetType(n))
-            .Where(t => t is not null)
-            .ToList();
-
-        var testsAssembly = typeof(DomainCapabilityRegistry).Assembly;
-        var testTypes = testsAssembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract).ToList();
-
-        foreach (var type in hybridTypes)
-        {
-            var ns = type!.Namespace!;
-            var resolvedStatus = DomainCapabilityRegistry.ResolveCapability(type);
-            resolvedStatus.Should().Be(DomainCapabilityStatus.Frozen,
-                $"hybrid aggregate {type.FullName} must be Frozen");
-
-            var fixtures = testTypes
-                .Where(t => t.GetCustomAttributes<CoversHybridAggregateAttribute>(inherit: false)
-                    .Any(a => a.AggregateType == type))
-                .ToList();
-
-            fixtures.Should().NotBeEmpty(
-                $"hybrid aggregate {type.FullName} must have a [CoversHybridAggregate] fixture");
-
-            fixtures.Should().Contain(f =>
-                    f.GetMethods(BindingFlags.Public | BindingFlags.Instance)
-                        .Any(m => m.GetCustomAttributes(typeof(FactAttribute), true).Length > 0 ||
-                                  m.GetCustomAttributes(typeof(TheoryAttribute), true).Length > 0),
-                $"hybrid aggregate {type.FullName} fixtures must contain executable test methods");
-        }
-    }
-
-    [Fact]
-    public void HybridPermissionTemplate_ShouldBeClassifiedCorrectly()
+    public void HybridPermissionTemplate_ShouldBeClassifiedAsFrozen()
     {
         var templateType = DomainAssembly.GetType("Notrelix.Domain.Governance.Templates.PermissionTemplate")!;
-
-        var scope = DomainCapabilityRegistry.ResolveScope(templateType);
-        scope.Should().Be(AggregateScopeKind.Hybrid);
 
         var capability = DomainCapabilityRegistry.ResolveCapability(templateType);
         capability.Should().Be(DomainCapabilityStatus.Frozen);

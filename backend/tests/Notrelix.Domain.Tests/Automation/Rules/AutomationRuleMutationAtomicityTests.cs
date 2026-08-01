@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Automation.Rules;
 using Notrelix.Domain.Automation.RulesEngine;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Automation.Rules;
 
@@ -16,7 +15,6 @@ public class AutomationRuleMutationAtomicityTests
         AutomationTriggerDefinition.Create("FieldChanged", """{"fieldId":"fld_123"}"""),
         AutomationActionDefinition.Create("SendEmail", """{"templateId":"tpl_1"}"""));
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Enable), MutationScenario.Audit, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Enable_ShouldUseTwoPhaseAudit()
     {
@@ -27,7 +25,6 @@ public class AutomationRuleMutationAtomicityTests
         rule.IsEnabled.Should().BeTrue();
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Enable), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Enable_WhenDeleted_ShouldThrow()
     {
@@ -37,7 +34,6 @@ public class AutomationRuleMutationAtomicityTests
         act.Should().Throw<DomainException>();
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Enable), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Enable_WhenAlreadyEnabled_ShouldBeNoOp()
     {
@@ -48,7 +44,6 @@ public class AutomationRuleMutationAtomicityTests
         rule.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Disable), MutationScenario.Audit, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Disable_ShouldUseTwoPhaseAudit()
     {
@@ -59,7 +54,6 @@ public class AutomationRuleMutationAtomicityTests
         rule.Version.Should().Be(before + 1);
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Disable), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Disable_WhenDeleted_ShouldThrow()
     {
@@ -101,7 +95,6 @@ public class AutomationRuleMutationAtomicityTests
         rule.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldSetDeleted()
     {
@@ -110,7 +103,6 @@ public class AutomationRuleMutationAtomicityTests
         rule.IsDeleted.Should().BeTrue();
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Delete), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
@@ -121,7 +113,6 @@ public class AutomationRuleMutationAtomicityTests
         rule.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldClearDeleted()
     {
@@ -131,7 +122,6 @@ public class AutomationRuleMutationAtomicityTests
         rule.IsDeleted.Should().BeFalse();
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Restore), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {

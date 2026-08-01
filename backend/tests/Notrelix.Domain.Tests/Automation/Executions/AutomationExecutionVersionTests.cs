@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Automation.Executions;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Automation;
 
@@ -10,7 +9,6 @@ public class AutomationExecutionVersionTests
     private readonly Guid _actorId = Guid.NewGuid();
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(AutomationExecution), nameof(AutomationExecution.SetPayload), MutationScenario.Version, typeof(string))]
     [Fact]
     public void SetPayload_ShouldIncrementVersion()
     {
@@ -23,7 +21,6 @@ public class AutomationExecutionVersionTests
         execution.Version.Should().Be(version + 1);
     }
 
-    [CoversMutation(typeof(AutomationExecution), nameof(AutomationExecution.Start), MutationScenario.Version, typeof(DateTimeOffset))]
     [Fact]
     public void Start_ShouldIncrementVersion()
     {
@@ -37,7 +34,6 @@ public class AutomationExecutionVersionTests
         execution.DomainEvents.Should().Contain(e => e is AutomationExecutionStartedDomainEvent);
     }
 
-    [CoversMutation(typeof(AutomationExecution), nameof(AutomationExecution.Succeed), MutationScenario.Version, typeof(DateTimeOffset))]
     [Fact]
     public void Succeed_ShouldIncrementVersion()
     {
@@ -52,7 +48,6 @@ public class AutomationExecutionVersionTests
         execution.DomainEvents.Should().Contain(e => e is AutomationExecutionSucceededDomainEvent);
     }
 
-    [CoversMutation(typeof(AutomationExecution), nameof(AutomationExecution.Fail), MutationScenario.Version, typeof(string), typeof(DateTimeOffset))]
     [Fact]
     public void Fail_ShouldIncrementVersion()
     {
@@ -67,7 +62,6 @@ public class AutomationExecutionVersionTests
         execution.DomainEvents.Should().Contain(e => e is AutomationExecutionFailedDomainEvent);
     }
 
-    [CoversMutation(typeof(AutomationExecution), nameof(AutomationExecution.Cancel), MutationScenario.Version, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Cancel_ShouldIncrementVersion()
     {

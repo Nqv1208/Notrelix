@@ -1,9 +1,7 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Accounts;
 
-[CoversAggregate(typeof(AccountMember))]
 public class AccountMemberTests
 {
     private readonly Guid _accountId = Guid.NewGuid();
@@ -31,7 +29,6 @@ public class AccountMemberTests
         member.Role.Should().Be(AccountRole.Owner);
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.ChangeRole), MutationScenario.Valid, typeof(AccountRole), typeof(Guid), typeof(int), typeof(DateTimeOffset))]
     [Fact]
     public void ChangeRole_ShouldSucceed()
     {
@@ -44,7 +41,6 @@ public class AccountMemberTests
         member.DomainEvents.Should().ContainSingle(e => e is AccountMemberRoleChangedDomainEvent);
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.ChangeRole), MutationScenario.Invalid, typeof(AccountRole), typeof(Guid), typeof(int), typeof(DateTimeOffset))]
     [Fact]
     public void ChangeRole_OwnerToMember_WithSingleOwner_ShouldThrow()
     {
@@ -55,7 +51,6 @@ public class AccountMemberTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot downgrade the last owner of the account.");
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.ChangeRole), MutationScenario.Valid, typeof(AccountRole), typeof(Guid), typeof(int), typeof(DateTimeOffset))]
     [Fact]
     public void ChangeRole_OwnerToMember_WithMultipleOwners_ShouldSucceed()
     {
@@ -67,7 +62,6 @@ public class AccountMemberTests
         member.Role.Should().Be(AccountRole.Member);
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.Suspend), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset), typeof(int))]
     [Fact]
     public void Suspend_ShouldSucceed()
     {
@@ -80,7 +74,6 @@ public class AccountMemberTests
         member.DomainEvents.Should().ContainSingle(e => e is AccountMemberSuspendedDomainEvent);
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.Suspend), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset), typeof(int))]
     [Fact]
     public void Suspend_LastOwner_ShouldThrow()
     {
@@ -91,7 +84,6 @@ public class AccountMemberTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot suspend the last owner of the account.");
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.Activate), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Activate_ShouldSucceed()
     {
@@ -105,7 +97,6 @@ public class AccountMemberTests
         member.DomainEvents.Should().ContainSingle(e => e is AccountMemberActivatedDomainEvent);
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.Remove), MutationScenario.Invalid, typeof(int), typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Activate_RemovedMember_ShouldThrow()
     {
@@ -118,7 +109,6 @@ public class AccountMemberTests
         exception.Message.Should().Contain("has been deleted");
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.Remove), MutationScenario.Valid, typeof(int), typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Remove_ShouldSucceed()
     {
@@ -131,7 +121,6 @@ public class AccountMemberTests
         member.DomainEvents.Should().ContainSingle(e => e is AccountMemberRemovedDomainEvent);
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.Remove), MutationScenario.Invalid, typeof(int), typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Remove_LastOwner_ShouldThrow()
     {
@@ -154,7 +143,6 @@ public class AccountMemberTests
         member.Version.Should().Be(1);
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.ChangeRole), MutationScenario.Version, typeof(AccountRole), typeof(Guid), typeof(int), typeof(DateTimeOffset))]
     [Fact]
     public void ChangeRole_ShouldIncrementVersion()
     {
@@ -164,7 +152,6 @@ public class AccountMemberTests
         member.Version.Should().Be(before + 1);
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.ChangeRole), MutationScenario.Audit, typeof(AccountRole), typeof(Guid), typeof(int), typeof(DateTimeOffset))]
     [Fact]
     public void ChangeRole_ShouldSetAudit()
     {
@@ -176,7 +163,6 @@ public class AccountMemberTests
         member.UpdatedAt.Should().Be(time);
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.ChangeRole), MutationScenario.Event, typeof(AccountRole), typeof(Guid), typeof(int), typeof(DateTimeOffset))]
     [Fact]
     public void ChangeRole_ToSameRole_ShouldNotRaiseEvent()
     {
@@ -186,7 +172,6 @@ public class AccountMemberTests
         member.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.ChangeRole), MutationScenario.Version, typeof(AccountRole), typeof(Guid), typeof(int), typeof(DateTimeOffset))]
     [Fact]
     public void ChangeRole_ToSameRole_ShouldNotIncrementVersion()
     {
@@ -196,7 +181,6 @@ public class AccountMemberTests
         member.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.Suspend), MutationScenario.Version, typeof(Guid), typeof(DateTimeOffset), typeof(int))]
     [Fact]
     public void Suspend_ShouldIncrementVersion()
     {
@@ -206,7 +190,6 @@ public class AccountMemberTests
         member.Version.Should().Be(before + 1);
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.Suspend), MutationScenario.Audit, typeof(Guid), typeof(DateTimeOffset), typeof(int))]
     [Fact]
     public void Suspend_ShouldSetAudit()
     {
@@ -218,7 +201,6 @@ public class AccountMemberTests
         member.UpdatedAt.Should().Be(time);
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.Suspend), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset), typeof(int))]
     [Fact]
     public void Suspend_WhenAlreadySuspended_ShouldNotRaiseEvent()
     {
@@ -229,7 +211,6 @@ public class AccountMemberTests
         member.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.Suspend), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset), typeof(int))]
     [Fact]
     public void Suspend_WhenAlreadySuspended_ShouldNotIncrementVersion()
     {
@@ -240,7 +221,6 @@ public class AccountMemberTests
         member.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.Activate), MutationScenario.Version, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Activate_ShouldIncrementVersion()
     {
@@ -251,7 +231,6 @@ public class AccountMemberTests
         member.Version.Should().Be(before + 1);
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.Activate), MutationScenario.Audit, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Activate_ShouldSetAudit()
     {
@@ -264,7 +243,6 @@ public class AccountMemberTests
         member.UpdatedAt.Should().Be(time);
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.Activate), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Activate_WhenAlreadyActive_ShouldNotRaiseEvent()
     {
@@ -274,7 +252,6 @@ public class AccountMemberTests
         member.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.Activate), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Activate_WhenAlreadyActive_ShouldNotIncrementVersion()
     {
@@ -284,7 +261,6 @@ public class AccountMemberTests
         member.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.Remove), MutationScenario.Version, typeof(int), typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Remove_ShouldIncrementVersion()
     {
@@ -294,7 +270,6 @@ public class AccountMemberTests
         member.Version.Should().Be(before + 1);
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.Remove), MutationScenario.Lifecycle, typeof(int), typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Remove_ShouldSetDeleteAudit()
     {
@@ -306,7 +281,6 @@ public class AccountMemberTests
         member.DeletedAt.Should().Be(time);
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.Remove), MutationScenario.Lifecycle, typeof(int), typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Remove_ShouldRaiseEvent()
     {
@@ -315,7 +289,6 @@ public class AccountMemberTests
         member.DomainEvents.Should().ContainSingle(e => e is AccountMemberRemovedDomainEvent);
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.Remove), MutationScenario.Invalid, typeof(int), typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void ChangeRole_AfterRemove_ShouldThrow()
     {
@@ -325,7 +298,6 @@ public class AccountMemberTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(AccountMember), nameof(AccountMember.Remove), MutationScenario.Invalid, typeof(int), typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Suspend_AfterRemove_ShouldThrow()
     {

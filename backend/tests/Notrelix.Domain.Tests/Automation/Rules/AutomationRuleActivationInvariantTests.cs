@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Automation.Rules;
 using Notrelix.Domain.Automation.RulesEngine;
 
@@ -9,7 +8,6 @@ namespace Notrelix.Domain.Tests.Automation;
 /// Tests for the activation invariant:
 /// Status == Active ⇒ Name valid ⇒ Configuration exists ⇒ Trigger valid ⇒ Action valid
 /// </summary>
-[CoversAggregate(typeof(AutomationRule))]
 public class AutomationRuleActivationInvariantTests
 {
     private static AutomationConfiguration CreateValidConfig()
@@ -28,7 +26,6 @@ public class AutomationRuleActivationInvariantTests
 
     // ── Enable validation ─────────────────────────────────────────────────
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Enable), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Enable_WhenTriggerDefinitionInvalid_ShouldReject()
     {
@@ -44,7 +41,6 @@ public class AutomationRuleActivationInvariantTests
             .WithMessage("*ScheduleTrigger*");
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Enable), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Enable_WhenActionDefinitionInvalid_ShouldReject()
     {
@@ -60,7 +56,6 @@ public class AutomationRuleActivationInvariantTests
             .WithMessage("*Webhook*");
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Enable), MutationScenario.FailureAtomicity, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Enable_WhenRejected_ShouldBeFailureAtomic()
     {
@@ -87,7 +82,6 @@ public class AutomationRuleActivationInvariantTests
         rule.DomainEvents.Count.Should().Be(eventsBefore);
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Enable), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Enable_WhenAlreadyActive_ShouldBeNoOp()
     {
@@ -104,7 +98,6 @@ public class AutomationRuleActivationInvariantTests
 
     // ── UpdateConfiguration validation when Active ────────────────────────
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.UpdateConfiguration), MutationScenario.Invalid, typeof(AutomationConfiguration), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateConfiguration_WhenActiveAndInvalidTrigger_ShouldReject()
     {
@@ -121,7 +114,6 @@ public class AutomationRuleActivationInvariantTests
             .WithMessage("*ScheduleTrigger*");
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.UpdateConfiguration), MutationScenario.Invalid, typeof(AutomationConfiguration), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateConfiguration_WhenActiveAndInvalidAction_ShouldReject()
     {
@@ -138,7 +130,6 @@ public class AutomationRuleActivationInvariantTests
             .WithMessage("*Webhook*");
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.UpdateConfiguration), MutationScenario.FailureAtomicity, typeof(AutomationConfiguration), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateConfiguration_WhenActiveAndRejected_ShouldBeFailureAtomic()
     {
@@ -167,7 +158,6 @@ public class AutomationRuleActivationInvariantTests
         rule.DomainEvents.Count.Should().Be(eventsBefore);
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.UpdateConfiguration), MutationScenario.Valid, typeof(AutomationConfiguration), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateConfiguration_WhenActiveAndValid_ShouldSucceed()
     {
@@ -186,7 +176,6 @@ public class AutomationRuleActivationInvariantTests
         rule.DomainEvents.Should().ContainSingle(e => e is AutomationConfigurationChangedDomainEvent);
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.UpdateConfiguration), MutationScenario.Valid, typeof(AutomationConfiguration), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateConfiguration_WhenDraftAndInvalid_ShouldAllow()
     {

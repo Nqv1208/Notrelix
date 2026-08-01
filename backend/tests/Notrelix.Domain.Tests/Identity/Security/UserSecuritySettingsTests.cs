@@ -1,9 +1,7 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Identity;
 
-[CoversAggregate(typeof(UserSecuritySettings))]
 public class UserSecuritySettingsTests
 {
     [Fact]
@@ -20,8 +18,6 @@ public class UserSecuritySettingsTests
         settings.CreatedAt.Should().Be(now);
     }
 
-    [CoversMutation(typeof(UserSecuritySettings), nameof(UserSecuritySettings.DisableMfa), MutationScenario.Event, typeof(DateTimeOffset))]
-    [CoversMutation(typeof(UserSecuritySettings), nameof(UserSecuritySettings.EnableMfa), MutationScenario.Event, typeof(MfaMethodType), typeof(DateTimeOffset))]
     [Fact]
     public void EnableMfa_ShouldSetMethodAndRaiseEvent()
     {
@@ -39,8 +35,6 @@ public class UserSecuritySettingsTests
         evt.EnabledAt.Should().Be(now);
     }
 
-    [CoversMutation(typeof(UserSecuritySettings), nameof(UserSecuritySettings.DisableMfa), MutationScenario.Event, typeof(DateTimeOffset))]
-    [CoversMutation(typeof(UserSecuritySettings), nameof(UserSecuritySettings.EnableMfa), MutationScenario.Event, typeof(MfaMethodType), typeof(DateTimeOffset))]
     [Fact]
     public void DisableMfa_ShouldClearMethodAndRaiseEvent()
     {
@@ -60,8 +54,6 @@ public class UserSecuritySettingsTests
         evt.DisabledAt.Should().Be(now.AddMinutes(1));
     }
 
-    [CoversMutation(typeof(UserSecuritySettings), nameof(UserSecuritySettings.MarkPasswordChanged), MutationScenario.Event, typeof(DateTimeOffset))]
-    [CoversMutation(typeof(UserSecuritySettings), nameof(UserSecuritySettings.RequirePasswordChangeNow), MutationScenario.Event, typeof(DateTimeOffset))]
     [Fact]
     public void RequirePasswordChangeNow_ShouldSetFlagAndRaiseEvent()
     {
@@ -77,8 +69,6 @@ public class UserSecuritySettingsTests
         evt.RequiredAt.Should().Be(now);
     }
 
-    [CoversMutation(typeof(UserSecuritySettings), nameof(UserSecuritySettings.MarkPasswordChanged), MutationScenario.Event, typeof(DateTimeOffset))]
-    [CoversMutation(typeof(UserSecuritySettings), nameof(UserSecuritySettings.RequirePasswordChangeNow), MutationScenario.Event, typeof(DateTimeOffset))]
     [Fact]
     public void MarkPasswordChanged_ShouldClearFlagAndRaiseEvent()
     {
@@ -96,7 +86,6 @@ public class UserSecuritySettingsTests
         evt.ChangedAt.Should().Be(now.AddMinutes(1));
     }
 
-    [CoversMutation(typeof(UserSecuritySettings), nameof(UserSecuritySettings.UpdateSettings), MutationScenario.Event, typeof(JsonValue), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateSettings_ShouldSetSettingsJsonAndRaiseEvent()
     {

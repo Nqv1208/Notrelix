@@ -1,10 +1,8 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Billing.Payments;
 
 namespace Notrelix.Domain.Tests.Billing;
 
-[CoversAggregate(typeof(PaymentMethod))]
 public class PaymentMethodTests
 {
     [Fact]
@@ -44,7 +42,6 @@ public class PaymentMethodTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(PaymentMethod), nameof(PaymentMethod.SetAsDefault), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void SetAsDefault_ShouldSetFlag_WhenNotDefault()
     {
@@ -56,7 +53,6 @@ public class PaymentMethodTests
         method.IsDefault.Should().BeTrue();
     }
 
-    [CoversMutation(typeof(PaymentMethod), nameof(PaymentMethod.UnsetAsDefault), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UnsetAsDefault_ShouldClearFlag_WhenDefault()
     {
@@ -68,7 +64,6 @@ public class PaymentMethodTests
         method.IsDefault.Should().BeFalse();
     }
 
-    [CoversMutation(typeof(PaymentMethod), nameof(PaymentMethod.Deactivate), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Deactivate_ShouldExpireMethod()
     {
@@ -80,7 +75,6 @@ public class PaymentMethodTests
         method.Status.Should().Be(PaymentMethodStatus.Expired);
     }
 
-    [CoversMutation(typeof(PaymentMethod), nameof(PaymentMethod.Reactivate), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Reactivate_ShouldRestoreMethod_WhenExpired()
     {

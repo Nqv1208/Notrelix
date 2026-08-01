@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Integrations.Connections;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Integrations.Connections;
 
@@ -11,7 +10,6 @@ public class IntegrationConnectionDeletionLifecycleTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.Delete), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Active_SurvivesDeleteRestore()
     {
@@ -23,7 +21,6 @@ public class IntegrationConnectionDeletionLifecycleTests
         connection.IsDeleted.Should().BeFalse();
     }
 
-    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.Delete), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Error_SurvivesDeleteRestore_RetainsErrorDetail()
     {
@@ -38,7 +35,6 @@ public class IntegrationConnectionDeletionLifecycleTests
         connection.IsDeleted.Should().BeFalse();
     }
 
-    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.Delete), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Expired_SurvivesDeleteRestore()
     {
@@ -52,7 +48,6 @@ public class IntegrationConnectionDeletionLifecycleTests
         connection.IsDeleted.Should().BeFalse();
     }
 
-    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.Delete), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Revoked_SurvivesDeleteRestore()
     {

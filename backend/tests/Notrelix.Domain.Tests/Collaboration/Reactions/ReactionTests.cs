@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Collaboration.Reactions;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Collaboration;
 
@@ -33,7 +32,6 @@ public class ReactionTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(Reaction), nameof(Reaction.Remove), MutationScenario.Event, typeof(DateTimeOffset))]
     [Fact]
     public void Remove_ShouldRaiseEvent()
     {

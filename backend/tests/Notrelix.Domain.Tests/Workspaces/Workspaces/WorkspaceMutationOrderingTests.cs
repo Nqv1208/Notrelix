@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Workspaces.Workspaces;
 
@@ -11,7 +10,6 @@ public class WorkspaceMutationOrderingTests
     private static Workspace CreateWorkspace() =>
         Workspace.Create(Guid.NewGuid(), ActorId, "Test Workspace", "test-ws", Now);
 
-    [CoversMutation(typeof(Workspace), nameof(Workspace.Rename), MutationScenario.Audit, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Rename_ShouldPrepareAuditBeforeMutation()
     {
@@ -21,7 +19,6 @@ public class WorkspaceMutationOrderingTests
         workspace.UpdatedAt.Should().Be(Now.AddMinutes(1));
     }
 
-    [CoversMutation(typeof(Workspace), nameof(Workspace.Rename), MutationScenario.NoOp, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Rename_NoOp_ShouldNotIncrementVersion()
     {
@@ -31,7 +28,6 @@ public class WorkspaceMutationOrderingTests
         workspace.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(Workspace), nameof(Workspace.Rename), MutationScenario.Invalid, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Rename_Archived_ShouldThrow()
     {
@@ -41,7 +37,6 @@ public class WorkspaceMutationOrderingTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(Workspace), nameof(Workspace.Archive), MutationScenario.Audit, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_ShouldPrepareAuditBeforeMutation()
     {
@@ -50,7 +45,6 @@ public class WorkspaceMutationOrderingTests
         workspace.UpdatedBy.Should().Be(ActorId);
     }
 
-    [CoversMutation(typeof(Workspace), nameof(Workspace.Archive), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_NoOp_ShouldNotIncrementVersion()
     {
@@ -61,7 +55,6 @@ public class WorkspaceMutationOrderingTests
         workspace.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(Workspace), nameof(Workspace.Unarchive), MutationScenario.Audit, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Unarchive_ShouldPrepareAuditBeforeMutation()
     {
@@ -71,7 +64,6 @@ public class WorkspaceMutationOrderingTests
         workspace.UpdatedBy.Should().Be(ActorId);
     }
 
-    [CoversMutation(typeof(Workspace), nameof(Workspace.Delete), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Unarchive_NonArchived_ShouldThrow()
     {
@@ -81,7 +73,6 @@ public class WorkspaceMutationOrderingTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(Workspace), nameof(Workspace.Unarchive), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Unarchive_Active_NoOp_ShouldNotIncrementVersion()
     {
@@ -91,7 +82,6 @@ public class WorkspaceMutationOrderingTests
         workspace.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(Workspace), nameof(Workspace.UpdateDescription), MutationScenario.Audit, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateDescription_ShouldPrepareAuditBeforeMutation()
     {
@@ -100,7 +90,6 @@ public class WorkspaceMutationOrderingTests
         workspace.UpdatedBy.Should().Be(ActorId);
     }
 
-    [CoversMutation(typeof(Workspace), nameof(Workspace.UpdateDescription), MutationScenario.NoOp, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateDescription_NoOp_ShouldNotIncrementVersion()
     {
@@ -110,7 +99,6 @@ public class WorkspaceMutationOrderingTests
         workspace.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(Workspace), nameof(Workspace.Archive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateDescription_Archived_ShouldThrow()
     {
@@ -120,7 +108,6 @@ public class WorkspaceMutationOrderingTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(Workspace), nameof(Workspace.UpdateSettings), MutationScenario.Audit, typeof(WorkspaceSettings), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateSettings_ShouldPrepareAuditBeforeMutation()
     {
@@ -130,7 +117,6 @@ public class WorkspaceMutationOrderingTests
         workspace.UpdatedBy.Should().Be(ActorId);
     }
 
-    [CoversMutation(typeof(Workspace), nameof(Workspace.UpdateSettings), MutationScenario.NoOp, typeof(WorkspaceSettings), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateSettings_NoOp_ShouldNotIncrementVersion()
     {
@@ -141,7 +127,6 @@ public class WorkspaceMutationOrderingTests
         workspace.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(Workspace), nameof(Workspace.Archive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateSettings_Archived_ShouldThrow()
     {

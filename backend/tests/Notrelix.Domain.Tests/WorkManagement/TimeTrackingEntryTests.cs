@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.WorkManagement.Items;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 
@@ -54,7 +53,6 @@ public class TimeTrackingEntryTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(TimeTrackingEntry), nameof(TimeTrackingEntry.Stop), MutationScenario.Valid, typeof(DateTimeOffset), typeof(Guid))]
     [Fact]
     public void Stop_WhenRunning_ShouldSucceed()
     {
@@ -67,7 +65,6 @@ public class TimeTrackingEntryTests
         entry.EndedAt.Should().Be(endedAt);
     }
 
-    [CoversMutation(typeof(TimeTrackingEntry), nameof(TimeTrackingEntry.Stop), MutationScenario.Valid, typeof(DateTimeOffset), typeof(Guid))]
     [Fact]
     public void Stop_ShouldCalculateDurationSeconds()
     {
@@ -79,7 +76,6 @@ public class TimeTrackingEntryTests
         entry.DurationSeconds.Should().Be(300);
     }
 
-    [CoversMutation(typeof(TimeTrackingEntry), nameof(TimeTrackingEntry.Stop), MutationScenario.Invalid, typeof(DateTimeOffset), typeof(Guid))]
     [Fact]
     public void Stop_WhenNotRunning_ShouldThrow()
     {
@@ -92,7 +88,6 @@ public class TimeTrackingEntryTests
             .WithMessage("*not running*");
     }
 
-    [CoversMutation(typeof(TimeTrackingEntry), nameof(TimeTrackingEntry.Stop), MutationScenario.Invalid, typeof(DateTimeOffset), typeof(Guid))]
     [Fact]
     public void Stop_WithEndTimeBeforeStart_ShouldThrow()
     {
@@ -104,7 +99,6 @@ public class TimeTrackingEntryTests
             .WithMessage("*after start*");
     }
 
-    [CoversMutation(typeof(TimeTrackingEntry), nameof(TimeTrackingEntry.Stop), MutationScenario.Version, typeof(DateTimeOffset), typeof(Guid))]
     [Fact]
     public void Stop_ShouldIncrementVersion()
     {
@@ -116,7 +110,6 @@ public class TimeTrackingEntryTests
         entry.Version.Should().Be(versionBefore + 1);
     }
 
-    [CoversMutation(typeof(TimeTrackingEntry), nameof(TimeTrackingEntry.Stop), MutationScenario.Audit, typeof(DateTimeOffset), typeof(Guid))]
     [Fact]
     public void Stop_ShouldSetAudit()
     {

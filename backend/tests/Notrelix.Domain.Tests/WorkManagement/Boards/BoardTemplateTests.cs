@@ -1,12 +1,10 @@
 using FluentAssertions;
 using Notrelix.Domain.WorkManagement.Templates;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 
 public class BoardTemplateTests
 {
-    [CoversMutation(typeof(BoardTemplate), nameof(BoardTemplate.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Create_WithWorkspace_ShouldSucceed()
     {

@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Items;
 
@@ -33,7 +32,6 @@ public class BoardItemOptionIdentityTests
         return field;
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.UpdateFieldValue), MutationScenario.Valid, typeof(BoardField), typeof(FieldValue), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void SelectValue_WithUppercaseBracedGuid_ShouldBeAccepted()
     {
@@ -49,7 +47,6 @@ public class BoardItemOptionIdentityTests
         item.FieldValues.First().Value.Should().Be(value);
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.UpdateFieldValue), MutationScenario.Invalid, typeof(BoardField), typeof(FieldValue), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void SelectValue_WithNonParsableId_ShouldThrow()
     {
@@ -61,7 +58,6 @@ public class BoardItemOptionIdentityTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*GUID*");
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.UpdateFieldValue), MutationScenario.Valid, typeof(BoardField), typeof(FieldValue), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MultiSelectValue_WithUppercaseBracedGuids_ShouldBeAccepted()
     {
@@ -75,7 +71,6 @@ public class BoardItemOptionIdentityTests
         item.FieldValues.Should().ContainSingle();
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.UpdateFieldValue), MutationScenario.Invalid, typeof(BoardField), typeof(FieldValue), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MultiSelectValue_WithDuplicateOptionIds_ShouldThrow()
     {
@@ -90,7 +85,6 @@ public class BoardItemOptionIdentityTests
         item.FieldValues.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.UpdateFieldValue), MutationScenario.Invalid, typeof(BoardField), typeof(FieldValue), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MultiSelectValue_WithUnknownOption_ShouldThrow()
     {

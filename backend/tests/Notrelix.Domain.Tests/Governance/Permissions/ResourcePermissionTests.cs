@@ -1,10 +1,8 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Governance.Permissions;
 
 namespace Notrelix.Domain.Tests.Governance;
 
-[CoversAggregate(typeof(ResourcePermission))]
 public class ResourcePermissionTests
 {
     [Fact]
@@ -32,7 +30,6 @@ public class ResourcePermissionTests
         permission.DomainEvents.Should().ContainSingle(e => e is ResourcePermissionGrantedDomainEvent);
     }
 
-    [CoversMutation(typeof(ResourcePermission), nameof(ResourcePermission.ChangeLevel), MutationScenario.Event, typeof(PermissionLevel), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ChangeLevel_ShouldUpdateLevel_AndRaiseEvent()
     {
@@ -50,7 +47,6 @@ public class ResourcePermissionTests
         permission.DomainEvents.Should().ContainSingle(e => e is ResourcePermissionLevelChangedDomainEvent);
     }
 
-    [CoversMutation(typeof(ResourcePermission), nameof(ResourcePermission.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Revoke_ShouldDelete_AndRaiseEvent()
     {

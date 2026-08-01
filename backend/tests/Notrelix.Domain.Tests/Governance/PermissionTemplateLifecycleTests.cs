@@ -1,11 +1,9 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Governance.Templates;
 
 namespace Notrelix.Domain.Tests.Governance;
 
-[CoversAggregate(typeof(PermissionTemplate))]
 public class PermissionTemplateLifecycleTests
 {
     private static PermissionTemplateDefinition ValidDefinition() =>
@@ -89,7 +87,6 @@ public class PermissionTemplateLifecycleTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(PermissionTemplate), nameof(PermissionTemplate.Archive), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_WhenWorkspace_ShouldSetArchivedAndRaiseEvent()
     {
@@ -110,7 +107,6 @@ public class PermissionTemplateLifecycleTests
         evt.ArchivedBy.Should().Be(updatedBy);
     }
 
-    [CoversMutation(typeof(PermissionTemplate), nameof(PermissionTemplate.Archive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_WhenSystem_ShouldThrow()
     {
@@ -122,7 +118,6 @@ public class PermissionTemplateLifecycleTests
             .WithMessage("*System*");
     }
 
-    [CoversMutation(typeof(PermissionTemplate), nameof(PermissionTemplate.Archive), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_WhenAlreadyArchived_ShouldBeNoOp()
     {
@@ -134,7 +129,6 @@ public class PermissionTemplateLifecycleTests
         template.Status.Should().Be(PermissionTemplateStatus.Archived);
     }
 
-    [CoversMutation(typeof(PermissionTemplate), nameof(PermissionTemplate.Archive), MutationScenario.Version, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_ShouldIncrementVersion()
     {

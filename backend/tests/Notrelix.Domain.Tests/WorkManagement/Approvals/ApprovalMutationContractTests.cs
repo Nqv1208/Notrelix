@@ -1,10 +1,8 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.WorkManagement.Approvals;
 
 namespace Notrelix.Domain.Tests.WorkManagement.Approvals;
 
-[CoversAggregate(typeof(ApprovalRequest))]
 public class ApprovalMutationContractTests
 {
     private static readonly Guid AccountId = Guid.NewGuid();

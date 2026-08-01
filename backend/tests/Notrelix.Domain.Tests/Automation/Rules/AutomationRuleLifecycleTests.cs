@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Automation.Rules;
 using Notrelix.Domain.Automation.RulesEngine;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Automation.Rules;
 
@@ -42,7 +41,6 @@ public class AutomationRuleLifecycleTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Enable), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Enable_DeletedRule_ShouldNotChangeStatus()
     {
@@ -55,7 +53,6 @@ public class AutomationRuleLifecycleTests
         rule.Status.Should().Be(AutomationRuleStatus.Draft);
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_thenEnable_ShouldSucceed()
     {
@@ -68,7 +65,6 @@ public class AutomationRuleLifecycleTests
         rule.Status.Should().Be(AutomationRuleStatus.Active);
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Enable_afterRestore_ShouldRaiseEnabledEvent()
     {
@@ -82,7 +78,6 @@ public class AutomationRuleLifecycleTests
         rule.DomainEvents.Should().ContainSingle(e => e is AutomationRuleEnabledDomainEvent);
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldPreserveStatusAndAudit()
     {
@@ -101,7 +96,6 @@ public class AutomationRuleLifecycleTests
         rule.Version.Should().Be(3);
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldPreserveStatusAndAudit()
     {
@@ -121,7 +115,6 @@ public class AutomationRuleLifecycleTests
         rule.Version.Should().Be(4);
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Enable), MutationScenario.Version, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Enable_thenDisable_ShouldBeCorrectVersion()
     {

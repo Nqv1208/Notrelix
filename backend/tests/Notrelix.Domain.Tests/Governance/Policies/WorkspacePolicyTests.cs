@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Governance.Policies;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Governance;
 
@@ -29,7 +28,6 @@ public class WorkspacePolicyTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(WorkspacePolicy), nameof(WorkspacePolicy.UpdatePolicy), MutationScenario.Event, typeof(GuestAccessPolicy), typeof(ResourcePolicy), typeof(SharingPolicy), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdatePolicy_ShouldReplacePoliciesAndRaiseEvent()
     {
@@ -49,7 +47,6 @@ public class WorkspacePolicyTests
         policy.DomainEvents.Should().ContainSingle(e => e is WorkspacePolicyUpdatedDomainEvent);
     }
 
-    [CoversMutation(typeof(WorkspacePolicy), nameof(WorkspacePolicy.UpdatePolicy), MutationScenario.Valid, typeof(GuestAccessPolicy), typeof(ResourcePolicy), typeof(SharingPolicy), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdatePolicy_WithNullGuestPolicy_ShouldKeepExisting()
     {

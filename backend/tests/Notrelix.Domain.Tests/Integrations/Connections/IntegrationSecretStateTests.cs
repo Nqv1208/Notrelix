@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Integrations.Connections;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Integrations.Connections;
 
@@ -23,7 +22,6 @@ public class IntegrationSecretStateTests
         c.SecretRotatedAt.Should().BeNull();
     }
 
-    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.RotateSecret), MutationScenario.Valid, typeof(string), typeof(SecretRef), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_ShouldSetSecretState()
     {
@@ -35,7 +33,6 @@ public class IntegrationSecretStateTests
         c.SecretRotatedAt.Should().Be(Now);
     }
 
-    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.RotateSecret), MutationScenario.Version, typeof(string), typeof(SecretRef), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_WithNewVersion_ShouldUpdate()
     {
@@ -47,7 +44,6 @@ public class IntegrationSecretStateTests
         c.CurrentSecretRef.Should().Be(newRef);
     }
 
-    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.RotateSecret), MutationScenario.NoOp, typeof(string), typeof(SecretRef), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_WithSameState_ShouldBeNoOp()
     {
@@ -58,7 +54,6 @@ public class IntegrationSecretStateTests
         c.DomainEvents.Should().ContainSingle(e => e is IntegrationSecretRotatedDomainEvent);
     }
 
-    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.RotateSecret), MutationScenario.Invalid, typeof(string), typeof(SecretRef), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_WithEmptyVersion_ShouldThrow()
     {
@@ -67,7 +62,6 @@ public class IntegrationSecretStateTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.RotateSecret), MutationScenario.Invalid, typeof(string), typeof(SecretRef), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_WithNullRef_ShouldThrow()
     {
@@ -76,7 +70,6 @@ public class IntegrationSecretStateTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.RotateSecret), MutationScenario.Invalid, typeof(string), typeof(SecretRef), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateSecret_WhenDeleted_ShouldThrow()
     {

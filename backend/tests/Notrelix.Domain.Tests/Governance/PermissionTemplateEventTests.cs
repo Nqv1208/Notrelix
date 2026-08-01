@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Governance.Templates;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Governance;
 
@@ -47,7 +46,6 @@ public class PermissionTemplateEventTests
         evt.OccurredAt.Should().Be(now);
     }
 
-    [CoversMutation(typeof(PermissionTemplate), nameof(PermissionTemplate.Archive), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_ShouldEmitArchivedEvent()
     {
@@ -85,7 +83,6 @@ public class PermissionTemplateEventTests
         evt.Should().BeAssignableTo<IWorkspaceScoped>();
     }
 
-    [CoversMutation(typeof(PermissionTemplate), nameof(PermissionTemplate.Archive), MutationScenario.Scope, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ArchivedEvent_ShouldBeWorkspaceScoped()
     {

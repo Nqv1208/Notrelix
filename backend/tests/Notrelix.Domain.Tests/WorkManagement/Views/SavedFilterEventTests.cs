@@ -1,10 +1,8 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.WorkManagement.Views;
 
 namespace Notrelix.Domain.Tests.WorkManagement.Views;
 
-[CoversAggregate(typeof(SavedFilter))]
 public class SavedFilterEventTests
 {
     private static readonly Guid WsA = Guid.NewGuid();
@@ -12,7 +10,6 @@ public class SavedFilterEventTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(SavedFilter), nameof(SavedFilter.Rename), MutationScenario.Event, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void SavedFilter_Rename_ShouldRaiseEvent()
     {
@@ -29,10 +26,6 @@ public class SavedFilterEventTests
         evt.Name.Should().Be("Renamed");
     }
 
-    [CoversMutation(typeof(SavedFilter), nameof(SavedFilter.UpdateGroup), MutationScenario.Event, typeof(GroupRule), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(SavedFilter), nameof(SavedFilter.UpdateSorts), MutationScenario.Event, typeof(System.Collections.Generic.IEnumerable<Notrelix.Domain.WorkManagement.Views.SortRule>), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(SavedFilter), nameof(SavedFilter.UpdateFilters), MutationScenario.Event, typeof(System.Collections.Generic.IEnumerable<Notrelix.Domain.WorkManagement.Views.FilterRule>), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(SavedFilter), nameof(SavedFilter.UpdateVisibility), MutationScenario.Event, typeof(SavedFilterVisibility), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void SavedFilter_UpdateVisibility_ShouldRaiseEvent()
     {
@@ -47,10 +40,6 @@ public class SavedFilterEventTests
         filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterVisibilityUpdatedDomainEvent);
     }
 
-    [CoversMutation(typeof(SavedFilter), nameof(SavedFilter.UpdateGroup), MutationScenario.Event, typeof(GroupRule), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(SavedFilter), nameof(SavedFilter.UpdateSorts), MutationScenario.Event, typeof(System.Collections.Generic.IEnumerable<Notrelix.Domain.WorkManagement.Views.SortRule>), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(SavedFilter), nameof(SavedFilter.UpdateFilters), MutationScenario.Event, typeof(System.Collections.Generic.IEnumerable<Notrelix.Domain.WorkManagement.Views.FilterRule>), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(SavedFilter), nameof(SavedFilter.UpdateVisibility), MutationScenario.Event, typeof(SavedFilterVisibility), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void SavedFilter_UpdateFilters_ShouldRaiseEvent()
     {
@@ -65,10 +54,6 @@ public class SavedFilterEventTests
         filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterFiltersUpdatedDomainEvent);
     }
 
-    [CoversMutation(typeof(SavedFilter), nameof(SavedFilter.UpdateGroup), MutationScenario.Event, typeof(GroupRule), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(SavedFilter), nameof(SavedFilter.UpdateSorts), MutationScenario.Event, typeof(System.Collections.Generic.IEnumerable<Notrelix.Domain.WorkManagement.Views.SortRule>), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(SavedFilter), nameof(SavedFilter.UpdateFilters), MutationScenario.Event, typeof(System.Collections.Generic.IEnumerable<Notrelix.Domain.WorkManagement.Views.FilterRule>), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(SavedFilter), nameof(SavedFilter.UpdateVisibility), MutationScenario.Event, typeof(SavedFilterVisibility), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void SavedFilter_UpdateSorts_ShouldRaiseEvent()
     {
@@ -83,10 +68,6 @@ public class SavedFilterEventTests
         filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterSortsUpdatedDomainEvent);
     }
 
-    [CoversMutation(typeof(SavedFilter), nameof(SavedFilter.UpdateGroup), MutationScenario.Event, typeof(GroupRule), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(SavedFilter), nameof(SavedFilter.UpdateSorts), MutationScenario.Event, typeof(System.Collections.Generic.IEnumerable<Notrelix.Domain.WorkManagement.Views.SortRule>), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(SavedFilter), nameof(SavedFilter.UpdateFilters), MutationScenario.Event, typeof(System.Collections.Generic.IEnumerable<Notrelix.Domain.WorkManagement.Views.FilterRule>), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(SavedFilter), nameof(SavedFilter.UpdateVisibility), MutationScenario.Event, typeof(SavedFilterVisibility), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void SavedFilter_UpdateGroup_ShouldRaiseEvent()
     {
@@ -101,7 +82,6 @@ public class SavedFilterEventTests
         filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterGroupUpdatedDomainEvent);
     }
 
-    [CoversMutation(typeof(SavedFilter), nameof(SavedFilter.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void SavedFilter_Delete_ShouldRaiseEvent()
     {
@@ -117,7 +97,6 @@ public class SavedFilterEventTests
         filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(SavedFilter), nameof(SavedFilter.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void SavedFilter_Delete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
@@ -133,7 +112,6 @@ public class SavedFilterEventTests
         filter.DomainEvents.Should().NotContain(e => e is SavedFilterDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(SavedFilter), nameof(SavedFilter.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void SavedFilter_Restore_ShouldRaiseEvent()
     {
@@ -150,8 +128,6 @@ public class SavedFilterEventTests
         filter.DomainEvents.Should().ContainSingle(e => e is SavedFilterRestoredDomainEvent);
     }
 
-    [CoversMutation(typeof(SavedFilter), nameof(SavedFilter.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(SavedFilter), nameof(SavedFilter.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void SavedFilter_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {

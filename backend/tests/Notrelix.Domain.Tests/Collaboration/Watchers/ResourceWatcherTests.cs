@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Collaboration.Watchers;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Collaboration;
 
@@ -38,7 +37,6 @@ public class ResourceWatcherTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(ResourceWatcher), nameof(ResourceWatcher.Unwatch), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Unwatch_ShouldRaiseEvent()
     {

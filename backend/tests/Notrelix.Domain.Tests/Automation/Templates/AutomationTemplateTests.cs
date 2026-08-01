@@ -1,16 +1,10 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Automation.Templates;
 
 namespace Notrelix.Domain.Tests.Automation;
 
-[CoversAggregate(typeof(AutomationTemplate))]
 public class AutomationTemplateTests
 {
-    [CoversMutation(typeof(AutomationTemplate), nameof(AutomationTemplate.Publish), MutationScenario.Event, typeof(DateTimeOffset))]
-    [CoversMutation(typeof(AutomationTemplate), nameof(AutomationTemplate.Archive), MutationScenario.Event, typeof(DateTimeOffset))]
-    [CoversMutation(typeof(AutomationTemplate), nameof(AutomationTemplate.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
-    [CoversMutation(typeof(AutomationTemplate), nameof(AutomationTemplate.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Create_ShouldSucceed_AndRaiseEvent()
     {
@@ -24,7 +18,6 @@ public class AutomationTemplateTests
         template.DomainEvents.Should().ContainSingle(e => e is AutomationTemplateCreatedDomainEvent);
     }
 
-    [CoversMutation(typeof(AutomationTemplate), nameof(AutomationTemplate.UpdateName), MutationScenario.Invalid, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Create_WithEmptyName_ShouldThrow()
     {
@@ -32,7 +25,6 @@ public class AutomationTemplateTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(AutomationTemplate), nameof(AutomationTemplate.UpdateDefinition), MutationScenario.Invalid, typeof(JsonValue), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Create_WithNullDefinition_ShouldThrow()
     {

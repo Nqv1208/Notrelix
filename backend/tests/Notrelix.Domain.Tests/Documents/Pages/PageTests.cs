@@ -1,10 +1,8 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Documents.Pages;
 
 namespace Notrelix.Domain.Tests.Documents;
 
-[CoversAggregate(typeof(Page))]
 public class PageTests
 {
     [Fact]
@@ -33,7 +31,6 @@ public class PageTests
         page.DomainEvents.Should().ContainSingle(e => e is PageRenamedDomainEvent);
     }
 
-    [CoversMutation(typeof(Page), nameof(Page.Archive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Rename_WhenArchived_ShouldThrow()
     {
@@ -69,7 +66,6 @@ public class PageTests
         page.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Page), nameof(Page.Archive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Move_WhenArchived_ShouldThrow()
     {
@@ -98,7 +94,6 @@ public class PageTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Page move would create a cycle in the page tree.");
     }
 
-    [CoversMutation(typeof(Page), nameof(Page.Archive), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_ShouldSetStatus_AndRaiseEvent()
     {
@@ -111,7 +106,6 @@ public class PageTests
         page.DomainEvents.Should().ContainSingle(e => e is PageArchivedDomainEvent);
     }
 
-    [CoversMutation(typeof(Page), nameof(Page.Archive), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_WhenAlreadyArchived_ShouldBeNoOp()
     {

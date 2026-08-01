@@ -1,14 +1,11 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Analytics.Dashboards;
 using Notrelix.Domain.Analytics.Widgets;
 
 namespace Notrelix.Domain.Tests.Analytics.Dashboards;
 
-[CoversAggregate(typeof(Dashboard))]
 public class DashboardWidgetScopeTests
 {
-    [CoversMutation(typeof(Dashboard), nameof(Dashboard.AddWidget), MutationScenario.Scope, typeof(string), typeof(DashboardWidgetType), typeof(JsonValue), typeof(WidgetPosition), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void AddWidget_ShouldSetScopeMatchingDashboard()
     {
@@ -40,7 +37,6 @@ public class DashboardWidgetScopeTests
         });
     }
 
-    [CoversMutation(typeof(Dashboard), nameof(Dashboard.AddWidget), MutationScenario.Invalid, typeof(string), typeof(DashboardWidgetType), typeof(JsonValue), typeof(WidgetPosition), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void AddWidget_WithUnknownWidgetType_ShouldThrow()
     {
@@ -52,7 +48,6 @@ public class DashboardWidgetScopeTests
             .WithMessage("*Unknown widget type*");
     }
 
-    [CoversMutation(typeof(Dashboard), nameof(Dashboard.AddWidget), MutationScenario.Valid, typeof(string), typeof(DashboardWidgetType), typeof(JsonValue), typeof(WidgetPosition), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void AddWidget_WithUnknownWidgetType_ShouldNotMutateDashboard()
     {

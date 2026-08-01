@@ -1,9 +1,7 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Accounts;
 
-[CoversAggregate(typeof(AccountInvitation))]
 public class AccountInvitationTests
 {
     private readonly Guid _accountId = Guid.NewGuid();
@@ -44,7 +42,6 @@ public class AccountInvitationTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(AccountInvitation), nameof(AccountInvitation.Accept), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Accept_ShouldSucceed()
     {
@@ -57,7 +54,6 @@ public class AccountInvitationTests
         invitation.DomainEvents.Should().ContainSingle(e => e is AccountInvitationAcceptedDomainEvent);
     }
 
-    [CoversMutation(typeof(AccountInvitation), nameof(AccountInvitation.Accept), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Accept_ExpiredInvitation_ShouldThrow()
     {
@@ -68,7 +64,6 @@ public class AccountInvitationTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Invitation has expired.");
     }
 
-    [CoversMutation(typeof(AccountInvitation), nameof(AccountInvitation.Accept), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Accept_AlreadyAccepted_ShouldThrow()
     {
@@ -80,7 +75,6 @@ public class AccountInvitationTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Invitation is not pending.");
     }
 
-    [CoversMutation(typeof(AccountInvitation), nameof(AccountInvitation.Expire), MutationScenario.Valid, typeof(DateTimeOffset))]
     [Fact]
     public void Expire_ShouldSucceed()
     {
@@ -93,7 +87,6 @@ public class AccountInvitationTests
         invitation.DomainEvents.Should().ContainSingle(e => e is AccountInvitationExpiredDomainEvent);
     }
 
-    [CoversMutation(typeof(AccountInvitation), nameof(AccountInvitation.Accept), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Expire_AlreadyAccepted_ShouldNotChange()
     {
@@ -107,7 +100,6 @@ public class AccountInvitationTests
         invitation.Status.Should().Be(AccountInvitationStatus.Accepted);
     }
 
-    [CoversMutation(typeof(AccountInvitation), nameof(AccountInvitation.Revoke), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Revoke_ShouldSucceed()
     {
@@ -120,7 +112,6 @@ public class AccountInvitationTests
         invitation.DomainEvents.Should().ContainSingle(e => e is AccountInvitationRevokedDomainEvent);
     }
 
-    [CoversMutation(typeof(AccountInvitation), nameof(AccountInvitation.Expire), MutationScenario.Invalid, typeof(DateTimeOffset))]
     [Fact]
     public void Revoke_ExpiredInvitation_ShouldThrow()
     {
@@ -131,7 +122,6 @@ public class AccountInvitationTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Invitation has expired.");
     }
 
-    [CoversMutation(typeof(AccountInvitation), nameof(AccountInvitation.Accept), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Revoke_AlreadyAccepted_ShouldNotChange()
     {
@@ -157,7 +147,6 @@ public class AccountInvitationTests
         invitation.Version.Should().Be(1);
     }
 
-    [CoversMutation(typeof(AccountInvitation), nameof(AccountInvitation.Accept), MutationScenario.Version, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Accept_ShouldIncrementVersion()
     {
@@ -167,7 +156,6 @@ public class AccountInvitationTests
         invitation.Version.Should().Be(before + 1);
     }
 
-    [CoversMutation(typeof(AccountInvitation), nameof(AccountInvitation.Accept), MutationScenario.Audit, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Accept_ShouldSetAudit()
     {
@@ -179,7 +167,6 @@ public class AccountInvitationTests
         invitation.UpdatedAt.Should().Be(time);
     }
 
-    [CoversMutation(typeof(AccountInvitation), nameof(AccountInvitation.Expire), MutationScenario.Version, typeof(DateTimeOffset))]
     [Fact]
     public void Expire_ShouldIncrementVersion()
     {
@@ -189,7 +176,6 @@ public class AccountInvitationTests
         invitation.Version.Should().Be(before + 1);
     }
 
-    [CoversMutation(typeof(AccountInvitation), nameof(AccountInvitation.Expire), MutationScenario.Audit, typeof(DateTimeOffset))]
     [Fact]
     public void Expire_ShouldSetAudit()
     {
@@ -199,7 +185,6 @@ public class AccountInvitationTests
         invitation.UpdatedAt.Should().Be(time);
     }
 
-    [CoversMutation(typeof(AccountInvitation), nameof(AccountInvitation.Revoke), MutationScenario.Version, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Revoke_ShouldIncrementVersion()
     {
@@ -209,7 +194,6 @@ public class AccountInvitationTests
         invitation.Version.Should().Be(before + 1);
     }
 
-    [CoversMutation(typeof(AccountInvitation), nameof(AccountInvitation.Revoke), MutationScenario.Audit, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Revoke_ShouldSetAudit()
     {
@@ -221,7 +205,6 @@ public class AccountInvitationTests
         invitation.UpdatedAt.Should().Be(time);
     }
 
-    [CoversMutation(typeof(AccountInvitation), nameof(AccountInvitation.Accept), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Accept_ShouldRaiseEvent_WithCorrectPayload()
     {
@@ -232,7 +215,6 @@ public class AccountInvitationTests
         evt.Should().BeOfType<AccountInvitationAcceptedDomainEvent>();
     }
 
-    [CoversMutation(typeof(AccountInvitation), nameof(AccountInvitation.Expire), MutationScenario.Event, typeof(DateTimeOffset))]
     [Fact]
     public void Expire_ShouldRaiseEvent_WithCorrectPayload()
     {
@@ -242,7 +224,6 @@ public class AccountInvitationTests
         evt.Should().BeOfType<AccountInvitationExpiredDomainEvent>();
     }
 
-    [CoversMutation(typeof(AccountInvitation), nameof(AccountInvitation.Revoke), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Revoke_ShouldRaiseEvent_WithCorrectPayload()
     {
@@ -253,7 +234,6 @@ public class AccountInvitationTests
         evt.Should().BeOfType<AccountInvitationRevokedDomainEvent>();
     }
 
-    [CoversMutation(typeof(AccountInvitation), nameof(AccountInvitation.Expire), MutationScenario.NoOp, typeof(DateTimeOffset))]
     [Fact]
     public void Expire_WhenAlreadyExpired_ShouldNotChange()
     {
@@ -264,7 +244,6 @@ public class AccountInvitationTests
         invitation.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(AccountInvitation), nameof(AccountInvitation.Revoke), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Revoke_AlreadyRevoked_ShouldNotChange()
     {
@@ -275,7 +254,6 @@ public class AccountInvitationTests
         invitation.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(AccountInvitation), nameof(AccountInvitation.Accept), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Accept_RevokedInvitation_ShouldThrow()
     {

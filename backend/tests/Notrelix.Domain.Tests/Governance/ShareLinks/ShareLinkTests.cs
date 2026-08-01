@@ -1,10 +1,8 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Governance.ShareLinks;
 
 namespace Notrelix.Domain.Tests.Governance;
 
-[CoversAggregate(typeof(ShareLink))]
 public class ShareLinkTests
 {
     [Fact]
@@ -22,7 +20,6 @@ public class ShareLinkTests
         link.DomainEvents.Should().ContainSingle(e => e is ShareLinkCreatedDomainEvent);
     }
 
-    [CoversMutation(typeof(ShareLink), nameof(ShareLink.Expire), MutationScenario.Valid, typeof(DateTimeOffset))]
     [Fact]
     public void IsExpired_ShouldReturnTrue_WhenExpirationPassed()
     {
@@ -32,7 +29,6 @@ public class ShareLinkTests
         link.IsExpired(DateTimeOffset.UtcNow).Should().BeTrue();
     }
 
-    [CoversMutation(typeof(ShareLink), nameof(ShareLink.Disable), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Disable_ShouldSetStatusToDisabled_AndRaiseEvent()
     {
@@ -47,7 +43,6 @@ public class ShareLinkTests
         link.DomainEvents.Should().ContainSingle(e => e is ShareLinkDisabledDomainEvent);
     }
 
-    [CoversMutation(typeof(ShareLink), nameof(ShareLink.RotateTokenHash), MutationScenario.Event, typeof(ShareLinkTokenHash), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RotateTokenHash_ShouldUpdateHash_AndRaiseEvent()
     {

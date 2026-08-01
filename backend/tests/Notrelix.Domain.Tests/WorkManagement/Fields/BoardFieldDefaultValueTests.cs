@@ -1,13 +1,11 @@
 using FluentAssertions;
 using Notrelix.Domain.SharedKernel.Ordering;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.WorkManagement;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Fields.Events;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 
-[CoversAggregate(typeof(BoardField))]
 public class BoardFieldDefaultValueTests
 {
     private static BoardField CreateTextField(FieldSettings settings)
@@ -105,7 +103,6 @@ public class BoardFieldDefaultValueTests
             .Which.RuleCode.Should().Be(WorkManagementRuleCodes.WorkManagement_Field_DefaultRequiresConfiguredOptions);
     }
 
-    [CoversMutation(typeof(BoardField), nameof(BoardField.SetDefaultValue), MutationScenario.Event, typeof(FieldValue), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void SetDefaultValue_WithConfiguredOption_ShouldSucceed_AndRaiseEvent()
     {
@@ -119,7 +116,6 @@ public class BoardFieldDefaultValueTests
         field.DomainEvents.Should().ContainSingle(e => e is BoardFieldDefaultValueUpdatedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardField), nameof(BoardField.SetDefaultValue), MutationScenario.Event, typeof(FieldValue), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void SetDefaultValue_WithMultiSelectConfiguredOptions_ShouldSucceed()
     {
@@ -137,7 +133,6 @@ public class BoardFieldDefaultValueTests
         field.DefaultValue.Should().Be(defaultValue);
     }
 
-    [CoversMutation(typeof(BoardField), nameof(BoardField.SetDefaultValue), MutationScenario.Invalid, typeof(FieldValue), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void SetDefaultValue_WithUnconfiguredOption_ShouldReject()
     {
@@ -150,7 +145,6 @@ public class BoardFieldDefaultValueTests
             .Which.RuleCode.Should().Be(WorkManagementRuleCodes.WorkManagement_Field_InvalidOptionValue);
     }
 
-    [CoversMutation(typeof(BoardField), nameof(BoardField.SetDefaultValue), MutationScenario.Event, typeof(FieldValue), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void SetDefaultValue_WithNull_ShouldClear_AndRaiseEvent()
     {
@@ -194,7 +188,6 @@ public class BoardFieldDefaultValueTests
         field.DefaultValue.Should().NotBeNull();
     }
 
-    [CoversMutation(typeof(BoardField), nameof(BoardField.SetDefaultValue), MutationScenario.NoOp, typeof(FieldValue), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void SetDefaultValue_SameValueWithStaleTimestamp_ShouldNoOp()
     {
@@ -239,7 +232,6 @@ public class BoardFieldDefaultValueTests
         field.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(BoardField), nameof(BoardField.UpdatePosition), MutationScenario.Event, typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdatePosition_ShouldRaiseReorderedEvent()
     {

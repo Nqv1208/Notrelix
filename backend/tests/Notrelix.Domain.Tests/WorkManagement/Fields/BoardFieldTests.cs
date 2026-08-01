@@ -1,10 +1,8 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.WorkManagement.Fields;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 
-[CoversAggregate(typeof(BoardField))]
 public class BoardFieldTests
 {
     [Fact]
@@ -25,8 +23,6 @@ public class BoardFieldTests
         field.DomainEvents.Should().ContainSingle(e => e is BoardFieldCreatedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardField), nameof(BoardField.AddOption), MutationScenario.Event, typeof(string), typeof(Color), typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BoardField), nameof(BoardField.RemoveOption), MutationScenario.Event, typeof(Guid), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void AddOption_ShouldSucceed_AndRaiseEvent()
     {
@@ -42,8 +38,6 @@ public class BoardFieldTests
         field.DomainEvents.Should().ContainSingle(e => e is FieldOptionAddedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardField), nameof(BoardField.AddOption), MutationScenario.Invalid, typeof(string), typeof(Color), typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BoardField), nameof(BoardField.RemoveOption), MutationScenario.Invalid, typeof(Guid), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void AddOption_ShouldThrow_WhenDuplicateName()
     {
@@ -55,8 +49,6 @@ public class BoardFieldTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*duplicate*");
     }
 
-    [CoversMutation(typeof(BoardField), nameof(BoardField.AddOption), MutationScenario.Valid, typeof(string), typeof(Color), typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BoardField), nameof(BoardField.RemoveOption), MutationScenario.Valid, typeof(Guid), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void AddOption_ShouldAllow_WhenSameNameDifferentCase()
     {
@@ -68,8 +60,6 @@ public class BoardFieldTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*duplicate*");
     }
 
-    [CoversMutation(typeof(BoardField), nameof(BoardField.AddOption), MutationScenario.Invalid, typeof(string), typeof(Color), typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BoardField), nameof(BoardField.RemoveOption), MutationScenario.Invalid, typeof(Guid), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void AddOption_ShouldThrow_WhenFieldTypeIsText()
     {
@@ -80,7 +70,6 @@ public class BoardFieldTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*cannot add options*");
     }
 
-    [CoversMutation(typeof(BoardField), nameof(BoardField.RemoveOption), MutationScenario.Event, typeof(Guid), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RemoveOption_ShouldSucceed_AndRaiseEvent()
     {
@@ -95,7 +84,6 @@ public class BoardFieldTests
         field.DomainEvents.Should().ContainSingle(e => e is FieldOptionRemovedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardField), nameof(BoardField.RemoveOption), MutationScenario.Invalid, typeof(Guid), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RemoveOption_ShouldThrow_WhenNotFound()
     {
@@ -106,8 +94,6 @@ public class BoardFieldTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(BoardField), nameof(BoardField.UpdateOption), MutationScenario.Event, typeof(Guid), typeof(string), typeof(Color), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BoardField), nameof(BoardField.RemoveOption), MutationScenario.Event, typeof(Guid), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateOption_ShouldSucceed_AndRaiseEvent()
     {
@@ -122,8 +108,6 @@ public class BoardFieldTests
         field.DomainEvents.Should().ContainSingle(e => e is FieldOptionUpdatedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardField), nameof(BoardField.UpdateOption), MutationScenario.Invalid, typeof(Guid), typeof(string), typeof(Color), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BoardField), nameof(BoardField.RemoveOption), MutationScenario.Invalid, typeof(Guid), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateOption_ShouldThrow_WhenDuplicateName()
     {
@@ -137,8 +121,6 @@ public class BoardFieldTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*duplicate*");
     }
 
-    [CoversMutation(typeof(BoardField), nameof(BoardField.ReorderOptions), MutationScenario.Event, typeof(System.Collections.Generic.IReadOnlyList<System.Guid>), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BoardField), nameof(BoardField.RemoveOption), MutationScenario.Event, typeof(Guid), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ReorderOptions_ShouldSucceed_AndRaiseEvent()
     {
@@ -158,8 +140,6 @@ public class BoardFieldTests
         reorderEvt.OrderedOptionIds.Should().BeEquivalentTo(new[] { optionB.Id, optionA.Id });
     }
 
-    [CoversMutation(typeof(BoardField), nameof(BoardField.ReorderOptions), MutationScenario.Invalid, typeof(System.Collections.Generic.IReadOnlyList<System.Guid>), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BoardField), nameof(BoardField.RemoveOption), MutationScenario.Invalid, typeof(Guid), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ReorderOptions_ShouldThrow_WhenCountMismatch()
     {
@@ -171,8 +151,6 @@ public class BoardFieldTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*all options*");
     }
 
-    [CoversMutation(typeof(BoardField), nameof(BoardField.ReorderOptions), MutationScenario.Invalid, typeof(System.Collections.Generic.IReadOnlyList<System.Guid>), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(BoardField), nameof(BoardField.RemoveOption), MutationScenario.Invalid, typeof(Guid), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ReorderOptions_ShouldThrow_WhenMissingOption()
     {

@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Governance.Templates;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Governance;
 
@@ -64,7 +63,6 @@ public class PermissionTemplateTests
         template.Name.Should().Be("Template");
     }
 
-    [CoversMutation(typeof(PermissionTemplate), nameof(PermissionTemplate.Archive), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_SystemTemplate_ShouldThrow()
     {
@@ -78,7 +76,6 @@ public class PermissionTemplateTests
         act.Should().Throw<BusinessRuleException>().WithMessage("*System*");
     }
 
-    [CoversMutation(typeof(PermissionTemplate), nameof(PermissionTemplate.Archive), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_WorkspaceTemplate_ShouldSucceed()
     {

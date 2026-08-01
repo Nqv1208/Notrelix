@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Integrations.Connections;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Integrations.Connections;
 
@@ -11,7 +10,6 @@ public class IntegrationConnectionContractTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.MarkError), MutationScenario.Valid, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MarkError_ShouldStoreErrorDetail()
     {
@@ -23,7 +21,6 @@ public class IntegrationConnectionContractTests
         connection.ErrorDetail.Should().Be("Rate limit exceeded");
     }
 
-    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.MarkError), MutationScenario.NoOp, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MarkError_WhenAlreadyError_ShouldUpdateErrorDetail()
     {
@@ -36,7 +33,6 @@ public class IntegrationConnectionContractTests
         connection.ErrorDetail.Should().Be("Second error");
     }
 
-    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.MarkError), MutationScenario.Invalid, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MarkError_EmptyError_ShouldThrow()
     {
@@ -46,7 +42,6 @@ public class IntegrationConnectionContractTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.AddScope), MutationScenario.Scope, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void AddScope_TrimmedBeforeComparison()
     {
@@ -69,7 +64,6 @@ public class IntegrationConnectionContractTests
         connection.Scopes.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldSetAudit()
     {
@@ -87,7 +81,6 @@ public class IntegrationConnectionContractTests
         connection.DomainEvents.Should().ContainSingle(e => e is IntegrationConnectionDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldSetAudit()
     {
@@ -107,7 +100,6 @@ public class IntegrationConnectionContractTests
         connection.DomainEvents.Should().ContainSingle(e => e is IntegrationConnectionRestoredDomainEvent);
     }
 
-    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.Delete), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
@@ -120,7 +112,6 @@ public class IntegrationConnectionContractTests
         connection.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.Restore), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {
@@ -144,7 +135,6 @@ public class IntegrationConnectionContractTests
         connection.DomainEvents.Should().ContainSingle(e => e is IntegrationConnectionRevokedDomainEvent);
     }
 
-    [CoversMutation(typeof(IntegrationConnection), nameof(IntegrationConnection.Reconnect), MutationScenario.Event, typeof(string), typeof(DateTimeOffset?), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Reconnect_ShouldRaiseReauthorizedEvent()
     {

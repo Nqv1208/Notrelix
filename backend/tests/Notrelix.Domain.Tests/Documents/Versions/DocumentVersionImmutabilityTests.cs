@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Documents.Versions;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Documents.Versions;
 
@@ -53,7 +52,6 @@ public class DocumentVersionImmutabilityTests
             .Should().ContainSingle().Which.VersionNumber.Should().Be(versionNumber);
     }
 
-    [CoversMutation(typeof(DocumentVersion), nameof(DocumentVersion.ApplyRestore), MutationScenario.Version, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ApplyRestore_ShouldIncrementVersion()
     {
@@ -64,7 +62,6 @@ public class DocumentVersionImmutabilityTests
         version.Version.Should().Be(before + 1);
     }
 
-    [CoversMutation(typeof(DocumentVersion), nameof(DocumentVersion.ApplyRestore), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ApplyRestore_ShouldRaiseEvent()
     {

@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Documents;
 using Notrelix.Domain.Documents.Templates;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Documents.Templates;
 
@@ -42,7 +41,6 @@ public class DocumentTemplateDefinitionTests
         template.Name.Should().Be("Template");
     }
 
-    [CoversMutation(typeof(PageTemplate), nameof(PageTemplate.Publish), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Publish_ShouldChangeStatus()
     {
@@ -51,7 +49,6 @@ public class DocumentTemplateDefinitionTests
         template.Status.Should().Be(PageTemplateStatus.Published);
     }
 
-    [CoversMutation(typeof(PageTemplate), nameof(PageTemplate.Publish), MutationScenario.Version, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Publish_ShouldIncrementVersion()
     {
@@ -61,8 +58,6 @@ public class DocumentTemplateDefinitionTests
         template.Version.Should().Be(before + 1);
     }
 
-    [CoversMutation(typeof(PageTemplate), nameof(PageTemplate.Publish), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(PageTemplate), nameof(PageTemplate.Publish), MutationScenario.Version, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Publish_AlreadyPublished_ShouldBeIdempotent()
     {
@@ -73,7 +68,6 @@ public class DocumentTemplateDefinitionTests
         template.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(PageTemplate), nameof(PageTemplate.Archive), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_ShouldSetArchivedStatus()
     {
@@ -82,7 +76,6 @@ public class DocumentTemplateDefinitionTests
         template.Status.Should().Be(PageTemplateStatus.Archived);
     }
 
-    [CoversMutation(typeof(PageTemplate), nameof(PageTemplate.Archive), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_ShouldRaiseEvent()
     {
@@ -91,8 +84,6 @@ public class DocumentTemplateDefinitionTests
         template.DomainEvents.OfType<PageTemplateArchivedDomainEvent>().Should().HaveCount(1);
     }
 
-    [CoversMutation(typeof(PageTemplate), nameof(PageTemplate.Archive), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(PageTemplate), nameof(PageTemplate.Archive), MutationScenario.Version, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_AlreadyArchived_ShouldBeIdempotent()
     {
@@ -103,7 +94,6 @@ public class DocumentTemplateDefinitionTests
         template.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(PageTemplate), nameof(PageTemplate.Publish), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Publish_AfterArchive_ShouldThrow()
     {

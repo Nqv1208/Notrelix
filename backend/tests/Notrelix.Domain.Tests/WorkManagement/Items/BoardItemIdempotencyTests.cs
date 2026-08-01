@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.WorkManagement.BoardGroups;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 
@@ -12,7 +11,6 @@ public class BoardItemIdempotencyTests
     private readonly Guid _actorId = Guid.NewGuid();
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Rename), MutationScenario.Version, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Rename_ShouldNotIncrementVersion_WhenNameIsSame()
     {
@@ -26,7 +24,6 @@ public class BoardItemIdempotencyTests
         item.DomainEvents.Should().NotContain(e => e is BoardItemRenamedDomainEvent);
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.MoveToGroup), MutationScenario.Version, typeof(BoardGroupRef), typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveToGroup_ShouldNotIncrementVersion_WhenGroupAndPositionAreSame()
     {
@@ -41,7 +38,6 @@ public class BoardItemIdempotencyTests
         item.Version.Should().Be(version);
     }
 
-    [CoversMutation(typeof(BoardItem), nameof(BoardItem.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldIncrementVersion_AndRaiseEvent()
     {

@@ -1,9 +1,7 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 
-[CoversAggregate(typeof(WorkspaceMember))]
 public class WorkspaceMemberTests
 {
     [Fact]
@@ -30,7 +28,6 @@ public class WorkspaceMemberTests
         evt.OccurredAt.Should().Be(now);
     }
 
-    [CoversMutation(typeof(WorkspaceMember), nameof(WorkspaceMember.ChangeRole), MutationScenario.Event, typeof(WorkspaceRole), typeof(Guid), typeof(int), typeof(DateTimeOffset))]
     [Fact]
     public void ChangeMemberRole_ShouldChangeRole_AndRaiseEvent()
     {
@@ -49,7 +46,6 @@ public class WorkspaceMemberTests
         evt.OccurredAt.Should().Be(now);
     }
 
-    [CoversMutation(typeof(WorkspaceMember), nameof(WorkspaceMember.PromoteToOwner), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ChangeMemberRole_OnLastOwner_ShouldThrow()
     {
@@ -60,7 +56,6 @@ public class WorkspaceMemberTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot downgrade the last owner of the workspace.");
     }
 
-    [CoversMutation(typeof(WorkspaceMember), nameof(WorkspaceMember.Suspend), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset), typeof(int))]
     [Fact]
     public void Suspend_ShouldSetStatusToSuspended_AndRaiseEvent()
     {
@@ -78,8 +73,6 @@ public class WorkspaceMemberTests
         evt.OccurredAt.Should().Be(now);
     }
 
-    [CoversMutation(typeof(WorkspaceMember), nameof(WorkspaceMember.Suspend), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset), typeof(int))]
-    [CoversMutation(typeof(WorkspaceMember), nameof(WorkspaceMember.PromoteToOwner), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Suspend_OnLastOwner_ShouldThrow()
     {
@@ -90,7 +83,6 @@ public class WorkspaceMemberTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot suspend the last owner of the workspace.");
     }
 
-    [CoversMutation(typeof(WorkspaceMember), nameof(WorkspaceMember.Suspend), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset), typeof(int))]
     [Fact]
     public void Activate_FromSuspended_ShouldSetStatusToActive_AndRaiseEvent()
     {
@@ -106,7 +98,6 @@ public class WorkspaceMemberTests
         member.DomainEvents.Should().ContainSingle(e => e is WorkspaceMemberActivatedDomainEvent);
     }
 
-    [CoversMutation(typeof(WorkspaceMember), nameof(WorkspaceMember.Remove), MutationScenario.Invalid, typeof(int), typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Activate_FromRemoved_ShouldThrow()
     {
@@ -117,7 +108,6 @@ public class WorkspaceMemberTests
         act.Should().Throw<DomainException>().WithMessage("*removed member*");
     }
 
-    [CoversMutation(typeof(WorkspaceMember), nameof(WorkspaceMember.Remove), MutationScenario.Lifecycle, typeof(int), typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void RemoveMember_ShouldSetStatusToRemoved_AndRaiseEvent()
     {
@@ -132,8 +122,6 @@ public class WorkspaceMemberTests
         member.DomainEvents.Should().ContainSingle(e => e is WorkspaceMemberRemovedDomainEvent);
     }
 
-    [CoversMutation(typeof(WorkspaceMember), nameof(WorkspaceMember.Remove), MutationScenario.Invalid, typeof(int), typeof(Guid), typeof(DateTimeOffset), typeof(string))]
-    [CoversMutation(typeof(WorkspaceMember), nameof(WorkspaceMember.PromoteToOwner), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RemoveMember_OnLastOwner_ShouldThrow()
     {
@@ -144,7 +132,6 @@ public class WorkspaceMemberTests
         act.Should().Throw<BusinessRuleException>().WithMessage("Cannot remove the last owner of the workspace.");
     }
 
-    [CoversMutation(typeof(WorkspaceMember), nameof(WorkspaceMember.ChangeRole), MutationScenario.Invalid, typeof(WorkspaceRole), typeof(Guid), typeof(int), typeof(DateTimeOffset))]
     [Fact]
     public void ChangeRole_OnRemovedMember_ShouldThrow()
     {
@@ -155,7 +142,6 @@ public class WorkspaceMemberTests
         act.Should().Throw<DomainException>();
     }
 
-    [CoversMutation(typeof(WorkspaceMember), nameof(WorkspaceMember.Suspend), MutationScenario.Invalid, typeof(Guid), typeof(DateTimeOffset), typeof(int))]
     [Fact]
     public void Suspend_OnDeletedMember_ShouldThrow()
     {
@@ -166,8 +152,6 @@ public class WorkspaceMemberTests
         act.Should().Throw<DomainException>();
     }
 
-    [CoversMutation(typeof(WorkspaceMember), nameof(WorkspaceMember.ChangeRole), MutationScenario.Valid, typeof(WorkspaceRole), typeof(Guid), typeof(int), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(WorkspaceMember), nameof(WorkspaceMember.PromoteToOwner), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ChangeRole_LastOwner_ShouldNotMutateRole()
     {
@@ -182,8 +166,6 @@ public class WorkspaceMemberTests
         member.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(WorkspaceMember), nameof(WorkspaceMember.Suspend), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset), typeof(int))]
-    [CoversMutation(typeof(WorkspaceMember), nameof(WorkspaceMember.PromoteToOwner), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Suspend_LastOwner_ShouldNotMutateStatus()
     {
@@ -198,7 +180,6 @@ public class WorkspaceMemberTests
         member.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(WorkspaceMember), nameof(WorkspaceMember.ChangeRole), MutationScenario.Valid, typeof(WorkspaceRole), typeof(Guid), typeof(int), typeof(DateTimeOffset))]
     [Fact]
     public void ChangeRole_EmptyActor_ShouldNotMutateRole()
     {
@@ -213,7 +194,6 @@ public class WorkspaceMemberTests
         member.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(WorkspaceMember), nameof(WorkspaceMember.Suspend), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset), typeof(int))]
     [Fact]
     public void Suspend_EmptyActor_ShouldNotMutateStatus()
     {

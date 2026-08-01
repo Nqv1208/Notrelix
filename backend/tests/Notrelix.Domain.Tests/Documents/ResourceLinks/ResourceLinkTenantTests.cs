@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Documents.ResourceLinks;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Documents.ResourceLinks;
 
@@ -35,7 +34,6 @@ public class ResourceLinkTenantTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(ResourceLink), nameof(ResourceLink.Delete), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldRaiseEvent()
     {
@@ -48,7 +46,6 @@ public class ResourceLinkTenantTests
         link.DomainEvents.Should().ContainSingle(e => e is ResourceLinkDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(ResourceLink), nameof(ResourceLink.Restore), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldRaiseEvent()
     {
@@ -62,8 +59,6 @@ public class ResourceLinkTenantTests
         link.DomainEvents.Should().ContainSingle(e => e is ResourceLinkRestoredDomainEvent);
     }
 
-    [CoversMutation(typeof(ResourceLink), nameof(ResourceLink.Delete), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
-    [CoversMutation(typeof(ResourceLink), nameof(ResourceLink.Delete), MutationScenario.Version, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_IsIdempotent_ShouldNotIncrementVersion()
     {

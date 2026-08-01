@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Identity.Profiles;
 
@@ -60,7 +59,6 @@ public class UserProfileDeleteRestoreTests
         profile.Version.Should().Be(versionBefore + 1);
     }
 
-    [CoversMutation(typeof(UserProfile), nameof(UserProfile.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_AfterDelete_ShouldRestore()
     {
@@ -73,7 +71,6 @@ public class UserProfileDeleteRestoreTests
         profile.IsDeleted.Should().BeFalse();
     }
 
-    [CoversMutation(typeof(UserProfile), nameof(UserProfile.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldRaiseEvent()
     {
@@ -91,7 +88,6 @@ public class UserProfileDeleteRestoreTests
         evt.OccurredAt.Should().Be(_now.AddMinutes(2));
     }
 
-    [CoversMutation(typeof(UserProfile), nameof(UserProfile.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_NotDeleted_ShouldBeNoOp()
     {
@@ -103,7 +99,6 @@ public class UserProfileDeleteRestoreTests
         profile.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(UserProfile), nameof(UserProfile.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldIncrementVersion()
     {

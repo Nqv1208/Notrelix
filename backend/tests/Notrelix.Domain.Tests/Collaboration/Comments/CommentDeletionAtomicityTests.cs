@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Collaboration.Comments;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Collaboration.Comments;
 
@@ -13,7 +12,6 @@ public class CommentDeletionAtomicityTests
 
     private ResourceRef Target => ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
 
-    [CoversMutation(typeof(Comment), nameof(Comment.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldTransitionStatus()
     {
@@ -22,7 +20,6 @@ public class CommentDeletionAtomicityTests
         comment.IsDeleted.Should().BeTrue();
     }
 
-    [CoversMutation(typeof(Comment), nameof(Comment.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldRaiseEvent()
     {
@@ -32,7 +29,6 @@ public class CommentDeletionAtomicityTests
         comment.DomainEvents.Should().ContainSingle(e => e is CommentDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(Comment), nameof(Comment.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldIncrementVersion()
     {
@@ -42,7 +38,6 @@ public class CommentDeletionAtomicityTests
         comment.Version.Should().Be(before + 1);
     }
 
-    [CoversMutation(typeof(Comment), nameof(Comment.Delete), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
@@ -55,7 +50,6 @@ public class CommentDeletionAtomicityTests
         comment.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Comment), nameof(Comment.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Restore_AfterDelete_ShouldRevertStatus()
     {
@@ -66,7 +60,6 @@ public class CommentDeletionAtomicityTests
         comment.IsDeleted.Should().BeFalse();
     }
 
-    [CoversMutation(typeof(Comment), nameof(Comment.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldRaiseEvent()
     {
@@ -77,7 +70,6 @@ public class CommentDeletionAtomicityTests
         comment.DomainEvents.Should().ContainSingle(e => e is CommentRestoredDomainEvent);
     }
 
-    [CoversMutation(typeof(Comment), nameof(Comment.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldIncrementVersion()
     {
@@ -88,7 +80,6 @@ public class CommentDeletionAtomicityTests
         comment.Version.Should().Be(before + 1);
     }
 
-    [CoversMutation(typeof(Comment), nameof(Comment.Restore), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {

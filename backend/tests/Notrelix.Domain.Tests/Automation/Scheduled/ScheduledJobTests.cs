@@ -1,18 +1,10 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Automation.Scheduled;
 
 namespace Notrelix.Domain.Tests.Automation;
 
-[CoversAggregate(typeof(ScheduledJob))]
 public class ScheduledJobTests
 {
-    [CoversMutation(typeof(ScheduledJob), nameof(ScheduledJob.Complete), MutationScenario.Event, typeof(DateTimeOffset))]
-    [CoversMutation(typeof(ScheduledJob), nameof(ScheduledJob.Fail), MutationScenario.Event, typeof(string), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(ScheduledJob), nameof(ScheduledJob.MarkRunCompleted), MutationScenario.Event, typeof(DateTimeOffset), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(ScheduledJob), nameof(ScheduledJob.UpdateSchedule), MutationScenario.Event, typeof(ScheduleDefinition), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(ScheduledJob), nameof(ScheduledJob.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
-    [CoversMutation(typeof(ScheduledJob), nameof(ScheduledJob.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Create_ShouldSucceed_AndRaiseEvent()
     {
@@ -24,7 +16,6 @@ public class ScheduledJobTests
         job.DomainEvents.Should().ContainSingle(e => e is ScheduledJobCreatedDomainEvent);
     }
 
-    [CoversMutation(typeof(ScheduledJob), nameof(ScheduledJob.Pause), MutationScenario.Event, typeof(DateTimeOffset))]
     [Fact]
     public void Pause_ShouldSetStatus_AndRaiseEvent()
     {
@@ -37,7 +28,6 @@ public class ScheduledJobTests
         job.DomainEvents.Should().ContainSingle(e => e is ScheduledJobPausedDomainEvent);
     }
 
-    [CoversMutation(typeof(ScheduledJob), nameof(ScheduledJob.Pause), MutationScenario.NoOp, typeof(DateTimeOffset))]
     [Fact]
     public void Pause_WhenAlreadyPaused_ShouldBeNoOp()
     {
@@ -50,7 +40,6 @@ public class ScheduledJobTests
         job.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(ScheduledJob), nameof(ScheduledJob.Resume), MutationScenario.Valid, typeof(DateTimeOffset))]
     [Fact]
     public void Resume_ShouldSetStatus()
     {
@@ -62,7 +51,6 @@ public class ScheduledJobTests
         job.Status.Should().Be(ScheduledJobStatus.Active);
     }
 
-    [CoversMutation(typeof(ScheduledJob), nameof(ScheduledJob.Pause), MutationScenario.NoOp, typeof(DateTimeOffset))]
     [Fact]
     public void Resume_WhenNotPaused_ShouldBeNoOp()
     {
@@ -73,7 +61,6 @@ public class ScheduledJobTests
         job.Status.Should().Be(ScheduledJobStatus.Active);
     }
 
-    [CoversMutation(typeof(ScheduledJob), nameof(ScheduledJob.Cancel), MutationScenario.Valid, typeof(DateTimeOffset))]
     [Fact]
     public void Cancel_ShouldSetStatus()
     {
@@ -84,7 +71,6 @@ public class ScheduledJobTests
         job.Status.Should().Be(ScheduledJobStatus.Cancelled);
     }
 
-    [CoversMutation(typeof(ScheduledJob), nameof(ScheduledJob.Cancel), MutationScenario.NoOp, typeof(DateTimeOffset))]
     [Fact]
     public void Cancel_WhenAlreadyCancelled_ShouldBeNoOp()
     {

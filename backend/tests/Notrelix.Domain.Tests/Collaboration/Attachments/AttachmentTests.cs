@@ -1,10 +1,8 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Collaboration.Attachments;
 
 namespace Notrelix.Domain.Tests.Collaboration;
 
-[CoversAggregate(typeof(Attachment))]
 public class AttachmentTests
 {
     [Fact]
@@ -33,7 +31,6 @@ public class AttachmentTests
         act.Should().Throw<BusinessRuleException>();
     }
 
-    [CoversMutation(typeof(Attachment), nameof(Attachment.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldSucceed_AndRaiseEvent()
     {
@@ -46,7 +43,6 @@ public class AttachmentTests
         attachment.DomainEvents.Should().ContainSingle(e => e is AttachmentDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(Attachment), nameof(Attachment.Delete), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
@@ -59,7 +55,6 @@ public class AttachmentTests
         attachment.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Attachment), nameof(Attachment.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldSucceed_AndRaiseEvent()
     {
@@ -73,7 +68,6 @@ public class AttachmentTests
         attachment.DomainEvents.Should().ContainSingle(e => e is AttachmentRestoredDomainEvent);
     }
 
-    [CoversMutation(typeof(Attachment), nameof(Attachment.Restore), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {

@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Automation.Rules;
 using Notrelix.Domain.Automation.RulesEngine;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Automation.Rules;
 
@@ -9,7 +8,6 @@ namespace Notrelix.Domain.Tests.Automation.Rules;
 /// Tests for AutomationRule deletion lifecycle.
 /// Invariant: Delete/Restore preserve AutomationRule.Status.
 /// </summary>
-[CoversAggregate(typeof(AutomationRule))]
 public class AutomationRuleDeletionLifecycleTests
 {
     private static AutomationConfiguration CreateValidConfig()
@@ -49,7 +47,6 @@ public class AutomationRuleDeletionLifecycleTests
 
     // ── Delete preserves status ───────────────────────────────────────────
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Delete), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_Draft_PreservesDraft()
     {
@@ -61,7 +58,6 @@ public class AutomationRuleDeletionLifecycleTests
         rule.IsDeleted.Should().BeTrue();
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Delete), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_Active_PreservesActive()
     {
@@ -73,7 +69,6 @@ public class AutomationRuleDeletionLifecycleTests
         rule.IsDeleted.Should().BeTrue();
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Delete), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_Disabled_PreservesDisabled()
     {
@@ -87,7 +82,6 @@ public class AutomationRuleDeletionLifecycleTests
 
     // ── Restore preserves status ──────────────────────────────────────────
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Restore), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_Draft_PreservesDraft()
     {
@@ -100,7 +94,6 @@ public class AutomationRuleDeletionLifecycleTests
         rule.IsDeleted.Should().BeFalse();
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Restore), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_Active_PreservesActive()
     {
@@ -113,7 +106,6 @@ public class AutomationRuleDeletionLifecycleTests
         rule.IsDeleted.Should().BeFalse();
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Restore), MutationScenario.Valid, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_Disabled_PreservesDisabled()
     {
@@ -128,7 +120,6 @@ public class AutomationRuleDeletionLifecycleTests
 
     // ── No-op behavior ────────────────────────────────────────────────────
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Delete), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_AlreadyDeleted_IsNoOp()
     {
@@ -143,7 +134,6 @@ public class AutomationRuleDeletionLifecycleTests
         rule.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(AutomationRule), nameof(AutomationRule.Restore), MutationScenario.NoOp, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_NotDeleted_IsNoOp()
     {

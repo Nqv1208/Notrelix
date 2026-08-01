@@ -1,11 +1,9 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Governance.Templates;
 
 namespace Notrelix.Domain.Tests.Governance;
 
-[CoversAggregate(typeof(PermissionTemplate))]
 public class PermissionTemplateArchiveAtomicityTests
 {
     private static PermissionTemplateDefinition ValidDefinition() =>

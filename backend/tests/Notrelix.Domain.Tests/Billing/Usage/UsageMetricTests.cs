@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Billing.Usage;
 
 namespace Notrelix.Domain.Tests.Billing;
@@ -22,7 +21,6 @@ public class UsageMetricTests
     }
 
     [Fact]
-    [CoversMutation(typeof(UsageMetric), nameof(UsageMetric.Increase), MutationScenario.Valid, typeof(int), typeof(int), typeof(bool), typeof(DateTimeOffset))]
     public void Increase_WithinLimit_ShouldSucceed_AndRaiseEvent()
     {
         var now = DateTimeOffset.UtcNow;
@@ -36,8 +34,6 @@ public class UsageMetricTests
     }
 
     [Fact]
-    [CoversMutation(typeof(UsageMetric), nameof(UsageMetric.Increase), MutationScenario.Invalid, typeof(int), typeof(int), typeof(bool), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(UsageMetric), nameof(UsageMetric.Increase), MutationScenario.Event, typeof(int), typeof(int), typeof(bool), typeof(DateTimeOffset))]
     public void Increase_ExceedingHardLimit_ShouldThrowException_AndRaiseLimitExceededEvent()
     {
         var now = DateTimeOffset.UtcNow;
@@ -50,7 +46,6 @@ public class UsageMetricTests
     }
 
     [Fact]
-    [CoversMutation(typeof(UsageMetric), nameof(UsageMetric.Increase), MutationScenario.Valid, typeof(int), typeof(int), typeof(bool), typeof(DateTimeOffset))]
     public void Increase_ExceedingSoftLimit_ShouldSucceed_AndRaiseBothEvents()
     {
         var now = DateTimeOffset.UtcNow;
@@ -64,8 +59,6 @@ public class UsageMetricTests
     }
 
     [Fact]
-    [CoversMutation(typeof(UsageMetric), nameof(UsageMetric.Decrease), MutationScenario.Valid, typeof(int), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(UsageMetric), nameof(UsageMetric.Decrease), MutationScenario.Invalid, typeof(int), typeof(DateTimeOffset))]
     public void Decrease_ShouldReduceValue_AndNotAllowNegative()
     {
         var now = DateTimeOffset.UtcNow;
@@ -82,7 +75,6 @@ public class UsageMetricTests
     }
 
     [Fact]
-    [CoversMutation(typeof(UsageMetric), nameof(UsageMetric.Reset), MutationScenario.Valid, typeof(UsagePeriod), typeof(DateTimeOffset))]
     public void Reset_ShouldClearValue()
     {
         var now = DateTimeOffset.UtcNow;
@@ -98,7 +90,6 @@ public class UsageMetricTests
     }
 
     [Fact]
-    [CoversMutation(typeof(UsageMetric), nameof(UsageMetric.Decrease), MutationScenario.Invalid, typeof(int), typeof(DateTimeOffset))]
     public void Decrease_WithNonPositiveAmount_ShouldThrow()
     {
         var now = DateTimeOffset.UtcNow;
@@ -110,7 +101,6 @@ public class UsageMetricTests
     }
 
     [Fact]
-    [CoversMutation(typeof(UsageMetric), nameof(UsageMetric.Decrease), MutationScenario.Event, typeof(int), typeof(DateTimeOffset))]
     public void Decrease_ShouldRaiseEvent()
     {
         var now = DateTimeOffset.UtcNow;

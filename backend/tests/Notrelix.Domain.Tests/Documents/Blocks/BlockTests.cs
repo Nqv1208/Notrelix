@@ -1,10 +1,8 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 using Notrelix.Domain.Documents.Blocks;
 
 namespace Notrelix.Domain.Tests.Documents;
 
-[CoversAggregate(typeof(Block))]
 public class BlockTests
 {
     [Fact]
@@ -57,7 +55,6 @@ public class BlockTests
         evt.PageId.Should().Be(pageId);
     }
 
-    [CoversMutation(typeof(Block), nameof(Block.UpdateProperties), MutationScenario.Valid, typeof(BlockProperties), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Create_ShouldApplyDefaultProperties_WhenNoneProvided()
     {
@@ -66,8 +63,6 @@ public class BlockTests
         block.Properties.Should().NotBeNull();
     }
 
-    [CoversMutation(typeof(Block), nameof(Block.UpdateProperties), MutationScenario.Event, typeof(BlockProperties), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(Block), nameof(Block.UpdateContent), MutationScenario.Event, typeof(BlockContent), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateContent_ShouldUpdate_AndRaiseEvent()
     {
@@ -85,8 +80,6 @@ public class BlockTests
         block.DomainEvents.Should().ContainSingle(e => e is BlockContentUpdatedDomainEvent);
     }
 
-    [CoversMutation(typeof(Block), nameof(Block.UpdateProperties), MutationScenario.NoOp, typeof(BlockProperties), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(Block), nameof(Block.UpdateContent), MutationScenario.NoOp, typeof(BlockContent), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateContent_WhenSameContent_ShouldBeNoOp()
     {
@@ -99,9 +92,6 @@ public class BlockTests
         block.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Block), nameof(Block.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
-    [CoversMutation(typeof(Block), nameof(Block.UpdateProperties), MutationScenario.Invalid, typeof(BlockProperties), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(Block), nameof(Block.UpdateContent), MutationScenario.Invalid, typeof(BlockContent), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateContent_WhenDeleted_ShouldThrow()
     {
@@ -112,8 +102,6 @@ public class BlockTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
-    [CoversMutation(typeof(Block), nameof(Block.UpdateProperties), MutationScenario.Event, typeof(BlockProperties), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(Block), nameof(Block.UpdateContent), MutationScenario.Event, typeof(BlockContent), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateProperties_ShouldUpdate_AndRaiseEvent()
     {
@@ -128,8 +116,6 @@ public class BlockTests
         block.DomainEvents.Should().ContainSingle(e => e is BlockPropertiesUpdatedDomainEvent);
     }
 
-    [CoversMutation(typeof(Block), nameof(Block.UpdateProperties), MutationScenario.NoOp, typeof(BlockProperties), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(Block), nameof(Block.UpdateContent), MutationScenario.NoOp, typeof(BlockContent), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateProperties_WhenSame_ShouldBeNoOp()
     {
@@ -142,9 +128,6 @@ public class BlockTests
         block.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Block), nameof(Block.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
-    [CoversMutation(typeof(Block), nameof(Block.UpdateProperties), MutationScenario.Invalid, typeof(BlockProperties), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(Block), nameof(Block.UpdateContent), MutationScenario.Invalid, typeof(BlockContent), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void UpdateProperties_WhenDeleted_ShouldThrow()
     {
@@ -184,7 +167,6 @@ public class BlockTests
         block.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Block), nameof(Block.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void MoveToRoot_WhenDeleted_ShouldThrow()
     {
@@ -195,7 +177,6 @@ public class BlockTests
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
     }
 
-    [CoversMutation(typeof(Block), nameof(Block.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_ShouldSucceed_AndRaiseEvent()
     {
@@ -208,7 +189,6 @@ public class BlockTests
         block.DomainEvents.Should().ContainSingle(e => e is BlockDeletedDomainEvent);
     }
 
-    [CoversMutation(typeof(Block), nameof(Block.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Delete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
@@ -221,7 +201,6 @@ public class BlockTests
         block.DomainEvents.Should().BeEmpty();
     }
 
-    [CoversMutation(typeof(Block), nameof(Block.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Restore_ShouldSucceed_AndRaiseEvent()
     {
@@ -235,8 +214,6 @@ public class BlockTests
         block.DomainEvents.Should().ContainSingle(e => e is BlockRestoredDomainEvent);
     }
 
-    [CoversMutation(typeof(Block), nameof(Block.Restore), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(Block), nameof(Block.Delete), MutationScenario.Lifecycle, typeof(Guid), typeof(DateTimeOffset), typeof(string))]
     [Fact]
     public void Restore_WhenNotDeleted_ShouldBeNoOp()
     {

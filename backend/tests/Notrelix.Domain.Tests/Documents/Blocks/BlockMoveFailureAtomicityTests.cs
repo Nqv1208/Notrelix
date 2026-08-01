@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Notrelix.Domain.Documents.Blocks;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Documents.Blocks;
 
@@ -15,7 +14,6 @@ public class BlockMoveFailureAtomicityTests
     private Block CreateRootBlock() => Block.CreateRoot(_accountId, _workspaceId, _pageId, BlockType.Text,
         BlockContent.Create(JsonValue.EmptyObject()), FractionalIndex.Create("a0"), _actorId, _now);
 
-    [CoversMutation(typeof(Block), nameof(Block.MoveUnder), MutationScenario.FailureAtomicity, typeof(BlockAncestorPath), typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveUnder_WithWrongAccount_ShouldNotMutateRoot()
     {
@@ -27,7 +25,6 @@ public class BlockMoveFailureAtomicityTests
         block.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(Block), nameof(Block.MoveUnder), MutationScenario.FailureAtomicity, typeof(BlockAncestorPath), typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveUnder_WithWrongWorkspace_ShouldNotMutateRoot()
     {
@@ -39,7 +36,6 @@ public class BlockMoveFailureAtomicityTests
         block.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(Block), nameof(Block.MoveUnder), MutationScenario.FailureAtomicity, typeof(BlockAncestorPath), typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveUnder_WithWrongPage_ShouldNotMutateRoot()
     {
@@ -51,7 +47,6 @@ public class BlockMoveFailureAtomicityTests
         block.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(Block), nameof(Block.MoveToRoot), MutationScenario.NoOp, typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveUnder_NoOp_ShouldNotIncrementVersion()
     {
@@ -61,8 +56,6 @@ public class BlockMoveFailureAtomicityTests
         block.Version.Should().Be(before);
     }
 
-    [CoversMutation(typeof(Block), nameof(Block.MoveUnder), MutationScenario.Valid, typeof(BlockAncestorPath), typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(Block), nameof(Block.MoveUnder), MutationScenario.Version, typeof(BlockAncestorPath), typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveUnder_ShouldIncrementVersion()
     {
@@ -74,8 +67,6 @@ public class BlockMoveFailureAtomicityTests
         block.Version.Should().Be(before + 1);
     }
 
-    [CoversMutation(typeof(Block), nameof(Block.MoveToRoot), MutationScenario.Valid, typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
-    [CoversMutation(typeof(Block), nameof(Block.MoveToRoot), MutationScenario.Version, typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveToRoot_ShouldIncrementVersion()
     {
@@ -88,7 +79,6 @@ public class BlockMoveFailureAtomicityTests
         block.Version.Should().Be(before + 1);
     }
 
-    [CoversMutation(typeof(Block), nameof(Block.MoveToRoot), MutationScenario.NoOp, typeof(FractionalIndex), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveToRoot_NoOp_ShouldNotIncrementVersion()
     {

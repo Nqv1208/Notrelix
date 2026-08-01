@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Notrelix.Domain.Analytics.Dashboards;
 using Notrelix.Domain.Analytics.Widgets;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Analytics;
 
@@ -23,7 +22,6 @@ public class DashboardTests
         dashboard.DomainEvents.Should().ContainSingle(e => e is DashboardCreatedDomainEvent);
     }
 
-    [CoversMutation(typeof(Dashboard), nameof(Dashboard.Rename), MutationScenario.Event, typeof(string), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Rename_ShouldUpdateName_AndRaiseEvent()
     {
@@ -37,7 +35,6 @@ public class DashboardTests
         dashboard.DomainEvents.Should().Contain(e => e is DashboardRenamedDomainEvent);
     }
 
-    [CoversMutation(typeof(Dashboard), nameof(Dashboard.ChangeVisibility), MutationScenario.Event, typeof(DashboardVisibility), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void ChangeVisibility_ShouldUpdateVisibility_AndRaiseEvent()
     {
@@ -51,7 +48,6 @@ public class DashboardTests
         dashboard.DomainEvents.Should().Contain(e => e is DashboardVisibilityChangedDomainEvent);
     }
 
-    [CoversMutation(typeof(Dashboard), nameof(Dashboard.AddWidget), MutationScenario.Invalid, typeof(string), typeof(DashboardWidgetType), typeof(JsonValue), typeof(WidgetPosition), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void AddWidget_WithInvalidPosition_ShouldThrowException()
     {
@@ -66,7 +62,6 @@ public class DashboardTests
         act2.Should().Throw<DomainException>().WithMessage("Widget dimensions (W, H) must be positive.");
     }
 
-    [CoversMutation(typeof(Dashboard), nameof(Dashboard.AddWidget), MutationScenario.Event, typeof(string), typeof(DashboardWidgetType), typeof(JsonValue), typeof(WidgetPosition), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void AddWidget_WithValidPosition_ShouldSucceed_AndRaiseEvent()
     {
@@ -84,7 +79,6 @@ public class DashboardTests
         dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetAddedDomainEvent);
     }
 
-    [CoversMutation(typeof(Dashboard), nameof(Dashboard.MoveWidget), MutationScenario.Event, typeof(Guid), typeof(WidgetPosition), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void MoveWidget_ShouldUpdatePosition_AndRaiseEvent()
     {
@@ -103,7 +97,6 @@ public class DashboardTests
         dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetMovedDomainEvent);
     }
 
-    [CoversMutation(typeof(Dashboard), nameof(Dashboard.Archive), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_ShouldSetStatusAndRaiseEvent()
     {
@@ -117,7 +110,6 @@ public class DashboardTests
         dashboard.DomainEvents.Should().Contain(e => e is DashboardArchivedDomainEvent);
     }
 
-    [CoversMutation(typeof(Dashboard), nameof(Dashboard.RemoveWidget), MutationScenario.Event, typeof(Guid), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RemoveWidget_ShouldRemove_AndRaiseEvent()
     {
@@ -135,7 +127,6 @@ public class DashboardTests
         dashboard.DomainEvents.Should().Contain(e => e is DashboardWidgetRemovedDomainEvent);
     }
 
-    [CoversMutation(typeof(Dashboard), nameof(Dashboard.RemoveWidget), MutationScenario.NoOp, typeof(Guid), typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void RemoveWidget_WithMissingWidget_ShouldBeNoOp()
     {
@@ -149,7 +140,6 @@ public class DashboardTests
         dashboard.DomainEvents.Should().NotContain(e => e is DashboardWidgetRemovedDomainEvent);
     }
 
-    [CoversMutation(typeof(Dashboard), nameof(Dashboard.Archive), MutationScenario.Event, typeof(Guid), typeof(DateTimeOffset))]
     [Fact]
     public void Archive_AlreadyArchived_ShouldBeNoOp()
     {
