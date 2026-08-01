@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Notrelix.API.ErrorHandling;
 using Notrelix.API.Middleware;
+using Notrelix.API.OpenApi;
 using Notrelix.API.Options;
 using Notrelix.API.RateLimiting;
 using Notrelix.Infrastructure.Auth.Csrf;
@@ -91,7 +92,14 @@ public static class DependencyInjection
                             "Content-Type",
                             "X-Correlation-Id",
                             "X-Workspace-Id",
-                            "X-Requested-With")
+                            "X-Requested-With",
+                            "Idempotency-Key",
+                            "If-Match")
+                        .WithExposedHeaders(
+                            "X-Correlation-Id",
+                            "ETag",
+                            "Location",
+                            "Retry-After")
                         .WithMethods(
                             "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                         .AllowCredentials();
@@ -130,20 +138,8 @@ public static class DependencyInjection
                 BearerFormat = "JWT",
             });
 
-            options.AddSecurityRequirement(new OpenApiSecurityRequirement
-            {
-                {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference
-                        {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "Bearer",
-                        },
-                    },
-                    Array.Empty<string>()
-                },
-            });
+            // Per-operation security: Bearer applied only to non-anonymous operations
+            options.OperationFilter<SecurityRequirementsOperationFilter>();
         });
         return services;
     }
