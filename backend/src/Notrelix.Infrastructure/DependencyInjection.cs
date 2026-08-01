@@ -25,7 +25,7 @@ public static class DependencyInjection
         services.AddRealtime(configuration);
         services.AddIntegrations(configuration);
         services.AddBilling(configuration, environment);
-        services.AddOperations(configuration);
+        services.AddOperations(configuration, environment);
         services.AddObservability(configuration);
 
         services.AddOAuthInfrastructure(configuration);

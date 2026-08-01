@@ -239,6 +239,7 @@ public partial class ApplicationDbContext
 
     // Ops infrastructure records
     public DbSet<IdempotencyKeyRecord> IdempotencyKeys => Set<IdempotencyKeyRecord>();
+    public DbSet<Notrelix.Infrastructure.Operations.Idempotency.IdempotencyRecord> IdempotencyRecords => Set<Notrelix.Infrastructure.Operations.Idempotency.IdempotencyRecord>();
     public DbSet<ImportJobRecord> ImportJobs => Set<ImportJobRecord>();
     public DbSet<ExportJobRecord> ExportJobs => Set<ExportJobRecord>();
     public DbSet<JobLockRecord> JobLocks => Set<JobLockRecord>();

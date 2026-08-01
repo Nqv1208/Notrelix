@@ -1,5 +1,9 @@
 namespace Notrelix.Infrastructure.Ops;
 
+/// <summary>
+/// Test-only idempotency store that always returns Started.
+/// Must NOT be registered in production — startup validation rejects it.
+/// </summary>
 public sealed class DevNullIdempotencyStore : IIdempotencyStore
 {
     public Task<IdempotencyBeginResult> BeginAsync(
@@ -7,13 +11,13 @@ public sealed class DevNullIdempotencyStore : IIdempotencyStore
         TimeSpan leaseDuration,
         CancellationToken cancellationToken)
         => Task.FromResult(new IdempotencyBeginResult(
-            IdempotencyBeginStatus.Started, "dev-null", null, null));
+            IdempotencyBeginStatus.Started, Guid.NewGuid(), null, null));
 
     public Task CompleteAsync(
         IdempotencyIdentity identity,
-        string leaseToken,
+        Guid leaseToken,
         string serializedResult,
-        string resultType,
+        string resultContract,
         DateTimeOffset expiresAt,
         CancellationToken cancellationToken)
         => Task.CompletedTask;

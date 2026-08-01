@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Notrelix.Application.Common.Context;
 
 namespace Notrelix.Application.Common.Behaviors;
 
@@ -9,13 +10,19 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
     private static readonly TimeSpan ResultExpiry = TimeSpan.FromHours(24);
 
     private readonly IIdempotencyStore _idempotencyStore;
+    private readonly ICurrentTenantContext _tenantContext;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger<IdempotencyBehavior<TRequest, TResponse>> _logger;
 
     public IdempotencyBehavior(
         IIdempotencyStore idempotencyStore,
+        ICurrentTenantContext tenantContext,
+        TimeProvider timeProvider,
         ILogger<IdempotencyBehavior<TRequest, TResponse>> logger)
     {
         _idempotencyStore = idempotencyStore;
+        _tenantContext = tenantContext;
+        _timeProvider = timeProvider;
         _logger = logger;
     }
 
@@ -31,16 +38,16 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         switch (beginResult.Status)
         {
             case IdempotencyBeginStatus.Completed:
-                _logger.LogDebug("Idempotency replay for {Operation} key={Key}", identity.Operation, identity.Key);
-                return DeserializeResult(beginResult.SerializedResult!);
+                _logger.LogDebug("Idempotency replay for {Operation} scope={Scope}", identity.Operation, identity.Scope);
+                return ReplayResult(beginResult);
 
             case IdempotencyBeginStatus.InProgress:
                 throw new ConflictException(
-                    $"Request with idempotency key '{identity.Key}' is already being processed.");
+                    $"Request with idempotency key is already being processed for operation '{identity.Operation}'.");
 
             case IdempotencyBeginStatus.PayloadMismatch:
                 throw new ConflictException(
-                    $"Idempotency key '{identity.Key}' was already used with a different request payload.");
+                    $"Idempotency key was already used with a different request payload for operation '{identity.Operation}'.");
 
             case IdempotencyBeginStatus.Started:
                 break;
@@ -52,33 +59,52 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         var response = await next();
 
         var serialized = JsonSerializer.Serialize(response);
-        var resultType = typeof(TResponse).AssemblyQualifiedName!;
+        var resultContract = typeof(TResponse).FullName!;
 
         await _idempotencyStore.CompleteAsync(
             identity,
             beginResult.LeaseToken,
             serialized,
-            resultType,
-            DateTimeOffset.UtcNow.Add(ResultExpiry),
+            resultContract,
+            _timeProvider.GetUtcNow().Add(ResultExpiry),
             cancellationToken);
 
         return response;
     }
 
-    private static IdempotencyIdentity BuildIdentity(IIdempotentRequest request)
+    private IdempotencyIdentity BuildIdentity(IIdempotentRequest request)
     {
-        var operation = request.GetType().FullName ?? request.GetType().Name;
+        var operation = typeof(TRequest).FullName ?? typeof(TRequest).Name;
 
-        var scope = request switch
-        {
-            IWorkspaceRequest ws => $"workspace:{ws.WorkspaceId}",
-            IAccountRequest => "account",
-            _ => "global"
-        };
+        var scope = BuildQualifiedScope(request);
 
         var requestHash = ComputeRequestHash(request);
 
         return new IdempotencyIdentity(operation, scope, request.IdempotencyKey, requestHash);
+    }
+
+    private string BuildQualifiedScope(IIdempotentRequest request)
+    {
+        if (request is IWorkspaceRequest ws)
+        {
+            return $"workspace:{ws.WorkspaceId}";
+        }
+
+        if (request is IAccountRequest)
+        {
+            var accountId = _tenantContext.AccountId
+                ?? throw new InvalidOperationException("AccountId not resolved for account-scoped idempotent request.");
+            return $"account:{accountId}";
+        }
+
+        if (_tenantContext.IsSystemContext)
+        {
+            return $"system:{typeof(TRequest).Name}";
+        }
+
+        var userId = _tenantContext.UserId
+            ?? throw new InvalidOperationException("UserId not resolved for global idempotent request.");
+        return $"global:user:{userId}";
     }
 
     private static string ComputeRequestHash(object request)
@@ -96,9 +122,18 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         return Convert.ToHexString(bytes)[..32];
     }
 
-    private static TResponse DeserializeResult(string serialized)
+    private static TResponse ReplayResult(IdempotencyBeginResult beginResult)
     {
-        return JsonSerializer.Deserialize<TResponse>(serialized)
+        var expectedContract = typeof(TResponse).FullName!;
+
+        if (beginResult.ResultContract is not null
+            && beginResult.ResultContract != expectedContract)
+        {
+            throw new ConflictException(
+                $"Idempotency result contract mismatch. Expected '{expectedContract}' but stored '{beginResult.ResultContract}'.");
+        }
+
+        return JsonSerializer.Deserialize<TResponse>(beginResult.SerializedResult!)
             ?? throw new InvalidOperationException("Failed to deserialize cached idempotency result.");
     }
 }

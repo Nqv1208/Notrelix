@@ -2,6 +2,7 @@ namespace Notrelix.Application.Common.Idempotency;
 
 /// <summary>
 /// Scoped idempotency identity. The raw client key is never globally unique by itself.
+/// Scope must be tenant/actor qualified (e.g. "workspace:{id}", "account:{id}", "global:user:{id}").
 /// </summary>
 public sealed record IdempotencyIdentity(
     string Operation,
@@ -19,13 +20,14 @@ public enum IdempotencyBeginStatus
 
 public sealed record IdempotencyBeginResult(
     IdempotencyBeginStatus Status,
-    string LeaseToken,
+    Guid LeaseToken,
     string? SerializedResult,
-    string? ResultType);
+    string? ResultContract);
 
 /// <summary>
 /// Provider-independent idempotency store port.
 /// Completion must participate in the same transaction as the business mutation.
+/// The store must NOT call SaveChanges — the caller owns the transaction.
 /// </summary>
 public interface IIdempotencyStore
 {
@@ -36,9 +38,9 @@ public interface IIdempotencyStore
 
     Task CompleteAsync(
         IdempotencyIdentity identity,
-        string leaseToken,
+        Guid leaseToken,
         string serializedResult,
-        string resultType,
+        string resultContract,
         DateTimeOffset expiresAt,
         CancellationToken cancellationToken);
 }

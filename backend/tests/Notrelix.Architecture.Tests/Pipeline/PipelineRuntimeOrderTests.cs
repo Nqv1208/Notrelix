@@ -9,6 +9,7 @@ using Notrelix.Application.Common.Data.Rls;
 using Notrelix.Application.Common.Entitlements;
 using Notrelix.Application.Common.Idempotency;
 using Notrelix.Application.Common.PostCommit;
+using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Common.Requests.Security;
 using Notrelix.Application.Common.Security;
 using Notrelix.Application.Common.Tenancy;
@@ -19,7 +20,7 @@ namespace Notrelix.Architecture.Tests.Pipeline;
 
 public class PipelineRuntimeOrderTests
 {
-    private record TestRequest : IRequest<TestResponse>, IAnonymousRequest;
+    private record TestRequest : IRequest<TestResponse>, IAnonymousRequest, IGlobalRequest;
     private record TestResponse;
 
     [Fact]
@@ -31,6 +32,7 @@ public class PipelineRuntimeOrderTests
         var services = new ServiceCollection();
         services.AddLogging();
 
+        services.AddSingleton(TimeProvider.System);
         services.AddSingleton(Mock.Of<IExecutionContextReader>());
         services.AddSingleton<ICurrentTenantContext, CurrentTenantContext>();
         services.AddSingleton(Mock.Of<IResourceScopeResolver>());
