@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Contracts.Snapshots;
 
 namespace Notrelix.Domain.Tests.Contracts.Snapshots;
 

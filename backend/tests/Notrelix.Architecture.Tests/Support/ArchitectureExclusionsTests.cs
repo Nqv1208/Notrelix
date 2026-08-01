@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Notrelix.Domain.Common;
 
 namespace Notrelix.Architecture.Tests;

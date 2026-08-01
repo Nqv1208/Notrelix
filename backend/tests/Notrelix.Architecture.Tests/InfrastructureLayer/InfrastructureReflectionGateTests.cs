@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using FluentAssertions;
 
 namespace Notrelix.Architecture.Tests.InfrastructureLayer;
 

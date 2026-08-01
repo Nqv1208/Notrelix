@@ -1,5 +1,4 @@
 using System.Reflection;
-using Notrelix.Domain.Common;
 
 namespace Notrelix.Domain.Tests.Contracts.Snapshots;
 

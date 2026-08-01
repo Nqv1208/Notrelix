@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using FluentAssertions;
 using Notrelix.Domain.Common;
 
 namespace Notrelix.Architecture.Tests;

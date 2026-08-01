@@ -1,5 +1,4 @@
 using System.Reflection;
-using FluentAssertions;
 using Notrelix.Domain.Common;
 
 #pragma warning disable CS0649

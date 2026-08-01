@@ -1,8 +1,6 @@
 using FluentAssertions;
-using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement;
 using Notrelix.Domain.WorkManagement.Fields;
-using Notrelix.Domain.WorkManagement.Fields.Events;
 
 namespace Notrelix.Domain.Tests.WorkManagement;
 

@@ -180,6 +180,14 @@ jobs:
           --no-build
           --configuration $DOTNET_CONFIGURATION
 
+      - name: Verify contract tests did not rewrite approved snapshots
+        working-directory: backend
+        run: >
+          git diff
+          --exit-code
+          --
+          tests/Notrelix.Domain.Tests/Snapshots
+
       - name: Application tests
         working-directory: backend
         run: >

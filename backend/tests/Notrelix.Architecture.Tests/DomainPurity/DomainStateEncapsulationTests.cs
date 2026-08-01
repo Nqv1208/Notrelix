@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.Reflection;
-using FluentAssertions;
 using Notrelix.Domain.Common;
 
 namespace Notrelix.Architecture.Tests;
