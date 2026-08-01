@@ -17,7 +17,11 @@ public class BoardFieldConfiguration : IEntityTypeConfiguration<BoardField>
         builder.Property(x => x.BoardId).HasColumnName("board_id").IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
         builder.Property(x => x.Type).HasColumnName("type").HasConversion<string>().IsRequired().HasMaxLength(50);
-        builder.Property(x => x.DefaultValue).HasColumnName("default_value");
+        builder.Property(x => x.DefaultValue)
+            .HasColumnName("default_value")
+            .HasConversion(
+                v => v == null ? null : v.Data.Value,
+                v => v == null ? null : FieldValue.Create(JsonValue.Create(v)));
         builder.Property(x => x.IsSystem).HasColumnName("is_system");
 
         builder.OwnsOne(x => x.Settings, settings =>
@@ -31,8 +35,6 @@ public class BoardFieldConfiguration : IEntityTypeConfiguration<BoardField>
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
-        builder.Property(x => x.RestoredAt).HasColumnName("restored_at");
-        builder.Property(x => x.RestoredBy).HasColumnName("restored_by");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");

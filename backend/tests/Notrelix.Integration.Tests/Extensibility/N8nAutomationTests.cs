@@ -60,7 +60,7 @@ public class N8nAutomationTests : IAsyncLifetime
         var group = Notrelix.Domain.WorkManagement.BoardGroups.BoardGroup.Create(Guid.NewGuid(), workspace.Id, board.Id, "Todo", Notrelix.Domain.SharedKernel.Color.Create("#808080"), Notrelix.Domain.SharedKernel.Ordering.FractionalIndex.Initial(), ownerId, Now);
         context.BoardGroups.Add(group);
 
-        var item = BoardItem.Create(Guid.NewGuid(), workspace.Id, board.Id, group.Id, "Task", Notrelix.Domain.SharedKernel.Ordering.FractionalIndex.Initial(), ownerId, Now);
+        var item = BoardItem.CreateRoot(Guid.NewGuid(), workspace.Id, board.Id, group.Id, "Task", Notrelix.Domain.SharedKernel.Ordering.FractionalIndex.Initial(), ownerId, Now);
         context.BoardItems.Add(item);
 
         var trigger = AutomationTriggerDefinition.Create("ItemAssigned");

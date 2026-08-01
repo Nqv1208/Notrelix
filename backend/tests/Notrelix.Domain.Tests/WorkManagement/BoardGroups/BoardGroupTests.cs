@@ -21,7 +21,7 @@ public class BoardGroupTests
     }
 
     [Fact]
-    public void SoftDelete_ShouldRaiseEvent_WithBoardId()
+    public void Delete_ShouldRaiseEvent_WithBoardId()
     {
         var accountId = Guid.NewGuid();
         var workspaceId = Guid.NewGuid();
@@ -29,9 +29,9 @@ public class BoardGroupTests
         var group = BoardGroup.Create(accountId, workspaceId, boardId, "Group", Color.Create("#000000"), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)group).ClearDomainEvents();
 
-        group.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        group.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        var deletedEvent = group.DomainEvents.OfType<BoardGroupSoftDeletedDomainEvent>().Single();
+        var deletedEvent = group.DomainEvents.OfType<BoardGroupDeletedDomainEvent>().Single();
         deletedEvent.BoardId.Should().Be(boardId);
         deletedEvent.WorkspaceId.Should().Be(workspaceId);
     }
@@ -40,7 +40,7 @@ public class BoardGroupTests
     public void Restore_ShouldClearIsDeleted_AndRaiseEvent()
     {
         var group = BoardGroup.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Group", Color.Create("#000000"), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        group.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        group.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         group.IsDeleted.Should().BeTrue();
         ((IHasDomainEvents)group).ClearDomainEvents();
 
@@ -78,7 +78,7 @@ public class BoardGroupTests
     public void Archive_ShouldThrow_WhenDeleted()
     {
         var group = BoardGroup.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Group", Color.Create("#000000"), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
-        group.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        group.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         Action act = () => group.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -114,7 +114,7 @@ public class BoardGroupTests
     {
         var group = BoardGroup.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Group", Color.Create("#000000"), FractionalIndex.Create("a0"), Guid.NewGuid(), DateTimeOffset.UtcNow);
         group.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        group.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        group.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         Action act = () => group.Unarchive(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

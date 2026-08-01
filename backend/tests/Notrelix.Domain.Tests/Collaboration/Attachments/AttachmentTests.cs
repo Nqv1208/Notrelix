@@ -32,25 +32,25 @@ public class AttachmentTests
     }
 
     [Fact]
-    public void SoftDelete_ShouldSucceed_AndRaiseEvent()
+    public void Delete_ShouldSucceed_AndRaiseEvent()
     {
         var attachment = CreateAttachment();
         ((IHasDomainEvents)attachment).ClearDomainEvents();
 
-        attachment.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        attachment.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         attachment.IsDeleted.Should().BeTrue();
         attachment.DomainEvents.Should().ContainSingle(e => e is AttachmentDeletedDomainEvent);
     }
 
     [Fact]
-    public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
+    public void Delete_WhenAlreadyDeleted_ShouldBeNoOp()
     {
         var attachment = CreateAttachment();
-        attachment.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        attachment.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)attachment).ClearDomainEvents();
 
-        attachment.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        attachment.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         attachment.DomainEvents.Should().BeEmpty();
     }
@@ -59,7 +59,7 @@ public class AttachmentTests
     public void Restore_ShouldSucceed_AndRaiseEvent()
     {
         var attachment = CreateAttachment();
-        attachment.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        attachment.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)attachment).ClearDomainEvents();
 
         attachment.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);

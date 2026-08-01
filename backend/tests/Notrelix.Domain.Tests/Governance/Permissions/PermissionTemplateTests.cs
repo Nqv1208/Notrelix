@@ -21,7 +21,7 @@ public class PermissionTemplateTests
         template.Status.Should().Be(PermissionTemplateStatus.Active);
         template.Scope.Should().Be(PermissionTemplateScope.System);
         template.WorkspaceId.Should().BeNull();
-        template.DomainEvents.Should().ContainSingle(e => e is PermissionTemplateCreatedDomainEvent);
+        template.DomainEvents.Should().ContainSingle(e => e is SystemPermissionTemplateCreatedDomainEvent);
     }
 
     [Fact]

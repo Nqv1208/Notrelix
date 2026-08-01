@@ -5,7 +5,7 @@ using static Notrelix.Domain.Analytics.AnalyticsRuleCodes;
 
 namespace Notrelix.Domain.Analytics.Dashboards;
 
-public class Dashboard : SoftDeletableAggregateRoot, IWorkspaceScoped
+public class Dashboard : AggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -42,32 +42,37 @@ public class Dashboard : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
+        EnsureActive();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(name);
 
         var normalizedName = name.Trim();
         if (Name == normalizedName) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Name = normalizedName;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new DashboardRenamedDomainEvent(AccountId, WorkspaceId, Id, Name, updatedBy, updatedAt));
     }
 
     public void ChangeVisibility(DashboardVisibility visibility, Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
+        EnsureActive();
+        Guard.NotEmpty(updatedBy);
         if (Visibility == visibility) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Visibility = visibility;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new DashboardVisibilityChangedDomainEvent(AccountId, WorkspaceId, Id, Visibility, updatedBy, updatedAt));
     }
 
     public void AddWidget(string title, DashboardWidgetType type, JsonValue config, WidgetPosition position, Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
+        EnsureActive();
+        Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(title);
         WidgetRules.ValidatePosition(position);
 
@@ -75,27 +80,33 @@ public class Dashboard : SoftDeletableAggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(Analytics_Dashboard_WidgetLimitExceeded, $"Cannot add more than {MaxWidgets} widgets to a dashboard.");
 
         var widget = DashboardWidget.Create(AccountId, WorkspaceId, Id, title, type, config, position);
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         _widgets.Add(widget);
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new DashboardWidgetAddedDomainEvent(AccountId, WorkspaceId, Id, widget.Id, updatedBy, updatedAt));
     }
 
     public void RemoveWidget(Guid widgetId, Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
+        EnsureActive();
+        Guard.NotEmpty(updatedBy);
         var widget = _widgets.FirstOrDefault(w => w.Id == widgetId);
         if (widget is null) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         _widgets.Remove(widget);
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new DashboardWidgetRemovedDomainEvent(AccountId, WorkspaceId, Id, widgetId, updatedBy, updatedAt));
     }
 
     public void MoveWidget(Guid widgetId, WidgetPosition newPosition, Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
+        EnsureActive();
+        Guard.NotEmpty(updatedBy);
+        WidgetRules.ValidatePosition(newPosition);
+
         var widget = _widgets.FirstOrDefault(w => w.Id == widgetId);
         if (widget is null)
         {
@@ -104,29 +115,31 @@ public class Dashboard : SoftDeletableAggregateRoot, IWorkspaceScoped
 
         if (widget.Position == newPosition) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         widget.UpdatePosition(newPosition);
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new DashboardWidgetMovedDomainEvent(AccountId, WorkspaceId, Id, widgetId, newPosition, updatedBy, updatedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
-        if (IsDeleted) return;
+        if (Status == DashboardStatus.Archived) return;
+
+        var pending = PrepareAuditUpdate(archivedBy, archivedAt);
         Status = DashboardStatus.Archived;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new DashboardDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
+        RaiseDomainEvent(new DashboardArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
     }
 
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    private void EnsureActive()
     {
-        if (!IsDeleted) return;
-        Status = DashboardStatus.Active;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
-        IncrementVersion();
-        RaiseDomainEvent(new DashboardRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+        if (Status != DashboardStatus.Active)
+        {
+            throw new BusinessRuleException(
+                Analytics_Dashboard_ArchivedReadOnly,
+                "Archived dashboards cannot be modified.");
+        }
     }
 }

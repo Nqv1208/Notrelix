@@ -24,12 +24,6 @@ public class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
             p.Property(m => m.Currency).HasColumnName("amount_currency").IsRequired().HasMaxLength(3).HasDefaultValue("USD");
         });
 
-        builder.Ignore(x => x.IsDeleted);
-        builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
-        builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
-        builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
-        builder.Property(x => x.RestoredAt).HasColumnName("restored_at");
-        builder.Property(x => x.RestoredBy).HasColumnName("restored_by");
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");

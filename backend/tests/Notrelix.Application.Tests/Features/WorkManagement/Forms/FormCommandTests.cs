@@ -2,7 +2,7 @@ using Notrelix.Application.Features.WorkManagement.Forms.Commands.CreateForm;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.UpdateFormDetails;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.PublishForm;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.CloseForm;
-using Notrelix.Application.Features.WorkManagement.Forms.Commands.SoftDeleteForm;
+using Notrelix.Application.Features.WorkManagement.Forms.Commands.DeleteForm;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.RestoreForm;
 using Notrelix.Domain.WorkManagement.Forms;
 
@@ -210,27 +210,27 @@ public class FormCommandTests : WorkManagementHandlerTestBase
         }
     }
 
-    // ── SoftDeleteForm ───────────────────────────────────────
+    // ── DeleteForm ───────────────────────────────────────
 
-    public class SoftDeleteFormTests : FormCommandTests
+    public class DeleteFormTests : FormCommandTests
     {
-        private readonly SoftDeleteFormCommandHandler _handler;
+        private readonly DeleteFormCommandHandler _handler;
 
-        public SoftDeleteFormTests()
+        public DeleteFormTests()
         {
-            _handler = new SoftDeleteFormCommandHandler(
+            _handler = new DeleteFormCommandHandler(
                 DbContextMock.Object,
                 RequestContextMock.Object,
                 DateTimeProviderMock.Object);
         }
 
         [Fact]
-        public async Task Handle_ValidCommand_SoftDeletesForm()
+        public async Task Handle_ValidCommand_DeletesForm()
         {
             var form = CreateForm();
             SetupForms(form);
 
-            var command = new SoftDeleteFormCommand(form.Id);
+            var command = new DeleteFormCommand(form.Id);
 
             var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -240,7 +240,7 @@ public class FormCommandTests : WorkManagementHandlerTestBase
         [Fact]
         public async Task Handle_FormNotFound_ThrowsNotFoundException()
         {
-            var command = new SoftDeleteFormCommand(Guid.CreateVersion7());
+            var command = new DeleteFormCommand(Guid.CreateVersion7());
 
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<NotFoundException>();
@@ -252,7 +252,7 @@ public class FormCommandTests : WorkManagementHandlerTestBase
             var form = CreateForm(status: FormStatus.Deleted);
             SetupForms(form);
 
-            var command = new SoftDeleteFormCommand(form.Id);
+            var command = new DeleteFormCommand(form.Id);
 
             var result = await _handler.Handle(command, CancellationToken.None);
 

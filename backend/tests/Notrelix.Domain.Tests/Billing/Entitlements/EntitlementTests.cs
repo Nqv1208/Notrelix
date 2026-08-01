@@ -67,16 +67,6 @@ public class EntitlementTests
     }
 
     [Fact]
-    public void ChangeLimit_WhenDeleted_ShouldThrow()
-    {
-        var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
-        entitlement.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        var act = () => entitlement.ChangeLimit(20, Guid.NewGuid(), DateTimeOffset.UtcNow);
-        act.Should().Throw<DomainException>().WithMessage("*deleted*");
-    }
-
-    [Fact]
     public void Disable_ShouldTransition_AndRaiseEvent()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -186,15 +176,6 @@ public class EntitlementTests
     }
 
     [Fact]
-    public void IsActiveAt_WhenDeleted_ShouldReturnFalse()
-    {
-        var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
-        entitlement.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        entitlement.IsActiveAt(DateTimeOffset.UtcNow).Should().BeFalse();
-    }
-
-    [Fact]
     public void IsActiveAt_WhenDisabled_ShouldReturnFalse()
     {
         var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
@@ -203,51 +184,4 @@ public class EntitlementTests
         entitlement.IsActiveAt(DateTimeOffset.UtcNow).Should().BeFalse();
     }
 
-    [Fact]
-    public void SoftDelete_ShouldMarkDeleted_AndRaiseEvent()
-    {
-        var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
-        ((IHasDomainEvents)entitlement).ClearDomainEvents();
-
-        entitlement.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        entitlement.IsDeleted.Should().BeTrue();
-        entitlement.DomainEvents.Should().Contain(e => e is EntitlementSoftDeletedDomainEvent);
-    }
-
-    [Fact]
-    public void SoftDelete_WhenAlreadyDeleted_ShouldBeNoOp()
-    {
-        var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
-        entitlement.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        ((IHasDomainEvents)entitlement).ClearDomainEvents();
-
-        entitlement.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        entitlement.DomainEvents.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void Restore_ShouldRestore_AndRaiseEvent()
-    {
-        var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
-        entitlement.SoftDelete(Guid.NewGuid(), DateTimeOffset.UtcNow);
-        ((IHasDomainEvents)entitlement).ClearDomainEvents();
-
-        entitlement.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        entitlement.IsDeleted.Should().BeFalse();
-        entitlement.DomainEvents.Should().Contain(e => e is EntitlementRestoredDomainEvent);
-    }
-
-    [Fact]
-    public void Restore_WhenNotDeleted_ShouldBeNoOp()
-    {
-        var entitlement = Entitlement.Create(Guid.NewGuid(), SampleFeature, 10, EntitlementSource.Subscription, DateTimeOffset.UtcNow);
-        ((IHasDomainEvents)entitlement).ClearDomainEvents();
-
-        entitlement.Restore(Guid.NewGuid(), DateTimeOffset.UtcNow);
-
-        entitlement.DomainEvents.Should().BeEmpty();
-    }
 }

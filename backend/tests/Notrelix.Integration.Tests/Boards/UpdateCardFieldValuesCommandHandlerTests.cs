@@ -64,7 +64,7 @@ public class UpdateBoardItemFieldValuesCommandHandlerTests : IAsyncLifetime
         var workspaceMember = WorkspaceMember.Create(Guid.NewGuid(), workspace.Id, userId, userRole, ownerId, now);
         var board = Board.Create(Guid.NewGuid(), workspace.Id, ownerId, "Board", null, now);
         var group = BoardGroup.Create(Guid.NewGuid(), workspace.Id, board.Id, "Todo", Color.Create("#808080"), FractionalIndex.Create("a0"), ownerId, now);
-        var boardItem = BoardItem.Create(Guid.NewGuid(), workspace.Id, board.Id, group.Id, "Task", FractionalIndex.Create("a0"), ownerId, now);
+        var boardItem = BoardItem.CreateRoot(Guid.NewGuid(), workspace.Id, board.Id, group.Id, "Task", FractionalIndex.Create("a0"), ownerId, now);
         var statusField = BoardField.Create(Guid.NewGuid(), workspace.Id, board.Id, "Status", FieldType.Status,
             FieldSettings.Create(Notrelix.Domain.SharedKernel.JsonValue.Create("{\"transitions\": [{\"from\": \"todo\", \"to\": [\"done\"]}]}")),
             FractionalIndex.Create("a0"), ownerId, now);

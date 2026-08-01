@@ -18,8 +18,7 @@ public sealed class DatabaseFeatureGateChecker : IFeatureGateChecker
         var entitlement = await _db.Entitlements
             .Where(e => e.AccountId == accountId
                 && e.Feature.Code == featureCode
-                && e.Status == EntitlementStatus.Active
-                && !e.IsDeleted)
+                && e.Status == EntitlementStatus.Active)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (entitlement is null)

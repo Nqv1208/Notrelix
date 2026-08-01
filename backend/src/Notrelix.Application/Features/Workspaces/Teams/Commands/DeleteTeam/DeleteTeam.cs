@@ -33,7 +33,7 @@ public class DeleteTeamCommandHandler : IRequestHandler<DeleteTeamCommand, Resul
         if (team is null)
             throw new NotFoundException(nameof(Team), request.TeamId);
 
-        team.SoftDelete(_requestContext.UserId, _dateTimeProvider.UtcNow);
+        team.Delete(_requestContext.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }

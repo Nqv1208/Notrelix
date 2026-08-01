@@ -23,7 +23,7 @@ public static class MapFormEndpoints
         group.MapUpdateFormDetails();
         group.MapPublishForm();
         group.MapCloseForm();
-        group.MapSoftDeleteForm();
+        group.MapDeleteForm();
         group.MapRestoreForm();
         group.MapAddFormQuestion();
         group.MapUpdateFormQuestion();

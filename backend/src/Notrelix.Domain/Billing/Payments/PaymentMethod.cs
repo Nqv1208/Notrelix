@@ -2,7 +2,7 @@ using Notrelix.Domain.Billing.Payments.Events;
 
 namespace Notrelix.Domain.Billing.Payments;
 
-public class PaymentMethod : SoftDeletableAggregateRoot, IWorkspaceScoped
+public class PaymentMethod : AggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -41,57 +41,45 @@ public class PaymentMethod : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void SetAsDefault(Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (IsDefault) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         IsDefault = true;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 
     public void UnsetAsDefault(Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (!IsDefault) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         IsDefault = false;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 
     public void Deactivate(Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (Status == PaymentMethodStatus.Expired) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = PaymentMethodStatus.Expired;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 
     public void Reactivate(Guid updatedBy, DateTimeOffset updatedAt)
     {
-        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
         if (Status == PaymentMethodStatus.Active) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Status = PaymentMethodStatus.Active;
-        SetAuditOnUpdate(updatedBy, updatedAt);
-        IncrementVersion();
-    }
-
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        if (IsDeleted) return;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
-        IncrementVersion();
-    }
-
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        if (!IsDeleted) return;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
     }
 }

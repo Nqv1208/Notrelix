@@ -35,7 +35,6 @@ using Notrelix.Application.Features.Workspaces.Settings.Commands.UpdateWorkspace
 using Notrelix.Application.Features.Workspaces.Members.Commands.AddMember;
 using Notrelix.Application.Features.Workspaces.Members.Commands.SuspendMember;
 using Notrelix.Application.Features.Workspaces.Members.Commands.ActivateMember;
-using Notrelix.Application.Features.Workspaces.Members.Commands.RestoreMember;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.DeclineInvitation;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.ChangeInvitationRole;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.CreateSpace;
@@ -426,7 +425,6 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             MockWorkspaceHandler<AddMemberCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<SuspendMemberCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<ActivateMemberCommand, Result>(services, Result.Success());
-            MockWorkspaceHandler<RestoreMemberCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<DeclineInvitationCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<ChangeInvitationRoleCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<CreateSpaceCommand, Result<Guid>>(services, Result<Guid>.Success(Guid.NewGuid()));

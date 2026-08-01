@@ -33,7 +33,7 @@ public class PlanLimit : Entity
     }
 }
 
-public class Plan : SoftDeletableAggregateRoot
+public class Plan : AggregateRoot
 {
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
@@ -96,21 +96,5 @@ public class Plan : SoftDeletableAggregateRoot
         Status = PlanStatus.Deprecated;
         IncrementVersion();
         RaiseDomainEvent(new PlanDeprecatedDomainEvent(Id, deprecatedAt));
-    }
-
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        if (IsDeleted) return;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        IncrementVersion();
-        RaiseDomainEvent(new PlanSoftDeletedDomainEvent(Id, deletedBy, deletedAt));
-    }
-
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        if (!IsDeleted) return;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        IncrementVersion();
-        RaiseDomainEvent(new PlanRestoredDomainEvent(Id, restoredBy, restoredAt));
     }
 }

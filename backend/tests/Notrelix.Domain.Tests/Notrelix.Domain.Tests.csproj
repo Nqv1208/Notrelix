@@ -4,6 +4,7 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <RootNamespace>Notrelix.Domain.Tests</RootNamespace>
+    <DomainTestProjectDirectory>$(MSBuildProjectDirectory)</DomainTestProjectDirectory>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,6 +26,21 @@
     <ProjectReference Include="..\..\src\Notrelix.Domain\Notrelix.Domain.csproj" />
     <ProjectReference Include="..\Notrelix.Testing.Core\Notrelix.Testing.Core.csproj" />
     <ProjectReference Include="..\Notrelix.Testing.Domain\Notrelix.Testing.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None
+        Update="Snapshots\**\*.approved.txt"
+        CopyToOutputDirectory="PreserveNewest"
+        CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute
+        Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>DomainTestProjectDirectory</_Parameter1>
+      <_Parameter2>$(DomainTestProjectDirectory)</_Parameter2>
+    </AssemblyAttribute>
   </ItemGroup>
 
 </Project>

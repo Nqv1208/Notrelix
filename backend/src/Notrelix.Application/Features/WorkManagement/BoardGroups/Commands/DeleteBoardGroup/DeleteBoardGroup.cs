@@ -35,7 +35,7 @@ public class DeleteBoardGroupCommandHandler : IRequestHandler<DeleteBoardGroupCo
         if (group is null) throw new NotFoundException(nameof(BoardGroup), request.GroupId);
 
         var now = _dateTimeProvider.UtcNow;
-        group.SoftDelete(_currentUser.UserId, now);
+        group.Delete(_currentUser.UserId, now);
         return Result.Success();
     }
 }

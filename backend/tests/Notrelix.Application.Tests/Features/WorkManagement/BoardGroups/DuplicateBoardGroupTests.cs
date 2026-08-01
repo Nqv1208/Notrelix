@@ -45,7 +45,7 @@ public class DuplicateBoardGroupTests : WorkManagementHandlerTestBase
     {
         var board = CreateBoard();
         var group = CreateBoardGroup(boardId: board.Id);
-        group.SoftDelete(TestUserId, TestNow);
+        group.Delete(TestUserId, TestNow);
         SetupBoards(board);
         SetupBoardGroups(group);
 

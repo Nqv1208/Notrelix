@@ -85,7 +85,7 @@ public class ErrorEventTests
     public void MarkError_WhenDeleted_ShouldThrow()
     {
         var connection = IntegrationConnection.Create(AccountId, WorkspaceId, IntegrationProvider.Slack, Actor, Now);
-        connection.SoftDelete(Actor, Now);
+        connection.Delete(Actor, Now);
 
         var act = () => connection.MarkError("error", Actor, Now);
 

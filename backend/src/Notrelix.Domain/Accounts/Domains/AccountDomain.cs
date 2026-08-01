@@ -43,9 +43,10 @@ public class AccountDomain : AggregateRoot, IAccountScoped
     public void Verify(DateTimeOffset verifiedAt, Guid verifiedBy)
     {
         if (VerificationStatus == DomainVerificationStatus.Verified) return;
+        var pending = PrepareAuditUpdate(verifiedBy, verifiedAt);
         VerificationStatus = DomainVerificationStatus.Verified;
         VerifiedAt = verifiedAt;
-        SetAuditOnUpdate(verifiedBy, verifiedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AccountDomainVerifiedDomainEvent(AccountId, Id, Domain, verifiedAt));
     }
@@ -53,8 +54,9 @@ public class AccountDomain : AggregateRoot, IAccountScoped
     public void Reject(Guid rejectedBy, DateTimeOffset rejectedAt)
     {
         if (VerificationStatus == DomainVerificationStatus.Rejected) return;
+        var pending = PrepareAuditUpdate(rejectedBy, rejectedAt);
         VerificationStatus = DomainVerificationStatus.Rejected;
-        SetAuditOnUpdate(rejectedBy, rejectedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AccountDomainRejectedDomainEvent(AccountId, Id, Domain, rejectedAt));
     }
@@ -64,8 +66,9 @@ public class AccountDomain : AggregateRoot, IAccountScoped
         if (AutoJoinEnabled) return;
         if (VerificationStatus != DomainVerificationStatus.Verified)
             throw new BusinessRuleException(AccountRuleCodes.Accounts_Domain_CannotEnableAutoJoinUnverified, "Cannot enable auto-join for an unverified domain.");
+        var pending = PrepareAuditUpdate(enabledBy, enabledAt);
         AutoJoinEnabled = true;
-        SetAuditOnUpdate(enabledBy, enabledAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AccountDomainAutoJoinEnabledDomainEvent(AccountId, Id, Domain, enabledAt));
     }
@@ -73,8 +76,9 @@ public class AccountDomain : AggregateRoot, IAccountScoped
     public void DisableAutoJoin(Guid disabledBy, DateTimeOffset disabledAt)
     {
         if (!AutoJoinEnabled) return;
+        var pending = PrepareAuditUpdate(disabledBy, disabledAt);
         AutoJoinEnabled = false;
-        SetAuditOnUpdate(disabledBy, disabledAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AccountDomainAutoJoinDisabledDomainEvent(AccountId, Id, Domain, disabledAt));
     }

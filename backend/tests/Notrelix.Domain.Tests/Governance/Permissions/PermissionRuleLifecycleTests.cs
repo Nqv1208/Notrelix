@@ -61,18 +61,18 @@ public class PermissionRuleLifecycleTests
     }
 
     [Fact]
-    public void PermissionRule_SoftDelete_ShouldRaiseEvent()
+    public void PermissionRule_Delete_ShouldRaiseEvent()
     {
         var rule = PermissionRule.Create(Guid.NewGuid(), WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
         ((IHasDomainEvents)rule).ClearDomainEvents();
         var version = rule.Version;
 
-        rule.SoftDelete(Actor, Now);
+        rule.Delete(Actor, Now);
 
         rule.IsDeleted.Should().BeTrue();
         rule.Version.Should().Be(version + 1);
-        rule.DomainEvents.Should().ContainSingle(e => e is PermissionRuleSoftDeletedDomainEvent);
-        var evt = (PermissionRuleSoftDeletedDomainEvent)rule.DomainEvents.Single(e => e is PermissionRuleSoftDeletedDomainEvent);
+        rule.DomainEvents.Should().ContainSingle(e => e is PermissionRuleDeletedDomainEvent);
+        var evt = (PermissionRuleDeletedDomainEvent)rule.DomainEvents.Single(e => e is PermissionRuleDeletedDomainEvent);
         evt.RuleId.Should().Be(rule.Id);
     }
 
@@ -80,7 +80,7 @@ public class PermissionRuleLifecycleTests
     public void PermissionRule_Restore_ShouldRaiseEvent()
     {
         var rule = PermissionRule.Create(Guid.NewGuid(), WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
-        rule.SoftDelete(Actor, Now);
+        rule.Delete(Actor, Now);
         ((IHasDomainEvents)rule).ClearDomainEvents();
         var version = rule.Version;
 
@@ -94,17 +94,17 @@ public class PermissionRuleLifecycleTests
     }
 
     [Fact]
-    public void PermissionRule_SoftDelete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
+    public void PermissionRule_Delete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
         var rule = PermissionRule.Create(Guid.NewGuid(), WsA, PermissionScopeType.Workspace, ResourceType.Board, null, PermissionSubjectType.User, Actor, null, PermissionAction.UpdateItem, PermissionEffect.Allow, Actor, Now);
-        rule.SoftDelete(Actor, Now);
+        rule.Delete(Actor, Now);
         ((IHasDomainEvents)rule).ClearDomainEvents();
         var version = rule.Version;
 
-        rule.SoftDelete(Actor, Now);
+        rule.Delete(Actor, Now);
 
         rule.Version.Should().Be(version);
-        rule.DomainEvents.Should().NotContain(e => e is PermissionRuleSoftDeletedDomainEvent);
+        rule.DomainEvents.Should().NotContain(e => e is PermissionRuleDeletedDomainEvent);
     }
 
     [Fact]

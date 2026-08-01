@@ -36,7 +36,7 @@ public class DeleteBoardViewCommandHandler : IRequestHandler<DeleteBoardViewComm
             throw new NotFoundException(nameof(BoardView), request.ViewId);
 
         var now = _dateTimeProvider.UtcNow;
-        view.SoftDelete(_currentUser.UserId, now);
+        view.Delete(_currentUser.UserId, now);
         return Result.Success();
     }
 }

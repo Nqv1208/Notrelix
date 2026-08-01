@@ -4,7 +4,7 @@ using Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSavedFil
 using Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSavedFilterFilters;
 using Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSavedFilterSorts;
 using Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSavedFilterGroup;
-using Notrelix.Application.Features.WorkManagement.Views.Commands.SoftDeleteSavedFilter;
+using Notrelix.Application.Features.WorkManagement.Views.Commands.DeleteSavedFilter;
 using Notrelix.Application.Features.WorkManagement.Views.Commands.RestoreSavedFilter;
 using DomainException = Notrelix.Domain.Common.Exceptions.DomainException;
 
@@ -326,27 +326,27 @@ public class SavedFilterCommandTests : WorkManagementHandlerTestBase
         }
     }
 
-    // ── SoftDeleteSavedFilter ──────────────────────────────────
+    // ── DeleteSavedFilter ──────────────────────────────────
 
-    public class SoftDeleteSavedFilterTests : SavedFilterCommandTests
+    public class DeleteSavedFilterTests : SavedFilterCommandTests
     {
-        private readonly SoftDeleteSavedFilterCommandHandler _handler;
+        private readonly DeleteSavedFilterCommandHandler _handler;
 
-        public SoftDeleteSavedFilterTests()
+        public DeleteSavedFilterTests()
         {
-            _handler = new SoftDeleteSavedFilterCommandHandler(
+            _handler = new DeleteSavedFilterCommandHandler(
                 DbContextMock.Object,
                 RequestContextMock.Object,
                 DateTimeProviderMock.Object);
         }
 
         [Fact]
-        public async Task Handle_ValidCommand_SoftDeletesFilter()
+        public async Task Handle_ValidCommand_DeletesFilter()
         {
             var filter = CreateSavedFilter();
             SetupSavedFilters(filter);
 
-            var command = new SoftDeleteSavedFilterCommand(filter.Id, 0);
+            var command = new DeleteSavedFilterCommand(filter.Id, 0);
 
             var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -356,7 +356,7 @@ public class SavedFilterCommandTests : WorkManagementHandlerTestBase
         [Fact]
         public async Task Handle_FilterNotFound_ThrowsNotFoundException()
         {
-            var command = new SoftDeleteSavedFilterCommand(Guid.CreateVersion7(), 0);
+            var command = new DeleteSavedFilterCommand(Guid.CreateVersion7(), 0);
 
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<NotFoundException>();
@@ -368,7 +368,7 @@ public class SavedFilterCommandTests : WorkManagementHandlerTestBase
             var filter = CreateSavedFilter(isDeleted: true);
             SetupSavedFilters(filter);
 
-            var command = new SoftDeleteSavedFilterCommand(filter.Id, 0);
+            var command = new DeleteSavedFilterCommand(filter.Id, 0);
 
             var result = await _handler.Handle(command, CancellationToken.None);
 

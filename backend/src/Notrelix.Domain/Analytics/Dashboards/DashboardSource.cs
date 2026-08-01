@@ -57,9 +57,11 @@ public class DashboardSource : AggregateRoot, IWorkspaceScoped
     public void UpdateFilter(JsonValue newFilter, Guid updatedBy, DateTimeOffset updatedAt)
     {
         Guard.NotNull(newFilter);
+        Guard.NotEmpty(updatedBy);
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         Filter = newFilter;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new DashboardSourceUpdatedDomainEvent(AccountId, WorkspaceId, DashboardId, Id, updatedAt));
     }

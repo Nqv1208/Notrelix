@@ -43,7 +43,7 @@ public class PermissionTemplateLifecycleTests
     {
         var template = PermissionTemplate.CreateSystem("Template", ValidDefinition(), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        template.DomainEvents.Should().ContainSingle(e => e is PermissionTemplateCreatedDomainEvent);
+        template.DomainEvents.Should().ContainSingle(e => e is SystemPermissionTemplateCreatedDomainEvent);
     }
 
     [Fact]
@@ -88,13 +88,23 @@ public class PermissionTemplateLifecycleTests
     }
 
     [Fact]
-    public void Archive_WhenWorkspace_ShouldSetArchived()
+    public void Archive_WhenWorkspace_ShouldSetArchivedAndRaiseEvent()
     {
-        var template = PermissionTemplate.CreateWorkspace(Guid.NewGuid(), Guid.NewGuid(), "Template", ValidDefinition(), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var accountId = Guid.NewGuid();
+        var workspaceId = Guid.NewGuid();
+        var updatedBy = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+        var template = PermissionTemplate.CreateWorkspace(accountId, workspaceId, "Template", ValidDefinition(), Guid.NewGuid(), now);
 
-        template.Archive(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        template.Archive(updatedBy, now);
 
         template.Status.Should().Be(PermissionTemplateStatus.Archived);
+        template.DomainEvents.Should().ContainSingle(e => e is PermissionTemplateArchivedDomainEvent);
+        var evt = (PermissionTemplateArchivedDomainEvent)template.DomainEvents.Single(e => e is PermissionTemplateArchivedDomainEvent);
+        evt.AccountId.Should().Be(accountId);
+        evt.WorkspaceId.Should().Be(workspaceId);
+        evt.TemplateId.Should().Be(template.Id);
+        evt.ArchivedBy.Should().Be(updatedBy);
     }
 
     [Fact]

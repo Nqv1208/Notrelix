@@ -37,7 +37,7 @@ public class DeleteBoardCommandHandler : IRequestHandler<DeleteBoardCommand, Res
         var board = await _context.Boards.FirstOrDefaultAsync(b => b.Id == request.BoardId, ct);
         if (board is null) throw new NotFoundException(nameof(BoardEntity), request.BoardId);
 
-        board.SoftDelete(_currentUser.UserId, _dateTimeProvider.UtcNow);
+        board.Delete(_currentUser.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }

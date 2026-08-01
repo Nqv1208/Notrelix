@@ -1,9 +1,7 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 
-[CoversAggregate(typeof(Workspace))]
 public class WorkspaceTests
 {
     private static readonly Guid AccountId = Guid.NewGuid();
@@ -100,30 +98,28 @@ public class WorkspaceTests
     }
 
     [Fact]
-    public void SoftDelete_ShouldSetStatusToSoftDeleted_AndRaiseEvent()
+    public void Delete_ShouldSetIsDeleted_AndRaiseEvent()
     {
         var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
         ((IHasDomainEvents)workspace).ClearDomainEvents();
         var actor = Guid.NewGuid();
 
-        workspace.SoftDelete(actor, Now);
+        workspace.Delete(actor, Now);
 
-        workspace.Status.Should().Be(WorkspaceStatus.SoftDeleted);
         workspace.IsDeleted.Should().BeTrue();
-        workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceSoftDeletedDomainEvent);
+        workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceDeletedDomainEvent);
     }
 
     [Fact]
-    public void Restore_ShouldSetStatusToActive_AndRaiseEvent()
+    public void Restore_ShouldSetIsDeleted_AndRaiseEvent()
     {
         var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
-        workspace.SoftDelete(Guid.NewGuid(), Now);
+        workspace.Delete(Guid.NewGuid(), Now);
         ((IHasDomainEvents)workspace).ClearDomainEvents();
 
         var actor = Guid.NewGuid();
         workspace.Restore(actor, Now);
 
-        workspace.Status.Should().Be(WorkspaceStatus.Active);
         workspace.IsDeleted.Should().BeFalse();
         workspace.DomainEvents.Should().ContainSingle(e => e is WorkspaceRestoredDomainEvent);
     }
@@ -180,10 +176,10 @@ public class WorkspaceTests
     }
 
     [Fact]
-    public void Unarchive_SoftDeleted_ShouldThrow()
+    public void Unarchive_Deleted_ShouldThrow()
     {
         var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
-        workspace.SoftDelete(Guid.NewGuid(), Now);
+        workspace.Delete(Guid.NewGuid(), Now);
 
         var act = () => workspace.Unarchive(Guid.NewGuid(), Now);
         act.Should().Throw<DomainException>().WithMessage("*deleted*");
@@ -251,5 +247,79 @@ public class WorkspaceTests
 
         workspace.AccountId.Should().Be(AccountId);
         workspace.IsPersonal.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Rename_ArchivedWorkspace_ShouldNotMutateName()
+    {
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
+        workspace.Archive(Guid.NewGuid(), Now);
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
+        var originalName = workspace.Name;
+
+        var act = () => workspace.Rename("New Name", Guid.NewGuid(), Now);
+
+        act.Should().Throw<BusinessRuleException>();
+        workspace.Name.Should().Be(originalName);
+        workspace.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void UpdateDescription_ArchivedWorkspace_ShouldNotMutateDescription()
+    {
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now, description: "Original");
+        workspace.Archive(Guid.NewGuid(), Now);
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
+        var originalDescription = workspace.Description;
+
+        var act = () => workspace.UpdateDescription("New description", Guid.NewGuid(), Now);
+
+        act.Should().Throw<BusinessRuleException>();
+        workspace.Description.Should().Be(originalDescription);
+        workspace.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void UpdateSettings_ArchivedWorkspace_ShouldNotMutateSettings()
+    {
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
+        workspace.Archive(Guid.NewGuid(), Now);
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
+        var originalSettings = workspace.Settings;
+
+        var settings = WorkspaceSettings.Create(allowPublicSharing: true);
+        var act = () => workspace.UpdateSettings(settings, Guid.NewGuid(), Now);
+
+        act.Should().Throw<BusinessRuleException>();
+        workspace.Settings.Should().BeSameAs(originalSettings);
+        workspace.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Rename_EmptyActor_ShouldNotMutateName()
+    {
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
+        var originalName = workspace.Name;
+
+        var act = () => workspace.Rename("New Name", Guid.Empty, Now);
+
+        act.Should().Throw<BusinessRuleException>();
+        workspace.Name.Should().Be(originalName);
+        workspace.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Archive_EmptyActor_ShouldNotMutateStatus()
+    {
+        var workspace = Workspace.Create(AccountId, OwnerId, "My Workspace", "my-workspace", Now);
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
+        var originalStatus = workspace.Status;
+
+        var act = () => workspace.Archive(Guid.Empty, Now);
+
+        act.Should().Throw<BusinessRuleException>();
+        workspace.Status.Should().Be(originalStatus);
+        workspace.DomainEvents.Should().BeEmpty();
     }
 }

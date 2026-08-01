@@ -37,7 +37,9 @@ public class DocumentVersion : AggregateRoot, IWorkspaceScoped
 
     public void ApplyRestore(Guid restoredBy, DateTimeOffset restoredAt)
     {
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        Guard.NotEmpty(restoredBy);
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new DocumentVersionRestoredDomainEvent(AccountId, WorkspaceId, PageId, VersionNumber, restoredAt));
     }

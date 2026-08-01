@@ -1,7 +1,7 @@
 using Notrelix.Domain.Governance.ShareLinks.Events;
 namespace Notrelix.Domain.Governance.ShareLinks;
 
-public class ShareLink : SoftDeletableAggregateRoot, IWorkspaceScoped
+public class ShareLink : AggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -60,53 +60,35 @@ public class ShareLink : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public void Disable(Guid disabledBy, DateTimeOffset disabledAt)
     {
-        EnsureNotDeleted();
         if (Status == ShareLinkStatus.Disabled) return;
 
+        var pending = PrepareAuditUpdate(disabledBy, disabledAt);
         Status = ShareLinkStatus.Disabled;
-        SetAuditOnUpdate(disabledBy, disabledAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new ShareLinkDisabledDomainEvent(AccountId, WorkspaceId, Id, disabledBy, disabledAt));
     }
 
     public void RotateTokenHash(ShareLinkTokenHash newHash, Guid rotatedBy, DateTimeOffset rotatedAt)
     {
-        EnsureNotDeleted();
         Guard.NotNull(newHash);
 
+        var pending = PrepareAuditUpdate(rotatedBy, rotatedAt);
         TokenHash = newHash;
         Status = ShareLinkStatus.Active;
-        SetAuditOnUpdate(rotatedBy, rotatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
 
         RaiseDomainEvent(new ShareLinkRotatedDomainEvent(AccountId, WorkspaceId, Id, rotatedBy, rotatedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
-    {
-        if (IsDeleted) return;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
-        IncrementVersion();
-        RaiseDomainEvent(new ShareLinkSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, deletedBy, deletedAt));
-    }
-
-    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
-    {
-        if (!IsDeleted) return;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
-        IncrementVersion();
-        RaiseDomainEvent(new ShareLinkRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
-    }
-
     public void Expire(DateTimeOffset expiredAt)
     {
-        EnsureNotDeleted();
         if (Status != ShareLinkStatus.Active) return;
 
+        var pending = PrepareAuditUpdate(null, expiredAt);
         Status = ShareLinkStatus.Expired;
-        SetAuditOnUpdate(null, expiredAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new ShareLinkExpiredDomainEvent(AccountId, WorkspaceId, Id, expiredAt));
     }

@@ -26,7 +26,7 @@ public class DeletePageCommandHandler : IRequestHandler<DeletePageCommand, Resul
         var page = await _context.Pages.FirstOrDefaultAsync(page => page.Id == request.PageId && !page.IsDeleted, ct);
         if (page is null) throw new NotFoundException(nameof(Page), request.PageId);
 
-        page.SoftDelete(_currentUser.UserId, _dateTimeProvider.UtcNow);
+        page.Delete(_currentUser.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }

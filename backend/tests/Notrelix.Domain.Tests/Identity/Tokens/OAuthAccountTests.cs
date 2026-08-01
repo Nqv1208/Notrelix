@@ -106,7 +106,7 @@ public class OAuthAccountTests
         user.LinkOAuthAccount(OAuthProvider.Google, "provider-id-123", TestSnapshot, null, user.Id, now);
         ((IHasDomainEvents)user).ClearDomainEvents();
 
-        user.UnlinkOAuthAccount(OAuthProvider.Google, now.AddMinutes(5));
+        user.UnlinkOAuthAccount(OAuthProvider.Google, user.Id, now.AddMinutes(5));
 
         user.OAuthAccounts.Should().BeEmpty();
         user.DomainEvents.Should().ContainSingle(e => e is OAuthAccountUnlinkedDomainEvent);
@@ -114,6 +114,7 @@ public class OAuthAccountTests
         evt.UserId.Should().Be(user.Id);
         evt.Provider.Should().Be(OAuthProvider.Google);
         evt.ProviderId.Should().Be("provider-id-123");
+        evt.UnlinkedBy.Should().Be(user.Id);
         evt.UnlinkedAt.Should().Be(now.AddMinutes(5));
     }
 

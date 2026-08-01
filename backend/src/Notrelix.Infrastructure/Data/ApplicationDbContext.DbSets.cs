@@ -6,7 +6,7 @@ using Notrelix.Domain.Accounts.Invitations;
 using Notrelix.Domain.Accounts.Members;
 using Notrelix.Domain.Accounts.Regions;
 using Notrelix.Domain.Accounts.Scim;
-using Notrelix.Domain.Accounts.Settings;
+using Notrelix.Application.Features.Accounts.Abstractions.Records;
 using Notrelix.Domain.Accounts.WorkspaceRoutes;
 
 // Identity
@@ -110,7 +110,7 @@ public partial class ApplicationDbContext
     public DbSet<AccountMember> AccountMembers => Set<AccountMember>();
     public DbSet<AccountInvitation> AccountInvitations => Set<AccountInvitation>();
     public DbSet<AccountDomain> AccountDomains => Set<AccountDomain>();
-    public DbSet<AccountSettings> AccountSettingsEntities => Set<AccountSettings>();
+    public DbSet<AccountSettingRecord> AccountSettingsEntities => Set<AccountSettingRecord>();
     public DbSet<AccountRegion> AccountRegions => Set<AccountRegion>();
     public DbSet<AccountIdentityProvider> AccountIdentityProviders => Set<AccountIdentityProvider>();
     public DbSet<ScimDirectory> ScimDirectories => Set<ScimDirectory>();

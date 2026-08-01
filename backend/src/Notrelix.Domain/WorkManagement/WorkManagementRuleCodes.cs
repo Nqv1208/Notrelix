@@ -25,6 +25,8 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Field_InvalidOptionValue = "WorkManagement_Field_InvalidOptionValue";
     public const string WorkManagement_Field_OptionNotFound = "WorkManagement_Field_OptionNotFound";
     public const string WorkManagement_Field_BelongsToDifferentWorkspace = "WorkManagement_Field_BelongsToDifferentWorkspace";
+    public const string WorkManagement_Field_DefaultRequiresConfiguredOptions = "WorkManagement_Field_DefaultRequiresConfiguredOptions";
+    public const string WorkManagement_Field_OptionUsedByDefault = "WorkManagement_Field_OptionUsedByDefault";
 
     // ── FieldSettings ─────────────────────────────────────────────────────
     public const string WorkManagement_FieldSettings_InvalidJsonFormat = "WorkManagement_FieldSettings_InvalidJsonFormat";
@@ -46,15 +48,22 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_FieldValue_InvalidBooleanValue = "WorkManagement_FieldValue_InvalidBooleanValue";
     public const string WorkManagement_FieldValue_InvalidSelectValue = "WorkManagement_FieldValue_InvalidSelectValue";
     public const string WorkManagement_FieldValue_InvalidMultiSelectValue = "WorkManagement_FieldValue_InvalidMultiSelectValue";
+    public const string WorkManagement_FieldValue_DuplicateOptionId = "WorkManagement_FieldValue_DuplicateOptionId";
     public const string WorkManagement_FieldValue_InvalidDateValue = "WorkManagement_FieldValue_InvalidDateValue";
     public const string WorkManagement_FieldValue_CalculatedFieldCannotBeWritten = "WorkManagement_FieldValue_CalculatedFieldCannotBeWritten";
     public const string WorkManagement_FieldValue_UnknownFieldType = "WorkManagement_FieldValue_UnknownFieldType";
 
     // ── Item ──────────────────────────────────────────────────────────────
+    public const string WorkManagement_Item_ParentMustBelongToSameAccount = "WorkManagement_Item_ParentMustBelongToSameAccount";
+    public const string WorkManagement_Item_ParentMustBelongToSameWorkspace = "WorkManagement_Item_ParentMustBelongToSameWorkspace";
     public const string WorkManagement_Item_ParentMustBelongToSameBoard = "WorkManagement_Item_ParentMustBelongToSameBoard";
-    public const string WorkManagement_Item_DueDateMustBeAfterStartDate = "WorkManagement_Item_DueDateMustBeAfterStartDate";
+    public const string WorkManagement_Item_ParentPathContainsEmptyId = "WorkManagement_Item_ParentPathContainsEmptyId";
+    public const string WorkManagement_Item_ParentPathContainsDuplicates = "WorkManagement_Item_ParentPathContainsDuplicates";
+    public const string WorkManagement_Item_ParentPathContainsTargetParent = "WorkManagement_Item_ParentPathContainsTargetParent";
     public const string WorkManagement_Item_CannotBeOwnParent = "WorkManagement_Item_CannotBeOwnParent";
     public const string WorkManagement_Item_ParentAssignmentWouldCreateCycle = "WorkManagement_Item_ParentAssignmentWouldCreateCycle";
+    public const string WorkManagement_Item_CompletedAtRequired = "WorkManagement_Item_CompletedAtRequired";
+    public const string WorkManagement_Item_DueDateMustBeAfterStartDate = "WorkManagement_Item_DueDateMustBeAfterStartDate";
     public const string WorkManagement_Item_CannotModifyArchived = "WorkManagement_Item_CannotModifyArchived";
     public const string WorkManagement_Item_FieldValueMustBeNumber = "WorkManagement_Item_FieldValueMustBeNumber";
 
@@ -132,6 +141,11 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Relation_SourceAndTargetMustBeDifferent = "WorkManagement_Relation_SourceAndTargetMustBeDifferent";
     public const string WorkManagement_Relation_CannotCreateSelfReferencing = "WorkManagement_Relation_CannotCreateSelfReferencing";
     public const string WorkManagement_Relation_CannotResumeBroken = "WorkManagement_Relation_CannotResumeBroken";
+    public const string WorkManagement_Relation_DuplicateNotAllowed = "WorkManagement_Relation_DuplicateNotAllowed";
+    public const string WorkManagement_Relation_CardinalityExceeded = "WorkManagement_Relation_CardinalityExceeded";
+
+    // ── Scope ────────────────────────────────────────────────────────────
+    public const string WorkManagement_BoardScopeMismatch = "WorkManagement_BoardScopeMismatch";
 
     // ── Connection ────────────────────────────────────────────────────────
     public const string WorkManagement_Connection_CannotConnectToSelf = "WorkManagement_Connection_CannotConnectToSelf";

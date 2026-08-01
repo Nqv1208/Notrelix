@@ -5,16 +5,8 @@ namespace Notrelix.Domain.WorkManagement.Fields;
 
 public static class FieldValueValidator
 {
-    // ISO-8601 formats: full round-trip, date-time with offset, date-only
-    private static readonly string[] DateFormats =
-    [
-        "O",                                // Round-trip: yyyy-MM-ddTHH:mm:ss.fffffffK
-        "yyyy-MM-ddTHH:mm:ss.fffK",         // With milliseconds
-        "yyyy-MM-ddTHH:mm:ssK",             // Without fractional seconds
-        "yyyy-MM-ddTHH:mm:ss.fff",          // Without timezone
-        "yyyy-MM-ddTHH:mm:ss",              // Without fractional or timezone
-        "yyyy-MM-dd",                       // Date only
-    ];
+    // ISO-8601 round-trip format only
+    private const string DateFormat = "O";
 
     public static void Validate(FieldValue value, FieldType type, FieldSettings settings)
     {
@@ -82,7 +74,8 @@ public static class FieldValueValidator
                 case FieldType.Number:
                     if (kind != JsonValueKind.Number)
                         throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidStringValue, "Value for field type Number must be a number.");
-                    var numVal = element.GetDecimal();
+                    if (!element.TryGetDecimal(out var numVal))
+                        throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidStringValue, "Number value could not be parsed as a decimal.");
                     if (settingsDoc != null)
                     {
                         if (settingsDoc.RootElement.TryGetProperty("min", out var minToken) && minToken.TryGetDecimal(out var minVal))
@@ -118,7 +111,7 @@ public static class FieldValueValidator
                 case FieldType.MultiSelect:
                     if (kind != JsonValueKind.Array)
                         throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidMultiSelectValue, "Value for field type MultiSelect must be an array of option IDs.");
-                    var seen = new HashSet<string>();
+                    var seen = new HashSet<Guid>();
                     foreach (var item in element.EnumerateArray())
                     {
                         if (item.ValueKind != JsonValueKind.String)
@@ -128,7 +121,7 @@ public static class FieldValueValidator
                             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidMultiSelectValue, "MultiSelect items must be valid GUIDs.");
                         if (parsedItemId == Guid.Empty)
                             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidMultiSelectValue, "MultiSelect items cannot be empty GUIDs.");
-                        if (!seen.Add(itemId))
+                        if (!seen.Add(parsedItemId))
                             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidMultiSelectValue, "MultiSelect value contains duplicate option IDs.");
                     }
                     break;
@@ -137,8 +130,8 @@ public static class FieldValueValidator
                     if (kind != JsonValueKind.String)
                         throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidDateValue, "Value for field type Date must be a string representation of DateTimeOffset.");
                     var dateStr = element.GetString();
-                    if (dateStr is not null && !DateTimeOffset.TryParseExact(dateStr, DateFormats, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _))
-                        throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidDateValue, $"Value '{dateStr}' is not a valid ISO-8601 date.");
+                    if (dateStr is not null && !DateTimeOffset.TryParseExact(dateStr, DateFormat, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _))
+                        throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidDateValue, $"Value '{dateStr}' is not a valid ISO-8601 round-trip date. Expected format: yyyy-MM-ddTHH:mm:ss.fffffffK");
                     break;
 
                 case FieldType.Formula:

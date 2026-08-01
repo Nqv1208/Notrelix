@@ -33,7 +33,7 @@ public class DeleteSpaceCommandHandler : IRequestHandler<DeleteSpaceCommand, Res
         if (space is null)
             throw new NotFoundException(nameof(Space), request.SpaceId);
 
-        space.SoftDelete(_requestContext.UserId, _dateTimeProvider.UtcNow);
+        space.Delete(_requestContext.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }

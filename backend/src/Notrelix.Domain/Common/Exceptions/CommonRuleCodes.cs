@@ -31,6 +31,4 @@ public static class CommonRuleCodes
 
     // ── Common / Scope ────────────────────────────────────────────────────
     public const string Common_WorkspaceScopeMismatch = "Common_WorkspaceScopeMismatch";
-    public const string Common_BoardScopeMismatch = "Common_BoardScopeMismatch";
-    public const string Common_ChildNotFound = "Common_ChildNotFound";
 }

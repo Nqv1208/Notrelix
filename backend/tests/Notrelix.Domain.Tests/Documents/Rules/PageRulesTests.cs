@@ -15,14 +15,6 @@ public class PageRulesTests
     }
 
     [Fact]
-    public void EnsureCanEdit_WhenSoftDeleted_ShouldNotThrow()
-    {
-        Action act = () => PageRules.EnsureCanEdit(PageStatus.SoftDeleted);
-
-        act.Should().NotThrow();
-    }
-
-    [Fact]
     public void EnsureCanEdit_WhenArchived_ShouldThrow()
     {
         Action act = () => PageRules.EnsureCanEdit(PageStatus.Archived);

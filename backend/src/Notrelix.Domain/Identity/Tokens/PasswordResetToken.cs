@@ -2,7 +2,7 @@ using Notrelix.Domain.Identity.Tokens.Events;
 
 namespace Notrelix.Domain.Identity.Tokens;
 
-public class PasswordResetToken : OneTimeUseToken
+public sealed class PasswordResetToken : OneTimeUseToken
 {
     private PasswordResetToken() : base() { }
 

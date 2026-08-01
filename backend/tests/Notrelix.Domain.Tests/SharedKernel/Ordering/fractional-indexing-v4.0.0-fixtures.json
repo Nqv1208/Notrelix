@@ -1,0 +1,59 @@
+{
+  "source": "rocicorp/fractional-indexing",
+  "version": "4.0.0",
+  "commit": "f1193a7",
+  "license": "CC0-1.0",
+  "description": "Official test vectors from fractional-indexing v4.0.0 test.js (default alphabet only)",
+  "alphabet": "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+  "fixtures": {
+    "generateKeyBetween": [
+      { "lower": null, "upper": null, "expected": "a0" },
+      { "lower": null, "upper": "a0", "expected": "Zz" },
+      { "lower": null, "upper": "Zz", "expected": "Zy" },
+      { "lower": "a0", "upper": null, "expected": "a1" },
+      { "lower": "a1", "upper": null, "expected": "a2" },
+      { "lower": "a0", "upper": "a1", "expected": "a0V" },
+      { "lower": "a1", "upper": "a2", "expected": "a1V" },
+      { "lower": "a0V", "upper": "a1", "expected": "a0l" },
+      { "lower": "Zz", "upper": "a0", "expected": "ZzV" },
+      { "lower": "Zz", "upper": "a1", "expected": "a0" },
+      { "lower": null, "upper": "Y00", "expected": "Xzzz" },
+      { "lower": "bzz", "upper": null, "expected": "c000" },
+      { "lower": "a0", "upper": "a0V", "expected": "a0G" },
+      { "lower": "a0", "upper": "a0G", "expected": "a08" },
+      { "lower": "b125", "upper": "b129", "expected": "b127" },
+      { "lower": "a0", "upper": "a1V", "expected": "a1" },
+      { "lower": "Zz", "upper": "a01", "expected": "a0" },
+      { "lower": null, "upper": "a0V", "expected": "a0" },
+      { "lower": null, "upper": "b999", "expected": "b99" },
+      { "lower": null, "upper": "A000000000000000000000000001", "expected": "A000000000000000000000000000V" }
+    ],
+    "generateNKeysBetween": [
+      { "lower": null, "upper": null, "count": 2, "expected": ["a0", "a1"] }
+    ],
+    "invalidKeys": {
+      "reversedBounds": [
+        { "lower": "a1", "upper": "a0" }
+      ],
+      "equalBounds": [
+        { "lower": "a0", "upper": "a0" }
+      ],
+      "invalidCharacters": [
+        "a0!", "a0_", "a0-", "a0 ", "a0@", "a0#", "a0$", "a0%", "a0^",
+        "a0&", "a0*", "a0(", "a0)", "a0+", "a0=", "a0[", "a0]", "a0{",
+        "a0}", "a0|", "a0\\", "a0;", "a0'", "a0\"", "a0,", "a0.", "a0<",
+        "a0>", "a0?", "a0/", "a0~", "a0`", "!!!"
+      ],
+      "invalidHeadCharacters": [
+        "0a", "1a", "9a", "!a", "@a", "0"
+      ],
+      "empty": [""],
+      "whitespace": [" ", "\t", "\n"],
+      "nonAscii": ["a0\u00e9", "\u00e90"]
+    },
+    "validKeys": [
+      "a0", "a1", "a2", "a3", "Zz", "a0V", "a1V",
+      "A000000000000000000000000001"
+    ]
+  }
+}

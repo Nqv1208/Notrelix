@@ -27,8 +27,8 @@
 | `UserRegisteredDomainEvent` | Global | UserId, Email, DisplayName |
 | `UserDeactivatedDomainEvent` | Global | UserId, PreviousStatus, DeactivatedBy, Reason |
 | `UserActivatedDomainEvent` | Global | UserId, ActivatedBy |
-| `UserSoftDeletedDomainEvent` | Global | UserId, DeletedBy |
-| `UserRestoredDomainEvent` | Global | UserId, RestoredBy |
+| `UserDeletedDomainEvent` | Global | UserId, Status, DeletedBy |
+| `UserRestoredDomainEvent` | Global | UserId, Status, RestoredBy |
 | `UserSuspendedDomainEvent` | Global | UserId, SuspendedBy, Reason |
 | `UserEmailChangedDomainEvent` | Global | UserId, OldEmail, NewEmail |
 | `UserEmailConfirmedDomainEvent` | Global | UserId, ConfirmedAt |
@@ -94,9 +94,9 @@
 | `AccountCreatedDomainEvent` | AcctRoot | AccountId, Name, Slug, Type, CreatedBy |
 | `AccountRenamedDomainEvent` | AcctRoot | AccountId, OldName, NewName |
 | `AccountSuspendedDomainEvent` | AcctRoot | AccountId, Reason |
-| `AccountSoftDeletedDomainEvent` | AcctRoot | AccountId |
+| `AccountDeletedDomainEvent` | AcctRoot | AccountId, Status |
 | `AccountArchivedDomainEvent` | AcctRoot | AccountId |
-| `AccountRestoredDomainEvent` | AcctRoot | AccountId |
+| `AccountRestoredDomainEvent` | AcctRoot | AccountId, Status |
 | `AccountMemberAddedDomainEvent` | AcctScoped | AccountId, MemberId, UserId, Role |
 | `AccountMemberRemovedDomainEvent` | AcctScoped | AccountId, MemberId, UserId |
 | `AccountMemberRestoredDomainEvent` | AcctScoped | AccountId, MemberId, UserId |

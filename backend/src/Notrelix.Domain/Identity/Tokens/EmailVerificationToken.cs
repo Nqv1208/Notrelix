@@ -2,7 +2,7 @@ using Notrelix.Domain.Identity.Tokens.Events;
 
 namespace Notrelix.Domain.Identity.Tokens;
 
-public class EmailVerificationToken : OneTimeUseToken
+public sealed class EmailVerificationToken : OneTimeUseToken
 {
     public string? NormalizedEmailSnapshot { get; private set; }
 

@@ -20,7 +20,7 @@ public class DeleteBoardGroupTests : WorkManagementHandlerTestBase
     }
 
     [Fact]
-    public async Task Handle_GroupExists_SoftDeletesGroup()
+    public async Task Handle_GroupExists_DeletesGroup()
     {
         var group = CreateBoardGroup();
         SetupBoardGroups(group);
@@ -45,7 +45,7 @@ public class DeleteBoardGroupTests : WorkManagementHandlerTestBase
     public async Task Handle_AlreadyDeleted_IsIdempotent()
     {
         var group = CreateBoardGroup();
-        group.SoftDelete(TestUserId, TestNow);
+        group.Delete(TestUserId, TestNow);
         SetupBoardGroups(group);
 
         var command = new DeleteBoardGroupCommand(group.Id);

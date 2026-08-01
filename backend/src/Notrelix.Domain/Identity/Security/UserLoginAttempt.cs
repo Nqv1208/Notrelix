@@ -2,7 +2,7 @@ using Notrelix.Domain.Identity.Security.Events;
 
 namespace Notrelix.Domain.Identity.Security;
 
-public class UserLoginAttempt : AggregateRoot
+public sealed class UserLoginAttempt : AggregateRoot
 {
     public Guid? UserId { get; private set; }
     public string? AttemptedEmail { get; private set; }

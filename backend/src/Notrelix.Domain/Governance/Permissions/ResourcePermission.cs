@@ -3,7 +3,7 @@ namespace Notrelix.Domain.Governance.Permissions;
 
 public class ResourcePermission : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
-    private bool _suppressSoftDeleteEvent;
+    private bool _suppressDeleteEvent;
 
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -67,39 +67,42 @@ public class ResourcePermission : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         if (Level == newLevel) return;
 
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         var oldLevel = Level;
         Level = newLevel;
-        SetAuditOnUpdate(updatedBy, updatedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new ResourcePermissionLevelChangedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, oldLevel, newLevel, updatedBy, updatedAt));
     }
 
-    public void SoftDelete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt, string? reason = null)
     {
+        Guard.NotEmpty(deletedBy);
         if (IsDeleted) return;
-        if (!MarkDeleted(deletedBy, deletedAt, reason)) return;
-        SetAuditOnUpdate(deletedBy, deletedAt);
+        var pendingDeletion = PrepareDeletion(deletedBy, deletedAt, reason);
         IncrementVersion();
-        if (!_suppressSoftDeleteEvent)
-            RaiseDomainEvent(new ResourcePermissionSoftDeletedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, deletedBy, deletedAt));
+        ApplyDeletion(pendingDeletion);
+        if (!_suppressDeleteEvent)
+            RaiseDomainEvent(new ResourcePermissionDeletedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, deletedBy, deletedAt));
     }
 
     public void Revoke(Guid revokedBy, DateTimeOffset revokedAt)
     {
         EnsureNotDeleted();
 
-        _suppressSoftDeleteEvent = true;
-        SoftDelete(revokedBy, revokedAt);
-        _suppressSoftDeleteEvent = false;
+        _suppressDeleteEvent = true;
+        Delete(revokedBy, revokedAt);
+        _suppressDeleteEvent = false;
         RaiseDomainEvent(new ResourcePermissionRevokedDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, SubjectType, SubjectId, revokedBy, revokedAt));
     }
 
     public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
     {
+        Guard.NotEmpty(restoredBy);
         if (!IsDeleted) return;
-        if (!MarkRestored(restoredBy, restoredAt)) return;
-        SetAuditOnUpdate(restoredBy, restoredAt);
+        var pendingRestore = PrepareRestore(restoredBy, restoredAt);
         IncrementVersion();
+        ApplyRestore(pendingRestore);
         RaiseDomainEvent(new ResourcePermissionRestoredDomainEvent(AccountId, WorkspaceId, Id, ResourceType, ResourceId, restoredBy, restoredAt));
     }
 }

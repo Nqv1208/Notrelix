@@ -15,8 +15,11 @@ public class ReportingSnapshotConfiguration : IEntityTypeConfiguration<Reporting
         builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.ReportType).HasColumnName("report_type").IsRequired().HasMaxLength(100);
+        builder.Property(x => x.SchemaVersion).HasColumnName("schema_version").IsRequired().HasDefaultValue(1);
         builder.Property(x => x.Data).HasColumnName("data").HasColumnType("jsonb").HasConversion<JsonValueConverter>().IsRequired();
         builder.Property(x => x.CapturedAt).HasColumnName("captured_at").IsRequired();
+
+        builder.Ignore(x => x.Payload);
 
         builder.HasIndex(x => x.WorkspaceId).HasDatabaseName("idx_reporting_snapshots_workspace_id");
     }

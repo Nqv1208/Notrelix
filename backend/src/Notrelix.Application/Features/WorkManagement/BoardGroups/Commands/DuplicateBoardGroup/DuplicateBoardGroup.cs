@@ -67,7 +67,7 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
 
     internal static BoardItem CloneCard(BoardItem source, Guid accountId, Guid groupId, Guid boardId, Guid workspaceId, Guid createdByUserId, string name, FractionalIndex position, DateTimeOffset createdAt)
     {
-        var copy = BoardItem.Create(
+        var copy = BoardItem.CreateRoot(
             accountId,
             workspaceId,
             boardId,

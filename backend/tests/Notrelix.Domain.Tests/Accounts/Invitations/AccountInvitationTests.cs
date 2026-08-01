@@ -134,4 +134,132 @@ public class AccountInvitationTests
         invitation.DomainEvents.Should().BeEmpty();
         invitation.Status.Should().Be(AccountInvitationStatus.Accepted);
     }
+
+    private AccountInvitation CreateInvitation()
+    {
+        return AccountInvitation.Create(_accountId, "user@example.com", AccountRole.Member, _invitedBy, _now);
+    }
+
+    [Fact]
+    public void InitialVersion_ShouldBe1()
+    {
+        var invitation = CreateInvitation();
+        invitation.Version.Should().Be(1);
+    }
+
+    [Fact]
+    public void Accept_ShouldIncrementVersion()
+    {
+        var invitation = CreateInvitation();
+        var before = invitation.Version;
+        invitation.Accept(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        invitation.Version.Should().Be(before + 1);
+    }
+
+    [Fact]
+    public void Accept_ShouldSetAudit()
+    {
+        var invitation = CreateInvitation();
+        var actor = Guid.NewGuid();
+        var time = DateTimeOffset.UtcNow;
+        invitation.Accept(actor, time);
+        invitation.UpdatedBy.Should().Be(actor);
+        invitation.UpdatedAt.Should().Be(time);
+    }
+
+    [Fact]
+    public void Expire_ShouldIncrementVersion()
+    {
+        var invitation = CreateInvitation();
+        var before = invitation.Version;
+        invitation.Expire(DateTimeOffset.UtcNow);
+        invitation.Version.Should().Be(before + 1);
+    }
+
+    [Fact]
+    public void Expire_ShouldSetAudit()
+    {
+        var invitation = CreateInvitation();
+        var time = DateTimeOffset.UtcNow;
+        invitation.Expire(time);
+        invitation.UpdatedAt.Should().Be(time);
+    }
+
+    [Fact]
+    public void Revoke_ShouldIncrementVersion()
+    {
+        var invitation = CreateInvitation();
+        var before = invitation.Version;
+        invitation.Revoke(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        invitation.Version.Should().Be(before + 1);
+    }
+
+    [Fact]
+    public void Revoke_ShouldSetAudit()
+    {
+        var invitation = CreateInvitation();
+        var actor = Guid.NewGuid();
+        var time = DateTimeOffset.UtcNow;
+        invitation.Revoke(actor, time);
+        invitation.UpdatedBy.Should().Be(actor);
+        invitation.UpdatedAt.Should().Be(time);
+    }
+
+    [Fact]
+    public void Accept_ShouldRaiseEvent_WithCorrectPayload()
+    {
+        var invitation = CreateInvitation();
+        var userId = Guid.NewGuid();
+        invitation.Accept(userId, DateTimeOffset.UtcNow);
+        var evt = invitation.DomainEvents.OfType<DomainEvent>().Last();
+        evt.Should().BeOfType<AccountInvitationAcceptedDomainEvent>();
+    }
+
+    [Fact]
+    public void Expire_ShouldRaiseEvent_WithCorrectPayload()
+    {
+        var invitation = CreateInvitation();
+        invitation.Expire(DateTimeOffset.UtcNow);
+        var evt = invitation.DomainEvents.OfType<DomainEvent>().Last();
+        evt.Should().BeOfType<AccountInvitationExpiredDomainEvent>();
+    }
+
+    [Fact]
+    public void Revoke_ShouldRaiseEvent_WithCorrectPayload()
+    {
+        var invitation = CreateInvitation();
+        var actor = Guid.NewGuid();
+        invitation.Revoke(actor, DateTimeOffset.UtcNow);
+        var evt = invitation.DomainEvents.OfType<DomainEvent>().Last();
+        evt.Should().BeOfType<AccountInvitationRevokedDomainEvent>();
+    }
+
+    [Fact]
+    public void Expire_WhenAlreadyExpired_ShouldNotChange()
+    {
+        var invitation = CreateInvitation();
+        invitation.Expire(DateTimeOffset.UtcNow);
+        var before = invitation.Version;
+        invitation.Expire(DateTimeOffset.UtcNow);
+        invitation.Version.Should().Be(before);
+    }
+
+    [Fact]
+    public void Revoke_AlreadyRevoked_ShouldNotChange()
+    {
+        var invitation = CreateInvitation();
+        invitation.Revoke(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var before = invitation.Version;
+        invitation.Revoke(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        invitation.Version.Should().Be(before);
+    }
+
+    [Fact]
+    public void Accept_RevokedInvitation_ShouldThrow()
+    {
+        var invitation = CreateInvitation();
+        invitation.Revoke(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var act = () => invitation.Accept(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        act.Should().Throw<BusinessRuleException>();
+    }
 }

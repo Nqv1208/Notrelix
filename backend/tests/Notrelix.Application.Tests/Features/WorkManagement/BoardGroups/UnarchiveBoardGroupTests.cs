@@ -38,7 +38,7 @@ public class UnarchiveBoardGroupTests : WorkManagementHandlerTestBase
     public async Task Handle_DeletedGroup_ThrowsDomainException()
     {
         var group = CreateBoardGroup();
-        group.SoftDelete(TestUserId, TestNow);
+        group.Delete(TestUserId, TestNow);
         SetupBoardGroups(group);
 
         var command = new UnarchiveBoardGroupCommand(group.Id);

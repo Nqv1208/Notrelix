@@ -73,9 +73,10 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
         if (Status != AiAgentRunStatus.Queued)
             throw new BusinessRuleException(AutomationRuleCodes.Automation_Agent_InvalidStatusTransition, "Run can only start from Queued state.");
 
+        var pending = PrepareAuditUpdate(ActorUserId, startedAt);
         Status = AiAgentRunStatus.Running;
         StartedAt = startedAt;
-        SetAuditOnUpdate(ActorUserId, startedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AiAgentRunStartedDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, startedAt));
     }
@@ -86,10 +87,11 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(AutomationRuleCodes.Automation_Agent_InvalidStatusTransition, "Run can only succeed from Running state.");
         Guard.NotNull(output);
 
+        var pending = PrepareAuditUpdate(ActorUserId, finishedAt);
         Status = AiAgentRunStatus.Succeeded;
         Output = output;
         FinishedAt = finishedAt;
-        SetAuditOnUpdate(ActorUserId, finishedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AiAgentRunSucceededDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, finishedAt));
     }
@@ -100,10 +102,11 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(AutomationRuleCodes.Automation_Agent_InvalidStatusTransition, "Run can only fail from Running state.");
         Guard.NotNull(error);
 
+        var pending = PrepareAuditUpdate(ActorUserId, finishedAt);
         Status = AiAgentRunStatus.Failed;
         Error = error;
         FinishedAt = finishedAt;
-        SetAuditOnUpdate(ActorUserId, finishedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AiAgentRunFailedDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, error.ToString(), finishedAt));
     }
@@ -113,9 +116,10 @@ public class AiAgentRun : AggregateRoot, IWorkspaceScoped
         if (Status != AiAgentRunStatus.Queued && Status != AiAgentRunStatus.Running)
             throw new BusinessRuleException(AutomationRuleCodes.Automation_Agent_InvalidStatusTransition, "Run can only be cancelled from Queued or Running state.");
 
+        var pending = PrepareAuditUpdate(cancelledBy, cancelledAt);
         Status = AiAgentRunStatus.Cancelled;
         FinishedAt = cancelledAt;
-        SetAuditOnUpdate(cancelledBy, cancelledAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AiAgentRunCancelledDomainEvent(AccountId, WorkspaceId, Id, AiAgentId, cancelledBy, cancelledAt));
     }

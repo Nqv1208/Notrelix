@@ -34,23 +34,27 @@ public class PageTemplate : AggregateRoot
 
     public void Publish(Guid publishedBy, DateTimeOffset publishedAt)
     {
+        Guard.NotEmpty(publishedBy);
         if (Status == PageTemplateStatus.Archived)
             throw new BusinessRuleException(DocumentRuleCodes.Documents_PageTemplate_CannotPublishArchived, "Cannot publish an archived template.");
 
         if (Status == PageTemplateStatus.Published) return;
 
+        var pending = PrepareAuditUpdate(publishedBy, publishedAt);
         Status = PageTemplateStatus.Published;
-        SetAuditOnUpdate(publishedBy, publishedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new PageTemplatePublishedDomainEvent(Id, publishedAt));
     }
 
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
+        Guard.NotEmpty(archivedBy);
         if (Status == PageTemplateStatus.Archived) return;
 
+        var pending = PrepareAuditUpdate(archivedBy, archivedAt);
         Status = PageTemplateStatus.Archived;
-        SetAuditOnUpdate(archivedBy, archivedAt);
+        ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new PageTemplateArchivedDomainEvent(Id, archivedBy, archivedAt));
     }

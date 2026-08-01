@@ -1,9 +1,8 @@
 using FluentAssertions;
-using Notrelix.Domain.Tests.Freeze;
+using Notrelix.Domain.Identity.OAuth;
 
 namespace Notrelix.Domain.Tests.Identity;
 
-[CoversAggregate(typeof(User))]
 public class UserTests
 {
     [Fact]
@@ -69,7 +68,7 @@ public class UserTests
     {
         var now = DateTimeOffset.UtcNow;
         var user = User.Create("test@example.com", "Test User", "hash123", now);
-        user.SoftDelete(Guid.NewGuid(), now);
+        user.Delete(Guid.NewGuid(), now);
 
         var act = () => user.UpdateProfile("New Name", null, user.Id, now);
 
@@ -144,5 +143,88 @@ public class UserTests
 
         var hasRevokeSessionMethod = user.GetType().GetMethod("RevokeSession");
         hasRevokeSessionMethod.Should().BeNull("session revocation belongs to UserSession aggregate");
+    }
+
+    [Fact]
+    public void UpdatePassword_SameHash_ShouldBeNoOp()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        ((IHasDomainEvents)user).ClearDomainEvents();
+        var version = user.Version;
+
+        user.UpdatePassword("hash123", user.Id, now);
+
+        user.PasswordHash.Should().Be("hash123");
+        user.Version.Should().Be(version);
+        user.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void UpdatePassword_DifferentHash_ShouldChangePassword()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Create("test@example.com", "Test User", "oldhash", now);
+        ((IHasDomainEvents)user).ClearDomainEvents();
+        var version = user.Version;
+
+        user.UpdatePassword("newhash", user.Id, now);
+
+        user.PasswordHash.Should().Be("newhash");
+        user.Version.Should().Be(version + 1);
+        user.DomainEvents.Should().ContainSingle(e => e is UserPasswordChangedDomainEvent);
+    }
+
+    [Fact]
+    public void RotateOAuthToken_SameToken_ShouldBeNoOp()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        var token = OAuthToken.Create(SecretRef.Create("access"), SecretRef.Create("refresh"), now.AddHours(1));
+        user.LinkOAuthAccount(OAuthProvider.Google, "pid123",
+            OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, JsonValue.EmptyObject()),
+            token, user.Id, now);
+        ((IHasDomainEvents)user).ClearDomainEvents();
+        var version = user.Version;
+
+        user.RotateOAuthToken(OAuthProvider.Google, token, user.Id, now.AddMinutes(5));
+
+        user.OAuthAccounts.Single().Token.Should().Be(token);
+        user.Version.Should().Be(version);
+        user.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void RotateOAuthToken_DifferentToken_ShouldRotate()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        var oldToken = OAuthToken.Create(SecretRef.Create("old-access"));
+        user.LinkOAuthAccount(OAuthProvider.Google, "pid123",
+            OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, JsonValue.EmptyObject()),
+            oldToken, user.Id, now);
+        ((IHasDomainEvents)user).ClearDomainEvents();
+        var version = user.Version;
+
+        var newToken = OAuthToken.Create(SecretRef.Create("new-access"));
+        user.RotateOAuthToken(OAuthProvider.Google, newToken, user.Id, now.AddMinutes(5));
+
+        user.OAuthAccounts.Single().Token.Should().Be(newToken);
+        user.Version.Should().Be(version + 1);
+        user.DomainEvents.Should().ContainSingle(e => e is OAuthTokenReferenceRotatedDomainEvent);
+    }
+
+    [Fact]
+    public void UnlinkOAuthAccount_EmptyActor_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Create("test@example.com", "Test User", "hash123", now);
+        user.LinkOAuthAccount(OAuthProvider.Google, "pid123",
+            OAuthProfileSnapshot.Create(OAuthProvider.Google, 1, JsonValue.EmptyObject()),
+            null, user.Id, now);
+
+        var act = () => user.UnlinkOAuthAccount(OAuthProvider.Google, Guid.Empty, now);
+
+        act.Should().Throw<BusinessRuleException>();
     }
 }
