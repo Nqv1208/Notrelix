@@ -1,9 +1,16 @@
 # Notrelix Production Core Domain Freeze Certification
 
-## Certified Commit
+## Certified Identity
 
-**Certified Code SHA**: `a0ed08194dd1c5232f755704070c4a8049f8e3a5`
-**Certification Date**: 2026-08-01
+- **Certified Code SHA**: `2dd46e6dd2e3c7accae1d1df93e12147edf99e7c`
+- **Certified Domain Tree SHA**: `5c7e2e8f8a7775f437d805713387f76571314063`
+- **Evidence CI Run ID**: `N/A` (local certification run; working tree not pushed)
+- **Evidence Record**: `backend/docs/domain/evidence/2dd46e6d-domain-freeze.md`
+- **Certification Date**: 2026-08-01
+
+> **Note**: FZ79A (determinism hardening) and FZ79B (snapshot schema v2) are certified as an
+> uncommitted working-tree delta on top of `2dd46e6d`. The certificate must be re-stamped
+> with the exact commit SHA after the delta is committed.
 
 ---
 
@@ -11,26 +18,58 @@
 
 ### Domain Build
 | Command | Exit Code | Errors | Warnings |
-|---|---|---|---|
+|---|---|---:|---:|
 | `dotnet build src/Notrelix.Domain/Notrelix.Domain.csproj -c Release -warnaserror` | 0 | 0 | 0 |
 
 ### Domain Tests
 | Command | Exit Code | Passed | Failed | Skipped |
-|---|---|---|---|---|
-| `dotnet test tests/Notrelix.Domain.Tests/Notrelix.Domain.Tests.csproj -c Release` | 0 | 2639 | 0 | 0 |
+|---|---|---:|---:|---:|
+| `dotnet test tests/Notrelix.Domain.Tests/Notrelix.Domain.Tests.csproj -c Release` | 0 | 2653 | 0 | 0 |
+
+### Freeze Gates
+| Gate | Exit Code | Passed | Failed | Skipped |
+|---|---|---:|---:|---:|
+| Architecture (`Freeze.Architecture`) | 0 | 62 | 0 | 0 |
+| Snapshots (`FreezeSnapshotTests` + `FreezeSnapshotSchemaTests`) | 0 | 11 | 0 | 0 |
+| Mutation coverage (`MutationCoverageTests`) | 0 | 4 | 0 | 0 |
+| Friend assembly (`DomainFriendAssemblyTests`) | 0 | 4 | 0 | 0 |
+| Determinism (`DeterminismSemanticTests` + `DomainProjectCompilationTests`) | 0 | 10 | 0 | 0 |
 
 ### Full Solution Build
-| Command | Exit Code | Projects | Errors | Warnings |
-|---|---|---|---|---|
-| `dotnet build backend/Notrelix.sln -c Release` | 0 | 16 | 0 | 0 |
+| Command | Exit Code | Errors | Warnings |
+|---|---|---:|---:|
+| `dotnet build backend.slnx -c Release --no-restore` | 0 | 0 | 0 |
 
-> **Note**: Full solution build with `-warnaserror` fails due to pre-existing warnings in `Notrelix.Application` and `Notrelix.Application.Tests` (CS1998, CS8604, CS8602). These are outside the Domain layer and do not affect the freeze certification.
+---
+
+## Determinism Claim
+
+The determinism gate loads the actual `Notrelix.Domain.csproj` through MSBuildWorkspace,
+fails on project/workspace/compilation failure, and semantically scans regular Domain
+source documents for the approved forbidden ambient APIs. It does not claim mathematical
+determinism; it is a fail-closed real-project analysis.
+
+---
+
+## Mutation Claim
+
+Every public mutation on every Frozen aggregate maps by exact overload identity to at
+least one executable test. The claim does not assert that every scenario exists globally.
+
+---
+
+## Friend-Assembly Claim
+
+Domain exposes internals only to `Notrelix.Domain.Tests`. Application, Infrastructure,
+API, and Platform use the public Domain contract.
 
 ---
 
 ## Capability Status
 
-### Frozen Production Core
+Counts calculated from `DomainCapabilityRegistry.Capabilities` (58 registrations).
+
+### Frozen Production Core (41)
 
 | # | Capability | Namespace Prefix |
 |---|---|---|
@@ -39,30 +78,44 @@
 | 3 | Accounts | `Notrelix.Domain.Accounts` |
 | 4 | Identity | `Notrelix.Domain.Identity` |
 | 5 | Workspaces | `Notrelix.Domain.Workspaces` |
-| 6 | WorkManagement.Boards | `Notrelix.Domain.WorkManagement.Boards` |
-| 7 | WorkManagement.BoardGroups | `Notrelix.Domain.WorkManagement.BoardGroups` |
-| 8 | WorkManagement.Fields | `Notrelix.Domain.WorkManagement.Fields` |
-| 9 | WorkManagement.Items | `Notrelix.Domain.WorkManagement.Items` |
-| 10 | WorkManagement.Views | `Notrelix.Domain.WorkManagement.Views` |
-| 11 | WorkManagement.Checklists | `Notrelix.Domain.WorkManagement.Checklists` |
-| 12 | WorkManagement.Labels | `Notrelix.Domain.WorkManagement.Labels` |
-| 13 | WorkManagement.Forms | `Notrelix.Domain.WorkManagement.Forms` |
-| 14 | WorkManagement.Relations | `Notrelix.Domain.WorkManagement.Relations` |
-| 15 | WorkManagement.Templates | `Notrelix.Domain.WorkManagement.Templates` |
-| 16 | Documents | `Notrelix.Domain.Documents` |
-| 17 | Collaboration.Attachments | `Notrelix.Domain.Collaboration.Attachments` |
-| 18 | Collaboration.Comments | `Notrelix.Domain.Collaboration.Comments` |
-| 19 | Collaboration.Mentions | `Notrelix.Domain.Collaboration.Mentions` |
-| 20 | Collaboration.ReadStates | `Notrelix.Domain.Collaboration.ReadStates` |
-| 21 | Collaboration.Rules | `Notrelix.Domain.Collaboration.Rules` |
-| 22 | Governance | `Notrelix.Domain.Governance` |
-| 23 | Automation.Rules | `Notrelix.Domain.Automation.Rules` |
-| 24 | Automation.RulesEngine | `Notrelix.Domain.Automation.RulesEngine` |
-| 25 | Integrations.Connections | `Notrelix.Domain.Integrations.Connections` |
-| 26 | Billing | `Notrelix.Domain.Billing` |
-| 27 | Analytics | `Notrelix.Domain.Analytics` |
+| 6 | WorkManagement | `Notrelix.Domain.WorkManagement` |
+| 7 | WorkManagement.Boards | `Notrelix.Domain.WorkManagement.Boards` |
+| 8 | WorkManagement.BoardGroups | `Notrelix.Domain.WorkManagement.BoardGroups` |
+| 9 | WorkManagement.Fields | `Notrelix.Domain.WorkManagement.Fields` |
+| 10 | WorkManagement.Items | `Notrelix.Domain.WorkManagement.Items` |
+| 11 | WorkManagement.Views | `Notrelix.Domain.WorkManagement.Views` |
+| 12 | WorkManagement.Checklists | `Notrelix.Domain.WorkManagement.Checklists` |
+| 13 | WorkManagement.Labels | `Notrelix.Domain.WorkManagement.Labels` |
+| 14 | WorkManagement.Forms | `Notrelix.Domain.WorkManagement.Forms` |
+| 15 | WorkManagement.Relations | `Notrelix.Domain.WorkManagement.Relations` |
+| 16 | WorkManagement.Templates | `Notrelix.Domain.WorkManagement.Templates` |
+| 17 | Documents | `Notrelix.Domain.Documents` |
+| 18 | Collaboration | `Notrelix.Domain.Collaboration` |
+| 19 | Collaboration.Attachments | `Notrelix.Domain.Collaboration.Attachments` |
+| 20 | Collaboration.Comments | `Notrelix.Domain.Collaboration.Comments` |
+| 21 | Collaboration.Mentions | `Notrelix.Domain.Collaboration.Mentions` |
+| 22 | Collaboration.ReadStates | `Notrelix.Domain.Collaboration.ReadStates` |
+| 23 | Collaboration.Rules | `Notrelix.Domain.Collaboration.Rules` |
+| 24 | Governance | `Notrelix.Domain.Governance` |
+| 25 | Governance.Permissions | `Notrelix.Domain.Governance.Permissions` |
+| 26 | Governance.Policies | `Notrelix.Domain.Governance.Policies` |
+| 27 | Governance.Roles | `Notrelix.Domain.Governance.Roles` |
+| 28 | Governance.ShareLinks | `Notrelix.Domain.Governance.ShareLinks` |
+| 29 | Governance.Templates | `Notrelix.Domain.Governance.Templates` |
+| 30 | Automation | `Notrelix.Domain.Automation` |
+| 31 | Automation.RulesEngine | `Notrelix.Domain.Automation.RulesEngine` |
+| 32 | Automation.Rules | `Notrelix.Domain.Automation.Rules` |
+| 33 | Integrations | `Notrelix.Domain.Integrations` |
+| 34 | Integrations.Rules | `Notrelix.Domain.Integrations.Rules` |
+| 35 | Integrations.Connections | `Notrelix.Domain.Integrations.Connections` |
+| 36 | Billing | `Notrelix.Domain.Billing` |
+| 37 | Analytics | `Notrelix.Domain.Analytics` |
+| 38 | Analytics.Dashboards | `Notrelix.Domain.Analytics.Dashboards` |
+| 39 | Analytics.Widgets | `Notrelix.Domain.Analytics.Widgets` |
+| 40 | Analytics.Snapshots | `Notrelix.Domain.Analytics.Snapshots` |
+| 41 | Analytics.Rules | `Notrelix.Domain.Analytics.Rules` |
 
-### Stabilizing Capabilities
+### Stabilizing Capabilities (7)
 
 These capabilities have unresolved product semantics and do not block the production-core freeze.
 
@@ -76,7 +129,7 @@ These capabilities have unresolved product semantics and do not block the produc
 | 6 | Integrations.Webhooks | `Notrelix.Domain.Integrations.Webhooks` | Delete deactivates, no restore lifecycle |
 | 7 | Integrations.Sync | `Notrelix.Domain.Integrations.Sync` | Related to Calendar sync |
 
-### Experimental Capabilities
+### Experimental Capabilities (10)
 
 | # | Capability | Namespace Prefix |
 |---|---|---|
@@ -84,32 +137,56 @@ These capabilities have unresolved product semantics and do not block the produc
 | 2 | WorkManagement.Rollups | `Notrelix.Domain.WorkManagement.Rollups` |
 | 3 | WorkManagement.Workload | `Notrelix.Domain.WorkManagement.Workload` |
 | 4 | WorkManagement.Approvals | `Notrelix.Domain.WorkManagement.Approvals` |
-| 5 | Automation.Triggers | `Notrelix.Domain.Automation.Triggers` |
-| 6 | Automation.Actions | `Notrelix.Domain.Automation.Actions` |
-| 7 | Automation.Conditions | `Notrelix.Domain.Automation.Conditions` |
-| 8 | Automation.Executions | `Notrelix.Domain.Automation.Executions` |
-| 9 | Automation.Agents | `Notrelix.Domain.Automation.Agents` |
-| 10 | Collaboration.Presence | `Notrelix.Domain.Collaboration.Presence` |
+| 5 | Collaboration.Presence | `Notrelix.Domain.Collaboration.Presence` |
+| 6 | Automation.Triggers | `Notrelix.Domain.Automation.Triggers` |
+| 7 | Automation.Actions | `Notrelix.Domain.Automation.Actions` |
+| 8 | Automation.Conditions | `Notrelix.Domain.Automation.Conditions` |
+| 9 | Automation.Executions | `Notrelix.Domain.Automation.Executions` |
+| 10 | Automation.Agents | `Notrelix.Domain.Automation.Agents` |
 
 ---
 
 ## Snapshot Schemas
 
 ### Frozen Domain Public API
-**Schema**: `FrozenApi|Type|Member|MemberType|Visibility|IsAbstract|IsVirtual|Parameters`
+**Schema version**: `2`
+
+**Columns**: `FrozenApi|Type|Member|MemberType|Visibility|IsAbstract|IsVirtual|ReturnOrPropertyType|ParametersOrAccessor`
+
+- constructor → `System.Void` + parameters
+- method → return type + parameters
+- property → property type + readonly/readwrite
+
 **File**: `tests/Notrelix.Domain.Tests/Snapshots/FrozenDomainPublicApi.approved.txt`
 
 ### Domain Events (Frozen only)
-**Schema**: `DomainEvents|LogicalName|Version|ClrType|Scope|PropertyName|PropertyType|IsNullable`
+**Schema version**: `1`
+**Columns**: `DomainEvents|LogicalName|Version|ClrType|Scope|PropertyName|PropertyType|IsNullable`
 **File**: `tests/Notrelix.Domain.Tests/Snapshots/DomainEvents.approved.txt`
 
 ### Enums (Frozen only)
-**Schema**: `Enums|EnumType|UnderlyingType|MemberName|NumericValue`
+**Schema version**: `2`
+**Columns**: `Enums|EnumType|UnderlyingType|MemberName|NumericValue`
 **File**: `tests/Notrelix.Domain.Tests/Snapshots/Enums.approved.txt`
 
 ### Rule Codes
-**Schema**: `RuleCodes|Code|OwnerContext|ConstantName`
+**Schema version**: `1`
+**Columns**: `RuleCodes|Code|OwnerContext|ConstantName`
 **File**: `tests/Notrelix.Domain.Tests/Snapshots/RuleCodes.approved.txt`
+
+---
+
+## Negative Proofs
+
+Performed temporarily and reverted before delivery; full table in the evidence record:
+
+- Ambient `DateTimeOffset.UtcNow` in a scratch Domain file → determinism gate fails with
+  relative path, line, and `System.DateTimeOffset.UtcNow`.
+- Missing backend root → locator throws listing inspected paths (permanent test).
+- Invalid in-memory syntax → `EnsureCompilationHasNoErrors` throws with the diagnostic
+  (permanent test).
+- Removed output column → schema test fails and prints the malformed row.
+- Altered approved row → snapshot comparison fails and the approved file is not rewritten.
 
 ---
 
@@ -184,19 +261,19 @@ Adding a new capability:
 
 ## Certification Statement
 
-> Notrelix production-core Domain is Frozen at `a0ed08194dd1c5232f755704070c4a8049f8e3a5`.
+> Notrelix production-core Domain is Frozen at `2dd46e6dd2e3c7accae1d1df93e12147edf99e7c`.
 >
-> **Frozen production core**: 27 capabilities certified.
+> The immutable Domain tree is `5c7e2e8f8a7775f437d805713387f76571314063`.
+>
+> Frozen contracts are protected by behavior tests, exact mutation-to-test mapping,
+> effective-maturity snapshots, production-friend-assembly restrictions, and fail-closed
+> real-project determinism analysis.
+>
+> **Frozen production core**: 41 capabilities certified.
 > **Stabilizing**: 7 capabilities isolated with unresolved semantics.
 > **Experimental**: 10 capabilities remain isolated.
 >
-> All production-core invariants are correct.
-> Frozen public APIs, enums, rule codes, and event contracts are protected.
-> Frozen capabilities have executable tests for their public mutations.
-> Stabilizing capabilities are isolated and do not block the production-core freeze.
-> Contract snapshots and architecture gates pass without regeneration or skipped tests.
-> Business status is independent from deletion state.
-> AutomationRule enforces activation invariant.
-> BoardRelation provides pure Domain rules for duplicate and cardinality enforcement.
-> Capability registry uses Exact/Subtree matching for fail-closed classification.
-> Frozen snapshots use effective registry status (exclude Stabilizing).
+> Stabilizing and Experimental capabilities remain outside the Frozen compatibility
+> commitment. Contract snapshots and architecture gates pass without regeneration or
+> skipped tests. Negative proofs confirm the fail-closed gates fail on ambient
+> nondeterminism, malformed rows, and snapshot drift.
