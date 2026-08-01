@@ -5,7 +5,11 @@ using Notrelix.Application.Features.Documents.Abstractions;
 
 namespace Notrelix.Application.Features.Documents.Pages.Queries.GetWorkspacePages;
 
-public record GetWorkspacePagesQuery(Guid WorkspaceId) : IQuery<Result<List<PageDto>>>;
+public record GetWorkspacePagesQuery(Guid WorkspaceId) : IQuery<Result<List<PageDto>>>, IWorkspaceRequest, IRequirePermission
+{
+    PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId);
+}
 
 public class GetWorkspacePagesQueryHandler : IRequestHandler<GetWorkspacePagesQuery, Result<List<PageDto>>>
 {

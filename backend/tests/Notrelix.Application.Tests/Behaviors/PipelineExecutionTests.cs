@@ -16,14 +16,15 @@ public class PipelineExecutionTests
         public string IdempotencyKey => "test-key";
     }
 
-    public sealed record NonTransactionalCommand : IRequest<string>;
+    public sealed record NonTransactionalCommand : IRequest<string>, IGlobalRequest;
 
-    public sealed record SideEffectCommand : IRequest<string>, ITransactionalRequest, IRealtimeRequest
+    public sealed record SideEffectCommand : IRequest<string>, ITransactionalRequest, IRealtimeRequest, IWorkspaceRequest
     {
+        public Guid WorkspaceId => Guid.NewGuid();
         public RealtimeTopic Topic => new("test", "test", Guid.NewGuid());
     }
 
-    public sealed record ValidationFailCommand : IRequest<string>, ITransactionalRequest
+    public sealed record ValidationFailCommand : IRequest<string>, ITransactionalRequest, IGlobalRequest
     {
         public string? Value { get; init; }
     }

@@ -1,3 +1,5 @@
+using Notrelix.Application.Common.Requests.Scoping;
+
 namespace Notrelix.Application.Features.Identity.Registration.Commands.SendWelcomeEmail;
 
 public sealed record SendWelcomeEmailCommand(
@@ -11,7 +13,7 @@ public sealed record SendWelcomeEmailCommand(
     string? CorrelationId,
     string? CausationId,
     DateTimeOffset OccurredAt
-) : ICommand<SendWelcomeEmailResult>, ISystemInternalRequest, ITransactionalRequest, IMessageTriggeredRequest, ISystemOperation
+) : ICommand<SendWelcomeEmailResult>, ISystemInternalRequest, ITransactionalRequest, IMessageTriggeredRequest, ISystemOperation, IGlobalRequest
 {
     public string ConsumerName => ConsumerNames.WelcomeEmailSending;
     public Guid? WorkspaceId => null;

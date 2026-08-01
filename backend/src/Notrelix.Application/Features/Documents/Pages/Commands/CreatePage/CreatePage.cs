@@ -7,7 +7,11 @@ public record CreatePageCommand(
     Guid WorkspaceId,
     string Title,
     Guid? ParentId
-) : ICommand<Result<Guid>>, ITransactionalRequest;
+) : ICommand<Result<Guid>>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission
+{
+    public PermissionAction Action => PermissionAction.ManageBoard;
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId);
+}
 
 public class CreatePageCommandHandler : IRequestHandler<CreatePageCommand, Result<Guid>>
 {

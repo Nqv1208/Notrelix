@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Queries.GetUserPendingInvitations;
@@ -14,7 +15,7 @@ public record UserPendingInvitationDto(
     DateTime ExpiresAt
 );
 
-public record GetUserPendingInvitationsQuery : IQuery<Result<List<UserPendingInvitationDto>>>;
+public record GetUserPendingInvitationsQuery : IQuery<Result<List<UserPendingInvitationDto>>>, IGlobalRequest;
 
 public class GetUserPendingInvitationsQueryHandler : IRequestHandler<GetUserPendingInvitationsQuery, Result<List<UserPendingInvitationDto>>>
 {

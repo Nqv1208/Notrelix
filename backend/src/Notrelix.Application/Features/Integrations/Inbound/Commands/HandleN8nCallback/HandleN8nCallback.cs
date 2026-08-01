@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Integrations.Abstractions;
 
 namespace Notrelix.Application.Features.Integrations.Inbound.Commands.HandleN8nCallback;
@@ -7,7 +8,7 @@ public record HandleN8nCallbackCommand(
     Guid ExecutionId,
     string Status,
     string? Response,
-    string? Error) : ICommand<Result>, ITransactionalRequest;
+    string? Error) : ICommand<Result>, ITransactionalRequest, IGlobalRequest;
 
 public class HandleN8nCallbackCommandHandler : IRequestHandler<HandleN8nCallbackCommand, Result>
 {

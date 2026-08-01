@@ -2,7 +2,11 @@ using global::Notrelix.Application.Common.Models;
 
 namespace Notrelix.Application.Features.Integrations.Calendar.Commands.TriggerCalendarSync;
 
-public record TriggerCalendarSyncCommand(Guid IntegrationId) : ICommand<Result>;
+public record TriggerCalendarSyncCommand(Guid IntegrationId) : ICommand<Result>, IResourceScopedRequest, IRequirePermission
+{
+    public ResourceRef Resource => ResourceRef.Create(ResourceType.CalendarIntegration, IntegrationId);
+    public PermissionAction Action => PermissionAction.ManageWorkspaceSettings;
+}
 
 public class TriggerCalendarSyncCommandHandler : IRequestHandler<TriggerCalendarSyncCommand, Result>
 {

@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Provisioning.Commands.ProvisionPersonalWorkspace;
@@ -18,7 +19,8 @@ public sealed record ProvisionPersonalWorkspaceCommand(
     ITransactionalRequest,
     IMessageTriggeredRequest,
     IIdempotentRequest,
-    ISystemOperation
+    ISystemOperation,
+    IGlobalRequest
 {
     public string ConsumerName => ConsumerNames.PersonalWorkspaceProvisioning;
     public Guid? WorkspaceId => null;

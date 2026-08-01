@@ -18,6 +18,8 @@ global using Notrelix.Application.Common.Security;
 global using Notrelix.Application.Common.Behaviors;
 global using Notrelix.Application.Common.Caching;
 global using Notrelix.Application.Common.Requests.Caching;
+global using Notrelix.Application.Common.Requests.Scoping;
+global using Notrelix.Application.Common.Requests.Execution;
 global using Notrelix.Application.Common.Entitlements;
 global using Notrelix.Application.Common.Requests.Security;
 global using Notrelix.Application.Common.Tenancy;

@@ -1,11 +1,12 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.DeclineInvitation;
 
 public record DeclineInvitationCommand(
     Guid InvitationId
-) : ICommand<Result>, ITransactionalRequest, IAuthenticatedRequest
+) : ICommand<Result>, ITransactionalRequest, IAuthenticatedRequest, IGlobalRequest
 {
 }
 

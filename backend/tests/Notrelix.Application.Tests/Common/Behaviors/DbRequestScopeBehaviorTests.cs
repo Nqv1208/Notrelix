@@ -11,7 +11,10 @@ public class DbRequestScopeBehaviorTests
         public Guid WorkspaceId => Guid.NewGuid();
     }
 
-    public sealed record RlsReadRequest : IRequest<string>, IRlsReadRequest, ITransactionalRequest;
+    public sealed record RlsReadRequest : IRequest<string>, IWorkspaceRequest, IRlsReadRequest, ITransactionalRequest
+    {
+        public Guid WorkspaceId => Guid.NewGuid();
+    }
 
     public sealed record GlobalPermissionRequest : IRequest<string>, IGlobalRequest, IRequirePermission
     {
@@ -19,7 +22,7 @@ public class DbRequestScopeBehaviorTests
         public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
     }
 
-    public sealed record NonTransactionalRequest : IRequest<string>;
+    public sealed record NonTransactionalRequest : IRequest<string>, IGlobalRequest;
 
     private static Mock<IRequestDataSession> CreateMockDataSession()
     {

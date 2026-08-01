@@ -1,11 +1,12 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Verification.Commands.RequestEmailVerification;
 
 public sealed record RequestEmailVerificationCommand()
-    : ICommand<Result>, IAuthenticatedRequest, ITransactionalRequest;
+    : ICommand<Result>, IAuthenticatedRequest, ITransactionalRequest, IGlobalRequest;
 
 public sealed record RequestEmailVerificationResult(
     Guid TokenId,

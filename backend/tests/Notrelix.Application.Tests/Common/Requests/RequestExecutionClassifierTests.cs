@@ -31,9 +31,9 @@ public class RequestExecutionClassifierTests
         public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
     }
 
-    private sealed record SystemInternalRequest : IRequest<string>, ISystemInternalRequest;
+    private sealed record SystemInternalRequest : IRequest<string>, ISystemInternalRequest, IGlobalRequest;
 
-    private sealed record AnonymousSystemInternalRequest : IRequest<string>, IAnonymousRequest, ISystemInternalRequest;
+    private sealed record AnonymousSystemInternalRequest : IRequest<string>, IAnonymousRequest, ISystemInternalRequest, IGlobalRequest;
 
     private sealed record SubscriptionRequest : IRequest<string>, IWorkspaceRequest, IRequireSubscription
     {
@@ -161,20 +161,18 @@ public class RequestExecutionClassifierTests
 
         profile.IsSystemInternal.Should().BeTrue();
         profile.IsAnonymous.Should().BeFalse();
-        profile.IsGlobal.Should().BeFalse();
+        profile.IsGlobal.Should().BeTrue();
         profile.RequiresRls.Should().BeFalse();
         profile.NeedsDbScope.Should().BeFalse();
     }
 
     [Fact]
-    public void AnonymousSystemInternal_Profile_HasBothMarkers()
+    public void AnonymousSystemInternal_Profile_ThrowsMultiplePrincipals()
     {
-        var profile = Classify(new AnonymousSystemInternalRequest());
+        var act = () => Classify(new AnonymousSystemInternalRequest());
 
-        profile.IsAnonymous.Should().BeTrue();
-        profile.IsSystemInternal.Should().BeTrue();
-
-        // Guard should reject this combination
+        act.Should().Throw<SecurityMisconfigurationException>()
+            .WithMessage("*multiple principal markers*");
     }
 
     [Fact]
