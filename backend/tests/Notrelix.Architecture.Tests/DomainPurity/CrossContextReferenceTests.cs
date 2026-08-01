@@ -1,7 +1,8 @@
 using System.Reflection;
 using FluentAssertions;
+using Notrelix.Domain.Common;
 
-namespace Notrelix.Domain.Tests.Freeze.Architecture;
+namespace Notrelix.Architecture.Tests;
 
 public class CrossContextReferenceTests
 {
@@ -21,6 +22,23 @@ public class CrossContextReferenceTests
         "Notrelix.Domain.Integrations",
         "Notrelix.Domain.Billing",
         "Notrelix.Domain.Analytics",
+    ];
+
+    private static readonly string[] ExperimentalNamespacePrefixes =
+    [
+        // WorkManagement experimental
+        "Notrelix.Domain.WorkManagement.Approvals",
+        "Notrelix.Domain.WorkManagement.Formulas",
+        "Notrelix.Domain.WorkManagement.Rollups",
+        "Notrelix.Domain.WorkManagement.Workload",
+        // Collaboration experimental
+        "Notrelix.Domain.Collaboration.Presence",
+        // Automation experimental (runtime/orchestration)
+        "Notrelix.Domain.Automation.Triggers",
+        "Notrelix.Domain.Automation.Actions",
+        "Notrelix.Domain.Automation.Conditions",
+        "Notrelix.Domain.Automation.Executions",
+        "Notrelix.Domain.Automation.Agents",
     ];
 
     private static readonly HashSet<string> CrossContextWhitelist = new()
@@ -104,8 +122,8 @@ public class CrossContextReferenceTests
         if (type.Namespace is null) return false;
         if (!type.Namespace.StartsWith("Notrelix.Domain.", StringComparison.Ordinal)) return false;
 
-        var status = DomainCapabilityRegistry.ResolveCapability(type);
-        return status == DomainCapabilityStatus.Frozen;
+        return !ExperimentalNamespacePrefixes.Any(p =>
+            type.Namespace.StartsWith(p, StringComparison.Ordinal));
     }
 
     private static bool IsDomainType(Type type)

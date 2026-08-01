@@ -1,9 +1,10 @@
 using System.Reflection;
 using FluentAssertions;
+using Notrelix.Domain.Common;
 
-namespace Notrelix.Domain.Tests.Freeze.Architecture;
+namespace Notrelix.Architecture.Tests;
 
-public class FrameworkDependencyTests
+public class DomainFrameworkDependencyTests
 {
     private static readonly Assembly DomainAssembly = typeof(AggregateRoot).Assembly;
 

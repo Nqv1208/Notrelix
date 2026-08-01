@@ -1,8 +1,9 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using FluentAssertions;
+using Notrelix.Domain.Common;
 
-namespace Notrelix.Domain.Tests.Freeze.Architecture;
+namespace Notrelix.Architecture.Tests;
 
 /// <summary>
 /// Ensures Domain does not expose internals to production assemblies.

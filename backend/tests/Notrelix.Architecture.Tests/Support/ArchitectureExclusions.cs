@@ -1,8 +1,8 @@
 using System.Runtime.CompilerServices;
 
-namespace Notrelix.Domain.Tests.Freeze.Architecture;
+namespace Notrelix.Architecture.Tests;
 
-public static class ArchitectureExclusionRegistry
+public static class ArchitectureExclusions
 {
     private static readonly HashSet<string> ExcludedTypes = new()
     {

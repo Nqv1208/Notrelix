@@ -1,7 +1,7 @@
 using System.Collections.Immutable;
 using FluentAssertions;
 
-namespace Notrelix.Domain.Tests.Freeze.Architecture;
+namespace Notrelix.Architecture.Tests.InfrastructureLayer;
 
 public class InfrastructureReflectionGateTests
 {

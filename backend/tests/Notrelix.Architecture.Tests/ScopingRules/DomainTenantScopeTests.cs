@@ -1,11 +1,57 @@
 using System.Reflection;
 using FluentAssertions;
+using Notrelix.Domain.Common;
 
-namespace Notrelix.Domain.Tests.Freeze.Architecture;
+namespace Notrelix.Architecture.Tests;
 
-public class TenantScopeTests
+public class DomainTenantScopeTests
 {
     private static readonly Assembly DomainAssembly = typeof(AggregateRoot).Assembly;
+
+    /// <summary>
+    /// Aggregates that are genuinely global (no tenant scope).
+    /// Must NOT implement IAccountScoped or IWorkspaceScoped.
+    /// </summary>
+    private static readonly HashSet<string> GlobalAggregates = new()
+    {
+        // Billing global
+        "Notrelix.Domain.Billing.Plans.Plan",
+        "Notrelix.Domain.Billing.Plans.FeatureCode",
+        "Notrelix.Domain.Billing.Plans.PlanPrice",
+        "Notrelix.Domain.Billing.Plans.BillingPeriod",
+        "Notrelix.Domain.Billing.BillingEvents.BillingEvent",
+
+        // Identity global (user identity is account-level but not workspace-scoped)
+        "Notrelix.Domain.Identity.Users.User",
+        "Notrelix.Domain.Identity.Tokens.EmailVerificationToken",
+        "Notrelix.Domain.Identity.Tokens.PasswordResetToken",
+        "Notrelix.Domain.Identity.Sessions.UserSession",
+        "Notrelix.Domain.Identity.Security.UserLoginAttempt",
+        "Notrelix.Domain.Identity.Security.UserSecuritySettings",
+        "Notrelix.Domain.Identity.Profiles.UserProfile",
+        "Notrelix.Domain.Identity.Mfa.UserMfaMethod",
+
+        // WorkManagement templates (global scope, not tied to a specific workspace)
+        "Notrelix.Domain.WorkManagement.Templates.BoardTemplate",
+
+        // Documents templates
+        "Notrelix.Domain.Documents.Templates.PageTemplate",
+
+        // Integrations
+        "Notrelix.Domain.Integrations.Webhooks.Events.InboundWebhookEvent",
+
+        // Automation
+        "Notrelix.Domain.Automation.Templates.AutomationTemplate",
+    };
+
+    /// <summary>
+    /// Aggregates that span multiple scopes (e.g., hybrid System/Workspace templates).
+    /// These implement a scope interface but are classified differently.
+    /// </summary>
+    private static readonly HashSet<string> HybridAggregates = new()
+    {
+        "Notrelix.Domain.Governance.Templates.PermissionTemplate",
+    };
 
     [Fact]
     public void TenantScopedEntities_ShouldImplementScopeInterface()
@@ -20,8 +66,8 @@ public class TenantScopeTests
             if (!typeof(AggregateRoot).IsAssignableFrom(type)) continue;
 
             // Skip global and hybrid aggregates
-            if (DomainCapabilityRegistry.GlobalAggregates.Contains(type.FullName!)) continue;
-            if (DomainCapabilityRegistry.HybridAggregates.Contains(type.FullName!)) continue;
+            if (GlobalAggregates.Contains(type.FullName!)) continue;
+            if (HybridAggregates.Contains(type.FullName!)) continue;
 
             // Check if the aggregate has workspace-scoped properties
             var hasWorkspaceId = type.GetProperty("WorkspaceId") is not null;
@@ -49,7 +95,7 @@ public class TenantScopeTests
     {
         var violations = new List<string>();
 
-        foreach (var aggregateName in DomainCapabilityRegistry.GlobalAggregates)
+        foreach (var aggregateName in GlobalAggregates)
         {
             var type = DomainAssembly.GetType(aggregateName);
             if (type is null) continue;

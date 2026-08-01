@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace Notrelix.Domain.Tests.Freeze.Architecture;
+namespace Notrelix.Architecture.Tests;
 
 /// <summary>
 /// Stateless, thread-safe walker that returns all types reachable from a root type
@@ -14,18 +14,33 @@ public static class DomainTypeGraphWalker
 
     public static IReadOnlyList<Type> GetReferencedTypes(Type root)
     {
-        var visited = new HashSet<Type>();
-        var result = new List<Type>();
-        Walk(root, visited, result);
-        return result;
+        return GetReferencedTypes(root, IsDomainType);
     }
 
     public static IReadOnlyList<Type> GetReferencedTypes(IEnumerable<Type> roots)
     {
+        return GetReferencedTypes(roots, IsDomainType);
+    }
+
+    /// <summary>
+    /// Returns all types reachable from the root, collecting only types that match
+    /// the supplied predicate. Defaults to Domain types; tests can supply a broader
+    /// predicate to walk over their own helper types.
+    /// </summary>
+    public static IReadOnlyList<Type> GetReferencedTypes(Type root, Func<Type, bool> collect)
+    {
+        var visited = new HashSet<Type>();
+        var result = new List<Type>();
+        Walk(root, collect, visited, result);
+        return result;
+    }
+
+    public static IReadOnlyList<Type> GetReferencedTypes(IEnumerable<Type> roots, Func<Type, bool> collect)
+    {
         var visited = new HashSet<Type>();
         var result = new List<Type>();
         foreach (var root in roots)
-            Walk(root, visited, result);
+            Walk(root, collect, visited, result);
         return result;
     }
 
@@ -41,7 +56,7 @@ public static class DomainTypeGraphWalker
         return all.Where(include).ToList();
     }
 
-    private static void Walk(Type? type, HashSet<Type> visited, List<Type> result)
+    private static void Walk(Type? type, Func<Type, bool> collect, HashSet<Type> visited, List<Type> result)
     {
         if (type is null) return;
 
@@ -50,7 +65,7 @@ public static class DomainTypeGraphWalker
         {
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
-                Walk(type.GetGenericArguments()[0], visited, result);
+                Walk(type.GetGenericArguments()[0], collect, visited, result);
                 return;
             }
         }
@@ -62,7 +77,7 @@ public static class DomainTypeGraphWalker
         // Unwrap arrays: T[] -> T
         if (type.IsArray)
         {
-            Walk(type.GetElementType(), visited, result);
+            Walk(type.GetElementType(), collect, visited, result);
             return;
         }
 
@@ -78,19 +93,7 @@ public static class DomainTypeGraphWalker
         if (!visited.Add(type))
             return;
 
-        // Only collect Notrelix.Domain types in the result
-        bool isDomainType;
-        try
-        {
-            isDomainType = type.Namespace?.StartsWith("Notrelix.Domain.", StringComparison.Ordinal) == true
-                && type.Assembly.GetName().Name?.StartsWith("Notrelix.", StringComparison.Ordinal) == true;
-        }
-        catch (System.BadImageFormatException)
-        {
-            return;
-        }
-
-        if (isDomainType)
+        if (collect(type))
             result.Add(type);
 
         // Base type chain
@@ -105,13 +108,13 @@ public static class DomainTypeGraphWalker
         }
 
         if (baseType is not null && baseType != typeof(object) && baseType != typeof(ValueType))
-            Walk(baseType, visited, result);
+            Walk(baseType, collect, visited, result);
 
         // Interfaces
         try
         {
             foreach (var iface in type.GetInterfaces())
-                Walk(iface, visited, result);
+                Walk(iface, collect, visited, result);
         }
         catch (System.BadImageFormatException)
         {
@@ -124,7 +127,7 @@ public static class DomainTypeGraphWalker
             if (type.IsGenericType && !type.IsGenericTypeDefinition)
             {
                 foreach (var arg in type.GetGenericArguments())
-                    Walk(arg, visited, result);
+                    Walk(arg, collect, visited, result);
             }
         }
         catch (System.BadImageFormatException)
@@ -136,7 +139,7 @@ public static class DomainTypeGraphWalker
         try
         {
             foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
-                Walk(field.FieldType, visited, result);
+                Walk(field.FieldType, collect, visited, result);
         }
         catch (System.BadImageFormatException)
         {
@@ -147,7 +150,7 @@ public static class DomainTypeGraphWalker
         try
         {
             foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
-                Walk(prop.PropertyType, visited, result);
+                Walk(prop.PropertyType, collect, visited, result);
         }
         catch (System.BadImageFormatException)
         {
@@ -160,7 +163,7 @@ public static class DomainTypeGraphWalker
             foreach (var ctor in type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
                 foreach (var param in ctor.GetParameters())
-                    Walk(param.ParameterType, visited, result);
+                    Walk(param.ParameterType, collect, visited, result);
             }
         }
         catch (System.BadImageFormatException)
@@ -175,9 +178,9 @@ public static class DomainTypeGraphWalker
             {
                 if (method.IsSpecialName) continue; // skip property/event accessors
 
-                Walk(method.ReturnType, visited, result);
+                Walk(method.ReturnType, collect, visited, result);
                 foreach (var param in method.GetParameters())
-                    Walk(param.ParameterType, visited, result);
+                    Walk(param.ParameterType, collect, visited, result);
             }
         }
         catch (System.BadImageFormatException)
@@ -191,12 +194,25 @@ public static class DomainTypeGraphWalker
             foreach (var evt in type.GetEvents(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
                 if (evt.EventHandlerType is not null)
-                    Walk(evt.EventHandlerType, visited, result);
+                    Walk(evt.EventHandlerType, collect, visited, result);
             }
         }
         catch (System.BadImageFormatException)
         {
             // skip
+        }
+    }
+
+    private static bool IsDomainType(Type type)
+    {
+        try
+        {
+            return type.Namespace?.StartsWith("Notrelix.Domain.", StringComparison.Ordinal) == true
+                && type.Assembly.GetName().Name?.StartsWith("Notrelix.", StringComparison.Ordinal) == true;
+        }
+        catch (System.BadImageFormatException)
+        {
+            return false;
         }
     }
 }

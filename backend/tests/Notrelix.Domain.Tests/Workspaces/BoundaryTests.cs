@@ -1,6 +1,6 @@
 using FluentAssertions;
 
-namespace Notrelix.Domain.Tests.Maturity;
+namespace Notrelix.Domain.Tests.Workspaces;
 
 public class BoundaryTests
 {
