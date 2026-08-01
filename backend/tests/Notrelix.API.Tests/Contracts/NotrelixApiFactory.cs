@@ -353,7 +353,13 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
 
             // Pipeline behavior dependencies.
             services.RemoveAll<IIdempotencyStore>();
-            services.AddScoped<IIdempotencyStore>(_ => Mock.Of<IIdempotencyStore>());
+            services.AddScoped<IIdempotencyStore>(_ =>
+            {
+                var mock = new Mock<IIdempotencyStore>();
+                mock.Setup(x => x.BeginAsync(It.IsAny<IdempotencyIdentity>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new IdempotencyBeginResult(IdempotencyBeginStatus.Started, "test-lease", null, null));
+                return mock.Object;
+            });
 
             services.RemoveAll<IRealtimePublisher>();
             services.AddScoped<IRealtimePublisher>(_ => Mock.Of<IRealtimePublisher>());

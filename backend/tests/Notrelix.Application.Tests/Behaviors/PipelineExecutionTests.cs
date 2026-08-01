@@ -111,11 +111,16 @@ public class PipelineExecutionTests
         return service;
     }
 
-    private static Mock<IIdempotencyStore> CreateMockIdempotencyStore(bool lockAcquired = true)
+    private static Mock<IIdempotencyStore> CreateMockIdempotencyStore(
+        IdempotencyBeginResult? beginResult = null)
     {
         var store = new Mock<IIdempotencyStore>();
-        store.Setup(x => x.TryAcquireLockAsync(It.IsAny<string>(), It.IsAny<TimeSpan>()))
-            .ReturnsAsync(lockAcquired);
+        store.Setup(x => x.BeginAsync(
+                It.IsAny<IdempotencyIdentity>(),
+                It.IsAny<TimeSpan>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(beginResult ?? new IdempotencyBeginResult(
+                IdempotencyBeginStatus.Started, "lease-token", null, null));
         return store;
     }
 
@@ -568,31 +573,33 @@ public class PipelineExecutionTests
     #region 4. Idempotency behavior
 
     [Fact]
-    public async Task IdempotencyBehavior_LockAcquired_ExecutesHandlerAndEnqueuesPostCommitResult()
+    public async Task IdempotencyBehavior_LeaseAcquired_ExecutesHandlerAndCompletesWithResult()
     {
-        var mockStore = CreateMockIdempotencyStore(lockAcquired: true);
-        var mockQueue = new Mock<IPostCommitActionQueue>();
+        var mockStore = CreateMockIdempotencyStore();
         var behavior = new IdempotencyBehavior<ExecutableCommand, string>(
-            mockStore.Object, mockQueue.Object, Mock.Of<ILogger<IdempotencyBehavior<ExecutableCommand, string>>>());
+            mockStore.Object, Mock.Of<ILogger<IdempotencyBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("result");
         var result = await behavior.Handle(new ExecutableCommand(), next, CancellationToken.None);
 
         result.Should().Be("result");
-        mockQueue.Verify(x => x.Enqueue(It.IsAny<IPostCommitAction>()), Times.Once);
+        mockStore.Verify(x => x.CompleteAsync(
+            It.IsAny<IdempotencyIdentity>(),
+            "lease-token",
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<DateTimeOffset>(),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task IdempotencyBehavior_LockNotAcquired_CachedResult_ReturnsCachedResult()
+    public async Task IdempotencyBehavior_AlreadyCompleted_ReturnsCachedResult()
     {
-        var mockStore = new Mock<IIdempotencyStore>();
-        mockStore.Setup(x => x.TryAcquireLockAsync("test-key", It.IsAny<TimeSpan>()))
-            .ReturnsAsync(false);
-        mockStore.Setup(x => x.GetResultAsync("test-key"))
-            .ReturnsAsync("cached-result");
+        var mockStore = CreateMockIdempotencyStore(new IdempotencyBeginResult(
+            IdempotencyBeginStatus.Completed, "lease", "\"cached-result\"", "System.String"));
 
         var behavior = new IdempotencyBehavior<ExecutableCommand, string>(
-            mockStore.Object, Mock.Of<IPostCommitActionQueue>(), Mock.Of<ILogger<IdempotencyBehavior<ExecutableCommand, string>>>());
+            mockStore.Object, Mock.Of<ILogger<IdempotencyBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => throw new InvalidOperationException("should not be called");
         var result = await behavior.Handle(new ExecutableCommand(), next, CancellationToken.None);
@@ -601,16 +608,13 @@ public class PipelineExecutionTests
     }
 
     [Fact]
-    public async Task IdempotencyBehavior_LockNotAcquired_NoCachedResult_ThrowsConflict()
+    public async Task IdempotencyBehavior_InProgress_ThrowsConflict()
     {
-        var mockStore = new Mock<IIdempotencyStore>();
-        mockStore.Setup(x => x.TryAcquireLockAsync("test-key", It.IsAny<TimeSpan>()))
-            .ReturnsAsync(false);
-        mockStore.Setup(x => x.GetResultAsync("test-key"))
-            .ReturnsAsync((string?)null);
+        var mockStore = CreateMockIdempotencyStore(new IdempotencyBeginResult(
+            IdempotencyBeginStatus.InProgress, "lease", null, null));
 
         var behavior = new IdempotencyBehavior<ExecutableCommand, string>(
-            mockStore.Object, Mock.Of<IPostCommitActionQueue>(), Mock.Of<ILogger<IdempotencyBehavior<ExecutableCommand, string>>>());
+            mockStore.Object, Mock.Of<ILogger<IdempotencyBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => throw new InvalidOperationException("should not be called");
 
@@ -620,20 +624,24 @@ public class PipelineExecutionTests
     }
 
     [Fact]
-    public async Task IdempotencyBehavior_HandlerThrows_ReleasesLockAndDoesNotEnqueueResult()
+    public async Task IdempotencyBehavior_HandlerThrows_DoesNotComplete()
     {
-        var mockStore = CreateMockIdempotencyStore(lockAcquired: true);
-        var mockQueue = new Mock<IPostCommitActionQueue>();
+        var mockStore = CreateMockIdempotencyStore();
         var behavior = new IdempotencyBehavior<ExecutableCommand, string>(
-            mockStore.Object, mockQueue.Object, Mock.Of<ILogger<IdempotencyBehavior<ExecutableCommand, string>>>());
+            mockStore.Object, Mock.Of<ILogger<IdempotencyBehavior<ExecutableCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => throw new InvalidOperationException("handler failed");
 
         Func<Task> act = () => behavior.Handle(new ExecutableCommand(), next, CancellationToken.None);
 
         await act.Should().ThrowAsync<InvalidOperationException>();
-        mockStore.Verify(x => x.ReleaseLockAsync("test-key"), Times.Once);
-        mockQueue.Verify(x => x.Enqueue(It.IsAny<IPostCommitAction>()), Times.Never);
+        mockStore.Verify(x => x.CompleteAsync(
+            It.IsAny<IdempotencyIdentity>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<DateTimeOffset>(),
+            It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -641,13 +649,16 @@ public class PipelineExecutionTests
     {
         var mockStore = CreateMockIdempotencyStore();
         var behavior = new IdempotencyBehavior<NonTransactionalCommand, string>(
-            mockStore.Object, Mock.Of<IPostCommitActionQueue>(), Mock.Of<ILogger<IdempotencyBehavior<NonTransactionalCommand, string>>>());
+            mockStore.Object, Mock.Of<ILogger<IdempotencyBehavior<NonTransactionalCommand, string>>>());
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("ok");
         var result = await behavior.Handle(new NonTransactionalCommand(), next, CancellationToken.None);
 
         result.Should().Be("ok");
-        mockStore.Verify(x => x.TryAcquireLockAsync(It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Never);
+        mockStore.Verify(x => x.BeginAsync(
+            It.IsAny<IdempotencyIdentity>(),
+            It.IsAny<TimeSpan>(),
+            It.IsAny<CancellationToken>()), Times.Never);
     }
 
     #endregion

@@ -1,17 +1,22 @@
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Infrastructure.Ops;
 
 public sealed class DevNullIdempotencyStore : IIdempotencyStore
 {
-    public Task<bool> TryAcquireLockAsync(string key, TimeSpan ttl)
-        => Task.FromResult(true);
+    public Task<IdempotencyBeginResult> BeginAsync(
+        IdempotencyIdentity identity,
+        TimeSpan leaseDuration,
+        CancellationToken cancellationToken)
+        => Task.FromResult(new IdempotencyBeginResult(
+            IdempotencyBeginStatus.Started, "dev-null", null, null));
 
-    public Task ReleaseLockAsync(string key)
+    public Task CompleteAsync(
+        IdempotencyIdentity identity,
+        string leaseToken,
+        string serializedResult,
+        string resultType,
+        DateTimeOffset expiresAt,
+        CancellationToken cancellationToken)
         => Task.CompletedTask;
-
-    public Task SetResultAsync<T>(string key, T result)
-        => Task.CompletedTask;
-
-    public Task<object?> GetResultAsync(string key)
-        => Task.FromResult<object?>(null);
 }

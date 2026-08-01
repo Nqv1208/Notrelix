@@ -78,7 +78,7 @@ public class ConcurrencyBehaviorTests
     }
 
     [Fact]
-    public async Task VersionMismatch_ShouldThrowConflict()
+    public async Task VersionMismatch_ShouldThrowPreconditionFailed()
     {
         var reader = CreateReader(version: 2);
         var behavior = new ConcurrencyBehavior<VersionedCommand, string>(reader.Object);
@@ -88,7 +88,7 @@ public class ConcurrencyBehaviorTests
             _ => Task.FromResult("ok"),
             default);
 
-        await act.Should().ThrowAsync<ConflictException>()
+        await act.Should().ThrowAsync<PreconditionFailedException>()
             .WithMessage($"*version mismatch*");
     }
 
