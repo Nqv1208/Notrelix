@@ -117,6 +117,9 @@ public static class DependencyInjection
             options.CustomSchemaIds(type =>
                 type.FullName!.Replace("+", ".", StringComparison.Ordinal));
 
+            // Include all endpoints in v1 document (endpoints without explicit GroupName)
+            options.DocInclusionPredicate((docName, apiDesc) => docName == "v1");
+
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 Description = "JWT Authorization header. Example: \"Bearer {token}\"",

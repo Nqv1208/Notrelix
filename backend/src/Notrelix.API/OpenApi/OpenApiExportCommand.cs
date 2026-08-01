@@ -13,24 +13,40 @@ public static class OpenApiExportCommand
 
     public static bool IsExportMode(string[] args) => args.Contains(Flag);
 
-    public static void Execute(WebApplication app, string[] args)
+    public static async Task ExecuteAsync(WebApplication app, string[] args)
     {
         var outputPath = args.SkipWhile(a => a != Flag).Skip(1).FirstOrDefault()
             ?? "contracts/openapi/notrelix.v1.json";
 
         app.MapEndpoints();
 
-        var swaggerProvider = app.Services
-            .GetRequiredService<Swashbuckle.AspNetCore.Swagger.ISwaggerProvider>();
+        // Use a random port to avoid conflicts — we only need the endpoint
+        // data source materialized, not actual HTTP serving.
+        app.Urls.Add("http://127.0.0.1:0");
 
-        var document = swaggerProvider.GetSwagger("v1");
+        // Start the app briefly to materialize the endpoint data source.
+        // The EndpointMetadataApiDescriptionProvider requires the composite
+        // EndpointDataSource to be built, which happens during app.Start().
+        await app.StartAsync();
 
-        var fullPath = Path.GetFullPath(outputPath);
-        Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+        try
+        {
+            var swaggerProvider = app.Services
+                .GetRequiredService<Swashbuckle.AspNetCore.Swagger.ISwaggerProvider>();
 
-        using var writer = new StreamWriter(fullPath, false, new System.Text.UTF8Encoding(false));
-        document.SerializeAsV3(new Microsoft.OpenApi.Writers.OpenApiJsonWriter(writer));
+            var document = swaggerProvider.GetSwagger("v1");
 
-        Console.WriteLine($"OpenAPI spec exported to {fullPath}");
+            var fullPath = Path.GetFullPath(outputPath);
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+
+            await using var writer = new StreamWriter(fullPath, false, new System.Text.UTF8Encoding(false));
+            document.SerializeAsV3(new Microsoft.OpenApi.Writers.OpenApiJsonWriter(writer));
+
+            Console.WriteLine($"OpenAPI spec exported to {fullPath}");
+        }
+        finally
+        {
+            await app.StopAsync();
+        }
     }
 }

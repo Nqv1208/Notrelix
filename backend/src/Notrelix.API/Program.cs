@@ -42,14 +42,36 @@ if (!isExportMode)
 {
     builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 }
+else
+{
+    // Export mode: register Infrastructure with safe defaults so endpoint
+    // parameter inference succeeds. AbortOnConnectFail=false prevents actual connections.
+    builder.Configuration["ConnectionStrings:Redis"] = "localhost:6379,abortConnect=false";
+    builder.Configuration["ConnectionStrings:Database"] = "Host=localhost;Database=notrelix_export;Username=export;Password=export";
+    builder.Configuration["JwtSettings:SecretKey"] = "export-only-dummy-key-at-least-32-characters-long";
+    builder.Configuration["JwtSettings:Issuer"] = "notrelix-export";
+    builder.Configuration["JwtSettings:Audience"] = "notrelix-export";
+    builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
+}
 
 builder.Services.AddApiLayer(builder.Configuration, builder.Environment);
+
+if (isExportMode)
+{
+    // Export mode: skip DI validation — Infrastructure is not registered,
+    // but endpoint metadata (routes, DTOs, Swagger) does not require runtime resolution.
+    builder.Host.UseDefaultServiceProvider(options =>
+    {
+        options.ValidateOnBuild = false;
+        options.ValidateScopes = false;
+    });
+}
 
 var app = builder.Build();
 
 if (isExportMode)
 {
-    OpenApiExportCommand.Execute(app, args);
+    await OpenApiExportCommand.ExecuteAsync(app, args);
     return;
 }
 
