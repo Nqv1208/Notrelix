@@ -12,4 +12,19 @@
     <ProjectReference Include="..\..\tests\Notrelix.Domain.Tests\Notrelix.Domain.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.Formats.Asn1">
+      <ExcludeAssets>runtime</ExcludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="System.Security.Cryptography.Xml">
+      <ExcludeAssets>runtime</ExcludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="System.Text.Json">
+      <ExcludeAssets>runtime</ExcludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
 </Project>

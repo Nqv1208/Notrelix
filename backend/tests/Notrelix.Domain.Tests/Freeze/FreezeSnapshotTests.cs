@@ -6,7 +6,7 @@ namespace Notrelix.Domain.Tests.Freeze;
 /// <summary>
 /// Verifies no drift in Domain freeze contract snapshots.
 /// Comparison only - never writes to approved files.
-/// Use FreezeSnapshotRegeneratorTests to regenerate.
+/// Regenerate approved files with tools/Notrelix.DomainFreezeSnapshots.
 /// </summary>
 public class FreezeSnapshotTests
 {

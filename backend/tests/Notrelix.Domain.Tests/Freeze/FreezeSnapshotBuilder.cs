@@ -143,8 +143,8 @@ public static class FreezeSnapshotBuilder
         var lines = new List<string>
         {
             "# Frozen Domain Public API Snapshot",
-            "# Snapshot schema: 1",
-            "# Contract: FrozenApi|Type|Member|MemberType|Visibility|IsAbstract|IsVirtual|Parameters",
+            "# Snapshot schema: 2",
+            "# Contract: FrozenApi|Type|Member|MemberType|Visibility|IsAbstract|IsVirtual|ReturnOrPropertyType|ParametersOrAccessor",
             ""
         };
 
@@ -152,38 +152,75 @@ public static class FreezeSnapshotBuilder
         {
             var ctors = type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
                 .Where(c => c.IsPublic || c.IsFamily)
-                .OrderBy(c => c.GetParameters().Length);
+                .OrderBy(c => c.GetParameters().Length)
+                .ThenBy(c => CanonicalParameterSignature(c), StringComparer.Ordinal);
             foreach (var ctor in ctors)
             {
-                var paramStr = string.Join(", ", ctor.GetParameters().Select(p => $"{CanonicalTypeNameFormatter.Format(p.ParameterType)} {p.Name}"));
-                lines.Add($"{type.FullName}|.ctor|Constructor|{(ctor.IsPublic ? "public" : "protected")}|{ctor.IsAbstract}|{ctor.IsVirtual}|{paramStr}");
+                var visibility = ctor.IsPublic ? "public" : "protected";
+                lines.Add(string.Join(
+                    "|",
+                    type.FullName,
+                    ".ctor",
+                    "Constructor",
+                    visibility,
+                    ctor.IsAbstract,
+                    ctor.IsVirtual,
+                    "System.Void",
+                    CanonicalParameterSignature(ctor)));
             }
 
             var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                 .Where(m => !m.IsSpecialName && m.GetBaseDefinition() == m)
                 .Where(m => !m.Name.StartsWith("get_") && !m.Name.StartsWith("set_") && !m.Name.StartsWith("add_") && !m.Name.StartsWith("remove_"))
                 .Where(m => m.Name != "RaiseDomainEvent" && m.Name != "ClearDomainEvents")
-                .OrderBy(m => m.Name, StringComparer.Ordinal);
+                .OrderBy(m => m.Name, StringComparer.Ordinal)
+                .ThenBy(m => CanonicalParameterSignature(m), StringComparer.Ordinal)
+                .ThenBy(m => CanonicalTypeNameFormatter.Format(m.ReturnType), StringComparer.Ordinal);
             foreach (var method in methods)
             {
-                var paramStr = string.Join(", ", method.GetParameters().Select(p => $"{CanonicalTypeNameFormatter.Format(p.ParameterType)} {p.Name}"));
                 var returnType = CanonicalTypeNameFormatter.Format(method.ReturnType);
-                lines.Add($"{type.FullName}|{method.Name}|Method|public|{method.IsAbstract}|{method.IsVirtual}|{returnType}|{paramStr}");
+                lines.Add(string.Join(
+                    "|",
+                    type.FullName,
+                    method.Name,
+                    "Method",
+                    "public",
+                    method.IsAbstract,
+                    method.IsVirtual,
+                    returnType,
+                    CanonicalParameterSignature(method)));
             }
 
             var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                 .Where(p => p.GetMethod?.IsPublic == true)
-                .OrderBy(p => p.Name, StringComparer.Ordinal);
+                .OrderBy(p => p.Name, StringComparer.Ordinal)
+                .ThenBy(p => CanonicalTypeNameFormatter.Format(p.PropertyType), StringComparer.Ordinal);
             foreach (var prop in properties)
             {
-                var setter = prop.SetMethod != null && (prop.SetMethod.IsPublic || prop.SetMethod.IsFamily)
+                var accessor = prop.SetMethod != null && (prop.SetMethod.IsPublic || prop.SetMethod.IsFamily)
                     ? "readwrite"
                     : "readonly";
-                lines.Add($"{type.FullName}|{prop.Name}|Property|public|{prop.GetMethod?.IsAbstract == true}|{prop.GetMethod?.IsVirtual == true}|{setter}|{CanonicalTypeNameFormatter.Format(prop.PropertyType)}");
+                var propertyType = CanonicalTypeNameFormatter.Format(prop.PropertyType);
+                lines.Add(string.Join(
+                    "|",
+                    type.FullName,
+                    prop.Name,
+                    "Property",
+                    "public",
+                    prop.GetMethod?.IsAbstract == true,
+                    prop.GetMethod?.IsVirtual == true,
+                    propertyType,
+                    accessor));
             }
         }
 
         return Encode(lines);
+    }
+
+    private static string CanonicalParameterSignature(MethodBase method)
+    {
+        return string.Join(", ", method.GetParameters().Select(p =>
+            $"{CanonicalTypeNameFormatter.Format(p.ParameterType)} {p.Name}"));
     }
 
     private static bool IsFrozenType(Type type)
