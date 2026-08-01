@@ -114,6 +114,9 @@ public static class DependencyInjection
                 Description = "Notrelix Enterprise Work Management API",
             });
 
+            options.CustomSchemaIds(type =>
+                type.FullName!.Replace("+", ".", StringComparison.Ordinal));
+
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 Description = "JWT Authorization header. Example: \"Bearer {token}\"",
