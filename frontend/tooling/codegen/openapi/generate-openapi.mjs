@@ -3,74 +3,69 @@
 /**
  * OpenAPI Code Generator
  *
- * Generates TypeScript types and API client from OpenAPI spec.
- * Target: packages/foundation/contracts/src/generated/rest/
+ * Generates TypeScript types from the committed backend OpenAPI spec
+ * using openapi-typescript.
+ *
+ * Input:  backend/contracts/openapi/notrelix.v1.json
+ * Output: packages/foundation/contracts/src/generated/rest/schema.ts
  *
  * Usage: node openapi/generate-openapi.mjs
+ * Override spec path: NOTRELIX_OPENAPI_SPEC=/path/to/spec.json
  */
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '../../..');
-const specPath = join(rootDir, 'openapi.json');
+const repoRoot = join(rootDir, '..');
+
+const specPath = process.env.NOTRELIX_OPENAPI_SPEC
+  || join(repoRoot, 'backend/contracts/openapi/notrelix.v1.json');
+
 const outputDir = join(rootDir, 'packages/foundation/contracts/src/generated/rest');
+const outputFile = join(outputDir, 'schema.ts');
 
 console.log('OpenAPI Code Generator');
 console.log('======================');
 console.log(`Spec: ${specPath}`);
-console.log(`Output: ${outputDir}`);
+console.log(`Output: ${outputFile}`);
 
 if (!existsSync(specPath)) {
-  console.log('\nNo openapi.json found. Skipping generation.');
-  console.log('Place your OpenAPI spec at the project root as openapi.json');
-  process.exit(0);
+  console.error(`\nERROR: OpenAPI spec not found at ${specPath}`);
+  console.error('Run the backend export first:');
+  console.error('  cd backend && dotnet run --project src/Notrelix.API -- --export-openapi contracts/openapi/notrelix.v1.json');
+  process.exit(1);
 }
 
-// Ensure output directory exists
-mkdirSync(outputDir, { recursive: true });
-
-// Read and parse spec
 const spec = JSON.parse(readFileSync(specPath, 'utf-8'));
 console.log(`\nParsed spec: ${spec.info?.title || 'Unknown'} v${spec.info?.version || '?'}`);
 
-// Generate types (placeholder - would use openapi-typescript or orval in production)
-const typesContent = `/**
- * Auto-generated from OpenAPI spec
- * DO NOT EDIT MANUALLY
- *
- * Spec: ${spec.info?.title || 'Unknown'} v${spec.info?.version || '?'}
- * Generated: ${new Date().toISOString()}
+mkdirSync(outputDir, { recursive: true });
+
+try {
+  execSync(
+    `npx openapi-typescript "${specPath}" -o "${outputFile}"`,
+    { cwd: join(__dirname, '..'), stdio: 'inherit' }
+  );
+  console.log('\nGenerated schema.ts');
+} catch {
+  console.error('\nERROR: openapi-typescript failed. Ensure it is installed:');
+  console.error('  pnpm add -D openapi-typescript --filter @notrelix/codegen');
+  process.exit(1);
+}
+
+const indexContent = `/**
+ * Auto-generated barrel export.
+ * DO NOT EDIT MANUALLY.
  */
 
-export type paths = Record<string, unknown>;
-export type components = Record<string, unknown>;
-export type operations = Record<string, unknown>;
+export type * from './schema';
 `;
 
-writeFileSync(join(outputDir, 'types.ts'), typesContent);
-console.log('Generated types.ts');
-
-// Generate client placeholder
-const clientContent = `/**
- * Auto-generated API client
- * DO NOT EDIT MANUALLY
- */
-
-import type { paths } from './types';
-
-export type ApiClient = {
-  get: <T>(path: string) => Promise<T>;
-  post: <T>(path: string, body: unknown) => Promise<T>;
-  put: <T>(path: string, body: unknown) => Promise<T>;
-  patch: <T>(path: string, body: unknown) => Promise<T>;
-  delete: <T>(path: string) => Promise<T>;
-};
-`;
-
-writeFileSync(join(outputDir, 'client.ts'), clientContent);
-console.log('Generated client.ts');
+writeFileSync(join(outputDir, 'index.ts'), indexContent);
+console.log('Generated index.ts');
 
 console.log('\nDone!');
