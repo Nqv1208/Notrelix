@@ -6,7 +6,10 @@ public class RawSqlArchitectureTests
     {
         // Reason: applies PostgreSQL RLS session variables
         "src/Notrelix.Infrastructure/Data/Rls/RlsSessionContext.cs",
-        
+
+        // Reason: sets READ ONLY transaction mode for read-scoped requests
+        "src/Notrelix.Infrastructure/Data/EfRequestDataSession.cs",
+
         // Reason: claim outbox messages with SKIP LOCKED
         "src/Notrelix.Infrastructure/BackgroundJobs/OutboxDispatcher.cs",
         

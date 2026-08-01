@@ -1,19 +1,28 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Options;
+using Notrelix.Application.Common.Data.Rls;
+using Notrelix.Infrastructure.Data.Rls;
+
 namespace Notrelix.Infrastructure.Data.Rls;
 
 public sealed class RlsSessionContext : IRlsSessionContext
 {
+    private readonly DatabaseFacade _database;
     private readonly IOptions<RlsOptions> _options;
     private readonly ICurrentTenantContext _tenant;
 
     public RlsSessionContext(
+        ApplicationDbContext dbContext,
         IOptions<RlsOptions> options,
         ICurrentTenantContext tenant)
     {
+        _database = dbContext.Database;
         _options = options;
         _tenant = tenant;
     }
 
-    public async Task ApplyAsync(DatabaseFacade database, CancellationToken cancellationToken)
+    public async Task ApplyAsync(CancellationToken cancellationToken)
     {
         if (!_options.Value.SetSessionContext)
         {
@@ -41,7 +50,7 @@ public sealed class RlsSessionContext : IRlsSessionContext
         var scope = _tenant.IsSystemContext ? "worker" : "app";
         var correlationId = System.Diagnostics.Activity.Current?.Id ?? "";
 
-        await database.ExecuteSqlInterpolatedAsync($@"
+        await _database.ExecuteSqlInterpolatedAsync($@"
             SELECT set_config('app.current_user_id', {userId}, true);
             SELECT set_config('app.current_account_id', {accountId}, true);
             SELECT set_config('app.current_workspace_id', {workspaceId}, true);

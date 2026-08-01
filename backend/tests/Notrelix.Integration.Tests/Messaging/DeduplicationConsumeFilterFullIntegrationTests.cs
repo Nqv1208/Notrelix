@@ -39,6 +39,7 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
         var context = _db.CreateContext(tenant);
         var store = new MessageDeduplicationStore(context);
         var rls = new RlsSessionContext(
+            context,
             Microsoft.Extensions.Options.Options.Create(new RlsOptions { SetSessionContext = true }),
             tenant);
         return (context, store, rls);
@@ -296,6 +297,7 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
         var context = _db.CreateContext(tenant);
         var store = new MessageDeduplicationStore(context);
         var rls = new RlsSessionContext(
+            context,
             Microsoft.Extensions.Options.Options.Create(new RlsOptions { SetSessionContext = true }),
             tenant);
 
@@ -362,6 +364,7 @@ public class DeduplicationConsumeFilterFullIntegrationTests : IAsyncLifetime
         var context = _db.CreateContext(tenant);
         var store = new MessageDeduplicationStore(context);
         var rls = new RlsSessionContext(
+            context,
             Microsoft.Extensions.Options.Options.Create(new RlsOptions { SetSessionContext = true }),
             tenant);
 

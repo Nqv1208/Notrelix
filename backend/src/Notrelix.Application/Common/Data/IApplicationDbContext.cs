@@ -1,12 +1,11 @@
 namespace Notrelix.Application.Common.Data;
 
 /// <summary>
-/// Minimal application-level DbContext interface after the split refactoring.
-/// Only exposes Database (for transactions) and SaveChangesAsync.
+/// Minimal application-level DbContext interface.
 /// Bounded-context-specific DbSets are on individual context interfaces.
+/// Transaction and RLS mechanics are owned by IRequestDataSession (Infrastructure).
 /// </summary>
 public interface IApplicationDbContext
 {
-    DatabaseFacade Database { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

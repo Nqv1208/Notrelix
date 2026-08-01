@@ -67,6 +67,9 @@ public static class PersistenceRegistration
         // IApplicationDbContext maps to ApplicationDbContext
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
+        // Provider-independent data session (transaction/RLS/SaveChanges mechanics)
+        services.AddScoped<IRequestDataSession, EfRequestDataSession>();
+
         // Map bounded-context interfaces to ApplicationDbContext
         // Platform
         services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());

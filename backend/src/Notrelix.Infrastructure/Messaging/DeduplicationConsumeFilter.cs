@@ -37,7 +37,7 @@ public sealed class DeduplicationConsumeFilter<T> : IFilter<ConsumeContext<T>>
         {
             // CRITICAL: Apply RLS trong transaction này cho TẤT CẢ events
             // Bao gồm cả system events (khi _tenant.IsSystemContext == true)
-            await _rls.ApplyAsync(_db.Database, context.CancellationToken);
+            await _rls.ApplyAsync(context.CancellationToken);
 
             var claimed = await _dedupStore.TryClaimProcessingAsync(
                 messageId: integrationEvent.EventId,
