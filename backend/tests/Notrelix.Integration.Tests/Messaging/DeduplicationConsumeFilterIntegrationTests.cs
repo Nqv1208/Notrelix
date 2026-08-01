@@ -30,7 +30,7 @@ public class DeduplicationConsumeFilterIntegrationTests : IAsyncLifetime
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
         var context = _db.CreateContext(tenant);
-        var store = new MessageDeduplicationStore(context);
+        var store = new MessageDeduplicationStore(context, new DateTimeProvider());
         return (context, store);
     }
 

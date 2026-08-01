@@ -55,11 +55,36 @@ internal sealed class OutboxDispatcher : BackgroundService
 
     private async Task ProcessBatchAsync(CancellationToken cancellationToken)
     {
+        // Phase 1: Short claim transaction — select + mark Processing + commit
+        var claimed = await ClaimBatchAsync(cancellationToken);
+        if (claimed.Count == 0) return;
+
+        // Phase 2: Publish outside database transaction
         await using var scope = _scopeFactory.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var integrationEventBus = scope.ServiceProvider.GetRequiredService<IIntegrationEventBus>();
         var eventTypeRegistry = scope.ServiceProvider.GetRequiredService<IEventTypeRegistry>();
         var eventCatalog = scope.ServiceProvider.GetRequiredService<IIntegrationEventCatalog>();
+        var dateTimeProvider = scope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
+
+        // Re-attach claimed messages to this scope's context
+        var messages = await context.Set<MessagingOutboxMessage>()
+            .Where(m => claimed.Contains(m.Id))
+            .ToListAsync(cancellationToken);
+
+        foreach (var message in messages)
+        {
+            await ProcessMessageAsync(message, context, eventTypeRegistry, eventCatalog, integrationEventBus, dateTimeProvider, cancellationToken);
+        }
+
+        // Phase 3: Short completion transaction — mark Processed/Failed + commit
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task<List<Guid>> ClaimBatchAsync(CancellationToken cancellationToken)
+    {
+        await using var scope = _scopeFactory.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var dateTimeProvider = scope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
 
         var now = dateTimeProvider.UtcNow;
@@ -88,7 +113,7 @@ internal sealed class OutboxDispatcher : BackgroundService
             if (messages.Count == 0)
             {
                 await transaction.RollbackAsync(cancellationToken);
-                return;
+                return [];
             }
 
             foreach (var message in messages)
@@ -97,14 +122,10 @@ internal sealed class OutboxDispatcher : BackgroundService
             }
 
             await context.SaveChangesAsync(cancellationToken);
-
-            foreach (var message in messages)
-            {
-                await ProcessMessageAsync(message, context, eventTypeRegistry, eventCatalog, integrationEventBus, dateTimeProvider, cancellationToken);
-            }
-
-            await context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+
+            _logger.LogDebug("Claimed {Count} outbox messages for dispatch", messages.Count);
+            return messages.Select(m => m.Id).ToList();
         }
         catch
         {
@@ -176,6 +197,7 @@ internal sealed class OutboxDispatcher : BackgroundService
                 return;
             }
 
+            // Publish OUTSIDE database transaction — broker latency does not hold DB locks
             await integrationEventBus.PublishAsync(integrationEvent, cancellationToken);
 
             message.MarkProcessed(now);
