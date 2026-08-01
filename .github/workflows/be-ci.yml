@@ -2,17 +2,16 @@ name: Backend CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, foundationfreeze]
     paths:
       - 'backend/**'
-      - '.github/workflows/ci.yml'
-      - '.github/dependabot.yml'
+      - '.github/workflows/be-ci.yml'
 
   pull_request:
     branches: [main, develop]
     paths:
       - 'backend/**'
-      - '.github/workflows/ci.yml'
+      - '.github/workflows/be-ci.yml'
 
 permissions:
   contents: read
@@ -190,15 +189,20 @@ jobs:
 
       - name: Export OpenAPI spec and verify no drift
         working-directory: backend
-        run: >
-          dotnet run
-          --project src/Notrelix.API/Notrelix.API.csproj
-          --configuration $DOTNET_CONFIGURATION
-          --no-build
-          --
-          --export-openapi
-          contracts/openapi/notrelix.v1.json
-          && git diff --exit-code -- contracts/openapi/notrelix.v1.json
+        env:
+          DOTNET_ENVIRONMENT: Development
+        run: |
+          test -f contracts/openapi/notrelix.v1.json
+          git ls-files --error-unmatch contracts/openapi/notrelix.v1.json
+          dotnet run \
+            --project src/Notrelix.API/Notrelix.API.csproj \
+            --configuration $DOTNET_CONFIGURATION \
+            --no-build \
+            -- \
+            --export-openapi \
+            /tmp/notrelix.v1.generated.json
+          cmp contracts/openapi/notrelix.v1.json /tmp/notrelix.v1.generated.json \
+            || (echo "OpenAPI spec drift detected. Regenerate: dotnet run --project src/Notrelix.API -- --export-openapi contracts/openapi/notrelix.v1.json" && exit 1)
 
       - name: Application tests
         working-directory: backend
