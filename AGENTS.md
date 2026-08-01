@@ -927,17 +927,18 @@ Persistence round-trip for versioned contracts
 
 Do not add tests only to satisfy test count or coverage metadata.
 
-Freeze gates must:
+Architecture and contract gates must:
 
 ```txt
-- Resolve exact mutation overloads.
-- Enforce required scenarios.
-- Exclude Stabilizing/Experimental contracts from Frozen snapshots.
-- Fail closed when source/project compilation is unavailable.
-- Never skip silently.
+- Pass without skips in CI.
+- Protect Domain Event logical names, versions, and payload shapes.
+- Protect event-reachable enum numeric values.
+- Protect rule-code string values.
+- Enforce friend assembly boundary (Domain.Tests only).
+- Enforce Domain framework purity (no EF/HTTP/provider references).
 ```
 
-Use targeted tests while implementing. Run broader gates when changing public contracts, events, mappings, migrations, capability status, or snapshots.
+Use targeted tests while implementing. Run broader gates when changing public contracts, events, mappings, migrations, or snapshots.
 
 ### Domain behavior tests
 
