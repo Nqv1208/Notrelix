@@ -1,5 +1,4 @@
 using Notrelix.Application.Common.Idempotency;
-using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Operations.Idempotency;
 using Notrelix.Integration.Tests.Containers;
 

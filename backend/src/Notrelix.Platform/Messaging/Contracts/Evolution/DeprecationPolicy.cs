@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Notrelix.Platform.Messaging.Contracts;
 using Notrelix.Platform.Messaging.Runtime;
 using Notrelix.Platform.Messaging.Runtime.Governance;
 

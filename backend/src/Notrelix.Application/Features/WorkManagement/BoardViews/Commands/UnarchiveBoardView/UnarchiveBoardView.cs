@@ -1,6 +1,5 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
-using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.UnarchiveBoardView;
 

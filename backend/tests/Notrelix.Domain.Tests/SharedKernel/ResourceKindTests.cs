@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Domain.Tests.SharedKernel;
 

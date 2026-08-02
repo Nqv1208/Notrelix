@@ -1,6 +1,5 @@
 using System.Reflection;
 using Notrelix.Application.Common.Behaviors;
-using Notrelix.Application.Common.Idempotency;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
 using Notrelix.Application.Features.Identity.Verification.Services;
 

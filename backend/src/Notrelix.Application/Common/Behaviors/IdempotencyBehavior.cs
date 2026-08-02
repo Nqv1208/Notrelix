@@ -2,7 +2,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
-using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Common.Behaviors;
 

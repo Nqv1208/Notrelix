@@ -1,5 +1,4 @@
 using System.Reflection;
-using MediatR;
 
 namespace Notrelix.Architecture.Tests.ApplicationLayer;
 

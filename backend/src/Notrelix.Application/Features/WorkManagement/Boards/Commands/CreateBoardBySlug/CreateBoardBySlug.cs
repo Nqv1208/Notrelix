@@ -5,7 +5,6 @@ using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 using Notrelix.Domain.SharedKernel.Ordering;
-using Notrelix.Application.Common.Idempotency;
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardBySlug;
 
 [IdempotencyOperation("work-management.boards.create-board-by-slug.v1")]

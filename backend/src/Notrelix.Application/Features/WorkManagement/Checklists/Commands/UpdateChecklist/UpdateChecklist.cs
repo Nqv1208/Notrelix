@@ -2,7 +2,6 @@ using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 using Notrelix.Domain.SharedKernel.Ordering;
-using Notrelix.Application.Common.Idempotency;
 namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.UpdateChecklist;
 
 [IdempotencyOperation("work-management.checklists.update-checklist.v1")]

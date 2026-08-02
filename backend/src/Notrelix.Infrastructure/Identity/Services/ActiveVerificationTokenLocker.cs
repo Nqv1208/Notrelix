@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
 using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Infrastructure.Data;

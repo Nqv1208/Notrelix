@@ -1,6 +1,3 @@
-using Notrelix.Application.Common.Idempotency;
-using Notrelix.Application.Common.Requests;
-
 namespace Notrelix.API.Filters;
 
 /// <summary>

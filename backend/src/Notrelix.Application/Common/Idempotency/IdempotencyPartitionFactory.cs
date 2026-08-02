@@ -1,6 +1,3 @@
-using Notrelix.Application.Common.Requests;
-using Notrelix.Application.Common.Security;
-
 namespace Notrelix.Application.Common.Idempotency;
 
 /// <summary>

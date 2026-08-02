@@ -2,7 +2,6 @@ using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 using Notrelix.Domain.SharedKernel.Ordering;
-using Notrelix.Application.Common.Idempotency;
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
 
 [IdempotencyOperation("work-management.board-fields.create-board-field.v1")]
