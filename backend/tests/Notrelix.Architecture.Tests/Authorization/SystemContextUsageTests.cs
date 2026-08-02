@@ -29,6 +29,7 @@ public class SystemContextUsageTests
         "ResourceScopeResolver.cs",
         "EmailTemplateMaterialization.cs",
         "EmailVerificationTokenIssuer.cs",
+        "ActiveVerificationTokenLocker.cs",
     ];
 
     [Fact]

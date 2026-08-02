@@ -18,6 +18,9 @@ public class RawSqlArchitectureTests
         
         // Reason: query permission version with MAX(updated_at)
         "src/Notrelix.Infrastructure/Governance/Services/PermissionVersionProvider.cs",
+
+        // Reason: lock active verification tokens with FromSqlInterpolated
+        "src/Notrelix.Infrastructure/Identity/Services/ActiveVerificationTokenLocker.cs",
     };
 
     [Fact]

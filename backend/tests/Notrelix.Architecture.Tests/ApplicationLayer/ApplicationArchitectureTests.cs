@@ -505,13 +505,13 @@ public class ApplicationArchitectureTests
     }
 
     [Fact]
-    public void EntityFrameworkCoreRelational_IsReferencedByApplication()
+    public void EntityFrameworkCoreRelational_IsNotReferencedByApplication()
     {
         var csprojPath = Path.Combine(GetApplicationPath(), "Notrelix.Application.csproj");
         var content = File.ReadAllText(csprojPath);
 
-        content.Should().Contain("Microsoft.EntityFrameworkCore.Relational",
-            "Application must reference EF Core Relational to use ExecuteSqlRawAsync for SET TRANSACTION READ ONLY");
+        content.Should().NotContain("Microsoft.EntityFrameworkCore.Relational",
+            "Application must not reference EF Core Relational — raw SQL belongs in Infrastructure");
     }
 
     [Fact]
