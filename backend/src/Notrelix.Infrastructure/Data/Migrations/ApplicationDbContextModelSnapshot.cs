@@ -8653,6 +8653,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(120)")
                         .HasColumnName("last_error_code");
 
+                    b.Property<Guid?>("LockId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lock_id");
+
                     b.Property<string>("LockedBy")
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)")
@@ -10454,6 +10458,87 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("search_index_jobs", "search");
                 });
 
+            modelBuilder.Entity("Notrelix.Infrastructure.Operations.Idempotency.IdempotencyRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("KeyHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("key_hash");
+
+                    b.Property<DateTimeOffset>("LeaseExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("lease_expires_at");
+
+                    b.Property<Guid>("LeaseToken")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lease_token");
+
+                    b.Property<string>("Operation")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("operation");
+
+                    b.Property<string>("RequestHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("request_hash");
+
+                    b.Property<string>("ResultContract")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("result_contract");
+
+                    b.Property<string>("ResultJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("result_json");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("scope");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("state");
+
+                    b.HasKey("Id")
+                        .HasName("pk_idempotency_records");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("ix_idempotency_records_expires_at");
+
+                    b.HasIndex("State", "LeaseExpiresAt")
+                        .HasDatabaseName("ix_idempotency_records_state_lease");
+
+                    b.HasIndex("Scope", "Operation", "KeyHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_idempotency_records_scope_op_key");
+
+                    b.ToTable("idempotency_records", "ops");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Analytics.Dashboards.DashboardWidget", b =>
                 {
                     b.HasOne("Notrelix.Domain.Analytics.Dashboards.Dashboard", null)
@@ -10782,6 +10867,38 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Notrelix.Domain.Collaboration.Attachments.Attachment", b =>
                 {
+                    b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
+                        {
+                            b1.Property<Guid>("AttachmentId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<Guid>("ResourceId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("resource_id");
+
+                            b1.Property<string>("ResourceType")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("resource_type");
+
+                            b1.Property<Guid?>("WorkspaceId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("target_workspace_id");
+
+                            b1.HasKey("AttachmentId");
+
+                            b1.HasIndex("ResourceType", "ResourceId")
+                                .HasDatabaseName("idx_attachments_resource");
+
+                            b1.ToTable("attachments", "collab");
+
+                            b1.WithOwner()
+                                .HasForeignKey("AttachmentId")
+                                .HasConstraintName("fk_attachments_attachments_id");
+                        });
+
                     b.OwnsOne("Notrelix.Domain.Collaboration.Attachments.FileMetadata", "Metadata", b1 =>
                         {
                             b1.Property<Guid>("AttachmentId")
@@ -10823,38 +10940,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                                 .HasConstraintName("fk_attachments_attachments_id");
                         });
 
-                    b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
-                        {
-                            b1.Property<Guid>("AttachmentId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
-
-                            b1.Property<Guid>("ResourceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("resource_id");
-
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("resource_type");
-
-                            b1.Property<Guid?>("WorkspaceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("target_workspace_id");
-
-                            b1.HasKey("AttachmentId");
-
-                            b1.HasIndex("ResourceType", "ResourceId")
-                                .HasDatabaseName("idx_attachments_resource");
-
-                            b1.ToTable("attachments", "collab");
-
-                            b1.WithOwner()
-                                .HasForeignKey("AttachmentId")
-                                .HasConstraintName("fk_attachments_attachments_id");
-                        });
-
                     b.Navigation("Metadata")
                         .IsRequired();
 
@@ -10869,30 +10954,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasForeignKey("ParentId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_comments_comments_parent_id");
-
-                    b.OwnsOne("Notrelix.Domain.Collaboration.Comments.CommentAnchor", "Anchor", b1 =>
-                        {
-                            b1.Property<Guid>("CommentId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
-
-                            b1.Property<int?>("Offset")
-                                .HasColumnType("integer")
-                                .HasColumnName("anchor_offset");
-
-                            b1.Property<string>("Selector")
-                                .HasMaxLength(256)
-                                .HasColumnType("character varying(256)")
-                                .HasColumnName("anchor_selector");
-
-                            b1.HasKey("CommentId");
-
-                            b1.ToTable("comments", "collab");
-
-                            b1.WithOwner()
-                                .HasForeignKey("CommentId")
-                                .HasConstraintName("fk_comments_comments_id");
-                        });
 
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
                         {
@@ -10918,6 +10979,30 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                             b1.HasIndex("ResourceType", "ResourceId")
                                 .HasDatabaseName("idx_comments_resource");
+
+                            b1.ToTable("comments", "collab");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CommentId")
+                                .HasConstraintName("fk_comments_comments_id");
+                        });
+
+                    b.OwnsOne("Notrelix.Domain.Collaboration.Comments.CommentAnchor", "Anchor", b1 =>
+                        {
+                            b1.Property<Guid>("CommentId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<int?>("Offset")
+                                .HasColumnType("integer")
+                                .HasColumnName("anchor_offset");
+
+                            b1.Property<string>("Selector")
+                                .HasMaxLength(256)
+                                .HasColumnType("character varying(256)")
+                                .HasColumnName("anchor_selector");
+
+                            b1.HasKey("CommentId");
 
                             b1.ToTable("comments", "collab");
 
@@ -11431,27 +11516,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_calendar_events_calendar_integrations_integration_id");
 
-                    b.OwnsOne("Notrelix.Domain.Integrations.Calendar.CalendarSyncFingerprint", "SyncHash", b1 =>
-                        {
-                            b1.Property<Guid>("CalendarEventId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
-
-                            b1.Property<string>("Value")
-                                .IsRequired()
-                                .HasMaxLength(64)
-                                .HasColumnType("character varying(64)")
-                                .HasColumnName("sync_hash");
-
-                            b1.HasKey("CalendarEventId");
-
-                            b1.ToTable("calendar_events", "integration");
-
-                            b1.WithOwner()
-                                .HasForeignKey("CalendarEventId")
-                                .HasConstraintName("fk_calendar_events_calendar_events_id");
-                        });
-
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
                         {
                             b1.Property<Guid>("CalendarEventId")
@@ -11476,6 +11540,27 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                             b1.HasIndex("ResourceType", "ResourceId")
                                 .HasDatabaseName("idx_calendar_events_resource");
+
+                            b1.ToTable("calendar_events", "integration");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CalendarEventId")
+                                .HasConstraintName("fk_calendar_events_calendar_events_id");
+                        });
+
+                    b.OwnsOne("Notrelix.Domain.Integrations.Calendar.CalendarSyncFingerprint", "SyncHash", b1 =>
+                        {
+                            b1.Property<Guid>("CalendarEventId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character varying(64)")
+                                .HasColumnName("sync_hash");
+
+                            b1.HasKey("CalendarEventId");
 
                             b1.ToTable("calendar_events", "integration");
 

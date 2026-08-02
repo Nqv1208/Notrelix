@@ -1,6 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Operations.Idempotency;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Ops;

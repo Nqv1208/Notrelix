@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Requests.Execution;
-using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Registration.Commands.Register;
 
 namespace Notrelix.Application.Tests.Common.Requests;

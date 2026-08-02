@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Messaging;
 using Notrelix.Infrastructure.Data.Events;
 using Notrelix.Infrastructure.Data.Messaging;
 

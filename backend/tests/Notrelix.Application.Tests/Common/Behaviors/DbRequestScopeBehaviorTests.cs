@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Requests.Scoping;
-
 namespace Notrelix.Application.Tests.Common.Behaviors;
 
 public class DbRequestScopeBehaviorTests

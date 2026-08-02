@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Notrelix.Application.Common.Context;
 
 namespace Notrelix.Application.Common.Behaviors;
 

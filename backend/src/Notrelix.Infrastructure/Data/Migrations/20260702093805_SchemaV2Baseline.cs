@@ -1074,6 +1074,30 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "idempotency_records",
+                schema: "ops",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    scope = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    operation = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    key_hash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    request_hash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    state = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    lease_token = table.Column<Guid>(type: "uuid", nullable: false),
+                    lease_expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    result_json = table.Column<string>(type: "jsonb", nullable: true),
+                    result_contract = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: true),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    completed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_idempotency_records", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "import_jobs",
                 schema: "ops",
                 columns: table => new
@@ -1430,6 +1454,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     max_retries = table.Column<int>(type: "integer", nullable: false, defaultValue: 5),
                     next_attempt_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     processing_started_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    lock_id = table.Column<Guid>(type: "uuid", nullable: true),
                     locked_by = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: true),
                     locked_until = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     published_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -4699,6 +4724,25 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_idempotency_records_expires_at",
+                schema: "ops",
+                table: "idempotency_records",
+                column: "expires_at");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_idempotency_records_scope_op_key",
+                schema: "ops",
+                table: "idempotency_records",
+                columns: new[] { "scope", "operation", "key_hash" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_idempotency_records_state_lease",
+                schema: "ops",
+                table: "idempotency_records",
+                columns: new[] { "state", "lease_expires_at" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_import_jobs_status",
                 schema: "ops",
                 table: "import_jobs",
@@ -5907,6 +5951,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
             migrationBuilder.DropTable(
                 name: "idempotency_keys",
+                schema: "ops");
+
+            migrationBuilder.DropTable(
+                name: "idempotency_records",
                 schema: "ops");
 
             migrationBuilder.DropTable(
