@@ -20,7 +20,6 @@ public sealed class CriticalPortRegistrationTests
         {
             (typeof(IRequestDataSession), "transaction/RLS/SaveChanges mechanics"),
             (typeof(IRlsSessionContext), "row-level security session context"),
-            (typeof(IApplicationDbContext), "application DbContext abstraction"),
             (typeof(IDateTimeProvider), "deterministic time provider"),
         };
 

@@ -64,9 +64,6 @@ public static class PersistenceRegistration
             }).UseSnakeCaseNamingConvention();
         });
 
-        // IApplicationDbContext maps to ApplicationDbContext
-        services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
-
         // Provider-independent data session (transaction/RLS/SaveChanges mechanics)
         services.AddScoped<IRequestDataSession, EfRequestDataSession>();
 

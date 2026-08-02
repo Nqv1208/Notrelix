@@ -2,7 +2,6 @@ namespace Notrelix.Architecture.Tests;
 
 /// <summary>
 /// Enforces handler injection rules:
-/// - No IApplicationDbContext in handlers
 /// - No ApplicationDbContext in handlers
 /// - No Guid.Empty accountId in factory calls
 /// </summary>
@@ -10,25 +9,6 @@ public class HandlerBoundaryArchitectureTests
 {
     private static readonly string FeaturesPath = Path.Combine(
         FindProjectRoot(), "src", "Notrelix.Application", "Features");
-
-    [Fact]
-    public void Handlers_ShouldNotInject_IApplicationDbContext()
-    {
-        var handlerFiles = Directory.GetFiles(FeaturesPath, "*.cs", SearchOption.AllDirectories);
-
-        foreach (var file in handlerFiles)
-        {
-            var content = File.ReadAllText(file);
-            var relativePath = Path.GetRelativePath(FindProjectRoot(), file);
-
-            // Skip DTOs, validators, commands, queries — only check handlers
-            if (!relativePath.Contains("Handler") && !content.Contains("IRequestHandler"))
-                continue;
-
-            content.Should().NotContain("IApplicationDbContext _",
-                $"Handler {relativePath} must not inject IApplicationDbContext");
-        }
-    }
 
     [Fact]
     public void Handlers_ShouldNotInject_ApplicationDbContext()
@@ -65,7 +45,7 @@ public class HandlerBoundaryArchitectureTests
             // Inline handlers must not inject IO services
             var ioServicePatterns = new[]
             {
-                "IApplicationDbContext", "IAutomationDbContext",
+                "ApplicationDbContext", "IAutomationDbContext",
                 "DbContext", "IJobQueue",
                 "IEmailService", "IHttpClientFactory",
                 "HttpClient", "ISender"

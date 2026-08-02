@@ -219,7 +219,6 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             // options and context directly without AddDbContext.
             services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
             services.RemoveAll<ApplicationDbContext>();
-            services.RemoveAll<IApplicationDbContext>();
 
             services.AddSingleton(sp =>
                 new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -270,9 +269,6 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
 
                 return new TestApplicationDbContext(options, tenant);
             });
-
-            services.AddScoped<IApplicationDbContext>(sp =>
-                sp.GetRequiredService<ApplicationDbContext>());
 
             // Replace Redis cache with in-memory distributed cache for testing.
             // Remove all Redis-dependent services to prevent DI resolution failures.

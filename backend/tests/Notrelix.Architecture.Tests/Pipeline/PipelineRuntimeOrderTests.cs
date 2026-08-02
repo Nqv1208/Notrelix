@@ -55,7 +55,6 @@ public class PipelineRuntimeOrderTests
         services.AddSingleton<ITenantBootstrapStore>(Mock.Of<ITenantBootstrapStore>());
         services.AddSingleton<IAuthorizationDecisionStore>(Mock.Of<IAuthorizationDecisionStore>());
         services.AddSingleton<IPermissionService>(Mock.Of<IPermissionService>());
-        services.AddSingleton<IApplicationDbContext>(Mock.Of<IApplicationDbContext>());
         services.AddSingleton<IRequestDataSession>(Mock.Of<IRequestDataSession>());
         services.AddSingleton<IEnumerable<IValidator<TestRequest>>>(Array.Empty<IValidator<TestRequest>>());
 

@@ -129,7 +129,6 @@ public class DbContextBoundaryTests
             "IIntegrationDbContext",
             "IReportingDbContext",
             "IAccountDbContext",
-            "IApplicationDbContext",
         };
 
         var violations = new List<string>();
