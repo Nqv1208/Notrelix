@@ -202,7 +202,7 @@ public sealed class EfIdempotencyStore : IIdempotencyStore
         cmd.Transaction = transaction;
         cmd.CommandText = """
             UPDATE ops.idempotency_records
-            SET state = 'Completed', result_json = @resultJson, result_contract = @resultContract,
+            SET state = 'Completed', result_json = @resultJson::jsonb, result_contract = @resultContract,
                 completed_at = @completedAt, expires_at = @expiresAt
             WHERE scope = @scope AND operation = @operation AND key_hash = @keyHash
               AND request_hash = @requestHash AND state = 'Processing'

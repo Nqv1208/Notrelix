@@ -238,7 +238,6 @@ public partial class ApplicationDbContext
     public DbSet<SearchIndexJobRecord> SearchIndexJobs => Set<SearchIndexJobRecord>();
 
     // Ops infrastructure records
-    public DbSet<IdempotencyKeyRecord> IdempotencyKeys => Set<IdempotencyKeyRecord>();
     public DbSet<Notrelix.Infrastructure.Operations.Idempotency.IdempotencyRecord> IdempotencyRecords => Set<Notrelix.Infrastructure.Operations.Idempotency.IdempotencyRecord>();
     public DbSet<ImportJobRecord> ImportJobs => Set<ImportJobRecord>();
     public DbSet<ExportJobRecord> ExportJobs => Set<ExportJobRecord>();

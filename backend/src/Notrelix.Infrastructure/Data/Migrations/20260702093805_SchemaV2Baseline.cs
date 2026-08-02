@@ -1047,33 +1047,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "idempotency_keys",
-                schema: "ops",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    workspace_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    user_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    scope = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
-                    idempotency_key = table.Column<string>(type: "character varying(260)", maxLength: 260, nullable: false),
-                    request_method = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
-                    request_path = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    request_hash = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    status = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
-                    response_status_code = table.Column<int>(type: "integer", nullable: true),
-                    response_body_json = table.Column<string>(type: "jsonb", nullable: true),
-                    error_message = table.Column<string>(type: "text", nullable: true),
-                    locked_until = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    completed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_idempotency_keys", x => x.id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "idempotency_records",
                 schema: "ops",
                 columns: table => new
@@ -1084,8 +1057,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     key_hash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     request_hash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     state = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    lease_token = table.Column<Guid>(type: "uuid", nullable: false),
-                    lease_expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     result_json = table.Column<string>(type: "jsonb", nullable: true),
                     result_contract = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
@@ -4711,19 +4682,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_idempotency_keys_expires_at",
-                schema: "ops",
-                table: "idempotency_keys",
-                column: "expires_at");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_idempotency_keys_scope_key",
-                schema: "ops",
-                table: "idempotency_keys",
-                columns: new[] { "scope", "idempotency_key" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "ix_idempotency_records_expires_at",
                 schema: "ops",
                 table: "idempotency_records",
@@ -4735,12 +4693,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 table: "idempotency_records",
                 columns: new[] { "scope", "operation", "key_hash" },
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ix_idempotency_records_state_lease",
-                schema: "ops",
-                table: "idempotency_records",
-                columns: new[] { "state", "lease_expires_at" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_import_jobs_status",
@@ -5948,10 +5900,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
             migrationBuilder.DropTable(
                 name: "form_submissions",
                 schema: "work");
-
-            migrationBuilder.DropTable(
-                name: "idempotency_keys",
-                schema: "ops");
 
             migrationBuilder.DropTable(
                 name: "idempotency_records",

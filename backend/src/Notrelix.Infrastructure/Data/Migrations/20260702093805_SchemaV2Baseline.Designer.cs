@@ -9806,97 +9806,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("export_jobs", "ops");
                 });
 
-            modelBuilder.Entity("Notrelix.Infrastructure.Data.Ops.Entities.IdempotencyKeyRecord", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset?>("CompletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("completed_at");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasColumnType("text")
-                        .HasColumnName("error_message");
-
-                    b.Property<DateTimeOffset>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("expires_at");
-
-                    b.Property<string>("IdempotencyKey")
-                        .IsRequired()
-                        .HasMaxLength(260)
-                        .HasColumnType("character varying(260)")
-                        .HasColumnName("idempotency_key");
-
-                    b.Property<DateTimeOffset?>("LockedUntil")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("locked_until");
-
-                    b.Property<string>("RequestHash")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("request_hash");
-
-                    b.Property<string>("RequestMethod")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)")
-                        .HasColumnName("request_method");
-
-                    b.Property<string>("RequestPath")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("request_path");
-
-                    b.Property<string>("ResponseBodyJson")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("response_body_json");
-
-                    b.Property<int?>("ResponseStatusCode")
-                        .HasColumnType("integer")
-                        .HasColumnName("response_status_code");
-
-                    b.Property<string>("Scope")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)")
-                        .HasColumnName("scope");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)")
-                        .HasColumnName("status");
-
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<Guid?>("WorkspaceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("workspace_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_idempotency_keys");
-
-                    b.HasIndex("ExpiresAt")
-                        .HasDatabaseName("ix_idempotency_keys_expires_at");
-
-                    b.HasIndex("Scope", "IdempotencyKey")
-                        .IsUnique()
-                        .HasDatabaseName("ix_idempotency_keys_scope_key");
-
-                    b.ToTable("idempotency_keys", "ops");
-                });
-
             modelBuilder.Entity("Notrelix.Infrastructure.Data.Ops.Entities.ImportJobRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -10485,14 +10394,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(64)")
                         .HasColumnName("key_hash");
 
-                    b.Property<DateTimeOffset>("LeaseExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("lease_expires_at");
-
-                    b.Property<Guid>("LeaseToken")
-                        .HasColumnType("uuid")
-                        .HasColumnName("lease_token");
-
                     b.Property<string>("Operation")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -10531,9 +10432,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.HasIndex("ExpiresAt")
                         .HasDatabaseName("ix_idempotency_records_expires_at");
-
-                    b.HasIndex("State", "LeaseExpiresAt")
-                        .HasDatabaseName("ix_idempotency_records_state_lease");
 
                     b.HasIndex("Scope", "Operation", "KeyHash")
                         .IsUnique()
