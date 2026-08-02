@@ -1,8 +1,10 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.ItemLinks.Commands.DeleteBoardItemLink;
 
+[IdempotencyOperation("work-management.item-links.delete-board-item-link.v1")]
 public record DeleteBoardItemLinkCommand(Guid BoardItemLinkId, string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemLinkId);

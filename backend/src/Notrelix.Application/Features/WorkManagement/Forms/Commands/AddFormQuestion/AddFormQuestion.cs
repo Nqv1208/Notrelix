@@ -2,8 +2,10 @@ using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 using Notrelix.Domain.SharedKernel.Ordering;
+using Notrelix.Application.Common.Idempotency;
 namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.AddFormQuestion;
 
+[IdempotencyOperation("work-management.forms.add-form-question.v1")]
 public record AddFormQuestionCommand(
     Guid FormId,
     string QuestionKey,

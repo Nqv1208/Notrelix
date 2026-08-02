@@ -1,8 +1,10 @@
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.CreateBoardView;
 
+[IdempotencyOperation("work-management.board-views.create-board-view.v1")]
 public record CreateBoardViewCommand(
     Guid BoardId,
     string Name,

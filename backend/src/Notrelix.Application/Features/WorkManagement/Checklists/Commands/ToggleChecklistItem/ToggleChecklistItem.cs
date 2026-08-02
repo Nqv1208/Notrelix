@@ -1,8 +1,10 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.ToggleChecklistItem;
 
+[IdempotencyOperation("work-management.checklists.toggle-checklist-item.v1")]
 public record ToggleChecklistItemCommand(Guid ChecklistItemId, string? IdempotencyKey = null) : ICommand<Result>, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;

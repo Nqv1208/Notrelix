@@ -1,8 +1,10 @@
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.UpdateBoardViewConfig;
 
+[IdempotencyOperation("work-management.board-views.update-board-view-config.v1")]
 public record UpdateBoardViewConfigCommand(
     Guid BoardId,
     Guid ViewId,

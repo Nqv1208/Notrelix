@@ -1,8 +1,10 @@
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.Workspaces.Provisioning.Commands.ProvisionPersonalWorkspace;
 
+[IdempotencyOperation("workspaces.provisioning.provision-personal-workspace.v1")]
 public sealed record ProvisionPersonalWorkspaceCommand(
     Guid UserId,
     Guid AccountId,

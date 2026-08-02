@@ -1,8 +1,10 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DeleteBoardGroup;
 
+[IdempotencyOperation("work-management.board-groups.delete-board-group.v1")]
 public record DeleteBoardGroupCommand(Guid GroupId, string? IdempotencyKey = null)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {

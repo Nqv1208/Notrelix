@@ -1,8 +1,10 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.Labels.Commands.CreateLabel;
 
+[IdempotencyOperation("work-management.labels.create-label.v1")]
 public record CreateLabelCommand(Guid BoardId, string Color, string? Name, string? IdempotencyKey = null)
     : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {

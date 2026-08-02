@@ -1,8 +1,10 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.RestoreForm;
 
+[IdempotencyOperation("work-management.forms.restore-form.v1")]
 public record RestoreFormCommand(
     Guid FormId,
     string? IdempotencyKey = null)

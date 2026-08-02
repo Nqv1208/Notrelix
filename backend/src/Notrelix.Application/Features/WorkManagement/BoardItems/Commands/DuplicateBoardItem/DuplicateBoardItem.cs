@@ -3,8 +3,10 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.DuplicateBoardGroup;
 
 using Notrelix.Domain.SharedKernel.Ordering;
+using Notrelix.Application.Common.Idempotency;
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.DuplicateBoardItem;
 
+[IdempotencyOperation("work-management.board-items.duplicate-board-item.v1")]
 public record DuplicateBoardItemCommand(Guid BoardItemId, string? IdempotencyKey = null) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreateItem;

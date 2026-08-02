@@ -1,8 +1,10 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.Approvals.Commands.RejectApprovalRequest;
 
+[IdempotencyOperation("work-management.approvals.reject-approval-request.v1")]
 public record RejectApprovalRequestCommand(
     Guid RequestId,
     string? Note,

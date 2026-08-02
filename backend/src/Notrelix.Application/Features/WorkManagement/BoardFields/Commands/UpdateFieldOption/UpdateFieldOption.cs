@@ -1,9 +1,11 @@
 using BoardFieldEntity = global::Notrelix.Domain.WorkManagement.Fields.BoardField;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateFieldOption;
 
+[IdempotencyOperation("work-management.board-fields.update-field-option.v1")]
 public record UpdateFieldOptionCommand(
     Guid BoardId,
     Guid FieldId,

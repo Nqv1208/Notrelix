@@ -1,8 +1,10 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.Relations.Commands.DeleteBoardRelation;
 
+[IdempotencyOperation("work-management.relations.delete-board-relation.v1")]
 public record DeleteBoardRelationCommand(Guid RelationId, string? IdempotencyKey = null)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {

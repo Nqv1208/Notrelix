@@ -1,8 +1,10 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.RejectFormSubmission;
 
+[IdempotencyOperation("work-management.forms.reject-form-submission.v1")]
 public record RejectFormSubmissionCommand(
     Guid SubmissionId,
     string? IdempotencyKey = null)

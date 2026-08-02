@@ -356,8 +356,8 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             services.AddScoped<IIdempotencyStore>(_ =>
             {
                 var mock = new Mock<IIdempotencyStore>();
-                mock.Setup(x => x.BeginAsync(It.IsAny<IdempotencyIdentity>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(new IdempotencyBeginResult(IdempotencyBeginStatus.Started, Guid.NewGuid(), null, null));
+                mock.Setup(x => x.BeginAsync(It.IsAny<IdempotencyIdentity>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new IdempotencyBeginResult(IdempotencyBeginStatus.Started, null, null));
                 return mock.Object;
             });
 

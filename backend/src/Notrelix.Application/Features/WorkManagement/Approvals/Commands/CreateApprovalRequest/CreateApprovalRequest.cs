@@ -1,10 +1,12 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.Approvals.Commands.CreateApprovalRequest;
 
 public record ApprovalStepDto(Guid? ApproverUserId, Guid? ApproverTeamId);
 
+[IdempotencyOperation("work-management.approvals.create-approval-request.v1")]
 public record CreateApprovalRequestCommand(
     Guid TargetResourceId,
     ResourceType TargetResourceType,

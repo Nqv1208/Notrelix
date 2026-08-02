@@ -2,9 +2,11 @@ using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using BoardMemberEntity = global::Notrelix.Domain.WorkManagement.Boards.BoardMember;
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardMemberRole;
 
+[IdempotencyOperation("work-management.boards.update-board-member-role.v1")]
 public record UpdateBoardMemberRoleCommand(Guid BoardId, Guid UserId, BoardRole Role, string? IdempotencyKey = null)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {

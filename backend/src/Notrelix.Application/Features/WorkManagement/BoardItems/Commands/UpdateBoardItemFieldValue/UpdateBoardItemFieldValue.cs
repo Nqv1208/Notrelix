@@ -1,8 +1,10 @@
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
 
+[IdempotencyOperation("work-management.board-items.update-board-item-field-value.v1")]
 public record UpdateBoardItemFieldValueCommand(
     Guid ItemId,
     Guid FieldId,

@@ -1,9 +1,11 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoard;
 
+[IdempotencyOperation("work-management.boards.update-board.v1")]
 public record UpdateBoardCommand(
     Guid BoardId,
     string? Title,

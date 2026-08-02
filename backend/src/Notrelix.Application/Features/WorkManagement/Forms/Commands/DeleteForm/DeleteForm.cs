@@ -1,8 +1,10 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.DeleteForm;
 
+[IdempotencyOperation("work-management.forms.delete-form.v1")]
 public record DeleteFormCommand(
     Guid FormId,
     long? ExpectedVersion = null,

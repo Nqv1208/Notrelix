@@ -1,5 +1,6 @@
 using System.Reflection;
 using Notrelix.Application.Common.Behaviors;
+using Notrelix.Application.Common.Idempotency;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
 using Notrelix.Application.Features.Identity.Verification.Services;
 
@@ -57,6 +58,11 @@ public static class DependencyInjection
         // Execution context (scoped per request)
         services.AddScoped<IExecutionContextAccessor, Notrelix.Application.Common.Context.ExecutionContext>();
         services.AddScoped<IExecutionContextReader>(sp => sp.GetRequiredService<IExecutionContextAccessor>());
+
+        // Idempotency services
+        services.AddSingleton<IIdempotencyRequestFingerprint, JsonIdempotencyRequestFingerprint>();
+        services.AddSingleton<IIdempotencyReplayPolicy, DefaultIdempotencyReplayPolicy>();
+        services.AddScoped<IdempotencyPartitionFactory>();
 
         // Integration event collector (scoped per request)
         services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();

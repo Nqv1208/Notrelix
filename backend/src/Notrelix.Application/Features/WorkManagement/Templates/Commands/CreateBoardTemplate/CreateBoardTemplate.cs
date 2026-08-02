@@ -1,8 +1,10 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.Templates.Commands.CreateBoardTemplate;
 
+[IdempotencyOperation("work-management.templates.create-board-template.v1")]
 public record CreateBoardTemplateCommand(
     Guid BoardId,
     string Name,

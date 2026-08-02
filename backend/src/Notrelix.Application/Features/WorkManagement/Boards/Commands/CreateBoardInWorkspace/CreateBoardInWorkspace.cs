@@ -4,8 +4,10 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 using Notrelix.Domain.SharedKernel.Ordering;
+using Notrelix.Application.Common.Idempotency;
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace;
 
+[IdempotencyOperation("work-management.boards.create-board-in-workspace.v1")]
 public record CreateBoardInWorkspaceCommand(
     Guid WorkspaceId,
     string Title,

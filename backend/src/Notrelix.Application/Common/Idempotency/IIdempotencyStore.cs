@@ -2,43 +2,40 @@ namespace Notrelix.Application.Common.Idempotency;
 
 /// <summary>
 /// Scoped idempotency identity. The raw client key is never globally unique by itself.
-/// Scope must be tenant/actor qualified (e.g. "workspace:{id}", "account:{id}", "global:user:{id}").
+/// Scope is tenant-qualified via <see cref="IdempotencyPartitionFactory"/>.
+/// KeyHash is the SHA-256 of the raw client key — raw key is never stored or logged.
 /// </summary>
 public sealed record IdempotencyIdentity(
     string Operation,
     string Scope,
-    string Key,
+    string KeyHash,
     string RequestHash);
 
 public enum IdempotencyBeginStatus
 {
     Started,
     Completed,
-    InProgress,
     PayloadMismatch
 }
 
 public sealed record IdempotencyBeginResult(
     IdempotencyBeginStatus Status,
-    Guid LeaseToken,
     string? SerializedResult,
     string? ResultContract);
 
 /// <summary>
 /// Provider-independent idempotency store port.
-/// Completion must participate in the same transaction as the business mutation.
-/// The store must NOT call SaveChanges — the caller owns the transaction.
+/// Begin and Complete participate in the same uncommitted request transaction.
+/// The store must NOT call SaveChanges or start a transaction — the caller owns it.
 /// </summary>
 public interface IIdempotencyStore
 {
     Task<IdempotencyBeginResult> BeginAsync(
         IdempotencyIdentity identity,
-        TimeSpan leaseDuration,
         CancellationToken cancellationToken);
 
     Task CompleteAsync(
         IdempotencyIdentity identity,
-        Guid leaseToken,
         string serializedResult,
         string resultContract,
         DateTimeOffset expiresAt,

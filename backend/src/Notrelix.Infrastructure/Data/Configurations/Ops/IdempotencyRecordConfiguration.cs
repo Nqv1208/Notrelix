@@ -18,9 +18,6 @@ public sealed class IdempotencyRecordConfiguration : IEntityTypeConfiguration<Id
 
         builder.Property(x => x.State).HasColumnName("state").IsRequired().HasMaxLength(20);
 
-        builder.Property(x => x.LeaseToken).HasColumnName("lease_token");
-        builder.Property(x => x.LeaseExpiresAt).HasColumnName("lease_expires_at");
-
         builder.Property(x => x.ResultJson).HasColumnName("result_json").HasColumnType("jsonb");
         builder.Property(x => x.ResultContract).HasColumnName("result_contract").HasMaxLength(512);
 
@@ -31,9 +28,6 @@ public sealed class IdempotencyRecordConfiguration : IEntityTypeConfiguration<Id
         builder.HasIndex(x => new { x.Scope, x.Operation, x.KeyHash })
             .IsUnique()
             .HasDatabaseName("ix_idempotency_records_scope_op_key");
-
-        builder.HasIndex(x => new { x.State, x.LeaseExpiresAt })
-            .HasDatabaseName("ix_idempotency_records_state_lease");
 
         builder.HasIndex(x => x.ExpiresAt)
             .HasDatabaseName("ix_idempotency_records_expires_at");

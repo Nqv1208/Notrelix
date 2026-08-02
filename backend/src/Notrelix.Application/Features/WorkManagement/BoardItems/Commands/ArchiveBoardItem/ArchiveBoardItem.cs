@@ -1,8 +1,10 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ArchiveBoardItem;
 
+[IdempotencyOperation("work-management.board-items.archive-board-item.v1")]
 public record ArchiveBoardItemCommand(Guid BoardItemId, string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;

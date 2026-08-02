@@ -1,8 +1,10 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.PublishForm;
 
+[IdempotencyOperation("work-management.forms.publish-form.v1")]
 public record PublishFormCommand(
     Guid FormId,
     long? ExpectedVersion = null,

@@ -1,26 +1,36 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Options;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Common.Behaviors;
 
 public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
-    private static readonly TimeSpan LeaseDuration = TimeSpan.FromMinutes(5);
-    private static readonly TimeSpan ResultExpiry = TimeSpan.FromHours(24);
-
     private readonly IIdempotencyStore _idempotencyStore;
-    private readonly ICurrentTenantContext _tenantContext;
+    private readonly IIdempotencyRequestFingerprint _fingerprint;
+    private readonly IIdempotencyReplayPolicy _replayPolicy;
+    private readonly IdempotencyPartitionFactory _partitionFactory;
+    private readonly IdempotencyOptions _options;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<IdempotencyBehavior<TRequest, TResponse>> _logger;
 
     public IdempotencyBehavior(
         IIdempotencyStore idempotencyStore,
-        ICurrentTenantContext tenantContext,
+        IIdempotencyRequestFingerprint fingerprint,
+        IIdempotencyReplayPolicy replayPolicy,
+        IdempotencyPartitionFactory partitionFactory,
+        IOptions<IdempotencyOptions> options,
         TimeProvider timeProvider,
         ILogger<IdempotencyBehavior<TRequest, TResponse>> logger)
     {
         _idempotencyStore = idempotencyStore;
-        _tenantContext = tenantContext;
+        _fingerprint = fingerprint;
+        _replayPolicy = replayPolicy;
+        _partitionFactory = partitionFactory;
+        _options = options.Value;
         _timeProvider = timeProvider;
         _logger = logger;
     }
@@ -32,17 +42,13 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
 
         var identity = BuildIdentity(idempotentRequest);
 
-        var beginResult = await _idempotencyStore.BeginAsync(identity, LeaseDuration, cancellationToken);
+        var beginResult = await _idempotencyStore.BeginAsync(identity, cancellationToken);
 
         switch (beginResult.Status)
         {
             case IdempotencyBeginStatus.Completed:
                 _logger.LogDebug("Idempotency replay for {Operation} scope={Scope}", identity.Operation, identity.Scope);
                 return ReplayResult(beginResult);
-
-            case IdempotencyBeginStatus.InProgress:
-                throw new ConflictException(
-                    $"Request with idempotency key is already being processed for operation '{identity.Operation}'.");
 
             case IdempotencyBeginStatus.PayloadMismatch:
                 throw new ConflictException(
@@ -58,72 +64,48 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         var response = await next();
 
         var serialized = JsonSerializer.Serialize(response);
-        var resultContract = typeof(TResponse).FullName!;
 
-        await _idempotencyStore.CompleteAsync(
-            identity,
-            beginResult.LeaseToken,
-            serialized,
-            resultContract,
-            _timeProvider.GetUtcNow().Add(ResultExpiry),
-            cancellationToken);
+        if (_replayPolicy.CanCacheResult(response, serialized))
+        {
+            var resultContract = identity.Operation;
+
+            await _idempotencyStore.CompleteAsync(
+                identity,
+                serialized,
+                resultContract,
+                _timeProvider.GetUtcNow().Add(_options.ResultExpiry),
+                cancellationToken);
+        }
+        else
+        {
+            _logger.LogDebug(
+                "Idempotency result not cached for {Operation} (policy rejected). Request remains non-replayable.",
+                identity.Operation);
+        }
 
         return response;
     }
 
     private IdempotencyIdentity BuildIdentity(IIdempotentRequest request)
     {
-        var operation = typeof(TRequest).FullName ?? typeof(TRequest).Name;
+        var operation = IdempotencyOperationMetadata.Resolve<TRequest>();
+        var scope = _partitionFactory.BuildPartition(request);
+        var keyHash = HashRawKey(request.IdempotencyKey);
+        var requestHash = _fingerprint.Compute(request, typeof(TRequest));
 
-        var scope = BuildQualifiedScope(request);
-
-        var requestHash = ComputeRequestHash(request);
-
-        return new IdempotencyIdentity(operation, scope, request.IdempotencyKey, requestHash);
+        return new IdempotencyIdentity(operation, scope, keyHash, requestHash);
     }
 
-    private string BuildQualifiedScope(IIdempotentRequest request)
+    private static string HashRawKey(string rawKey)
     {
-        if (request is IWorkspaceRequest ws)
-        {
-            return $"workspace:{ws.WorkspaceId}";
-        }
-
-        if (request is IAccountRequest)
-        {
-            var accountId = _tenantContext.AccountId
-                ?? throw new InvalidOperationException("AccountId not resolved for account-scoped idempotent request.");
-            return $"account:{accountId}";
-        }
-
-        if (_tenantContext.IsSystemContext)
-        {
-            return $"system:{typeof(TRequest).Name}";
-        }
-
-        var userId = _tenantContext.UserId
-            ?? throw new InvalidOperationException("UserId not resolved for global idempotent request.");
-        return $"global:user:{userId}";
-    }
-
-    private static string ComputeRequestHash(object request)
-    {
-        var json = JsonSerializer.Serialize(request, new JsonSerializerOptions
-        {
-            WriteIndented = false,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-        });
-
-        var bytes = System.Security.Cryptography.SHA256.HashData(
-            System.Text.Encoding.UTF8.GetBytes(json));
-
-        return Convert.ToHexString(bytes)[..32];
+        ArgumentException.ThrowIfNullOrWhiteSpace(rawKey);
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(rawKey));
+        return Convert.ToHexString(bytes);
     }
 
     private static TResponse ReplayResult(IdempotencyBeginResult beginResult)
     {
-        var expectedContract = typeof(TResponse).FullName!;
+        var expectedContract = IdempotencyOperationMetadata.Resolve<TRequest>();
 
         if (beginResult.ResultContract is not null
             && beginResult.ResultContract != expectedContract)

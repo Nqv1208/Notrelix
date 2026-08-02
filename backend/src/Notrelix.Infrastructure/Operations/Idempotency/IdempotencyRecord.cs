@@ -3,6 +3,7 @@ namespace Notrelix.Infrastructure.Operations.Idempotency;
 /// <summary>
 /// Durable idempotency record. Stores SHA-256 key hash, not the raw client key.
 /// Unique constraint: Scope + Operation + KeyHash.
+/// States: Processing | Completed. No lease model — same-transaction semantics.
 /// </summary>
 public sealed class IdempotencyRecord
 {
@@ -14,9 +15,6 @@ public sealed class IdempotencyRecord
     public string RequestHash { get; private set; } = null!;
 
     public string State { get; private set; } = null!;
-
-    public Guid LeaseToken { get; private set; }
-    public DateTimeOffset LeaseExpiresAt { get; private set; }
 
     public string? ResultJson { get; private set; }
     public string? ResultContract { get; private set; }
@@ -32,8 +30,6 @@ public sealed class IdempotencyRecord
         string operation,
         string keyHash,
         string requestHash,
-        Guid leaseToken,
-        DateTimeOffset leaseExpiresAt,
         DateTimeOffset createdAt)
     {
         return new IdempotencyRecord
@@ -44,8 +40,6 @@ public sealed class IdempotencyRecord
             KeyHash = keyHash,
             RequestHash = requestHash,
             State = "Processing",
-            LeaseToken = leaseToken,
-            LeaseExpiresAt = leaseExpiresAt,
             CreatedAt = createdAt,
             ExpiresAt = createdAt.AddDays(1),
         };
@@ -62,12 +56,5 @@ public sealed class IdempotencyRecord
         ResultContract = resultContract;
         CompletedAt = completedAt;
         ExpiresAt = expiresAt;
-    }
-
-    public void ReclaimLease(Guid newLeaseToken, DateTimeOffset newLeaseExpiresAt)
-    {
-        LeaseToken = newLeaseToken;
-        LeaseExpiresAt = newLeaseExpiresAt;
-        State = "Processing";
     }
 }

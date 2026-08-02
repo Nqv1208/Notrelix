@@ -1,8 +1,10 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.Relations.Commands.CreateBoardRelation;
 
+[IdempotencyOperation("work-management.relations.create-board-relation.v1")]
 public record CreateBoardRelationCommand(
     Guid SourceBoardId,
     Guid TargetBoardId,

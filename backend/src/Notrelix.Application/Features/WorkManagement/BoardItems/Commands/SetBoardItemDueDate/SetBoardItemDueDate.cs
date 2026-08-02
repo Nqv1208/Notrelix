@@ -1,8 +1,10 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.SetBoardItemDueDate;
 
+[IdempotencyOperation("work-management.board-items.set-board-item-due-date.v1")]
 public record SetBoardItemDueDateCommand(Guid BoardItemId, DateTime? DueDate, DateTime? StartDate, string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IIdempotentRequest, IResourceScopedRequest, IRequirePermission
 {
     string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"set-item-due-date:{BoardItemId}";

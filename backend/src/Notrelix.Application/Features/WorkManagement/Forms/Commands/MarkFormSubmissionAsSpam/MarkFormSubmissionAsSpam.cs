@@ -1,8 +1,10 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.MarkFormSubmissionAsSpam;
 
+[IdempotencyOperation("work-management.forms.mark-form-submission-as-spam.v1")]
 public record MarkFormSubmissionAsSpamCommand(
     Guid SubmissionId,
     string? IdempotencyKey = null)

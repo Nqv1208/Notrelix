@@ -41,6 +41,10 @@ public class PipelineRuntimeOrderTests
         services.AddSingleton(new CacheKeyFactory(Options.Create(new CacheKeyOptions())));
         services.AddSingleton<IRlsSessionContext>(Mock.Of<IRlsSessionContext>());
         services.AddSingleton<IIdempotencyStore>(Mock.Of<IIdempotencyStore>());
+        services.AddSingleton<IIdempotencyRequestFingerprint>(Mock.Of<IIdempotencyRequestFingerprint>());
+        services.AddSingleton<IIdempotencyReplayPolicy>(Mock.Of<IIdempotencyReplayPolicy>());
+        services.AddSingleton(new IdempotencyPartitionFactory(Mock.Of<ICurrentTenantContext>()));
+        services.AddSingleton(Options.Create(new IdempotencyOptions()));
         services.AddSingleton<IRealtimePublisher>(Mock.Of<IRealtimePublisher>());
         services.AddSingleton<IPermissionVersionProvider>(Mock.Of<IPermissionVersionProvider>());
         services.AddSingleton<IResourceVersionReader>(Mock.Of<IResourceVersionReader>());

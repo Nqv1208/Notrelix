@@ -1,8 +1,10 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSavedFilterGroup;
 
+[IdempotencyOperation("work-management.views.update-saved-filter-group.v1")]
 public record UpdateSavedFilterGroupCommand(Guid FilterId, GroupRule? GroupRule, long ExpectedVersion, string? IdempotencyKey = null)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {

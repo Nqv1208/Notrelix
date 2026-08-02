@@ -5,8 +5,10 @@ using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 using Notrelix.Domain.SharedKernel.Ordering;
+using Notrelix.Application.Common.Idempotency;
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardBySlug;
 
+[IdempotencyOperation("work-management.boards.create-board-by-slug.v1")]
 public record CreateBoardBySlugCommand(string Slug, string Title, string? Description, string? Background, BoardVisibility? Visibility, string? IdempotencyKey = null) : ICommand<Result<Guid>>, ITransactionalRequest, IIdempotentRequest, IGlobalRequest
 {
     string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"create-board-slug:{Slug}";

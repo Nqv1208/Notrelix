@@ -1,8 +1,10 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.CloseForm;
 
+[IdempotencyOperation("work-management.forms.close-form.v1")]
 public record CloseFormCommand(
     Guid FormId,
     long? ExpectedVersion = null,

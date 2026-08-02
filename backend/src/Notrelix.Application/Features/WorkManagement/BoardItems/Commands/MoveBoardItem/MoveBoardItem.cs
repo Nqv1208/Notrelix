@@ -2,8 +2,10 @@ using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 using Notrelix.Domain.SharedKernel.Ordering;
+using Notrelix.Application.Common.Idempotency;
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem;
 
+[IdempotencyOperation("work-management.board-items.move-board-item.v1")]
 public record MoveBoardItemCommand(
     Guid ItemId,
     Guid NewGroupId,

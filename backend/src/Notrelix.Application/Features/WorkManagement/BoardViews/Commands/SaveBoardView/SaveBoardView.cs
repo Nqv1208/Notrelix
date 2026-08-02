@@ -1,9 +1,11 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SaveBoardView;
 
+[IdempotencyOperation("work-management.board-views.save-board-view.v1")]
 public record SaveBoardViewCommand(
     Guid BoardId,
     ViewMode ViewMode,

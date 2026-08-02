@@ -1,8 +1,10 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.Templates.Commands.DeleteBoardTemplate;
 
+[IdempotencyOperation("work-management.templates.delete-board-template.v1")]
 public record DeleteBoardTemplateCommand(Guid TemplateId, string? IdempotencyKey = null)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {

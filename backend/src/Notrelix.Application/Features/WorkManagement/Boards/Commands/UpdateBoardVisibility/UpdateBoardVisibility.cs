@@ -1,9 +1,11 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardVisibility;
 
+[IdempotencyOperation("work-management.boards.update-board-visibility.v1")]
 public record UpdateBoardVisibilityCommand(
     Guid BoardId,
     BoardVisibility Visibility,

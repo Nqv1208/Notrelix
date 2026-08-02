@@ -1,8 +1,10 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.RenameBoardView;
 
+[IdempotencyOperation("work-management.board-views.rename-board-view.v1")]
 public record RenameBoardViewCommand(
     Guid ViewId,
     string Name,

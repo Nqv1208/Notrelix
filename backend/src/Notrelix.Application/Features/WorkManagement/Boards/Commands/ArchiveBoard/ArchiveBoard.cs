@@ -1,9 +1,11 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.ArchiveBoard;
 
+[IdempotencyOperation("work-management.boards.archive-board.v1")]
 public record ArchiveBoardCommand(Guid BoardId, string? IdempotencyKey = null)
     : ICommand<Result>,
       ITransactionalRequest,

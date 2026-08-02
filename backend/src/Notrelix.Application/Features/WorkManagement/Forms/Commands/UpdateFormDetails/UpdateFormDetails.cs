@@ -1,8 +1,10 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.UpdateFormDetails;
 
+[IdempotencyOperation("work-management.forms.update-form-details.v1")]
 public record UpdateFormDetailsCommand(
     Guid FormId,
     string Title,

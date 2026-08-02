@@ -1,8 +1,10 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.CreateForm;
 
+[IdempotencyOperation("work-management.forms.create-form.v1")]
 public record CreateFormCommand(
     Guid BoardId,
     string Title,

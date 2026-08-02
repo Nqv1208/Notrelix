@@ -1,8 +1,10 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CompleteBoardItem;
 
+[IdempotencyOperation("work-management.board-items.complete-board-item.v1")]
 public record CompleteBoardItemCommand(
     Guid BoardItemId,
     DateTimeOffset? CompletedAt,

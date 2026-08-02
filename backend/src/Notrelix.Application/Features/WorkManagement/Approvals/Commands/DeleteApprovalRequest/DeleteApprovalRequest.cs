@@ -1,8 +1,10 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Common.Idempotency;
 
 namespace Notrelix.Application.Features.WorkManagement.Approvals.Commands.DeleteApprovalRequest;
 
+[IdempotencyOperation("work-management.approvals.delete-approval-request.v1")]
 public record DeleteApprovalRequestCommand(
     Guid RequestId,
     long ExpectedVersion,
