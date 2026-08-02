@@ -793,5 +793,47 @@ public class PipelineExecutionTests
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [Fact]
+    public async Task Pipeline_CommitFailure_DoesNotFlushPostCommit()
+    {
+        // PIPE-007: When the transaction commit fails, post-commit actions must not run.
+        var dataSession = new Mock<IRequestDataSession>();
+        dataSession
+            .Setup(x => x.ExecuteAsync(
+                It.IsAny<RequestDataSessionOptions>(),
+                It.IsAny<Func<CancellationToken, Task<string>>>(),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Simulated commit failure"));
+
+        var mockPostCommit = CreateMockPostCommitQueue();
+
+        var transactionBehavior = new DbRequestScopeBehavior<SideEffectCommand, string>(
+            dataSession.Object, Mock.Of<ILogger<DbRequestScopeBehavior<SideEffectCommand, string>>>());
+
+        var enqueueBehavior = new PostCommitEnqueueBehavior<SideEffectCommand, string>(
+            mockPostCommit.Object, Mock.Of<IRealtimePublisher>(), CreateMockExecutionContext(), Mock.Of<ILogger<PostCommitEnqueueBehavior<SideEffectCommand, string>>>());
+
+        var postCommitBehavior = new PostCommitScopeBehavior<SideEffectCommand, string>(
+            mockPostCommit.Object, Mock.Of<ILogger<PostCommitScopeBehavior<SideEffectCommand, string>>>());
+
+        RequestHandlerDelegate<string> txNext = _ => Task.FromResult("ok");
+
+        RequestHandlerDelegate<string> enqueueNext = ct =>
+            transactionBehavior.Handle(new SideEffectCommand(), txNext, ct);
+
+        RequestHandlerDelegate<string> postCommitNext = ct =>
+            enqueueBehavior.Handle(new SideEffectCommand(), enqueueNext, ct);
+
+        Func<Task> act = () => postCommitBehavior.Handle(new SideEffectCommand(), postCommitNext, CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Simulated commit failure");
+
+        mockPostCommit.Verify(x => x.FlushAsync(It.IsAny<CancellationToken>()), Times.Never,
+            "post-commit flush must not run when commit fails");
+        mockPostCommit.Verify(x => x.Clear(), Times.Once,
+            "queue must be cleared on failure to prevent stale side effects");
+    }
+
     #endregion
 }

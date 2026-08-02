@@ -7,7 +7,7 @@ using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Queries.GetBootstrap;
 
-public record GetBootstrapQuery(Guid UserId) : IQuery<Result<BootstrapResult>>, IGlobalRequest;
+public record GetBootstrapQuery(Guid UserId) : IQuery<Result<BootstrapResult>>, IGlobalRequest, IAnonymousRequest;
 
 public class GetBootstrapQueryHandler : IRequestHandler<GetBootstrapQuery, Result<BootstrapResult>>
 {
