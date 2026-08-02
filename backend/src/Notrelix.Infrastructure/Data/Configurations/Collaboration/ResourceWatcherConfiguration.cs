@@ -18,9 +18,9 @@ public class ResourceWatcherConfiguration : IEntityTypeConfiguration<ResourceWat
 
         builder.OwnsOne(x => x.Target, t =>
         {
-            t.Property(p => p.ResourceType).HasColumnName("target_type").IsRequired().HasMaxLength(50);
+            t.Property(p => p.Kind).HasColumnName("target_type").HasConversion(v => v.Value, v => LegacyResourceTypeMappings.ParseResourceKind(v)).IsRequired().HasMaxLength(128);
             t.Property(p => p.ResourceId).HasColumnName("target_id").IsRequired();
-            t.HasIndex(p => new { p.ResourceType, p.ResourceId }).HasDatabaseName("idx_resource_watchers_target");
+            t.HasIndex(p => new { p.Kind, p.ResourceId }).HasDatabaseName("idx_resource_watchers_target");
         });
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");

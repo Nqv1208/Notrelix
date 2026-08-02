@@ -31,7 +31,7 @@ internal sealed class AuditService : IAuditService
             actorUserId: actorId,
             actorType: "User",
             action: action,
-            resourceType: target.ResourceType.ToString(),
+            resourceType: target.Kind.Value,
             resourceId: target.ResourceId,
             subjectType: null,
             subjectId: null,

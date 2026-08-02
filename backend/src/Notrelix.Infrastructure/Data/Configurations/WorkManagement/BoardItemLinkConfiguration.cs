@@ -18,7 +18,7 @@ public class BoardItemLinkConfiguration : IEntityTypeConfiguration<BoardItemLink
 
         builder.OwnsOne(x => x.Target, target =>
         {
-            target.Property(t => t.ResourceType).HasColumnName("target_type").IsRequired().HasMaxLength(50);
+            target.Property(t => t.Kind).HasColumnName("target_type").HasConversion(v => v.Value, v => LegacyResourceTypeMappings.ParseResourceKind(v)).IsRequired().HasMaxLength(128);
             target.Property(t => t.ResourceId).HasColumnName("target_id").IsRequired();
         });
 

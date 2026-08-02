@@ -32,11 +32,11 @@ public class ResourceScopeBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
         {
             _logger.LogWarning(
                 "Resource not found: Type={ResourceType} Id={ResourceId} RequestType={RequestType}",
-                resourceRequest.Resource.ResourceType,
+                resourceRequest.Resource.Kind,
                 resourceRequest.Resource.ResourceId,
                 typeof(TRequest).Name);
 
-            throw new AppNotFoundException(resourceRequest.Resource.ResourceType.ToString(), resourceRequest.Resource.ResourceId);
+            throw new AppNotFoundException(resourceRequest.Resource.Kind.ToString(), resourceRequest.Resource.ResourceId);
         }
 
         _logger.LogTrace(

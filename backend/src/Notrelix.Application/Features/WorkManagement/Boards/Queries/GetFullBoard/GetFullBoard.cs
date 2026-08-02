@@ -93,14 +93,14 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
 
         var commentCounts = await _collabContext.Comments
             .AsNoTracking()
-            .Where(comment => comment.Target.ResourceType == ResourceType.BoardItem && cardIds.Contains(comment.Target.ResourceId))
+            .Where(comment => comment.Target.Kind == LegacyResourceTypeMappings.ToResourceKind(ResourceType.BoardItem) && cardIds.Contains(comment.Target.ResourceId))
             .GroupBy(comment => comment.Target.ResourceId)
             .Select(group => new { BoardItemId = group.Key, Count = group.Count() })
             .ToDictionaryAsync(item => item.BoardItemId, item => item.Count, cancellationToken);
 
         var attachmentCounts = await _collabContext.Attachments
             .AsNoTracking()
-            .Where(attachment => attachment.Target.ResourceType == ResourceType.BoardItem && cardIds.Contains(attachment.Target.ResourceId))
+            .Where(attachment => attachment.Target.Kind == LegacyResourceTypeMappings.ToResourceKind(ResourceType.BoardItem) && cardIds.Contains(attachment.Target.ResourceId))
             .GroupBy(attachment => attachment.Target.ResourceId)
             .Select(group => new { BoardItemId = group.Key, Count = group.Count() })
             .ToDictionaryAsync(item => item.BoardItemId, item => item.Count, cancellationToken);

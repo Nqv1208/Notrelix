@@ -17,10 +17,10 @@ public class AttachmentConfiguration : IEntityTypeConfiguration<Attachment>
 
         builder.OwnsOne(x => x.Target, target =>
         {
-            target.Property(t => t.ResourceType).HasColumnName("resource_type").HasConversion<string>().IsRequired().HasMaxLength(50);
+            target.Property(t => t.Kind).HasColumnName("resource_type").HasConversion(v => v.Value, v => LegacyResourceTypeMappings.ParseResourceKind(v)).IsRequired().HasMaxLength(128);
             target.Property(t => t.ResourceId).HasColumnName("resource_id").IsRequired();
             target.Property(t => t.WorkspaceId).HasColumnName("target_workspace_id");
-            target.HasIndex(t => new { t.ResourceType, t.ResourceId }).HasDatabaseName("idx_attachments_resource");
+            target.HasIndex(t => new { t.Kind, t.ResourceId }).HasDatabaseName("idx_attachments_resource");
         });
 
         builder.OwnsOne(x => x.Metadata, metadata =>

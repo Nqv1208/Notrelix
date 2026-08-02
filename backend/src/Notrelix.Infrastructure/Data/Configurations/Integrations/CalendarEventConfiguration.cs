@@ -16,10 +16,10 @@ public class CalendarEventConfiguration : IEntityTypeConfiguration<CalendarEvent
 
         builder.OwnsOne(x => x.Target, target =>
         {
-            target.Property(t => t.ResourceType).HasColumnName("resource_type").HasConversion<string>().HasMaxLength(50);
+            target.Property(t => t.Kind).HasColumnName("resource_type").HasConversion(v => v.Value, v => string.IsNullOrEmpty(v) ? default : LegacyResourceTypeMappings.ParseResourceKind(v)).HasMaxLength(128);
             target.Property(t => t.ResourceId).HasColumnName("resource_id");
             target.Property(t => t.WorkspaceId).HasColumnName("target_workspace_id");
-            target.HasIndex(t => new { t.ResourceType, t.ResourceId }).HasDatabaseName("idx_calendar_events_resource");
+            target.HasIndex(t => new { t.Kind, t.ResourceId }).HasDatabaseName("idx_calendar_events_resource");
         });
 
         builder.OwnsOne(x => x.SyncHash, hash =>

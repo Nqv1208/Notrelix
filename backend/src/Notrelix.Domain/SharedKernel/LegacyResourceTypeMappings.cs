@@ -105,4 +105,22 @@ public static class LegacyResourceTypeMappings
     /// All defined mappings. Count must equal the number of ResourceType enum values.
     /// </summary>
     public static IReadOnlyDictionary<ResourceType, string> All => EnumToKind;
+
+    /// <summary>
+    /// Dual-read parser: accepts either a canonical ResourceKind string ("work-management.board")
+    /// or a legacy enum name ("Board") and returns the corresponding ResourceKind.
+    /// Used by EF value converters during the migration period.
+    /// </summary>
+    public static ResourceKind ParseResourceKind(string stored)
+    {
+        if (ResourceKind.TryCreate(stored, out var kind))
+            return kind;
+
+        if (Enum.TryParse<ResourceType>(stored, ignoreCase: false, out var legacyEnum))
+            return ToResourceKind(legacyEnum);
+
+        throw new InvalidOperationException(
+            $"Cannot parse resource kind from stored value '{stored}'. " +
+            "Expected canonical format (context.resource) or legacy enum name.");
+    }
 }

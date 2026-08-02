@@ -81,7 +81,7 @@ public class SharedKernelTests
         var id = Guid.NewGuid();
         var resourceRef = ResourceRef.Create(ResourceType.Board, id);
 
-        resourceRef.ResourceType.Should().Be(ResourceType.Board);
+        resourceRef.Kind.Should().Be(LegacyResourceTypeMappings.ToResourceKind(ResourceType.Board));
         resourceRef.ResourceId.Should().Be(id);
     }
 }

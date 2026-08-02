@@ -10,7 +10,7 @@ public static class CommentRules
         if (parentTarget == null)
             throw new BusinessRuleException(CollaborationRuleCodes.Collaboration_Comment_ParentNotFound, "Parent comment does not exist.");
 
-        if (parentTarget.ResourceType != target.ResourceType || parentTarget.ResourceId != target.ResourceId)
+        if (parentTarget.Kind != target.Kind || parentTarget.ResourceId != target.ResourceId)
             throw new BusinessRuleException(CollaborationRuleCodes.Collaboration_Comment_ParentMustBeInSameTarget, "Parent comment must belong to the same target resource.");
     }
 }

@@ -31,7 +31,7 @@ public class ResourceReadState : Entity, IWorkspaceScoped
             AccountId = accountId,
             WorkspaceId = workspaceId,
             UserId = userId,
-            ResourceType = target.ResourceType.ToString(),
+            ResourceType = target.Kind.ToString(),
             ResourceId = target.ResourceId,
             UnreadCount = 0,
             UpdatedAt = createdAt,

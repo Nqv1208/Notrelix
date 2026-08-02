@@ -29,7 +29,7 @@ public class ListBoardItemLinksQueryHandler : IRequestHandler<ListBoardItemLinks
                 l.Id,
                 l.SourceItemId,
                 l.Target.ResourceId,
-                l.Target.ResourceType == ResourceType.Board ? l.Target.ResourceId : Guid.Empty,
+                l.Target.Kind == LegacyResourceTypeMappings.ToResourceKind(ResourceType.Board) ? l.Target.ResourceId : Guid.Empty,
                 l.LinkType.ToString()))
             .ToListAsync(ct);
 

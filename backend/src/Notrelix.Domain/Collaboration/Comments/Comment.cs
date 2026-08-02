@@ -76,7 +76,7 @@ public class Comment : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (parentContext.WorkspaceId != workspaceId)
             throw new BusinessRuleException(CollaborationRuleCodes.Collaboration_Comment_ParentScopeMismatch, "Parent comment must belong to the same workspace.");
 
-        if (parentContext.ParentTarget.ResourceType != target.ResourceType || parentContext.ParentTarget.ResourceId != target.ResourceId)
+        if (parentContext.ParentTarget.Kind != target.Kind || parentContext.ParentTarget.ResourceId != target.ResourceId)
             throw new BusinessRuleException(CollaborationRuleCodes.Collaboration_Comment_ParentMustBeInSameTarget, "Parent comment must belong to the same target resource.");
 
         // Validate parent is not deleted

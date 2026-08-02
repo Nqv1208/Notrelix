@@ -28,7 +28,7 @@ public class GetBoardItemAttachmentsQueryHandler : IRequestHandler<GetBoardItemA
         if (!boardItemExists) throw new NotFoundException("BoardItem", request.BoardItemId);
 
         var attachments = await _context.Attachments.AsNoTracking()
-            .Where(attachment => attachment.Target.ResourceType == ResourceType.BoardItem && attachment.Target.ResourceId == request.BoardItemId)
+            .Where(attachment => attachment.Target.Kind == LegacyResourceTypeMappings.ToResourceKind(ResourceType.BoardItem) && attachment.Target.ResourceId == request.BoardItemId)
             .OrderByDescending(attachment => attachment.CreatedAt)
             .ToListAsync(ct);
 

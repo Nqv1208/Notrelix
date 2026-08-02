@@ -111,11 +111,11 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
                     "Security misconfiguration: Account request {RequestType} specifies a Resource ({ResourceType}/{ResourceId}). " +
                     "Account-scoped requests must not specify a Resource; it is resolved from tenant context.",
                     typeof(TRequest).Name,
-                    resource.ResourceType,
+                    resource.Kind,
                     resource.ResourceId);
 
                 throw new SecurityMisconfigurationException(
-                    $"{typeof(TRequest).Name} is account-scoped but specifies a Resource ({resource.ResourceType}/{resource.ResourceId}). " +
+                    $"{typeof(TRequest).Name} is account-scoped but specifies a Resource ({resource.Kind}/{resource.ResourceId}). " +
                     "Account-scoped requests must not specify a Resource; it is resolved from tenant context.");
             }
         }
@@ -159,12 +159,18 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
                     $"but Resource.WorkspaceId is null.");
             }
 
+            if (!LegacyResourceTypeMappings.TryToLegacyEnum(resolvedResource.Kind.Value, out var legacyResourceType))
+            {
+                throw new SecurityMisconfigurationException(
+                    $"No legacy ResourceType mapping for kind '{resolvedResource.Kind.Value}'.");
+            }
+
             var decision = await _authorizationDecisionStore.EvaluateAsync(
                 new PermissionContext(
                     userId,
                     _tenant.RequireAccountId(),
                     workspaceId,
-                    resolvedResource.ResourceType,
+                    legacyResourceType,
                     resolvedResource.ResourceId,
                     requirePermission.Action,
                     scope),
@@ -176,14 +182,14 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
                     "Permission denied: UserId={UserId} Action={Action} ResourceType={ResourceType} ResourceId={ResourceId} WorkspaceId={WorkspaceId} Reason={Reason}",
                     userId,
                     requirePermission.Action,
-                    resolvedResource.ResourceType,
+                    resolvedResource.Kind,
                     resolvedResource.ResourceId,
                     resolvedResource.WorkspaceId,
                     decision.ReasonCode);
 
                 if (decision.ReasonCode == "resource_not_found")
                 {
-                    throw new NotFoundException(resolvedResource.ResourceType.ToString(), resolvedResource.ResourceId);
+                    throw new NotFoundException(resolvedResource.Kind.ToString(), resolvedResource.ResourceId);
                 }
                 throw new ForbiddenException("You do not have permission to perform this action.");
             }

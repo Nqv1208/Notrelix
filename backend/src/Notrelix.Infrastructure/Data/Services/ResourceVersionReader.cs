@@ -35,10 +35,11 @@ public sealed class ResourceVersionReader : IResourceVersionReader
 
     public async Task<long?> GetVersionAsync(ResourceRef resource, CancellationToken cancellationToken)
     {
-        if (!TableMap.TryGetValue(resource.ResourceType, out var mapping))
+        if (!LegacyResourceTypeMappings.TryToLegacyEnum(resource.Kind.Value, out var resourceType)
+            || !TableMap.TryGetValue(resourceType, out var mapping))
         {
             throw new NotSupportedException(
-                $"ResourceType '{resource.ResourceType}' is not supported for version reading. " +
+                $"ResourceKind '{resource.Kind.Value}' is not supported for version reading. " +
                 $"Add a table mapping in {nameof(ResourceVersionReader)}.");
         }
 

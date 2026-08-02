@@ -19,10 +19,10 @@ public class MentionConfiguration : IEntityTypeConfiguration<Mention>
 
         builder.OwnsOne(x => x.Source, source =>
         {
-            source.Property(s => s.ResourceType).HasColumnName("source_type").HasConversion<string>().IsRequired().HasMaxLength(50);
+            source.Property(s => s.Kind).HasColumnName("source_type").HasConversion(v => v.Value, v => LegacyResourceTypeMappings.ParseResourceKind(v)).IsRequired().HasMaxLength(128);
             source.Property(s => s.ResourceId).HasColumnName("source_id").IsRequired();
             source.Property(s => s.WorkspaceId).HasColumnName("source_workspace_id");
-            source.HasIndex(s => new { s.ResourceType, s.ResourceId }).HasDatabaseName("idx_mentions_source");
+            source.HasIndex(s => new { s.Kind, s.ResourceId }).HasDatabaseName("idx_mentions_source");
         });
 
         builder.HasIndex(x => x.MentionedId).HasDatabaseName("idx_mentions_mentioned_user_id");

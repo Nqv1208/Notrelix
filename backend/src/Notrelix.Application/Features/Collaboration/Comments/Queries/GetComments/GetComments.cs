@@ -23,7 +23,7 @@ public class GetCommentsQueryHandler : IRequestHandler<GetCommentsQuery, Result<
     public async Task<Result<List<CommentDto>>> Handle(GetCommentsQuery request, CancellationToken ct)
     {
         var comments = await _context.Comments.AsNoTracking()
-            .Where(c => c.Target.ResourceType == request.ResourceType && c.Target.ResourceId == request.ResourceId && !c.IsDeleted)
+            .Where(c => c.Target.Kind == LegacyResourceTypeMappings.ToResourceKind(request.ResourceType) && c.Target.ResourceId == request.ResourceId && !c.IsDeleted)
             .OrderBy(c => c.CreatedAt)
             .ToListAsync(ct);
 

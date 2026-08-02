@@ -33,7 +33,10 @@ public sealed class ResourceScopeResolver : IResourceScopeResolver
         Guid actorUserId,
         CancellationToken cancellationToken)
     {
-        return resource.ResourceType switch
+        if (!LegacyResourceTypeMappings.TryToLegacyEnum(resource.Kind.Value, out var resourceType))
+            return null;
+
+        return resourceType switch
         {
             ResourceType.Board => await _workDb.Boards
                 .IgnoreQueryFilters()
