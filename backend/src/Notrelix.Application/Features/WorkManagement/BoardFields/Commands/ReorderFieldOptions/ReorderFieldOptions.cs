@@ -8,11 +8,10 @@ namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.Reor
 public record ReorderFieldOptionsCommand(
     Guid BoardId,
     Guid FieldId,
-    List<Guid> OrderedOptionIds, string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    List<Guid> OrderedOptionIds) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateField;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardField, FieldId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"reorder-field-options:{FieldId}";
 }
 
 public class ReorderFieldOptionsCommandHandler : IRequestHandler<ReorderFieldOptionsCommand, Result>

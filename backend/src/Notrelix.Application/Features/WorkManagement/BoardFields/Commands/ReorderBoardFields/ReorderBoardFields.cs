@@ -6,11 +6,10 @@ using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.ReorderBoardFields;
 
 [IdempotencyOperation("work-management.board-fields.reorder-board-fields.v1")]
-public record ReorderBoardFieldsCommand(Guid BoardId, List<ReorderItem> Items, string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record ReorderBoardFieldsCommand(Guid BoardId, List<ReorderItem> Items) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"reorder-fields:{BoardId}";
 }
 
 public class ReorderBoardFieldsCommandHandler : IRequestHandler<ReorderBoardFieldsCommand, Result>

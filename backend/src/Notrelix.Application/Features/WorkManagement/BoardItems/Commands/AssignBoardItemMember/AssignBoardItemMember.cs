@@ -6,13 +6,11 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.Assig
 [IdempotencyOperation("work-management.board-items.assign-board-item-member.v1")]
 public record AssignBoardItemMemberCommand(
     Guid BoardItemId,
-    Guid UserId,
-    string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest, IIdempotentRequest
+    Guid UserId) : ICommand<Result>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.AssignItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
     public RealtimeTopic Topic => new("board", "BoardItem", BoardItemId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"assign-item-member:{BoardItemId}:{UserId}";
 }
 
 public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardItemMemberCommand, Result>

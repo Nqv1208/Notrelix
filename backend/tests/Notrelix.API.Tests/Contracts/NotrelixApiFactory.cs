@@ -357,6 +357,21 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 return mock.Object;
             });
 
+            // The scoped execution context carries the raw idempotency key. No
+            // endpoint filter is attached in this test host (that contract is
+            // covered by Architecture.Tests / API endpoint tests), so seed a key
+            // for every scope so the real IdempotencyBehavior.RequireKey succeeds.
+            services.RemoveAll<IIdempotencyExecutionContext>();
+            services.RemoveAll<IIdempotencyExecutionContextWriter>();
+            services.AddScoped<IIdempotencyExecutionContext>(_ =>
+            {
+                var context = new IdempotencyExecutionContext();
+                context.Set("api-test-execution-key", IdempotencyExecutionSource.Internal);
+                return context;
+            });
+            services.AddScoped<IIdempotencyExecutionContextWriter>(sp =>
+                (IIdempotencyExecutionContextWriter)sp.GetRequiredService<IIdempotencyExecutionContext>());
+
             services.RemoveAll<IRealtimePublisher>();
             services.AddScoped<IRealtimePublisher>(_ => Mock.Of<IRealtimePublisher>());
 

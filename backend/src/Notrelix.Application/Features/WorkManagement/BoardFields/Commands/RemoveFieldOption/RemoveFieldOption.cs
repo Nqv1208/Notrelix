@@ -8,12 +8,10 @@ namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.Remo
 public record RemoveFieldOptionCommand(
     Guid BoardId,
     Guid FieldId,
-    Guid OptionId,
-    string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    Guid OptionId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateField;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardField, FieldId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"remove-field-option:{OptionId}";
 }
 
 public class RemoveFieldOptionCommandHandler : IRequestHandler<RemoveFieldOptionCommand, Result>

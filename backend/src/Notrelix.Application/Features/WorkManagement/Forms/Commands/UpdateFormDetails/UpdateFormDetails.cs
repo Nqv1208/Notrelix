@@ -10,15 +10,13 @@ public record UpdateFormDetailsCommand(
     BoardVisibility Visibility,
     string SettingsJson,
     string SubmitterPolicyJson,
-    long? ExpectedVersion = null,
-    string? IdempotencyKey = null)
+    long? ExpectedVersion = null)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Form, FormId);
     long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion ?? 0;
     ResourceRef IExpectedVersionRequest.Resource => Resource;
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"update-form:{FormId}";
 }
 
 public class UpdateFormDetailsCommandHandler : IRequestHandler<UpdateFormDetailsCommand, Result>

@@ -6,13 +6,11 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.Compl
 [IdempotencyOperation("work-management.board-items.complete-board-item.v1")]
 public record CompleteBoardItemCommand(
     Guid BoardItemId,
-    DateTimeOffset? CompletedAt,
-    string? IdempotencyKey = null)
+    DateTimeOffset? CompletedAt)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"complete-item:{BoardItemId}";
 }
 
 public class CompleteBoardItemCommandHandler : IRequestHandler<CompleteBoardItemCommand, Result>

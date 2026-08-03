@@ -7,13 +7,11 @@ namespace Notrelix.Application.Features.WorkManagement.Templates.Commands.Create
 public record CreateBoardFromTemplateCommand(
     Guid TemplateId,
     Guid WorkspaceId,
-    string Name,
-    string? IdempotencyKey = null)
+    string Name)
     : ICommand<Result<Guid>>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreateBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"create-board-from-template:{TemplateId}:{WorkspaceId}:{Name}";
 }
 
 public class CreateBoardFromTemplateCommandHandler : IRequestHandler<CreateBoardFromTemplateCommand, Result<Guid>>

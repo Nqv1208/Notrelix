@@ -12,13 +12,11 @@ public record AddFormQuestionCommand(
     string Label,
     bool IsRequired,
     string? ConfigJson,
-    string? Position,
-    string? IdempotencyKey = null)
+    string? Position)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Form, FormId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"add-form-question:{FormId}:{QuestionKey}";
 }
 
 public class AddFormQuestionCommandHandler : IRequestHandler<AddFormQuestionCommand, Result>

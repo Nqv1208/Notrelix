@@ -11,13 +11,11 @@ public record CreateApprovalRequestCommand(
     ResourceType TargetResourceType,
     string Title,
     string? Description,
-    List<ApprovalStepDto>? Steps,
-    string? IdempotencyKey = null)
+    List<ApprovalStepDto>? Steps)
     : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, TargetResourceId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"create-approval:{TargetResourceId}:{Title}";
 }
 
 public class CreateApprovalRequestCommandHandler : IRequestHandler<CreateApprovalRequestCommand, Result<Guid>>

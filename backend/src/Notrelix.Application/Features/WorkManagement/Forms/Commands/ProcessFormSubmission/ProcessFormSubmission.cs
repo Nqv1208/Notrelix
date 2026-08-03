@@ -6,13 +6,11 @@ namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.ProcessFor
 [IdempotencyOperation("work-management.forms.process-form-submission.v1")]
 public record ProcessFormSubmissionCommand(
     Guid SubmissionId,
-    Guid CreatedItemId,
-    string? IdempotencyKey = null)
+    Guid CreatedItemId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.FormSubmission, SubmissionId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"process-submission:{SubmissionId}";
 }
 
 public class ProcessFormSubmissionCommandHandler : IRequestHandler<ProcessFormSubmissionCommand, Result>

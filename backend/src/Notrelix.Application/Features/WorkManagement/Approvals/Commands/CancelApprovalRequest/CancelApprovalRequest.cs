@@ -6,15 +6,13 @@ namespace Notrelix.Application.Features.WorkManagement.Approvals.Commands.Cancel
 [IdempotencyOperation("work-management.approvals.cancel-approval-request.v1")]
 public record CancelApprovalRequestCommand(
     Guid RequestId,
-    long ExpectedVersion,
-    string? IdempotencyKey = null)
+    long ExpectedVersion)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.ApprovalRequest, RequestId);
     long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion;
     ResourceRef IExpectedVersionRequest.Resource => Resource;
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"cancel-approval:{RequestId}";
 }
 
 public class CancelApprovalRequestCommandHandler : IRequestHandler<CancelApprovalRequestCommand, Result>

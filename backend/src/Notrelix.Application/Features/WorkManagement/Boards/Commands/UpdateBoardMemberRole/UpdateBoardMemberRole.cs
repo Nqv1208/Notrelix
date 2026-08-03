@@ -6,12 +6,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoardMemberRole;
 
 [IdempotencyOperation("work-management.boards.update-board-member-role.v1")]
-public record UpdateBoardMemberRoleCommand(Guid BoardId, Guid UserId, BoardRole Role, string? IdempotencyKey = null)
+public record UpdateBoardMemberRoleCommand(Guid BoardId, Guid UserId, BoardRole Role)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"update-board-member-role:{BoardId}:{UserId}";
 }
 
 public class UpdateBoardMemberRoleCommandHandler : IRequestHandler<UpdateBoardMemberRoleCommand, Result>

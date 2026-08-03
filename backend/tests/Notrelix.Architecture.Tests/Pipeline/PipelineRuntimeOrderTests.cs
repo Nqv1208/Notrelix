@@ -45,6 +45,8 @@ public class PipelineRuntimeOrderTests
         services.AddSingleton<IIdempotencyReplayPolicy>(Mock.Of<IIdempotencyReplayPolicy>());
         services.AddSingleton(new IdempotencyPartitionFactory(Mock.Of<ICurrentTenantContext>()));
         services.AddSingleton(Options.Create(new IdempotencyOptions()));
+        services.AddSingleton<IIdempotencyExecutionContext>(Mock.Of<IIdempotencyExecutionContext>());
+        services.AddSingleton<IIdempotencyExecutionContextWriter>(Mock.Of<IIdempotencyExecutionContextWriter>());
         services.AddSingleton<IRealtimePublisher>(Mock.Of<IRealtimePublisher>());
         services.AddSingleton<IPermissionVersionProvider>(Mock.Of<IPermissionVersionProvider>());
         services.AddSingleton<IResourceVersionReader>(Mock.Of<IResourceVersionReader>());

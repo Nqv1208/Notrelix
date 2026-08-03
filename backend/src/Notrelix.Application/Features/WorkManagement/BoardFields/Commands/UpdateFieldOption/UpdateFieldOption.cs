@@ -10,11 +10,10 @@ public record UpdateFieldOptionCommand(
     Guid FieldId,
     Guid OptionId,
     string Name,
-    string Color, string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    string Color) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateField;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardField, FieldId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"update-field-option:{OptionId}";
 }
 
 public class UpdateFieldOptionCommandHandler : IRequestHandler<UpdateFieldOptionCommand, Result>

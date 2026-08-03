@@ -9,13 +9,11 @@ public record CreateFormCommand(
     string Title,
     BoardVisibility? Visibility = null,
     string? SettingsJson = null,
-    string? SubmitterPolicyJson = null,
-    string? IdempotencyKey = null)
+    string? SubmitterPolicyJson = null)
     : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"create-form:{BoardId}:{Title}";
 }
 
 public class CreateFormCommandHandler : IRequestHandler<CreateFormCommand, Result<Guid>>

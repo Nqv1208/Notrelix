@@ -4,11 +4,10 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ArchiveBoardGroup;
 
 [IdempotencyOperation("work-management.board-groups.archive-board-group.v1")]
-public record ArchiveBoardGroupCommand(Guid GroupId, string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record ArchiveBoardGroupCommand(Guid GroupId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardGroup, GroupId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"archive-group:{GroupId}";
 }
 
 public class ArchiveBoardGroupCommandHandler : IRequestHandler<ArchiveBoardGroupCommand, Result>

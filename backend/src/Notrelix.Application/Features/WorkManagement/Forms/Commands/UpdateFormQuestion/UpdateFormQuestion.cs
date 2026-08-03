@@ -10,13 +10,11 @@ public record UpdateFormQuestionCommand(
     string Label,
     bool IsRequired,
     string? ConfigJson,
-    string? Position,
-    string? IdempotencyKey = null)
+    string? Position)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Form, QuestionId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"update-form-question:{QuestionId}";
 }
 
 public class UpdateFormQuestionCommandHandler : IRequestHandler<UpdateFormQuestionCommand, Result>

@@ -4,12 +4,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.Views.Commands.CreateSavedFilter;
 
 [IdempotencyOperation("work-management.views.create-saved-filter.v1")]
-public record CreateSavedFilterCommand(Guid BoardId, string Name, List<FilterRule>? Rules = null, Guid? ViewId = null, string? IdempotencyKey = null)
+public record CreateSavedFilterCommand(Guid BoardId, string Name, List<FilterRule>? Rules = null, Guid? ViewId = null)
     : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"create-filter:{BoardId}:{Name}";
 }
 
 public class CreateSavedFilterCommandHandler : IRequestHandler<CreateSavedFilterCommand, Result<Guid>>

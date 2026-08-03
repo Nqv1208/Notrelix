@@ -4,12 +4,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.Templates.Commands.ArchiveBoardTemplate;
 
 [IdempotencyOperation("work-management.templates.archive-board-template.v1")]
-public record ArchiveBoardTemplateCommand(Guid TemplateId, string? IdempotencyKey = null)
+public record ArchiveBoardTemplateCommand(Guid TemplateId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, TemplateId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"archive-board-template:{TemplateId}";
 }
 
 public class ArchiveBoardTemplateCommandHandler : IRequestHandler<ArchiveBoardTemplateCommand, Result>

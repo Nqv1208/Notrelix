@@ -5,12 +5,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.RestoreBoard;
 
 [IdempotencyOperation("work-management.boards.restore-board.v1")]
-public record RestoreBoardCommand(Guid BoardId, string? IdempotencyKey = null)
+public record RestoreBoardCommand(Guid BoardId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"restore-board:{BoardId}";
 }
 
 public class RestoreBoardCommandHandler : IRequestHandler<RestoreBoardCommand, Result>

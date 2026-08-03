@@ -7,13 +7,11 @@ namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.UpdateBoa
 [IdempotencyOperation("work-management.boards.update-board-visibility.v1")]
 public record UpdateBoardVisibilityCommand(
     Guid BoardId,
-    BoardVisibility Visibility,
-    string? IdempotencyKey = null)
+    BoardVisibility Visibility)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"update-board-visibility:{BoardId}";
 }
 
 public class UpdateBoardVisibilityCommandHandler : IRequestHandler<UpdateBoardVisibilityCommand, Result>

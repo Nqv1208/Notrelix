@@ -5,11 +5,10 @@ using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.CreateChecklist;
 
 [IdempotencyOperation("work-management.checklists.create-checklist.v1")]
-public record CreateChecklistCommand(Guid BoardItemId, string Title, string? IdempotencyKey = null) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record CreateChecklistCommand(Guid BoardItemId, string Title) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"create-checklist:{BoardItemId}";
 }
 
 public class CreateChecklistCommandHandler : IRequestHandler<CreateChecklistCommand, Result<Guid>>

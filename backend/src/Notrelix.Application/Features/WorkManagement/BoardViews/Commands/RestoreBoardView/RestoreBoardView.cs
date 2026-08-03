@@ -4,12 +4,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.RestoreBoardView;
 
 [IdempotencyOperation("work-management.board-views.restore-board-view.v1")]
-public record RestoreBoardViewCommand(Guid ViewId, string? IdempotencyKey = null)
+public record RestoreBoardViewCommand(Guid ViewId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateBoardView;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardView, ViewId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"restore-view:{ViewId}";
 }
 
 public class RestoreBoardViewCommandHandler : IRequestHandler<RestoreBoardViewCommand, Result>

@@ -7,13 +7,11 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.Updat
 public record UpdateBoardItemFieldValueCommand(
     Guid ItemId,
     Guid FieldId,
-    object? Value,
-    string? IdempotencyKey = null) : ICommand<BoardItemSlimDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest, IIdempotentRequest
+    object? Value) : ICommand<BoardItemSlimDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, ItemId);
     public RealtimeTopic Topic => new("board", "BoardItem", ItemId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"set-field-value:{ItemId}:{FieldId}";
 }
 
 public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoardItemFieldValueCommand, BoardItemSlimDto>

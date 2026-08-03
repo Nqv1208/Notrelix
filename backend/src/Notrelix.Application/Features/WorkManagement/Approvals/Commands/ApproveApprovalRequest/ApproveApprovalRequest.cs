@@ -7,15 +7,13 @@ namespace Notrelix.Application.Features.WorkManagement.Approvals.Commands.Approv
 public record ApproveApprovalRequestCommand(
     Guid RequestId,
     string? Note,
-    long ExpectedVersion,
-    string? IdempotencyKey = null)
+    long ExpectedVersion)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.ApprovalRequest, RequestId);
     long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion;
     ResourceRef IExpectedVersionRequest.Resource => Resource;
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"approve-approval:{RequestId}";
 }
 
 public class ApproveApprovalRequestCommandHandler : IRequestHandler<ApproveApprovalRequestCommand, Result>

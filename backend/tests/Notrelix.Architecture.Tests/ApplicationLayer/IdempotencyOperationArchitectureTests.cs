@@ -120,5 +120,5 @@ public class IdempotencyOperationArchitectureTests
             .WithMessage("*missing [IdempotencyOperation]*");
     }
 
-    private sealed record RequestWithoutAttribute(string IdempotencyKey) : IIdempotentRequest;
+    private sealed record RequestWithoutAttribute : IIdempotentRequest;
 }

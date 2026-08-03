@@ -6,15 +6,13 @@ namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.CloseForm;
 [IdempotencyOperation("work-management.forms.close-form.v1")]
 public record CloseFormCommand(
     Guid FormId,
-    long? ExpectedVersion = null,
-    string? IdempotencyKey = null)
+    long? ExpectedVersion = null)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Form, FormId);
     long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion ?? 0;
     ResourceRef IExpectedVersionRequest.Resource => Resource;
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"close-form:{FormId}";
 }
 
 public class CloseFormCommandHandler : IRequestHandler<CloseFormCommand, Result>

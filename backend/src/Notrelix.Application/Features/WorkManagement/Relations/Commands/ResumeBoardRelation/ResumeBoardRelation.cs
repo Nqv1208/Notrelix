@@ -4,12 +4,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.Relations.Commands.ResumeBoardRelation;
 
 [IdempotencyOperation("work-management.relations.resume-board-relation.v1")]
-public record ResumeBoardRelationCommand(Guid RelationId, string? IdempotencyKey = null)
+public record ResumeBoardRelationCommand(Guid RelationId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardRelation, RelationId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"resume-board-relation:{RelationId}";
 }
 
 public class ResumeBoardRelationCommandHandler : IRequestHandler<ResumeBoardRelationCommand, Result>

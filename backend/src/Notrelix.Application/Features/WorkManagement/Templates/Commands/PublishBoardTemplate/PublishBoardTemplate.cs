@@ -4,12 +4,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.Templates.Commands.PublishBoardTemplate;
 
 [IdempotencyOperation("work-management.templates.publish-board-template.v1")]
-public record PublishBoardTemplateCommand(Guid TemplateId, string? IdempotencyKey = null)
+public record PublishBoardTemplateCommand(Guid TemplateId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, TemplateId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"publish-board-template:{TemplateId}";
 }
 
 public class PublishBoardTemplateCommandHandler : IRequestHandler<PublishBoardTemplateCommand, Result>

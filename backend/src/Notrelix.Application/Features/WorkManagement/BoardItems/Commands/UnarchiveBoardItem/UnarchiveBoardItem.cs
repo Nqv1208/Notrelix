@@ -4,11 +4,10 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UnarchiveBoardItem;
 
 [IdempotencyOperation("work-management.board-items.unarchive-board-item.v1")]
-public record UnarchiveBoardItemCommand(Guid BoardItemId, string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record UnarchiveBoardItemCommand(Guid BoardItemId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"unarchive-item:{BoardItemId}";
 }
 
 public class UnarchiveBoardItemCommandHandler : IRequestHandler<UnarchiveBoardItemCommand, Result>

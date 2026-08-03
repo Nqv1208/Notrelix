@@ -4,14 +4,13 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.Views.Commands.RenameSavedFilter;
 
 [IdempotencyOperation("work-management.views.rename-saved-filter.v1")]
-public record RenameSavedFilterCommand(Guid FilterId, string Name, long ExpectedVersion, string? IdempotencyKey = null)
+public record RenameSavedFilterCommand(Guid FilterId, string Name, long ExpectedVersion)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.SavedFilter, FilterId);
     long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion;
     ResourceRef IExpectedVersionRequest.Resource => Resource;
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"rename-filter:{FilterId}";
 }
 
 public class RenameSavedFilterCommandHandler : IRequestHandler<RenameSavedFilterCommand, Result>

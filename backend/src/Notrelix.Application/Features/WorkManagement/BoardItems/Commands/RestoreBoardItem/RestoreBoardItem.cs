@@ -4,12 +4,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.RestoreBoardItem;
 
 [IdempotencyOperation("work-management.board-items.restore-board-item.v1")]
-public record RestoreBoardItemCommand(Guid BoardItemId, string? IdempotencyKey = null)
+public record RestoreBoardItemCommand(Guid BoardItemId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"restore-item:{BoardItemId}";
 }
 
 public class RestoreBoardItemCommandHandler : IRequestHandler<RestoreBoardItemCommand, Result>

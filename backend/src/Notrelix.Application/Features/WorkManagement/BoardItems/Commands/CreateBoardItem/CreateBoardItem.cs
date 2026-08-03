@@ -9,13 +9,11 @@ public record CreateBoardItemCommand(
     Guid BoardId,
     Guid GroupId,
     string Title,
-    double Position,
-    string? IdempotencyKey = null) : ICommand<BoardItemSlimDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest, IIdempotentRequest
+    double Position) : ICommand<BoardItemSlimDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
     public RealtimeTopic Topic => new("board", "Board", BoardId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"create-item:{BoardId}:{GroupId}:{Title}";
 }
 
 public class CreateBoardItemCommandHandler : IRequestHandler<CreateBoardItemCommand, BoardItemSlimDto>

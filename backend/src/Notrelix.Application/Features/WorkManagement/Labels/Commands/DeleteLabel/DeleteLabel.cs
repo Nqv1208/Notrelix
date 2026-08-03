@@ -4,12 +4,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.Labels.Commands.DeleteLabel;
 
 [IdempotencyOperation("work-management.labels.delete-label.v1")]
-public record DeleteLabelCommand(Guid LabelId, string? IdempotencyKey = null)
+public record DeleteLabelCommand(Guid LabelId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Label, LabelId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"delete-label:{LabelId}";
 }
 
 public class DeleteLabelCommandHandler : IRequestHandler<DeleteLabelCommand, Result>

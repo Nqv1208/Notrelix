@@ -4,12 +4,11 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.Relations.Commands.PauseBoardRelation;
 
 [IdempotencyOperation("work-management.relations.pause-board-relation.v1")]
-public record PauseBoardRelationCommand(Guid RelationId, string? IdempotencyKey = null)
+public record PauseBoardRelationCommand(Guid RelationId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardRelation, RelationId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"pause-board-relation:{RelationId}";
 }
 
 public class PauseBoardRelationCommandHandler : IRequestHandler<PauseBoardRelationCommand, Result>

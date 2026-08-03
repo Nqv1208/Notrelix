@@ -6,13 +6,11 @@ namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.Renam
 [IdempotencyOperation("work-management.board-views.rename-board-view.v1")]
 public record RenameBoardViewCommand(
     Guid ViewId,
-    string Name,
-    string? IdempotencyKey = null)
+    string Name)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateBoardView;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardView, ViewId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"rename-view:{ViewId}";
 }
 
 public class RenameBoardViewCommandHandler : IRequestHandler<RenameBoardViewCommand, Result>

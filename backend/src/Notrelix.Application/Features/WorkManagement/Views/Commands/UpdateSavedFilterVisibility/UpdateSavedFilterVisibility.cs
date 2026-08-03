@@ -4,14 +4,13 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSavedFilterVisibility;
 
 [IdempotencyOperation("work-management.views.update-saved-filter-visibility.v1")]
-public record UpdateSavedFilterVisibilityCommand(Guid FilterId, SavedFilterVisibility Visibility, long ExpectedVersion, string? IdempotencyKey = null)
+public record UpdateSavedFilterVisibilityCommand(Guid FilterId, SavedFilterVisibility Visibility, long ExpectedVersion)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.SavedFilter, FilterId);
     long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion;
     ResourceRef IExpectedVersionRequest.Resource => Resource;
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"update-filter-visibility:{FilterId}";
 }
 
 public class UpdateSavedFilterVisibilityCommandHandler : IRequestHandler<UpdateSavedFilterVisibilityCommand, Result>

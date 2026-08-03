@@ -15,7 +15,6 @@ public class PipelineExecutionTests
         public Guid WorkspaceId => Wsid;
         public PermissionAction Action => PermissionAction.ViewWorkspace;
         public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, Wsid, Wsid);
-        public string IdempotencyKey => "test-key";
     }
 
     public sealed record NonTransactionalCommand : IRequest<string>, IGlobalRequest;
@@ -151,6 +150,9 @@ public class PipelineExecutionTests
         mockReplayPolicy.Setup(x => x.CanCacheResult(It.IsAny<string>(), It.IsAny<string>()))
             .Returns(cacheResult);
 
+        var executionContext = new IdempotencyExecutionContext();
+        executionContext.Set("test-execution-key", IdempotencyExecutionSource.Internal);
+
         return new IdempotencyBehavior<TRequest, string>(
             mockStore.Object,
             mockFingerprint.Object,
@@ -158,6 +160,8 @@ public class PipelineExecutionTests
             partitionFactory,
             Options.Create(new IdempotencyOptions()),
             TimeProvider.System,
+            executionContext,
+            executionContext,
             Mock.Of<ILogger<IdempotencyBehavior<TRequest, string>>>());
     }
 

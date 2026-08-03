@@ -5,13 +5,11 @@ namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.DeleteForm
 
 [IdempotencyOperation("work-management.forms.delete-form-submission.v1")]
 public record DeleteFormSubmissionCommand(
-    Guid SubmissionId,
-    string? IdempotencyKey = null)
+    Guid SubmissionId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.FormSubmission, SubmissionId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"delete-submission:{SubmissionId}";
 }
 
 public class DeleteFormSubmissionCommandHandler : IRequestHandler<DeleteFormSubmissionCommand, Result>

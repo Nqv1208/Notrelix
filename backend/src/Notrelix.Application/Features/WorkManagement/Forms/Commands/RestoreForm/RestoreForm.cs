@@ -5,13 +5,11 @@ namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.RestoreFor
 
 [IdempotencyOperation("work-management.forms.restore-form.v1")]
 public record RestoreFormCommand(
-    Guid FormId,
-    string? IdempotencyKey = null)
+    Guid FormId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Form, FormId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"restore-form:{FormId}";
 }
 
 public class RestoreFormCommandHandler : IRequestHandler<RestoreFormCommand, Result>

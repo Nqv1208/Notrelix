@@ -4,14 +4,13 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSavedFilterSorts;
 
 [IdempotencyOperation("work-management.views.update-saved-filter-sorts.v1")]
-public record UpdateSavedFilterSortsCommand(Guid FilterId, List<SortRule> SortRules, long ExpectedVersion, string? IdempotencyKey = null)
+public record UpdateSavedFilterSortsCommand(Guid FilterId, List<SortRule> SortRules, long ExpectedVersion)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.SavedFilter, FilterId);
     long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion;
     ResourceRef IExpectedVersionRequest.Resource => Resource;
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"update-filter-sorts:{FilterId}";
 }
 
 public class UpdateSavedFilterSortsCommandHandler : IRequestHandler<UpdateSavedFilterSortsCommand, Result>

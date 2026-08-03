@@ -63,6 +63,13 @@ public static class DependencyInjection
         services.AddSingleton<IIdempotencyReplayPolicy, DefaultIdempotencyReplayPolicy>();
         services.AddScoped<IdempotencyPartitionFactory>();
 
+        // Scoped execution context: one instance is exposed as both the read and
+        // the write contract so the transport can bind the key and the pipeline
+        // can require it.
+        services.AddScoped<IIdempotencyExecutionContext, IdempotencyExecutionContext>();
+        services.AddScoped<IIdempotencyExecutionContextWriter>(sp =>
+            (IIdempotencyExecutionContextWriter)sp.GetRequiredService<IIdempotencyExecutionContext>());
+
         // Integration event collector (scoped per request)
         services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
 

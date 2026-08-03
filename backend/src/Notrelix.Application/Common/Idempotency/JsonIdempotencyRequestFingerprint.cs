@@ -11,12 +11,11 @@ namespace Notrelix.Application.Common.Idempotency;
 /// Deterministic request fingerprint using canonical JSON serialization.
 /// Algorithm:
 /// 1. Serialize request to JsonNode with shared deterministic options.
-/// 2. Remove top-level property corresponding to IIdempotentRequest.IdempotencyKey.
-/// 3. Remove properties decorated with [IdempotencyFingerprintIgnore].
-/// 4. Recursively sort object property names (ordinal).
-/// 5. Preserve array order.
-/// 6. Serialize compact UTF-8.
-/// 7. SHA-256 full 64 uppercase hexadecimal characters.
+/// 2. Remove properties decorated with [IdempotencyFingerprintIgnore].
+/// 3. Recursively sort object property names (ordinal).
+/// 4. Preserve array order.
+/// 5. Serialize compact UTF-8.
+/// 6. SHA-256 full 64 uppercase hexadecimal characters.
 /// </summary>
 public sealed class JsonIdempotencyRequestFingerprint : IIdempotencyRequestFingerprint
 {
@@ -36,19 +35,12 @@ public sealed class JsonIdempotencyRequestFingerprint : IIdempotencyRequestFinge
         if (node is not JsonObject root)
             throw new InvalidOperationException("Request must serialize to a JSON object.");
 
-        RemoveIdempotencyKeyProperty(root);
         RemoveIgnoredProperties(root, requestType);
         SortPropertiesRecursively(root);
 
         var compact = root.ToJsonString(new JsonSerializerOptions { WriteIndented = false });
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(compact));
         return Convert.ToHexString(bytes);
-    }
-
-    private static void RemoveIdempotencyKeyProperty(JsonObject root)
-    {
-        var keyPropertyName = SerializerOptions.PropertyNamingPolicy?.ConvertName("IdempotencyKey") ?? "idempotencyKey";
-        root.Remove(keyPropertyName);
     }
 
     private static void RemoveIgnoredProperties(JsonObject root, Type requestType)

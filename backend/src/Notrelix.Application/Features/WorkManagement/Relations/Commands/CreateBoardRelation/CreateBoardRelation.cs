@@ -7,13 +7,11 @@ namespace Notrelix.Application.Features.WorkManagement.Relations.Commands.Create
 public record CreateBoardRelationCommand(
     Guid SourceBoardId,
     Guid TargetBoardId,
-    string RelationType,
-    string? IdempotencyKey = null)
+    string RelationType)
     : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, SourceBoardId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"create-board-relation:{SourceBoardId}:{TargetBoardId}";
 }
 
 public class CreateBoardRelationCommandHandler : IRequestHandler<CreateBoardRelationCommand, Result<Guid>>

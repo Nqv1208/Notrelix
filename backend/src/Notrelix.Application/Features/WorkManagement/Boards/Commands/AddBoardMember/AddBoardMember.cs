@@ -6,11 +6,10 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.AddBoardMember;
 
 [IdempotencyOperation("work-management.boards.add-board-member.v1")]
-public record AddBoardMemberCommand(Guid BoardId, Guid UserId, BoardRole? Role, string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record AddBoardMemberCommand(Guid BoardId, Guid UserId, BoardRole? Role) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"add-board-member:{BoardId}:{UserId}";
 }
 
 public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberCommand, Result>

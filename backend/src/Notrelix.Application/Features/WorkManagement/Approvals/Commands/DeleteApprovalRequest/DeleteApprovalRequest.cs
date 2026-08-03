@@ -6,15 +6,13 @@ namespace Notrelix.Application.Features.WorkManagement.Approvals.Commands.Delete
 [IdempotencyOperation("work-management.approvals.delete-approval-request.v1")]
 public record DeleteApprovalRequestCommand(
     Guid RequestId,
-    long ExpectedVersion,
-    string? IdempotencyKey = null)
+    long ExpectedVersion)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.ApprovalRequest, RequestId);
     long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion;
     ResourceRef IExpectedVersionRequest.Resource => Resource;
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"delete-approval:{RequestId}";
 }
 
 public class DeleteApprovalRequestCommandHandler : IRequestHandler<DeleteApprovalRequestCommand, Result>

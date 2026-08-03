@@ -5,13 +5,11 @@ namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.MarkFormSu
 
 [IdempotencyOperation("work-management.forms.mark-form-submission-as-spam.v1")]
 public record MarkFormSubmissionAsSpamCommand(
-    Guid SubmissionId,
-    string? IdempotencyKey = null)
+    Guid SubmissionId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.FormSubmission, SubmissionId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"spam-submission:{SubmissionId}";
 }
 
 public class MarkFormSubmissionAsSpamCommandHandler : IRequestHandler<MarkFormSubmissionAsSpamCommand, Result>

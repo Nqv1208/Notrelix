@@ -7,12 +7,10 @@ namespace Notrelix.Application.Features.WorkManagement.ItemLinks.Commands.Create
 public record CreateBoardItemLinkCommand(
     Guid SourceBoardItemId,
     Guid TargetBoardItemId,
-    string LinkType,
-    string? IdempotencyKey = null) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    string LinkType) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, SourceBoardItemId);
     public PermissionAction Action => PermissionAction.UpdateItem;
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"create-item-link:{SourceBoardItemId}:{TargetBoardItemId}";
 }
 
 public class CreateBoardItemLinkCommandHandler(

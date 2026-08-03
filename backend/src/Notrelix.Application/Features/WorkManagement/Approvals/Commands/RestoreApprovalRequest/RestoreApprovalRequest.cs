@@ -5,13 +5,11 @@ namespace Notrelix.Application.Features.WorkManagement.Approvals.Commands.Restor
 
 [IdempotencyOperation("work-management.approvals.restore-approval-request.v1")]
 public record RestoreApprovalRequestCommand(
-    Guid RequestId,
-    string? IdempotencyKey = null)
+    Guid RequestId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.ApprovalRequest, RequestId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"restore-approval:{RequestId}";
 }
 
 public class RestoreApprovalRequestCommandHandler : IRequestHandler<RestoreApprovalRequestCommand, Result>

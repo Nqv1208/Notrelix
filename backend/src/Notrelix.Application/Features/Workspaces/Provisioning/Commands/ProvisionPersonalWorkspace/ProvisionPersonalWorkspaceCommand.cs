@@ -26,7 +26,6 @@ public sealed record ProvisionPersonalWorkspaceCommand(
     public string ConsumerName => ConsumerNames.PersonalWorkspaceProvisioning;
     public Guid? WorkspaceId => null;
 
-    public string IdempotencyKey => $"account-default-workspace:{AccountId}";
     public string OperationName => "ProvisionPersonalWorkspace";
     public SystemOperationReason Reason => new("Workspaces", "Auto-provision personal workspace for new user");
     Guid ISystemOperation.CorrelationId => MessageId;

@@ -5,13 +5,11 @@ namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.RejectForm
 
 [IdempotencyOperation("work-management.forms.reject-form-submission.v1")]
 public record RejectFormSubmissionCommand(
-    Guid SubmissionId,
-    string? IdempotencyKey = null)
+    Guid SubmissionId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceType.FormSubmission, SubmissionId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"reject-submission:{SubmissionId}";
 }
 
 public class RejectFormSubmissionCommandHandler : IRequestHandler<RejectFormSubmissionCommand, Result>

@@ -12,6 +12,8 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
     private readonly IIdempotencyRequestFingerprint _fingerprint;
     private readonly IIdempotencyReplayPolicy _replayPolicy;
     private readonly IdempotencyPartitionFactory _partitionFactory;
+    private readonly IIdempotencyExecutionContext _executionContext;
+    private readonly IIdempotencyExecutionContextWriter _executionContextWriter;
     private readonly IdempotencyOptions _options;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<IdempotencyBehavior<TRequest, TResponse>> _logger;
@@ -23,12 +25,16 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         IdempotencyPartitionFactory partitionFactory,
         IOptions<IdempotencyOptions> options,
         TimeProvider timeProvider,
+        IIdempotencyExecutionContext executionContext,
+        IIdempotencyExecutionContextWriter executionContextWriter,
         ILogger<IdempotencyBehavior<TRequest, TResponse>> logger)
     {
         _idempotencyStore = idempotencyStore;
         _fingerprint = fingerprint;
         _replayPolicy = replayPolicy;
         _partitionFactory = partitionFactory;
+        _executionContext = executionContext;
+        _executionContextWriter = executionContextWriter;
         _options = options.Value;
         _timeProvider = timeProvider;
         _logger = logger;
@@ -47,6 +53,7 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         {
             case IdempotencyBeginStatus.Completed:
                 _logger.LogDebug("Idempotency replay for {Operation} scope={Scope}", identity.Operation, identity.Scope);
+                _executionContextWriter.MarkReplay();
                 return ReplayResult(beginResult);
 
             case IdempotencyBeginStatus.PayloadMismatch:
@@ -89,7 +96,7 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
     {
         var operation = IdempotencyOperationMetadata.Resolve<TRequest>();
         var scope = _partitionFactory.BuildPartition(request);
-        var keyHash = HashRawKey(request.IdempotencyKey);
+        var keyHash = HashRawKey(_executionContext.RequireKey());
         var requestHash = _fingerprint.Compute(request, typeof(TRequest));
 
         return new IdempotencyIdentity(operation, scope, keyHash, requestHash);
