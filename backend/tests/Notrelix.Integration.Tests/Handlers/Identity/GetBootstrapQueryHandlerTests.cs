@@ -35,9 +35,10 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
         await using var context = _db.CreateContext(tenant);
-        var handler = new GetBootstrapQueryHandler(context, context, context);
+        var currentUser = new FakeCurrentUser { UserId = Guid.NewGuid() };
+        var handler = new GetBootstrapQueryHandler(context, context, context, currentUser);
 
-        var result = await handler.Handle(new GetBootstrapQuery(Guid.NewGuid()), CancellationToken.None);
+        var result = await handler.Handle(new GetBootstrapQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().Contain("User not found");
@@ -55,9 +56,10 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         context.AccountMembers.Add(AccountMember.Create(AccountId, user.Id, AccountRole.Owner, user.Id, now));
         await context.SaveChangesAsync();
 
-        var handler = new GetBootstrapQueryHandler(context, context, context);
+        var currentUser = new FakeCurrentUser { UserId = user.Id };
+        var handler = new GetBootstrapQueryHandler(context, context, context, currentUser);
 
-        var result = await handler.Handle(new GetBootstrapQuery(user.Id), CancellationToken.None);
+        var result = await handler.Handle(new GetBootstrapQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         result.Data!.User.Id.Should().Be(user.Id);
@@ -84,9 +86,10 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         context.WorkspaceMembers.Add(member);
         await context.SaveChangesAsync();
 
-        var handler = new GetBootstrapQueryHandler(context, context, context);
+        var currentUser = new FakeCurrentUser { UserId = user.Id };
+        var handler = new GetBootstrapQueryHandler(context, context, context, currentUser);
 
-        var result = await handler.Handle(new GetBootstrapQuery(user.Id), CancellationToken.None);
+        var result = await handler.Handle(new GetBootstrapQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         result.Data!.Workspaces.Should().HaveCount(1);
@@ -112,9 +115,10 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         context.Workspaces.Add(personalWorkspace);
         await context.SaveChangesAsync();
 
-        var handler = new GetBootstrapQueryHandler(context, context, context);
+        var currentUser = new FakeCurrentUser { UserId = user.Id };
+        var handler = new GetBootstrapQueryHandler(context, context, context, currentUser);
 
-        var result = await handler.Handle(new GetBootstrapQuery(user.Id), CancellationToken.None);
+        var result = await handler.Handle(new GetBootstrapQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         result.Data!.PersonalWorkspace.Status.Should().Be("ready");
@@ -134,9 +138,10 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         context.AccountMembers.Add(AccountMember.Create(AccountId, user.Id, AccountRole.Owner, user.Id, now));
         await context.SaveChangesAsync();
 
-        var handler = new GetBootstrapQueryHandler(context, context, context);
+        var currentUser = new FakeCurrentUser { UserId = user.Id };
+        var handler = new GetBootstrapQueryHandler(context, context, context, currentUser);
 
-        var result = await handler.Handle(new GetBootstrapQuery(user.Id), CancellationToken.None);
+        var result = await handler.Handle(new GetBootstrapQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         result.Data!.PersonalWorkspace.Status.Should().Be("pending");

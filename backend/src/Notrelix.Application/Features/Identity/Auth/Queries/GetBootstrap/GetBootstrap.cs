@@ -7,36 +7,39 @@ using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Queries.GetBootstrap;
 
-public record GetBootstrapQuery(Guid UserId) : IQuery<Result<BootstrapResult>>, IGlobalRequest, IAnonymousRequest;
+public record GetBootstrapQuery : IQuery<Result<BootstrapResult>>, IGlobalRequest, IAuthenticatedRequest;
 
 public class GetBootstrapQueryHandler : IRequestHandler<GetBootstrapQuery, Result<BootstrapResult>>
 {
     private readonly IIdentityDbContext _identityContext;
     private readonly IAccountDbContext _accountContext;
     private readonly IWorkspaceDbContext _workspaceContext;
+    private readonly ICurrentUser _currentUser;
 
     public GetBootstrapQueryHandler(
         IIdentityDbContext identityContext,
         IAccountDbContext accountContext,
-        IWorkspaceDbContext workspaceContext)
+        IWorkspaceDbContext workspaceContext,
+        ICurrentUser currentUser)
     {
         _identityContext = identityContext;
         _accountContext = accountContext;
         _workspaceContext = workspaceContext;
+        _currentUser = currentUser;
     }
 
     public async Task<Result<BootstrapResult>> Handle(GetBootstrapQuery request, CancellationToken cancellationToken)
     {
         var user = await _identityContext.Users
             .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
+            .FirstOrDefaultAsync(u => u.Id == _currentUser.UserId, cancellationToken);
 
         if (user is null)
             return Result<BootstrapResult>.Failure("User not found");
 
         var workspaces = await _workspaceContext.WorkspaceMembers
             .AsNoTracking()
-            .Where(m => m.UserId == request.UserId)
+            .Where(m => m.UserId == _currentUser.UserId)
             .Join(_workspaceContext.Workspaces,
                 member => member.WorkspaceId,
                 workspace => workspace.Id,
@@ -51,7 +54,7 @@ public class GetBootstrapQueryHandler : IRequestHandler<GetBootstrapQuery, Resul
 
         var accountMember = await _accountContext.AccountMembers
             .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.UserId == request.UserId, cancellationToken);
+            .FirstOrDefaultAsync(m => m.UserId == _currentUser.UserId, cancellationToken);
 
         Guid? personalWorkspaceId = null;
         if (accountMember is not null)

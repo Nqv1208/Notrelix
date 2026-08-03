@@ -14,9 +14,9 @@ public static class GetBootstrapEndpoint
         return group;
     }
 
-    private static async Task<IResult> HandleAsync(ISender sender, ICurrentUser currentUser)
+    private static async Task<IResult> HandleAsync(ISender sender)
     {
-        var result = await sender.Send(new GetBootstrapQuery(currentUser.UserId));
+        var result = await sender.Send(new GetBootstrapQuery());
         return result.ToApiResult();
     }
 }

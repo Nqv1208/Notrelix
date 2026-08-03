@@ -4,10 +4,18 @@ namespace Notrelix.Application.Tests.Features.Identity.Auth.Queries;
 
 public class GetBootstrapTests : IdentityHandlerTestBase
 {
-    private GetBootstrapQueryHandler CreateSut() => new(
-        IdentityContextMock.Object,
-        AccountContextMock.Object,
-        WorkspaceContextMock.Object);
+    private GetBootstrapQueryHandler CreateSut()
+    {
+        var currentUser = new Mock<ICurrentUser>();
+        currentUser.Setup(u => u.UserId).Returns(TestUserId);
+        currentUser.Setup(u => u.IsAuthenticated).Returns(true);
+
+        return new GetBootstrapQueryHandler(
+            IdentityContextMock.Object,
+            AccountContextMock.Object,
+            WorkspaceContextMock.Object,
+            currentUser.Object);
+    }
 
     [Fact]
     public async Task Handle_WhenUserExists_ReturnsBootstrapData()
@@ -16,7 +24,7 @@ public class GetBootstrapTests : IdentityHandlerTestBase
         SetupUsers(user);
 
         var sut = CreateSut();
-        var result = await sut.Handle(new GetBootstrapQuery(TestUserId), CancellationToken.None);
+        var result = await sut.Handle(new GetBootstrapQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         result.Data!.User.Id.Should().Be(TestUserId);
@@ -31,7 +39,7 @@ public class GetBootstrapTests : IdentityHandlerTestBase
         SetupUsers();
 
         var sut = CreateSut();
-        var result = await sut.Handle(new GetBootstrapQuery(TestUserId), CancellationToken.None);
+        var result = await sut.Handle(new GetBootstrapQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().Contain(e => e.Contains("User not found"));
