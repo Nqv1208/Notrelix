@@ -133,7 +133,8 @@ public class PipelineExecutionTests
     }
 
     private static IdempotencyBehavior<TRequest, string> CreateIdempotencyBehavior<TRequest>(
-        Mock<IIdempotencyStore> mockStore)
+        Mock<IIdempotencyStore> mockStore,
+        bool cacheResult = true)
         where TRequest : notnull
     {
         var mockTenant = new Mock<ICurrentTenantContext>();
@@ -148,7 +149,7 @@ public class PipelineExecutionTests
 
         var mockReplayPolicy = new Mock<IIdempotencyReplayPolicy>();
         mockReplayPolicy.Setup(x => x.CanCacheResult(It.IsAny<string>(), It.IsAny<string>()))
-            .Returns(true);
+            .Returns(cacheResult);
 
         return new IdempotencyBehavior<TRequest, string>(
             mockStore.Object,
@@ -675,9 +676,32 @@ public class PipelineExecutionTests
     }
 
     [Fact]
-    public async Task IdempotencyBehavior_NonIdempotentRequest_SkipsIdempotency()
+    public async Task IdempotencyBehavior_ReplayPolicyRejectsResult_ThrowsAndDoesNotComplete()
     {
+        // FZ-IDEM-01 (spec 3.7): never return a successful business response without
+        // Completed replay state. When the replay policy rejects caching the result,
+        // the behavior must throw so the request transaction rolls back — it must not
+        // return the response and silently leave a Started row behind.
         var mockStore = CreateMockIdempotencyStore();
+        var behavior = CreateIdempotencyBehavior<ExecutableCommand>(mockStore, cacheResult: false);
+
+        RequestHandlerDelegate<string> next = _ => Task.FromResult("result");
+
+        Func<Task> act = () => behavior.Handle(new ExecutableCommand(), next, CancellationToken.None);
+
+        await act.Should().ThrowAsync<Exception>(
+            "a rejected non-replayable result must not surface as a successful business response");
+        mockStore.Verify(x => x.CompleteAsync(
+            It.IsAny<IdempotencyIdentity>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<DateTimeOffset>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task IdempotencyBehavior_NonIdempotentRequest_SkipsIdempotency()
+    {        var mockStore = CreateMockIdempotencyStore();
         var behavior = CreateIdempotencyBehavior<NonTransactionalCommand>(mockStore);
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("ok");

@@ -143,15 +143,84 @@ public sealed class ConsumerHostTests
     }
 
     [Fact]
-    public async Task DispatchAsync_ShouldHandleHandlerThrowing_WithoutCrashing()
+    public async Task DispatchAsync_HandlerFailure_PublishesDiagnosticsThenRethrows()
     {
+        // FZ-PLT-01 (final decision: Platform failure): publish diagnostics then
+        // rethrow for transport retry. Currently the host swallows the exception.
         _sut.Register("test.event", (_, _) =>
-            throw new InvalidOperationException("handler error"));
+            throw new InvalidOperationException("handler error"), o => o.PoisonThreshold = 5);
+
+        var envelope = CreateEnvelope("test.event");
+
+        Func<Task> act = () => _sut.DispatchAsync(envelope);
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("handler error");
+        _diagMock.Verify(d => d.Publish(It.Is<DeliveryFailedEvent>(e => e.Error.Contains("handler error"))), Times.Once);
+    }
+
+    [Fact]
+    public async Task DispatchAsync_ConcurrencyLimitReached_NeverDrops()
+    {
+        // FZ-PLT-01 (final decision: Platform concurrency): wait or throw backpressure;
+        // never drop. Currently the host returns success without running the handler.
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handlerRuns = 0L;
+
+        _sut.Register("test.event", (_, _) =>
+        {
+            Interlocked.Increment(ref handlerRuns);
+            entered.TrySetResult();
+            return release.Task;
+        }, o => o.ConcurrencyLimit = 1);
+
+        var first = _sut.DispatchAsync(CreateEnvelope("test.event"));
+        await entered.Task;
+
+        var second = _sut.DispatchAsync(CreateEnvelope("test.event"));
+        var settled = await Task.WhenAny(second, Task.Delay(1000));
+
+        if (ReferenceEquals(settled, second))
+        {
+            if (second.IsCompletedSuccessfully)
+            {
+                Interlocked.Read(ref handlerRuns).Should().Be(2,
+                    "a dispatch that succeeds while the slot is full proves a silent drop — never drop under backpressure");
+            }
+            // else: backpressure throw is acceptable — the transport retries.
+        }
+        else
+        {
+            release.TrySetResult();
+            await second;
+            Interlocked.Read(ref handlerRuns).Should().Be(2,
+                "a waiting dispatch must execute the handler once the slot frees");
+        }
+
+        release.TrySetResult();
+        await first;
+    }
+
+    [Fact]
+    public async Task DispatchAsync_OrderingEnabled_ProcessesFirstMessage()
+    {
+        // FZ-PLT-02 (final decision: Platform ordering): require a real sequence when
+        // ordering is enabled. Currently the host hardcodes sequence 0, which the
+        // OrderingEnforcer always rejects — the first message is dropped.
+        var handled = false;
+        _sut.Register("test.event", (_, _) =>
+        {
+            handled = true;
+            return Task.CompletedTask;
+        }, o => o.OrderingRequired = true);
 
         var envelope = CreateEnvelope("test.event");
         await _sut.DispatchAsync(envelope);
 
-        _diagMock.Verify(d => d.Publish(It.Is<DeliveryFailedEvent>(e => e.Error.Contains("handler error"))), Times.Once);
+        handled.Should().BeTrue(
+            "an ordering-enabled consumer must process its first message — the host must supply a real sequence, not a hardcoded 0");
+        _diagMock.Verify(d => d.Publish(It.IsAny<DeliveryFailedEvent>()), Times.Never);
     }
 
     private static EventEnvelope CreateEnvelope(string eventName) => new()

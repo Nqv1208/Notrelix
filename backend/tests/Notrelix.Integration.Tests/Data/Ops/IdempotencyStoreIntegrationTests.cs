@@ -187,6 +187,37 @@ public class IdempotencyStoreIntegrationTests
     }
 
     [Fact]
+    public async Task IDEM_DB_012_CommittedActiveProcessing_IsNeverReturnedAsCompleted()
+    {
+        // FZ-IDEM-01 (spec 3.8): a committed active Processing row is corrupt/legacy
+        // state. BeginAsync must never map it to Completed — it must surface an
+        // incomplete-state failure so the caller rolls back. Currently the store
+        // returns Completed for a non-expired Processing row.
+        var identity = CreateIdentity(
+            keyHash: Guid.NewGuid().ToString("N"),
+            requestHash: Guid.NewGuid().ToString("N"));
+
+        // Simulate a committed Processing row left behind by a crashed/partial writer.
+        await using (var seedContext = _db.CreateContext())
+        {
+            var record = IdempotencyRecord.CreateProcessing(
+                identity.Scope, identity.Operation, identity.KeyHash, identity.RequestHash,
+                DateTimeOffset.UtcNow);
+            seedContext.Set<IdempotencyRecord>().Add(record);
+            await seedContext.SaveChangesAsync();
+        }
+
+        await using var context = _db.CreateContext();
+        await using var tx = await context.Database.BeginTransactionAsync();
+        var store = new EfIdempotencyStore(context, TimeProvider.System);
+
+        var act = () => store.BeginAsync(identity, CancellationToken.None);
+
+        await act.Should().ThrowAsync<Exception>(
+            "an active committed Processing row must never be replayed as Completed — FZ-IDEM-01 pins the typed IdempotencyIncompleteStateException");
+    }
+
+    [Fact]
     public async Task IDEM_SCHEMA_001_OnlyCanonicalTableExists()
     {
         await using var conn = _db.CreateConnection();
