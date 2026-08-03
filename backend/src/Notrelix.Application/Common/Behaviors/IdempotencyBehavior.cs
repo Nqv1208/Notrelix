@@ -84,9 +84,12 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         }
         else
         {
-            _logger.LogDebug(
-                "Idempotency result not cached for {Operation} (policy rejected). Request remains non-replayable.",
+            _logger.LogWarning(
+                "Idempotency result for {Operation} rejected by the replay policy; throwing so the execution rolls back instead of leaving a non-replayable Started row.",
                 identity.Operation);
+            throw new InvalidOperationException(
+                $"The idempotency result for operation '{identity.Operation}' was rejected by the replay policy. " +
+                "Refusing to return a successful response without completed replay state.");
         }
 
         return response;
