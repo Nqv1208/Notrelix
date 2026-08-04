@@ -332,33 +332,3 @@ public class DateRangeTests
         DateRange.Create(start).Should().Be(DateRange.Create(start));
     }
 }
-
-public class ResourceTypeContractTests
-{
-    [Fact]
-    public void ResourceType_ShouldHaveExplicitValues()
-    {
-        var values = Enum.GetValues<ResourceType>();
-        var numericValues = values.Select(v => (int)v).ToList();
-
-        // All values should be unique
-        numericValues.Distinct().Should().HaveCount(numericValues.Count);
-    }
-
-    [Theory]
-    [InlineData(ResourceType.Account, 0)]
-    [InlineData(ResourceType.Workspace, 1)]
-    [InlineData(ResourceType.Board, 10)]
-    [InlineData(ResourceType.BoardItem, 13)]
-    [InlineData(ResourceType.Page, 40)]
-    [InlineData(ResourceType.Block, 41)]
-    [InlineData(ResourceType.Comment, 60)]
-    [InlineData(ResourceType.AutomationRule, 70)]
-    [InlineData(ResourceType.Subscription, 110)]
-    [InlineData(ResourceType.User, 120)]
-    [InlineData(ResourceType.External, 200)]
-    public void ResourceType_SnapshotValues(ResourceType type, int expected)
-    {
-        ((int)type).Should().Be(expected);
-    }
-}

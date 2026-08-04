@@ -93,69 +93,11 @@ public class ResourceKindTests
         var id = Guid.NewGuid();
         var wsId = Guid.NewGuid();
 
-        var ref1 = ResourceRef.Create(ResourceType.Board, id, wsId);
-        var ref2 = ResourceRef.Create(ResourceType.Board, id, wsId);
-        var ref3 = ResourceRef.Create(ResourceType.Page, id, wsId);
+        var ref1 = ResourceRef.Create(ResourceKind.Create("work-management.board"), id, wsId);
+        var ref2 = ResourceRef.Create(ResourceKind.Create("work-management.board"), id, wsId);
+        var ref3 = ResourceRef.Create(ResourceKind.Create("documents.page"), id, wsId);
 
         ref1.Should().Be(ref2);
         ref1.Should().NotBe(ref3);
-    }
-}
-
-public class LegacyResourceTypeMappingTests
-{
-    [Fact]
-    public void RES_MAP_001_Mapping_Count_Equals_All_Enum_Values()
-    {
-        var enumCount = Enum.GetValues<ResourceType>().Length;
-        LegacyResourceTypeMappings.All.Count.Should().Be(enumCount,
-            "every ResourceType enum value must have exactly one canonical mapping");
-    }
-
-    [Fact]
-    public void RES_MAP_002_Mapping_Values_Are_Unique()
-    {
-        var values = LegacyResourceTypeMappings.All.Values.ToArray();
-        var distinct = values.Distinct(StringComparer.Ordinal).ToArray();
-
-        distinct.Length.Should().Be(values.Length,
-            "no two ResourceType values may map to the same ResourceKind string");
-    }
-
-    [Fact]
-    public void RES_MAP_003_Every_Mapping_Produces_Valid_ResourceKind()
-    {
-        foreach (var (enumValue, kindString) in LegacyResourceTypeMappings.All)
-        {
-            var act = () => ResourceKind.Create(kindString);
-            act.Should().NotThrow($"mapping for {enumValue} → '{kindString}' must be a valid ResourceKind");
-        }
-    }
-
-    [Fact]
-    public void RES_MAP_003_Spot_Check_Exact_Mappings()
-    {
-        LegacyResourceTypeMappings.ToResourceKind(ResourceType.Account).Value.Should().Be("accounts.account");
-        LegacyResourceTypeMappings.ToResourceKind(ResourceType.Board).Value.Should().Be("work-management.board");
-        LegacyResourceTypeMappings.ToResourceKind(ResourceType.BoardItem).Value.Should().Be("work-management.board-item");
-        LegacyResourceTypeMappings.ToResourceKind(ResourceType.Page).Value.Should().Be("documents.page");
-        LegacyResourceTypeMappings.ToResourceKind(ResourceType.User).Value.Should().Be("identity.user");
-        LegacyResourceTypeMappings.ToResourceKind(ResourceType.External).Value.Should().Be("external.resource");
-    }
-
-    [Fact]
-    public void RES_MAP_003_Reverse_Mapping_Works()
-    {
-        LegacyResourceTypeMappings.TryToLegacyEnum("work-management.board", out var rt).Should().BeTrue();
-        rt.Should().Be(ResourceType.Board);
-
-        LegacyResourceTypeMappings.TryToLegacyEnum("unknown.new-thing", out _).Should().BeFalse();
-    }
-
-    [Fact]
-    public void RES_MAP_004_Unknown_Enum_Value_Throws()
-    {
-        var act = () => LegacyResourceTypeMappings.ToResourceKind((ResourceType)9999);
-        act.Should().Throw<ArgumentOutOfRangeException>();
     }
 }
