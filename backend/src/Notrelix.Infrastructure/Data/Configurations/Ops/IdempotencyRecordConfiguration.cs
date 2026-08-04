@@ -31,5 +31,15 @@ public sealed class IdempotencyRecordConfiguration : IEntityTypeConfiguration<Id
 
         builder.HasIndex(x => x.ExpiresAt)
             .HasDatabaseName("ix_idempotency_records_expires_at");
+
+        builder.ToTable(t =>
+        {
+            t.HasCheckConstraint(
+                "ck_idempotency_records_state",
+                "state IN ('Processing', 'Completed')");
+            t.HasCheckConstraint(
+                "ck_idempotency_records_completed_result",
+                "state <> 'Completed' OR (result_json IS NOT NULL AND result_contract IS NOT NULL AND completed_at IS NOT NULL)");
+        });
     }
 }

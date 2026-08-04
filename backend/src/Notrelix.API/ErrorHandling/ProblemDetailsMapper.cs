@@ -75,6 +75,13 @@ public static class ProblemDetailsMapper
                 precondition.Message,
                 null
             ),
+            Notrelix.Application.Common.Idempotency.IdempotencyIncompleteStateException => (
+                StatusCodes.Status503ServiceUnavailable,
+                ErrorCodes.IdempotencyStateIncomplete,
+                "Service unavailable",
+                "The operation is being processed. Retry shortly with the same Idempotency-Key.",
+                null
+            ),
             _ => (
                 StatusCodes.Status500InternalServerError,
                 ErrorCodes.InternalServerError,

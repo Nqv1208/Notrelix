@@ -30,7 +30,8 @@ public sealed class IdempotencyRecord
         string operation,
         string keyHash,
         string requestHash,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt,
+        DateTimeOffset expiresAt)
     {
         return new IdempotencyRecord
         {
@@ -41,7 +42,7 @@ public sealed class IdempotencyRecord
             RequestHash = requestHash,
             State = "Processing",
             CreatedAt = createdAt,
-            ExpiresAt = createdAt.AddDays(1),
+            ExpiresAt = expiresAt,
         };
     }
 

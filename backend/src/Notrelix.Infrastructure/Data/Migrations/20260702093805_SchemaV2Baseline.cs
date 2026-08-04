@@ -1066,6 +1066,8 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_idempotency_records", x => x.id);
+                    table.CheckConstraint("ck_idempotency_records_state", "state IN ('Processing', 'Completed')");
+                    table.CheckConstraint("ck_idempotency_records_completed_result", "state <> 'Completed' OR (result_json IS NOT NULL AND result_contract IS NOT NULL AND completed_at IS NOT NULL)");
                 });
 
             migrationBuilder.CreateTable(

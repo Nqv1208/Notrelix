@@ -10434,7 +10434,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_idempotency_records_scope_op_key");
 
-                    b.ToTable("idempotency_records", "ops");
+                    b.ToTable("idempotency_records", "ops", t =>
+                        {
+                            t.HasCheckConstraint("ck_idempotency_records_state", "state IN ('Processing', 'Completed')");
+
+                            t.HasCheckConstraint("ck_idempotency_records_completed_result", "state <> 'Completed' OR (result_json IS NOT NULL AND result_contract IS NOT NULL AND completed_at IS NOT NULL)");
+                        });
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Analytics.Dashboards.DashboardWidget", b =>

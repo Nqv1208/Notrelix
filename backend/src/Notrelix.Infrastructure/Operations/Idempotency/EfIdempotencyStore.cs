@@ -7,9 +7,24 @@ namespace Notrelix.Infrastructure.Operations.Idempotency;
 /// <summary>
 /// Atomic PostgreSQL idempotency store using INSERT ... ON CONFLICT DO NOTHING.
 /// Participates in the current request transaction — never starts its own or calls SaveChanges.
+///
+/// State machine (spec 3.8):
+/// - normal Processing is uncommitted in the current request transaction;
+/// - a committed active Processing row is corrupt/legacy state and is never mapped
+///   to Completed — the typed <see cref="IdempotencyIncompleteStateException"/> is thrown;
+/// - expired Processing/Completed rows are replaced atomically (FOR UPDATE, delete,
+///   retry insert, verify one row inserted);
+/// - the store owns all expiry calculations through TimeProvider + IdempotencyOptions.
 /// </summary>
 public sealed class EfIdempotencyStore : IIdempotencyStore
 {
+    private const string ProcessingState = "Processing";
+    private const string CompletedState = "Completed";
+
+    // Bounded retry budget for expired-row replacement races: after deleting an
+    // expired row, another transaction may win the re-insert; re-read and retry.
+    private const int MaxAcquisitionAttempts = 3;
+
     private readonly ApplicationDbContext _context;
     private readonly TimeProvider _timeProvider;
     private readonly IdempotencyOptions _options;
@@ -35,55 +50,61 @@ public sealed class EfIdempotencyStore : IIdempotencyStore
                 "Idempotency store requires a current request transaction. " +
                 "Ensure the request is classified as transactional.");
 
-        // Atomic insert — PostgreSQL unique constraint (scope, operation, key_hash) serializes concurrency
-        var inserted = await InsertProcessingRecordAsync(
-            connection, transaction, identity, now, cancellationToken);
-
-        if (inserted)
+        for (var attempt = 0; attempt < MaxAcquisitionAttempts; attempt++)
         {
-            return new IdempotencyBeginResult(IdempotencyBeginStatus.Started, null, null);
-        }
+            // Atomic insert — the PostgreSQL unique constraint (scope, operation, key_hash)
+            // serializes concurrent first executions. The Processing row expires according
+            // to IdempotencyOptions.ProcessingExpiry.
+            var inserted = await InsertProcessingRecordAsync(
+                connection, transaction, identity, now, _options.ProcessingExpiry, cancellationToken);
 
-        // Conflict — read the existing row FOR UPDATE
-        var existing = await SelectForUpdateAsync(connection, transaction, identity, cancellationToken);
-
-        if (existing.State == "Completed")
-        {
-            if (existing.ExpiresAt <= now)
+            if (inserted)
             {
-                // Expired — delete and retry insert
-                await DeleteRecordAsync(connection, transaction, identity, cancellationToken);
-                await InsertProcessingRecordAsync(connection, transaction, identity, now, cancellationToken);
                 return new IdempotencyBeginResult(IdempotencyBeginStatus.Started, null, null);
             }
 
-            if (existing.RequestHash != identity.RequestHash)
+            // Conflict — read the existing row FOR UPDATE. It may have vanished if the
+            // conflicting transaction rolled back while we were waiting on the conflict.
+            var existing = await SelectForUpdateAsync(connection, transaction, identity, cancellationToken);
+
+            if (existing is null)
             {
-                return new IdempotencyBeginResult(IdempotencyBeginStatus.PayloadMismatch, null, null);
+                continue;
             }
 
-            return new IdempotencyBeginResult(IdempotencyBeginStatus.Completed, existing.ResultJson, existing.ResultContract);
+            if (existing.Value.ExpiresAt <= now)
+            {
+                // Expired Processing or Completed row — replace atomically.
+                await DeleteRecordAsync(connection, transaction, identity, cancellationToken);
+                continue;
+            }
+
+            if (existing.Value.State == CompletedState)
+            {
+                if (existing.Value.RequestHash != identity.RequestHash)
+                {
+                    return new IdempotencyBeginResult(IdempotencyBeginStatus.PayloadMismatch, null, null);
+                }
+
+                if (existing.Value.ResultJson is null || existing.Value.ResultContract is null)
+                {
+                    throw new IdempotencyIncompleteStateException(identity.Operation);
+                }
+
+                return new IdempotencyBeginResult(
+                    IdempotencyBeginStatus.Completed,
+                    existing.Value.ResultJson,
+                    existing.Value.ResultContract);
+            }
+
+            // Active committed Processing row: corrupt/legacy state. Never replay it
+            // as Completed — surface the typed incomplete-state failure instead.
+            throw new IdempotencyIncompleteStateException(identity.Operation);
         }
 
-        // State == "Processing" from another uncommitted transaction should not be visible
-        // after ON CONFLICT resolution in PostgreSQL. If we reach here, treat as conflict.
-        // This can happen if the row was inserted and committed as Processing but never completed
-        // (crash scenario). Treat expired Processing as reclaimable.
-        if (existing.ExpiresAt <= now)
-        {
-            await DeleteRecordAsync(connection, transaction, identity, cancellationToken);
-            await InsertProcessingRecordAsync(connection, transaction, identity, now, cancellationToken);
-            return new IdempotencyBeginResult(IdempotencyBeginStatus.Started, null, null);
-        }
-
-        // Active Processing from a crashed transaction — payload mismatch is safest response
-        if (existing.RequestHash != identity.RequestHash)
-        {
-            return new IdempotencyBeginResult(IdempotencyBeginStatus.PayloadMismatch, null, null);
-        }
-
-        // Same payload, still processing — replay the completed result if available
-        return new IdempotencyBeginResult(IdempotencyBeginStatus.Completed, existing.ResultJson, existing.ResultContract);
+        throw new InvalidOperationException(
+            $"Idempotency acquisition for operation '{identity.Operation}' failed after " +
+            $"{MaxAcquisitionAttempts} attempts due to concurrent replacement activity.");
     }
 
     public async Task CompleteAsync(
@@ -115,6 +136,7 @@ public sealed class EfIdempotencyStore : IIdempotencyStore
         System.Data.Common.DbTransaction transaction,
         IdempotencyIdentity identity,
         DateTimeOffset now,
+        TimeSpan processingExpiry,
         CancellationToken cancellationToken)
     {
         await using var cmd = connection.CreateCommand();
@@ -131,13 +153,13 @@ public sealed class EfIdempotencyStore : IIdempotencyStore
         AddParameter(cmd, "keyHash", identity.KeyHash);
         AddParameter(cmd, "requestHash", identity.RequestHash);
         AddParameter(cmd, "createdAt", now);
-        AddParameter(cmd, "expiresAt", now.AddDays(1));
+        AddParameter(cmd, "expiresAt", now.Add(processingExpiry));
 
         var rows = await cmd.ExecuteNonQueryAsync(cancellationToken);
         return rows > 0;
     }
 
-    private static async Task<(string State, string RequestHash, string? ResultJson, string? ResultContract, DateTimeOffset ExpiresAt)>
+    private static async Task<(string State, string RequestHash, string? ResultJson, string? ResultContract, DateTimeOffset ExpiresAt)?>
         SelectForUpdateAsync(
             System.Data.Common.DbConnection connection,
             System.Data.Common.DbTransaction transaction,
@@ -160,8 +182,8 @@ public sealed class EfIdempotencyStore : IIdempotencyStore
         await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
         if (!await reader.ReadAsync(cancellationToken))
         {
-            throw new InvalidOperationException(
-                $"Idempotency record disappeared during conflict resolution for operation '{identity.Operation}'.");
+            // The conflicting row vanished (its transaction rolled back).
+            return null;
         }
 
         return (
