@@ -2,16 +2,16 @@ using System.Reflection;
 
 namespace Notrelix.Architecture.Tests.ApplicationLayer;
 
-/// <summary>
-/// APP-05: Compiled handler data-port gate.
-/// Reflects all IRequestHandler constructors and verifies:
-/// - Handlers inject their owning context DbContext port (inferred from namespace)
-/// - Handlers do NOT inject another context's DbContext
-/// - Handlers do NOT inject concrete Infrastructure types
-/// - Common cross-cutting ports are allowed by exact type
-/// </summary>
-public class HandlerDataPortGateTests
-{
+    /// <summary>
+    /// APP-05: Compiled handler data-port gate.
+    /// Reflects all IRequestHandler constructors and verifies:
+    /// - Handlers inject their owning context DbContext port (inferred from namespace)
+    /// - Handlers do NOT inject another context's DbContext
+    /// - Handlers do NOT inject concrete Infrastructure types
+    /// - Common cross-cutting ports are allowed by exact type
+    /// </summary>
+    public class HandlerDataPortGateTests
+    {
     private static readonly Assembly ApplicationAssembly =
         typeof(Notrelix.Application.Common.Behaviors.ValidationBehavior<,>).Assembly;
 
@@ -67,20 +67,6 @@ public class HandlerDataPortGateTests
         "ICorrelationContext",
     };
 
-    /// <summary>
-    /// Known transitional cross-context reads. Each entry must be migrated to a narrow read port.
-    /// Format: "HandlerName:ForeignPort"
-    /// </summary>
-    private static readonly HashSet<string> TransitionalCrossContextReads = new(StringComparer.Ordinal)
-    {
-        "GetFullBoardQueryHandler:ICollaborationDbContext",
-        "GetBoardItemQueryHandler:ICollaborationDbContext",
-        "CompleteOAuthLoginCommandHandler:IAccountDbContext",
-        "GetBootstrapQueryHandler:IAccountDbContext",
-        "GetBootstrapQueryHandler:IWorkspaceDbContext",
-        "RegisterCommandHandler:IAccountDbContext",
-    };
-
     private static string? GetContextFromHandlerNamespace(string? ns)
     {
         if (ns is null) return null;
@@ -115,10 +101,6 @@ public class HandlerDataPortGateTests
 
                     if (owningPort is not null && paramTypeName != owningPort)
                     {
-                        var exceptionKey = $"{handler.Name}:{paramTypeName}";
-                        if (TransitionalCrossContextReads.Contains(exceptionKey))
-                            continue;
-
                         violations.Add(
                             $"{handler.Name} (context: {context}) injects foreign DbContext port '{paramTypeName}' " +
                             $"— expected owning port '{owningPort}'");

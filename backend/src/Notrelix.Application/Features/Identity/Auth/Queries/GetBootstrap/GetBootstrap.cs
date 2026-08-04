@@ -1,9 +1,8 @@
+using Notrelix.Application.Common.Context;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
-using Notrelix.Application.Features.Accounts.Abstractions;
-using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Common.Security.Auth;
 using Notrelix.Application.Features.Identity.Auth.GetBootstrap;
-using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Auth.Queries.GetBootstrap;
 
@@ -11,75 +10,47 @@ public record GetBootstrapQuery : IQuery<Result<BootstrapResult>>, IGlobalReques
 
 public class GetBootstrapQueryHandler : IRequestHandler<GetBootstrapQuery, Result<BootstrapResult>>
 {
-    private readonly IIdentityDbContext _identityContext;
-    private readonly IAccountDbContext _accountContext;
-    private readonly IWorkspaceDbContext _workspaceContext;
+    private readonly IIdentityBootstrapReadPort _bootstrapReadPort;
     private readonly ICurrentUser _currentUser;
 
     public GetBootstrapQueryHandler(
-        IIdentityDbContext identityContext,
-        IAccountDbContext accountContext,
-        IWorkspaceDbContext workspaceContext,
+        IIdentityBootstrapReadPort bootstrapReadPort,
         ICurrentUser currentUser)
     {
-        _identityContext = identityContext;
-        _accountContext = accountContext;
-        _workspaceContext = workspaceContext;
+        _bootstrapReadPort = bootstrapReadPort;
         _currentUser = currentUser;
     }
 
     public async Task<Result<BootstrapResult>> Handle(GetBootstrapQuery request, CancellationToken cancellationToken)
     {
-        var user = await _identityContext.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Id == _currentUser.UserId, cancellationToken);
+        var projection = await _bootstrapReadPort.GetAsync(_currentUser.UserId, cancellationToken);
 
-        if (user is null)
+        if (projection is null)
             return Result<BootstrapResult>.Failure("User not found");
-
-        var workspaces = await _workspaceContext.WorkspaceMembers
-            .AsNoTracking()
-            .Where(m => m.UserId == _currentUser.UserId)
-            .Join(_workspaceContext.Workspaces,
-                member => member.WorkspaceId,
-                workspace => workspace.Id,
-                (member, workspace) => new WorkspaceInfo
-                {
-                    Id = workspace.Id,
-                    Name = workspace.Name,
-                    Slug = workspace.Slug,
-                    Role = member.Role.ToString()
-                })
-            .ToListAsync(cancellationToken);
-
-        var accountMember = await _accountContext.AccountMembers
-            .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.UserId == _currentUser.UserId, cancellationToken);
-
-        Guid? personalWorkspaceId = null;
-        if (accountMember is not null)
-        {
-            var pw = await _workspaceContext.Workspaces
-                .AsNoTracking()
-                .FirstOrDefaultAsync(w => w.AccountId == accountMember.AccountId && w.IsPersonal, cancellationToken);
-            personalWorkspaceId = pw?.Id;
-        }
 
         return Result<BootstrapResult>.Success(new BootstrapResult
         {
             User = new UserDto
             {
-                Id = user.Id,
-                Email = user.Email.Value,
-                Name = user.Name,
-                AvatarUrl = user.AvatarUrl,
-                EmailConfirmed = user.EmailConfirmed
+                Id = projection.User.Id,
+                Email = projection.User.Email,
+                Name = projection.User.Name,
+                AvatarUrl = projection.User.AvatarUrl,
+                EmailConfirmed = projection.User.EmailConfirmed
             },
-            Workspaces = workspaces,
+            Workspaces = projection.Workspaces
+                .Select(workspace => new WorkspaceInfo
+                {
+                    Id = workspace.Id,
+                    Name = workspace.Name,
+                    Slug = workspace.Slug,
+                    Role = workspace.Role
+                })
+                .ToList(),
             PersonalWorkspace = new PersonalWorkspaceStatus
             {
-                Status = personalWorkspaceId is not null ? "ready" : "pending",
-                WorkspaceId = personalWorkspaceId
+                Status = projection.PersonalWorkspaceId is not null ? "ready" : "pending",
+                WorkspaceId = projection.PersonalWorkspaceId
             }
         });
     }

@@ -1,12 +1,11 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Events.Identity;
-using Notrelix.Application.Features.Accounts.Abstractions;
+using Notrelix.Application.Features.Accounts.Provisioning;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.DTOs;
 using Notrelix.Application.Common.Requests.Scoping;
-using Notrelix.Domain.Accounts.Accounts;
-using Notrelix.Domain.Accounts.Members;
+using Notrelix.Domain.Identity.Users;
 
 namespace Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthLogin;
 
@@ -30,7 +29,7 @@ public sealed class CompleteOAuthLoginCommandHandler
     private readonly IOAuthProviderClient _providerClient;
     private readonly IOAuthOptionsProvider _optionsProvider;
     private readonly IIdentityDbContext _identityContext;
-    private readonly IAccountDbContext _accountContext;
+    private readonly IAccountProvisioningService _provisioningService;
     private readonly IAuthSessionIssuer _sessionIssuer;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IDateTimeProvider _dateTimeProvider;
@@ -42,7 +41,7 @@ public sealed class CompleteOAuthLoginCommandHandler
         IOAuthProviderClient providerClient,
         IOAuthOptionsProvider optionsProvider,
         IIdentityDbContext identityContext,
-        IAccountDbContext accountContext,
+        IAccountProvisioningService provisioningService,
         IAuthSessionIssuer sessionIssuer,
         IPasswordHasher passwordHasher,
         IDateTimeProvider dateTimeProvider,
@@ -53,7 +52,7 @@ public sealed class CompleteOAuthLoginCommandHandler
         _providerClient = providerClient;
         _optionsProvider = optionsProvider;
         _identityContext = identityContext;
-        _accountContext = accountContext;
+        _provisioningService = provisioningService;
         _sessionIssuer = sessionIssuer;
         _passwordHasher = passwordHasher;
         _dateTimeProvider = dateTimeProvider;
@@ -189,18 +188,13 @@ public sealed class CompleteOAuthLoginCommandHandler
         var user = User.Create(email, displayName, sentinelHash, now);
         _identityContext.Users.Add(user);
 
-        var accountSlug = Slug.GenerateFromName($"{displayName}'s Account");
-        var account = Account.Create(
-            $"{displayName}'s Account",
-            accountSlug.Value,
-            AccountType.Personal,
+        var accountName = $"{displayName}'s Account";
+        var provisioning = await _provisioningService.ProvisionPersonalAccountAsync(
             user.Id,
-            now);
-        _accountContext.Accounts.Add(account);
-
-        var accountMember = AccountMember.Create(
-            account.Id, user.Id, AccountRole.Owner, user.Id, now);
-        _accountContext.AccountMembers.Add(accountMember);
+            displayName,
+            now,
+            cancellationToken);
+        var accountId = provisioning.AccountId;
 
         user.LinkOAuthAccount(profile.Provider, profile.Subject,
             OAuthProfileSnapshot.Create(profile.Provider, 1, profile.RawProfile), null, user.Id, now);
@@ -211,10 +205,10 @@ public sealed class CompleteOAuthLoginCommandHandler
             new IdentityRegistrationCompletedIntegrationEventV1(
                 EventId: Guid.CreateVersion7(),
                 UserId: user.Id,
-                AccountId: account.Id,
+                AccountId: accountId,
                 Email: user.Email.Value,
                 DisplayName: user.Name,
-                AccountName: account.Name,
+                AccountName: accountName,
                 CorrelationId: Guid.CreateVersion7(),
                 ActorUserId: user.Id,
                 SourceEventId: null,

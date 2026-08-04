@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Behaviors;
+using Notrelix.Application.Features.Accounts.Provisioning;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
 using Notrelix.Application.Features.Identity.Verification.Services;
 
@@ -81,6 +82,9 @@ public static class DependencyInjection
         // Auth session issuer
         services.AddScoped<IAuthSessionIssuer, AuthSessionIssuer>();
         services.AddScoped<IEmailVerificationTokenIssuer, EmailVerificationTokenIssuer>();
+
+        // Accounts-owned onboarding provisioning (spec 5.2)
+        services.AddScoped<IAccountProvisioningService, AccountProvisioningService>();
 
         // AutoMapper
         services.AddAutoMapper(cfg => cfg.AddMaps(assembly), assembly);
