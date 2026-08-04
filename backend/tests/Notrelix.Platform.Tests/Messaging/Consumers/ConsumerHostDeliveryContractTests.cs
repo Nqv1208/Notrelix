@@ -87,6 +87,23 @@ public sealed class ConsumerHostDeliveryContractTests
     }
 
     [Fact]
+    public async Task OrderedConsumer_MissingSequence_Throws_MessageOrderingException()
+    {
+        var handled = false;
+        _sut.Register("test.event", (_, _) =>
+        {
+            handled = true;
+            return Task.CompletedTask;
+        }, o => o.OrderingRequired = true);
+
+        var act = () => _sut.DispatchAsync(CreateEnvelope("test.event"));
+
+        await act.Should().ThrowAsync<MessageOrderingException>();
+        handled.Should().BeFalse("an envelope without a sequence must not be delivered");
+        _diagMock.Verify(d => d.Publish(It.IsAny<DeliveryFailedEvent>()), Times.Once);
+    }
+
+    [Fact]
     public async Task OrderedConsumer_DuplicateSequence_Throws_MessageOrderingException()
     {
         var handled = 0;

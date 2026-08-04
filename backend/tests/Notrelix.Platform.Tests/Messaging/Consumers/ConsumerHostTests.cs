@@ -199,11 +199,11 @@ public sealed class ConsumerHostTests
     }
 
     [Fact]
-    public async Task DispatchAsync_OrderingEnabled_ProcessesFirstMessage()
+    public async Task DispatchAsync_OrderingEnabled_RejectsEnvelopeWithoutSequence()
     {
-        // FZ-PLT-02 (final decision: Platform ordering): require a real sequence when
-        // ordering is enabled. Currently the host hardcodes sequence 0, which the
-        // OrderingEnforcer always rejects — the first message is dropped.
+        // Spec 8.3: ordering requires a real envelope sequence. A missing sequence
+        // is a contract violation and must be rejected with a typed ordering
+        // exception — never synthesized from arrival order.
         var handled = false;
         _sut.Register("test.event", (_, _) =>
         {
@@ -212,11 +212,13 @@ public sealed class ConsumerHostTests
         }, o => o.OrderingRequired = true);
 
         var envelope = CreateEnvelope("test.event");
-        await _sut.DispatchAsync(envelope);
 
-        handled.Should().BeTrue(
-            "an ordering-enabled consumer must process its first message — the host must supply a real sequence, not a hardcoded 0");
-        _diagMock.Verify(d => d.Publish(It.IsAny<DeliveryFailedEvent>()), Times.Never);
+        var act = () => _sut.DispatchAsync(envelope);
+        await act.Should().ThrowAsync<MessageOrderingException>();
+
+        handled.Should().BeFalse(
+            "an envelope without a sequence must not be delivered to an ordering-enabled consumer");
+        _diagMock.Verify(d => d.Publish(It.IsAny<DeliveryFailedEvent>()), Times.Once);
     }
 
     private static EventEnvelope CreateEnvelope(string eventName) => new()

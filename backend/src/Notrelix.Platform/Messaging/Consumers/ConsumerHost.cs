@@ -111,13 +111,25 @@ public sealed class ConsumerHost : IConsumerHost, IAsyncDisposable
             var partitionKey = envelope.AggregateId?.ToString() ?? envelope.CorrelationId.ToString();
             var orderingEnforcer = _orderingEnforcers[envelope.EventName];
 
-            // Ordered consumers validate the real envelope sequence. A null sequence
-            // is assigned the next expected value in arrival order so ordered
-            // delivery never silently drops a message.
-            var effectiveSequence = envelope.Sequence
-                ?? orderingEnforcer.GetLastSequence(partitionKey) + 1;
+            // Spec 8.3: ordering requires a real envelope sequence. A missing
+            // sequence is a contract violation — never synthesized. A fabricated
+            // value would silently reorder or acknowledge messages the transport
+            // cannot order, so the delivery fails observably for transport retry.
+            if (envelope.Sequence is null)
+            {
+                _logger?.LogWarning("Ordering requires a sequence for {EventName} (partition {Partition}); envelope {Id} has none",
+                    envelope.EventName, partitionKey, envelope.Id);
+                _diagnosticEvents.Publish(new DeliveryFailedEvent
+                {
+                    EventName = envelope.EventName,
+                    Error = "Ordering requires a sequence",
+                });
+                throw new MessageOrderingException(
+                    $"Ordering for '{envelope.EventName}' partition '{partitionKey}' requires a sequence; " +
+                    $"envelope '{envelope.Id}' has none.");
+            }
 
-            var orderingResult = orderingEnforcer.ValidateSequence(partitionKey, effectiveSequence);
+            var orderingResult = orderingEnforcer.ValidateSequence(partitionKey, envelope.Sequence.Value);
 
             if (!orderingResult.CanProcess)
             {
