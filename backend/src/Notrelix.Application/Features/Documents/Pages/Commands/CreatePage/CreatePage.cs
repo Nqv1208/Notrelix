@@ -10,7 +10,7 @@ public record CreatePageCommand(
 ) : ICommand<Result<Guid>>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId);
 }
 
 public class CreatePageCommandHandler : IRequestHandler<CreatePageCommand, Result<Guid>>

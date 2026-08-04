@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.Documents.Pages.Queries.GetPageHistory;
 public record GetPageHistoryQuery(Guid PageId) : IQuery<Result<List<PageHistoryDto>>>, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewPage;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Page, PageId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);
 }
 
 public class GetPageHistoryQueryHandler : IRequestHandler<GetPageHistoryQuery, Result<List<PageHistoryDto>>>

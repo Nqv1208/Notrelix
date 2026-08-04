@@ -9,7 +9,7 @@ public record BatchUpdateBlocksCommand(
 ) : ICommand<Result<List<Guid>>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.UpdatePage;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Page, PageId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);
 }
 
 public record BatchUpdateBlockItem(

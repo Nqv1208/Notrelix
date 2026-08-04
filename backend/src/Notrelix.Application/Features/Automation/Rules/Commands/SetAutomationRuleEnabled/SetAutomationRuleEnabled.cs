@@ -5,7 +5,7 @@ namespace Notrelix.Application.Features.Automation.Rules.Commands.SetAutomationR
 
 public record SetAutomationRuleEnabledCommand(Guid AutomationRuleId, bool IsEnabled) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.AutomationRule, AutomationRuleId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("automation.rule"), AutomationRuleId);
     public PermissionAction Action => PermissionAction.ManageWorkspaceSettings;
 }
 

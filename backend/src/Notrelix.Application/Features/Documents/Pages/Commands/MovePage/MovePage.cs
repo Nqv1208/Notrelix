@@ -9,7 +9,7 @@ public record MovePageCommand(
 ) : ICommand<Result>, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Page, PageId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);
 }
 
 public class MovePageCommandHandler : IRequestHandler<MovePageCommand, Result>

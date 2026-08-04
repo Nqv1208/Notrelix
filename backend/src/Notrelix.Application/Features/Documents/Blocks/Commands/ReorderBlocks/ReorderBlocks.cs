@@ -9,7 +9,7 @@ public record ReorderBlocksCommand(
 ) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.UpdatePage;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Page, PageId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);
 }
 
 public record ReorderBlockItem(Guid BlockId, string NewPosition, Guid? NewParentBlockId);

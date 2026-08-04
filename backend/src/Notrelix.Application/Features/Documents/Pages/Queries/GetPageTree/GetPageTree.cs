@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.Documents.Pages.Queries.GetPageTree;
 public record GetPageTreeQuery(Guid WorkspaceId) : IQuery<Result<List<PageTreeItemDto>>>, IWorkspaceRequest, IRequirePermission
 {
     PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
-    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId);
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId);
 }
 
 public class GetPageTreeQueryHandler : IRequestHandler<GetPageTreeQuery, Result<List<PageTreeItemDto>>>

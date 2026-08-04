@@ -25,7 +25,7 @@ public sealed class SyncCursorValue : ValueObject
 public class IntegrationSyncCursor : Entity
 {
     public Guid ConnectionId { get; private set; }
-    public string ResourceType { get; private set; } = null!;
+    public string ResourceKind { get; private set; } = null!;
     public SyncCursorValue Cursor { get; private set; } = null!;
     public DateTimeOffset LastSyncedAt { get; private set; }
 
@@ -40,7 +40,7 @@ public class IntegrationSyncCursor : Entity
         return new IntegrationSyncCursor
         {
             ConnectionId = connectionId,
-            ResourceType = resourceType,
+            ResourceKind = resourceType,
             Cursor = cursor,
             LastSyncedAt = lastSyncedAt
         };

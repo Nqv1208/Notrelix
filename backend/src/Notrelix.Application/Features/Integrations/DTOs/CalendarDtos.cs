@@ -15,7 +15,7 @@ public record CalendarEventDto(
     Guid Id,
     Guid IntegrationId,
     string ExternalEventId,
-    string ResourceType,
+    string ResourceKind,
     Guid ResourceId,
     DateTime SyncedAt
 );

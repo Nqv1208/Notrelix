@@ -4,7 +4,7 @@ namespace Notrelix.Application.Features.Integrations.Calendar.Commands.Disconnec
 
 public record DisconnectCalendarCommand(Guid IntegrationId) : ICommand<Result>, IResourceScopedRequest, IRequirePermission
 {
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.CalendarIntegration, IntegrationId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("integrations.calendar-integration"), IntegrationId);
     public PermissionAction Action => PermissionAction.ManageWorkspaceSettings;
 }
 

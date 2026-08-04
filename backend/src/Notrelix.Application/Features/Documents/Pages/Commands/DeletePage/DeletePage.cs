@@ -6,7 +6,7 @@ namespace Notrelix.Application.Features.Documents.Pages.Commands.DeletePage;
 public record DeletePageCommand(Guid PageId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Page, PageId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);
 }
 
 public class DeletePageCommandHandler : IRequestHandler<DeletePageCommand, Result>
