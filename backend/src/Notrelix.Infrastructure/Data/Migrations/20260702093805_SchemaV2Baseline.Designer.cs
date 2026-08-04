@@ -10770,21 +10770,21 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 {
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
                         {
-                            b1.Property<Guid>("AttachmentId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
+b1.Property<Guid>("AttachmentId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("id");
 
-                            b1.Property<Guid>("ResourceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("resource_id");
+                        b1.Property<Guid>("ResourceId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("resource_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("resource_type");
+                        b1.Property<string>("ResourceType")
+                            .IsRequired()
+                            .HasMaxLength(128)
+                            .HasColumnType("character varying(128)")
+                            .HasColumnName("resource_type");
 
-                            b1.Property<Guid?>("WorkspaceId")
+                        b1.Property<Guid?>("WorkspaceId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("target_workspace_id");
 
@@ -10858,21 +10858,21 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
                         {
-                            b1.Property<Guid>("CommentId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
+b1.Property<Guid>("CommentId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("id");
 
-                            b1.Property<Guid>("ResourceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("resource_id");
+                        b1.Property<Guid>("ResourceId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("resource_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("resource_type");
+                        b1.Property<string>("ResourceType")
+                            .IsRequired()
+                            .HasMaxLength(128)
+                            .HasColumnType("character varying(128)")
+                            .HasColumnName("resource_type");
 
-                            b1.Property<Guid?>("WorkspaceId")
+                        b1.Property<Guid?>("WorkspaceId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("target_workspace_id");
 
@@ -10923,21 +10923,21 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 {
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Source", b1 =>
                         {
-                            b1.Property<Guid>("MentionId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
+b1.Property<Guid>("MentionId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("id");
 
-                            b1.Property<Guid>("ResourceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("source_id");
+                        b1.Property<Guid>("ResourceId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("source_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("source_type");
+                        b1.Property<string>("ResourceType")
+                            .IsRequired()
+                            .HasMaxLength(128)
+                            .HasColumnType("character varying(128)")
+                            .HasColumnName("source_type");
 
-                            b1.Property<Guid?>("WorkspaceId")
+                        b1.Property<Guid?>("WorkspaceId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("source_workspace_id");
 
@@ -10982,21 +10982,21 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
                         {
-                            b1.Property<Guid>("ReactionId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
+b1.Property<Guid>("ReactionId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("id");
 
-                            b1.Property<Guid>("ResourceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("resource_id");
+                        b1.Property<Guid>("ResourceId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("resource_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("resource_type");
+                        b1.Property<string>("ResourceType")
+                            .IsRequired()
+                            .HasMaxLength(128)
+                            .HasColumnType("character varying(128)")
+                            .HasColumnName("resource_type");
 
-                            b1.Property<Guid?>("WorkspaceId")
+                        b1.Property<Guid?>("WorkspaceId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("target_workspace_id");
 
@@ -11026,21 +11026,21 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 {
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
                         {
-                            b1.Property<Guid>("ResourceWatcherId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
+b1.Property<Guid>("ResourceWatcherId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("id");
 
-                            b1.Property<Guid>("ResourceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("target_id");
+                        b1.Property<Guid>("ResourceId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("target_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("target_type");
+                        b1.Property<string>("ResourceType")
+                            .IsRequired()
+                            .HasMaxLength(128)
+                            .HasColumnType("character varying(128)")
+                            .HasColumnName("target_type");
 
-                            b1.HasKey("ResourceWatcherId");
+                        b1.HasKey("ResourceWatcherId");
 
                             b1.HasIndex("ResourceType", "ResourceId")
                                 .HasDatabaseName("idx_resource_watchers_target");
@@ -11131,21 +11131,21 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 {
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Source", b1 =>
                         {
-                            b1.Property<Guid>("ResourceLinkId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
+b1.Property<Guid>("ResourceLinkId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("id");
 
-                            b1.Property<Guid>("ResourceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("source_id");
+                        b1.Property<Guid>("ResourceId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("source_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("source_type");
+                        b1.Property<string>("ResourceType")
+                            .IsRequired()
+                            .HasMaxLength(128)
+                            .HasColumnType("character varying(128)")
+                            .HasColumnName("source_type");
 
-                            b1.HasKey("ResourceLinkId");
+                        b1.HasKey("ResourceLinkId");
 
                             b1.HasIndex("ResourceType", "ResourceId")
                                 .HasDatabaseName("idx_resource_links_source");
@@ -11159,21 +11159,21 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
                         {
-                            b1.Property<Guid>("ResourceLinkId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
+b1.Property<Guid>("ResourceLinkId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("id");
 
-                            b1.Property<Guid>("ResourceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("target_id");
+                        b1.Property<Guid>("ResourceId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("target_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("target_type");
+                        b1.Property<string>("ResourceType")
+                            .IsRequired()
+                            .HasMaxLength(128)
+                            .HasColumnType("character varying(128)")
+                            .HasColumnName("target_type");
 
-                            b1.HasKey("ResourceLinkId");
+                        b1.HasKey("ResourceLinkId");
 
                             b1.HasIndex("ResourceType", "ResourceId")
                                 .HasDatabaseName("idx_resource_links_target");
@@ -11419,21 +11419,21 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
                         {
-                            b1.Property<Guid>("CalendarEventId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
+b1.Property<Guid>("CalendarEventId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("id");
 
-                            b1.Property<Guid>("ResourceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("resource_id");
+                        b1.Property<Guid>("ResourceId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("resource_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("resource_type");
+                        b1.Property<string>("ResourceType")
+                            .IsRequired()
+                            .HasMaxLength(128)
+                            .HasColumnType("character varying(128)")
+                            .HasColumnName("resource_type");
 
-                            b1.Property<Guid?>("WorkspaceId")
+                        b1.Property<Guid?>("WorkspaceId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("target_workspace_id");
 
@@ -11550,21 +11550,21 @@ namespace Notrelix.Infrastructure.Data.Migrations
                 {
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
                         {
-                            b1.Property<Guid>("ApprovalRequestId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
+b1.Property<Guid>("ApprovalRequestId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("id");
 
-                            b1.Property<Guid>("ResourceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("target_id");
+                        b1.Property<Guid>("ResourceId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("target_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("target_type");
+                        b1.Property<string>("ResourceType")
+                            .IsRequired()
+                            .HasMaxLength(128)
+                            .HasColumnType("character varying(128)")
+                            .HasColumnName("target_type");
 
-                            b1.HasKey("ApprovalRequestId");
+                        b1.HasKey("ApprovalRequestId");
 
                             b1.ToTable("approval_requests", "work");
 
@@ -11820,21 +11820,21 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
                         {
-                            b1.Property<Guid>("BoardItemLinkId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
+b1.Property<Guid>("BoardItemLinkId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("id");
 
-                            b1.Property<Guid>("ResourceId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("target_id");
+                        b1.Property<Guid>("ResourceId")
+                            .HasColumnType("uuid")
+                            .HasColumnName("target_id");
 
-                            b1.Property<string>("ResourceType")
-                                .IsRequired()
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("target_type");
+                        b1.Property<string>("ResourceType")
+                            .IsRequired()
+                            .HasMaxLength(128)
+                            .HasColumnType("character varying(128)")
+                            .HasColumnName("target_type");
 
-                            b1.HasKey("BoardItemLinkId");
+                        b1.HasKey("BoardItemLinkId");
 
                             b1.ToTable("board_item_links", "work");
 
