@@ -10,19 +10,26 @@ public record CreateShareLinkResponse(
 );
 
 public record CreateShareLinkCommand(
-    ResourceType ResourceType,
+    string ResourceKind,
     Guid ResourceId,
     string Level,
     DateTime? ExpiresAt = null) : ICommand<Result<CreateShareLinkResponse>>, IResourceScopedRequest, IRequirePermission, ITransactionalRequest
 {
-    PermissionAction IRequirePermission.Action => ResourceType switch
+    internal ResourceKind Kind => ParseKind(ResourceKind);
+
+    PermissionAction IRequirePermission.Action => Kind.Value switch
     {
-        ResourceType.Board => PermissionAction.ShareBoardView,
-        ResourceType.Page => PermissionAction.SharePage,
+        "work-management.board" => PermissionAction.ShareBoardView,
+        "documents.page" => PermissionAction.SharePage,
         _ => PermissionAction.ManageWorkspace
     };
-    ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(ResourceType, ResourceId);
-    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType, ResourceId);
+    ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(Kind, ResourceId);
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(Kind, ResourceId);
+
+    private static ResourceKind ParseKind(string value) =>
+        global::Notrelix.Domain.SharedKernel.ResourceKind.TryCreate(value, out var kind)
+            ? kind
+            : throw new ArgumentException($"Invalid resource kind '{value}'. Expected a canonical kind such as 'work-management.board'.", nameof(value));
 }
 
 public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkCommand, Result<CreateShareLinkResponse>>
@@ -54,7 +61,7 @@ public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkComm
         var shareLink = ShareLink.Create(
             _requestContext.RequireAccountId(),
             workspaceId,
-            request.ResourceType,
+            request.Kind,
             request.ResourceId,
             tokenHash,
             ShareLinkAccessMode.WorkspaceOnly,
@@ -68,7 +75,7 @@ public class CreateShareLinkCommandHandler : IRequestHandler<CreateShareLinkComm
         var dto = new ShareLinkDto(
             shareLink.Id,
             shareLink.WorkspaceId,
-            shareLink.ResourceType.ToString(),
+            shareLink.ResourceKind.ToString(),
             shareLink.ResourceId,
             shareLink.TokenHash.Hash,
             shareLink.AccessMode.ToString(),

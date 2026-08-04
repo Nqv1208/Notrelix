@@ -4,7 +4,6 @@ public class CreateCommentCommandValidator : AbstractValidator<CreateCommentComm
 {
     public CreateCommentCommandValidator()
     {
-        RuleFor(x => x.ResourceType).IsInEnum();
         RuleFor(x => x.ResourceId).NotEmpty();
         RuleFor(x => x.ContentMd).NotEmpty().MaximumLength(50000);
     }

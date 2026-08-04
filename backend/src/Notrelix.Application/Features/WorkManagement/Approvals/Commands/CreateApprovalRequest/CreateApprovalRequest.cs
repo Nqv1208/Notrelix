@@ -8,14 +8,15 @@ public record ApprovalStepDto(Guid? ApproverUserId, Guid? ApproverTeamId);
 [IdempotencyOperation("work-management.approvals.create-approval-request.v1")]
 public record CreateApprovalRequestCommand(
     Guid TargetResourceId,
-    ResourceType TargetResourceType,
     string Title,
     string? Description,
     List<ApprovalStepDto>? Steps)
     : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
+    internal const string BoardKind = "work-management.board";
+
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, TargetResourceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create(BoardKind), TargetResourceId);
 }
 
 public class CreateApprovalRequestCommandHandler : IRequestHandler<CreateApprovalRequestCommand, Result<Guid>>
@@ -40,7 +41,7 @@ public class CreateApprovalRequestCommandHandler : IRequestHandler<CreateApprova
             .FirstOrDefaultAsync(b => b.Id == request.TargetResourceId, ct);
         if (board is null) throw new NotFoundException("Board", request.TargetResourceId);
 
-        var target = ResourceRef.Create(request.TargetResourceType, request.TargetResourceId, board.WorkspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create(CreateApprovalRequestCommand.BoardKind), request.TargetResourceId, board.WorkspaceId);
         var now = _dateTimeProvider.UtcNow;
         var approvalRequest = ApprovalRequest.Create(
             _requestContext.RequireAccountId(),

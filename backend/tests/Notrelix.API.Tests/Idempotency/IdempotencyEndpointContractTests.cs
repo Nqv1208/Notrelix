@@ -71,7 +71,7 @@ public class IdempotencyEndpointContractTests : IClassFixture<NotrelixApiFactory
                 .ReturnsAsync(new ResourceScopeSnapshot(
                     Guid.Parse("A0000000-0000-0000-0000-000000000001"),
                     Guid.Parse("A0000000-0000-0000-0000-000000000001"),
-                    ResourceType.Checklist,
+                    ResourceKind.Create("work-management.checklist"),
                     Guid.Parse("00000000-0000-0000-0000-000000000001")));
             return mock.Object;
         });

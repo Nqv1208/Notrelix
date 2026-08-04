@@ -27,7 +27,7 @@ public static class CreateApprovalRequestEndpoint
             .ToList();
 
         var result = await sender.Send(
-            new CreateApprovalRequestCommand(boardId, ResourceType.Board, body.Title, body.Description, steps),
+            new CreateApprovalRequestCommand(boardId, body.Title, body.Description, steps),
             cancellationToken);
         return result.ToCreatedResult();
     }
