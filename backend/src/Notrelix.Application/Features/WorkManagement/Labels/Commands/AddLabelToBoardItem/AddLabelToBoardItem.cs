@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.Labels.Commands.AddLabelT
 public record AddLabelToBoardItemCommand(Guid BoardItemId, Guid LabelId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
 }
 
 public class AddLabelToBoardItemCommandHandler : IRequestHandler<AddLabelToBoardItemCommand, Result>

@@ -8,7 +8,7 @@ public record CreateLabelCommand(Guid BoardId, string Color, string? Name)
     : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 
 public class CreateLabelCommandHandler : IRequestHandler<CreateLabelCommand, Result<Guid>>

@@ -13,7 +13,7 @@ public class ApprovalMutationContractTests
     [Fact]
     public void AddStep_ShouldAlwaysUpdateAuditAndVersion()
     {
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WorkspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WorkspaceId);
         var request = ApprovalRequest.Create(AccountId, WorkspaceId, target, "Approve", Actor, Now);
         ((IHasDomainEvents)request).ClearDomainEvents();
         var version = request.Version;
@@ -27,7 +27,7 @@ public class ApprovalMutationContractTests
     [Fact]
     public void AddStep_ShouldNotRaiseEvent_WhenNoStepAdded()
     {
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WorkspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WorkspaceId);
         var request = ApprovalRequest.Create(AccountId, WorkspaceId, target, "Approve", Actor, Now);
         request.AddStep(1, Actor, Now, approverUserId: Guid.NewGuid());
         ((IHasDomainEvents)request).ClearDomainEvents();
@@ -44,7 +44,7 @@ public class ApprovalMutationContractTests
     {
         var approverId = Guid.NewGuid();
         var otherUserId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WorkspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WorkspaceId);
         var request = ApprovalRequest.Create(AccountId, WorkspaceId, target, "Approve", Actor, Now);
         request.AddStep(1, Actor, Now, approverUserId: approverId);
 
@@ -58,7 +58,7 @@ public class ApprovalMutationContractTests
     public void Approve_ShouldSucceed_WhenCorrectApprover()
     {
         var approverId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WorkspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WorkspaceId);
         var request = ApprovalRequest.Create(AccountId, WorkspaceId, target, "Approve", Actor, Now);
         request.AddStep(1, Actor, Now, approverUserId: approverId);
 
@@ -73,7 +73,7 @@ public class ApprovalMutationContractTests
     {
         var approverId = Guid.NewGuid();
         var otherUserId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WorkspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WorkspaceId);
         var request = ApprovalRequest.Create(AccountId, WorkspaceId, target, "Approve", Actor, Now);
         request.AddStep(1, Actor, Now, approverUserId: approverId);
 
@@ -87,7 +87,7 @@ public class ApprovalMutationContractTests
     public void Reject_ShouldSucceed_WhenCorrectApprover()
     {
         var approverId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WorkspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WorkspaceId);
         var request = ApprovalRequest.Create(AccountId, WorkspaceId, target, "Approve", Actor, Now);
         request.AddStep(1, Actor, Now, approverUserId: approverId);
 
@@ -102,7 +102,7 @@ public class ApprovalMutationContractTests
     {
         var teamId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WorkspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WorkspaceId);
         var request = ApprovalRequest.Create(AccountId, WorkspaceId, target, "Approve", Actor, Now);
         request.AddStep(1, Actor, Now, approverTeamId: teamId);
 
@@ -117,7 +117,7 @@ public class ApprovalMutationContractTests
     {
         var teamId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WorkspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WorkspaceId);
         var request = ApprovalRequest.Create(AccountId, WorkspaceId, target, "Approve", Actor, Now);
         request.AddStep(1, Actor, Now, approverTeamId: teamId);
 
@@ -131,7 +131,7 @@ public class ApprovalMutationContractTests
     public void Approve_ShouldThrow_WhenStepAlreadyApproved()
     {
         var approverId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WorkspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WorkspaceId);
         var request = ApprovalRequest.Create(AccountId, WorkspaceId, target, "Approve", Actor, Now);
         request.AddStep(1, Actor, Now, approverUserId: approverId);
 
@@ -147,7 +147,7 @@ public class ApprovalMutationContractTests
     public void Approve_ShouldThrow_WhenRequestAlreadyRejected()
     {
         var approverId = Guid.NewGuid();
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WorkspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WorkspaceId);
         var request = ApprovalRequest.Create(AccountId, WorkspaceId, target, "Approve", Actor, Now);
         request.AddStep(1, Actor, Now, approverUserId: approverId);
 

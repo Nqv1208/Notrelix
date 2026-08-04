@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyB
 public record GetMyBoardItemsQuery(Guid WorkspaceId) : IQuery<Result<List<BoardItemSummaryDto>>>, IWorkspaceRequest, IRequirePermission
 {
     PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
-    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId);
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId);
 }
 
 public class GetMyBoardItemsQueryHandler(

@@ -9,7 +9,7 @@ namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetFullBoa
 public record GetFullBoardQuery(Guid BoardId) : IQuery<Result<FullBoardDto>>, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 
 public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Result<FullBoardDto>>
@@ -93,14 +93,14 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
 
         var commentCounts = await _collabContext.Comments
             .AsNoTracking()
-            .Where(comment => comment.Target.Kind == LegacyResourceTypeMappings.ToResourceKind(ResourceType.BoardItem) && cardIds.Contains(comment.Target.ResourceId))
+            .Where(comment => comment.Target.Kind == ResourceKind.Create("work-management.board-item") && cardIds.Contains(comment.Target.ResourceId))
             .GroupBy(comment => comment.Target.ResourceId)
             .Select(group => new { BoardItemId = group.Key, Count = group.Count() })
             .ToDictionaryAsync(item => item.BoardItemId, item => item.Count, cancellationToken);
 
         var attachmentCounts = await _collabContext.Attachments
             .AsNoTracking()
-            .Where(attachment => attachment.Target.Kind == LegacyResourceTypeMappings.ToResourceKind(ResourceType.BoardItem) && cardIds.Contains(attachment.Target.ResourceId))
+            .Where(attachment => attachment.Target.Kind == ResourceKind.Create("work-management.board-item") && cardIds.Contains(attachment.Target.ResourceId))
             .GroupBy(attachment => attachment.Target.ResourceId)
             .Select(group => new { BoardItemId = group.Key, Count = group.Count() })
             .ToDictionaryAsync(item => item.BoardItemId, item => item.Count, cancellationToken);

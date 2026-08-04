@@ -11,7 +11,7 @@ public record ReorderFieldOptionsCommand(
     List<Guid> OrderedOptionIds) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateField;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardField, FieldId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-field"), FieldId);
 }
 
 public class ReorderFieldOptionsCommandHandler : IRequestHandler<ReorderFieldOptionsCommand, Result>

@@ -9,7 +9,7 @@ public record RestoreFormCommand(
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Form, FormId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.form"), FormId);
 }
 
 public class RestoreFormCommandHandler : IRequestHandler<RestoreFormCommand, Result>

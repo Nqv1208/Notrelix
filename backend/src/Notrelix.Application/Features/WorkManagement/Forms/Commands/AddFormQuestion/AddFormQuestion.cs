@@ -16,7 +16,7 @@ public record AddFormQuestionCommand(
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Form, FormId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.form"), FormId);
 }
 
 public class AddFormQuestionCommandHandler : IRequestHandler<AddFormQuestionCommand, Result>

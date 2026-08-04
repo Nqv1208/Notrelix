@@ -8,7 +8,7 @@ public record DeleteBoardGroupCommand(Guid GroupId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardGroup, GroupId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-group"), GroupId);
     long IExpectedVersionRequest.ExpectedVersion => 0;
 }
 

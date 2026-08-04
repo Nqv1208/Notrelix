@@ -8,7 +8,7 @@ public record SetDefaultViewCommand(Guid BoardId, Guid ViewId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 
 public class SetDefaultViewCommandHandler : IRequestHandler<SetDefaultViewCommand, Result>

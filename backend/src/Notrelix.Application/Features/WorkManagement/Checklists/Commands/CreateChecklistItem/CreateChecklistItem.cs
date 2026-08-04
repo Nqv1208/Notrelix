@@ -8,7 +8,7 @@ namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.Creat
 public record CreateChecklistItemCommand(Guid ChecklistId, string Title) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Checklist, ChecklistId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.checklist"), ChecklistId);
 }
 
 public class CreateChecklistItemCommandHandler : IRequestHandler<CreateChecklistItemCommand, Result<Guid>>

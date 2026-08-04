@@ -8,7 +8,7 @@ namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.Unarchive
 public record UnarchiveBoardCommand(Guid BoardId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 
 public class UnarchiveBoardCommandHandler : IRequestHandler<UnarchiveBoardCommand, Result>

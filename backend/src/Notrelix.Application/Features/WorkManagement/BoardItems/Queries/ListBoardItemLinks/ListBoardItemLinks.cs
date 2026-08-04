@@ -8,7 +8,7 @@ public record BoardItemLinkDto(Guid Id, Guid SourceItemId, Guid TargetItemId, Gu
 public record ListBoardItemLinksQuery(Guid BoardItemId) : IQuery<Result<List<BoardItemLinkDto>>>, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
 }
 
 public class ListBoardItemLinksQueryHandler : IRequestHandler<ListBoardItemLinksQuery, Result<List<BoardItemLinkDto>>>
@@ -29,7 +29,7 @@ public class ListBoardItemLinksQueryHandler : IRequestHandler<ListBoardItemLinks
                 l.Id,
                 l.SourceItemId,
                 l.Target.ResourceId,
-                l.Target.Kind == LegacyResourceTypeMappings.ToResourceKind(ResourceType.Board) ? l.Target.ResourceId : Guid.Empty,
+                l.Target.Kind == ResourceKind.Create("work-management.board") ? l.Target.ResourceId : Guid.Empty,
                 l.LinkType.ToString()))
             .ToListAsync(ct);
 

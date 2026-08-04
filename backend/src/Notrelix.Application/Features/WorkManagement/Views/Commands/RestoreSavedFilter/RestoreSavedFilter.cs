@@ -8,7 +8,7 @@ public record RestoreSavedFilterCommand(Guid FilterId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.SavedFilter, FilterId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.saved-filter"), FilterId);
 }
 
 public class RestoreSavedFilterCommandHandler : IRequestHandler<RestoreSavedFilterCommand, Result>

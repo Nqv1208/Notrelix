@@ -8,7 +8,7 @@ public record UpdateSavedFilterGroupCommand(Guid FilterId, GroupRule? GroupRule,
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.SavedFilter, FilterId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.saved-filter"), FilterId);
     long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion;
     ResourceRef IExpectedVersionRequest.Resource => Resource;
 }

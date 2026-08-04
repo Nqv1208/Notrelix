@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.Updat
 public record UpdateChecklistItemCommand(Guid ItemId, bool? IsChecked) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.ChecklistItem, ItemId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.checklist-item"), ItemId);
 }
 
 public class UpdateChecklistItemCommandHandler : IRequestHandler<UpdateChecklistItemCommand, Result>

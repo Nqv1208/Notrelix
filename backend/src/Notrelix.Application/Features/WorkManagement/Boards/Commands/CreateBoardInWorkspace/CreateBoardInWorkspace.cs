@@ -15,7 +15,7 @@ public record CreateBoardInWorkspaceCommand(
     BoardVisibility? Visibility) : ICommand<Result<Guid>>, ITransactionalRequest, IRequirePermission, IWorkspaceRequest, IRealtimeRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreateBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId);
     public RealtimeTopic Topic => new("workspace", "Workspace", WorkspaceId);
 }
 

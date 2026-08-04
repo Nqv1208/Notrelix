@@ -9,7 +9,7 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.Dupli
 public record DuplicateBoardItemCommand(Guid BoardItemId) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
 }
 
 public class DuplicateBoardItemCommandHandler : IRequestHandler<DuplicateBoardItemCommand, Result<Guid>>

@@ -13,7 +13,7 @@ public record ArchiveBoardCommand(Guid BoardId)
       IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 
 public class ArchiveBoardCommandHandler : IRequestHandler<ArchiveBoardCommand, Result>

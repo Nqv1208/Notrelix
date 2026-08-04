@@ -10,7 +10,7 @@ public record UpdateBoardItemFieldValueCommand(
     object? Value) : ICommand<BoardItemSlimDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, ItemId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), ItemId);
     public RealtimeTopic Topic => new("board", "BoardItem", ItemId);
 }
 

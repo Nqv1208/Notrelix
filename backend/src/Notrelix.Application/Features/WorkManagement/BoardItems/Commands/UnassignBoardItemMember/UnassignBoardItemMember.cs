@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.Unass
 public record UnassignBoardItemMemberCommand(Guid BoardItemId, Guid UserId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.AssignItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
 }
 
 public class UnassignBoardItemMemberCommandHandler : IRequestHandler<UnassignBoardItemMemberCommand, Result>

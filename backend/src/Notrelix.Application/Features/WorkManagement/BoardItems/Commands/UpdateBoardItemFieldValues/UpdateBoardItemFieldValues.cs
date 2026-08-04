@@ -8,7 +8,7 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.Updat
 public record UpdateBoardItemFieldValuesCommand(Guid BoardItemId, Dictionary<Guid, object?> Values) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
 }
 
 public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBoardItemFieldValuesCommand, Result>
@@ -86,7 +86,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
                             var link = BoardItemLink.Create(
                                 _requestContext.RequireAccountId(),
                                 card.WorkspaceId, card.BoardId, card.Id,
-                                ResourceRef.Create(ResourceType.Page, pageId.Value, card.WorkspaceId),
+                                ResourceRef.Create(ResourceKind.Create("documents.page"), pageId.Value, card.WorkspaceId),
                                 BoardItemLinkType.Reference,
                                 _requestContext.UserId, now);
                             _context.BoardItemLinks.Add(link);

@@ -11,7 +11,7 @@ public class ApprovalFailureAtomicityTests
 
     private ApprovalRequest CreateRequest()
     {
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WorkspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WorkspaceId);
         var userId = Guid.NewGuid();
         var request = ApprovalRequest.Create(AccountId, WorkspaceId, target, "Test", userId, Now);
         request.AddStep(1, userId, Now, approverUserId: userId);

@@ -10,7 +10,7 @@ public record ProcessFormSubmissionCommand(
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.FormSubmission, SubmissionId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.form-submission"), SubmissionId);
 }
 
 public class ProcessFormSubmissionCommandHandler : IRequestHandler<ProcessFormSubmissionCommand, Result>

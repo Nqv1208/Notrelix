@@ -12,7 +12,7 @@ public class ApprovalRequestEventTests
     [Fact]
     public void ApprovalRequest_Delete_ShouldRaiseEvent()
     {
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsA);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WsA);
         var request = ApprovalRequest.Create(Guid.NewGuid(), WsA, target, "Approve this", Actor, Now);
         ((IHasDomainEvents)request).ClearDomainEvents();
         var version = request.Version;
@@ -27,7 +27,7 @@ public class ApprovalRequestEventTests
     [Fact]
     public void ApprovalRequest_Delete_WhenAlreadyDeleted_ShouldNotRaiseEvent()
     {
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsA);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WsA);
         var request = ApprovalRequest.Create(Guid.NewGuid(), WsA, target, "Approve this", Actor, Now);
         request.Delete(Actor, Now);
         ((IHasDomainEvents)request).ClearDomainEvents();
@@ -42,7 +42,7 @@ public class ApprovalRequestEventTests
     [Fact]
     public void ApprovalRequest_Restore_ShouldRaiseEvent()
     {
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsA);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WsA);
         var request = ApprovalRequest.Create(Guid.NewGuid(), WsA, target, "Approve this", Actor, Now);
         request.Delete(Actor, Now);
         ((IHasDomainEvents)request).ClearDomainEvents();
@@ -58,7 +58,7 @@ public class ApprovalRequestEventTests
     [Fact]
     public void ApprovalRequest_Restore_WhenNotDeleted_ShouldNotRaiseEvent()
     {
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), WsA);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), WsA);
         var request = ApprovalRequest.Create(Guid.NewGuid(), WsA, target, "Approve this", Actor, Now);
         ((IHasDomainEvents)request).ClearDomainEvents();
         var version = request.Version;

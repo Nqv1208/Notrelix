@@ -8,7 +8,7 @@ public record DeleteLabelCommand(Guid LabelId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Label, LabelId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.label"), LabelId);
 }
 
 public class DeleteLabelCommandHandler : IRequestHandler<DeleteLabelCommand, Result>

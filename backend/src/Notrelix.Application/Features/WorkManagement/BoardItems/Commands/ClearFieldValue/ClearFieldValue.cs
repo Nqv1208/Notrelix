@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.Clear
 public record ClearFieldValueCommand(Guid ItemId, Guid FieldId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, ItemId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), ItemId);
 }
 
 public class ClearFieldValueCommandHandler : IRequestHandler<ClearFieldValueCommand, Result>

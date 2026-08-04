@@ -11,7 +11,7 @@ public record RejectApprovalRequestCommand(
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.ApprovalRequest, RequestId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.approval-request"), RequestId);
     long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion;
     ResourceRef IExpectedVersionRequest.Resource => Resource;
 }

@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.Toggl
 public record ToggleChecklistItemCommand(Guid ChecklistItemId) : ICommand<Result>, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.ChecklistItem, ChecklistItemId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.checklist-item"), ChecklistItemId);
 }
 
 public class ToggleChecklistItemCommandHandler : IRequestHandler<ToggleChecklistItemCommand, Result>

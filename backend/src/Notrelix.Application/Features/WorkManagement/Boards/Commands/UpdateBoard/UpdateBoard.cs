@@ -14,7 +14,7 @@ public record UpdateBoardCommand(
     long? ExpectedVersion) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
     long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion ?? 0;
     ResourceRef IExpectedVersionRequest.Resource => Resource;
 }

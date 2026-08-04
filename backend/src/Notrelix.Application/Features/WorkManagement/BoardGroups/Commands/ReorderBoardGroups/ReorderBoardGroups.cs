@@ -9,7 +9,7 @@ namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.Reor
 public record ReorderBoardGroupsCommand(Guid BoardId, List<ReorderItem> Items) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 
 public class ReorderBoardGroupsCommandHandler : IRequestHandler<ReorderBoardGroupsCommand, Result>

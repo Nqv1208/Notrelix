@@ -11,7 +11,7 @@ public record CreateSpaceCommand(
 ) : ICommand<Result<Guid>>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission, IRequireVerifiedEmail
 {
     public PermissionAction Action => PermissionAction.CreateWorkspace;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
 
 public class CreateSpaceCommandHandler : IRequestHandler<CreateSpaceCommand, Result<Guid>>

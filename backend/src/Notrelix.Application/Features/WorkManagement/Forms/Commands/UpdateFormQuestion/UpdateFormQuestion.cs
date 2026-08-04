@@ -14,7 +14,7 @@ public record UpdateFormQuestionCommand(
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Form, QuestionId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.form"), QuestionId);
 }
 
 public class UpdateFormQuestionCommandHandler : IRequestHandler<UpdateFormQuestionCommand, Result>

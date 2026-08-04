@@ -8,7 +8,7 @@ public record RestoreBoardViewCommand(Guid ViewId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateBoardView;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardView, ViewId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-view"), ViewId);
 }
 
 public class RestoreBoardViewCommandHandler : IRequestHandler<RestoreBoardViewCommand, Result>

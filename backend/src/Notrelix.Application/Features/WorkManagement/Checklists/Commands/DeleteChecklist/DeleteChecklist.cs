@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.Checklists.Commands.Delet
 public record DeleteChecklistCommand(Guid ChecklistId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Checklist, ChecklistId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.checklist"), ChecklistId);
 }
 
 public class DeleteChecklistCommandHandler : IRequestHandler<DeleteChecklistCommand, Result>

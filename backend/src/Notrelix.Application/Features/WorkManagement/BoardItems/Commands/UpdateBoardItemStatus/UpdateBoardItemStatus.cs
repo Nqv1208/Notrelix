@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.Updat
 public record UpdateBoardItemStatusCommand(Guid BoardItemId, string Status) : ICommand<Result>, ITransactionalRequest, IIdempotentRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
 }
 
 public class UpdateBoardItemStatusCommandHandler : IRequestHandler<UpdateBoardItemStatusCommand, Result>

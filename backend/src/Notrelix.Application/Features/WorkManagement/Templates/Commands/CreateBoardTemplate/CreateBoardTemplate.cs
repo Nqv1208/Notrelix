@@ -11,7 +11,7 @@ public record CreateBoardTemplateCommand(
     : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 
 public class CreateBoardTemplateCommandHandler : IRequestHandler<CreateBoardTemplateCommand, Result<Guid>>

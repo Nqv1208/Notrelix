@@ -8,7 +8,7 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetBoa
 public record GetBoardItemQuery(Guid BoardItemId) : IQuery<Result<BoardItemDto>>, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
 }
 
 public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Result<BoardItemDto>>

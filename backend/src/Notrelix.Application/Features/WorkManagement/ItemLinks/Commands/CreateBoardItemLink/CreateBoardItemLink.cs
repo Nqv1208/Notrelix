@@ -9,7 +9,7 @@ public record CreateBoardItemLinkCommand(
     Guid TargetBoardItemId,
     string LinkType) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, SourceBoardItemId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), SourceBoardItemId);
     public PermissionAction Action => PermissionAction.UpdateItem;
 }
 
@@ -45,7 +45,7 @@ public class CreateBoardItemLinkCommandHandler(
         var accountId = requestContext.RequireAccountId();
         var workspaceId = requestContext.RequireWorkspaceId();
 
-        var target = ResourceRef.Create(ResourceType.BoardItem, request.TargetBoardItemId, workspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), request.TargetBoardItemId, workspaceId);
 
         var link = BoardItemLink.Create(
             accountId,

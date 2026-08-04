@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.Upda
 public record UpdateBoardGroupCommand(Guid GroupId, string? Title, string? Color = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardGroup, GroupId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-group"), GroupId);
 }
 
 public class UpdateBoardGroupCommandHandler : IRequestHandler<UpdateBoardGroupCommand, Result>

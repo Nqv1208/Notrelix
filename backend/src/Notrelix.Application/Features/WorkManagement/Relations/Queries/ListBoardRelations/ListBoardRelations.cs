@@ -8,7 +8,7 @@ public record ListBoardRelationsQuery(Guid BoardId)
     : IQuery<Result<List<BoardRelationDto>>>, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 
 public class ListBoardRelationsQueryHandler : IRequestHandler<ListBoardRelationsQuery, Result<List<BoardRelationDto>>>

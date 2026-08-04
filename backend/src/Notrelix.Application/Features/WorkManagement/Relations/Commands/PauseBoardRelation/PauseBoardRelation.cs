@@ -8,7 +8,7 @@ public record PauseBoardRelationCommand(Guid RelationId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardRelation, RelationId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-relation"), RelationId);
 }
 
 public class PauseBoardRelationCommandHandler : IRequestHandler<PauseBoardRelationCommand, Result>

@@ -10,7 +10,7 @@ public record CloseFormCommand(
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Form, FormId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.form"), FormId);
     long IExpectedVersionRequest.ExpectedVersion => ExpectedVersion ?? 0;
     ResourceRef IExpectedVersionRequest.Resource => Resource;
 }

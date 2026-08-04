@@ -9,7 +9,7 @@ public record RestoreApprovalRequestCommand(
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.ApprovalRequest, RequestId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.approval-request"), RequestId);
 }
 
 public class RestoreApprovalRequestCommandHandler : IRequestHandler<RestoreApprovalRequestCommand, Result>

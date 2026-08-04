@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.Dele
 public record DeleteBoardFieldCommand(Guid BoardId, Guid ColumnId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.DeleteField;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardField, ColumnId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-field"), ColumnId);
 }
 
 public class DeleteBoardFieldCommandHandler : IRequestHandler<DeleteBoardFieldCommand, Result>

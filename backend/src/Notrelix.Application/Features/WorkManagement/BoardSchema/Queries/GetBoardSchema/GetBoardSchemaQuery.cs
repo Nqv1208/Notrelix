@@ -8,7 +8,7 @@ public sealed record GetBoardSchemaCacheIdentity(Guid BoardId);
 public record GetBoardSchemaQuery(Guid BoardId) : IQuery<BoardSchemaDto>, IRequirePermission, IResourceScopedRequest, IAuthorizedCacheableRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
     public AuthorizedCacheScope CacheScope => AuthorizedCacheScope.Workspace;
     public object CacheIdentity => new GetBoardSchemaCacheIdentity(BoardId);
     public TimeSpan? CacheTtl => TimeSpan.FromMinutes(5);

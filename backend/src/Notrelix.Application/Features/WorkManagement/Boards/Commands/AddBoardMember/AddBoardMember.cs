@@ -9,7 +9,7 @@ namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.AddBoardM
 public record AddBoardMemberCommand(Guid BoardId, Guid UserId, BoardRole? Role) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 
 public class AddBoardMemberCommandHandler : IRequestHandler<AddBoardMemberCommand, Result>

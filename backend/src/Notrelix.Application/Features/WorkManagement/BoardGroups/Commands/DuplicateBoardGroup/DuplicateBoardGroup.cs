@@ -8,7 +8,7 @@ namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.Dupl
 public record DuplicateBoardGroupCommand(Guid GroupId) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardGroup, GroupId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-group"), GroupId);
 }
 
 public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardGroupCommand, Result<Guid>>

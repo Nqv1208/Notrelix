@@ -10,7 +10,7 @@ public record UpdateBoardViewConfigCommand(
     string ConfigJson) : ICommand<BoardViewDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateBoardView;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardView, ViewId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-view"), ViewId);
     public RealtimeTopic Topic => new("board", "Board", BoardId);
 }
 

@@ -9,7 +9,7 @@ public record AssignBoardItemMemberCommand(
     Guid UserId) : ICommand<Result>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.AssignItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
     public RealtimeTopic Topic => new("board", "BoardItem", BoardItemId);
 }
 
