@@ -13,7 +13,7 @@ public sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
 
         builder.Property(x => x.ActorType).IsRequired().HasMaxLength(80).HasDefaultValue("User");
         builder.Property(x => x.Action).IsRequired().HasMaxLength(160);
-        builder.Property(x => x.ResourceKind).HasMaxLength(160);
+        builder.Property(x => x.ResourceKind).HasColumnName("resource_type").HasMaxLength(160);
         builder.Property(x => x.SubjectType).HasMaxLength(160);
         builder.Property(x => x.Severity).IsRequired().HasMaxLength(40).HasDefaultValue("Info");
         builder.Property(x => x.Outcome).IsRequired().HasMaxLength(40).HasDefaultValue("Succeeded");

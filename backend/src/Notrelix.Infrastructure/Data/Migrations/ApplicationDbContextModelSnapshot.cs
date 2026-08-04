@@ -3306,9 +3306,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<int?>("ResourceKind")
-                        .HasMaxLength(50)
-                        .HasColumnType("integer")
+                    b.Property<string>("ResourceKind")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
                         .HasColumnName("resource_type");
 
                     b.Property<string>("ScopeType")
@@ -3435,8 +3435,8 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.Property<string>("ResourceKind")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
                         .HasColumnName("resource_type");
 
                     b.Property<Guid>("SubjectId")
@@ -3696,8 +3696,8 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.Property<string>("ResourceKind")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
                         .HasColumnName("resource_type");
 
                     b.Property<string>("Status")
@@ -3780,9 +3780,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("status");
 
-                    b.Property<string>("TargetResourceType")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                    b.Property<string>("TargetResourceKind")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
                         .HasColumnName("target_resource_type");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
@@ -10436,9 +10436,9 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.ToTable("idempotency_records", "ops", t =>
                         {
-                            t.HasCheckConstraint("ck_idempotency_records_state", "state IN ('Processing', 'Completed')");
-
                             t.HasCheckConstraint("ck_idempotency_records_completed_result", "state <> 'Completed' OR (result_json IS NOT NULL AND result_contract IS NOT NULL AND completed_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_idempotency_records_state", "state IN ('Processing', 'Completed')");
                         });
                 });
 
