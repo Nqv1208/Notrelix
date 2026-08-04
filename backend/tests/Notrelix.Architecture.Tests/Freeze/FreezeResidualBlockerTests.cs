@@ -1,4 +1,5 @@
 using System.Reflection;
+using Notrelix.Architecture.Tests.Support;
 
 namespace Notrelix.Architecture.Tests.Freeze;
 
@@ -9,7 +10,7 @@ namespace Notrelix.Architecture.Tests.Freeze;
 ///   FZ-0001/0002 -> FZ-IDEM-01 (marker-only requests, scoped execution context)
 ///   FZ-0004      -> FZ-APP-02  (authenticated bootstrap, no user selector)
 ///   FZ-0005      -> FZ-APP-01..03 (narrow read ports / provisioning service)
-///   FZ-0006      -> FZ-APP-04  (Roslyn invocation gate)
+///   FZ-0006      -> FZ-APP-04  (Roslyn invocation gate — landed; now asserts detection)
 ///   FZ-0007*     -> FZ-RES-03/04 (ResourceType cutover and deletion)
 /// </summary>
 public class FreezeResidualBlockerTests : ArchitectureTestBase
@@ -131,46 +132,30 @@ public class FreezeResidualBlockerTests : ArchitectureTestBase
                 "the six transitional cross-context reads must be migrated to narrow read ports / the provisioning service");
     }
 
-    // --- FZ-0006: SaveChanges invocation is not detected by the name-based gate ---
+    // --- FZ-0006: Roslyn invocation gate detects hidden SaveChanges invocations ---
 
     [Fact]
     public void FZ_0006_SaveChanges_Invocation_Is_Detected_By_The_Gate()
     {
-        var handlerType = typeof(SaveChangesEvasionFixture);
+        // Negative fixture: the old name-based gate (APP_DATA_005) inspected public
+        // METHOD NAMES, so a handler whose Handle method invokes SaveChangesAsync
+        // internally was invisible to it. FZ-APP-04 replaces it with a Roslyn
+        // invocation gate that parses the source and sees the actual call.
+        const string evasionSource = """
+            internal sealed class EvasionFixture
+            {
+                private readonly ISaveChangesContext _context;
 
-        // This is exactly how the current gate works (APP_DATA_005): it inspects
-        // public instance METHOD NAMES. The fixture's Handle method invokes
-        // SaveChangesAsync internally and is invisible to it.
-        var violations = handlerType
-            .GetMethods(BindingFlags.Public | BindingFlags.Instance)
-            .Where(m => m.Name.Contains("SaveChanges", StringComparison.Ordinal))
-            .Select(m => m.Name)
-            .ToArray();
+                public Task<string> Handle(string request, CancellationToken cancellationToken)
+                    => _context.SaveChangesAsync(cancellationToken);
+            }
+            """;
 
-        violations.Should().NotBeEmpty(
-            "a handler invoking SaveChanges must be flagged — a name-based scan is insufficient");
-    }
+        var violations = HandlerDataAccessInvocationGate.Scan(evasionSource, "EvasionFixture.cs");
 
-    /// <summary>
-    /// Negative fixture: a plausible handler whose Handle method invokes SaveChangesAsync
-    /// on a data context. The current name-based gate does not detect this.
-    /// Re-pointed at the Roslyn invocation gate in FZ-APP-04.
-    /// </summary>
-    private sealed class SaveChangesEvasionFixture
-    {
-        private readonly ISaveChangesContext _context;
-
-        private SaveChangesEvasionFixture(ISaveChangesContext context) => _context = context;
-
-        public Task<string> Handle(string request, CancellationToken cancellationToken)
-        {
-            return _context.SaveChangesAsync(cancellationToken);
-        }
-
-        private interface ISaveChangesContext
-        {
-            Task<string> SaveChangesAsync(CancellationToken cancellationToken);
-        }
+        violations.Should().Contain(
+            v => v.EndsWith("SaveChangesAsync", StringComparison.Ordinal),
+            "a handler invoking SaveChanges must be flagged by the Roslyn invocation gate (FZ-APP-04)");
     }
 
     // --- FZ-0007: ResourceType / LegacyResourceTypeMappings are deleted ---

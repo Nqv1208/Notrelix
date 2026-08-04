@@ -1,4 +1,7 @@
 using System.Reflection;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Notrelix.Architecture.Tests.Support;
 
 namespace Notrelix.Architecture.Tests.ApplicationLayer;
 
@@ -9,8 +12,9 @@ namespace Notrelix.Architecture.Tests.ApplicationLayer;
     /// - Handlers do NOT inject another context's DbContext
     /// - Handlers do NOT inject concrete Infrastructure types
     /// - Common cross-cutting ports are allowed by exact type
+    /// - Handlers do NOT invoke persistence/provider APIs (Roslyn, FZ-APP-04)
     /// </summary>
-    public class HandlerDataPortGateTests
+    public class HandlerDataPortGateTests : ArchitectureTestBase
     {
     private static readonly Assembly ApplicationAssembly =
         typeof(Notrelix.Application.Common.Behaviors.ValidationBehavior<,>).Assembly;
@@ -146,22 +150,36 @@ namespace Notrelix.Architecture.Tests.ApplicationLayer;
     public void APP_DATA_005_No_Handler_SaveChanges()
     {
         var handlerTypes = GetHandlerTypes();
+        var classToFile = IndexHandlerSourceFiles();
         var violations = new List<string>();
 
         foreach (var handler in handlerTypes)
         {
-            var methods = handler.GetMethods(BindingFlags.Public | BindingFlags.Instance);
-            foreach (var method in methods)
-            {
-                if (method.Name.Contains("SaveChanges", StringComparison.Ordinal))
-                {
-                    violations.Add($"{handler.Name}.{method.Name}");
-                }
-            }
+            if (!classToFile.TryGetValue(handler.Name, out var file))
+                continue;
+
+            var relativePath = Path.GetRelativePath(GetApplicationPath(), file);
+            violations.AddRange(HandlerDataAccessInvocationGate.Scan(File.ReadAllText(file), relativePath));
         }
 
         violations.Should().BeEmpty(
-            "handlers must not call SaveChanges — the pipeline owns persistence");
+            "handlers must not invoke persistence/provider APIs — the pipeline owns persistence");
+    }
+
+    private static Dictionary<string, string> IndexHandlerSourceFiles()
+    {
+        var index = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        foreach (var file in GetApplicationFeatureFiles())
+        {
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file)).GetCompilationUnitRoot();
+            foreach (var classDeclaration in root.DescendantNodes().OfType<ClassDeclarationSyntax>())
+            {
+                index.TryAdd(classDeclaration.Identifier.ValueText, file);
+            }
+        }
+
+        return index;
     }
 
     private static IEnumerable<Type> GetHandlerTypes()
