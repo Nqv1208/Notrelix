@@ -1,4 +1,5 @@
 using System.Reflection;
+using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Behaviors;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
 using Notrelix.Application.Features.Identity.Verification.Services;
@@ -59,6 +60,10 @@ public static class DependencyInjection
         services.AddScoped<IExecutionContextReader>(sp => sp.GetRequiredService<IExecutionContextAccessor>());
 
         // Idempotency services
+        services.AddOptions<IdempotencyOptions>()
+            .Bind(builder.Configuration.GetSection(IdempotencyOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<IdempotencyOptions>, IdempotencyOptionsValidator>();
         services.AddSingleton<IIdempotencyRequestFingerprint, JsonIdempotencyRequestFingerprint>();
         services.AddSingleton<IIdempotencyReplayPolicy, DefaultIdempotencyReplayPolicy>();
         services.AddScoped<IdempotencyPartitionFactory>();

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Options;
 using Notrelix.Infrastructure.Data;
 
 namespace Notrelix.Infrastructure.Operations.Idempotency;
@@ -11,11 +12,16 @@ public sealed class EfIdempotencyStore : IIdempotencyStore
 {
     private readonly ApplicationDbContext _context;
     private readonly TimeProvider _timeProvider;
+    private readonly IdempotencyOptions _options;
 
-    public EfIdempotencyStore(ApplicationDbContext context, TimeProvider timeProvider)
+    public EfIdempotencyStore(
+        ApplicationDbContext context,
+        TimeProvider timeProvider,
+        IOptions<IdempotencyOptions> options)
     {
         _context = context;
         _timeProvider = timeProvider;
+        _options = options.Value;
     }
 
     public async Task<IdempotencyBeginResult> BeginAsync(
@@ -84,10 +90,10 @@ public sealed class EfIdempotencyStore : IIdempotencyStore
         IdempotencyIdentity identity,
         string serializedResult,
         string resultContract,
-        DateTimeOffset expiresAt,
         CancellationToken cancellationToken)
     {
         var now = _timeProvider.GetUtcNow();
+        var expiresAt = now.Add(_options.ResultExpiry);
         var connection = _context.Database.GetDbConnection();
         var transaction = _context.Database.CurrentTransaction?.GetDbTransaction()
             ?? throw new InvalidOperationException(

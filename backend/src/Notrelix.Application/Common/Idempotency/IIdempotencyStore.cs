@@ -38,6 +38,5 @@ public interface IIdempotencyStore
         IdempotencyIdentity identity,
         string serializedResult,
         string resultContract,
-        DateTimeOffset expiresAt,
         CancellationToken cancellationToken);
 }

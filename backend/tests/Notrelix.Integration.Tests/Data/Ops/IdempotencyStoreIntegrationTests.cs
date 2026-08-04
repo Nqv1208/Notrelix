@@ -1,12 +1,15 @@
+using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Idempotency;
+using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Operations.Idempotency;
 using Notrelix.Integration.Tests.Containers;
 
 namespace Notrelix.Integration.Tests.Data.Ops;
 
 /// <summary>
-/// IDEM-DB-001..011: Atomic PostgreSQL idempotency store integration tests.
+/// IDEM-DB-001..013: Atomic PostgreSQL idempotency store integration tests.
 /// Uses real PostgreSQL via Testcontainers with migrations applied.
+/// The store owns all expiry calculations through TimeProvider + IdempotencyOptions.
 /// </summary>
 [Collection("Database")]
 [Trait("Category", "RequiresDocker")]
@@ -17,6 +20,17 @@ public class IdempotencyStoreIntegrationTests
     public IdempotencyStoreIntegrationTests(PostgresTestContainer db)
     {
         _db = db;
+    }
+
+    private static EfIdempotencyStore CreateStore(
+        ApplicationDbContext context,
+        IdempotencyOptions? options = null,
+        TimeProvider? timeProvider = null)
+    {
+        return new EfIdempotencyStore(
+            context,
+            timeProvider ?? TimeProvider.System,
+            Options.Create(options ?? new IdempotencyOptions()));
     }
 
     private static IdempotencyIdentity CreateIdentity(
@@ -34,15 +48,14 @@ public class IdempotencyStoreIntegrationTests
         await using var context = _db.CreateContext();
         await using var tx = await context.Database.BeginTransactionAsync();
 
-        var store = new EfIdempotencyStore(context, TimeProvider.System);
+        var store = CreateStore(context);
         var identity = CreateIdentity(keyHash: Guid.NewGuid().ToString("N"), requestHash: Guid.NewGuid().ToString("N"));
 
         var beginResult = await store.BeginAsync(identity, CancellationToken.None);
 
         beginResult.Status.Should().Be(IdempotencyBeginStatus.Started);
 
-        await store.CompleteAsync(identity, "{\"result\":42}", identity.Operation,
-            DateTimeOffset.UtcNow.AddHours(24), CancellationToken.None);
+        await store.CompleteAsync(identity, "{\"result\":42}", identity.Operation, CancellationToken.None);
 
         await context.SaveChangesAsync();
         await tx.CommitAsync();
@@ -65,21 +78,20 @@ public class IdempotencyStoreIntegrationTests
         await using var context = _db.CreateContext();
         await using var tx = await context.Database.BeginTransactionAsync();
 
-        var store = new EfIdempotencyStore(context, TimeProvider.System);
+        var store = CreateStore(context);
         var identity = CreateIdentity(keyHash: Guid.NewGuid().ToString("N"), requestHash: Guid.NewGuid().ToString("N"));
 
         // First execution
         var first = await store.BeginAsync(identity, CancellationToken.None);
         first.Status.Should().Be(IdempotencyBeginStatus.Started);
-        await store.CompleteAsync(identity, "{\"id\":\"abc\"}", identity.Operation,
-            DateTimeOffset.UtcNow.AddHours(24), CancellationToken.None);
+        await store.CompleteAsync(identity, "{\"id\":\"abc\"}", identity.Operation, CancellationToken.None);
         await context.SaveChangesAsync();
         await tx.CommitAsync();
 
         // Second execution (replay)
         await using var context2 = _db.CreateContext();
         await using var tx2 = await context2.Database.BeginTransactionAsync();
-        var store2 = new EfIdempotencyStore(context2, TimeProvider.System);
+        var store2 = CreateStore(context2);
 
         var second = await store2.BeginAsync(identity, CancellationToken.None);
 
@@ -95,22 +107,21 @@ public class IdempotencyStoreIntegrationTests
         await using var context = _db.CreateContext();
         await using var tx = await context.Database.BeginTransactionAsync();
 
-        var store = new EfIdempotencyStore(context, TimeProvider.System);
+        var store = CreateStore(context);
         var keyHash = Guid.NewGuid().ToString("N");
         var identity1 = CreateIdentity(keyHash: keyHash, requestHash: "hash-A");
 
         // First execution with hash-A
         var first = await store.BeginAsync(identity1, CancellationToken.None);
         first.Status.Should().Be(IdempotencyBeginStatus.Started);
-        await store.CompleteAsync(identity1, "{}", identity1.Operation,
-            DateTimeOffset.UtcNow.AddHours(24), CancellationToken.None);
+        await store.CompleteAsync(identity1, "{}", identity1.Operation, CancellationToken.None);
         await context.SaveChangesAsync();
         await tx.CommitAsync();
 
         // Second execution with same key but different request hash
         await using var context2 = _db.CreateContext();
         await using var tx2 = await context2.Database.BeginTransactionAsync();
-        var store2 = new EfIdempotencyStore(context2, TimeProvider.System);
+        var store2 = CreateStore(context2);
         var identity2 = CreateIdentity(keyHash: keyHash, requestHash: "hash-B");
 
         var second = await store2.BeginAsync(identity2, CancellationToken.None);
@@ -124,7 +135,7 @@ public class IdempotencyStoreIntegrationTests
         await using var context = _db.CreateContext();
         await using var tx = await context.Database.BeginTransactionAsync();
 
-        var store = new EfIdempotencyStore(context, TimeProvider.System);
+        var store = CreateStore(context);
         var identity = CreateIdentity(keyHash: Guid.NewGuid().ToString("N"), requestHash: Guid.NewGuid().ToString("N"));
 
         var begin = await store.BeginAsync(identity, CancellationToken.None);
@@ -153,18 +164,17 @@ public class IdempotencyStoreIntegrationTests
         // Tenant A executes
         await using var contextA = _db.CreateContext();
         await using var txA = await contextA.Database.BeginTransactionAsync();
-        var storeA = new EfIdempotencyStore(contextA, TimeProvider.System);
+        var storeA = CreateStore(contextA);
         var resultA = await storeA.BeginAsync(identityA, CancellationToken.None);
         resultA.Status.Should().Be(IdempotencyBeginStatus.Started);
-        await storeA.CompleteAsync(identityA, "{\"tenant\":\"A\"}", identityA.Operation,
-            DateTimeOffset.UtcNow.AddHours(24), CancellationToken.None);
+        await storeA.CompleteAsync(identityA, "{\"tenant\":\"A\"}", identityA.Operation, CancellationToken.None);
         await contextA.SaveChangesAsync();
         await txA.CommitAsync();
 
         // Tenant B with same key should also get Started (independent partition)
         await using var contextB = _db.CreateContext();
         await using var txB = await contextB.Database.BeginTransactionAsync();
-        var storeB = new EfIdempotencyStore(contextB, TimeProvider.System);
+        var storeB = CreateStore(contextB);
         var resultB = await storeB.BeginAsync(identityB, CancellationToken.None);
 
         resultB.Status.Should().Be(IdempotencyBeginStatus.Started,
@@ -177,7 +187,7 @@ public class IdempotencyStoreIntegrationTests
         await using var context = _db.CreateContext();
         // No transaction started
 
-        var store = new EfIdempotencyStore(context, TimeProvider.System);
+        var store = CreateStore(context);
         var identity = CreateIdentity();
 
         var act = () => store.BeginAsync(identity, CancellationToken.None);
@@ -189,10 +199,10 @@ public class IdempotencyStoreIntegrationTests
     [Fact]
     public async Task IDEM_DB_012_CommittedActiveProcessing_IsNeverReturnedAsCompleted()
     {
-        // FZ-IDEM-01 (spec 3.8): a committed active Processing row is corrupt/legacy
-        // state. BeginAsync must never map it to Completed — it must surface an
-        // incomplete-state failure so the caller rolls back. Currently the store
-        // returns Completed for a non-expired Processing row.
+        // FZ-IDEM-03 (spec 3.8): a committed active Processing row is corrupt/legacy
+        // state. BeginAsync must never map it to Completed — it must surface a typed
+        // incomplete-state failure so the caller rolls back and the API can answer
+        // 503 + Retry-After. Currently the store returns Completed with a null result.
         var identity = CreateIdentity(
             keyHash: Guid.NewGuid().ToString("N"),
             requestHash: Guid.NewGuid().ToString("N"));
@@ -209,12 +219,45 @@ public class IdempotencyStoreIntegrationTests
 
         await using var context = _db.CreateContext();
         await using var tx = await context.Database.BeginTransactionAsync();
-        var store = new EfIdempotencyStore(context, TimeProvider.System);
+        var store = CreateStore(context);
 
         var act = () => store.BeginAsync(identity, CancellationToken.None);
 
         await act.Should().ThrowAsync<Exception>(
-            "an active committed Processing row must never be replayed as Completed — FZ-IDEM-01 pins the typed IdempotencyIncompleteStateException");
+            "an active committed Processing row must never be replayed as Completed — FZ-IDEM-03 pins the typed incomplete-state exception");
+    }
+
+    [Fact]
+    public async Task IDEM_DB_013_CompleteAsync_ExpiryOwnedByStoreOptions()
+    {
+        // Spec 3.6: the store owns expiry calculation through TimeProvider + options.
+        // CompleteAsync takes no expiry argument.
+        var options = new IdempotencyOptions { ResultExpiry = TimeSpan.FromHours(2) };
+        var identity = CreateIdentity(
+            keyHash: Guid.NewGuid().ToString("N"),
+            requestHash: Guid.NewGuid().ToString("N"));
+
+        var before = DateTimeOffset.UtcNow;
+
+        await using var context = _db.CreateContext();
+        await using var tx = await context.Database.BeginTransactionAsync();
+        var store = CreateStore(context, options);
+
+        var begin = await store.BeginAsync(identity, CancellationToken.None);
+        begin.Status.Should().Be(IdempotencyBeginStatus.Started);
+
+        await store.CompleteAsync(identity, "{\"ok\":true}", identity.Operation, CancellationToken.None);
+        await context.SaveChangesAsync();
+        await tx.CommitAsync();
+
+        var after = DateTimeOffset.UtcNow;
+
+        await using var verifyContext = _db.CreateContext();
+        var record = await verifyContext.Set<IdempotencyRecord>()
+            .FirstAsync(r => r.Scope == identity.Scope && r.Operation == identity.Operation && r.KeyHash == identity.KeyHash);
+
+        record.ExpiresAt.Should().BeOnOrAfter(before.Add(options.ResultExpiry));
+        record.ExpiresAt.Should().BeOnOrBefore(after.Add(options.ResultExpiry).AddSeconds(1));
     }
 
     [Fact]

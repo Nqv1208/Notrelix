@@ -1,7 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using Microsoft.Extensions.Options;
 
 namespace Notrelix.Application.Common.Behaviors;
 
@@ -14,8 +13,6 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
     private readonly IdempotencyPartitionFactory _partitionFactory;
     private readonly IIdempotencyExecutionContext _executionContext;
     private readonly IIdempotencyExecutionContextWriter _executionContextWriter;
-    private readonly IdempotencyOptions _options;
-    private readonly TimeProvider _timeProvider;
     private readonly ILogger<IdempotencyBehavior<TRequest, TResponse>> _logger;
 
     public IdempotencyBehavior(
@@ -23,8 +20,6 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         IIdempotencyRequestFingerprint fingerprint,
         IIdempotencyReplayPolicy replayPolicy,
         IdempotencyPartitionFactory partitionFactory,
-        IOptions<IdempotencyOptions> options,
-        TimeProvider timeProvider,
         IIdempotencyExecutionContext executionContext,
         IIdempotencyExecutionContextWriter executionContextWriter,
         ILogger<IdempotencyBehavior<TRequest, TResponse>> logger)
@@ -35,8 +30,6 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         _partitionFactory = partitionFactory;
         _executionContext = executionContext;
         _executionContextWriter = executionContextWriter;
-        _options = options.Value;
-        _timeProvider = timeProvider;
         _logger = logger;
     }
 
@@ -45,10 +38,17 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         if (request is not IIdempotentRequest idempotentRequest)
             return await next();
 
+        // 1. Response-type eligibility fails before Begin — no row is created for
+        //    sensitive response types (e.g. token/auth responses).
+        _replayPolicy.EnsureResponseTypeAllowed<TResponse>();
+
+        // 2. Require key and construct identity.
         var identity = BuildIdentity(idempotentRequest);
 
+        // 3. Begin.
         var beginResult = await _idempotencyStore.BeginAsync(identity, cancellationToken);
 
+        // 4. Replay/mismatch handling.
         switch (beginResult.Status)
         {
             case IdempotencyBeginStatus.Completed:
@@ -67,31 +67,25 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
                 throw new InvalidOperationException($"Unknown idempotency status: {beginResult.Status}");
         }
 
+        // 5. Execute handler.
         var response = await next();
 
+        // 6. Serialize.
         var serialized = JsonSerializer.Serialize(response);
 
-        if (_replayPolicy.CanCacheResult(response, serialized))
-        {
-            var resultContract = identity.Operation;
+        // 7. Serialized-result eligibility fails before Complete — the request
+        //    transaction rolls back instead of leaving a non-replayable Started row.
+        _replayPolicy.EnsureSerializedResultAllowed(response, serialized);
 
-            await _idempotencyStore.CompleteAsync(
-                identity,
-                serialized,
-                resultContract,
-                _timeProvider.GetUtcNow().Add(_options.ResultExpiry),
-                cancellationToken);
-        }
-        else
-        {
-            _logger.LogWarning(
-                "Idempotency result for {Operation} rejected by the replay policy; throwing so the execution rolls back instead of leaving a non-replayable Started row.",
-                identity.Operation);
-            throw new InvalidOperationException(
-                $"The idempotency result for operation '{identity.Operation}' was rejected by the replay policy. " +
-                "Refusing to return a successful response without completed replay state.");
-        }
+        // 8. Complete. The store owns the expiry calculation.
+        var resultContract = identity.Operation;
+        await _idempotencyStore.CompleteAsync(
+            identity,
+            serialized,
+            resultContract,
+            cancellationToken);
 
+        // 9. Return.
         return response;
     }
 

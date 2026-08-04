@@ -9,9 +9,20 @@ public sealed class IdempotencyOptions
     public const string SectionName = "Idempotency";
 
     /// <summary>
-    /// Default expiry for completed idempotency records. Default: 24 hours.
+    /// Default expiry for in-progress (Processing) idempotency records. Default: 5 minutes.
     /// </summary>
-    public TimeSpan ResultExpiry { get; init; } = TimeSpan.FromHours(24);
+    public TimeSpan ProcessingExpiry { get; init; } = TimeSpan.FromMinutes(5);
+
+    /// <summary>
+    /// Default expiry for completed idempotency records. Default: 1 day.
+    /// </summary>
+    public TimeSpan ResultExpiry { get; init; } = TimeSpan.FromDays(1);
+
+    /// <summary>
+    /// Retry-After delay the API returns when a committed Processing row is detected.
+    /// Default: 3 seconds.
+    /// </summary>
+    public TimeSpan IncompleteStateRetryAfter { get; init; } = TimeSpan.FromSeconds(3);
 
     /// <summary>
     /// Maximum serialized result size in bytes. Results exceeding this are not cached for replay.

@@ -125,7 +125,6 @@ public class PipelineExecutionTests
                 It.IsAny<IdempotencyIdentity>(),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
-                It.IsAny<DateTimeOffset>(),
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
         return store;
@@ -133,7 +132,7 @@ public class PipelineExecutionTests
 
     private static IdempotencyBehavior<TRequest, string> CreateIdempotencyBehavior<TRequest>(
         Mock<IIdempotencyStore> mockStore,
-        bool cacheResult = true)
+        bool allowSerializedResult = true)
         where TRequest : notnull
     {
         var mockTenant = new Mock<ICurrentTenantContext>();
@@ -147,8 +146,11 @@ public class PipelineExecutionTests
             .Returns("test-fingerprint-hash");
 
         var mockReplayPolicy = new Mock<IIdempotencyReplayPolicy>();
-        mockReplayPolicy.Setup(x => x.CanCacheResult(It.IsAny<string>(), It.IsAny<string>()))
-            .Returns(cacheResult);
+        if (!allowSerializedResult)
+        {
+            mockReplayPolicy.Setup(x => x.EnsureSerializedResultAllowed(It.IsAny<string>(), It.IsAny<string>()))
+                .Throws(new InvalidOperationException("test replay policy rejected serialized result"));
+        }
 
         var executionContext = new IdempotencyExecutionContext();
         executionContext.Set("test-execution-key", IdempotencyExecutionSource.Internal);
@@ -158,8 +160,6 @@ public class PipelineExecutionTests
             mockFingerprint.Object,
             mockReplayPolicy.Object,
             partitionFactory,
-            Options.Create(new IdempotencyOptions()),
-            TimeProvider.System,
             executionContext,
             executionContext,
             Mock.Of<ILogger<IdempotencyBehavior<TRequest, string>>>());
@@ -627,7 +627,6 @@ public class PipelineExecutionTests
             It.IsAny<IdempotencyIdentity>(),
             It.IsAny<string>(),
             It.IsAny<string>(),
-            It.IsAny<DateTimeOffset>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -675,7 +674,6 @@ public class PipelineExecutionTests
             It.IsAny<IdempotencyIdentity>(),
             It.IsAny<string>(),
             It.IsAny<string>(),
-            It.IsAny<DateTimeOffset>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -683,11 +681,11 @@ public class PipelineExecutionTests
     public async Task IdempotencyBehavior_ReplayPolicyRejectsResult_ThrowsAndDoesNotComplete()
     {
         // FZ-IDEM-01 (spec 3.7): never return a successful business response without
-        // Completed replay state. When the replay policy rejects caching the result,
-        // the behavior must throw so the request transaction rolls back — it must not
-        // return the response and silently leave a Started row behind.
+        // Completed replay state. When the replay policy rejects caching the serialized
+        // result, the behavior must throw so the request transaction rolls back — it
+        // must not return the response and silently leave a Started row behind.
         var mockStore = CreateMockIdempotencyStore();
-        var behavior = CreateIdempotencyBehavior<ExecutableCommand>(mockStore, cacheResult: false);
+        var behavior = CreateIdempotencyBehavior<ExecutableCommand>(mockStore, allowSerializedResult: false);
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("result");
 
@@ -699,7 +697,6 @@ public class PipelineExecutionTests
             It.IsAny<IdempotencyIdentity>(),
             It.IsAny<string>(),
             It.IsAny<string>(),
-            It.IsAny<DateTimeOffset>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
