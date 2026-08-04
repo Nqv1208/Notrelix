@@ -87,18 +87,37 @@ public sealed class ConsumerHost : IConsumerHost, IAsyncDisposable
 
         if (!registration.Options.Enabled)
         {
+            // Disabled: no delivery, no success metric, no failure — by design.
             _logger?.LogDebug("Consumer for {EventName} is disabled", envelope.EventName);
             return;
         }
 
-        var partitionKey = registration.Options.OrderingRequired
-            ? envelope.AggregateId?.ToString() ?? envelope.CorrelationId.ToString()
-            : null;
-
-        if (partitionKey is not null)
+        if (registration.Options.ExpectedEventVersion is int expectedVersion
+            && envelope.EventVersion != expectedVersion)
         {
+            _logger?.LogWarning("Event version mismatch for {EventName}: expected {Expected}, got {Actual}",
+                envelope.EventName, expectedVersion, envelope.EventVersion);
+            _diagnosticEvents.Publish(new DeliveryFailedEvent
+            {
+                EventName = envelope.EventName,
+                Error = $"Event version mismatch: expected {expectedVersion}, got {envelope.EventVersion}",
+            });
+            throw new MessageContractException(
+                $"Event version mismatch for '{envelope.EventName}': expected {expectedVersion}, got {envelope.EventVersion}.");
+        }
+
+        if (registration.Options.OrderingRequired)
+        {
+            var partitionKey = envelope.AggregateId?.ToString() ?? envelope.CorrelationId.ToString();
             var orderingEnforcer = _orderingEnforcers[envelope.EventName];
-            var orderingResult = orderingEnforcer.ValidateSequence(partitionKey, 0);
+
+            // Ordered consumers validate the real envelope sequence. A null sequence
+            // is assigned the next expected value in arrival order so ordered
+            // delivery never silently drops a message.
+            var effectiveSequence = envelope.Sequence
+                ?? orderingEnforcer.GetLastSequence(partitionKey) + 1;
+
+            var orderingResult = orderingEnforcer.ValidateSequence(partitionKey, effectiveSequence);
 
             if (!orderingResult.CanProcess)
             {
@@ -109,23 +128,28 @@ public sealed class ConsumerHost : IConsumerHost, IAsyncDisposable
                     EventName = envelope.EventName,
                     Error = $"Ordering: {orderingResult.Reason}",
                 });
-                return;
+                throw new MessageOrderingException(
+                    $"Ordering rejected for '{envelope.EventName}' partition '{partitionKey}': {orderingResult.Reason}");
             }
         }
 
         var semaphore = _semaphores[envelope.EventName];
         var poisonDetector = _poisonDetectors[envelope.EventName];
 
-        if (!await semaphore.WaitAsync(TimeSpan.Zero, cancellationToken))
+        // Wait for a concurrency slot up to the configured timeout. Never drop: when
+        // the wait expires the dispatch fails observably so the transport can retry.
+        if (!await semaphore.WaitAsync(registration.Options.QueueWaitTimeout, cancellationToken))
         {
-            _logger?.LogWarning("Concurrency limit reached for {EventName}, dropping message {Id}",
-                envelope.EventName, envelope.Id);
+            _logger?.LogWarning("Concurrency backpressure timeout for {EventName} after {Timeout} (message {Id})",
+                envelope.EventName, registration.Options.QueueWaitTimeout, envelope.Id);
             _diagnosticEvents.Publish(new DeliveryFailedEvent
             {
                 EventName = envelope.EventName,
-                Error = "Concurrency limit reached",
+                Error = "Concurrency backpressure timeout",
             });
-            return;
+            throw new ConsumerBackpressureException(
+                $"Consumer for '{envelope.EventName}' did not acquire a concurrency slot within " +
+                $"{registration.Options.QueueWaitTimeout.TotalSeconds:0.#}s; the message was not dropped.");
         }
 
         try
@@ -157,8 +181,12 @@ public sealed class ConsumerHost : IConsumerHost, IAsyncDisposable
         }
         catch (Exception ex)
         {
+            // Diagnostics first, then the failure stays observable: below the poison
+            // threshold the original exception is rethrown for transport retry; at the
+            // threshold a typed dead-letter recommendation wraps it. Handler failures
+            // are never swallowed into a false delivery success.
             _logger?.LogError(ex, "Consumer {EventName} failed processing {Id}", envelope.EventName, envelope.Id);
-            poisonDetector.RecordFailure(envelope.EventName);
+            var detection = poisonDetector.RecordFailure(envelope.EventName);
 
             _metrics.EventDeliveryFailed();
             _diagnosticEvents.Publish(new DeliveryFailedEvent
@@ -167,17 +195,22 @@ public sealed class ConsumerHost : IConsumerHost, IAsyncDisposable
                 Error = ex.Message,
             });
 
-            if (poisonDetector.GetPoisonCount(envelope.EventName) >= registration.Options.PoisonThreshold)
+            if (detection.IsPoison)
             {
-                _logger?.LogWarning("Consumer {EventName} detected as poison after failures",
-                    envelope.EventName);
+                _logger?.LogWarning("Consumer {EventName} detected as poison after {Count} failures (threshold {Threshold})",
+                    envelope.EventName, detection.CurrentPoisonCount, detection.Threshold);
                 _diagnosticEvents.Publish(new DeliveryFailedEvent
                 {
                     EventName = envelope.EventName,
                     Error = "Poison detected",
                     DeadLettered = true,
                 });
+                throw new PoisonMessageException(
+                    $"Consumer for '{envelope.EventName}' failed {detection.CurrentPoisonCount} times " +
+                    $"(threshold {detection.Threshold}); dead-letter recommended.", ex);
             }
+
+            throw;
         }
         finally
         {

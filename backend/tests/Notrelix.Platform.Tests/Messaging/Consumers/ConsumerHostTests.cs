@@ -126,18 +126,14 @@ public sealed class ConsumerHostTests
 
         var envelope = CreateEnvelope("test.event");
 
-        // First call fails
-        await _sut.DispatchAsync(envelope);
-        // Second call fails
-        await _sut.DispatchAsync(envelope);
-        // Third call succeeds — should reset
-        await _sut.DispatchAsync(envelope);
+        // Handler failures below the poison threshold are rethrown after diagnostics.
+        Func<Task> dispatch = () => _sut.DispatchAsync(envelope);
+        await dispatch.Should().ThrowAsync<InvalidOperationException>();   // fail 1
+        await dispatch.Should().ThrowAsync<InvalidOperationException>();   // fail 2
+        // Third call succeeds — poison resets
+        await dispatch.Should().NotThrowAsync();
         // Fourth call succeeds — clean
-        await _sut.DispatchAsync(envelope);
-
-        // After success, poison should be 0
-        var poisonBefore = failCount;
-        await _sut.DispatchAsync(envelope);
+        await dispatch.Should().NotThrowAsync();
 
         _diagMock.Verify(d => d.Publish(It.IsAny<DeliveryFailedEvent>()), Times.AtLeast(2));
     }
