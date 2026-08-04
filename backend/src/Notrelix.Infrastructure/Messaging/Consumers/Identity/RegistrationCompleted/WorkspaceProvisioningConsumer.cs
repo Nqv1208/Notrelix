@@ -24,7 +24,8 @@ public sealed class WorkspaceProvisioningConsumer : IConsumer<IdentityRegistrati
     {
         var msg = context.Message;
 
-        _executionContextWriter.Set(msg.EventId.ToString(), IdempotencyExecutionSource.Message);
+        // Spec 3.4: message-source execution keys are the event/message id in N format.
+        _executionContextWriter.Set(msg.EventId.ToString("N"), IdempotencyExecutionSource.Message);
 
         var result = await _sender.Send(new ProvisionPersonalWorkspaceCommand(
             UserId: msg.UserId,

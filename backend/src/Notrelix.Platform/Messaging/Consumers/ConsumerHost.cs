@@ -11,6 +11,7 @@ public sealed class ConsumerHost : IConsumerHost, IAsyncDisposable
     private readonly MessagingMetrics _metrics;
     private readonly IDiagnosticEventPublisher _diagnosticEvents;
     private readonly ILogger<ConsumerHost>? _logger;
+    private readonly IServiceProvider? _serviceProvider;
     private readonly ConcurrentDictionary<string, ConsumerRegistration> _registrations = new();
 
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _semaphores = new();
@@ -23,11 +24,13 @@ public sealed class ConsumerHost : IConsumerHost, IAsyncDisposable
     public ConsumerHost(
         MessagingMetrics metrics,
         IDiagnosticEventPublisher diagnosticEvents,
-        ILogger<ConsumerHost>? logger = null)
+        ILogger<ConsumerHost>? logger = null,
+        IServiceProvider? serviceProvider = null)
     {
         _metrics = metrics;
         _diagnosticEvents = diagnosticEvents;
         _logger = logger;
+        _serviceProvider = serviceProvider;
     }
 
     public void Register(
@@ -40,12 +43,20 @@ public sealed class ConsumerHost : IConsumerHost, IAsyncDisposable
         var options = new ConsumerOptions();
         configure?.Invoke(options);
 
-        var registration = new ConsumerRegistration
+        Register(new ConsumerRegistration
         {
             EventName = eventName,
             Handler = handler,
             Options = options,
-        };
+        });
+    }
+
+    public void Register(ConsumerRegistration registration)
+    {
+        ArgumentNullException.ThrowIfNull(registration);
+
+        var eventName = registration.EventName;
+        var options = registration.Options;
 
         if (!_registrations.TryAdd(eventName, registration))
         {
@@ -122,7 +133,16 @@ public sealed class ConsumerHost : IConsumerHost, IAsyncDisposable
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
                 _shutdownCts.Token, cancellationToken);
 
-            await registration.Handler(envelope, linkedCts.Token);
+            if (registration.ScopedHandler is not null)
+            {
+                var provider = _serviceProvider ?? throw new InvalidOperationException(
+                    $"Consumer for '{envelope.EventName}' requires a service provider to create dispatch scopes.");
+                await registration.ScopedHandler(provider, envelope, linkedCts.Token);
+            }
+            else
+            {
+                await registration.Handler(envelope, linkedCts.Token);
+            }
 
             poisonDetector.Reset(envelope.EventName);
             _metrics.EventDelivered();
