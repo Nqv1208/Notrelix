@@ -5,7 +5,7 @@ public sealed record ResourcePermissionGrantedIntegrationEvent(
     Guid EventId,
     Guid PermissionId,
     Guid? WorkspaceId,
-    string ResourceType,
+    string ResourceKind,
     Guid ResourceId,
     string SubjectType,
     Guid SubjectId,

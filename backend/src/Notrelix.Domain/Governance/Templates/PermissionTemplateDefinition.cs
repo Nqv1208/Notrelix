@@ -31,7 +31,7 @@ public sealed class PermissionTemplateDefinition : ValueObject
 
         var copied = CopyEntries(entries);
 
-        var seen = new HashSet<(ResourceType, Governance.Permissions.PermissionAction, Governance.Permissions.PermissionEffect)>();
+        var seen = new HashSet<(ResourceKind, Governance.Permissions.PermissionAction, Governance.Permissions.PermissionEffect)>();
         foreach (var entry in copied)
         {
             var key = (entry.Resource, entry.Action, entry.Effect);

@@ -15,7 +15,7 @@ public class ResourcePermissionTests
 
         var permission = ResourcePermission.Grant(Guid.NewGuid(),
             workspaceId,
-            ResourceType.Board,
+            ResourceKind.Create("work-management.board"),
             resourceId,
             PermissionSubjectType.User,
             subjectId,
@@ -24,7 +24,7 @@ public class ResourcePermissionTests
             grantedBy,
             DateTimeOffset.UtcNow);
 
-        permission.ResourceType.Should().Be(ResourceType.Board);
+        permission.ResourceKind.Should().Be(ResourceKind.Create("work-management.board"));
         permission.Level.Should().Be(PermissionLevel.Editor);
         permission.CreatedBy.Should().Be(grantedBy);
         permission.DomainEvents.Should().ContainSingle(e => e is ResourcePermissionGrantedDomainEvent);
@@ -35,7 +35,7 @@ public class ResourcePermissionTests
     {
         var workspaceId = Guid.NewGuid();
         var permission = ResourcePermission.Grant(Guid.NewGuid(),
-            workspaceId, ResourceType.Board, Guid.NewGuid(), PermissionSubjectType.User, Guid.NewGuid(), PermissionLevel.Viewer, PermissionLevel.Owner, Guid.NewGuid(), DateTimeOffset.UtcNow);
+            workspaceId, ResourceKind.Create("work-management.board"), Guid.NewGuid(), PermissionSubjectType.User, Guid.NewGuid(), PermissionLevel.Viewer, PermissionLevel.Owner, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         ((IHasDomainEvents)permission).ClearDomainEvents();
 
@@ -52,7 +52,7 @@ public class ResourcePermissionTests
     {
         var workspaceId = Guid.NewGuid();
         var permission = ResourcePermission.Grant(Guid.NewGuid(),
-            workspaceId, ResourceType.Workspace, Guid.NewGuid(), PermissionSubjectType.Team, Guid.NewGuid(), PermissionLevel.Viewer, PermissionLevel.Owner, Guid.NewGuid(), DateTimeOffset.UtcNow);
+            workspaceId, ResourceKind.Create("workspaces.workspace"), Guid.NewGuid(), PermissionSubjectType.Team, Guid.NewGuid(), PermissionLevel.Viewer, PermissionLevel.Owner, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         ((IHasDomainEvents)permission).ClearDomainEvents();
 

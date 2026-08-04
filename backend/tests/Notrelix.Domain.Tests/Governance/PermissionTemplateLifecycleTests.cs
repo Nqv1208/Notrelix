@@ -9,7 +9,7 @@ public class PermissionTemplateLifecycleTests
     private static PermissionTemplateDefinition ValidDefinition() =>
         PermissionTemplateDefinition.Create(
         [
-            PermissionTemplateEntry.Create(ResourceType.Board, PermissionAction.ViewBoard, PermissionEffect.Allow)
+            PermissionTemplateEntry.Create(ResourceKind.Create("work-management.board"), PermissionAction.ViewBoard, PermissionEffect.Allow)
         ]);
 
     [Fact]
@@ -33,9 +33,9 @@ public class PermissionTemplateLifecycleTests
     [Fact]
     public void CreateSystem_WithTargetResourceType_ShouldSetTarget()
     {
-        var template = PermissionTemplate.CreateSystem("Template", ValidDefinition(), Guid.NewGuid(), DateTimeOffset.UtcNow, targetResourceType: ResourceType.Board);
+        var template = PermissionTemplate.CreateSystem("Template", ValidDefinition(), Guid.NewGuid(), DateTimeOffset.UtcNow, targetResourceKind: ResourceKind.Create("work-management.board"));
 
-        template.TargetResourceType.Should().Be(ResourceType.Board);
+        template.TargetResourceKind.Should().Be(ResourceKind.Create("work-management.board"));
     }
 
     [Fact]

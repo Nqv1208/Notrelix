@@ -13,7 +13,7 @@ public interface IPermissionService
     Task<bool> AuthorizeAsync(
         Guid userId,
         Guid workspaceId,
-        ResourceType resourceType,
+        ResourceKind resourceKind,
         Guid resourceId,
         PermissionAction action,
         CancellationToken cancellationToken = default);
@@ -27,7 +27,7 @@ public interface IPermissionService
     Task<bool> HasPermissionAsync(
         Guid userId,
         Guid workspaceId,
-        ResourceType resourceType,
+        ResourceKind resourceKind,
         Guid? resourceId,
         PermissionAction action,
         CancellationToken cancellationToken = default);

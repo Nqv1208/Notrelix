@@ -11,7 +11,7 @@ public class PermissionTemplateDefinitionTests
     {
         var definition = PermissionTemplateDefinition.Create(
         [
-            PermissionTemplateEntry.Create(ResourceType.Board, PermissionAction.ViewBoard, PermissionEffect.Allow)
+            PermissionTemplateEntry.Create(ResourceKind.Create("work-management.board"), PermissionAction.ViewBoard, PermissionEffect.Allow)
         ]);
 
         definition.SchemaVersion.Should().Be(1);
@@ -28,7 +28,7 @@ public class PermissionTemplateDefinitionTests
     [Fact]
     public void Create_DuplicateEntries_ShouldThrow()
     {
-        var entry = PermissionTemplateEntry.Create(ResourceType.Board, PermissionAction.ViewBoard, PermissionEffect.Allow);
+        var entry = PermissionTemplateEntry.Create(ResourceKind.Create("work-management.board"), PermissionAction.ViewBoard, PermissionEffect.Allow);
 
         var act = () => PermissionTemplateDefinition.Create([entry, entry]);
         act.Should().Throw<BusinessRuleException>();
@@ -39,12 +39,12 @@ public class PermissionTemplateDefinitionTests
     {
         var definition = PermissionTemplateDefinition.Create(
         [
-            PermissionTemplateEntry.Create(ResourceType.Board, PermissionAction.ViewBoard, PermissionEffect.Allow)
+            PermissionTemplateEntry.Create(ResourceKind.Create("work-management.board"), PermissionAction.ViewBoard, PermissionEffect.Allow)
         ]);
 
         definition.Entries.Should().AllSatisfy(e =>
         {
-            e.Resource.Should().Be(ResourceType.Board);
+            e.Resource.Should().Be(ResourceKind.Create("work-management.board"));
             e.Action.Should().Be(PermissionAction.ViewBoard);
             e.Effect.Should().Be(PermissionEffect.Allow);
         });

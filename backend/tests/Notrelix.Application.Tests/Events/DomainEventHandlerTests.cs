@@ -74,8 +74,8 @@ public class DomainEventHandlerTests
     [Fact]
     public void ResourceType_ShouldContainExpectedTypes()
     {
-        ResourceType.Board.Should().Be(ResourceType.Board);
-        ResourceType.BoardItem.Should().Be(ResourceType.BoardItem);
-        ResourceType.Workspace.Should().Be(ResourceType.Workspace);
+        ResourceKind.Create("work-management.board").Should().Be(ResourceKind.Create("work-management.board"));
+        ResourceKind.Create("work-management.board-item").Should().Be(ResourceKind.Create("work-management.board-item"));
+        ResourceKind.Create("workspaces.workspace").Should().Be(ResourceKind.Create("workspaces.workspace"));
     }
 }

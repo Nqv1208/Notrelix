@@ -13,7 +13,7 @@ public class RequestExecutionClassifierTests
 
     private sealed record ResourcePermissionReadRequest : IRequest<string>, IResourceScopedRequest, IRequirePermission, IRlsReadRequest
     {
-        public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), Guid.NewGuid());
         public PermissionAction Action => PermissionAction.ViewBoard;
     }
 
@@ -26,7 +26,7 @@ public class RequestExecutionClassifierTests
     private sealed record GlobalPermissionRequest : IRequest<string>, IGlobalRequest, IRequirePermission
     {
         public PermissionAction Action => PermissionAction.ViewBoard;
-        public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), Guid.NewGuid());
     }
 
     private sealed record SystemInternalRequest : IRequest<string>, ISystemInternalRequest, IGlobalRequest;

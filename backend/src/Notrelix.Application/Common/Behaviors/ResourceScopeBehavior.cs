@@ -31,7 +31,7 @@ public class ResourceScopeBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
         if (snapshot is null)
         {
             _logger.LogWarning(
-                "Resource not found: Type={ResourceType} Id={ResourceId} RequestType={RequestType}",
+                "Resource not found: Kind={ResourceKind} Id={ResourceId} RequestType={RequestType}",
                 resourceRequest.Resource.Kind,
                 resourceRequest.Resource.ResourceId,
                 typeof(TRequest).Name);
@@ -40,10 +40,10 @@ public class ResourceScopeBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
         }
 
         _logger.LogTrace(
-            "Resolved resource scope: AccountId={AccountId} WorkspaceId={WorkspaceId} ResourceType={ResourceType} ResourceId={ResourceId}",
+            "Resolved resource scope: AccountId={AccountId} WorkspaceId={WorkspaceId} ResourceKind={ResourceKind} ResourceId={ResourceId}",
             snapshot.AccountId,
             snapshot.WorkspaceId,
-            snapshot.ResourceType,
+            snapshot.ResourceKind,
             snapshot.ResourceId);
 
         _tenant.SetWorkspace(snapshot.AccountId, snapshot.WorkspaceId, actorUserId);

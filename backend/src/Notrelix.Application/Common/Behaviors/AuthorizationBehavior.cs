@@ -3,6 +3,8 @@ namespace Notrelix.Application.Common.Behaviors;
 public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
+    private static readonly ResourceKind AccountKind = ResourceKind.Create("accounts.account");
+
     private readonly ICurrentUser _currentUser;
     private readonly ICurrentTenantContext _tenant;
     private readonly IAuthorizationDecisionStore _authorizationDecisionStore;
@@ -108,7 +110,7 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
             {
                 var resource = accountPermission.Resource;
                 _logger.LogError(
-                    "Security misconfiguration: Account request {RequestType} specifies a Resource ({ResourceType}/{ResourceId}). " +
+                    "Security misconfiguration: Account request {RequestType} specifies a Resource ({ResourceKind}/{ResourceId}). " +
                     "Account-scoped requests must not specify a Resource; it is resolved from tenant context.",
                     typeof(TRequest).Name,
                     resource.Kind,
@@ -141,7 +143,7 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
             }
             else if (scope == Security.PermissionScope.Account)
             {
-                resolvedResource = ResourceRef.Create(ResourceType.Account, _tenant.RequireAccountId());
+                resolvedResource = ResourceRef.Create(AccountKind, _tenant.RequireAccountId());
             }
             else
             {
@@ -159,18 +161,12 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
                     $"but Resource.WorkspaceId is null.");
             }
 
-            if (!LegacyResourceTypeMappings.TryToLegacyEnum(resolvedResource.Kind.Value, out var legacyResourceType))
-            {
-                throw new SecurityMisconfigurationException(
-                    $"No legacy ResourceType mapping for kind '{resolvedResource.Kind.Value}'.");
-            }
-
             var decision = await _authorizationDecisionStore.EvaluateAsync(
                 new PermissionContext(
                     userId,
                     _tenant.RequireAccountId(),
                     workspaceId,
-                    legacyResourceType,
+                    resolvedResource.Kind,
                     resolvedResource.ResourceId,
                     requirePermission.Action,
                     scope),
@@ -179,7 +175,7 @@ public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
             if (!decision.IsAllowed)
             {
                 _logger.LogWarning(
-                    "Permission denied: UserId={UserId} Action={Action} ResourceType={ResourceType} ResourceId={ResourceId} WorkspaceId={WorkspaceId} Reason={Reason}",
+                    "Permission denied: UserId={UserId} Action={Action} ResourceKind={ResourceKind} ResourceId={ResourceId} WorkspaceId={WorkspaceId} Reason={Reason}",
                     userId,
                     requirePermission.Action,
                     resolvedResource.Kind,

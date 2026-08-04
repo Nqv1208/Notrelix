@@ -9,7 +9,7 @@ public class PermissionTemplate : AggregateRoot
     public Guid? WorkspaceId { get; private set; }
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
-    public ResourceType? TargetResourceType { get; private set; }
+    public ResourceKind? TargetResourceKind { get; private set; }
     public PermissionTemplateDefinition Definition { get; private set; } = null!;
     public PermissionTemplateScope Scope { get; private set; }
     public PermissionTemplateStatus Status { get; private set; }
@@ -22,7 +22,7 @@ public class PermissionTemplate : AggregateRoot
         Guid createdBy,
         DateTimeOffset createdAt,
         string? description = null,
-        ResourceType? targetResourceType = null)
+        ResourceKind? targetResourceKind = null)
     {
         Guard.NotNullOrWhiteSpace(name);
         Guard.NotNull(definition);
@@ -31,7 +31,7 @@ public class PermissionTemplate : AggregateRoot
         {
             Name = name.Trim(),
             Description = description?.Trim(),
-            TargetResourceType = targetResourceType,
+            TargetResourceKind = targetResourceKind,
             Definition = definition,
             Scope = PermissionTemplateScope.System,
             Status = PermissionTemplateStatus.Active
@@ -50,7 +50,7 @@ public class PermissionTemplate : AggregateRoot
         Guid createdBy,
         DateTimeOffset createdAt,
         string? description = null,
-        ResourceType? targetResourceType = null)
+        ResourceKind? targetResourceKind = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
@@ -63,7 +63,7 @@ public class PermissionTemplate : AggregateRoot
             WorkspaceId = workspaceId,
             Name = name.Trim(),
             Description = description?.Trim(),
-            TargetResourceType = targetResourceType,
+            TargetResourceKind = targetResourceKind,
             Definition = definition,
             Scope = PermissionTemplateScope.Workspace,
             Status = PermissionTemplateStatus.Active

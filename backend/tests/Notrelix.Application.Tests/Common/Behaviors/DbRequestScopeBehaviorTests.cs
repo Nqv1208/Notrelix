@@ -17,7 +17,7 @@ public class DbRequestScopeBehaviorTests
     public sealed record GlobalPermissionRequest : IRequest<string>, IGlobalRequest, IRequirePermission
     {
         public PermissionAction Action => PermissionAction.ViewBoard;
-        public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), Guid.NewGuid());
     }
 
     public sealed record NonTransactionalRequest : IRequest<string>, IGlobalRequest;

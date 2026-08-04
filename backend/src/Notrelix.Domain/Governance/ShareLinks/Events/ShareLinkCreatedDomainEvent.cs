@@ -5,7 +5,7 @@ public sealed record ShareLinkCreatedDomainEvent(
     Guid AccountId,
     Guid WorkspaceId,
     Guid LinkId,
-    ResourceType ResourceType,
+    ResourceKind ResourceKind,
     Guid ResourceId,
     Guid CreatedBy,
     DateTimeOffset OccurredAt

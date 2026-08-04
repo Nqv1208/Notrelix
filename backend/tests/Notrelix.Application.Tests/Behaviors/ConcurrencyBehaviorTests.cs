@@ -6,7 +6,7 @@ public class ConcurrencyBehaviorTests
 
     public sealed record VersionedCommand : IRequest<string>, IExpectedVersionRequest
     {
-        public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, ResourceId);
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), ResourceId);
         public long ExpectedVersion { get; init; } = 1;
     }
 
@@ -112,7 +112,7 @@ public class ConcurrencyBehaviorTests
     {
         var reader = new Mock<IResourceVersionReader>();
         reader.Setup(x => x.GetVersionAsync(It.IsAny<ResourceRef>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new NotSupportedException("ResourceType 'Widget' not supported"));
+            .ThrowsAsync(new NotSupportedException("ResourceKind 'Widget' not supported"));
         var behavior = new ConcurrencyBehavior<VersionedCommand, string>(reader.Object);
 
         var act = () => behavior.Handle(

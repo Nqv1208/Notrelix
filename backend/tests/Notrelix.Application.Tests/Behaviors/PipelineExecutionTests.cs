@@ -14,7 +14,7 @@ public class PipelineExecutionTests
         private static readonly Guid Wsid = Guid.NewGuid();
         public Guid WorkspaceId => Wsid;
         public PermissionAction Action => PermissionAction.ViewWorkspace;
-        public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, Wsid, Wsid);
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), Wsid, Wsid);
     }
 
     public sealed record NonTransactionalCommand : IRequest<string>, IGlobalRequest;

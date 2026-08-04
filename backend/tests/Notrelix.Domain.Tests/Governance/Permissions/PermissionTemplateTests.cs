@@ -11,7 +11,7 @@ public class PermissionTemplateTests
     {
         var definition = PermissionTemplateDefinition.Create(
         [
-            PermissionTemplateEntry.Create(ResourceType.Board, PermissionAction.ViewBoard, PermissionEffect.Allow)
+            PermissionTemplateEntry.Create(ResourceKind.Create("work-management.board"), PermissionAction.ViewBoard, PermissionEffect.Allow)
         ]);
         var now = DateTimeOffset.UtcNow;
 
@@ -31,7 +31,7 @@ public class PermissionTemplateTests
         var accountId = Guid.NewGuid();
         var definition = PermissionTemplateDefinition.Create(
         [
-            PermissionTemplateEntry.Create(ResourceType.Board, PermissionAction.ViewBoard, PermissionEffect.Allow)
+            PermissionTemplateEntry.Create(ResourceKind.Create("work-management.board"), PermissionAction.ViewBoard, PermissionEffect.Allow)
         ]);
         var now = DateTimeOffset.UtcNow;
 
@@ -46,7 +46,7 @@ public class PermissionTemplateTests
     {
         var definition = PermissionTemplateDefinition.Create(
         [
-            PermissionTemplateEntry.Create(ResourceType.Board, PermissionAction.ViewBoard, PermissionEffect.Allow)
+            PermissionTemplateEntry.Create(ResourceKind.Create("work-management.board"), PermissionAction.ViewBoard, PermissionEffect.Allow)
         ]);
         var act = () => PermissionTemplate.CreateSystem(null!, definition, Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>();
@@ -57,7 +57,7 @@ public class PermissionTemplateTests
     {
         var definition = PermissionTemplateDefinition.Create(
         [
-            PermissionTemplateEntry.Create(ResourceType.Board, PermissionAction.ViewBoard, PermissionEffect.Allow)
+            PermissionTemplateEntry.Create(ResourceKind.Create("work-management.board"), PermissionAction.ViewBoard, PermissionEffect.Allow)
         ]);
         var template = PermissionTemplate.CreateSystem("  Template  ", definition, Guid.NewGuid(), DateTimeOffset.UtcNow);
         template.Name.Should().Be("Template");
@@ -68,7 +68,7 @@ public class PermissionTemplateTests
     {
         var definition = PermissionTemplateDefinition.Create(
         [
-            PermissionTemplateEntry.Create(ResourceType.Board, PermissionAction.ViewBoard, PermissionEffect.Allow)
+            PermissionTemplateEntry.Create(ResourceKind.Create("work-management.board"), PermissionAction.ViewBoard, PermissionEffect.Allow)
         ]);
         var template = PermissionTemplate.CreateSystem("System", definition, Guid.NewGuid(), DateTimeOffset.UtcNow);
 
@@ -81,7 +81,7 @@ public class PermissionTemplateTests
     {
         var definition = PermissionTemplateDefinition.Create(
         [
-            PermissionTemplateEntry.Create(ResourceType.Board, PermissionAction.ViewBoard, PermissionEffect.Allow)
+            PermissionTemplateEntry.Create(ResourceKind.Create("work-management.board"), PermissionAction.ViewBoard, PermissionEffect.Allow)
         ]);
         var template = PermissionTemplate.CreateWorkspace(Guid.NewGuid(), Guid.NewGuid(), "Template", definition, Guid.NewGuid(), DateTimeOffset.UtcNow);
 

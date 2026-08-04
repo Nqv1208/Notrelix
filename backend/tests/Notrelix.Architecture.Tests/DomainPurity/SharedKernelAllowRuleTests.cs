@@ -88,11 +88,8 @@ public class SharedKernelAllowRuleTests
     {
         var types = GetSharedKernelPublicTypes();
 
-        // ResourceType is the known legacy catalog — frozen at 64 values, being migrated to ResourceKind.
-        // No NEW catalog enums may be added.
         var catalogEnums = types
             .Where(t => t.IsEnum)
-            .Where(t => t.Name != "ResourceType")
             .Where(t =>
             {
                 var values = Enum.GetNames(t);
@@ -103,17 +100,17 @@ public class SharedKernelAllowRuleTests
 
         catalogEnums.Should().BeEmpty(
             "SharedKernel must not contain closed platform resource catalog enums. " +
-            "Use open ResourceKind instead. ResourceType is legacy and must not grow.");
+            "Use open ResourceKind instead.");
     }
 
     [Fact]
-    public void DOM_SHARED_002_ResourceType_Enum_Is_Legacy_And_Frozen()
+    public void DOM_SHARED_002_ResourceType_Enum_Is_Deleted()
     {
-        var resourceType = typeof(ResourceType);
-        var valueCount = Enum.GetValues<ResourceType>().Length;
+        var resourceType = DomainAssembly.GetTypes()
+            .SingleOrDefault(t => t.FullName == "Notrelix.Domain.SharedKernel.ResourceType");
 
-        valueCount.Should().Be(64,
-            "ResourceType is a legacy frozen enum — no new values may be added. " +
-            "New resources use ResourceKind. Current count must remain 64.");
+        resourceType.Should().BeNull(
+            "the legacy global ResourceType catalog enum must be deleted after the ResourceKind cutover; " +
+            "resource identity is ResourceKind + ResourceId + optional WorkspaceId");
     }
 }

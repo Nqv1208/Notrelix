@@ -11,13 +11,13 @@ public class RequestContractGuardBehaviorTests
 
     private sealed record GlobalResourceRequest : IRequest<string>, IGlobalRequest, IResourceScopedRequest
     {
-        public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), Guid.NewGuid());
     }
 
     private sealed record GlobalPermissionRequest : IRequest<string>, IGlobalRequest, IRequirePermission
     {
         public PermissionAction Action => PermissionAction.ViewBoard;
-        public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), Guid.NewGuid());
     }
 
     private sealed record AnonymousWorkspaceRequest : IRequest<string>, IAnonymousRequest, IWorkspaceRequest
@@ -27,7 +27,7 @@ public class RequestContractGuardBehaviorTests
 
     private sealed record AnonymousResourceRequest : IRequest<string>, IAnonymousRequest, IResourceScopedRequest
     {
-        public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), Guid.NewGuid());
     }
 
     private sealed record PublicCacheWorkspaceRequest : IRequest<string>, IPublicCacheableQuery<string>, IWorkspaceRequest
@@ -52,7 +52,7 @@ public class RequestContractGuardBehaviorTests
     {
         public Guid WorkspaceId => Guid.NewGuid();
         public PermissionAction Action => PermissionAction.ViewBoard;
-        public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), Guid.NewGuid());
     }
 
     // --- Helpers ---

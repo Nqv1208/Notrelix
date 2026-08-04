@@ -5,8 +5,8 @@ public class DomainModelContractChecks : ArchitectureTestBase
     [Fact]
     public void ResourceType_IncludesLabel()
     {
-        var content = File.ReadAllText(Path.Combine(GetDomainPath(), "SharedKernel", "ResourceType.cs"));
-        content.Should().Contain("Label", "ResourceType enum must include Label for label resources");
+        var content = File.ReadAllText(Path.Combine(GetDomainPath(), "SharedKernel", "ResourceKind.cs"));
+        content.Should().Contain("Label", "ResourceKind enum must include Label for label resources");
     }
 
     [Fact]
