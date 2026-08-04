@@ -6,7 +6,7 @@ namespace Notrelix.Application.Features.Collaboration.Comments.Commands.DeleteCo
 public record DeleteCommentCommand(Guid CommentId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Comment, CommentId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("collaboration.comment"), CommentId);
 }
 
 public class DeleteCommentCommandHandler : IRequestHandler<DeleteCommentCommand, Result>

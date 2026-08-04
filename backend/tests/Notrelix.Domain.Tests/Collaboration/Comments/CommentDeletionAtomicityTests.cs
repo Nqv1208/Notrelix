@@ -10,7 +10,7 @@ public class CommentDeletionAtomicityTests
     private readonly Guid _actorId = Guid.NewGuid();
     private readonly DateTimeOffset _now = DateTimeOffset.UtcNow;
 
-    private ResourceRef Target => ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), _workspaceId);
+    private ResourceRef Target => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), _workspaceId);
 
     [Fact]
     public void Delete_ShouldTransitionStatus()

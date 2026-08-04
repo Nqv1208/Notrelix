@@ -5,7 +5,7 @@ public class ResourceReadState : Entity, IWorkspaceScoped
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public Guid UserId { get; private set; }
-    public string ResourceType { get; private set; } = null!;
+    public string ResourceKind { get; private set; } = null!;
     public Guid ResourceId { get; private set; }
     public DateTimeOffset? LastReadAt { get; private set; }
     public Guid? LastReadCommentId { get; private set; }
@@ -31,7 +31,7 @@ public class ResourceReadState : Entity, IWorkspaceScoped
             AccountId = accountId,
             WorkspaceId = workspaceId,
             UserId = userId,
-            ResourceType = target.Kind.ToString(),
+            ResourceKind = target.Kind.ToString(),
             ResourceId = target.ResourceId,
             UnreadCount = 0,
             UpdatedAt = createdAt,

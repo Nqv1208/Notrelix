@@ -5,7 +5,7 @@ public record ActivityLogDto(
     Guid ActorId,
     string? ActorName,
     string Action,
-    string ResourceType,
+    string ResourceKind,
     Guid ResourceId,
     string? ResourceTitle,
     DateTime CreatedAt

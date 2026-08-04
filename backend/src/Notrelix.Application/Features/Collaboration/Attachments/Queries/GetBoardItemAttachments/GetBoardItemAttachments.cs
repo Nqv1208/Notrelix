@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.Collaboration.Attachments.Queries.GetBoa
 public record GetBoardItemAttachmentsQuery(Guid BoardItemId) : IQuery<Result<List<AttachmentDto>>>, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
 }
 
 public class GetBoardItemAttachmentsQueryHandler : IRequestHandler<GetBoardItemAttachmentsQuery, Result<List<AttachmentDto>>>
@@ -28,7 +28,7 @@ public class GetBoardItemAttachmentsQueryHandler : IRequestHandler<GetBoardItemA
         if (!boardItemExists) throw new NotFoundException("BoardItem", request.BoardItemId);
 
         var attachments = await _context.Attachments.AsNoTracking()
-            .Where(attachment => attachment.Target.Kind == LegacyResourceTypeMappings.ToResourceKind(ResourceType.BoardItem) && attachment.Target.ResourceId == request.BoardItemId)
+            .Where(attachment => attachment.Target.Kind == ResourceKind.Create("work-management.board-item") && attachment.Target.ResourceId == request.BoardItemId)
             .OrderByDescending(attachment => attachment.CreatedAt)
             .ToListAsync(ct);
 

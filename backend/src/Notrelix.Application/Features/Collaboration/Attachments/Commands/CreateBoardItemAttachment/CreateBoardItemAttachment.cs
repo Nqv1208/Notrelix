@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.Collaboration.Attachments.Commands.Creat
 public record CreateBoardItemAttachmentCommand(Guid BoardItemId, string Filename, string Url, long? SizeBytes, string? ContentType, string? Source) : ICommand<Result<AttachmentDto>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, BoardItemId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
 }
 
 public class CreateBoardItemAttachmentCommandHandler : IRequestHandler<CreateBoardItemAttachmentCommand, Result<AttachmentDto>>
@@ -34,7 +34,7 @@ public class CreateBoardItemAttachmentCommandHandler : IRequestHandler<CreateBoa
             ?? throw new NotFoundException("BoardItem", request.BoardItemId);
 
         var now = _dateTimeProvider.UtcNow;
-        var target = ResourceRef.Create(ResourceType.BoardItem, request.BoardItemId, workspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), request.BoardItemId, workspaceId);
         var metadata = FileMetadata.Create(request.Filename, request.SizeBytes ?? 0, request.ContentType ?? "application/octet-stream", url: request.Url);
         var attachment = Attachment.Create(_requestContext.RequireAccountId(), workspaceId, target, AttachmentType.Link, metadata, _requestContext.UserId, now);
 
