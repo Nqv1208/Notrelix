@@ -8,6 +8,7 @@ public static class CloseFormEndpoint
     public static IEndpointRouteBuilder MapCloseForm(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/close", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Forms.Close")
             .WithTags("WorkManagement.Forms")
             .WithSummary("Close a form");

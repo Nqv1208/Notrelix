@@ -9,6 +9,7 @@ public static class UpdateLabelEndpoint
     public static IEndpointRouteBuilder MapUpdateLabel(this IEndpointRouteBuilder group)
     {
         group.MapResourcePatch("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Labels.Update")
             .WithTags("WorkManagement.Labels")
             .WithSummary("Update label name or color");

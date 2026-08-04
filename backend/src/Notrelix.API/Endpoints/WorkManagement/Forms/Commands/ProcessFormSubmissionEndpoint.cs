@@ -9,6 +9,7 @@ public static class ProcessFormSubmissionEndpoint
     public static IEndpointRouteBuilder MapProcessFormSubmission(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/process", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Forms.ProcessSubmission")
             .WithTags("WorkManagement.Forms")
             .WithSummary("Process a form submission");

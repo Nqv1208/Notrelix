@@ -9,6 +9,7 @@ public static class RenameBoardViewEndpoint
     public static IEndpointRouteBuilder MapRenameBoardView(this IEndpointRouteBuilder group)
     {
         group.MapResourcePatch("/{viewId:guid}/rename", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardViews.Rename")
             .WithTags("WorkManagement.BoardViews")
             .WithSummary("Rename a board view");

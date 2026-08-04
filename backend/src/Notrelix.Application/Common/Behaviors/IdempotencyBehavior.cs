@@ -57,8 +57,7 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
                 return ReplayResult(beginResult);
 
             case IdempotencyBeginStatus.PayloadMismatch:
-                throw new ConflictException(
-                    $"Idempotency key was already used with a different request payload for operation '{identity.Operation}'.");
+                throw new IdempotencyPayloadMismatchException(identity.Operation);
 
             case IdempotencyBeginStatus.Started:
                 break;
@@ -70,8 +69,9 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         // 5. Execute handler.
         var response = await next();
 
-        // 6. Serialize.
-        var serialized = JsonSerializer.Serialize(response);
+        // 6. Serialize with the replay contract options (Result envelopes and
+        // enums must round-trip, spec 3.7).
+        var serialized = JsonSerializer.Serialize(response, IdempotencyJson.Options);
 
         // 7. Serialized-result eligibility fails before Complete — the request
         //    transaction rolls back instead of leaving a non-replayable Started row.
@@ -117,7 +117,7 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
                 $"Idempotency result contract mismatch. Expected '{expectedContract}' but stored '{beginResult.ResultContract}'.");
         }
 
-        return JsonSerializer.Deserialize<TResponse>(beginResult.SerializedResult!)
+        return JsonSerializer.Deserialize<TResponse>(beginResult.SerializedResult!, IdempotencyJson.Options)
             ?? throw new InvalidOperationException("Failed to deserialize cached idempotency result.");
     }
 }

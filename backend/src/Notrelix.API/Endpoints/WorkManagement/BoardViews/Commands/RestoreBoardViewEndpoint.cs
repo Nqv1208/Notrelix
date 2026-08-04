@@ -8,6 +8,7 @@ public static class RestoreBoardViewEndpoint
     public static IEndpointRouteBuilder MapRestoreBoardView(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/{viewId:guid}/restore", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardViews.Restore")
             .WithTags("WorkManagement.BoardViews")
             .WithSummary("Restore a soft-deleted board view");

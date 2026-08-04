@@ -8,6 +8,7 @@ public static class ArchiveBoardItemEndpoint
     public static IEndpointRouteBuilder MapArchiveBoardItem(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/archive", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardItems.Archive")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Archive a board item");

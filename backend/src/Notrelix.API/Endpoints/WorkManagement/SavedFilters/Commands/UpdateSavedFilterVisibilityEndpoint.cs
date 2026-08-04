@@ -9,6 +9,7 @@ public static class UpdateSavedFilterVisibilityEndpoint
     public static IEndpointRouteBuilder MapUpdateSavedFilterVisibility(this IEndpointRouteBuilder group)
     {
         group.MapResourcePatch("/visibility", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.SavedFilters.UpdateVisibility")
             .WithTags("WorkManagement.SavedFilters")
             .WithSummary("Update saved filter visibility");

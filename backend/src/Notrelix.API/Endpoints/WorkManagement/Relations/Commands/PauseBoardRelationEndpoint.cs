@@ -8,6 +8,7 @@ public static class PauseBoardRelationEndpoint
     public static IEndpointRouteBuilder MapPauseBoardRelation(this IEndpointRouteBuilder group)
     {
         group.MapResourcePatch("/pause", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Relations.Pause")
             .WithTags("WorkManagement.Relations")
             .WithSummary("Pause a board relation");

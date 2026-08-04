@@ -140,6 +140,10 @@ public static class DependencyInjection
 
             // Per-operation security: Bearer applied only to non-anonymous operations
             options.OperationFilter<SecurityRequirementsOperationFilter>();
+
+            // Idempotency contract: required header, 409/503 responses and the
+            // replay header, only for endpoints marked with WithIdempotencyKey()
+            options.OperationFilter<IdempotencyOperationFilter>();
         });
         return services;
     }

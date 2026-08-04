@@ -9,6 +9,7 @@ public static class CreateApprovalRequestEndpoint
     public static IEndpointRouteBuilder MapCreateApprovalRequest(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Approvals.Create")
             .WithTags("WorkManagement.Approvals")
             .WithSummary("Create a new approval request");

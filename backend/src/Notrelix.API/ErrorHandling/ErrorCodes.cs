@@ -9,6 +9,7 @@ public static class ErrorCodes
     public const string ResourceNotFound = "resource.not_found";
     public const string Conflict = "concurrency.conflict";
     public const string TooManyRequests = "rate_limit.exceeded";
+    public const string IdempotencyPayloadMismatch = "idempotency_payload_mismatch";
     public const string IdempotencyStateIncomplete = "idempotency_state_incomplete";
     public const string InternalServerError = "internal_server_error";
 }

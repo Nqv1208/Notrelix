@@ -9,6 +9,7 @@ public static class CreateBoardEndpoint
     public static IEndpointRouteBuilder MapCreateBoard(this IEndpointRouteBuilder group)
     {
         group.MapWorkspacePost("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Boards.Create")
             .WithTags("WorkManagement.Boards")
             .WithSummary("Create a new board in workspace");

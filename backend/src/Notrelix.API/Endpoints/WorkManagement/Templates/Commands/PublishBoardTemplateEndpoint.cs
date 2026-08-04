@@ -8,6 +8,7 @@ public static class PublishBoardTemplateEndpoint
     public static IEndpointRouteBuilder MapPublishBoardTemplate(this IEndpointRouteBuilder group)
     {
         group.MapResourcePatch("/publish", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Templates.Publish")
             .WithTags("WorkManagement.Templates")
             .WithSummary("Publish a board template");

@@ -357,18 +357,14 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 return mock.Object;
             });
 
-            // The scoped execution context carries the raw idempotency key. No
-            // endpoint filter is attached in this test host (that contract is
-            // covered by Architecture.Tests / API endpoint tests), so seed a key
-            // for every scope so the real IdempotencyBehavior.RequireKey succeeds.
+            // The scoped execution context carries the raw idempotency key.
+            // Idempotent endpoints are marked with WithIdempotencyKey(), so the real
+            // HttpIdempotencyEndpointFilter binds the Idempotency-Key header here.
+            // CreateClient() below injects a unique test key per request; tests that
+            // assert the missing/invalid-header contract must set their own headers.
             services.RemoveAll<IIdempotencyExecutionContext>();
             services.RemoveAll<IIdempotencyExecutionContextWriter>();
-            services.AddScoped<IIdempotencyExecutionContext>(_ =>
-            {
-                var context = new IdempotencyExecutionContext();
-                context.Set("api-test-execution-key", IdempotencyExecutionSource.Internal);
-                return context;
-            });
+            services.AddScoped<IIdempotencyExecutionContext, IdempotencyExecutionContext>();
             services.AddScoped<IIdempotencyExecutionContextWriter>(sp =>
                 (IIdempotencyExecutionContextWriter)sp.GetRequiredService<IIdempotencyExecutionContext>());
 
@@ -576,6 +572,21 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             services.AddAuthentication(defaultScheme: "Test")
                 .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
         });
+    }
+
+    /// <summary>
+    /// Creates a client that automatically sends an Idempotency-Key header.
+    /// Idempotent endpoints are marked with WithIdempotencyKey() and reject
+    /// requests without the header; contract tests unrelated to idempotency use
+    /// this default. Tests asserting the idempotency header contract itself must
+    /// build a client from <see cref="WebApplicationFactory{TEntryPoint}.Server"/>
+    /// and control the header explicitly.
+    /// </summary>
+    public new HttpClient CreateClient()
+    {
+        var client = base.CreateClient();
+        client.DefaultRequestHeaders.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        return client;
     }
 
     public HttpClient CreateAuthenticatedClient()

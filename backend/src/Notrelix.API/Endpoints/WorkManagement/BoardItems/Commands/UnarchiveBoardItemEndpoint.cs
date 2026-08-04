@@ -8,6 +8,7 @@ public static class UnarchiveBoardItemEndpoint
     public static IEndpointRouteBuilder MapUnarchiveBoardItem(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/unarchive", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardItems.Unarchive")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Unarchive a board item");

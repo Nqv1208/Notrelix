@@ -9,6 +9,7 @@ public static class CreateChecklistItemEndpoint
     public static IEndpointRouteBuilder MapCreateChecklistItem(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Checklists.CreateItem")
             .WithTags("WorkManagement.Checklists")
             .WithSummary("Create a checklist item");

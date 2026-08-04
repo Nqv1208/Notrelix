@@ -8,6 +8,7 @@ public static class DeleteBoardEndpoint
     public static IEndpointRouteBuilder MapDeleteBoard(this IEndpointRouteBuilder group)
     {
         group.MapResourceDelete("/", HandleDeleteBoard)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Boards.Delete");
         return group;
     }

@@ -8,6 +8,7 @@ public static class ResumeBoardRelationEndpoint
     public static IEndpointRouteBuilder MapResumeBoardRelation(this IEndpointRouteBuilder group)
     {
         group.MapResourcePatch("/resume", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Relations.Resume")
             .WithTags("WorkManagement.Relations")
             .WithSummary("Resume a board relation");

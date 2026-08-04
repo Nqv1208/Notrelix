@@ -8,6 +8,7 @@ public static class SetDefaultViewEndpoint
     public static IEndpointRouteBuilder MapSetDefaultView(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/{viewId:guid}/set-default", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardViews.SetDefault")
             .WithTags("WorkManagement.BoardViews")
             .WithSummary("Set a board view as the default view");

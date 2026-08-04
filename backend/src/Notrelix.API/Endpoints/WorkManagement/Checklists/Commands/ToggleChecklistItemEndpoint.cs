@@ -8,6 +8,7 @@ public static class ToggleChecklistItemEndpoint
     public static IEndpointRouteBuilder MapToggleChecklistItem(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/toggle", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Checklists.ToggleItem")
             .WithTags("WorkManagement.Checklists")
             .WithSummary("Toggle the completion status of a checklist item");

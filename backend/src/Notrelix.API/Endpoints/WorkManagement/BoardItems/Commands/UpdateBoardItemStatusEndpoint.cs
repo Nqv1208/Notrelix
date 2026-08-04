@@ -9,6 +9,7 @@ public static class UpdateBoardItemStatusEndpoint
     public static IEndpointRouteBuilder MapUpdateBoardItemStatus(this IEndpointRouteBuilder group)
     {
         group.MapResourcePatch("/status", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardItems.UpdateStatus")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Update the status of a board item");

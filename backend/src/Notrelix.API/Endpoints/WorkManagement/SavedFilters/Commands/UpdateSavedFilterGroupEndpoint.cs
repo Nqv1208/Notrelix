@@ -9,6 +9,7 @@ public static class UpdateSavedFilterGroupEndpoint
     public static IEndpointRouteBuilder MapUpdateSavedFilterGroup(this IEndpointRouteBuilder group)
     {
         group.MapResourcePatch("/group", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.SavedFilters.UpdateGroup")
             .WithTags("WorkManagement.SavedFilters")
             .WithSummary("Update saved filter group rule");

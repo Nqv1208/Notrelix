@@ -26,6 +26,7 @@ public static class MapChecklistEndpoints
         clGroup.MapUpdateChecklist();
         clGroup.MapDeleteChecklist();
         clGroup.MapResourcePost("/items", HandleCreateChecklistItem)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Checklists.CreateItemByChecklist")
             .WithSummary("Create a checklist item");
 

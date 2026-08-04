@@ -8,6 +8,7 @@ public static class CancelApprovalRequestEndpoint
     public static IEndpointRouteBuilder MapCancelApprovalRequest(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/cancel", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Approvals.Cancel")
             .WithTags("WorkManagement.Approvals")
             .WithSummary("Cancel an approval request");

@@ -8,6 +8,7 @@ public static class DuplicateBoardGroupEndpoint
     public static IEndpointRouteBuilder MapDuplicateBoardGroup(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/duplicate", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardGroups.Duplicate")
             .WithTags("WorkManagement.BoardGroups")
             .WithSummary("Duplicate a group and its items");

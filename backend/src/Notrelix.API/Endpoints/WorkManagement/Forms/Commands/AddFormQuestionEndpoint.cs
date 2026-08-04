@@ -9,6 +9,7 @@ public static class AddFormQuestionEndpoint
     public static IEndpointRouteBuilder MapAddFormQuestion(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/questions", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Forms.AddQuestion")
             .WithTags("WorkManagement.Forms")
             .WithSummary("Add a question to a form");

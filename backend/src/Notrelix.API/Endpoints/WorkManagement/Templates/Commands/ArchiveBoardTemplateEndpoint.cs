@@ -8,6 +8,7 @@ public static class ArchiveBoardTemplateEndpoint
     public static IEndpointRouteBuilder MapArchiveBoardTemplate(this IEndpointRouteBuilder group)
     {
         group.MapResourcePatch("/archive", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Templates.Archive")
             .WithTags("WorkManagement.Templates")
             .WithSummary("Archive a board template");

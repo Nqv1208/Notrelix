@@ -61,6 +61,13 @@ public static class ProblemDetailsMapper
                 exception.Message,
                 null
             ),
+            Notrelix.Application.Common.Idempotency.IdempotencyPayloadMismatchException => (
+                StatusCodes.Status409Conflict,
+                ErrorCodes.IdempotencyPayloadMismatch,
+                "Idempotency conflict",
+                exception.Message,
+                null
+            ),
             AppConflictException => (
                 StatusCodes.Status409Conflict,
                 ErrorCodes.Conflict,

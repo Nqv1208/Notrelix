@@ -8,6 +8,7 @@ public static class ClearFieldValueEndpoint
     public static IEndpointRouteBuilder MapClearFieldValue(this IEndpointRouteBuilder group)
     {
         group.MapResourceDelete("/values/{fieldId:guid}", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardItems.ClearFieldValue")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Clear a field value on a board item");
