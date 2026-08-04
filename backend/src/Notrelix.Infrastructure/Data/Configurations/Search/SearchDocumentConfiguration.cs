@@ -11,7 +11,7 @@ public class SearchDocumentConfiguration : IEntityTypeConfiguration<SearchDocume
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
-        builder.Property(x => x.ResourceType).HasColumnName("resource_type").IsRequired().HasMaxLength(80);
+        builder.Property(x => x.ResourceKind).HasColumnName("resource_type").IsRequired().HasMaxLength(80);
         builder.Property(x => x.ResourceId).HasColumnName("resource_id").IsRequired();
         builder.Property(x => x.Title).HasColumnName("title").IsRequired();
         builder.Property(x => x.Content).HasColumnName("content");
@@ -21,8 +21,8 @@ public class SearchDocumentConfiguration : IEntityTypeConfiguration<SearchDocume
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 
-        builder.HasIndex(x => new { x.AccountId, x.WorkspaceId, x.ResourceType, x.ResourceId }).IsUnique().HasDatabaseName("ux_search_documents_resource");
-        builder.HasIndex(x => new { x.AccountId, x.WorkspaceId, x.ResourceType }).HasDatabaseName("ix_search_documents_account_workspace_type");
+        builder.HasIndex(x => new { x.AccountId, x.WorkspaceId, x.ResourceKind, x.ResourceId }).IsUnique().HasDatabaseName("ux_search_documents_resource");
+        builder.HasIndex(x => new { x.AccountId, x.WorkspaceId, x.ResourceKind }).HasDatabaseName("ix_search_documents_account_workspace_type");
 
         builder.HasIndex(x => x.SearchVector)
             .HasMethod("gin")

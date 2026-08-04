@@ -1,5 +1,7 @@
 using Notrelix.Domain.Collaboration.Watchers;
 
+using Notrelix.Infrastructure.Data.Converters;
+
 namespace Notrelix.Infrastructure.Data.Configurations.Collaboration;
 
 public class ResourceWatcherConfiguration : IEntityTypeConfiguration<ResourceWatcher>
@@ -18,7 +20,7 @@ public class ResourceWatcherConfiguration : IEntityTypeConfiguration<ResourceWat
 
         builder.OwnsOne(x => x.Target, t =>
         {
-            t.Property(p => p.Kind).HasColumnName("target_type").HasConversion(v => v.Value, v => LegacyResourceTypeMappings.ParseResourceKind(v)).IsRequired().HasMaxLength(128);
+            t.Property(p => p.Kind).HasColumnName("target_type").HasConversion<ResourceKindConverter>().IsRequired().HasMaxLength(128);
             t.Property(p => p.ResourceId).HasColumnName("target_id").IsRequired();
             t.HasIndex(p => new { p.Kind, p.ResourceId }).HasDatabaseName("idx_resource_watchers_target");
         });

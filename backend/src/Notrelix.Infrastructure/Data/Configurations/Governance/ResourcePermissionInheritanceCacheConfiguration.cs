@@ -10,7 +10,7 @@ public class ResourcePermissionInheritanceCacheConfiguration : IEntityTypeConfig
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
-        builder.Property(x => x.ResourceType).HasColumnName("resource_type").IsRequired().HasMaxLength(80);
+        builder.Property(x => x.ResourceKind).HasColumnName("resource_type").IsRequired().HasMaxLength(80);
         builder.Property(x => x.ResourceId).HasColumnName("resource_id").IsRequired();
         builder.Property(x => x.ParentResourceType).HasColumnName("parent_resource_type").HasMaxLength(80);
         builder.Property(x => x.ParentResourceId).HasColumnName("parent_resource_id");
@@ -32,7 +32,7 @@ public class ResourcePermissionInheritanceCacheConfiguration : IEntityTypeConfig
         builder.HasIndex(x => new
         {
             x.WorkspaceId,
-            x.ResourceType,
+            x.ResourceKind,
             x.ResourceId,
             x.SubjectType,
             x.SubjectId,
@@ -45,7 +45,7 @@ public class ResourcePermissionInheritanceCacheConfiguration : IEntityTypeConfig
             x.WorkspaceId,
             x.SubjectType,
             x.SubjectId,
-            x.ResourceType,
+            x.ResourceKind,
             x.ResourceId,
             x.Action,
         }).HasDatabaseName("ix_governance_permission_inheritance_cache_lookup");

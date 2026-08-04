@@ -20,7 +20,7 @@ public class ResourcePermissionInheritanceCacheEntryTests
 
         entry.Id.Should().Be(id);
         entry.WorkspaceId.Should().Be(workspaceId);
-        entry.ResourceType.Should().Be("Board");
+        entry.ResourceKind.Should().Be("Board");
         entry.ResourceId.Should().Be(resourceId);
         entry.Action.Should().Be("view");
         entry.Effect.Should().Be("Allow");

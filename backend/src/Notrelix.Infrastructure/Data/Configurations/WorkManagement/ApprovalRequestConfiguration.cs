@@ -1,5 +1,7 @@
 using Notrelix.Domain.WorkManagement.Approvals;
 
+using Notrelix.Infrastructure.Data.Converters;
+
 namespace Notrelix.Infrastructure.Data.Configurations.WorkManagement;
 
 public class ApprovalRequestConfiguration : IEntityTypeConfiguration<ApprovalRequest>
@@ -20,7 +22,7 @@ public class ApprovalRequestConfiguration : IEntityTypeConfiguration<ApprovalReq
 
         builder.OwnsOne(x => x.Target, target =>
         {
-            target.Property(t => t.Kind).HasColumnName("target_type").HasConversion(v => v.Value, v => LegacyResourceTypeMappings.ParseResourceKind(v)).IsRequired().HasMaxLength(128);
+            target.Property(t => t.Kind).HasColumnName("target_type").HasConversion<ResourceKindConverter>().IsRequired().HasMaxLength(128);
             target.Property(t => t.ResourceId).HasColumnName("target_id").IsRequired();
         });
 

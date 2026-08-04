@@ -1,5 +1,7 @@
 using Notrelix.Domain.Collaboration.Attachments;
 
+using Notrelix.Infrastructure.Data.Converters;
+
 namespace Notrelix.Infrastructure.Data.Configurations.Collaboration;
 
 public class AttachmentConfiguration : IEntityTypeConfiguration<Attachment>
@@ -17,7 +19,7 @@ public class AttachmentConfiguration : IEntityTypeConfiguration<Attachment>
 
         builder.OwnsOne(x => x.Target, target =>
         {
-            target.Property(t => t.Kind).HasColumnName("resource_type").HasConversion(v => v.Value, v => LegacyResourceTypeMappings.ParseResourceKind(v)).IsRequired().HasMaxLength(128);
+            target.Property(t => t.Kind).HasColumnName("resource_type").HasConversion<ResourceKindConverter>().IsRequired().HasMaxLength(128);
             target.Property(t => t.ResourceId).HasColumnName("resource_id").IsRequired();
             target.Property(t => t.WorkspaceId).HasColumnName("target_workspace_id");
             target.HasIndex(t => new { t.Kind, t.ResourceId }).HasDatabaseName("idx_attachments_resource");

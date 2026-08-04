@@ -2686,7 +2686,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .IsRequired()
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)")
@@ -2713,7 +2713,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_resource_read_states");
 
-                    b.HasIndex("WorkspaceId", "UserId", "ResourceType", "ResourceId")
+                    b.HasIndex("WorkspaceId", "UserId", "ResourceKind", "ResourceId")
                         .IsUnique()
                         .HasDatabaseName("ux_collab_resource_read_states_user_resource");
 
@@ -3306,7 +3306,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<int?>("ResourceType")
+                    b.Property<int?>("ResourceKind")
                         .HasMaxLength(50)
                         .HasColumnType("integer")
                         .HasColumnName("resource_type");
@@ -3433,7 +3433,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
@@ -3474,7 +3474,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("SubjectId")
                         .HasDatabaseName("idx_resource_permissions_subject_id");
 
-                    b.HasIndex("ResourceType", "ResourceId")
+                    b.HasIndex("ResourceKind", "ResourceId")
                         .HasDatabaseName("idx_resource_permissions_resource");
 
                     b.ToTable("resource_permissions", "governance");
@@ -3694,7 +3694,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
@@ -4903,7 +4903,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_synced_at");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
@@ -4912,7 +4912,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_integration_sync_cursors");
 
-                    b.HasIndex("ConnectionId", "ResourceType")
+                    b.HasIndex("ConnectionId", "ResourceKind")
                         .HasDatabaseName("idx_integration_sync_cursors_connection_resource");
 
                     b.ToTable("integration_sync_cursors", "integration");
@@ -8063,7 +8063,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)")
                         .HasColumnName("resource_type");
@@ -8118,7 +8118,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDatabaseName("ix_audit_logs_workspace_id_occurred_at")
                         .HasFilter("\"workspace_id\" IS NOT NULL");
 
-                    b.HasIndex("ResourceType", "ResourceId", "OccurredAt")
+                    b.HasIndex("ResourceKind", "ResourceId", "OccurredAt")
                         .IsDescending(false, false, true)
                         .HasDatabaseName("ix_audit_logs_resource_type_resource_id_occurred_at")
                         .HasFilter("\"resource_type\" IS NOT NULL AND \"resource_id\" IS NOT NULL");
@@ -8179,7 +8179,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)")
                         .HasColumnName("resource_type");
@@ -8540,7 +8540,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .IsRequired()
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)")
@@ -8577,10 +8577,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_resource_permission_inheritance_cache");
 
-                    b.HasIndex("WorkspaceId", "SubjectType", "SubjectId", "ResourceType", "ResourceId", "Action")
+                    b.HasIndex("WorkspaceId", "SubjectType", "SubjectId", "ResourceKind", "ResourceId", "Action")
                         .HasDatabaseName("ix_governance_permission_inheritance_cache_lookup");
 
-                    b.HasIndex("WorkspaceId", "ResourceType", "ResourceId", "SubjectType", "SubjectId", "SubjectKey", "Action")
+                    b.HasIndex("WorkspaceId", "ResourceKind", "ResourceId", "SubjectType", "SubjectId", "SubjectKey", "Action")
                         .IsUnique()
                         .HasDatabaseName("ux_governance_permission_inheritance_cache");
 
@@ -9408,7 +9408,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)")
                         .HasColumnName("resource_type");
@@ -9505,7 +9505,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDatabaseName("ix_notifications_items_workspace_time")
                         .HasFilter("\"workspace_id\" IS NOT NULL");
 
-                    b.HasIndex("ResourceType", "ResourceId", "CreatedAt")
+                    b.HasIndex("ResourceKind", "ResourceId", "CreatedAt")
                         .IsDescending(false, false, true)
                         .HasDatabaseName("ix_notifications_items_resource")
                         .HasFilter("\"resource_type\" IS NOT NULL AND \"resource_id\" IS NOT NULL");
@@ -10068,7 +10068,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)")
                         .HasColumnName("resource_type");
@@ -10165,7 +10165,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDatabaseName("ix_activity_workspace_logs_workspace_time")
                         .HasFilter("\"deleted_at\" IS NULL");
 
-                    b.HasIndex("ResourceType", "ResourceId", "OccurredAt")
+                    b.HasIndex("ResourceKind", "ResourceId", "OccurredAt")
                         .IsDescending(false, false, true)
                         .HasDatabaseName("ix_activity_workspace_logs_resource")
                         .HasFilter("\"resource_type\" IS NOT NULL AND \"resource_id\" IS NOT NULL AND \"deleted_at\" IS NULL");
@@ -10208,7 +10208,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .IsRequired()
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)")
@@ -10244,10 +10244,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchVector"), "gin");
 
-                    b.HasIndex("AccountId", "WorkspaceId", "ResourceType")
+                    b.HasIndex("AccountId", "WorkspaceId", "ResourceKind")
                         .HasDatabaseName("ix_search_documents_account_workspace_type");
 
-                    b.HasIndex("AccountId", "WorkspaceId", "ResourceType", "ResourceId")
+                    b.HasIndex("AccountId", "WorkspaceId", "ResourceKind", "ResourceId")
                         .IsUnique()
                         .HasDatabaseName("ux_search_documents_resource");
 
@@ -10329,7 +10329,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("resource_id");
 
-                    b.Property<string>("ResourceType")
+                    b.Property<string>("ResourceKind")
                         .IsRequired()
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)")
@@ -10360,7 +10360,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("Status", "Priority", "AvailableAt", "CreatedAt")
                         .HasDatabaseName("ix_search_index_jobs_pending");
 
-                    b.HasIndex("WorkspaceId", "ResourceType", "ResourceId", "CreatedAt")
+                    b.HasIndex("WorkspaceId", "ResourceKind", "ResourceId", "CreatedAt")
                         .IsDescending(false, false, false, true)
                         .HasDatabaseName("ix_search_index_jobs_resource");
 

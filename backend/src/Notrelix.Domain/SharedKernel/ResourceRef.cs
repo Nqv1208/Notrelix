@@ -21,17 +21,6 @@ public sealed class ResourceRef : ValueObject
         return new ResourceRef(kind, resourceId, workspaceId);
     }
 
-    /// <summary>
-    /// Compatibility factory accepting legacy ResourceType enum.
-    /// Maps to canonical ResourceKind via LegacyResourceTypeMappings.
-    /// </summary>
-    public static ResourceRef Create(ResourceType resourceType, Guid resourceId, Guid? workspaceId = null)
-    {
-        Guard.NotEmpty(resourceId);
-        var kind = LegacyResourceTypeMappings.ToResourceKind(resourceType);
-        return new ResourceRef(kind, resourceId, workspaceId);
-    }
-
     protected override IEnumerable<object?> GetEqualityComponents()
     {
         yield return Kind;

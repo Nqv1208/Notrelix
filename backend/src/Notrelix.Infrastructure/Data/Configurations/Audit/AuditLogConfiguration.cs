@@ -13,7 +13,7 @@ public sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
 
         builder.Property(x => x.ActorType).IsRequired().HasMaxLength(80).HasDefaultValue("User");
         builder.Property(x => x.Action).IsRequired().HasMaxLength(160);
-        builder.Property(x => x.ResourceType).HasMaxLength(160);
+        builder.Property(x => x.ResourceKind).HasMaxLength(160);
         builder.Property(x => x.SubjectType).HasMaxLength(160);
         builder.Property(x => x.Severity).IsRequired().HasMaxLength(40).HasDefaultValue("Info");
         builder.Property(x => x.Outcome).IsRequired().HasMaxLength(40).HasDefaultValue("Succeeded");
@@ -33,7 +33,7 @@ public sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
         builder.HasIndex(x => new { x.ActorUserId, x.OccurredAt })
             .HasFilter("\"actor_user_id\" IS NOT NULL")
             .IsDescending(false, true);
-        builder.HasIndex(x => new { x.ResourceType, x.ResourceId, x.OccurredAt })
+        builder.HasIndex(x => new { x.ResourceKind, x.ResourceId, x.OccurredAt })
             .HasFilter("\"resource_type\" IS NOT NULL AND \"resource_id\" IS NOT NULL")
             .IsDescending(false, false, true);
         builder.HasIndex(x => x.CorrelationId)

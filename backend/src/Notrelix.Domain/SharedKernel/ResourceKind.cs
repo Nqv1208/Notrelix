@@ -6,6 +6,7 @@ namespace Notrelix.Domain.SharedKernel;
 /// No global registry — unknown well-formed values are accepted.
 /// Equality is ordinal string comparison.
 /// </summary>
+[System.Text.Json.Serialization.JsonConverter(typeof(ResourceKindJsonConverter))]
 public readonly record struct ResourceKind
 {
     public string Value { get; }

@@ -3,10 +3,19 @@ using Notrelix.Domain.Billing.Usage;
 using Notrelix.Domain.Documents.Versions;
 using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Domain.Integrations.Sync;
+using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.Views;
 
 namespace Notrelix.Infrastructure.Data.Converters;
+
+public class ResourceKindConverter : ValueConverter<ResourceKind, string>
+{
+    public ResourceKindConverter()
+        : base(v => v.Value, v => ResourceKind.Create(v))
+    {
+    }
+}
 
 public class JsonValueConverter : ValueConverter<JsonValue, string>
 {

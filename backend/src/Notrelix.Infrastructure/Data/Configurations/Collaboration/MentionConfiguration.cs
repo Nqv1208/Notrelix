@@ -1,5 +1,7 @@
 using Notrelix.Domain.Collaboration.Mentions;
 
+using Notrelix.Infrastructure.Data.Converters;
+
 namespace Notrelix.Infrastructure.Data.Configurations.Collaboration;
 
 public class MentionConfiguration : IEntityTypeConfiguration<Mention>
@@ -19,7 +21,7 @@ public class MentionConfiguration : IEntityTypeConfiguration<Mention>
 
         builder.OwnsOne(x => x.Source, source =>
         {
-            source.Property(s => s.Kind).HasColumnName("source_type").HasConversion(v => v.Value, v => LegacyResourceTypeMappings.ParseResourceKind(v)).IsRequired().HasMaxLength(128);
+            source.Property(s => s.Kind).HasColumnName("source_type").HasConversion<ResourceKindConverter>().IsRequired().HasMaxLength(128);
             source.Property(s => s.ResourceId).HasColumnName("source_id").IsRequired();
             source.Property(s => s.WorkspaceId).HasColumnName("source_workspace_id");
             source.HasIndex(s => new { s.Kind, s.ResourceId }).HasDatabaseName("idx_mentions_source");

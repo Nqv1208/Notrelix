@@ -1,5 +1,7 @@
 using Notrelix.Domain.Collaboration.Comments;
 
+using Notrelix.Infrastructure.Data.Converters;
+
 namespace Notrelix.Infrastructure.Data.Configurations.Collaboration;
 
 public class CommentConfiguration : IEntityTypeConfiguration<Comment>
@@ -19,7 +21,7 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
 
         builder.OwnsOne(x => x.Target, target =>
         {
-            target.Property(t => t.Kind).HasColumnName("resource_type").HasConversion(v => v.Value, v => LegacyResourceTypeMappings.ParseResourceKind(v)).IsRequired().HasMaxLength(128);
+            target.Property(t => t.Kind).HasColumnName("resource_type").HasConversion<ResourceKindConverter>().IsRequired().HasMaxLength(128);
             target.Property(t => t.ResourceId).HasColumnName("resource_id").IsRequired();
             target.Property(t => t.WorkspaceId).HasColumnName("target_workspace_id");
             target.HasIndex(t => new { t.Kind, t.ResourceId }).HasDatabaseName("idx_comments_resource");

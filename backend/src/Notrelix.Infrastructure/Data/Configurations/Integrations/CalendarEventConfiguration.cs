@@ -1,5 +1,7 @@
 using Notrelix.Domain.Integrations.Calendar;
 
+using Notrelix.Domain.SharedKernel;
+
 namespace Notrelix.Infrastructure.Data.Configurations.Integrations;
 
 public class CalendarEventConfiguration : IEntityTypeConfiguration<CalendarEvent>
@@ -16,7 +18,7 @@ public class CalendarEventConfiguration : IEntityTypeConfiguration<CalendarEvent
 
         builder.OwnsOne(x => x.Target, target =>
         {
-            target.Property(t => t.Kind).HasColumnName("resource_type").HasConversion(v => v.Value, v => string.IsNullOrEmpty(v) ? default : LegacyResourceTypeMappings.ParseResourceKind(v)).HasMaxLength(128);
+            target.Property(t => t.Kind).HasColumnName("resource_type").HasConversion(v => v.Value, v => string.IsNullOrEmpty(v) ? default : ResourceKind.Create(v)).HasMaxLength(128);
             target.Property(t => t.ResourceId).HasColumnName("resource_id");
             target.Property(t => t.WorkspaceId).HasColumnName("target_workspace_id");
             target.HasIndex(t => new { t.Kind, t.ResourceId }).HasDatabaseName("idx_calendar_events_resource");
