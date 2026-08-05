@@ -425,7 +425,7 @@ jobs:
           --no-build
           --configuration $DOTNET_CONFIGURATION
           --filter
-          "FullyQualifiedName~IdempotencyStoreIntegrationTests|FullyQualifiedName~TenantIsolationTests|FullyQualifiedName~CrossTenantIsolationTests|FullyQualifiedName~DeduplicationConsumeFilterIntegrationTests|FullyQualifiedName~DeduplicationConsumeFilterFullIntegrationTests|FullyQualifiedName~MigrationSmokeTests|FullyQualifiedName~ProductionCompositionTests"
+          "FullyQualifiedName~IdempotencyStoreIntegrationTests|FullyQualifiedName~TenantIsolationTests|FullyQualifiedName~CrossTenantIsolationTests|FullyQualifiedName~DeduplicationConsumeFilterIntegrationTests|FullyQualifiedName~DeduplicationConsumeFilterFullIntegrationTests|FullyQualifiedName~MigrationSmokeTests|FullyQualifiedName~ProductionCompositionTests|FullyQualifiedName~RlsRuntimeEnforcementTests|FullyQualifiedName~OutboxDispatchContractTests|FullyQualifiedName~OutboxClaimReclaimTests|FullyQualifiedName~OutboxAtomicityTests|FullyQualifiedName~RedisCacheBehaviorTests|FullyQualifiedName~RealtimeDispatchContractTests|FullyQualifiedName~ProductionGraphTests"
 
       - name: Foundation — RLS policy verification and outbox interceptor
         working-directory: backend
