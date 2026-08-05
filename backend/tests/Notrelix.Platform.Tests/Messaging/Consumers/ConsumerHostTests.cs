@@ -1,3 +1,4 @@
+using System.Diagnostics.Metrics;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -221,6 +222,56 @@ public sealed class ConsumerHostTests
         _diagMock.Verify(d => d.Publish(It.IsAny<DeliveryFailedEvent>()), Times.Once);
     }
 
+    [Fact]
+    public async Task DispatchAsync_Success_CountsDeliveredMetric_NotDeliveryFailed()
+    {
+        // FZ-PLT-01: the delivery metric counts only after handler success.
+        var meterName = $"metrics-{Guid.NewGuid():N}";
+        using var recorder = new MetricsRecorder(meterName);
+        var host = new ConsumerHost(new MessagingMetrics(meterName), _diagMock.Object, NullLogger<ConsumerHost>.Instance);
+        host.Register("test.event", (_, _) => Task.CompletedTask);
+
+        await host.DispatchAsync(CreateEnvelope("test.event"));
+
+        recorder.GetTotal("messaging.events.delivered").Should().Be(1);
+        recorder.GetTotal("messaging.events.delivery_failed").Should().Be(0);
+        _diagMock.Verify(d => d.Publish(It.IsAny<DeliverySucceededEvent>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task DispatchAsync_HandlerFailure_CountsDeliveryFailedMetric_NotDelivered()
+    {
+        var meterName = $"metrics-{Guid.NewGuid():N}";
+        using var recorder = new MetricsRecorder(meterName);
+        var host = new ConsumerHost(new MessagingMetrics(meterName), _diagMock.Object, NullLogger<ConsumerHost>.Instance);
+        host.Register("test.event", (_, _) => throw new InvalidOperationException("boom"),
+            o => o.PoisonThreshold = 5);
+
+        Func<Task> act = () => host.DispatchAsync(CreateEnvelope("test.event"));
+        await act.Should().ThrowAsync<InvalidOperationException>();
+
+        recorder.GetTotal("messaging.events.delivered").Should().Be(0,
+            "a failed handler must never count as delivered");
+        recorder.GetTotal("messaging.events.delivery_failed").Should().Be(1);
+    }
+
+    [Fact]
+    public async Task DispatchAsync_PoisonThreshold_ThrowsPoisonException_CountsDeliveryFailed_NotDelivered()
+    {
+        var meterName = $"metrics-{Guid.NewGuid():N}";
+        using var recorder = new MetricsRecorder(meterName);
+        var host = new ConsumerHost(new MessagingMetrics(meterName), _diagMock.Object, NullLogger<ConsumerHost>.Instance);
+        host.Register("test.event", (_, _) => throw new InvalidOperationException("poison"),
+            o => o.PoisonThreshold = 1);
+
+        Func<Task> act = () => host.DispatchAsync(CreateEnvelope("test.event"));
+
+        await act.Should().ThrowAsync<PoisonMessageException>();
+        recorder.GetTotal("messaging.events.delivered").Should().Be(0);
+        recorder.GetTotal("messaging.events.delivery_failed").Should().Be(1,
+            "a poison detection is still a delivery failure, not a delivery success");
+    }
+
     private static EventEnvelope CreateEnvelope(string eventName) => new()
     {
         EventName = eventName,
@@ -230,4 +281,40 @@ public sealed class ConsumerHostTests
         Data = new byte[0],
         ContentType = "application/json",
     };
+
+    private sealed class MetricsRecorder : IDisposable
+    {
+        private readonly MeterListener _listener = new();
+        private readonly Dictionary<string, long> _totals = new(StringComparer.Ordinal);
+
+        public MetricsRecorder(string meterName)
+        {
+            _listener.InstrumentPublished = (instrument, _) =>
+            {
+                if (instrument.Meter.Name == meterName)
+                {
+                    _listener.EnableMeasurementEvents(instrument);
+                }
+            };
+            _listener.SetMeasurementEventCallback<long>((instrument, measurement, _, _) =>
+            {
+                lock (_totals)
+                {
+                    _totals.TryGetValue(instrument.Name, out var current);
+                    _totals[instrument.Name] = current + measurement;
+                }
+            });
+            _listener.Start();
+        }
+
+        public long GetTotal(string instrumentName)
+        {
+            lock (_totals)
+            {
+                return _totals.GetValueOrDefault(instrumentName);
+            }
+        }
+
+        public void Dispose() => _listener.Dispose();
+    }
 }
