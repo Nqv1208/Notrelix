@@ -1,7 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Moq;
-using Notrelix.Application.Common.Events;
-using Notrelix.Application.Common.Messaging;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data;

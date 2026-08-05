@@ -1,7 +1,5 @@
-using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Caching;
@@ -10,11 +8,9 @@ using Notrelix.Application.Common.Data;
 using Notrelix.Application.Common.Email;
 using Notrelix.Application.Common.Entitlements;
 using Notrelix.Application.Common.Idempotency;
-using Notrelix.Application.Common.Messaging;
 using Notrelix.Application.Common.PostCommit;
 using Notrelix.Application.Common.Storage;
 using Notrelix.API;
-using Notrelix.Infrastructure.Auditing;
 using Notrelix.Infrastructure.Billing;
 using Notrelix.Infrastructure.Caching;
 using Notrelix.Infrastructure.Data;
@@ -27,8 +23,6 @@ using Notrelix.Infrastructure.Realtime;
 using Notrelix.Infrastructure.Services;
 using Notrelix.Infrastructure.Storage.Providers;
 using Notrelix.Integration.Tests.Containers;
-using Microsoft.EntityFrameworkCore;
-using Xunit;
 
 namespace Notrelix.Integration.Tests.Integration.Production;
 

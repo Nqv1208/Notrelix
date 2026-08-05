@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Hosting;
 using Notrelix.Infrastructure.Messaging;
 using Notrelix.Infrastructure.Realtime;
 

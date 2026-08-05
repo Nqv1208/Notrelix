@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Messaging;
 using Notrelix.Integration.Tests.Containers;

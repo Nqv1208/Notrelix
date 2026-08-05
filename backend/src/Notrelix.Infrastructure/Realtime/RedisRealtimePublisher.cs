@@ -1,7 +1,4 @@
 using System.Text.Json;
-using Microsoft.Extensions.Logging;
-using StackExchange.Redis;
-using Notrelix.Application.Common.PostCommit;
 
 namespace Notrelix.Infrastructure.Realtime;
 

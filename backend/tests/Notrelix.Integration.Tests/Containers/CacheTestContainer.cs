@@ -1,10 +1,7 @@
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
-using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
-using Testcontainers;
 using Notrelix.Infrastructure.Data;
-using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Containers;
 
