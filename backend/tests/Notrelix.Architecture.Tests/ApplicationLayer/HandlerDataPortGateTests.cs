@@ -5,17 +5,17 @@ using Notrelix.Architecture.Tests.Support;
 
 namespace Notrelix.Architecture.Tests.ApplicationLayer;
 
-    /// <summary>
-    /// APP-05: Compiled handler data-port gate.
-    /// Reflects all IRequestHandler constructors and verifies:
-    /// - Handlers inject their owning context DbContext port (inferred from namespace)
-    /// - Handlers do NOT inject another context's DbContext
-    /// - Handlers do NOT inject concrete Infrastructure types
-    /// - Common cross-cutting ports are allowed by exact type
-    /// - Handlers do NOT invoke persistence/provider APIs (Roslyn, FZ-APP-04)
-    /// </summary>
-    public class HandlerDataPortGateTests : ArchitectureTestBase
-    {
+/// <summary>
+/// APP-05: Compiled handler data-port gate.
+/// Reflects all IRequestHandler constructors and verifies:
+/// - Handlers inject their owning context DbContext port (inferred from namespace)
+/// - Handlers do NOT inject another context's DbContext
+/// - Handlers do NOT inject concrete Infrastructure types
+/// - Common cross-cutting ports are allowed by exact type
+/// - Handlers do NOT invoke persistence/provider APIs (Roslyn, FZ-APP-04)
+/// </summary>
+public class HandlerDataPortGateTests : ArchitectureTestBase
+{
     private static readonly Assembly ApplicationAssembly =
         typeof(Notrelix.Application.Common.Behaviors.ValidationBehavior<,>).Assembly;
 
@@ -191,5 +191,64 @@ namespace Notrelix.Architecture.Tests.ApplicationLayer;
                 (i.GetGenericTypeDefinition() == typeof(IRequestHandler<>) ||
                  i.GetGenericTypeDefinition() == typeof(IRequestHandler<,>))))
             .ToList();
+    }
+
+    [Fact]
+    public void APP_DATA_006_Final_Cross_Context_Contracts()
+    {
+        // FZ-APP-01..03: the five migrated handlers must use their final
+        // cross-context contracts (spec 3.2) and never the old foreign DbContexts.
+        var expectations = new Dictionary<string, (string RequiredPort, string[] ForbiddenPorts)>(StringComparer.Ordinal)
+        {
+            ["GetFullBoardQueryHandler"] = ("IWorkManagementCollaborationReadPort", ["ICollaborationDbContext"]),
+            ["GetBoardItemQueryHandler"] = ("IWorkManagementCollaborationReadPort", ["ICollaborationDbContext"]),
+            ["GetBootstrapQueryHandler"] = ("IIdentityBootstrapReadPort", ["IAccountDbContext", "IWorkspaceDbContext"]),
+            ["RegisterCommandHandler"] = ("IAccountProvisioningService", ["IAccountDbContext"]),
+            ["CompleteOAuthLoginCommandHandler"] = ("IAccountProvisioningService", ["IAccountDbContext"]),
+        };
+
+        var violations = new List<string>();
+
+        foreach (var (handlerName, (requiredPort, forbiddenPorts)) in expectations)
+        {
+            var handler = ApplicationAssembly.GetTypes().SingleOrDefault(t => t.Name == handlerName);
+            handler.Should().NotBeNull($"handler {handlerName} must exist");
+
+            var parameterTypes = handler!
+                .GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+                .SelectMany(c => c.GetParameters())
+                .Select(p => p.ParameterType.Name)
+                .ToArray();
+
+            if (!parameterTypes.Contains(requiredPort, StringComparer.Ordinal))
+                violations.Add($"{handlerName} must inject {requiredPort}");
+
+            foreach (var forbiddenPort in forbiddenPorts)
+            {
+                if (parameterTypes.Contains(forbiddenPort, StringComparer.Ordinal))
+                    violations.Add($"{handlerName} must not inject {forbiddenPort}");
+            }
+        }
+
+        violations.Should().BeEmpty(
+            "the five migrated handlers must use the final cross-context contracts — read ports and the provisioning service");
+    }
+
+    [Fact]
+    public void APP_DATA_007_No_Direct_Permission_Service_In_Handlers()
+    {
+        // FZ-APP-05: permission decisions are centralized in the pipeline
+        // authorization behavior — handlers must not call IPermissionService directly.
+        var violations = GetHandlerTypes()
+            .SelectMany(handler => handler.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+                .SelectMany(c => c.GetParameters())
+                .Where(p => p.ParameterType.Name is "IPermissionService" or "IPermissionEvaluator" or "IAuthorizationDecisionStore")
+                .Select(p => $"{handler.Name}:{p.ParameterType.Name}"))
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(x => x, StringComparer.Ordinal)
+            .ToArray();
+
+        violations.Should().BeEmpty(
+            "handlers must not inject the permission service directly — use the authorization request marker and pipeline behavior");
     }
 }

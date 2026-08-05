@@ -14,6 +14,11 @@ public class DbRequestScopeBehaviorTests
         public Guid WorkspaceId => Guid.NewGuid();
     }
 
+    public sealed record ReadOnlyRlsRequest : IRequest<string>, IWorkspaceRequest, IRlsReadRequest
+    {
+        public Guid WorkspaceId => Guid.NewGuid();
+    }
+
     public sealed record GlobalPermissionRequest : IRequest<string>, IGlobalRequest, IRequirePermission
     {
         public PermissionAction Action => PermissionAction.ViewBoard;
@@ -102,6 +107,30 @@ public class DbRequestScopeBehaviorTests
 
         await act.Should().ThrowAsync<SecurityMisconfigurationException>()
             .WithMessage("*is global but requires tenant RLS.*");
+    }
+
+    [Fact]
+    public async Task ReadOnlyRlsRequest_PassesReadOnlyAccessWithTenantScope()
+    {
+        var dataSession = CreateMockDataSession();
+        var behavior = CreateBehavior<ReadOnlyRlsRequest>(dataSession);
+        RequestDataSessionOptions? capturedOptions = null;
+
+        dataSession
+            .Setup(x => x.ExecuteAsync(
+                It.IsAny<RequestDataSessionOptions>(),
+                It.IsAny<Func<CancellationToken, Task<string>>>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<RequestDataSessionOptions, Func<CancellationToken, Task<string>>, CancellationToken>(
+                (opts, _, _) => capturedOptions = opts)
+            .Returns<RequestDataSessionOptions, Func<CancellationToken, Task<string>>, CancellationToken>(
+                (_, action, ct) => action(ct));
+
+        await behavior.Handle(new ReadOnlyRlsRequest(), _ => Task.FromResult("ok"), CancellationToken.None);
+
+        capturedOptions.Should().NotBeNull();
+        capturedOptions!.Access.Should().Be(RequestDataAccess.ReadOnly);
+        capturedOptions.ApplyTenantScope.Should().BeTrue();
     }
 
     [Fact]
