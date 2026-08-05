@@ -199,6 +199,36 @@ public class FreezeResidualBlockerTests : ArchitectureTestBase
             "no reverse mapping, dual-read parser or legacy enum factory may remain");
     }
 
+    // --- FZ-0008: legacy ops idempotency residue is zero ---
+
+    [Fact]
+    public void FZ_0008_No_Legacy_Ops_Idempotency_Types_Remain_In_Infrastructure()
+    {
+        var infrastructureAssembly = typeof(Notrelix.Infrastructure.CacheRegistration).Assembly;
+
+        var residue = infrastructureAssembly.GetTypes()
+            .Where(t => t.Name.Contains("IdempotencyKeyRecord", StringComparison.Ordinal)
+                || t.Name.Contains("DevNullIdempotency", StringComparison.Ordinal)
+                || t.Name.Contains("LegacyIdempotency", StringComparison.Ordinal))
+            .Select(t => t.FullName!)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(x => x, StringComparer.Ordinal)
+            .ToArray();
+
+        residue.Should().BeEmpty(
+            "legacy ops idempotency records, DevNull stores and legacy idempotency interfaces must be deleted after cutover");
+    }
+
+    [Fact]
+    public void FZ_0008b_Legacy_Ops_Test_Project_Residue_Is_Deleted()
+    {
+        var backendRoot = Path.GetDirectoryName(GetSrcPath());
+        var legacyTestDir = Path.Combine(backendRoot!, "tests", "Notrelix.Tests");
+
+        Directory.Exists(legacyTestDir).Should().BeFalse(
+            "the legacy Notrelix.Tests project (IdempotencyKeyRecordTests, JobLockRecordTests, ...) must be deleted");
+    }
+
     // --- helpers ---
 
     private static IEnumerable<Type> GetHandlerTypes()
