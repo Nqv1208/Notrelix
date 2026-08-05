@@ -1,7 +1,5 @@
-using Notrelix.Application.Common.Context;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
-using Notrelix.Application.Common.Security.Auth;
 using Notrelix.Application.Features.Identity.Auth.GetBootstrap;
 
 namespace Notrelix.Application.Features.Identity.Auth.Queries.GetBootstrap;

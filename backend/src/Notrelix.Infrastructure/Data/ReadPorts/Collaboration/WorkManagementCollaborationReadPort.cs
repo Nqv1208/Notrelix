@@ -1,7 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Common.Abstractions;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Infrastructure.Data.ReadPorts.Collaboration;
 

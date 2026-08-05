@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Idempotency;
 using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Workspaces.Provisioning.Commands.ProvisionPersonalWorkspace;
 

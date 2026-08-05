@@ -1,7 +1,6 @@
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Accounts.Members;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Features.Accounts.Provisioning;
 

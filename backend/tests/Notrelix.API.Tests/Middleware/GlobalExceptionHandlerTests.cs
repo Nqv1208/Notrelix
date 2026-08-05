@@ -2,7 +2,6 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Notrelix.API.ErrorHandling;
-using Notrelix.Application.Common.Idempotency;
 using DomainNotFoundException = Notrelix.Application.Common.Exceptions.NotFoundException;
 using DomainForbiddenException = Notrelix.Application.Common.Exceptions.ForbiddenException;
 using DomainConflictException = Notrelix.Application.Common.Exceptions.ConflictException;

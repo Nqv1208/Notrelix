@@ -16,7 +16,13 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
         builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.ParentId).HasColumnName("parent_id");
-        builder.Property(x => x.Content).HasColumnName("content").HasColumnType("jsonb").IsRequired();
+        builder.Property(x => x.Content)
+            .HasColumnName("content")
+            .HasColumnType("jsonb")
+            .IsRequired()
+            .HasConversion(
+                v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                v => System.Text.Json.JsonSerializer.Deserialize<string>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? string.Empty);
         builder.Property(x => x.CommentStatus).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
 
         builder.OwnsOne(x => x.Target, target =>

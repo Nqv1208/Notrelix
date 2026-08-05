@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using Notrelix.API.Idempotency;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Notrelix.API.OpenApi;

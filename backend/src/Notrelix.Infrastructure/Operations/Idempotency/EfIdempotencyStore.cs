@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.Extensions.Options;
 using Notrelix.Infrastructure.Data;
 
 namespace Notrelix.Infrastructure.Operations.Idempotency;

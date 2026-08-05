@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.GetBootstrap;

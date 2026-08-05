@@ -1,7 +1,5 @@
 using Notrelix.Domain.Integrations.Calendar;
 
-using Notrelix.Domain.SharedKernel;
-
 namespace Notrelix.Infrastructure.Data.Configurations.Integrations;
 
 public class CalendarEventConfiguration : IEntityTypeConfiguration<CalendarEvent>

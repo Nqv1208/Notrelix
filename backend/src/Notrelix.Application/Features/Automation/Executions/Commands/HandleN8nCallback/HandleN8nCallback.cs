@@ -1,8 +1,8 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
-using Notrelix.Application.Features.Integrations.Abstractions;
+using Notrelix.Application.Features.Automation.Abstractions;
 
-namespace Notrelix.Application.Features.Integrations.Inbound.Commands.HandleN8nCallback;
+namespace Notrelix.Application.Features.Automation.Executions.Commands.HandleN8nCallback;
 
 public record HandleN8nCallbackCommand(
     Guid ExecutionId,
@@ -12,10 +12,10 @@ public record HandleN8nCallbackCommand(
 
 public class HandleN8nCallbackCommandHandler : IRequestHandler<HandleN8nCallbackCommand, Result>
 {
-    private readonly IIntegrationDbContext _context;
+    private readonly IAutomationDbContext _context;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public HandleN8nCallbackCommandHandler(IIntegrationDbContext context, IDateTimeProvider dateTimeProvider)
+    public HandleN8nCallbackCommandHandler(IAutomationDbContext context, IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _dateTimeProvider = dateTimeProvider;

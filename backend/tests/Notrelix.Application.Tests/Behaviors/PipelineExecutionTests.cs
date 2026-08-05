@@ -1,5 +1,4 @@
 using FluentValidation;
-using Microsoft.Extensions.Options;
 using ValidationException = Notrelix.Application.Common.Exceptions.ValidationException;
 
 namespace Notrelix.Application.Tests.Behaviors;
@@ -702,7 +701,8 @@ public class PipelineExecutionTests
 
     [Fact]
     public async Task IdempotencyBehavior_NonIdempotentRequest_SkipsIdempotency()
-    {        var mockStore = CreateMockIdempotencyStore();
+    {
+        var mockStore = CreateMockIdempotencyStore();
         var behavior = CreateIdempotencyBehavior<NonTransactionalCommand>(mockStore);
 
         RequestHandlerDelegate<string> next = _ => Task.FromResult("ok");

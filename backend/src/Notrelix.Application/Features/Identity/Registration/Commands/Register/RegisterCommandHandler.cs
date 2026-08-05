@@ -3,7 +3,6 @@ using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Accounts.Provisioning;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
-using Notrelix.Domain.Identity.Users;
 
 namespace Notrelix.Application.Features.Identity.Registration.Commands.Register;
 

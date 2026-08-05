@@ -9,7 +9,6 @@ global using Microsoft.OpenApi.Models;
 global using Notrelix.API.Idempotency;
 
 // Domain
-global using Notrelix.Domain.SharedKernel;
 global using Notrelix.Domain.WorkManagement;
 global using Notrelix.Domain.WorkManagement.Boards;
 global using Notrelix.Domain.Workspaces.Members;
