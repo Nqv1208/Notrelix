@@ -9,6 +9,7 @@ public static class CreateSavedFilterEndpoint
     public static IEndpointRouteBuilder MapCreateSavedFilter(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.SavedFilters.Create")
             .WithTags("WorkManagement.SavedFilters")
             .WithSummary("Create a new saved filter");

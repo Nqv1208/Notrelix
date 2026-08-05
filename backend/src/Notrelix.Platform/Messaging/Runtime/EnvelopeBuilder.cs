@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Events;
 using Notrelix.Platform.Messaging.Contracts;
 
 namespace Notrelix.Platform.Messaging.Runtime;

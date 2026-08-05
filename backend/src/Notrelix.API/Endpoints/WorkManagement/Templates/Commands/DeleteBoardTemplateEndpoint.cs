@@ -8,6 +8,7 @@ public static class DeleteBoardTemplateEndpoint
     public static IEndpointRouteBuilder MapDeleteBoardTemplate(this IEndpointRouteBuilder group)
     {
         group.MapResourceDelete("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Templates.Delete")
             .WithTags("WorkManagement.Templates")
             .WithSummary("Delete a board template");

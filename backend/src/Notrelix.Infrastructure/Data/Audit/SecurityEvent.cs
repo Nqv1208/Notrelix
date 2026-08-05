@@ -15,7 +15,7 @@ public sealed class SecurityEvent
     public string? UserAgent { get; private set; }
     public string? DeviceId { get; private set; }
     public Guid? SessionId { get; private set; }
-    public string? ResourceType { get; private set; }
+    public string? ResourceKind { get; private set; }
     public Guid? ResourceId { get; private set; }
     public string? CorrelationId { get; private set; }
     public JsonDocument MetadataJson { get; private set; } = JsonDocument.Parse("{}");
@@ -53,7 +53,7 @@ public sealed class SecurityEvent
         UserAgent = userAgent;
         DeviceId = deviceId;
         SessionId = sessionId;
-        ResourceType = resourceType;
+        ResourceKind = resourceType;
         ResourceId = resourceId;
         CorrelationId = correlationId;
         MetadataJson = metadataJson ?? JsonDocument.Parse("{}");

@@ -40,7 +40,7 @@ public class FakePermissionService : IPermissionService
             throw new UnauthorizedAccessException(decision.ReasonCode ?? "Access denied.");
     }
 
-    public Task<bool> AuthorizeAsync(Guid userId, Guid workspaceId, ResourceType resourceType, Guid resourceId, PermissionAction action, CancellationToken cancellationToken = default)
+    public Task<bool> AuthorizeAsync(Guid userId, Guid workspaceId, ResourceKind resourceType, Guid resourceId, PermissionAction action, CancellationToken cancellationToken = default)
     {
         var key = (userId, workspaceId);
         return Task.FromResult(_authorizationResults.TryGetValue(key, out var result) ? result : _defaultResult);
@@ -52,7 +52,7 @@ public class FakePermissionService : IPermissionService
         return Task.FromResult(_authorizationResults.TryGetValue(key, out var result) ? result : _defaultResult);
     }
 
-    public Task<bool> HasPermissionAsync(Guid userId, Guid workspaceId, ResourceType resourceType, Guid? resourceId, PermissionAction action, CancellationToken cancellationToken = default)
+    public Task<bool> HasPermissionAsync(Guid userId, Guid workspaceId, ResourceKind resourceType, Guid? resourceId, PermissionAction action, CancellationToken cancellationToken = default)
     {
         var key = (userId, workspaceId);
         return Task.FromResult(_authorizationResults.TryGetValue(key, out var result) ? result : _defaultResult);

@@ -14,10 +14,13 @@ public static class BoardMembersEndpoint
         group.MapResourceGet("/", HandleGetBoardMembers)
             .WithName("WorkManagement.Boards.GetMembers");
         group.MapResourcePost("/", HandleAddBoardMember)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Boards.AddMember");
         group.MapResourceDelete("/{userId:guid}", HandleRemoveBoardMember)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Boards.RemoveMember");
         group.MapResourcePatch("/{userId:guid}/role", HandleUpdateBoardMemberRole)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Boards.UpdateMemberRole");
         return group;
     }

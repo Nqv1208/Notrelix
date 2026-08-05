@@ -565,7 +565,7 @@ internal static class InitDb
             var comment = Comment.Create(
                 account.Id,
                 item.WorkspaceId,
-                ResourceRef.Create(ResourceType.BoardItem, item.Id),
+                ResourceRef.Create(ResourceKind.Create("work-management.board-item"), item.Id),
                 text, author.Id, Epoch.AddDays(1));
             context.Comments.Add(comment);
         }

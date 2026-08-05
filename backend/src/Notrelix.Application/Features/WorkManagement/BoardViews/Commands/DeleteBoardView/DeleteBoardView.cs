@@ -3,12 +3,12 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.DeleteBoardView;
 
-public record DeleteBoardViewCommand(Guid BoardId, Guid ViewId, string? IdempotencyKey = null)
+[IdempotencyOperation("work-management.board-views.delete-board-view.v1")]
+public record DeleteBoardViewCommand(Guid BoardId, Guid ViewId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateBoardView;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardView, ViewId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"delete-view:{ViewId}";
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-view"), ViewId);
 }
 
 public class DeleteBoardViewCommandHandler : IRequestHandler<DeleteBoardViewCommand, Result>

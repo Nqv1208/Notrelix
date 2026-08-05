@@ -9,6 +9,7 @@ public static class ApproveApprovalRequestEndpoint
     public static IEndpointRouteBuilder MapApproveApprovalRequest(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/approve", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Approvals.Approve")
             .WithTags("WorkManagement.Approvals")
             .WithSummary("Approve an approval request");

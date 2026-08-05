@@ -8,6 +8,7 @@ public static class DeleteBoardItemEndpoint
     public static IEndpointRouteBuilder MapDeleteBoardItem(this IEndpointRouteBuilder group)
     {
         group.MapResourceDelete("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardItems.Delete")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Delete a board item");

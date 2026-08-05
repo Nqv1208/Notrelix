@@ -9,7 +9,7 @@ public class PermissionTemplateWorkspaceScopeTests
     private static PermissionTemplateDefinition ValidDefinition() =>
         PermissionTemplateDefinition.Create(
         [
-            PermissionTemplateEntry.Create(ResourceType.Board, PermissionAction.ViewBoard, PermissionEffect.Allow)
+            PermissionTemplateEntry.Create(ResourceKind.Create("work-management.board"), PermissionAction.ViewBoard, PermissionEffect.Allow)
         ]);
 
     [Fact]

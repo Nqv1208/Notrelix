@@ -3,15 +3,14 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.ItemLinks.Commands.CreateBoardItemLink;
 
+[IdempotencyOperation("work-management.item-links.create-board-item-link.v1")]
 public record CreateBoardItemLinkCommand(
     Guid SourceBoardItemId,
     Guid TargetBoardItemId,
-    string LinkType,
-    string? IdempotencyKey = null) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    string LinkType) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardItem, SourceBoardItemId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), SourceBoardItemId);
     public PermissionAction Action => PermissionAction.UpdateItem;
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"create-item-link:{SourceBoardItemId}:{TargetBoardItemId}";
 }
 
 public class CreateBoardItemLinkCommandHandler(
@@ -46,7 +45,7 @@ public class CreateBoardItemLinkCommandHandler(
         var accountId = requestContext.RequireAccountId();
         var workspaceId = requestContext.RequireWorkspaceId();
 
-        var target = ResourceRef.Create(ResourceType.BoardItem, request.TargetBoardItemId, workspaceId);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), request.TargetBoardItemId, workspaceId);
 
         var link = BoardItemLink.Create(
             accountId,

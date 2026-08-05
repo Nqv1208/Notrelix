@@ -25,6 +25,6 @@ public class ResourceScopeBehaviorTests
 
     private sealed record TestResourceScopedRequest : IResourceScopedRequest
     {
-        public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), Guid.NewGuid());
     }
 }

@@ -15,7 +15,4 @@ public interface IIntegrationDbContext
     DbSet<CalendarIntegration> CalendarIntegrations { get; }
     DbSet<CalendarEvent> CalendarEvents { get; }
     DbSet<CalendarEventLink> CalendarEventLinks { get; }
-
-    // Automation (shared for inbound integration callbacks)
-    DbSet<AutomationExecution> AutomationExecutions { get; }
 }

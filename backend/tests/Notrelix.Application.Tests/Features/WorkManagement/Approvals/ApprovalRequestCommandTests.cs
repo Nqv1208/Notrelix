@@ -30,7 +30,7 @@ public class ApprovalRequestCommandTests : WorkManagementHandlerTestBase
             SetupBoards(board);
 
             var command = new CreateApprovalRequestCommand(
-                board.Id, ResourceType.Board, "Approve design", null, null);
+                board.Id, "Approve design", null, null);
 
             var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -42,7 +42,7 @@ public class ApprovalRequestCommandTests : WorkManagementHandlerTestBase
         public async Task Handle_BoardNotFound_ThrowsNotFoundException()
         {
             var command = new CreateApprovalRequestCommand(
-                Guid.CreateVersion7(), ResourceType.Board, "Approve design", null, null);
+                Guid.CreateVersion7(), "Approve design", null, null);
 
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<NotFoundException>();
@@ -61,7 +61,7 @@ public class ApprovalRequestCommandTests : WorkManagementHandlerTestBase
                 new(null, Guid.CreateVersion7())
             };
             var command = new CreateApprovalRequestCommand(
-                board.Id, ResourceType.Board, "Multi-step approval", null, steps);
+                board.Id, "Multi-step approval", null, steps);
 
             var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -76,7 +76,7 @@ public class ApprovalRequestCommandTests : WorkManagementHandlerTestBase
             SetupBoards(board);
 
             var command = new CreateApprovalRequestCommand(
-                board.Id, ResourceType.Board, "Approve release", "Please review", null);
+                board.Id, "Approve release", "Please review", null);
 
             var result = await _handler.Handle(command, CancellationToken.None);
 

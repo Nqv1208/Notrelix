@@ -6,7 +6,7 @@ namespace Notrelix.Application.Features.Collaboration.Comments.Commands.ResolveC
 public record ResolveCommentCommand(Guid CommentId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Comment, CommentId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("collaboration.comment"), CommentId);
 }
 
 public class ResolveCommentCommandHandler : IRequestHandler<ResolveCommentCommand, Result>

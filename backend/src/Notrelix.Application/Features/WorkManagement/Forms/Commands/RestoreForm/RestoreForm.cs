@@ -3,14 +3,13 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.RestoreForm;
 
+[IdempotencyOperation("work-management.forms.restore-form.v1")]
 public record RestoreFormCommand(
-    Guid FormId,
-    string? IdempotencyKey = null)
+    Guid FormId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Form, FormId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"restore-form:{FormId}";
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.form"), FormId);
 }
 
 public class RestoreFormCommandHandler : IRequestHandler<RestoreFormCommand, Result>

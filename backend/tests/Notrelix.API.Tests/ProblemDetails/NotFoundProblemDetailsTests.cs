@@ -13,7 +13,9 @@ public class NotFoundProblemDetailsTests
 
     public NotFoundProblemDetailsTests()
     {
-        _handler = new GlobalExceptionHandler(Mock.Of<ILogger<GlobalExceptionHandler>>());
+        _handler = new GlobalExceptionHandler(
+            Mock.Of<ILogger<GlobalExceptionHandler>>(),
+            Microsoft.Extensions.Options.Options.Create(new IdempotencyOptions()));
         _context = new DefaultHttpContext();
         _context.Response.Body = new MemoryStream();
         _context.Request.Path = "/api/test";

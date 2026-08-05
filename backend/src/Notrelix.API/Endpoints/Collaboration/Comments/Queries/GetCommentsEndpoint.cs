@@ -25,13 +25,13 @@ public static class GetCommentsEndpoint
 
     private static async Task<IResult> GetBoardItemCommentsAsync(Guid boardItemId, ISender sender)
     {
-        var result = await sender.Send(new GetCommentsQuery(Enum.Parse<ResourceType>("BoardItem", ignoreCase: true), boardItemId));
+        var result = await sender.Send(GetCommentsQuery.ForBoardItem(boardItemId));
         return result.ToApiResult();
     }
 
     private static async Task<IResult> GetPageCommentsAsync(Guid pageId, ISender sender)
     {
-        var result = await sender.Send(new GetCommentsQuery(Enum.Parse<ResourceType>("Page", ignoreCase: true), pageId));
+        var result = await sender.Send(GetCommentsQuery.ForPage(pageId));
         return result.ToApiResult();
     }
 }

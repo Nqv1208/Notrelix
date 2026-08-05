@@ -2,14 +2,17 @@ name: Frontend CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, foundationfreeze]
     paths:
       - 'frontend/**'
-      - '.github/workflows/frontend-ci.yml'
+      - 'backend/contracts/openapi/**'
+      - '.github/workflows/fe-ci.yml'
   pull_request:
     branches: [main, develop]
     paths:
       - 'frontend/**'
+      - 'backend/contracts/openapi/**'
+      - '.github/workflows/fe-ci.yml'
 
 jobs:
   install:

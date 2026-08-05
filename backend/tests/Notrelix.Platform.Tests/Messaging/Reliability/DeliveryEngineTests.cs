@@ -15,7 +15,7 @@ public sealed class DeliveryEngineTests
     private readonly CircuitBreaker _circuitBreaker = new(5, TimeSpan.FromSeconds(30));
     private readonly DeliveryEngine _sut;
 
-        private static readonly RetryPolicy FastRetry = new()
+    private static readonly RetryPolicy FastRetry = new()
     {
         MaxRetries = 5,
         Strategy = BackoffStrategy.Fixed,

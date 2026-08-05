@@ -9,6 +9,7 @@ public static class CreateBoardRelationEndpoint
     public static IEndpointRouteBuilder MapCreateBoardRelation(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Relations.Create")
             .WithTags("WorkManagement.Relations")
             .WithSummary("Create a relation between two boards");

@@ -9,6 +9,7 @@ public static class UpdateFormDetailsEndpoint
     public static IEndpointRouteBuilder MapUpdateFormDetails(this IEndpointRouteBuilder group)
     {
         group.MapResourcePatch("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Forms.UpdateDetails")
             .WithTags("WorkManagement.Forms")
             .WithSummary("Update form details");

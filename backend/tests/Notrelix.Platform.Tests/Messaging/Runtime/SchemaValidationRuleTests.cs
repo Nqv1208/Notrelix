@@ -1,7 +1,6 @@
 using System.Text;
 using FluentAssertions;
 using Moq;
-using Notrelix.Domain.Common;
 using Notrelix.Platform.Messaging.Contracts;
 using Notrelix.Platform.Messaging.Runtime;
 using Xunit;

@@ -9,6 +9,7 @@ using Notrelix.Application.Common.Data.Rls;
 using Notrelix.Application.Common.Entitlements;
 using Notrelix.Application.Common.Idempotency;
 using Notrelix.Application.Common.PostCommit;
+using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Common.Requests.Security;
 using Notrelix.Application.Common.Security;
 using Notrelix.Application.Common.Tenancy;
@@ -19,7 +20,7 @@ namespace Notrelix.Architecture.Tests.Pipeline;
 
 public class PipelineRuntimeOrderTests
 {
-    private record TestRequest : IRequest<TestResponse>, IAnonymousRequest;
+    private record TestRequest : IRequest<TestResponse>, IAnonymousRequest, IGlobalRequest;
     private record TestResponse;
 
     [Fact]
@@ -31,6 +32,7 @@ public class PipelineRuntimeOrderTests
         var services = new ServiceCollection();
         services.AddLogging();
 
+        services.AddSingleton(TimeProvider.System);
         services.AddSingleton(Mock.Of<IExecutionContextReader>());
         services.AddSingleton<ICurrentTenantContext, CurrentTenantContext>();
         services.AddSingleton(Mock.Of<IResourceScopeResolver>());
@@ -39,6 +41,12 @@ public class PipelineRuntimeOrderTests
         services.AddSingleton(new CacheKeyFactory(Options.Create(new CacheKeyOptions())));
         services.AddSingleton<IRlsSessionContext>(Mock.Of<IRlsSessionContext>());
         services.AddSingleton<IIdempotencyStore>(Mock.Of<IIdempotencyStore>());
+        services.AddSingleton<IIdempotencyRequestFingerprint>(Mock.Of<IIdempotencyRequestFingerprint>());
+        services.AddSingleton<IIdempotencyReplayPolicy>(Mock.Of<IIdempotencyReplayPolicy>());
+        services.AddSingleton(new IdempotencyPartitionFactory(Mock.Of<ICurrentTenantContext>()));
+        services.AddSingleton(Options.Create(new IdempotencyOptions()));
+        services.AddSingleton<IIdempotencyExecutionContext>(Mock.Of<IIdempotencyExecutionContext>());
+        services.AddSingleton<IIdempotencyExecutionContextWriter>(Mock.Of<IIdempotencyExecutionContextWriter>());
         services.AddSingleton<IRealtimePublisher>(Mock.Of<IRealtimePublisher>());
         services.AddSingleton<IPermissionVersionProvider>(Mock.Of<IPermissionVersionProvider>());
         services.AddSingleton<IResourceVersionReader>(Mock.Of<IResourceVersionReader>());
@@ -49,7 +57,7 @@ public class PipelineRuntimeOrderTests
         services.AddSingleton<ITenantBootstrapStore>(Mock.Of<ITenantBootstrapStore>());
         services.AddSingleton<IAuthorizationDecisionStore>(Mock.Of<IAuthorizationDecisionStore>());
         services.AddSingleton<IPermissionService>(Mock.Of<IPermissionService>());
-        services.AddSingleton<IApplicationDbContext>(Mock.Of<IApplicationDbContext>());
+        services.AddSingleton<IRequestDataSession>(Mock.Of<IRequestDataSession>());
         services.AddSingleton<IEnumerable<IValidator<TestRequest>>>(Array.Empty<IValidator<TestRequest>>());
 
         foreach (var typeName in expectedOrder)

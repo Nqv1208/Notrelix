@@ -8,6 +8,7 @@ public static class DeleteFormEndpoint
     public static IEndpointRouteBuilder MapDeleteForm(this IEndpointRouteBuilder group)
     {
         group.MapResourceDelete("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Forms.SoftDelete")
             .WithTags("WorkManagement.Forms")
             .WithSummary("Soft-delete a form");

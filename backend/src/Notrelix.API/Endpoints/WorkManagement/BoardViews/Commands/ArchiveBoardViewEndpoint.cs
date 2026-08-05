@@ -8,6 +8,7 @@ public static class ArchiveBoardViewEndpoint
     public static IEndpointRouteBuilder MapArchiveBoardView(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/{viewId:guid}/archive", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardViews.Archive")
             .WithTags("WorkManagement.BoardViews")
             .WithSummary("Archive a board view");

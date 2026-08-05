@@ -8,6 +8,7 @@ public static class RestoreSavedFilterEndpoint
     public static IEndpointRouteBuilder MapRestoreSavedFilter(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/restore", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.SavedFilters.Restore")
             .WithTags("WorkManagement.SavedFilters")
             .WithSummary("Restore a soft-deleted saved filter");

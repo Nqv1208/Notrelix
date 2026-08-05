@@ -8,7 +8,7 @@ namespace Notrelix.Application.Features.Documents.Pages.Queries.GetPage;
 public record GetPageQuery(Guid PageId) : IQuery<Result<PageDto>>, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Page, PageId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);
 }
 
 public class GetPageQueryHandler : IRequestHandler<GetPageQuery, Result<PageDto>>

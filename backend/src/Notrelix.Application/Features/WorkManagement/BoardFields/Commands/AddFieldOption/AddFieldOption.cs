@@ -5,17 +5,16 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.AddFieldOption;
 
+[IdempotencyOperation("work-management.board-fields.add-field-option.v1")]
 public record AddFieldOptionCommand(
     Guid BoardId,
     Guid FieldId,
     string Name,
     string Color,
-    string? Position,
-    string? IdempotencyKey = null) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    string? Position) : ICommand<Result<Guid>>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateField;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardField, FieldId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"add-field-option:{FieldId}:{Name}";
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-field"), FieldId);
 }
 
 public class AddFieldOptionCommandHandler : IRequestHandler<AddFieldOptionCommand, Result<Guid>>

@@ -10,7 +10,7 @@ public class SearchIndexJobConfiguration : IEntityTypeConfiguration<SearchIndexJ
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id");
-        builder.Property(x => x.ResourceType).HasColumnName("resource_type").IsRequired().HasMaxLength(80);
+        builder.Property(x => x.ResourceKind).HasColumnName("resource_type").IsRequired().HasMaxLength(80);
         builder.Property(x => x.ResourceId).HasColumnName("resource_id").IsRequired();
         builder.Property(x => x.Operation).HasColumnName("operation").IsRequired().HasMaxLength(40);
         builder.Property(x => x.Status).HasColumnName("status").IsRequired().HasMaxLength(40).HasDefaultValue("Pending");
@@ -30,6 +30,6 @@ public class SearchIndexJobConfiguration : IEntityTypeConfiguration<SearchIndexJ
 
         builder.HasIndex(x => new { x.Status, x.Priority, x.AvailableAt, x.CreatedAt }).HasDatabaseName("ix_search_index_jobs_pending");
         builder.HasIndex(x => x.LockedUntil).HasDatabaseName("ix_search_index_jobs_locks");
-        builder.HasIndex(x => new { x.WorkspaceId, x.ResourceType, x.ResourceId, x.CreatedAt }).IsDescending(false, false, false, true).HasDatabaseName("ix_search_index_jobs_resource");
+        builder.HasIndex(x => new { x.WorkspaceId, x.ResourceKind, x.ResourceId, x.CreatedAt }).IsDescending(false, false, false, true).HasDatabaseName("ix_search_index_jobs_resource");
     }
 }

@@ -33,9 +33,11 @@ public class ConcurrencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
 
             if (currentVersion.Value != expectedVersionRequest.ExpectedVersion)
             {
-                throw new ConflictException(
+                throw new Exceptions.PreconditionFailedException(
                     $"Resource {expectedVersionRequest.Resource} version mismatch. " +
-                    $"Expected {expectedVersionRequest.ExpectedVersion}, got {currentVersion.Value}.");
+                    $"Expected {expectedVersionRequest.ExpectedVersion}, got {currentVersion.Value}.",
+                    expectedVersion: expectedVersionRequest.ExpectedVersion,
+                    currentVersion: currentVersion.Value);
             }
         }
 

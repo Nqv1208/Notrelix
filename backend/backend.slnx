@@ -4,6 +4,7 @@
   <Project Path="src/Notrelix.Application/Notrelix.Application.csproj" />
   <Project Path="src/Notrelix.Infrastructure/Notrelix.Infrastructure.csproj" />
   <Project Path="src/Notrelix.API/Notrelix.API.csproj" />
+  <Project Path="src/Notrelix.Platform/Notrelix.Platform.csproj" />
 
   <!-- Test projects -->
   <Project Path="tests/Notrelix.Architecture.Tests/Notrelix.Architecture.Tests.csproj" />
@@ -12,6 +13,7 @@
   <Project Path="tests/Notrelix.Infrastructure.Tests/Notrelix.Infrastructure.Tests.csproj" />
   <Project Path="tests/Notrelix.API.Tests/Notrelix.API.Tests.csproj" />
   <Project Path="tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj" />
+  <Project Path="tests/Notrelix.Platform.Tests/Notrelix.Platform.Tests.csproj" />
 
   <!-- Testing support libraries -->
   <Project Path="tests/Notrelix.Testing.Core/Notrelix.Testing.Core.csproj" />

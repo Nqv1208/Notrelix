@@ -1,4 +1,5 @@
 using Notrelix.Domain.Governance.Permissions;
+using Notrelix.Infrastructure.Data.Converters;
 
 namespace Notrelix.Infrastructure.Data.Configurations.Governance;
 
@@ -13,7 +14,7 @@ public class PermissionRuleConfiguration : IEntityTypeConfiguration<PermissionRu
 
         builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.ScopeType).HasColumnName("scope_type").IsRequired().HasMaxLength(50);
-        builder.Property(x => x.ResourceType).HasColumnName("resource_type").HasMaxLength(50);
+        builder.Property(x => x.ResourceKind).HasColumnName("resource_type").HasConversion<ResourceKindConverter>().HasMaxLength(128);
         builder.Property(x => x.ResourceId).HasColumnName("resource_id");
         builder.Property(x => x.SubjectType).HasColumnName("subject_type").IsRequired().HasMaxLength(50);
         builder.Property(x => x.SubjectId).HasColumnName("subject_id");

@@ -5,7 +5,7 @@ public sealed class SearchDocumentRecord
     public Guid Id { get; private set; }
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
-    public string ResourceType { get; private set; } = null!;
+    public string ResourceKind { get; private set; } = null!;
     public Guid ResourceId { get; private set; }
     public string Title { get; private set; } = null!;
     public string? Content { get; private set; }
@@ -34,7 +34,7 @@ public sealed class SearchDocumentRecord
             Id = id,
             AccountId = accountId,
             WorkspaceId = workspaceId,
-            ResourceType = resourceType,
+            ResourceKind = resourceType,
             ResourceId = resourceId,
             Title = title,
             Content = content,

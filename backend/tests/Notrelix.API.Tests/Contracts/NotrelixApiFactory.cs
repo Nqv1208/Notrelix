@@ -219,7 +219,6 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             // options and context directly without AddDbContext.
             services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
             services.RemoveAll<ApplicationDbContext>();
-            services.RemoveAll<IApplicationDbContext>();
 
             services.AddSingleton(sp =>
                 new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -270,9 +269,6 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
 
                 return new TestApplicationDbContext(options, tenant);
             });
-
-            services.AddScoped<IApplicationDbContext>(sp =>
-                sp.GetRequiredService<ApplicationDbContext>());
 
             // Replace Redis cache with in-memory distributed cache for testing.
             // Remove all Redis-dependent services to prevent DI resolution failures.
@@ -353,7 +349,24 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
 
             // Pipeline behavior dependencies.
             services.RemoveAll<IIdempotencyStore>();
-            services.AddScoped<IIdempotencyStore>(_ => Mock.Of<IIdempotencyStore>());
+            services.AddScoped<IIdempotencyStore>(_ =>
+            {
+                var mock = new Mock<IIdempotencyStore>();
+                mock.Setup(x => x.BeginAsync(It.IsAny<IdempotencyIdentity>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new IdempotencyBeginResult(IdempotencyBeginStatus.Started, null, null));
+                return mock.Object;
+            });
+
+            // The scoped execution context carries the raw idempotency key.
+            // Idempotent endpoints are marked with WithIdempotencyKey(), so the real
+            // HttpIdempotencyEndpointFilter binds the Idempotency-Key header here.
+            // CreateClient() below injects a unique test key per request; tests that
+            // assert the missing/invalid-header contract must set their own headers.
+            services.RemoveAll<IIdempotencyExecutionContext>();
+            services.RemoveAll<IIdempotencyExecutionContextWriter>();
+            services.AddScoped<IIdempotencyExecutionContext, IdempotencyExecutionContext>();
+            services.AddScoped<IIdempotencyExecutionContextWriter>(sp =>
+                (IIdempotencyExecutionContextWriter)sp.GetRequiredService<IIdempotencyExecutionContext>());
 
             services.RemoveAll<IRealtimePublisher>();
             services.AddScoped<IRealtimePublisher>(_ => Mock.Of<IRealtimePublisher>());
@@ -559,6 +572,21 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             services.AddAuthentication(defaultScheme: "Test")
                 .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
         });
+    }
+
+    /// <summary>
+    /// Creates a client that automatically sends an Idempotency-Key header.
+    /// Idempotent endpoints are marked with WithIdempotencyKey() and reject
+    /// requests without the header; contract tests unrelated to idempotency use
+    /// this default. Tests asserting the idempotency header contract itself must
+    /// build a client from <see cref="WebApplicationFactory{TEntryPoint}.Server"/>
+    /// and control the header explicitly.
+    /// </summary>
+    public new HttpClient CreateClient()
+    {
+        var client = base.CreateClient();
+        client.DefaultRequestHeaders.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        return client;
     }
 
     public HttpClient CreateAuthenticatedClient()

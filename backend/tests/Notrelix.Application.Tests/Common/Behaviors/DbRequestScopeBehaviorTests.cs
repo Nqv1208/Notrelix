@@ -1,14 +1,7 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Storage;
-using Notrelix.Application.Common.Requests.Scoping;
-
 namespace Notrelix.Application.Tests.Common.Behaviors;
 
 public class DbRequestScopeBehaviorTests
 {
-    // --- Test request types ---
-
     public sealed record GlobalTransactionalRequest : IRequest<string>, IGlobalRequest, ITransactionalRequest;
 
     public sealed record WorkspaceTransactionalRequest : IRequest<string>, IWorkspaceRequest, ITransactionalRequest
@@ -16,126 +9,92 @@ public class DbRequestScopeBehaviorTests
         public Guid WorkspaceId => Guid.NewGuid();
     }
 
-    public sealed record RlsReadRequest : IRequest<string>, IRlsReadRequest, ITransactionalRequest;
+    public sealed record RlsReadRequest : IRequest<string>, IWorkspaceRequest, IRlsReadRequest, ITransactionalRequest
+    {
+        public Guid WorkspaceId => Guid.NewGuid();
+    }
+
+    public sealed record ReadOnlyRlsRequest : IRequest<string>, IWorkspaceRequest, IRlsReadRequest
+    {
+        public Guid WorkspaceId => Guid.NewGuid();
+    }
 
     public sealed record GlobalPermissionRequest : IRequest<string>, IGlobalRequest, IRequirePermission
     {
         public PermissionAction Action => PermissionAction.ViewBoard;
-        public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, Guid.NewGuid());
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), Guid.NewGuid());
     }
 
-    public sealed record NonTransactionalRequest : IRequest<string>;
+    public sealed record NonTransactionalRequest : IRequest<string>, IGlobalRequest;
 
-    // --- Helpers ---
-
-    private static Mock<IRlsSessionContext> CreateMockRls()
+    private static Mock<IRequestDataSession> CreateMockDataSession()
     {
-        var rls = new Mock<IRlsSessionContext>();
-        rls.Setup(x => x.ApplyAsync(It.IsAny<DatabaseFacade>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-        return rls;
-    }
-
-    private static (Mock<IApplicationDbContext> Context, Mock<IDbContextTransaction> Transaction) CreateMockContextPair(bool throwOnSave = false)
-    {
-        var context = new Mock<IApplicationDbContext>();
-        var database = new Mock<DatabaseFacade>(Mock.Of<DbContext>());
-        var transaction = new Mock<IDbContextTransaction>();
-        database.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(transaction.Object);
-        context.Setup(x => x.Database).Returns(database.Object);
-
-        if (throwOnSave)
-            context.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new DbUpdateException("Simulated save failure", new Exception()));
-        else
-            context.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(1);
-
-        return (context, transaction);
+        var session = new Mock<IRequestDataSession>();
+        session
+            .Setup(x => x.ExecuteAsync(
+                It.IsAny<RequestDataSessionOptions>(),
+                It.IsAny<Func<CancellationToken, Task<string>>>(),
+                It.IsAny<CancellationToken>()))
+            .Returns<RequestDataSessionOptions, Func<CancellationToken, Task<string>>, CancellationToken>(
+                (_, action, ct) => action(ct));
+        return session;
     }
 
     private static DbRequestScopeBehavior<T, string> CreateBehavior<T>(
-        Mock<IApplicationDbContext>? context = null,
-        Mock<IRlsSessionContext>? rls = null)
+        Mock<IRequestDataSession>? dataSession = null)
         where T : IRequest<string>
     {
         return new DbRequestScopeBehavior<T, string>(
-            (context ?? CreateMockContextPair().Context).Object,
-            (rls ?? CreateMockRls()).Object,
+            (dataSession ?? CreateMockDataSession()).Object,
             Mock.Of<ILogger<DbRequestScopeBehavior<T, string>>>());
     }
 
-    // --- Tests ---
-
     [Fact]
-    public async Task GlobalTransactionalRequest_Does_Not_Apply_Rls()
+    public async Task GlobalTransactionalRequest_PassesTransactionalOptions()
     {
-        var rls = CreateMockRls();
-        var behavior = CreateBehavior<GlobalTransactionalRequest>(rls: rls);
+        var dataSession = CreateMockDataSession();
+        var behavior = CreateBehavior<GlobalTransactionalRequest>(dataSession);
+        RequestDataSessionOptions? capturedOptions = null;
+
+        dataSession
+            .Setup(x => x.ExecuteAsync(
+                It.IsAny<RequestDataSessionOptions>(),
+                It.IsAny<Func<CancellationToken, Task<string>>>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<RequestDataSessionOptions, Func<CancellationToken, Task<string>>, CancellationToken>(
+                (opts, _, _) => capturedOptions = opts)
+            .Returns<RequestDataSessionOptions, Func<CancellationToken, Task<string>>, CancellationToken>(
+                (_, action, ct) => action(ct));
 
         await behavior.Handle(new GlobalTransactionalRequest(), _ => Task.FromResult("ok"), CancellationToken.None);
 
-        rls.Verify(
-            x => x.ApplyAsync(It.IsAny<DatabaseFacade>(), It.IsAny<CancellationToken>()),
-            Times.Never);
+        capturedOptions.Should().NotBeNull();
+        capturedOptions!.Access.Should().Be(RequestDataAccess.Transactional);
+        capturedOptions.ApplyTenantScope.Should().BeFalse();
     }
 
     [Fact]
-    public async Task GlobalTransactionalRequest_SavesChanges()
+    public async Task WorkspaceTransactionalRequest_PassesTenantScope()
     {
-        var (context, _) = CreateMockContextPair();
-        var behavior = CreateBehavior<GlobalTransactionalRequest>(context: context);
+        var dataSession = CreateMockDataSession();
+        var behavior = CreateBehavior<WorkspaceTransactionalRequest>(dataSession);
+        RequestDataSessionOptions? capturedOptions = null;
 
-        await behavior.Handle(new GlobalTransactionalRequest(), _ => Task.FromResult("ok"), CancellationToken.None);
-
-        context.Verify(
-            x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task WorkspaceTransactionalRequest_Applies_Rls()
-    {
-        var rls = CreateMockRls();
-        var behavior = CreateBehavior<WorkspaceTransactionalRequest>(rls: rls);
+        dataSession
+            .Setup(x => x.ExecuteAsync(
+                It.IsAny<RequestDataSessionOptions>(),
+                It.IsAny<Func<CancellationToken, Task<string>>>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<RequestDataSessionOptions, Func<CancellationToken, Task<string>>, CancellationToken>(
+                (opts, _, _) => capturedOptions = opts)
+            .Returns<RequestDataSessionOptions, Func<CancellationToken, Task<string>>, CancellationToken>(
+                (_, action, ct) => action(ct));
 
         await behavior.Handle(new WorkspaceTransactionalRequest(), _ => Task.FromResult("ok"), CancellationToken.None);
 
-        rls.Verify(
-            x => x.ApplyAsync(It.IsAny<DatabaseFacade>(), It.IsAny<CancellationToken>()),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task WorkspaceTransactionalRequest_SavesChanges()
-    {
-        var (context, _) = CreateMockContextPair();
-        var behavior = CreateBehavior<WorkspaceTransactionalRequest>(context: context);
-
-        await behavior.Handle(new WorkspaceTransactionalRequest(), _ => Task.FromResult("ok"), CancellationToken.None);
-
-        context.Verify(
-            x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task RlsReadRequest_Applies_Rls_And_SavesChanges()
-    {
-        var rls = CreateMockRls();
-        var (context, _) = CreateMockContextPair();
-        var behavior = CreateBehavior<RlsReadRequest>(context: context, rls: rls);
-
-        await behavior.Handle(new RlsReadRequest(), _ => Task.FromResult("ok"), CancellationToken.None);
-
-        rls.Verify(
-            x => x.ApplyAsync(It.IsAny<DatabaseFacade>(), It.IsAny<CancellationToken>()),
-            Times.Once);
-
-        context.Verify(
-            x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
-            Times.Once);
+        capturedOptions.Should().NotBeNull();
+        capturedOptions!.Access.Should().Be(RequestDataAccess.Transactional);
+        capturedOptions.ApplyTenantScope.Should().BeTrue();
     }
 
     [Fact]
@@ -151,17 +110,44 @@ public class DbRequestScopeBehaviorTests
     }
 
     [Fact]
-    public async Task NonTransactionalRequest_Does_Not_Open_DbScope()
+    public async Task ReadOnlyRlsRequest_PassesReadOnlyAccessWithTenantScope()
     {
-        var (context, _) = CreateMockContextPair();
-        var behavior = CreateBehavior<NonTransactionalRequest>(context: context);
+        var dataSession = CreateMockDataSession();
+        var behavior = CreateBehavior<ReadOnlyRlsRequest>(dataSession);
+        RequestDataSessionOptions? capturedOptions = null;
+
+        dataSession
+            .Setup(x => x.ExecuteAsync(
+                It.IsAny<RequestDataSessionOptions>(),
+                It.IsAny<Func<CancellationToken, Task<string>>>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<RequestDataSessionOptions, Func<CancellationToken, Task<string>>, CancellationToken>(
+                (opts, _, _) => capturedOptions = opts)
+            .Returns<RequestDataSessionOptions, Func<CancellationToken, Task<string>>, CancellationToken>(
+                (_, action, ct) => action(ct));
+
+        await behavior.Handle(new ReadOnlyRlsRequest(), _ => Task.FromResult("ok"), CancellationToken.None);
+
+        capturedOptions.Should().NotBeNull();
+        capturedOptions!.Access.Should().Be(RequestDataAccess.ReadOnly);
+        capturedOptions.ApplyTenantScope.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task NonTransactionalRequest_SkipsDataSession()
+    {
+        var dataSession = CreateMockDataSession();
+        var behavior = CreateBehavior<NonTransactionalRequest>(dataSession);
 
         var result = await behavior.Handle(
             new NonTransactionalRequest(), _ => Task.FromResult("ok"), CancellationToken.None);
 
         result.Should().Be("ok");
-        context.Verify(
-            x => x.Database,
+        dataSession.Verify(
+            x => x.ExecuteAsync(
+                It.IsAny<RequestDataSessionOptions>(),
+                It.IsAny<Func<CancellationToken, Task<string>>>(),
+                It.IsAny<CancellationToken>()),
             Times.Never);
     }
 }

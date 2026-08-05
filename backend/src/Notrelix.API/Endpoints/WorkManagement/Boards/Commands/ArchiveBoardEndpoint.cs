@@ -8,6 +8,7 @@ public static class ArchiveBoardEndpoint
     public static IEndpointRouteBuilder MapArchiveBoard(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/archive", HandleArchiveBoard)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Boards.Archive");
         return group;
     }

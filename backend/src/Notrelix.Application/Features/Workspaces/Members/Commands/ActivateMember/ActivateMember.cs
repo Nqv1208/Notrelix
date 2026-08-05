@@ -9,7 +9,7 @@ public record ActivateMemberCommand(
 ) : ICommand<Result>, ITransactionalRequest, IWorkspaceRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.RemoveMember;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId, WorkspaceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
 
 public class ActivateMemberCommandHandler : IRequestHandler<ActivateMemberCommand, Result>

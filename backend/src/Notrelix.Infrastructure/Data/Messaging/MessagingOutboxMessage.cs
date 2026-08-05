@@ -35,6 +35,7 @@ public sealed class MessagingOutboxMessage
     public DateTimeOffset NextAttemptAt { get; private set; }
     public DateTimeOffset? ProcessingStartedAt { get; private set; }
     public string? LockedBy { get; private set; }
+    public Guid? LockId { get; private set; }
     public DateTimeOffset? LockedUntil { get; private set; }
     public DateTimeOffset? PublishedAt { get; private set; }
     public DateTimeOffset? ProcessedAt { get; private set; }
@@ -90,10 +91,12 @@ public sealed class MessagingOutboxMessage
         CreatedAt = createdAt;
     }
 
-    public void MarkProcessing(DateTimeOffset now)
+    public void MarkProcessing(DateTimeOffset now, Guid lockId)
     {
         Status = "Processing";
         ProcessingStartedAt = now;
+        LockId = lockId;
+        LockedUntil = now.AddSeconds(60);
         UpdatedAt = now;
     }
 

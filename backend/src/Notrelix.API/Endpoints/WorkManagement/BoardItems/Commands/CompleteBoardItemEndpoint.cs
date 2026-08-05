@@ -9,6 +9,7 @@ public static class CompleteBoardItemEndpoint
     public static IEndpointRouteBuilder MapCompleteBoardItem(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/complete", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardItems.Complete")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Complete a board item");

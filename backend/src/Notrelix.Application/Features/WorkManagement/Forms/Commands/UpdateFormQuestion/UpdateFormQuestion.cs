@@ -4,18 +4,17 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.UpdateFormQuestion;
 
+[IdempotencyOperation("work-management.forms.update-form-question.v1")]
 public record UpdateFormQuestionCommand(
     Guid QuestionId,
     string Label,
     bool IsRequired,
     string? ConfigJson,
-    string? Position,
-    string? IdempotencyKey = null)
+    string? Position)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Form, QuestionId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"update-form-question:{QuestionId}";
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.form"), QuestionId);
 }
 
 public class UpdateFormQuestionCommandHandler : IRequestHandler<UpdateFormQuestionCommand, Result>

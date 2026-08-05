@@ -3,16 +3,15 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.UpdateBoardViewConfig;
 
+[IdempotencyOperation("work-management.board-views.update-board-view-config.v1")]
 public record UpdateBoardViewConfigCommand(
     Guid BoardId,
     Guid ViewId,
-    string ConfigJson,
-    string? IdempotencyKey = null) : ICommand<BoardViewDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest, IIdempotentRequest
+    string ConfigJson) : ICommand<BoardViewDto>, ITransactionalRequest, IRequirePermission, IResourceScopedRequest, IRealtimeRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateBoardView;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardView, ViewId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-view"), ViewId);
     public RealtimeTopic Topic => new("board", "Board", BoardId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"update-view-config:{ViewId}";
 }
 
 public class UpdateBoardViewConfigCommandHandler : IRequestHandler<UpdateBoardViewConfigCommand, BoardViewDto>

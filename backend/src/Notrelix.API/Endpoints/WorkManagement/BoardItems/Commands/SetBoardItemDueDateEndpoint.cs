@@ -9,6 +9,7 @@ public static class SetBoardItemDueDateEndpoint
     public static IEndpointRouteBuilder MapSetBoardItemDueDate(this IEndpointRouteBuilder group)
     {
         group.MapResourcePatch("/due-date", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardItems.SetDueDate")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("Set due date and start date for a board item");

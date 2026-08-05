@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.Approvals.Queries.ListApp
 public record ListApprovalRequestsQuery(Guid BoardId) : IQuery<Result<List<ApprovalRequestDto>>>, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 
 public class ListApprovalRequestsQueryHandler : IRequestHandler<ListApprovalRequestsQuery, Result<List<ApprovalRequestDto>>>

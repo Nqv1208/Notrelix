@@ -8,6 +8,7 @@ public static class PublishFormEndpoint
     public static IEndpointRouteBuilder MapPublishForm(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/publish", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Forms.Publish")
             .WithTags("WorkManagement.Forms")
             .WithSummary("Publish a form");

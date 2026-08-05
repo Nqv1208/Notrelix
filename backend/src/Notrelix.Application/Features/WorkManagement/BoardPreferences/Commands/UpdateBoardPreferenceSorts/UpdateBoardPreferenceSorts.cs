@@ -10,7 +10,7 @@ public record UpdateBoardPreferenceSortsCommand(
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 
 public class UpdateBoardPreferenceSortsCommandHandler : IRequestHandler<UpdateBoardPreferenceSortsCommand, Result>

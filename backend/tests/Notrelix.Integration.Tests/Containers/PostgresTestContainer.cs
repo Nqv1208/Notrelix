@@ -52,6 +52,7 @@ public sealed class PostgresTestContainer : IAsyncLifetime
                 npgOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
                 npgOptions.MigrationsHistoryTable("__EFMigrationsHistory", "ops");
             })
+            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning))
             .UseSnakeCaseNamingConvention()
             .ReplaceService<IModelCacheKeyFactory, WorkspaceAwareModelCacheKeyFactory>();
 

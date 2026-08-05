@@ -6,18 +6,17 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Domain.SharedKernel.Ordering;
 namespace Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace;
 
+[IdempotencyOperation("work-management.boards.create-board-in-workspace.v1")]
 public record CreateBoardInWorkspaceCommand(
     Guid WorkspaceId,
     string Title,
     string? Description,
     string? Background,
-    BoardVisibility? Visibility,
-    string? IdempotencyKey = null) : ICommand<Result<Guid>>, ITransactionalRequest, IRequirePermission, IWorkspaceRequest, IRealtimeRequest, IIdempotentRequest
+    BoardVisibility? Visibility) : ICommand<Result<Guid>>, ITransactionalRequest, IRequirePermission, IWorkspaceRequest, IRealtimeRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreateBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId);
     public RealtimeTopic Topic => new("workspace", "Workspace", WorkspaceId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"create-board:{WorkspaceId}:{Title}";
 }
 
 public class CreateBoardInWorkspaceCommandHandler : IRequestHandler<CreateBoardInWorkspaceCommand, Result<Guid>>

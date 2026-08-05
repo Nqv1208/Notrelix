@@ -6,17 +6,25 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Identity.RegistrationCompl
 public sealed class WorkspaceProvisioningConsumer : IConsumer<IdentityRegistrationCompletedIntegrationEventV1>
 {
     private readonly ISender _sender;
+    private readonly IIdempotencyExecutionContextWriter _executionContextWriter;
     private readonly ILogger<WorkspaceProvisioningConsumer> _logger;
 
-    public WorkspaceProvisioningConsumer(ISender sender, ILogger<WorkspaceProvisioningConsumer> logger)
+    public WorkspaceProvisioningConsumer(
+        ISender sender,
+        IIdempotencyExecutionContextWriter executionContextWriter,
+        ILogger<WorkspaceProvisioningConsumer> logger)
     {
         _sender = sender;
+        _executionContextWriter = executionContextWriter;
         _logger = logger;
     }
 
     public async Task Consume(ConsumeContext<IdentityRegistrationCompletedIntegrationEventV1> context)
     {
         var msg = context.Message;
+
+        // Spec 3.4: message-source execution keys are the event/message id in N format.
+        _executionContextWriter.Set(msg.EventId.ToString("N"), IdempotencyExecutionSource.Message);
 
         var result = await _sender.Send(new ProvisionPersonalWorkspaceCommand(
             UserId: msg.UserId,

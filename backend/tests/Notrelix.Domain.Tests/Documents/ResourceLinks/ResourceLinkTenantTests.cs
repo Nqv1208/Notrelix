@@ -9,8 +9,8 @@ public class ResourceLinkTenantTests
     public void Create_SameWorkspace_ShouldSucceed()
     {
         var ws = Guid.NewGuid();
-        var source = ResourceRef.Create(ResourceType.Page, Guid.NewGuid(), ws);
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), ws);
+        var source = ResourceRef.Create(ResourceKind.Create("documents.page"), Guid.NewGuid(), ws);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), ws);
         var link = ResourceLink.Create(Guid.NewGuid(), ws, source, target, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
         link.WorkspaceId.Should().Be(ws);
     }
@@ -19,8 +19,8 @@ public class ResourceLinkTenantTests
     public void Create_DifferentWorkspace_ShouldThrow()
     {
         var ws = Guid.NewGuid();
-        var source = ResourceRef.Create(ResourceType.Page, Guid.NewGuid(), ws);
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), Guid.NewGuid());
+        var source = ResourceRef.Create(ResourceKind.Create("documents.page"), Guid.NewGuid(), ws);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), Guid.NewGuid());
         var act = () => ResourceLink.Create(Guid.NewGuid(), ws, source, target, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>();
     }
@@ -29,7 +29,7 @@ public class ResourceLinkTenantTests
     public void Create_SelfReference_ShouldThrow()
     {
         var ws = Guid.NewGuid();
-        var source = ResourceRef.Create(ResourceType.Page, Guid.NewGuid(), ws);
+        var source = ResourceRef.Create(ResourceKind.Create("documents.page"), Guid.NewGuid(), ws);
         var act = () => ResourceLink.Create(Guid.NewGuid(), ws, source, source, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>();
     }
@@ -38,8 +38,8 @@ public class ResourceLinkTenantTests
     public void Delete_ShouldRaiseEvent()
     {
         var ws = Guid.NewGuid();
-        var source = ResourceRef.Create(ResourceType.Page, Guid.NewGuid(), ws);
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), ws);
+        var source = ResourceRef.Create(ResourceKind.Create("documents.page"), Guid.NewGuid(), ws);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), ws);
         var link = ResourceLink.Create(Guid.NewGuid(), ws, source, target, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)link).ClearDomainEvents();
         link.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
@@ -50,8 +50,8 @@ public class ResourceLinkTenantTests
     public void Restore_ShouldRaiseEvent()
     {
         var ws = Guid.NewGuid();
-        var source = ResourceRef.Create(ResourceType.Page, Guid.NewGuid(), ws);
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), ws);
+        var source = ResourceRef.Create(ResourceKind.Create("documents.page"), Guid.NewGuid(), ws);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), ws);
         var link = ResourceLink.Create(Guid.NewGuid(), ws, source, target, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
         link.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         ((IHasDomainEvents)link).ClearDomainEvents();
@@ -63,8 +63,8 @@ public class ResourceLinkTenantTests
     public void Delete_IsIdempotent_ShouldNotIncrementVersion()
     {
         var ws = Guid.NewGuid();
-        var source = ResourceRef.Create(ResourceType.Page, Guid.NewGuid(), ws);
-        var target = ResourceRef.Create(ResourceType.BoardItem, Guid.NewGuid(), ws);
+        var source = ResourceRef.Create(ResourceKind.Create("documents.page"), Guid.NewGuid(), ws);
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), Guid.NewGuid(), ws);
         var link = ResourceLink.Create(Guid.NewGuid(), ws, source, target, LinkType.Internal, Guid.NewGuid(), DateTimeOffset.UtcNow);
         link.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
         var before = link.Version;

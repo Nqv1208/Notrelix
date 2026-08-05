@@ -3,14 +3,13 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Approvals.Commands.RestoreApprovalRequest;
 
+[IdempotencyOperation("work-management.approvals.restore-approval-request.v1")]
 public record RestoreApprovalRequestCommand(
-    Guid RequestId,
-    string? IdempotencyKey = null)
+    Guid RequestId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.ApprovalRequest, RequestId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"restore-approval:{RequestId}";
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.approval-request"), RequestId);
 }
 
 public class RestoreApprovalRequestCommandHandler : IRequestHandler<RestoreApprovalRequestCommand, Result>

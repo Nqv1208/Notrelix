@@ -3,12 +3,12 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Templates.Commands.PublishBoardTemplate;
 
-public record PublishBoardTemplateCommand(Guid TemplateId, string? IdempotencyKey = null)
+[IdempotencyOperation("work-management.templates.publish-board-template.v1")]
+public record PublishBoardTemplateCommand(Guid TemplateId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, TemplateId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"publish-board-template:{TemplateId}";
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), TemplateId);
 }
 
 public class PublishBoardTemplateCommandHandler : IRequestHandler<PublishBoardTemplateCommand, Result>

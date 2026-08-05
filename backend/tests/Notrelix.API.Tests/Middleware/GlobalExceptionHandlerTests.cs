@@ -17,11 +17,31 @@ public class GlobalExceptionHandlerTests
 
     public GlobalExceptionHandlerTests()
     {
-        _handler = new GlobalExceptionHandler(Mock.Of<ILogger<GlobalExceptionHandler>>());
+        _handler = new GlobalExceptionHandler(
+            Mock.Of<ILogger<GlobalExceptionHandler>>(),
+            Microsoft.Extensions.Options.Options.Create(new IdempotencyOptions()));
         _context = new DefaultHttpContext();
         _context.Response.Body = new MemoryStream();
         _context.Request.Path = "/api/test";
         _context.TraceIdentifier = "test-trace-id";
+    }
+
+    [Fact]
+    public async Task IdempotencyIncompleteState_ShouldReturn503WithRetryAfter()
+    {
+        // Spec 3.8: committed active Processing is incomplete state — the API answers
+        // 503 + Retry-After (from IdempotencyOptions) and never a replayed success.
+        var exception = new IdempotencyIncompleteStateException("work-management.create-board-item.v1");
+
+        await _handler.TryHandleAsync(_context, exception, default);
+
+        var pd = await ReadProblemDetailsAsync(_context);
+        pd.Status.Should().Be(StatusCodes.Status503ServiceUnavailable);
+        pd.Extensions!["errorCode"].ToString().Should().Be("idempotency_state_incomplete");
+        pd.Type.Should().Be("https://docs.notrelix.com/problems/idempotency_state_incomplete");
+
+        _context.Response.Headers.RetryAfter.ToString()
+            .Should().Be(((int)new IdempotencyOptions().IncompleteStateRetryAfter.TotalSeconds).ToString());
     }
 
     [Fact]

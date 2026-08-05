@@ -5,17 +5,24 @@ using Notrelix.Application.Features.Governance.DTOs;
 namespace Notrelix.Application.Features.Governance.ResourcePermissions.Queries.GetResourcePermissions;
 
 public record GetResourcePermissionsQuery(
-    ResourceType ResourceType,
+    string ResourceKind,
     Guid ResourceId) : IQuery<Result<List<ResourcePermissionDto>>>, IResourceScopedRequest, IRequirePermission
 {
-    PermissionAction IRequirePermission.Action => ResourceType switch
+    internal ResourceKind Kind => ParseKind(ResourceKind);
+
+    PermissionAction IRequirePermission.Action => Kind.Value switch
     {
-        ResourceType.Board => PermissionAction.ManageBoardPermission,
-        ResourceType.Page => PermissionAction.SharePage,
+        "work-management.board" => PermissionAction.ManageBoardPermission,
+        "documents.page" => PermissionAction.SharePage,
         _ => PermissionAction.ManageWorkspace
     };
-    ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(ResourceType, ResourceId);
-    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceType, ResourceId);
+    ResourceRef IResourceScopedRequest.Resource => ResourceRef.Create(Kind, ResourceId);
+    ResourceRef IRequirePermission.Resource => ResourceRef.Create(Kind, ResourceId);
+
+    private static ResourceKind ParseKind(string value) =>
+        global::Notrelix.Domain.SharedKernel.ResourceKind.TryCreate(value, out var kind)
+            ? kind
+            : throw new ArgumentException($"Invalid resource kind '{value}'. Expected a canonical kind such as 'work-management.board'.", nameof(value));
 }
 
 public class GetResourcePermissionsQueryHandler : IRequestHandler<GetResourcePermissionsQuery, Result<List<ResourcePermissionDto>>>
@@ -34,15 +41,32 @@ public class GetResourcePermissionsQueryHandler : IRequestHandler<GetResourcePer
         CancellationToken cancellationToken)
     {
         var workspaceId = _requestContext.RequireWorkspaceId();
-        var permissions = await _context.ResourcePermissions
+        var kind = request.Kind;
+        var rows = await _context.ResourcePermissions
             .AsNoTracking()
             .Where(p => p.WorkspaceId == workspaceId &&
-                        p.ResourceType == request.ResourceType &&
+                        p.ResourceKind == kind &&
                         p.ResourceId == request.ResourceId)
+            .Select(p => new
+            {
+                p.Id,
+                p.WorkspaceId,
+                Kind = p.ResourceKind,
+                p.ResourceId,
+                p.SubjectType,
+                p.SubjectId,
+                p.Level,
+                p.CreatedBy,
+                p.IsDeleted,
+                p.DeletedAt
+            })
+            .ToListAsync(cancellationToken);
+
+        var permissions = rows
             .Select(p => new ResourcePermissionDto(
                 p.Id,
                 p.WorkspaceId,
-                p.ResourceType.ToString(),
+                p.Kind.Value,
                 p.ResourceId,
                 p.SubjectType.ToString(),
                 p.SubjectId,
@@ -50,7 +74,7 @@ public class GetResourcePermissionsQueryHandler : IRequestHandler<GetResourcePer
                 p.CreatedBy,
                 p.IsDeleted,
                 p.DeletedAt))
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         return Result<List<ResourcePermissionDto>>.Success(permissions);
     }

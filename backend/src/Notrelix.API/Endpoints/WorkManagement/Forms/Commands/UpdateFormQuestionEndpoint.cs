@@ -9,6 +9,7 @@ public static class UpdateFormQuestionEndpoint
     public static IEndpointRouteBuilder MapUpdateFormQuestion(this IEndpointRouteBuilder group)
     {
         group.MapResourcePatch("/{questionId:guid}", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Forms.UpdateQuestion")
             .WithTags("WorkManagement.Forms")
             .WithSummary("Update a form question");

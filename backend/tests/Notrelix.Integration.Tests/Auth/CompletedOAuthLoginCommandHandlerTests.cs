@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using Notrelix.Application.Features.Accounts.Provisioning;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthLogin;
 using Notrelix.Application.Features.Identity.OAuth.DTOs;
@@ -71,7 +72,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
             providerClient.Object,
             optionsProvider.Object,
             context,
-            context,
+            new AccountProvisioningService(context),
             sessionIssuer.Object,
             passwordHasher.Object,
             dateTimeProvider.Object,

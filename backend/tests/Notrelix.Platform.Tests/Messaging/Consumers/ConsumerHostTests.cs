@@ -1,3 +1,4 @@
+using System.Diagnostics.Metrics;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -126,32 +127,149 @@ public sealed class ConsumerHostTests
 
         var envelope = CreateEnvelope("test.event");
 
-        // First call fails
-        await _sut.DispatchAsync(envelope);
-        // Second call fails
-        await _sut.DispatchAsync(envelope);
-        // Third call succeeds — should reset
-        await _sut.DispatchAsync(envelope);
+        // Handler failures below the poison threshold are rethrown after diagnostics.
+        Func<Task> dispatch = () => _sut.DispatchAsync(envelope);
+        await dispatch.Should().ThrowAsync<InvalidOperationException>();   // fail 1
+        await dispatch.Should().ThrowAsync<InvalidOperationException>();   // fail 2
+        // Third call succeeds — poison resets
+        await dispatch.Should().NotThrowAsync();
         // Fourth call succeeds — clean
-        await _sut.DispatchAsync(envelope);
-
-        // After success, poison should be 0
-        var poisonBefore = failCount;
-        await _sut.DispatchAsync(envelope);
+        await dispatch.Should().NotThrowAsync();
 
         _diagMock.Verify(d => d.Publish(It.IsAny<DeliveryFailedEvent>()), Times.AtLeast(2));
     }
 
     [Fact]
-    public async Task DispatchAsync_ShouldHandleHandlerThrowing_WithoutCrashing()
+    public async Task DispatchAsync_HandlerFailure_PublishesDiagnosticsThenRethrows()
     {
+        // FZ-PLT-01 (final decision: Platform failure): publish diagnostics then
+        // rethrow for transport retry. Currently the host swallows the exception.
         _sut.Register("test.event", (_, _) =>
-            throw new InvalidOperationException("handler error"));
+            throw new InvalidOperationException("handler error"), o => o.PoisonThreshold = 5);
 
         var envelope = CreateEnvelope("test.event");
-        await _sut.DispatchAsync(envelope);
 
+        Func<Task> act = () => _sut.DispatchAsync(envelope);
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("handler error");
         _diagMock.Verify(d => d.Publish(It.Is<DeliveryFailedEvent>(e => e.Error.Contains("handler error"))), Times.Once);
+    }
+
+    [Fact]
+    public async Task DispatchAsync_ConcurrencyLimitReached_NeverDrops()
+    {
+        // FZ-PLT-01 (final decision: Platform concurrency): wait or throw backpressure;
+        // never drop. Currently the host returns success without running the handler.
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handlerRuns = 0L;
+
+        _sut.Register("test.event", (_, _) =>
+        {
+            Interlocked.Increment(ref handlerRuns);
+            entered.TrySetResult();
+            return release.Task;
+        }, o => o.ConcurrencyLimit = 1);
+
+        var first = _sut.DispatchAsync(CreateEnvelope("test.event"));
+        await entered.Task;
+
+        var second = _sut.DispatchAsync(CreateEnvelope("test.event"));
+        var settled = await Task.WhenAny(second, Task.Delay(1000));
+
+        if (ReferenceEquals(settled, second))
+        {
+            if (second.IsCompletedSuccessfully)
+            {
+                Interlocked.Read(ref handlerRuns).Should().Be(2,
+                    "a dispatch that succeeds while the slot is full proves a silent drop — never drop under backpressure");
+            }
+            // else: backpressure throw is acceptable — the transport retries.
+        }
+        else
+        {
+            release.TrySetResult();
+            await second;
+            Interlocked.Read(ref handlerRuns).Should().Be(2,
+                "a waiting dispatch must execute the handler once the slot frees");
+        }
+
+        release.TrySetResult();
+        await first;
+    }
+
+    [Fact]
+    public async Task DispatchAsync_OrderingEnabled_RejectsEnvelopeWithoutSequence()
+    {
+        // Spec 8.3: ordering requires a real envelope sequence. A missing sequence
+        // is a contract violation and must be rejected with a typed ordering
+        // exception — never synthesized from arrival order.
+        var handled = false;
+        _sut.Register("test.event", (_, _) =>
+        {
+            handled = true;
+            return Task.CompletedTask;
+        }, o => o.OrderingRequired = true);
+
+        var envelope = CreateEnvelope("test.event");
+
+        var act = () => _sut.DispatchAsync(envelope);
+        await act.Should().ThrowAsync<MessageOrderingException>();
+
+        handled.Should().BeFalse(
+            "an envelope without a sequence must not be delivered to an ordering-enabled consumer");
+        _diagMock.Verify(d => d.Publish(It.IsAny<DeliveryFailedEvent>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task DispatchAsync_Success_CountsDeliveredMetric_NotDeliveryFailed()
+    {
+        // FZ-PLT-01: the delivery metric counts only after handler success.
+        var meterName = $"metrics-{Guid.NewGuid():N}";
+        using var recorder = new MetricsRecorder(meterName);
+        var host = new ConsumerHost(new MessagingMetrics(meterName), _diagMock.Object, NullLogger<ConsumerHost>.Instance);
+        host.Register("test.event", (_, _) => Task.CompletedTask);
+
+        await host.DispatchAsync(CreateEnvelope("test.event"));
+
+        recorder.GetTotal("messaging.events.delivered").Should().Be(1);
+        recorder.GetTotal("messaging.events.delivery_failed").Should().Be(0);
+        _diagMock.Verify(d => d.Publish(It.IsAny<DeliverySucceededEvent>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task DispatchAsync_HandlerFailure_CountsDeliveryFailedMetric_NotDelivered()
+    {
+        var meterName = $"metrics-{Guid.NewGuid():N}";
+        using var recorder = new MetricsRecorder(meterName);
+        var host = new ConsumerHost(new MessagingMetrics(meterName), _diagMock.Object, NullLogger<ConsumerHost>.Instance);
+        host.Register("test.event", (_, _) => throw new InvalidOperationException("boom"),
+            o => o.PoisonThreshold = 5);
+
+        Func<Task> act = () => host.DispatchAsync(CreateEnvelope("test.event"));
+        await act.Should().ThrowAsync<InvalidOperationException>();
+
+        recorder.GetTotal("messaging.events.delivered").Should().Be(0,
+            "a failed handler must never count as delivered");
+        recorder.GetTotal("messaging.events.delivery_failed").Should().Be(1);
+    }
+
+    [Fact]
+    public async Task DispatchAsync_PoisonThreshold_ThrowsPoisonException_CountsDeliveryFailed_NotDelivered()
+    {
+        var meterName = $"metrics-{Guid.NewGuid():N}";
+        using var recorder = new MetricsRecorder(meterName);
+        var host = new ConsumerHost(new MessagingMetrics(meterName), _diagMock.Object, NullLogger<ConsumerHost>.Instance);
+        host.Register("test.event", (_, _) => throw new InvalidOperationException("poison"),
+            o => o.PoisonThreshold = 1);
+
+        Func<Task> act = () => host.DispatchAsync(CreateEnvelope("test.event"));
+
+        await act.Should().ThrowAsync<PoisonMessageException>();
+        recorder.GetTotal("messaging.events.delivered").Should().Be(0);
+        recorder.GetTotal("messaging.events.delivery_failed").Should().Be(1,
+            "a poison detection is still a delivery failure, not a delivery success");
     }
 
     private static EventEnvelope CreateEnvelope(string eventName) => new()
@@ -163,4 +281,40 @@ public sealed class ConsumerHostTests
         Data = new byte[0],
         ContentType = "application/json",
     };
+
+    private sealed class MetricsRecorder : IDisposable
+    {
+        private readonly MeterListener _listener = new();
+        private readonly Dictionary<string, long> _totals = new(StringComparer.Ordinal);
+
+        public MetricsRecorder(string meterName)
+        {
+            _listener.InstrumentPublished = (instrument, _) =>
+            {
+                if (instrument.Meter.Name == meterName)
+                {
+                    _listener.EnableMeasurementEvents(instrument);
+                }
+            };
+            _listener.SetMeasurementEventCallback<long>((instrument, measurement, _, _) =>
+            {
+                lock (_totals)
+                {
+                    _totals.TryGetValue(instrument.Name, out var current);
+                    _totals[instrument.Name] = current + measurement;
+                }
+            });
+            _listener.Start();
+        }
+
+        public long GetTotal(string instrumentName)
+        {
+            lock (_totals)
+            {
+                return _totals.GetValueOrDefault(instrumentName);
+            }
+        }
+
+        public void Dispose() => _listener.Dispose();
+    }
 }

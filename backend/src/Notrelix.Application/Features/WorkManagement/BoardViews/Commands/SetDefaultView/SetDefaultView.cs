@@ -3,12 +3,12 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SetDefaultView;
 
-public record SetDefaultViewCommand(Guid BoardId, Guid ViewId, string? IdempotencyKey = null)
+[IdempotencyOperation("work-management.board-views.set-default-view.v1")]
+public record SetDefaultViewCommand(Guid BoardId, Guid ViewId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Board, BoardId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"set-default-view:{ViewId}";
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 
 public class SetDefaultViewCommandHandler : IRequestHandler<SetDefaultViewCommand, Result>

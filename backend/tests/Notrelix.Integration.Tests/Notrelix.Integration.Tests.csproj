@@ -21,13 +21,19 @@
     <PackageReference Include="Moq" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Testcontainers" />
     <PackageReference Include="Testcontainers.PostgreSQL" />
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Notrelix.Domain\Notrelix.Domain.csproj" />
     <ProjectReference Include="..\..\src\Notrelix.Application\Notrelix.Application.csproj" />
     <ProjectReference Include="..\..\src\Notrelix.Infrastructure\Notrelix.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Notrelix.API\Notrelix.API.csproj" />
     <ProjectReference Include="..\Notrelix.Testing.Core\Notrelix.Testing.Core.csproj" />
     <ProjectReference Include="..\Notrelix.Testing.Domain\Notrelix.Testing.Domain.csproj" />
     <ProjectReference Include="..\Notrelix.Testing.Application\Notrelix.Testing.Application.csproj" />

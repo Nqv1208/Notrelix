@@ -133,7 +133,7 @@ public class PermissionVersionProviderTests : IAsyncLifetime
         var versionBefore = await provider.GetVersionAsync(accountId, workspace.Id, ownerId, default);
 
         var permission = ResourcePermission.Grant(
-            accountId, workspace.Id, ResourceType.Board,
+            accountId, workspace.Id, ResourceKind.Create("work-management.board"),
             Guid.NewGuid(), PermissionSubjectType.User,
             ownerId, PermissionLevel.Editor, PermissionLevel.Owner, ownerId, Now);
         permission.ChangeLevel(PermissionLevel.Manager, ownerId, Now);

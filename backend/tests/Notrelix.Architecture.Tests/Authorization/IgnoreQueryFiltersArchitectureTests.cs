@@ -95,6 +95,9 @@ public class IgnoreQueryFiltersArchitectureTests
         ["EmailVerificationTokenIssuer.cs"] = new("EmailVerificationTokenIssuer.cs", AllowlistClassification.Intentional,
             "Token issuer bypasses EF query filter to revoke prior tokens across tenant boundaries",
             "Keep as Intentional — cross-tenant token revocation"),
+        ["ActiveVerificationTokenLocker.cs"] = new("ActiveVerificationTokenLocker.cs", AllowlistClassification.Intentional,
+            "Token locker bypasses EF query filter to lock active verification tokens across tenant boundaries",
+            "Keep as Intentional — cross-tenant token locking"),
     };
 
     [Fact]

@@ -4,15 +4,14 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.RemoveFieldOption;
 
+[IdempotencyOperation("work-management.board-fields.remove-field-option.v1")]
 public record RemoveFieldOptionCommand(
     Guid BoardId,
     Guid FieldId,
-    Guid OptionId,
-    string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    Guid OptionId) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateField;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardField, FieldId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"remove-field-option:{OptionId}";
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-field"), FieldId);
 }
 
 public class RemoveFieldOptionCommandHandler : IRequestHandler<RemoveFieldOptionCommand, Result>

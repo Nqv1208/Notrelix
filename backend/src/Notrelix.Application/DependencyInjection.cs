@@ -1,5 +1,7 @@
 using System.Reflection;
+using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Behaviors;
+using Notrelix.Application.Features.Accounts.Provisioning;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
 using Notrelix.Application.Features.Identity.Verification.Services;
 
@@ -58,12 +60,31 @@ public static class DependencyInjection
         services.AddScoped<IExecutionContextAccessor, Notrelix.Application.Common.Context.ExecutionContext>();
         services.AddScoped<IExecutionContextReader>(sp => sp.GetRequiredService<IExecutionContextAccessor>());
 
+        // Idempotency services
+        services.AddOptions<IdempotencyOptions>()
+            .Bind(builder.Configuration.GetSection(IdempotencyOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<IdempotencyOptions>, IdempotencyOptionsValidator>();
+        services.AddSingleton<IIdempotencyRequestFingerprint, JsonIdempotencyRequestFingerprint>();
+        services.AddSingleton<IIdempotencyReplayPolicy, DefaultIdempotencyReplayPolicy>();
+        services.AddScoped<IdempotencyPartitionFactory>();
+
+        // Scoped execution context: one instance is exposed as both the read and
+        // the write contract so the transport can bind the key and the pipeline
+        // can require it.
+        services.AddScoped<IIdempotencyExecutionContext, IdempotencyExecutionContext>();
+        services.AddScoped<IIdempotencyExecutionContextWriter>(sp =>
+            (IIdempotencyExecutionContextWriter)sp.GetRequiredService<IIdempotencyExecutionContext>());
+
         // Integration event collector (scoped per request)
         services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
 
         // Auth session issuer
         services.AddScoped<IAuthSessionIssuer, AuthSessionIssuer>();
         services.AddScoped<IEmailVerificationTokenIssuer, EmailVerificationTokenIssuer>();
+
+        // Accounts-owned onboarding provisioning (spec 5.2)
+        services.AddScoped<IAccountProvisioningService, AccountProvisioningService>();
 
         // AutoMapper
         services.AddAutoMapper(cfg => cfg.AddMaps(assembly), assembly);

@@ -9,6 +9,7 @@ public static class CreateBoardFromTemplateEndpoint
     public static IEndpointRouteBuilder MapCreateBoardFromTemplate(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/create-board", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Templates.CreateBoard")
             .WithTags("WorkManagement.Templates")
             .WithSummary("Create a board from a template");

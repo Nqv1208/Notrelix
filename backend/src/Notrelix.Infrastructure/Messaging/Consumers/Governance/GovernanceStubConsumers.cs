@@ -35,9 +35,9 @@ public sealed class ResourcePermissionGrantedConsumer : IConsumer<ResourcePermis
     public Task Consume(ConsumeContext<ResourcePermissionGrantedIntegrationEvent> context)
     {
         _logger.LogInformation(
-            "[Governance] ResourcePermissionGranted: PermissionId={PermissionId}, ResourceType={ResourceType}, ResourceId={ResourceId}, SubjectType={SubjectType}, SubjectId={SubjectId}, PermissionLevel={PermissionLevel}, WorkspaceId={WorkspaceId}",
+            "[Governance] ResourcePermissionGranted: PermissionId={PermissionId}, ResourceKind={ResourceKind}, ResourceId={ResourceId}, SubjectType={SubjectType}, SubjectId={SubjectId}, PermissionLevel={PermissionLevel}, WorkspaceId={WorkspaceId}",
             context.Message.PermissionId,
-            context.Message.ResourceType,
+            context.Message.ResourceKind,
             context.Message.ResourceId,
             context.Message.SubjectType,
             context.Message.SubjectId,
@@ -59,9 +59,9 @@ public sealed class ResourcePermissionRevokedConsumer : IConsumer<ResourcePermis
     public Task Consume(ConsumeContext<ResourcePermissionRevokedIntegrationEvent> context)
     {
         _logger.LogInformation(
-            "[Governance] ResourcePermissionRevoked: PermissionId={PermissionId}, ResourceType={ResourceType}, ResourceId={ResourceId}, SubjectType={SubjectType}, SubjectId={SubjectId}, WorkspaceId={WorkspaceId}",
+            "[Governance] ResourcePermissionRevoked: PermissionId={PermissionId}, ResourceKind={ResourceKind}, ResourceId={ResourceId}, SubjectType={SubjectType}, SubjectId={SubjectId}, WorkspaceId={WorkspaceId}",
             context.Message.PermissionId,
-            context.Message.ResourceType,
+            context.Message.ResourceKind,
             context.Message.ResourceId,
             context.Message.SubjectType,
             context.Message.SubjectId,

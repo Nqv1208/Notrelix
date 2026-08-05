@@ -1,3 +1,4 @@
+using System.Diagnostics.Metrics;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -141,6 +142,53 @@ public sealed class MessagingHostTests
     }
 
     [Fact]
+    public async Task DeliverAsync_Success_CountsDeliveredMetric_NotDeliveryFailed()
+    {
+        var meterName = $"metrics-{Guid.NewGuid():N}";
+        using var recorder = new MetricsRecorder(meterName);
+        var host = CreateHost(meterName);
+
+        await host.DeliverAsync(TestEnvelope.Create(), () => Task.CompletedTask);
+
+        recorder.GetTotal("messaging.events.delivered").Should().Be(1);
+        recorder.GetTotal("messaging.events.delivery_failed").Should().Be(0);
+        recorder.GetTotal("messaging.events.dead_lettered").Should().Be(0);
+    }
+
+    [Fact]
+    public async Task DeliverAsync_DeadLetterResult_CountsDeadLetteredMetric_NotDelivered()
+    {
+        var meterName = $"metrics-{Guid.NewGuid():N}";
+        using var recorder = new MetricsRecorder(meterName);
+        _deliveryEngineMock.Setup(d => d.DeliverAsync(
+                It.IsAny<EventEnvelope>(),
+                It.IsAny<Func<Task>>(),
+                It.IsAny<DeliveryOptions?>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DeliveryResult.DeadLetter("poison"));
+        var host = CreateHost(meterName);
+
+        var result = await host.DeliverAsync(TestEnvelope.Create(), () => Task.CompletedTask);
+
+        result.Success.Should().BeFalse();
+        result.DeadLettered.Should().BeTrue();
+        recorder.GetTotal("messaging.events.delivered").Should().Be(0,
+            "a dead-lettered delivery must never count as delivered");
+        recorder.GetTotal("messaging.events.delivery_failed").Should().Be(1);
+        recorder.GetTotal("messaging.events.dead_lettered").Should().Be(1);
+    }
+
+    private MessagingHost CreateHost(string meterName) => new(
+        _runtimeMock.Object,
+        _deliveryEngineMock.Object,
+        _connectionManagerMock.Object,
+        Options.Create(new MessagingHostOptions()),
+        new MessagingMetrics(meterName),
+        _diagMock.Object,
+        _healthCheck,
+        NullLogger<MessagingHost>.Instance);
+
+    [Fact]
     public async Task CheckHealthAsync_ShouldReturnHealthy_WhenConnected()
     {
         var result = await _sut.CheckHealthAsync();
@@ -204,4 +252,40 @@ file sealed record TestEvent
     public Guid EventId { get; init; }
     public Guid CorrelationId { get; init; }
     public DateTimeOffset OccurredAt { get; init; }
+}
+
+file sealed class MetricsRecorder : IDisposable
+{
+    private readonly MeterListener _listener = new();
+    private readonly Dictionary<string, long> _totals = new(StringComparer.Ordinal);
+
+    public MetricsRecorder(string meterName)
+    {
+        _listener.InstrumentPublished = (instrument, _) =>
+        {
+            if (instrument.Meter.Name == meterName)
+            {
+                _listener.EnableMeasurementEvents(instrument);
+            }
+        };
+        _listener.SetMeasurementEventCallback<long>((instrument, measurement, _, _) =>
+        {
+            lock (_totals)
+            {
+                _totals.TryGetValue(instrument.Name, out var current);
+                _totals[instrument.Name] = current + measurement;
+            }
+        });
+        _listener.Start();
+    }
+
+    public long GetTotal(string instrumentName)
+    {
+        lock (_totals)
+        {
+            return _totals.GetValueOrDefault(instrumentName);
+        }
+    }
+
+    public void Dispose() => _listener.Dispose();
 }

@@ -8,6 +8,7 @@ public static class DeleteLabelEndpoint
     public static IEndpointRouteBuilder MapDeleteLabel(this IEndpointRouteBuilder group)
     {
         group.MapResourceDelete("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Labels.Delete")
             .WithTags("WorkManagement.Labels")
             .WithSummary("Delete a label");

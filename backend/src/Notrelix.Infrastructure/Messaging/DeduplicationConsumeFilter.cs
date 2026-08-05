@@ -8,17 +8,20 @@ public sealed class DeduplicationConsumeFilter<T> : IFilter<ConsumeContext<T>>
     private readonly IMessageDeduplicationStore _dedupStore;
     private readonly ApplicationDbContext _db;
     private readonly IRlsSessionContext _rls;
+    private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<DeduplicationConsumeFilter<T>> _logger;
 
     public DeduplicationConsumeFilter(
         IMessageDeduplicationStore dedupStore,
         ApplicationDbContext db,
         IRlsSessionContext rls,
+        IDateTimeProvider dateTimeProvider,
         ILogger<DeduplicationConsumeFilter<T>> logger)
     {
         _dedupStore = dedupStore;
         _db = db;
         _rls = rls;
+        _dateTimeProvider = dateTimeProvider;
         _logger = logger;
     }
 
@@ -37,7 +40,7 @@ public sealed class DeduplicationConsumeFilter<T> : IFilter<ConsumeContext<T>>
         {
             // CRITICAL: Apply RLS trong transaction này cho TẤT CẢ events
             // Bao gồm cả system events (khi _tenant.IsSystemContext == true)
-            await _rls.ApplyAsync(_db.Database, context.CancellationToken);
+            await _rls.ApplyAsync(context.CancellationToken);
 
             var claimed = await _dedupStore.TryClaimProcessingAsync(
                 messageId: integrationEvent.EventId,
@@ -62,7 +65,7 @@ public sealed class DeduplicationConsumeFilter<T> : IFilter<ConsumeContext<T>>
             _dedupStore.MarkSucceeded(
                 messageId: integrationEvent.EventId,
                 consumerName: consumerName,
-                processedAt: DateTimeOffset.UtcNow);
+                processedAt: _dateTimeProvider.UtcNow);
 
             await _db.SaveChangesAsync(context.CancellationToken);
             await transaction.CommitAsync(context.CancellationToken);

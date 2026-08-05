@@ -4,7 +4,7 @@ public sealed class ResourcePermissionInheritanceCacheEntry
 {
     public Guid Id { get; private set; }
     public Guid WorkspaceId { get; private set; }
-    public string ResourceType { get; private set; } = null!;
+    public string ResourceKind { get; private set; } = null!;
     public Guid ResourceId { get; private set; }
     public string? ParentResourceType { get; private set; }
     public Guid? ParentResourceId { get; private set; }
@@ -50,7 +50,7 @@ public sealed class ResourcePermissionInheritanceCacheEntry
         {
             Id = id,
             WorkspaceId = workspaceId,
-            ResourceType = resourceType,
+            ResourceKind = resourceType,
             ResourceId = resourceId,
             ParentResourceType = parentResourceType,
             ParentResourceId = parentResourceId,

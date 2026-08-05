@@ -152,7 +152,7 @@ public class V4DomainRulesTests
     {
         var link = ShareLink.Create(Guid.NewGuid(),
             _workspaceId,
-            ResourceType.Board,
+            ResourceKind.Create("work-management.board"),
             _boardId,
             ShareLinkTokenHash.Create("tokenhash"),
             ShareLinkAccessMode.Public,

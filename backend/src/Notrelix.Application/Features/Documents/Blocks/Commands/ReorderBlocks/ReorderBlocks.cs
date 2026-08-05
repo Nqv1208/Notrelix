@@ -9,7 +9,7 @@ public record ReorderBlocksCommand(
 ) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.UpdatePage;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Page, PageId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);
 }
 
 public record ReorderBlockItem(Guid BlockId, string NewPosition, Guid? NewParentBlockId);
@@ -37,7 +37,7 @@ public class ReorderBlocksCommandHandler : IRequestHandler<ReorderBlocksCommand,
         foreach (var item in request.Items)
         {
             if (!blocks.TryGetValue(item.BlockId, out var block))
-                return Result.Failure($"Block '{item.BlockId}' was not found on page '{request.PageId}'.");
+                return Result.Failure(new ApplicationError("docs.block.not-found", $"Block '{item.BlockId}' was not found on page '{request.PageId}'.", ApplicationErrorType.NotFound));
 
             var newPosition = FractionalIndex.Create(item.NewPosition);
             if (item.NewParentBlockId is null)
@@ -49,7 +49,7 @@ public class ReorderBlocksCommandHandler : IRequestHandler<ReorderBlocksCommand,
                 var parentBlock = await _context.Blocks
                     .FirstOrDefaultAsync(b => b.Id == item.NewParentBlockId.Value && b.PageId == request.PageId && !b.IsDeleted, ct);
                 if (parentBlock is null)
-                    return Result.Failure($"Parent block '{item.NewParentBlockId}' was not found on page '{request.PageId}'.");
+                    return Result.Failure(new ApplicationError("docs.block.parent-not-found", $"Parent block '{item.NewParentBlockId}' was not found on page '{request.PageId}'.", ApplicationErrorType.NotFound));
 
                 var ancestorIds = new List<Guid>();
                 var currentParentId = parentBlock.ParentId;

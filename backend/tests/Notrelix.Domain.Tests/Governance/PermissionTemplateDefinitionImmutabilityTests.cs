@@ -11,12 +11,12 @@ public class PermissionTemplateDefinitionImmutabilityTests
     {
         var entries = new List<PermissionTemplateEntry>
         {
-            PermissionTemplateEntry.Create(ResourceType.Board, PermissionAction.ViewBoard, PermissionEffect.Allow)
+            PermissionTemplateEntry.Create(ResourceKind.Create("work-management.board"), PermissionAction.ViewBoard, PermissionEffect.Allow)
         };
 
         var definition = PermissionTemplateDefinition.Create(entries);
 
-        entries.Add(PermissionTemplateEntry.Create(ResourceType.Board, PermissionAction.ManageBoard, PermissionEffect.Allow));
+        entries.Add(PermissionTemplateEntry.Create(ResourceKind.Create("work-management.board"), PermissionAction.ManageBoard, PermissionEffect.Allow));
         definition.Entries.Should().HaveCount(1);
     }
 
@@ -25,8 +25,8 @@ public class PermissionTemplateDefinitionImmutabilityTests
     {
         var source = new List<PermissionTemplateEntry>
         {
-            PermissionTemplateEntry.Create(ResourceType.Board, PermissionAction.ViewBoard, PermissionEffect.Allow),
-            PermissionTemplateEntry.Create(ResourceType.Board, PermissionAction.ManageBoard, PermissionEffect.Allow)
+            PermissionTemplateEntry.Create(ResourceKind.Create("work-management.board"), PermissionAction.ViewBoard, PermissionEffect.Allow),
+            PermissionTemplateEntry.Create(ResourceKind.Create("work-management.board"), PermissionAction.ManageBoard, PermissionEffect.Allow)
         };
 
         var definition = PermissionTemplateDefinition.Create(source);
@@ -40,7 +40,7 @@ public class PermissionTemplateDefinitionImmutabilityTests
     {
         var entries = new List<PermissionTemplateEntry?>
         {
-            PermissionTemplateEntry.Create(ResourceType.Board, PermissionAction.ViewBoard, PermissionEffect.Allow),
+            PermissionTemplateEntry.Create(ResourceKind.Create("work-management.board"), PermissionAction.ViewBoard, PermissionEffect.Allow),
             null!
         };
 
@@ -54,7 +54,7 @@ public class PermissionTemplateDefinitionImmutabilityTests
     {
         var definition = PermissionTemplateDefinition.Create(
         [
-            PermissionTemplateEntry.Create(ResourceType.Board, PermissionAction.ViewBoard, PermissionEffect.Allow)
+            PermissionTemplateEntry.Create(ResourceKind.Create("work-management.board"), PermissionAction.ViewBoard, PermissionEffect.Allow)
         ]);
 
         definition.SchemaVersion.Should().Be(1);

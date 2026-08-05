@@ -3,7 +3,7 @@ namespace Notrelix.Application.Features.Governance.DTOs;
 public record ResourcePermissionDto(
     Guid Id,
     Guid WorkspaceId,
-    string ResourceType,
+    string ResourceKind,
     Guid ResourceId,
     string SubjectType,
     Guid SubjectId,

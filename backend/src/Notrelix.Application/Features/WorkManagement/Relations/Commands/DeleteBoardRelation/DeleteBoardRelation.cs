@@ -3,12 +3,12 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Relations.Commands.DeleteBoardRelation;
 
-public record DeleteBoardRelationCommand(Guid RelationId, string? IdempotencyKey = null)
+[IdempotencyOperation("work-management.relations.delete-board-relation.v1")]
+public record DeleteBoardRelationCommand(Guid RelationId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardRelation, RelationId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"delete-board-relation:{RelationId}";
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-relation"), RelationId);
 }
 
 public class DeleteBoardRelationCommandHandler : IRequestHandler<DeleteBoardRelationCommand, Result>

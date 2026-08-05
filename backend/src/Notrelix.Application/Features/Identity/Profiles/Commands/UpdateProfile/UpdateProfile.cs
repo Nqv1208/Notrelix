@@ -1,9 +1,10 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Identity.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile;
 
-public record UpdateProfileCommand : ICommand<Result<UserDto>>, ITransactionalRequest
+public record UpdateProfileCommand : ICommand<Result<UserDto>>, ITransactionalRequest, IGlobalRequest
 {
     // Filled from JWT claims by controller
     public Guid UserId { get; init; }

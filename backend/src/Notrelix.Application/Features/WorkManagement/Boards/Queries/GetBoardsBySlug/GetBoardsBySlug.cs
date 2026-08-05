@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardsB
 public record GetBoardsBySlugQuery(Guid WorkspaceId, string Slug) : IQuery<Result<List<BoardDto>>>, IRequirePermission, IWorkspaceRequest
 {
     public PermissionAction Action => PermissionAction.ViewWorkspace;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.Workspace, WorkspaceId);
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId);
 }
 
 public class GetBoardsBySlugQueryHandler : IRequestHandler<GetBoardsBySlugQuery, Result<List<BoardDto>>>

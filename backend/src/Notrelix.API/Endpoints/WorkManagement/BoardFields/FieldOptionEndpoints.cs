@@ -11,15 +11,19 @@ public static class FieldOptionEndpoints
     public static IEndpointRouteBuilder MapFieldOptionEndpoints(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/{fieldId:guid}/options", HandleAddFieldOption)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardFields.AddFieldOption")
             .WithSummary("Add an option to a select/status field");
         group.MapResourceDelete("/{fieldId:guid}/options/{optionId:guid}", HandleRemoveFieldOption)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardFields.RemoveFieldOption")
             .WithSummary("Remove an option from a field");
         group.MapResourcePatch("/{fieldId:guid}/options/{optionId:guid}", HandleUpdateFieldOption)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardFields.UpdateFieldOption")
             .WithSummary("Update a field option's name and color");
         group.MapResourcePost("/{fieldId:guid}/options/reorder", HandleReorderFieldOptions)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.BoardFields.ReorderFieldOptions")
             .WithSummary("Reorder field options");
         return group;

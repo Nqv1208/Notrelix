@@ -8,6 +8,7 @@ public static class DeleteSavedFilterEndpoint
     public static IEndpointRouteBuilder MapDeleteSavedFilter(this IEndpointRouteBuilder group)
     {
         group.MapResourceDelete("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.SavedFilters.SoftDelete")
             .WithTags("WorkManagement.SavedFilters")
             .WithSummary("Soft delete a saved filter");

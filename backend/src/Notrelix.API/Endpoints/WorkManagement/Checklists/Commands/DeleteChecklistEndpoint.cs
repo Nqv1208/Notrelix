@@ -8,6 +8,7 @@ public static class DeleteChecklistEndpoint
     public static IEndpointRouteBuilder MapDeleteChecklist(this IEndpointRouteBuilder group)
     {
         group.MapResourceDelete("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("WorkManagement.Checklists.Delete")
             .WithTags("WorkManagement.Checklists")
             .WithSummary("Delete a checklist");

@@ -4,16 +4,16 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateFieldOption;
 
+[IdempotencyOperation("work-management.board-fields.update-field-option.v1")]
 public record UpdateFieldOptionCommand(
     Guid BoardId,
     Guid FieldId,
     Guid OptionId,
     string Name,
-    string Color, string? IdempotencyKey = null) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+    string Color) : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateField;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.BoardField, FieldId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"update-field-option:{OptionId}";
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-field"), FieldId);
 }
 
 public class UpdateFieldOptionCommandHandler : IRequestHandler<UpdateFieldOptionCommand, Result>

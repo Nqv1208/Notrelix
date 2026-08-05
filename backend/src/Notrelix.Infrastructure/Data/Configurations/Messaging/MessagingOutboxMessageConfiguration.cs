@@ -32,6 +32,7 @@ public sealed class MessagingOutboxMessageConfiguration : IEntityTypeConfigurati
         builder.Property(x => x.MaxRetries).IsRequired().HasDefaultValue(5);
         builder.Property(x => x.NextAttemptAt).IsRequired();
         builder.Property(x => x.LockedBy).HasMaxLength(160);
+        builder.Property(x => x.LockId).HasColumnName("lock_id");
         builder.Property(x => x.LastErrorCode).HasMaxLength(120);
         builder.Property(x => x.CreatedAt).IsRequired();
         builder.Property(x => x.UpdatedAt);

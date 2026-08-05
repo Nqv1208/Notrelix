@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Notrelix.Application.Common.Events;
 using Notrelix.Platform.Messaging.Runtime;
 using Notrelix.Platform.Messaging.Transport;
 using Xunit;

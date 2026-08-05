@@ -3,12 +3,12 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 namespace Notrelix.Application.Features.WorkManagement.Views.Commands.RestoreSavedFilter;
 
-public record RestoreSavedFilterCommand(Guid FilterId, string? IdempotencyKey = null)
+[IdempotencyOperation("work-management.views.restore-saved-filter.v1")]
+public record RestoreSavedFilterCommand(Guid FilterId)
     : ICommand<Result>, ITransactionalRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ManageBoard;
-    public ResourceRef Resource => ResourceRef.Create(ResourceType.SavedFilter, FilterId);
-    string IIdempotentRequest.IdempotencyKey => IdempotencyKey ?? $"restore-filter:{FilterId}";
+    public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.saved-filter"), FilterId);
 }
 
 public class RestoreSavedFilterCommandHandler : IRequestHandler<RestoreSavedFilterCommand, Result>

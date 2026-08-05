@@ -3,31 +3,15 @@ using AppBusinessRuleException = Notrelix.Application.Common.Exceptions.Business
 using AppConflictException = Notrelix.Application.Common.Exceptions.ConflictException;
 using AppNotFoundException = Notrelix.Application.Common.Exceptions.NotFoundException;
 using AppValidationException = Notrelix.Application.Common.Exceptions.ValidationException;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
 
 namespace Notrelix.API.ErrorHandling;
 
 public static class ProblemDetailsMapper
 {
-    private static bool IsWorkspaceSlugUniqueViolation(Exception exception)
-    {
-        return exception is DbUpdateException { InnerException: PostgresException pg } &&
-               pg.SqlState == PostgresErrorCodes.UniqueViolation &&
-               pg.ConstraintName == "ux_workspaces_account_slug_active";
-    }
-
     public static ProblemDetails Map(HttpContext context, Exception exception)
     {
         (int StatusCode, string ErrorCode, string Title, string Detail, IReadOnlyDictionary<string, string[]>? Errors) mapped = exception switch
         {
-            _ when IsWorkspaceSlugUniqueViolation(exception) => (
-                StatusCodes.Status409Conflict,
-                ErrorCodes.Conflict,
-                "Slug conflict",
-                "A workspace with this slug already exists in your account.",
-                null
-            ),
             FluentValidation.ValidationException ex => (
                 StatusCodes.Status400BadRequest,
                 ErrorCodes.ValidationFailed,
@@ -77,11 +61,32 @@ public static class ProblemDetailsMapper
                 exception.Message,
                 null
             ),
+            Notrelix.Application.Common.Idempotency.IdempotencyPayloadMismatchException => (
+                StatusCodes.Status409Conflict,
+                ErrorCodes.IdempotencyPayloadMismatch,
+                "Idempotency conflict",
+                exception.Message,
+                null
+            ),
             AppConflictException => (
                 StatusCodes.Status409Conflict,
                 ErrorCodes.Conflict,
                 "Conflict",
                 exception.Message,
+                null
+            ),
+            Notrelix.Application.Common.Exceptions.PreconditionFailedException precondition => (
+                StatusCodes.Status412PreconditionFailed,
+                precondition.ErrorCode,
+                "Precondition failed",
+                precondition.Message,
+                null
+            ),
+            Notrelix.Application.Common.Idempotency.IdempotencyIncompleteStateException => (
+                StatusCodes.Status503ServiceUnavailable,
+                ErrorCodes.IdempotencyStateIncomplete,
+                "Service unavailable",
+                "The operation is being processed. Retry shortly with the same Idempotency-Key.",
                 null
             ),
             _ => (
