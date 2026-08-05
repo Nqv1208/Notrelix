@@ -1,15 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.OpenApi.Models;
 using Notrelix.API.Tests.Contracts;
-using Notrelix.Application.Common.Idempotency;
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Common.Security;
 using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.API.Tests.Idempotency;
@@ -110,6 +107,27 @@ public class IdempotencyEndpointContractTests : IClassFixture<NotrelixApiFactory
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
         problem.GetProperty("errorCode").GetString().Should().Be("validation.failed");
+    }
+
+    [Fact]
+    public async Task RepeatedKey_Returns400ValidationProblem_StatingExactlyOneAllowed()
+    {
+        using var client = CreateBareClient();
+        using var request = new HttpRequestMessage(HttpMethod.Post, ChecklistRoute)
+        {
+            Content = ChecklistBody(),
+        };
+        request.Headers.TryAddWithoutValidation("Idempotency-Key", new[] { ValidKey, ValidKey });
+
+        var response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "a request carrying more than one Idempotency-Key header is ambiguous");
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        problem.GetProperty("errorCode").GetString().Should().Be("validation.failed");
+        var errors = problem.GetProperty("errors");
+        errors.TryGetProperty("Idempotency-Key", out var message).Should().BeTrue();
+        message[0].GetString().Should().Contain("Exactly one Idempotency-Key header is allowed");
     }
 
     [Fact]
