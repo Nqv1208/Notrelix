@@ -172,7 +172,7 @@ public sealed class ProductionGraphTests : IAsyncLifetime
         {
             ["ConnectionStrings:NotrelixDb"] = _fixture.PostgresConnectionString,
             ["ConnectionStrings:Redis"] = _fixture.RedisConnectionString,
-            ["JwtSettings:SecretKey"] = "production-graph-test-signing-key-0123456789abcdef0123456789abcdef",
+            ["JwtSettings:SecretKey"] = "production-graph-test-signing-key-ThisIsNotASecret-0123456789",
             ["JwtSettings:Issuer"] = "https://notrelix.test",
             ["JwtSettings:Audience"] = "notrelix-api",
             ["Cors:AllowedOrigins:0"] = "https://app.notrelix.test",
